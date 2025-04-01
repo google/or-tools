@@ -30,72 +30,7 @@ using Model = SetCoverModel;
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
-
-class Solution {
- public:
-  Solution() = default;
-  template <typename SubsetsT>
-  Solution(const Model& model, SubsetsT&& subsets)
-      : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
-    for (SubsetIndex j : subsets_) {
-      cost_ += model.subset_costs()[j];
-    }
-  }
-
-  double cost() const { return cost_; }
-  const std::vector<SubsetIndex>& subsets() const { return subsets_; }
-  std::vector<SubsetIndex>& subsets() { return subsets_; }
-  void AddSubset(SubsetIndex subset, Cost cost) {
-    subsets_.push_back(subset);
-    cost_ += cost;
-  }
-  bool Empty() const { return subsets_.empty(); }
-  void Clear() {
-    cost_ = 0.0;
-    subsets_.clear();
-  }
-
- private:
-  Cost cost_;
-  std::vector<SubsetIndex> subsets_;
-};
-
-Cost ComputeReducedCosts(const Model& model,
-                         const ElementCostVector& multipliers,
-                         SubsetCostVector& reduced_costs);
-
-class DualState {
- public:
-  DualState(const Model& model);
-  Cost lower_bound() const { return lower_bound_; }
-  const ElementCostVector& multipliers() const { return multipliers_; }
-  const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
-
-  // NOTE: This function contains one of the two O(nnz) subgradient steps
-  template <typename Op>
-  void DualUpdate(const Model& model, Op multiplier_operator) {
-    multipliers_.resize(model.num_elements());
-    reduced_costs_.resize(model.num_subsets());
-    lower_bound_ = .0;
-    // Update multipliers
-    for (ElementIndex i : model.ElementRange()) {
-      multiplier_operator(i, multipliers_[i]);
-      lower_bound_ += multipliers_[i];
-      DCHECK_GE(multipliers_[i], .0);
-    }
-    lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
-  }
-
- private:
-  Cost lower_bound_;
-  ElementCostVector multipliers_;
-  SubsetCostVector reduced_costs_;
-};
-
-struct PrimalDualState {
-  Solution solution;
-  DualState dual_state;
-};
+struct PrimalDualState;
 
 // The SubModelView abstraction provides a mechanism to interact with a subset
 // of the rows and columns of a SetCoverModel, effectively creating a filtered
@@ -118,10 +53,13 @@ struct PrimalDualState {
 // hoisting.
 class SubModelView {
  public:
+  SubModelView() = default;
   SubModelView(const Model& model) { RestoreFullModel(model); }
 
   virtual ~SubModelView() = default;
 
+  BaseInt num_subsets() const { return model_->num_subsets(); }
+  BaseInt num_elements() const { return model_->num_elements(); }
   auto subset_costs() const
       -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
     return IndexListView(model_->subset_costs(), &columns_focus_);
@@ -144,6 +82,8 @@ class SubModelView {
       -> IndexListView<IntRange<ElementIndex>, std::vector<ElementIndex>> {
     return IndexListView(all_rows_range_, rows_focus());
   }
+
+  bool ComputeFeasibility() const;
 
   virtual void RestoreFullModel(const Model& model);
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
@@ -172,9 +112,77 @@ class SubModelView {
   std::vector<ElementIndex> rows_focus_;
   SubsetBoolVector columns_flags_;
   ElementBoolVector rows_flags_;
+  SubsetToIntVector columns_sizes_;
+  ElementToIntVector rows_sizes_;
 
   std::vector<SubsetIndex> fixed_columns_;
   Cost fixed_cost_;
+};
+
+class Solution {
+ public:
+  Solution() = default;
+  template <typename SubsetsT>
+  Solution(const SubModelView& model, SubsetsT&& subsets)
+      : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
+    for (SubsetIndex j : subsets_) {
+      cost_ += model.subset_costs()[j];
+    }
+  }
+
+  double cost() const { return cost_; }
+  const std::vector<SubsetIndex>& subsets() const { return subsets_; }
+  std::vector<SubsetIndex>& subsets() { return subsets_; }
+  void AddSubset(SubsetIndex subset, Cost cost) {
+    subsets_.push_back(subset);
+    cost_ += cost;
+  }
+  bool Empty() const { return subsets_.empty(); }
+  void Clear() {
+    cost_ = 0.0;
+    subsets_.clear();
+  }
+
+ private:
+  Cost cost_;
+  std::vector<SubsetIndex> subsets_;
+};
+
+Cost ComputeReducedCosts(const SubModelView& model,
+                         const ElementCostVector& multipliers,
+                         SubsetCostVector& reduced_costs);
+
+class DualState {
+ public:
+  DualState(const SubModelView& model);
+  Cost lower_bound() const { return lower_bound_; }
+  const ElementCostVector& multipliers() const { return multipliers_; }
+  const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
+
+  // NOTE: This function contains one of the two O(nnz) subgradient steps
+  template <typename Op>
+  void DualUpdate(const SubModelView& model, Op multiplier_operator) {
+    multipliers_.resize(model.num_elements());
+    reduced_costs_.resize(model.num_subsets());
+    lower_bound_ = .0;
+    // Update multipliers
+    for (ElementIndex i : model.ElementRange()) {
+      multiplier_operator(i, multipliers_[i]);
+      lower_bound_ += multipliers_[i];
+      DCHECK_GE(multipliers_[i], .0);
+    }
+    lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
+  }
+
+ private:
+  Cost lower_bound_;
+  ElementCostVector multipliers_;
+  SubsetCostVector reduced_costs_;
+};
+
+struct PrimalDualState {
+  Solution solution;
+  DualState dual_state;
 };
 
 // In the narrow scope of the CFT subgradient, there are often divisions
@@ -189,8 +197,8 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
   return numerator / denominator;
 }
 
-absl::Status ValidateModel(Model& model);
-absl::Status ValidateFeasibleSolution(const Model& model,
+absl::Status ValidateModel(const SubModelView& model);
+absl::Status ValidateFeasibleSolution(const SubModelView& model,
                                       const Solution& solution,
                                       Cost tolerance = 1e-6);
 
@@ -199,7 +207,7 @@ absl::Status ValidateFeasibleSolution(const Model& model,
 ///////////////////////////////////////////////////////////////////////
 
 struct SubgradientContext {
-  const Model& model;
+  const SubModelView& model;
   const DualState& current_dual_state;
   const DualState& best_dual_state;
   const Solution& best_solution;
@@ -220,7 +228,7 @@ class BoundCBs : public SubgradientCBs {
  public:
   static constexpr Cost kTol = 1e-6;
 
-  BoundCBs(const Model& model);
+  BoundCBs(const SubModelView& model);
   Cost step_size() const { return step_size_; }
   bool ExitCondition(const SubgradientContext& context) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
@@ -264,10 +272,10 @@ void SubgradientOptimization(SubModelView& core_model, SubgradientCBs& cbs,
 ////////////////////////////////////////////////////////////////////////
 
 Solution RunMultiplierBasedGreedy(
-    const Model& model, const DualState& dual_state,
+    const SubModelView& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
 
-Cost CoverGreedly(const Model& model, const DualState& dual_state,
+Cost CoverGreedly(const SubModelView& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt size_cutoff,
                   std::vector<SubsetIndex>& sol_subsets);
 
@@ -322,7 +330,7 @@ class FullToCoreModel : public SubModelView {
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            const PrimalDualState& core_state);
 
-  SubsetMapVector columns_map_;
+  std::vector<SubsetIndex> columns_map_;
   Model full_model_;
   DualState full_dual_state_;
 

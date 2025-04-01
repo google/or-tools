@@ -82,7 +82,30 @@ class CoverCounters {
 
 }  // namespace
 
-Cost ComputeReducedCosts(const Model& model,
+bool SubModelView::ComputeFeasibility() const {
+  CHECK_GT(num_elements(), 0);
+  CHECK_GT(num_subsets(), 0);
+  CHECK_EQ(columns().size(), num_subsets());
+  CHECK_EQ(subset_costs().size(), num_subsets());
+  for (Cost cost : subset_costs()) {
+    CHECK_GT(cost, 0.0);
+  }
+  CoverCounters possible_coverage(num_elements());
+  size_t num_covered_rows = 0;
+  for (const auto& column : columns()) {
+    num_covered_rows += possible_coverage.Cover(column);
+  }
+  VLOG(1) << "num_uncoverable_elements = " << num_elements() - num_covered_rows;
+  for (ElementIndex i : ElementRange()) {
+    if (possible_coverage[i] == 0) {
+      LOG(ERROR) << "Element " << i << " is not covered.";
+      return false;
+    }
+  }
+  return true;
+}
+
+Cost ComputeReducedCosts(const SubModelView& model,
                          const ElementCostVector& multipliers,
                          SubsetCostVector& reduced_costs) {
   // Compute new reduced costs (O(nnz))
@@ -99,10 +122,10 @@ Cost ComputeReducedCosts(const Model& model,
   return negative_sum;
 }
 
-DualState::DualState(const Model& model)
+DualState::DualState(const SubModelView& model)
     : lower_bound_(),
       multipliers_(model.num_elements(), std::numeric_limits<Cost>::max()),
-      reduced_costs_(model.subset_costs()) {
+      reduced_costs_(model.subset_costs().begin(), model.subset_costs().end()) {
   DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
     for (SubsetIndex j : model.rows()[i]) {
       Cost candidate = model.subset_costs()[j] / model.columns()[j].size();
@@ -111,7 +134,7 @@ DualState::DualState(const Model& model)
   });
 }
 
-absl::Status ValidateModel(Model& model) {
+absl::Status ValidateSubModel(SubModelView& model) {
   if (model.rows().size() != model.num_elements()) {
     return absl::InvalidArgumentError("Model has no rows.");
   }
@@ -133,16 +156,14 @@ absl::Status ValidateModel(Model& model) {
   return absl::OkStatus();
 }
 
-absl::Status ValidateFeasibleSolution(const Model& model,
+absl::Status ValidateFeasibleSolution(const SubModelView& model,
                                       const Solution& solution,
                                       Cost tolerance) {
   AccurateSum<Cost> solution_cost;
   CoverCounters coverage(model.num_elements());
-  const SparseColumnView& columns = model.columns();
-  const SubsetCostVector& subset_costs = model.subset_costs();
-  for (SubsetIndex subset : solution.subsets()) {
-    solution_cost.Add(subset_costs[subset]);
-    coverage.Cover(columns[subset]);
+  for (SubsetIndex j : solution.subsets()) {
+    solution_cost.Add(model.subset_costs()[j]);
+    coverage.Cover(model.columns()[j]);
   }
   if (!AreWithinAbsoluteOrRelativeTolerances(
           solution_cost.Value(), solution.cost(), tolerance, tolerance))
@@ -207,7 +228,7 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
 ///////////////////////////// SUBGRADIENT /////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-BoundCBs::BoundCBs(const Model& model)
+BoundCBs::BoundCBs(const SubModelView& model)
     : squared_norm_(static_cast<Cost>(model.num_elements())),
       direction_(ElementCostVector(model.num_elements(), .0)),
       prev_best_lb_(std::numeric_limits<Cost>::lowest()),
@@ -292,7 +313,7 @@ void BoundCBs::MakeMinimalCoverageSubgradient(const SubgradientContext& context,
     return reduced_costs[j1] > reduced_costs[j2];
   });
 
-  const SparseColumnView& cols = context.model.columns();
+  const auto& cols = context.model.columns();
   for (SubsetIndex j : lagrangian_solution_) {
     if (absl::c_all_of(cols[j], [&](auto i) { return subgradient[i] < 0; })) {
       absl::c_for_each(cols[j], [&](auto i) { subgradient[i] += 1.0; });
@@ -315,7 +336,7 @@ bool BoundCBs::UpdateCoreModel(SubModelView& core_model,
 
 void SubgradientOptimization(SubModelView& model, SubgradientCBs& cbs,
                              PrimalDualState& best_state) {
-  DCHECK_OK(ValidateModel(model));
+  DCHECK_OK(ValidateSubModel(model));
   DCHECK_OK(ValidateFeasibleSolution(model, best_state.solution));
 
   ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
@@ -381,7 +402,7 @@ class GreedyScores {
   static constexpr BaseInt removed_idx = -1;
   static constexpr Cost max_score = std::numeric_limits<Cost>::max();
 
-  GreedyScores(const Model& model, const DualState& dual_state)
+  GreedyScores(const SubModelView& model, const DualState& dual_state)
       : bad_size_(),
         worst_good_score_(std::numeric_limits<Cost>::lowest()),
         scores_(),
@@ -400,7 +421,7 @@ class GreedyScores {
     bad_size_ = scores_.size();
   }
 
-  SubsetIndex FindMinScoreColumn(const Model& model,
+  SubsetIndex FindMinScoreColumn(const SubModelView& model,
                                  const DualState& dual_state) {
     // Check if the bad/good partition should be updated
     if (bad_size_ == scores_.size()) {
@@ -431,8 +452,8 @@ class GreedyScores {
   // For each row in the given set, if `cond` returns true, the row is
   // considered newly covered. The function then iterates over the columns of
   // that row, updating the scores of the columns accordingly.
-  template <typename ElementSpanT, typename CondT>
-  BaseInt UpdateColumnsScoreOfRowsIf(const SparseRowView& rows,
+  template <typename RowT, typename ElementSpanT, typename CondT>
+  BaseInt UpdateColumnsScoreOfRowsIf(const RowT& rows,
                                      const ElementCostVector& multipliers,
                                      const ElementSpanT& row_idxs, CondT cond) {
     BaseInt processed_rows_count = 0;
@@ -509,7 +530,7 @@ class GreedyScores {
 // Stores the redundancy set and related information
 class RedundancyRemover {
  public:
-  RedundancyRemover(const Model& model, CoverCounters& total_coverage)
+  RedundancyRemover(const SubModelView& model, CoverCounters& total_coverage)
       : redund_set_(),
         total_coverage_(total_coverage),
         partial_coverage_(model.num_elements()),
@@ -518,7 +539,7 @@ class RedundancyRemover {
         partial_cov_count_(0),
         cols_to_remove_() {}
 
-  Cost TryRemoveRedundantCols(const Model& model, Cost cost_cutoff,
+  Cost TryRemoveRedundantCols(const SubModelView& model, Cost cost_cutoff,
                               std::vector<SubsetIndex>& sol_subsets) {
     for (SubsetIndex j : sol_subsets) {
       if (total_coverage_.IsRedundantUncover(model.columns()[j]))
@@ -565,13 +586,13 @@ class RedundancyRemover {
 
  private:
   // Remove redundant columns from the redundancy set using a heuristic
-  void HeuristicRedundancyRemoval(const Model& model, Cost cost_cutoff) {
+  void HeuristicRedundancyRemoval(const SubModelView& model, Cost cost_cutoff) {
     while (!redund_set_.empty()) {
       if (partial_cov_count_ == model.num_elements()) {
         return;
       }
       SubsetIndex j = redund_set_.back().idx;
-      const SparseColumn& j_col = model.columns()[j];
+      const auto& j_col = model.columns()[j];
       redund_set_.pop_back();
 
       if (total_coverage_.IsRedundantUncover(j_col)) {
@@ -609,7 +630,7 @@ class RedundancyRemover {
 
 }  // namespace
 
-Solution RunMultiplierBasedGreedy(const Model& model,
+Solution RunMultiplierBasedGreedy(const SubModelView& model,
                                   const DualState& dual_state,
                                   Cost cost_cutoff) {
   std::vector<SubsetIndex> sol_subsets;
@@ -618,7 +639,7 @@ Solution RunMultiplierBasedGreedy(const Model& model,
   return Solution(model, std::move(sol_subsets));
 }
 
-Cost CoverGreedly(const Model& model, const DualState& dual_state,
+Cost CoverGreedly(const SubModelView& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt stop_size,
                   std::vector<SubsetIndex>& sol_subsets) {
   Cost sol_cost = .0;
@@ -655,7 +676,7 @@ Cost CoverGreedly(const Model& model, const DualState& dual_state,
   // Fill up partial solution
   while (num_rows_to_cover > 0 && sol_subsets.size() < stop_size) {
     SubsetIndex j_star = scores.FindMinScoreColumn(model, dual_state);
-    const SparseColumn& column = model.columns()[j_star];
+    const auto& column = model.columns()[j_star];
     num_rows_to_cover -= scores.UpdateColumnsScoreOfRowsIf(
         model.rows(), dual_state.multipliers(), column,
         [&](auto i) { return covered_rows[i] == 0; });
@@ -675,7 +696,7 @@ namespace {
 
 void FixColumns(SubModelView& model,
                 const std::vector<SubsetIndex>& cols_to_fix,
-                ElementMapVector& new_to_old_map) {
+                std::vector<ElementIndex>& new_to_old_map) {
   CHECK(false) << "FixColumns not implemented";
 }
 
@@ -699,21 +720,21 @@ void FixBestColumns(SubModelView& model, PrimalDualState& state) {
 
   // Ensure at least a minimum number of columns are fixed
   BaseInt fix_at_least =
-      cols_to_fix.size() + std::max(1, model.num_elements() / 200);
+      cols_to_fix.size() + std::max<BaseInt>(1, model.num_elements() / 200);
   CoverGreedly(model, state.dual_state, std::numeric_limits<Cost>::max(),
                fix_at_least, cols_to_fix);
 
   // Fix columns and update the model
-  ElementMapVector new_to_old_map;
+  std::vector<ElementIndex> new_to_old_map;
   FixColumns(model, cols_to_fix, new_to_old_map);  // TODO(c4v4): implement
 
   // Update multipliers for the reduced model
   dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-    i_mult = state.dual_state.multipliers()[new_to_old_map[i]];
+    i_mult = state.dual_state.multipliers()[new_to_old_map[i.value()]];
   });
 }
 
-void RandomizeDualState(const Model& model, DualState& dual_state,
+void RandomizeDualState(const SubModelView& model, DualState& dual_state,
                         absl::BitGen& rnd) {
   dual_state.DualUpdate(model, [&](ElementIndex, Cost i_multiplier) {
     i_multiplier *= absl::Uniform(rnd, 0.9, 1.1);
@@ -746,8 +767,7 @@ void HeuristicCBs::ComputeMultipliersDelta(const SubgradientContext& context,
 
 absl::StatusOr<PrimalDualState> RunThreePhase(SubModelView& model,
                                               const Solution& init_solution) {
-  model.CreateSparseRowView();
-  RETURN_IF_ERROR(ValidateModel(model));
+  RETURN_IF_ERROR(ValidateSubModel(model));
 
   PrimalDualState best_state = {.solution = init_solution,
                                 .dual_state = DualState(model)};
@@ -797,12 +817,13 @@ absl::StatusOr<PrimalDualState> RunThreePhase(SubModelView& model,
 
 namespace {
 void ExtractCoreModel(const Model& full_model,
-                      const SubsetMapVector& columns_map, Model& core_model) {
+                      const std::vector<SubsetIndex>& columns_map,
+                      Model& core_model) {
   // Fill core model with the selected columns
   core_model = Model();
   core_model.ResizeNumSubsets(columns_map.size());
   for (SubsetIndex core_j : core_model.SubsetRange()) {
-    SubsetIndex full_j = columns_map[core_j];
+    SubsetIndex full_j = columns_map[core_j.value()];
     const SparseColumn& full_column = full_model.columns()[full_j];
     core_model.SetSubsetCost(core_j, full_model.subset_costs()[full_j]);
     core_model.ReserveNumElementsInSubset(full_column.size(), core_j.value());
@@ -816,7 +837,8 @@ void ExtractCoreModel(const Model& full_model,
 
 static constexpr BaseInt kMinCov = 5;
 void FillTentativeCoreModel(const Model& full_model,
-                            SubsetMapVector& columns_map, Model& core_model) {
+                            std::vector<SubsetIndex>& columns_map,
+                            Model& core_model) {
   SubsetBoolVector selected(full_model.num_subsets(), false);
   columns_map.reserve(full_model.num_elements() * kMinCov);
 
@@ -835,11 +857,11 @@ void FillTentativeCoreModel(const Model& full_model,
 
 void SelecteMinRedCostColumns(const Model& full_model,
                               const SubsetCostVector& reduced_costs,
-                              SubsetMapVector& columns_map,
+                              std::vector<SubsetIndex>& columns_map,
                               SubsetBoolVector& selected) {
   DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
   DCHECK_EQ(selected.size(), full_model.num_subsets());
-  SubsetMapVector candidates;
+  std::vector<SubsetIndex> candidates;
   for (SubsetIndex j : full_model.SubsetRange())
     if (reduced_costs[j] < 0.1) {
       candidates.push_back(j);
@@ -863,7 +885,7 @@ void SelecteMinRedCostColumns(const Model& full_model,
 
 static void SelectMinRedCostByRow(const Model& full_model,
                                   const SubsetCostVector& reduced_costs,
-                                  SubsetMapVector& columns_map,
+                                  std::vector<SubsetIndex>& columns_map,
                                   SubsetBoolVector& selected) {
   DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
   DCHECK_EQ(selected.size(), full_model.num_subsets());
@@ -908,7 +930,7 @@ FullToCoreModel::FullToCoreModel(Model&& full_model)
       update_period_(10),
       update_max_period_(std::min(1000, full_model_.num_elements() / 3)) {
   FillTentativeCoreModel(full_model_, columns_map_, static_cast<Model&>(*this));
-  DCHECK_OK(ValidateModel(*this));
+  DCHECK_OK(ValidateSubModel(*this));
 }
 
 bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
@@ -922,7 +944,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
   UpdatePricingPeriod(full_dual_state_, core_state);
 
   SubsetBoolVector selected(full_model_.num_subsets(), false);
-  SubsetMapVector old_column_map = std::move(columns_map_);
+  std::vector<SubsetIndex> old_column_map = std::move(columns_map_);
   columns_map_.clear();
 
   // Always retain best solution in the core model
@@ -943,7 +965,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
     i_mult = full_dual_state_.multipliers()[i];
   });
 
-  DCHECK_OK(ValidateModel(*this));
+  DCHECK_OK(ValidateSubModel(*this));
   DCHECK_OK(ValidateFeasibleSolution(*this, core_state.solution));
   DCHECK_GE(core_state.dual_state.lower_bound(),
             full_dual_state_.lower_bound());

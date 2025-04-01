@@ -11,10 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CAV_OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
-#define CAV_OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
-
-#include <vector>
+#ifndef OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
+#define OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
 
 #include "ortools/set_cover/base_types.h"
 
@@ -23,63 +21,78 @@ namespace operations_research::scp {
 // View exposing only the elements of a container that are indexed by a list of
 // indices. The list pointer can be null, in which case all elements are
 // returned.
-template <typename ContainerT, typename IndexListT = std::vector<int>>
+template <typename ContainerT, typename IndexListT>
 class IndexListView {
  public:
   using container_iterator = decltype(std::declval<const ContainerT>().begin());
   using index_iterator = decltype(std::declval<const IndexListT>().begin());
-  using index_type = decltype(*std::declval<index_iterator>());
+  using index_type = std::remove_cv_t<
+      std::remove_reference_t<decltype(*std::declval<index_iterator>())>>;
 
   struct IndexListViewIterator {
-    container_iterator elements_iter_;
-    index_iterator index_iter_;
-    bool no_indices_;
+    IndexListViewIterator(const ContainerT* container, size_t index)
+        : container_(container), pos_(index), use_index_(true) {}
+    IndexListViewIterator(const ContainerT* container, index_iterator iter)
+        : container_(container),
+          pos_(idx_or_iter{.iter = iter}),
+          use_index_(false) {}
 
     bool operator!=(const IndexListViewIterator& other) const {
-      return elements_iter_ != other.elements_iter_ |
-             index_iter_ != other.index_iter_;
+      DCHECK_EQ(container_, other.container_);
+      return use_index_ ? pos_.index != other.pos_.index
+                        : pos_.iter != other.pos_.iter;
     }
     IndexListViewIterator& operator++() {
-      elements_iter_ += no_indices_ ? 1 : 0;
-      index_iter_ += !no_indices_ ? 1 : 0;
+      if (use_index_) {
+        ++pos_.index;
+      } else {
+        ++pos_.iter;
+      }
       return *this;
     }
     decltype(auto) operator*() const {
-      return elements_iter_[no_indices_ ? 0 : *index_iter_];
+      return (*container_)[use_index_ ? index_type(pos_.index) : *pos_.iter];
     }
+
+   private:
+    const ContainerT* container_;
+    union idx_or_iter {
+      size_t index;
+      index_iterator iter;
+    } pos_;
+    bool use_index_;
   };
 
   IndexListView(const ContainerT& container, const IndexListT* element_list)
-      : begin_(container.begin()),
-        end_(container.end()),
-        indices_(element_list) {}
-  IndexListView(const ContainerT& container, std::nullptr_t)
-      : begin_(container.begin()), end_(container.end()), indices_(nullptr) {}
+      : container_(&container), indices_(element_list) {}
   BaseInt size() const {
-    return indices_ ? indices_->end() - indices_->begin() : end_ - begin_;
+    return indices_ ? indices_->end() - indices_->begin() : container_->size();
   }
   bool empty() const { return size() == 0; }
-  decltype(auto) operator[](BaseInt index) const {
+  decltype(auto) AtRelativeIndex(BaseInt index) const {
     DCHECK(0 <= index && index < size());
-    return begin_[indices_ ? (*indices_->begin())[index] : index_type(index)];
+    return (*container_)[indices_ ? (*indices_)[index] : index_type(index)];
   }
-  decltype(auto) AtOriginalIndex(index_type index) const {
-    DCHECK(0 <= index && index < end_ - begin_);
-    return begin_[index];
+  decltype(auto) operator[](index_type index) const {
+    DCHECK(0 <= index && index < container_->size());
+    return (*container_)[index];
   }
 
   IndexListViewIterator begin() const {
-    if (indices_ == nullptr) return IndexListViewIterator(begin_, {}, true);
-    return IndexListViewIterator(begin_, indices_->begin(), false);
+    if (indices_ == nullptr) {
+      return IndexListViewIterator(container_, 0ULL);
+    }
+    return IndexListViewIterator(container_, indices_->begin());
   }
   IndexListViewIterator end() const {
-    if (indices_ == nullptr) return IndexListViewIterator(end_, {}, true);
-    return IndexListViewIterator(begin_, indices_->end(), false);
+    if (indices_ == nullptr) {
+      return IndexListViewIterator(container_, container_->size());
+    }
+    return IndexListViewIterator(container_, indices_->end());
   }
 
  private:
-  container_iterator begin_;
-  container_iterator end_;
+  const ContainerT* container_;
   const IndexListT* indices_;
 };
 
@@ -88,7 +101,7 @@ class IndexListView {
 // those elements for which the corresponding boolean vector entry is set to
 // true. If the boolean vector pointer is null, the view includes all elements
 // from the container without applying any filtering.
-template <typename ContainerT, typename BoolVectorT = std::vector<bool>>
+template <typename ContainerT, typename BoolVectorT>
 class IndexListFilter {
  public:
   using container_iterator = decltype(std::declval<const ContainerT>().begin());
@@ -116,8 +129,6 @@ class IndexListFilter {
       : begin_(container.begin()),
         end_(container.end()),
         is_active_(is_active_) {}
-  IndexListFilter(const ContainerT& container, std::nullptr_t)
-      : begin_(container.begin()), end_(container.end()), is_active_(nullptr) {}
   IndexListFilterIterator begin() const {
     return IndexListFilterIterator(begin_, end_, is_active_);
   }
@@ -139,7 +150,7 @@ class IndexListFilter {
 //    using a boolean vector, which determines which elements within the
 //    sub-container are included in the view.
 template <typename SparseContainer2D, typename IndexListT, typename BoolVectorT>
-class SparseFilteredView : IndexListView<SparseContainer2D, IndexListT> {
+class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
  public:
   using base = IndexListView<SparseContainer2D, IndexListT>;
   using dim2_container_type = typename SparseContainer2D::value_type;
@@ -158,7 +169,7 @@ class SparseFilteredView : IndexListView<SparseContainer2D, IndexListT> {
       ++iter_;
       return *this;
     }
-    const IndexListFilter<dim2_container_type>& operator*() const {
+    const dim2_view_type& operator*() const {
       return IndexListFilter(*iter_, active_elements_);
     }
 
@@ -166,6 +177,7 @@ class SparseFilteredView : IndexListView<SparseContainer2D, IndexListT> {
     dim1_view_iterator iter_;
     const BoolVectorT* active_elements_;
   };
+
   SparseFilteredView() = default;
   SparseFilteredView(const SparseContainer2D& container,
                      const IndexListT* focus_indices,
@@ -178,9 +190,9 @@ class SparseFilteredView : IndexListView<SparseContainer2D, IndexListT> {
   SparseFocus2DViewIterator end() const {
     return SparseFocus2DViewIterator(base::end(), active_elements_);
   }
-  IndexListFilter<dim2_container_type> operator[](BaseInt focus_j) const {
-    return IndexListFilter<dim2_container_type>(base::operator[](focus_j),
-                                                active_elements_);
+  template <typename T>
+  dim2_view_type operator[](T j) const {
+    return dim2_view_type(base::operator[](j), active_elements_);
   }
 
  private:
@@ -213,8 +225,8 @@ struct IntRange {
   bool empty() const { return size() == 0; }
   IntRangeIterator begin() const { return IntRangeIterator{begin_}; }
   IntRangeIterator end() const { return IntRangeIterator{end_}; }
-  IntType operator[](BaseInt index) const {
-    DCHECK(0 <= index && index < size());
+  IntType operator[](IntType index) const {
+    DCHECK(IntType{} <= index && index < end_ - begin_);
     return begin_ + index;
   }
 
@@ -225,4 +237,4 @@ struct IntRange {
 
 }  // namespace operations_research::scp
 
-#endif /* CAV_OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H */
+#endif /* OR_TOOLS_ORTOOLS_SET_COVER_SET_COVER_VIEWS_H */
