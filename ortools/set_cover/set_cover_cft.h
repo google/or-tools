@@ -66,13 +66,15 @@ class SubModelView {
   }
   auto columns() const
       -> SparseFilteredView<SparseColumnView, std::vector<SubsetIndex>,
-                            ElementBoolVector> {
-    return SparseFilteredView(model_->columns(), columns_focus(), rows_flags());
+                            ElementBoolVector, SubsetToIntVector> {
+    return SparseFilteredView(model_->columns(), columns_focus(), rows_flags(),
+                              &columns_sizes_);
   }
   auto rows() const
       -> SparseFilteredView<SparseRowView, std::vector<ElementIndex>,
-                            SubsetBoolVector> {
-    return SparseFilteredView(model_->rows(), rows_focus(), columns_flags());
+                            SubsetBoolVector, ElementToIntVector> {
+    return SparseFilteredView(model_->rows(), rows_focus(), columns_flags(),
+                              &rows_sizes_);
   }
   auto SubsetRange() const
       -> IndexListView<IntRange<SubsetIndex>, std::vector<SubsetIndex>> {
@@ -310,7 +312,8 @@ absl::StatusOr<PrimalDualState> RunThreePhase(
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-class FullToCoreModel : public SubModelView {
+// TODO(c4v4): with the introduction of SubModelView, this needs to be updated.
+class FullToCoreModel : public Model {
   struct UpdateTrigger {
     BaseInt countdown;
     BaseInt period;
@@ -324,7 +327,7 @@ class FullToCoreModel : public SubModelView {
   FullToCoreModel(Args&&... args)
       : FullToCoreModel(Model(std::forward<Args>(args)...)) {}
 
-  bool UpdateCore(PrimalDualState& core_state) override;
+  bool UpdateCore(PrimalDualState& core_state) /* override */;
 
  private:
   void UpdatePricingPeriod(const DualState& full_dual_state,
