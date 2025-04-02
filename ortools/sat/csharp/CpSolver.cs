@@ -26,8 +26,8 @@ namespace Google.OrTools.Sat
  * variables in the best solution, as well as general statistics of the search.
  * </remarks>
  */
-public class CpSolver
-{
+public class CpSolver : IDisposable
+{ 
     /** <summary>Solves the given model, and returns the solve status.</summary> */
     public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
     {
