@@ -638,7 +638,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
   // Optimization: we only initialize the set if we don't have all task here.
   absl::flat_hash_set<int> requested_boxes_set;
-  if (requested_boxes.size() != helper_->NumBoxes()) {
+  const bool not_all_boxes = requested_boxes.size() != helper_->NumBoxes();
+  if (not_all_boxes) {
     requested_boxes_set = {requested_boxes.begin(), requested_boxes.end()};
   }
 
@@ -648,10 +649,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   auto fixed_boxes = already_checked_fixed_boxes_.view();
   for (int i = temp.size(); --i >= 0;) {
     const int box = temp[i].task_index;
-    if (requested_boxes.size() != helper_->NumBoxes() &&
-        !requested_boxes_set.contains(box)) {
-      continue;
-    }
+    if (not_all_boxes && !requested_boxes_set.contains(box)) continue;
 
     // By definition, fixed boxes are always present.
     // Doing this check optimize a bit the case where we have many fixed boxes.
@@ -910,41 +908,34 @@ bool RectanglePairwisePropagator::Propagate() {
     point_zero_area_boxes_.clear();
     fixed_non_zero_area_boxes_.clear();
     non_fixed_non_zero_area_boxes_.clear();
-    fixed_non_zero_area_rectangles_.clear();
     for (int b : helper_->connected_components()[component_index]) {
       if (!helper_->IsPresent(b)) continue;
       const auto [x_size_max, y_size_max] = helper_->GetBoxSizesMax(b);
-      ItemWithVariableSize* box;
+      ItemWithVariableSize box = helper_->GetItemWithVariableSize(b);
       if (x_size_max == 0) {
         if (y_size_max == 0) {
-          box = &point_zero_area_boxes_.emplace_back();
+          point_zero_area_boxes_.push_back(std::move(box));
         } else {
-          box = &vertical_zero_area_boxes_.emplace_back();
+          vertical_zero_area_boxes_.push_back(std::move(box));
         }
       } else if (y_size_max == 0) {
-        box = &horizontal_zero_area_boxes_.emplace_back();
+        horizontal_zero_area_boxes_.push_back(std::move(box));
       } else {
-        if (helper_->IsFixed(b)) {
-          box = &fixed_non_zero_area_boxes_.emplace_back();
-          fixed_non_zero_area_rectangles_.push_back(
-              helper_->GetItemRangeForSizeMin(b).bounding_area);
+        // TODO(user): if the number of fixed boxes is large, we keep
+        // reconstructing them each time this is called for no reason.
+        if (box.IsFixed()) {
+          fixed_non_zero_area_boxes_.push_back(std::move(box));
         } else {
-          box = &non_fixed_non_zero_area_boxes_.emplace_back();
+          non_fixed_non_zero_area_boxes_.push_back(std::move(box));
         }
       }
-      *box = helper_->GetItemWithVariableSize(b);
     }
 
     // We ignore pairs of two fixed boxes. The only thing to propagate between
     // two fixed boxes is a conflict and it should already have been taken care
     // of by the MandatoryOverlapPropagator propagator.
-
     RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
         non_fixed_non_zero_area_boxes_, fixed_non_zero_area_boxes_,
-        &restrictions));
-
-    RETURN_IF_FALSE(FindRestrictionsAndPropagateConflict(
-        fixed_non_zero_area_boxes_, non_fixed_non_zero_area_boxes_,
         &restrictions));
 
     // Check zero area boxes against non-zero area boxes.
@@ -964,24 +955,6 @@ bool RectanglePairwisePropagator::Propagate() {
   }
   for (const PairwiseRestriction& restriction : restrictions) {
     RETURN_IF_FALSE(PropagateTwoBoxes(restriction));
-  }
-  return true;
-}
-
-bool RectanglePairwisePropagator::FindRestrictionsAndPropagateConflict(
-    absl::Span<const ItemWithVariableSize> items,
-    std::vector<PairwiseRestriction>* restrictions) {
-  const int max_pairs =
-      params_->max_pairs_pairwise_reasoning_in_no_overlap_2d();
-  if (items.size() * (items.size() - 1) / 2 > max_pairs) {
-    return true;
-  }
-  AppendPairwiseRestrictions(items, restrictions);
-  for (const PairwiseRestriction& restriction : *restrictions) {
-    if (restriction.type ==
-        PairwiseRestriction::PairwiseRestrictionType::CONFLICT) {
-      RETURN_IF_FALSE(PropagateTwoBoxes(restriction));
-    }
   }
   return true;
 }

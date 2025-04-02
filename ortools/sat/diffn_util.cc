@@ -599,55 +599,51 @@ void AppendPairwiseRestriction(const ItemWithVariableSize& item1,
     return;
   }
 
+  PairwiseRestriction::PairwiseRestrictionType type;
   switch (state) {
     case 0:
       // Conflict. The two boxes must overlap in both dimensions.
-      result->push_back(
-          {.first_index = item1.index,
-           .second_index = item2.index,
-           .type = PairwiseRestriction::PairwiseRestrictionType::CONFLICT});
+      type = PairwiseRestriction::PairwiseRestrictionType::CONFLICT;
       break;
     case 1:
       // box2 can only be after box1 on x.
       if (item1.x.end_min > item2.x.start_min ||
           item2.x.start_max < item1.x.end_max) {
-        result->push_back({.first_index = item1.index,
-                           .second_index = item2.index,
-                           .type = PairwiseRestriction::
-                               PairwiseRestrictionType::FIRST_LEFT_OF_SECOND});
+        type =
+            PairwiseRestriction::PairwiseRestrictionType::FIRST_LEFT_OF_SECOND;
+        break;
       }
-      break;
-    case 2:  // box1 an only be after box2 on x.
+      return;
+    case 2:
+      // box1 can only be after box2 on x.
       if (item2.x.end_min > item1.x.start_min ||
           item1.x.start_max < item2.x.end_max) {
-        result->push_back({.first_index = item1.index,
-                           .second_index = item2.index,
-                           .type = PairwiseRestriction::
-                               PairwiseRestrictionType::FIRST_RIGHT_OF_SECOND});
+        type =
+            PairwiseRestriction::PairwiseRestrictionType::FIRST_RIGHT_OF_SECOND;
+        break;
       }
-      break;
+      return;
     case 4:
-      // box2 an only be after box1 on y.
+      // box2 can only be after box1 on y.
       if (item1.y.end_min > item2.y.start_min ||
           item2.y.start_max < item1.y.end_max) {
-        result->push_back({.first_index = item1.index,
-                           .second_index = item2.index,
-                           .type = PairwiseRestriction::
-                               PairwiseRestrictionType::FIRST_BELOW_SECOND});
+        type = PairwiseRestriction::PairwiseRestrictionType::FIRST_BELOW_SECOND;
+        break;
       }
-      break;
-    case 8:  // box1 an only be after box2 on y.
+      return;
+    case 8:
+      // box1 can only be after box2 on y.
       if (item2.y.end_min > item1.y.start_min ||
           item1.y.start_max < item2.y.end_max) {
-        result->push_back({.first_index = item1.index,
-                           .second_index = item2.index,
-                           .type = PairwiseRestriction::
-                               PairwiseRestrictionType::FIRST_ABOVE_SECOND});
+        type = PairwiseRestriction::PairwiseRestrictionType::FIRST_ABOVE_SECOND;
+        break;
       }
-      break;
+      return;
     default:
-      break;
+      return;
   }
+  result->push_back(
+      {.first_index = item1.index, .second_index = item2.index, .type = type});
 }
 }  // namespace
 
@@ -1942,8 +1938,7 @@ PostProcessedResult ConvertToRectangle32WithNonZeroSizes(
   IntegerValue prev_y = 0;
   Event prev_event = Event::kEnd;
   int cur_index = -1;
-  for (int i = 0; i < y_events.size(); ++i) {
-    const auto [y, event, index] = y_events[i];
+  for (const auto [y, event, index] : y_events) {
     if ((prev_event != event && prev_event != Event::kEnd) || prev_y != y ||
         event == Event::kPoint || cur_index == -1) {
       ++cur_index;
@@ -1974,8 +1969,7 @@ PostProcessedResult ConvertToRectangle32WithNonZeroSizes(
   IntegerValue prev_x = 0;
   prev_event = Event::kEnd;
   cur_index = -1;
-  for (int i = 0; i < x_events.size(); ++i) {
-    const auto [x, event, index] = x_events[i];
+  for (const auto [x, event, index] : x_events) {
     if ((prev_event != event && prev_event != Event::kEnd) || prev_x != x ||
         event == Event::kPoint || cur_index == -1) {
       ++cur_index;
@@ -2000,8 +1994,7 @@ PostProcessedResult ConvertToRectangle32WithNonZeroSizes(
 
   std::vector<Rectangle32> sorted_rectangles32;
   sorted_rectangles32.reserve(rectangles.size());
-  for (int i = 0; i < x_events.size(); ++i) {
-    const auto [x, event, index] = x_events[i];
+  for (const auto [x, event, index] : x_events) {
     if (event == Event::kBegin || event == Event::kPoint) {
       sorted_rectangles32.push_back(rectangles32[index]);
     }

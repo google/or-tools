@@ -163,7 +163,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
       logger_, "[Pure SAT presolve]", " num_fixed: ", trail_->Index(),
       " num_redundant: ", implication_graph_->num_redundant_literals() / 2, "/",
       sat_solver_->NumVariables(),
-      " num_implications: ", implication_graph_->num_implications(),
+      " num_implications: ", implication_graph_->ComputeNumImplicationsForLog(),
       " num_watched_clauses: ", clause_manager_->num_watched_clauses(),
       " dtime: ", time_limit_->GetElapsedDeterministicTime() - start_dtime, "/",
       options.deterministic_time_limit, " wtime: ", wall_timer.Get(),
@@ -280,7 +280,7 @@ bool Inprocessing::InprocessingRound() {
         logger_, "Inprocessing.", " fixed:", trail_->Index(),
         " equiv:", implication_graph_->num_redundant_literals() / 2,
         " bools:", sat_solver_->NumVariables(),
-        " implications:", implication_graph_->num_implications(),
+        " implications:", implication_graph_->ComputeNumImplicationsForLog(),
         " watched:", clause_manager_->num_watched_clauses(),
         " minimization:", mini_num_clause, "|", mini_num_removed,
         " dtime:", time_limit_->GetElapsedDeterministicTime() - start_dtime,
@@ -664,8 +664,7 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   num_removed_literals_ = 0;
   num_fixed_ = 0;
 
-  if (implication_graph_->literal_size() == 0) return true;
-  if (implication_graph_->num_implications() == 0) return true;
+  if (implication_graph_->IsEmpty()) return true;
 
   if (!stamps_are_already_computed_) {
     // We need a DAG so that we don't have cycle while we sample the tree.
@@ -696,8 +695,7 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
   dtime_ = 0.0;
   num_fixed_ = 0;
 
-  if (implication_graph_->literal_size() == 0) return true;
-  if (implication_graph_->num_implications() == 0) return true;
+  if (implication_graph_->IsEmpty()) return true;
 
   implication_graph_->RemoveFixedVariables();
   if (!implication_graph_->DetectEquivalences(log_info)) return true;

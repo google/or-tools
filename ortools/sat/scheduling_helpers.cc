@@ -246,7 +246,9 @@ void SchedulingConstraintHelper::InitSortedVectors() {
 
   recompute_all_cache_ = true;
   recompute_cache_.Resize(num_tasks);
+  non_fixed_intervals_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
+    non_fixed_intervals_[t] = t;
     recompute_cache_.Set(t);
   }
 
@@ -313,8 +315,22 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   }
 
   if (recompute_all_cache_) {
-    for (int t = 0; t < recompute_cache_.size(); ++t) {
+    for (const int t : non_fixed_intervals_) {
       if (!UpdateCachedValues(t)) return false;
+    }
+
+    // We also update non_fixed_intervals_ at level zero so that we will never
+    // scan them again.
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      int new_size = 0;
+      for (const int t : non_fixed_intervals_) {
+        if (IsPresent(t) && StartIsFixed(t) && EndIsFixed(t) &&
+            SizeIsFixed(t)) {
+          continue;
+        }
+        non_fixed_intervals_[new_size++] = t;
+      }
+      non_fixed_intervals_.resize(new_size);
     }
   } else {
     for (const int t : recompute_cache_) {

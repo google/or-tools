@@ -133,7 +133,7 @@ TEST(InprocessingTest, ClauseSubsumptionAndStrengthening) {
       // We added {+1, +2} and {+1, -3} there.
       // TODO(user): make sure we don't add twice the implications.
       auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
-      EXPECT_EQ(implication_graph->num_implications(), 6);
+      EXPECT_EQ(implication_graph->ComputeNumImplicationsForLog(), 6);
       EXPECT_EQ(implication_graph->Implications(Literal(-1)).size(), 3);
       EXPECT_THAT(implication_graph->Implications(Literal(-1)),
                   ::testing::UnorderedElementsAre(Literal(+2), Literal(+2),
@@ -146,7 +146,7 @@ TEST(InprocessingTest, ClauseSubsumptionAndStrengthening) {
 
       // Depending on the implication added, we don't get the same clauses.
       auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
-      EXPECT_EQ(implication_graph->num_implications(), 2);
+      EXPECT_EQ(implication_graph->ComputeNumImplicationsForLog(), 2);
       EXPECT_EQ(implication_graph->Implications(Literal(-1)).size(), 1);
       if (implication_graph->Implications(Literal(-1))[0] == Literal(+2)) {
         EXPECT_EQ(all_clauses[2]->AsSpan(), Literals({+2, +6, +1, +1}));
