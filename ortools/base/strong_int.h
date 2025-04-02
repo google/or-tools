@@ -496,15 +496,33 @@ struct numeric_limits<util_intops::StrongInt<TagType, NativeType>> {
       numeric_limits<NativeType>::tinyness_before;
   // NOLINTEND(google3-readability-class-member-naming)
 
-  static constexpr StrongIntT(min)() { return StrongIntT(numeric_limits<NativeType>::min()); }
-  static constexpr StrongIntT lowest() { return StrongIntT(numeric_limits<NativeType>::min()); }
-  static constexpr StrongIntT(max)() { return StrongIntT(numeric_limits<NativeType>::max()); }
-  static constexpr StrongIntT epsilon() { return StrongIntT(numeric_limits<NativeType>::epsilon()); }
-  static constexpr StrongIntT round_error() { return StrongIntT(numeric_limits<NativeType>::round_error()); }
-  static constexpr StrongIntT infinity() { return StrongIntT(numeric_limits<NativeType>::infinity()); }
-  static constexpr StrongIntT quiet_NaN() { return StrongIntT(numeric_limits<NativeType>::quiet_NaN()); }
-  static constexpr StrongIntT signaling_NaN() { return StrongIntT(numeric_limits<NativeType>::signaling_NaN()); }
-  static constexpr StrongIntT denorm_min() { return StrongIntT(numeric_limits<NativeType>::denorm_min()); }
+  static constexpr StrongIntT(min)() {
+    return StrongIntT(numeric_limits<NativeType>::min());
+  }
+  static constexpr StrongIntT lowest() {
+    return StrongIntT(numeric_limits<NativeType>::min());
+  }
+  static constexpr StrongIntT(max)() {
+    return StrongIntT(numeric_limits<NativeType>::max());
+  }
+  static constexpr StrongIntT epsilon() {
+    return StrongIntT(numeric_limits<NativeType>::epsilon());
+  }
+  static constexpr StrongIntT round_error() {
+    return StrongIntT(numeric_limits<NativeType>::round_error());
+  }
+  static constexpr StrongIntT infinity() {
+    return StrongIntT(numeric_limits<NativeType>::infinity());
+  }
+  static constexpr StrongIntT quiet_NaN() {
+    return StrongIntT(numeric_limits<NativeType>::quiet_NaN());
+  }
+  static constexpr StrongIntT signaling_NaN() {
+    return StrongIntT(numeric_limits<NativeType>::signaling_NaN());
+  }
+  static constexpr StrongIntT denorm_min() {
+    return StrongIntT(numeric_limits<NativeType>::denorm_min());
+  }
 };
 
 }  // namespace std
