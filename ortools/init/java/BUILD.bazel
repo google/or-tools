@@ -22,6 +22,7 @@ ortools_java_wrap_cc(
     package = "com.google.ortools.init",
     swig_includes = [
         "//ortools/base:base_swig",
+        "//ortools/util/java:absl_string_view_swig",
     ],
     visibility = ["//visibility:public"],
     deps = [
