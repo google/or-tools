@@ -47,6 +47,14 @@ filegroup(
 )
 
 filegroup(
+    name = "absl_string_view_swig",
+    srcs = [
+        "absl_string_view.i",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
     name = "sorted_interval_list_swig",
     srcs = [
         "sorted_interval_list.i",
