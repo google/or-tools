@@ -16,6 +16,7 @@
 #include <absl/algorithm/container.h>
 #include <absl/random/random.h>
 #include <absl/status/status.h>
+#include <absl/strings/str_join.h>
 #include <absl/types/span.h>
 
 #include <limits>
@@ -134,22 +135,22 @@ DualState::DualState(const SubModelView& model)
 
 absl::Status ValidateSubModel(SubModelView& model) {
   if (model.rows().size() != model.num_elements()) {
-    return absl::InvalidArgumentError("Model has no rows.");
+    return absl::InvalidArgumentError("Sub-Model has no rows.");
   }
   if (model.columns().size() != model.num_subsets()) {
-    return absl::InvalidArgumentError("Model has no columns.");
+    return absl::InvalidArgumentError("Sub-Model has no columns.");
   }
   if (model.subset_costs().size() != model.num_subsets()) {
-    return absl::InvalidArgumentError("Model has no subset costs.");
+    return absl::InvalidArgumentError("Sub-Model has no subset costs.");
   }
   if (model.num_elements() <= 0) {
-    return absl::InvalidArgumentError("Model has no elements.");
+    return absl::InvalidArgumentError("Sub-Model has no elements.");
   }
   if (model.num_subsets() <= 0) {
-    return absl::InvalidArgumentError("Model has no subsets.");
+    return absl::InvalidArgumentError("Sub-Model has no subsets.");
   }
   if (!model.ComputeFeasibility()) {
-    return absl::InvalidArgumentError("Model is infeasible.");
+    return absl::InvalidArgumentError("Sub-Model is infeasible.");
   }
   return absl::OkStatus();
 }
@@ -166,25 +167,25 @@ absl::Status ValidateFeasibleSolution(const SubModelView& model,
   if (!AreWithinAbsoluteOrRelativeTolerances(
           solution_cost.Value(), solution.cost(), tolerance, tolerance))
     return absl::InvalidArgumentError("Solution cost is incorrect.");
-  for (ElementIndex element : model.ElementRange()) {
-    if (coverage[element] == 0) {
+  for (ElementIndex i : model.ElementRange()) {
+    if (coverage[i] == 0) {
       return absl::InvalidArgumentError("Solution is infeasible.");
     }
   }
   return absl::OkStatus();
 }
 
-void SubModelView::RestoreFullModel(const Model& model) {
-  model_ = &model;
-  all_columns_range_ = IntRange<SubsetIndex>(model.num_subsets());
-  all_rows_range_ = IntRange<ElementIndex>(model.num_elements());
-  columns_sizes_.resize(model.num_subsets());
-  rows_sizes_.resize(model.num_elements());
-  for (SubsetIndex j : model.SubsetRange()) {
-    columns_sizes_[j] = model.columns()[j].size();
+void SubModelView::RestoreFullModel(const Model* model) {
+  model_ = model;
+  all_columns_range_ = IntRange<SubsetIndex>(model->num_subsets());
+  all_rows_range_ = IntRange<ElementIndex>(model->num_elements());
+  columns_sizes_.resize(model->num_subsets());
+  rows_sizes_.resize(model->num_elements());
+  for (SubsetIndex j : model->SubsetRange()) {
+    columns_sizes_[j] = model->columns()[j].size();
   }
-  for (ElementIndex i : model.ElementRange()) {
-    rows_sizes_[i] = model.rows()[i].size();
+  for (ElementIndex i : model->ElementRange()) {
+    rows_sizes_[i] = model->rows()[i].size();
   }
   col_view_is_valid_ = false;
   row_view_is_valid_ = false;
@@ -717,12 +718,6 @@ Cost CoverGreedly(const SubModelView& model, const DualState& dual_state,
 ///////////////////////////////////////////////////////////////////////
 namespace {
 
-void FixColumns(SubModelView& model,
-                const std::vector<SubsetIndex>& cols_to_fix,
-                std::vector<ElementIndex>& new_to_old_map) {
-  CHECK(false) << "FixColumns not implemented";
-}
-
 void FixBestColumns(SubModelView& model, PrimalDualState& state) {
   auto& [best_sol, dual_state] = state;
 
@@ -749,12 +744,12 @@ void FixBestColumns(SubModelView& model, PrimalDualState& state) {
 
   // Fix columns and update the model
   std::vector<ElementIndex> new_to_old_map;
-  FixColumns(model, cols_to_fix, new_to_old_map);  // TODO(c4v4): implement
+  model.FixColumns(cols_to_fix);
 
   // Update multipliers for the reduced model
-  dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-    i_mult = state.dual_state.multipliers()[new_to_old_map[i.value()]];
-  });
+  // dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+  //     i_mult = state.dual_state.multipliers()[new_to_old_map[i.value()]];
+  //});
 }
 
 void RandomizeDualState(const SubModelView& model, DualState& dual_state,
@@ -948,7 +943,7 @@ FullToCoreModel::FullToCoreModel(Model&& full_model)
     : Model(),
       columns_map_(),
       full_model_(std::move(full_model)),
-      full_dual_state_(full_model_),
+      full_dual_state_(&full_model_),
       update_countdown_(10),
       update_period_(10),
       update_max_period_(std::min(1000, full_model_.num_elements() / 3)) {
@@ -961,7 +956,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
     return false;
   }
 
-  full_dual_state_.DualUpdate(full_model_, [&](ElementIndex i, Cost& i_mult) {
+  full_dual_state_.DualUpdate(&full_model_, [&](ElementIndex i, Cost& i_mult) {
     i_mult = core_state.dual_state.multipliers()[i];
   });
   UpdatePricingPeriod(full_dual_state_, core_state);
@@ -984,7 +979,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
   SelectMinRedCostByRow(full_model_, full_dual_state_.reduced_costs(),
                         columns_map_, selected);
   ExtractCoreModel(full_model_, columns_map_, *this);
-  core_state.dual_state.DualUpdate(*this, [&](ElementIndex i, Cost& i_mult) {
+  core_state.dual_state.DualUpdate(this, [&](ElementIndex i, Cost& i_mult) {
     i_mult = full_dual_state_.multipliers()[i];
   });
 

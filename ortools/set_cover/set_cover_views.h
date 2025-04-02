@@ -36,12 +36,12 @@ bool any_of(const ContainerT& container, Op op) {
   return false;
 }
 template <typename ContainerT, typename Op>
-bool all_of(const ContainerT& container, Op op) {
-  return any_of(container, [&](const auto& elem) { return !op(elem); });
-}
-template <typename ContainerT, typename Op>
 bool none_of(const ContainerT& container, Op op) {
   return !any_of(container, op);
+}
+template <typename ContainerT, typename Op>
+bool all_of(const ContainerT& container, Op op) {
+  return !any_of(container, [&](const auto& elem) { return !op(elem); });
 }
 
 // View exposing only the elements of a container that are indexed by a list of
@@ -94,10 +94,10 @@ class IndexListView {
     bool use_index_;
   };
 
-  IndexListView(const ContainerT& container, const IndexListT* element_list)
-      : container_(&container), indices_(element_list) {}
+  IndexListView(const ContainerT* container, const IndexListT* indices)
+      : container_(container), indices_(indices) {}
   BaseInt size() const {
-    return indices_ ? indices_->end() - indices_->begin() : container_->size();
+    return indices_ ? indices_->size() : container_->size();
   }
   bool empty() const { return size() == 0; }
   decltype(auto) AtRelativeIndex(BaseInt index) const {
@@ -110,16 +110,16 @@ class IndexListView {
   }
 
   IndexListViewIterator begin() const {
-    if (indices_ == nullptr) {
-      return IndexListViewIterator(container_, 0ULL);
+    if (indices_) {
+      return IndexListViewIterator(container_, indices_->begin());
     }
-    return IndexListViewIterator(container_, indices_->begin());
+    return IndexListViewIterator(container_, 0ULL);
   }
   IndexListViewIterator end() const {
-    if (indices_ == nullptr) {
-      return IndexListViewIterator(container_, container_->size());
+    if (indices_) {
+      return IndexListViewIterator(container_, indices_->end());
     }
-    return IndexListViewIterator(container_, indices_->end());
+    return IndexListViewIterator(container_, container_->size());
   }
 
  private:
@@ -165,9 +165,9 @@ class IndexListFilter {
     const BoolVectorT* is_active_;
   };
 
-  IndexListFilter(const ContainerT& container, const BoolVectorT* is_active_,
+  IndexListFilter(const ContainerT* container, const BoolVectorT* is_active_,
                   BaseInt size)
-      : container_(&container), is_active_(is_active_) {}
+      : container_(container), is_active_(is_active_) {}
   IndexListFilterIterator begin() const {
     return IndexListFilterIterator(container_->begin(), container_->end(),
                                    is_active_);
@@ -223,7 +223,7 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
       return *this;
     }
     dim2_view_type operator*() const {
-      return IndexListFilter(*iter_, active_elements_, *sizes_iter_);
+      return IndexListFilter(&*iter_, active_elements_, *sizes_iter_);
     }
 
    private:
@@ -233,13 +233,13 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
   };
 
   SparseFilteredView() = default;
-  SparseFilteredView(const SparseContainer2D& container,
+  SparseFilteredView(const SparseContainer2D* container,
                      const IndexListT* focus_indices,
                      const BoolVectorT* active_elements,
                      const SizeVectorT* sizes)
       : base(container, focus_indices),
         active_elements_(active_elements),
-        sizes_(*sizes, focus_indices) {}
+        sizes_(sizes, focus_indices) {}
 
   SparseFocus2DViewIterator begin() const {
     return SparseFocus2DViewIterator(base::begin(), active_elements_,
@@ -251,7 +251,7 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
   }
   template <typename T>
   dim2_view_type operator[](T j) const {
-    return dim2_view_type(base::operator[](j), active_elements_, sizes_[j]);
+    return dim2_view_type(&base::operator[](j), active_elements_, sizes_[j]);
   }
 
  private:

@@ -54,7 +54,7 @@ struct PrimalDualState;
 class SubModelView {
  public:
   SubModelView() = default;
-  SubModelView(const Model& model) { RestoreFullModel(model); }
+  SubModelView(const Model* model) { RestoreFullModel(model); }
 
   virtual ~SubModelView() = default;
 
@@ -62,32 +62,32 @@ class SubModelView {
   BaseInt num_elements() const { return model_->num_elements(); }
   auto subset_costs() const
       -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
-    return IndexListView(model_->subset_costs(), &columns_focus_);
+    return IndexListView(&model_->subset_costs(), columns_focus());
   }
   auto columns() const
       -> SparseFilteredView<SparseColumnView, std::vector<SubsetIndex>,
                             ElementBoolVector, SubsetToIntVector> {
-    return SparseFilteredView(model_->columns(), columns_focus(), rows_flags(),
+    return SparseFilteredView(&model_->columns(), columns_focus(), rows_flags(),
                               &columns_sizes_);
   }
   auto rows() const
       -> SparseFilteredView<SparseRowView, std::vector<ElementIndex>,
                             SubsetBoolVector, ElementToIntVector> {
-    return SparseFilteredView(model_->rows(), rows_focus(), columns_flags(),
+    return SparseFilteredView(&model_->rows(), rows_focus(), columns_flags(),
                               &rows_sizes_);
   }
   auto SubsetRange() const
       -> IndexListView<IntRange<SubsetIndex>, std::vector<SubsetIndex>> {
-    return IndexListView(all_columns_range_, columns_focus());
+    return IndexListView(&all_columns_range_, columns_focus());
   }
   auto ElementRange() const
       -> IndexListView<IntRange<ElementIndex>, std::vector<ElementIndex>> {
-    return IndexListView(all_rows_range_, rows_focus());
+    return IndexListView(&all_rows_range_, rows_focus());
   }
 
   bool ComputeFeasibility() const;
 
-  virtual void RestoreFullModel(const Model& model);
+  virtual void RestoreFullModel(const Model* model);
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
   virtual bool UpdateCore(PrimalDualState& state) { return false; }
 
@@ -106,6 +106,9 @@ class SubModelView {
   };
 
   const Model* model_;
+  SubsetToIntVector columns_sizes_;
+  ElementToIntVector rows_sizes_;
+
   bool col_view_is_valid_;
   bool row_view_is_valid_;
   IntRange<SubsetIndex> all_columns_range_;
@@ -114,8 +117,6 @@ class SubModelView {
   std::vector<ElementIndex> rows_focus_;
   SubsetBoolVector columns_flags_;
   ElementBoolVector rows_flags_;
-  SubsetToIntVector columns_sizes_;
-  ElementToIntVector rows_sizes_;
 
   std::vector<SubsetIndex> fixed_columns_;
   Cost fixed_cost_;
