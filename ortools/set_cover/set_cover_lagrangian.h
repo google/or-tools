@@ -52,7 +52,7 @@ namespace operations_research {
 class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
  public:
   explicit SetCoverLagrangian(SetCoverInvariant* inv)
-      : SetCoverLagrangian(inv, class_name()) {}
+      : SetCoverLagrangian(inv, "Lagrangian") {}
 
   SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
       : SubsetListBasedSolutionGenerator(inv, "Lagrangian", name),
