@@ -324,7 +324,31 @@ cc_library(
 cc_library(
     name = "intops",
     hdrs = ["strong_int.h"],
-    deps = [":int_type"],
+    deps = [
+      ":int_type",
+      "@abseil-cpp//absl/numeric:int128",
+      "@abseil-cpp//absl/strings",
+      "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "strong_int_test",
+    size = "small",
+    timeout = "long",
+    srcs = ["strong_int_test.cc"],
+    deps = [
+        ":intops",
+        ":base",
+        ":types",
+        "@abseil-cpp//absl/container:node_hash_map",
+        "@abseil-cpp//absl/flags:marshalling",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
