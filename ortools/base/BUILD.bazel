@@ -186,6 +186,7 @@ cc_library(
     deps = [
         ":base",
         ":logging",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
