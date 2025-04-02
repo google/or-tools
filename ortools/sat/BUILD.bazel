@@ -101,6 +101,7 @@ cc_library(
     deps = [
         ":diffn_util",
         ":integer",
+        ":integer_base",
         ":model",
         ":no_overlap_2d_helper",
         ":scheduling_helpers",
@@ -2377,19 +2378,23 @@ cc_test(
     size = "small",
     srcs = [
         "boolean_problem_test.cc",
-        "opb_reader.h",
     ],
     deps = [
         ":boolean_problem",
-        ":boolean_problem_cc_proto",
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_symmetries",
+        ":opb_reader",
+        ":sat_parameters_cc_proto",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/util:filelineiter",
+        "//ortools/util:logging",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -3320,6 +3325,7 @@ cc_library(
         ":synchronization",
         ":util",
         "//ortools/base:stl_util",
+        "//ortools/set_cover:base_types",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",
@@ -3328,6 +3334,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -3737,19 +3744,35 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "opb_reader",
+    hdrs = ["opb_reader.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_binary(
     name = "sat_runner",
     srcs = [
-        "opb_reader.h",
         "sat_runner.cc",
     ],
     deps = [
-        ":boolean_problem",
-        ":boolean_problem_cc_proto",
         ":cp_model_cc_proto",
         ":cp_model_solver",
         ":cp_model_utils",
         ":model",
+        ":opb_reader",
         ":sat_cnf_reader",
         ":sat_parameters_cc_proto",
         "//ortools/base",

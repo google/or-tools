@@ -29,8 +29,6 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
-#include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -95,13 +93,12 @@ std::string ExtractName(absl::string_view full_filename) {
 bool LoadProblem(const std::string& filename, absl::string_view hint_file,
                  absl::string_view domain_file, CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
-      absl::EndsWith(filename, ".opb.bz2")) {
+      absl::EndsWith(filename, ".opb.bz2") ||
+      absl::EndsWith(filename, ".opb.gz")) {
     OpbReader reader;
-    LinearBooleanProblem problem;
-    if (!reader.Load(filename, &problem)) {
+    if (!reader.LoadAndValidate(filename, cp_model)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
-    *cp_model = BooleanProblemToCpModelproto(problem);
   } else if (absl::EndsWith(filename, ".cnf") ||
              absl::EndsWith(filename, ".cnf.xz") ||
              absl::EndsWith(filename, ".cnf.gz") ||

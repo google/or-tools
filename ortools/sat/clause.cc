@@ -574,7 +574,8 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
 
   // Tricky: If this is the first clause, the propagator will be added and
   // assumed to be in a "propagated" state. This makes sure this is the case.
-  if (IsEmpty()) propagation_trail_index_ = trail_->Index();
+  if (no_constraint_ever_added_) propagation_trail_index_ = trail_->Index();
+  no_constraint_ever_added_ = false;
 
   if (drat_proof_handler_ != nullptr) {
     // TODO(user): Like this we will duplicate all binary clause from the
@@ -600,7 +601,6 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   NotifyPossibleDuplicate(a);
   NotifyPossibleDuplicate(b);
   is_dag_ = false;
-  num_implications_ += 2;
 
   if (enable_sharing_ && add_binary_callback_ != nullptr) {
     add_binary_callback_(a, b);
@@ -633,6 +633,10 @@ bool BinaryImplicationGraph::AddAtMostOne(
     absl::Span<const Literal> at_most_one) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (at_most_one.size() <= 1) return true;
+
+  // Same as for AddBinaryClause().
+  if (no_constraint_ever_added_) propagation_trail_index_ = trail_->Index();
+  no_constraint_ever_added_ = false;
 
   // Temporarily copy the at_most_one constraint at the end of
   // at_most_one_buffer_. It will be cleaned up and added by
@@ -788,7 +792,6 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
           NotifyPossibleDuplicate(a);
         }
       }
-      num_implications_ += at_most_one.size() * (at_most_one.size() - 1);
 
       // This will erase the at_most_one from the buffer.
       local_end = local_start;
@@ -1173,7 +1176,7 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
   // TODO(user): This might be a bit slow. Do not call all the time if needed,
   // this shouldn't change the correctness of the code.
   at_most_ones_.clear();
-  CleanUpAndAddAtMostOnes(/*base_index=*/0);
+  CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
   DCHECK(InvariantsAreOk());
 }
 
@@ -1428,6 +1431,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
         const Literal rep = RepresentativeOf(l);
         if (rep.Index() != representative) representative_list.push_back(rep);
       }
+      dtime += 1e-8 * static_cast<double>(ref.size());
 
       // Add representative <=> literal.
       //
@@ -1449,7 +1453,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     // one.
     at_most_ones_.clear();
     int saved_trail_index = propagation_trail_index_;
-    CleanUpAndAddAtMostOnes(/*base_index=*/0);
+    if (!CleanUpAndAddAtMostOnes(/*base_index=*/0)) return false;
+
     // This might have run the propagation on a few variables without taking
     // into account the AMOs. Propagate again.
     //
@@ -1459,12 +1464,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       propagation_trail_index_ = saved_trail_index;
       Propagate(trail_);
     }
-
-    num_implications_ = 0;
-    for (LiteralIndex i(0); i < size; ++i) {
-      num_implications_ += implications_[i].size();
-    }
-    dtime += 2e-8 * num_implications_;
   }
 
   time_limit_->AdvanceDeterministicTime(dtime);
@@ -1475,8 +1474,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "
                          << num_fixed_during_scc << " fixed. "
-                         << num_implications_ << " implications left. "
-                         << implications_.size() << " literals."
+                         << ComputeNumImplicationsForLog()
+                         << " implications left. " << implications_.size()
+                         << " literals."
                          << " size of at_most_one buffer = "
                          << at_most_one_buffer_.size() << "."
                          << " dtime: " << dtime
@@ -1640,7 +1640,6 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     direct_implications.resize(new_size);
     direct_implications.shrink_to_fit();
     num_new_redundant_implications += diff;
-    num_implications_ -= diff;
 
     // Abort if the computation involved is too big.
     if (work_done_in_mark_descendants_ > 1e8) {
@@ -1681,7 +1680,8 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   num_redundant_implications_ += num_new_redundant_implications;
   LOG_IF(INFO, log_info) << "Transitive reduction removed "
                          << num_new_redundant_implications << " literals. "
-                         << num_fixed << " fixed. " << num_implications_
+                         << num_fixed << " fixed. "
+                         << ComputeNumImplicationsForLog()
                          << " implications left. " << implications_.size()
                          << " literals." << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get()
@@ -2681,7 +2681,7 @@ void BinaryImplicationGraph::CleanupAllRemovedAndFixedVariables() {
 
   // Clean-up at most ones.
   at_most_ones_.clear();
-  CleanUpAndAddAtMostOnes(/*base_index=*/0);
+  CHECK(CleanUpAndAddAtMostOnes(/*base_index=*/0));
 
   // Note that to please the invariant() we also removed fixed literal above.
   DCHECK(InvariantsAreOk());
