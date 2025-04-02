@@ -229,22 +229,27 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
   switch (parameters.iterated_local_search_parameters()
               .ruin_recreate_parameters()
               .recreate_strategy()) {
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION: {
+      const LocalCheapestInsertionParameters& lci_params =
+          parameters.local_cheapest_insertion_parameters();
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
-          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          lci_params.pickup_delivery_strategy(),
           GetLocalCheapestInsertionSortingProperties(
-              parameters.local_cheapest_insertion_sorting_properties()),
+              lci_params.insertion_sorting_properties()),
           filter_manager, model->GetBinCapacities());
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
+    }
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION: {
+      const LocalCheapestInsertionParameters& lci_params =
+          parameters.local_cheapest_cost_insertion_parameters();
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
-          /*evaluator=*/nullptr,
-          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
+          /*evaluator=*/nullptr, lci_params.pickup_delivery_strategy(),
           GetLocalCheapestInsertionSortingProperties(
-              parameters.local_cheapest_insertion_sorting_properties()),
+              lci_params.insertion_sorting_properties()),
           filter_manager, model->GetBinCapacities());
+    }
     case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
       GlobalCheapestInsertionFilteredHeuristic::
           GlobalCheapestInsertionParameters gci_parameters =

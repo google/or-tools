@@ -15,6 +15,8 @@
 
 %include "std_string.i"
 
+%include "ortools/util/java/absl_string_view.i"
+
 %{
 #include "ortools/init/init.h"
 %}

@@ -189,10 +189,10 @@
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/range_query_function.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/scheduling.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research::routing {
@@ -1651,6 +1651,7 @@ class OR_DLL RoutingModel {
       if (routing_model_.IsStart(node_index)) return empty_neighbors_;
 
       if (node_index_to_incoming_neighbors_by_cost_class_.empty()) {
+        DCHECK(IsFullNeighborhood());
         return all_incoming_nodes_;
       }
       const std::vector<std::vector<int>>& node_index_to_incoming_neighbors =
@@ -1669,6 +1670,7 @@ class OR_DLL RoutingModel {
       if (routing_model_.IsEnd(node_index)) return empty_neighbors_;
 
       if (node_index_to_outgoing_neighbors_by_cost_class_.empty()) {
+        DCHECK(IsFullNeighborhood());
         return all_outgoing_nodes_;
       }
       const std::vector<std::vector<int>>& node_index_to_outgoing_neighbors =
@@ -1684,6 +1686,7 @@ class OR_DLL RoutingModel {
     bool IsNeighborhoodArcForCostClass(int cost_class, int64_t from,
                                        int64_t to) const {
       if (node_index_to_outgoing_neighbor_indicator_by_cost_class_.empty()) {
+        DCHECK(full_neighborhood_);
         return true;
       }
       if (routing_model_.IsEnd(from)) {
@@ -1692,6 +1695,8 @@ class OR_DLL RoutingModel {
       return node_index_to_outgoing_neighbor_indicator_by_cost_class_
           [cost_class][from][to];
     }
+
+    bool IsFullNeighborhood() const { return full_neighborhood_; }
 
    private:
     const RoutingModel& routing_model_;
@@ -1710,6 +1715,8 @@ class OR_DLL RoutingModel {
 
     std::vector<int> all_outgoing_nodes_;
     std::vector<int> all_incoming_nodes_;
+
+    bool full_neighborhood_ = false;
   };
 
   /// Returns neighbors of all nodes for every cost class. The result is cached
@@ -2189,7 +2196,7 @@ class OR_DLL RoutingModel {
       const std::vector<int>& state_dependent_evaluator_indices,
       int64_t slack_max, bool fix_start_cumul_to_zero,
       RoutingDimension* dimension);
-  DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
+  DimensionIndex GetDimensionIndex(absl::string_view dimension_name) const;
 
   /// Creates global and local cumul optimizers for the dimensions needing them,
   /// and stores them in the corresponding [local|global]_dimension_optimizers_
@@ -2799,7 +2806,7 @@ class DisjunctivePropagator {
  private:
   /// The main algorithm uses Vilim's theta tree data structure.
   /// See Petr Vilim's PhD thesis "Global Constraints in Scheduling".
-  sat::ThetaLambdaTree<int64_t> theta_lambda_tree_;
+  ThetaLambdaTree<int64_t> theta_lambda_tree_;
   /// Mappings between events and tasks.
   std::vector<int> tasks_by_start_min_;
   std::vector<int> tasks_by_end_max_;
@@ -3506,6 +3513,8 @@ class RoutingDimension {
       kFirstAndSecondIndependent,
       // if second_node is performed, first_node must be performed.
       kSecondImpliesFirst,
+      // if first_node is performed, second_node must be performed.
+      kFirstImpliesSecond,
       // first_node is performed iff second_node is performed.
       kFirstAndSecondEqual,
     };
@@ -3540,6 +3549,13 @@ class RoutingDimension {
           return PrecedenceStatus::kInactive;
         }
         if (second_unperformed) return PrecedenceStatus::kInactive;
+        break;
+      case NodePrecedence::PerformedConstraint::kFirstImpliesSecond:
+        if (second_unperformed) {
+          if (!first_unperformed) return PrecedenceStatus::kInvalid;
+          return PrecedenceStatus::kInactive;
+        }
+        if (first_unperformed) return PrecedenceStatus::kInactive;
         break;
       case NodePrecedence::PerformedConstraint::kFirstAndSecondEqual:
         if (first_unperformed != second_unperformed) {

@@ -2666,7 +2666,7 @@ bool PickupDeliveryFilter::AcceptPathOrdered(int path) {
 
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    const std::vector<PickupDeliveryPair>& pairs,
+    absl::Span<const PickupDeliveryPair> pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>&
         vehicle_policies) {
   return routing_model.solver()->RevAlloc(

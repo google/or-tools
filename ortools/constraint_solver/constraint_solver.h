@@ -3975,9 +3975,9 @@ class SearchMonitor : public BaseObject {
   /// When the search tree is finished.
   virtual void NoMoreSolutions();
 
-  /// When a local optimum is reached. If 'true' is returned, the last solution
-  /// is discarded and the search proceeds with the next one.
-  virtual bool LocalOptimum();
+  /// Called when a local optimum is reached. If 'true' is returned, the last
+  /// solution is discarded and the search proceeds with the next one.
+  virtual bool AtLocalOptimum();
 
   ///
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);

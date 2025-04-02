@@ -42,19 +42,19 @@ width="1022.6666666666666" height="750.6666666666666" viewBox="-55.3333333333333
 <line x1="912" y1="0" x2="912" y2="640" style="stroke-width:2;stroke:#969696;fill:none"/>
 <!-- Print routes -->
 <!-- Print route 0 -->
-<polyline points="456,320 399.0,280.0 342,240" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
-<polyline points="342,240 171.0,160.0 0,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
-<polyline points="0,80 57.0,80.0 114,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
-<polyline points="114,80 171.0,40.0 228,0" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
-<polyline points="228,0 342.0,160.0 456,320" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
-<circle cx="342" cy="240" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
-<text x="342" y="240" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">7</text>
-<circle cx="0" cy="80" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
-<text x="0" y="80" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">3</text>
+<polyline points="456,320 285.0,200.0 114,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
+<polyline points="114,80 57.0,80.0 0,80" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
+<polyline points="0,80 114.0,40.0 228,0" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
+<polyline points="228,0 285.0,120.0 342,240" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
+<polyline points="342,240 399.0,280.0 456,320" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:none;marker-mid:url(#arrow_blue)"/>
 <circle cx="114" cy="80" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
 <text x="114" y="80" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">4</text>
+<circle cx="0" cy="80" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
+<text x="0" y="80" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">3</text>
 <circle cx="228" cy="0" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
 <text x="228" y="0" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">1</text>
+<circle cx="342" cy="240" r="26.666666666666668" style="stroke-width:6.666666666666667;stroke:#4285F4;fill:white"/>
+<text x="342" y="240" dy="8.88888888888889" style="text-anchor:middle;font-weight:bold;font-size:26.666666666666668;stroke:none;fill:#4285F4">7</text>
 <!-- Print route 1 -->
 <polyline points="456,320 570.0,440.0 684,560" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:none;marker-mid:url(#arrow_red)"/>
 <polyline points="684,560 741.0,600.0 798,640" style="stroke-width:6.666666666666667;stroke:#EA4335;fill:none;marker-mid:url(#arrow_red)"/>

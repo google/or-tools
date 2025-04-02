@@ -2657,10 +2657,18 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
   const bool result = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
-  if (offset != 0) {
-    FillDomainInProto(
-        ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset)),
-        ct->mutable_linear());
+  const auto [min_activity, max_activity] = ComputeMinMaxActivity(ct->linear());
+  const Domain implied = Domain(min_activity, max_activity);
+  const Domain original_domain =
+      ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset));
+  const Domain tight_domain = implied.IntersectionWith(original_domain);
+  if (tight_domain.IsEmpty()) {
+    // Canonicalization is not the right place to handle unsat constraints.
+    // Let's just replace the domain by one that is overflow-safe.
+    const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);
+    FillDomainInProto(bad_domain, ct->mutable_linear());
+  } else {
+    FillDomainInProto(tight_domain, ct->mutable_linear());
   }
   return result;
 }

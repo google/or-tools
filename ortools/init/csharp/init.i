@@ -15,6 +15,7 @@
 
 %include "stdint.i"
 %include "std_string.i"
+%import "ortools/util/csharp/absl_string_view.i"
 
 %{
 #include "ortools/init/init.h"

@@ -63,8 +63,8 @@ namespace operations_research {
 // Utility methods to ensure the communication between local search and the
 // search.
 
-// Returns true if a local optimum has been reached and cannot be improved.
-bool LocalOptimumReached(Search* search);
+// Returns true if the search must continue after reaching the local optimum.
+bool ContinueAtLocalOptimum(Search* search);
 
 // Returns true if the search accepts the delta (actually checking this by
 // calling AcceptDelta on the monitors of the search).
@@ -4392,7 +4392,7 @@ class NestedSolveDecision : public Decision {
 
  private:
   DecisionBuilder* const db_;
-  bool restore_;
+  const bool restore_;
   std::vector<SearchMonitor*> monitors_;
   int state_;
 };
@@ -4647,15 +4647,21 @@ Decision* LocalSearch::Next(Solver* const solver) {
   const int state = decision->state();
   switch (state) {
     case NestedSolveDecision::DECISION_FAILED: {
-      const bool local_optimum_reached =
-          LocalOptimumReached(solver->ActiveSearch());
-      if (local_optimum_reached) {
+      // NOTE: The DECISION_FAILED state can be reached when no first solution
+      // was found by the solver, so we should only consider to be at a local
+      // optimum and call ContinueAtLocalOptimum() when we've reached the last
+      // nested decision.
+      const bool continue_at_local_optimum =
+          nested_decision_index_ == nested_decisions_.size() - 1 &&
+          ContinueAtLocalOptimum(solver->ActiveSearch());
+      if (continue_at_local_optimum) {
         // A local optimum has been reached. The search will continue only if we
         // accept up-hill moves (due to metaheuristics). In this case we need to
         // reset neighborhood optimal routes.
         ls_operator_->Reset();
       }
-      if (!local_optimum_reached || solver->IsUncheckedSolutionLimitReached()) {
+      if (!continue_at_local_optimum ||
+          solver->IsUncheckedSolutionLimitReached()) {
         nested_decision_index_ = -1;  // Stop the search
       }
       solver->Fail();

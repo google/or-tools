@@ -16,6 +16,7 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/linear_solver/linear_solver.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
@@ -31,10 +32,12 @@ enum class SetCoverMipSolver : int {
 
 class SetCoverMip : public SubsetListBasedSolutionGenerator {
  public:
-  // Simpler constructor that uses SCIP by default.
-  explicit SetCoverMip(SetCoverInvariant* inv,
-                       const absl::string_view name = "Mip")
-      : SubsetListBasedSolutionGenerator(inv, name),
+  // Simpler constructors that uses SCIP by default.
+  explicit SetCoverMip(SetCoverInvariant* inv)
+      : SetCoverMip(inv, "SetCoverMip") {}
+
+  SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
+      : SubsetListBasedSolutionGenerator(inv, "Mip", name),
         mip_solver_(SetCoverMipSolver::SCIP),
         use_integers_(true) {}
 
@@ -48,6 +51,8 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
     return *this;
   }
 
+  MPSolver::ResultStatus solve_status() const { return solve_status_; }
+
   using SubsetListBasedSolutionGenerator::NextSolution;
 
   // Computes the next partial solution considering only the subsets whose
@@ -60,6 +65,9 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
 
   // Whether to use integer variables in the MIP.
   bool use_integers_;
+
+  // The status of the last solve.
+  MPSolver::ResultStatus solve_status_;
 };
 }  // namespace operations_research
 

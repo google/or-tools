@@ -55,7 +55,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
 
   Highs highs;
   // Set model name.
-  if (model.has_name()) {
+  if (model.has_name() && !model.name().empty()) {
     const std::string model_name = model.name();
     highs.passModelName(model_name);
   }

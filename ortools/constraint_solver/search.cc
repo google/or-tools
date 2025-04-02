@@ -3013,8 +3013,8 @@ class RoundRobinCompoundObjectiveMonitor : public BaseObjectiveMonitor {
   bool AcceptSolution() override {
     return monitors_[active_monitor_]->AcceptSolution();
   }
-  bool LocalOptimum() override {
-    const bool ok = monitors_[active_monitor_]->LocalOptimum();
+  bool AtLocalOptimum() override {
+    const bool ok = monitors_[active_monitor_]->AtLocalOptimum();
     if (!ok) {
       enabled_monitors_[active_monitor_] = false;
     }
@@ -3388,7 +3388,7 @@ class TabuSearch : public Metaheuristic {
   void EnterSearch() override;
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
-  bool LocalOptimum() override;
+  bool AtLocalOptimum() override;
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void AcceptNeighbor() override;
   std::string DebugString() const override { return "Tabu Search"; }
@@ -3549,7 +3549,7 @@ bool TabuSearch::AtSolution() {
   return true;
 }
 
-bool TabuSearch::LocalOptimum() {
+bool TabuSearch::AtLocalOptimum() {
   solver()->SetUseFastLocalSearch(false);
   AgeLists();
   for (int i = 0; i < Size(); ++i) {
@@ -3697,7 +3697,7 @@ class SimulatedAnnealing : public Metaheuristic {
                      std::vector<int64_t> initial_temperatures);
   ~SimulatedAnnealing() override {}
   void ApplyDecision(Decision* d) override;
-  bool LocalOptimum() override;
+  bool AtLocalOptimum() override;
   void AcceptNeighbor() override;
   std::string DebugString() const override { return "Simulated Annealing"; }
 
@@ -3756,7 +3756,7 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   }
 }
 
-bool SimulatedAnnealing::LocalOptimum() {
+bool SimulatedAnnealing::AtLocalOptimum() {
   for (int i = 0; i < Size(); ++i) {
     SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
   }
@@ -3903,7 +3903,7 @@ class GuidedLocalSearch : public Metaheuristic {
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
   void EnterSearch() override;
-  bool LocalOptimum() override;
+  bool AtLocalOptimum() override;
   virtual int64_t AssignmentElementPenalty(int index) const = 0;
   virtual int64_t AssignmentPenalty(int64_t var, int64_t value) const = 0;
   virtual int64_t Evaluate(const Assignment* delta, int64_t current_penalty,
@@ -4172,7 +4172,7 @@ bool GuidedLocalSearch<P>::AcceptDelta(Assignment* delta,
 // Penalize (var, value) pairs of maximum utility, with
 // utility(var, value) = cost(var, value) / (1 + penalty(var, value))
 template <typename P>
-bool GuidedLocalSearch<P>::LocalOptimum() {
+bool GuidedLocalSearch<P>::AtLocalOptimum() {
   solver()->SetUseFastLocalSearch(false);
   std::vector<double> utilities(num_vars_);
   double max_utility = -std::numeric_limits<double>::infinity();

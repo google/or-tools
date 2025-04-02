@@ -235,15 +235,7 @@ message RoutesConstraintProto {
   repeated int32 heads = 2;
   repeated int32 literals = 3;
 
-  // EXPERIMENTAL. The demands for each node, and the maximum capacity for each
-  // route. Note that this is currently only used for the LP relaxation and one
-  // need to add the corresponding constraint to enforce this outside of the LP.
-  //
-  // TODO(user): Ideally, we should be able to extract any dimension like these
-  // (i.e. capacity, route_length, etc..) automatically from the encoding. The
-  // classical way to encode that is to have "current_capacity" variables along
-  // the route and linear equations of the form:
-  //   arc_literal => (current_capacity_tail + demand <= current_capacity_head)
+  // DEPRECATED. These fields are no longer used. The solver ignores them.
   repeated int32 demands = 4;
   int64 capacity = 5;
 

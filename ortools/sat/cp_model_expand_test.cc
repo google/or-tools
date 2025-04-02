@@ -1876,46 +1876,18 @@ TEST(LinMaxExpansionTest, GoldenTest) {
     variables { domain: 0 domain: 1 }
     constraints {}
     constraints {
-      linear {
-        vars: 0
-        vars: 1
-        coeffs: 1
-        coeffs: -2
-        domain: -1
-        domain: 9223372036854775806
-      }
+      linear { vars: 0 vars: 1 coeffs: 1 coeffs: -2 domain: -1 domain: 5 }
     }
     constraints {
-      linear {
-        vars: 0
-        vars: 2
-        coeffs: 1
-        coeffs: -1
-        domain: -4
-        domain: 9223372036854775803
-      }
+      linear { vars: 0 vars: 2 coeffs: 1 coeffs: -1 domain: -4 domain: 5 }
     }
     constraints {
       enforcement_literal: 3
-      linear {
-        vars: 0
-        vars: 1
-        coeffs: 1
-        coeffs: -2
-        domain: -9223372036854775808
-        domain: -1
-      }
+      linear { vars: 0 vars: 1 coeffs: 1 coeffs: -2 domain: -10 domain: -1 }
     }
     constraints {
       enforcement_literal: -4
-      linear {
-        vars: 0
-        vars: 2
-        coeffs: 1
-        coeffs: -1
-        domain: -9223372036854775808
-        domain: -4
-      }
+      linear { vars: 0 vars: 2 coeffs: 1 coeffs: -1 domain: -6 domain: -4 }
     }
   )pb");
   EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));

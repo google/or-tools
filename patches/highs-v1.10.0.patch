@@ -39,3 +39,131 @@ index ffaf5290..bf7d1f56 100644
      endforeach()
    endif()
  
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index e390ac4b..0e2c470c 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ if (NOT BUILD_CXX)
+   return()
+ endif()
+-  
++
+ # Define library.
+ include(sources)
+ set(sources ${highs_sources} ${cupdlp_sources} ${ipx_sources} ${basiclu_sources})
+@@ -84,7 +84,7 @@ if(NOT FAST_BUILD)
+     # target_compile_options(libipx PRIVATE "-Wno-sign-compare")
+     # target_compile_options(libipx PRIVATE "-Wno-logical-op-parentheses")
+   endif()
+-  
++
+   install(TARGETS libhighs EXPORT highs-targets
+     LIBRARY
+     ARCHIVE
+@@ -154,8 +154,6 @@ else()
+     # $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/highs>
+   )
+ 
+-  target_include_directories(highs PUBLIC "${CMAKE_CUDA_PATH}/include")
+-
+   # target_include_directories(highs PRIVATE
+   #   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interfaces>
+   #   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/io>
+@@ -180,8 +178,8 @@ else()
+   #   $<BUILD_INTERFACE:${HIGHS_SOURCE_DIR}/extern/pdqsort>)
+ 
+   target_sources(highs PRIVATE ${sources} ${headers} ${win_version_file})
+-  
+-  # Optional Cuda 
++
++  # Optional Cuda
+   if (CUPDLP_GPU)
+   #   enable_language(CXX CUDA)
+   #   target_sources(highs PRIVATE ${cuda_sources})
+@@ -189,9 +187,11 @@ else()
+   #   set_target_properties(highs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+ 
+   #   target_link_libraries(highs ${CUDA_LIBRARY} m)
+-  
++
+     # target_include_directories(highs PUBLIC "/usr/local/include")
+ 
++    target_include_directories(highs PUBLIC
++      $<BUILD_INTERFACE:"${CMAKE_CUDA_PATH}/include">)
+     set(CUPDLP_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/src/pdlp/cupdlp/")
+ 
+     add_subdirectory(pdlp/cupdlp/cuda)
+@@ -201,7 +201,7 @@ else()
+     else()
+       target_link_libraries(highs cudalin ${CUDA_LIBRARY} m)
+     endif()
+-    
++
+     set_target_properties(highs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+ 
+   endif()
+@@ -257,13 +257,13 @@ else()
+       $<BUILD_INTERFACE:${HIGHS_SOURCE_DIR}/extern/zstr>
+     )
+     target_link_libraries(highs ZLIB::ZLIB)
+-    set(CONF_DEPS 
++    set(CONF_DEPS
+       "include(CMakeFindDependencyMacro)\nfind_dependency(Threads)\nfind_dependency(ZLIB)")
+     set(CONF_DEPENDENCIES ${CONF_DEPS})
+-  else() 
++  else()
+     set(CONF_DEPENDENCIES "include(CMakeFindDependencyMacro)\nfind_dependency(Threads)")
+   endif()
+-    
++
+ 
+   # # on UNIX system the 'lib' prefix is automatically added
+   # set_target_properties(highs PROPERTIES
+@@ -274,7 +274,7 @@ else()
+   # set_target_properties(highs PROPERTIES
+   # LIBRARY_OUTPUT_DIRECTORY "${HIGHS_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+   # endif()
+-  
++
+   # set_target_properties(highs PROPERTIES PUBLIC_HEADER "src/Highs.h;src/lp_data/HighsLp.h;src/lp_data/HighsLpSolverObject.h")
+ 
+   # install the header files of highs
+@@ -291,7 +291,7 @@ else()
+ 
+   # target_compile_options(highs PRIVATE "-Wall")
+   # target_compile_options(highs PRIVATE "-Wunused")
+-  
++
+   if (UNIX)
+     target_compile_options(highs PRIVATE "-Wno-unused-variable")
+     target_compile_options(highs PRIVATE "-Wno-unused-const-variable")
+@@ -324,7 +324,7 @@ else()
+ 
+ 
+   if (BUILD_DOTNET)
+-  
++
+       # see: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
+       if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+         set(DOTNET_PLATFORM arm64)
+@@ -355,8 +355,8 @@ else()
+         set(TARGET_FILE_NAME "highs.dll")
+       endif()
+ 
+-      add_custom_command(TARGET highs POST_BUILD 
+-        COMMAND "${CMAKE_COMMAND}" -E copy 
++      add_custom_command(TARGET highs POST_BUILD
++        COMMAND "${CMAKE_COMMAND}" -E copy
+           "$<TARGET_FILE:highs>"
+         ${DOTNET_PROJECT_DIR}/runtimes/${DOTNET_RID}/native/${TARGET_FILE_NAME}
+         COMMENT "Copying to output directory")
+@@ -375,7 +375,7 @@ if(FORTRAN_FOUND)
+     target_link_libraries(FortranHighs PUBLIC highs)
+   endif()
+ 
+-  install(TARGETS FortranHighs 
++  install(TARGETS FortranHighs
+     LIBRARY
+     ARCHIVE
+     RUNTIME

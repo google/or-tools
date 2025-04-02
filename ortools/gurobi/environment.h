@@ -18,6 +18,7 @@
 #include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
@@ -52,7 +53,7 @@ bool GurobiIsCorrectlyInstalled();
 // Successive calls are no-op.
 //
 // Note that it does not check if a token license can be grabbed.
-absl::Status LoadGurobiDynamicLibrary(std::vector<std::string> potential_paths);
+absl::Status LoadGurobiDynamicLibrary(std::vector<absl::string_view> potential_paths);
 
 // The list of #define and extern std::function<> below is generated directly
 // from gurobi_c.h via parse_header.py

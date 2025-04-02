@@ -1053,7 +1053,7 @@ TEST(PresolveContextTest, CanonicalizeLinearConstraint) {
     linear {
       vars: [ 0, 1, 2 ]
       coeffs: [ -2, 2, -2 ]
-      domain: [ 0, 1000 ]
+      domain: [ 0, 16 ]
     }
   )pb");
   EXPECT_THAT(working_model.constraints(0), testing::EqualsProto(expected));

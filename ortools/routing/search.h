@@ -758,12 +758,10 @@ class GlobalCheapestInsertionFilteredHeuristic
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
-  /// Updates all existing pair entries inserting a node after nodes of the
-  /// chain starting at 'insert_after_start' and ending before
-  /// 'insert_after_end', and updates the priority queue accordingly.
-  bool UpdateExistingPairEntriesOnChain(
-      int64_t insert_after_start, int64_t insert_after_end,
-      AdjustablePriorityQueue<PairEntry>* priority_queue,
+  /// Updates all existing pair entries inserting a node after 'insert_after'
+  /// and updates the priority queue accordingly.
+  bool UpdateExistingPairEntriesAfter(
+      int64_t insert_after, AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
   /// Adds pair entries inserting either a pickup or a delivery after
@@ -847,14 +845,6 @@ class GlobalCheapestInsertionFilteredHeuristic
   bool UpdateAfterNodeInsertion(const SparseBitset<int>& nodes, int vehicle,
                                 int64_t node, int64_t insert_after,
                                 bool all_vehicles, NodeEntryQueue* queue);
-  /// Updates all existing node entries inserting a node after nodes of the
-  /// chain starting at 'insert_after_start' and ending before
-  /// 'insert_after_end', and updates the priority queue accordingly.
-  bool UpdateExistingNodeEntriesOnChain(const SparseBitset<int>& nodes,
-                                        int vehicle, int64_t insert_after_start,
-                                        int64_t insert_after_end,
-                                        bool all_vehicles,
-                                        NodeEntryQueue* queue);
   /// Adds node entries inserting a node after "insert_after" and updates the
   /// priority queue accordingly.
   bool AddNodeEntriesAfter(const SparseBitset<int>& nodes, int vehicle,
@@ -919,6 +909,9 @@ class GlobalCheapestInsertionFilteredHeuristic
       node_index_to_neighbors_by_cost_class_;
 
   std::unique_ptr<VehicleTypeCurator> empty_vehicle_type_curator_;
+
+  // Temporary member used to keep track of node insertions wherever needed.
+  SparseBitset<int> temp_inserted_nodes_;
 
   mutable EntryAllocator<PairEntry> pair_entry_allocator_;
 };
@@ -1137,8 +1130,9 @@ class LocalCheapestInsertionFilteredHeuristic
   LocalCheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
-      RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-      std::vector<RoutingSearchParameters::InsertionSortingProperty>
+      LocalCheapestInsertionParameters::PairInsertionStrategy
+          pair_insertion_strategy,
+      std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
           insertion_sorting_properties,
       LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
       BinCapacities* bin_capacities = nullptr,
@@ -1220,8 +1214,9 @@ class LocalCheapestInsertionFilteredHeuristic
   }
 
   std::vector<Seed> insertion_order_;
-  const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
-  std::vector<RoutingSearchParameters::InsertionSortingProperty>
+  const LocalCheapestInsertionParameters::PairInsertionStrategy
+      pair_insertion_strategy_;
+  std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
       insertion_sorting_properties_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
