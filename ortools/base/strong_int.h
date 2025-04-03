@@ -121,7 +121,6 @@
 #define OR_TOOLS_BASE_STRONG_INT_H_
 
 #include <cstdint>
-#include <hash_map>
 #include <iosfwd>
 #include <iterator>
 #include <limits>
