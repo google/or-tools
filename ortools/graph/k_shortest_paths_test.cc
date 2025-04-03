@@ -205,7 +205,7 @@ TEST(KShortestPathsYenTest, ReturnsTheRightNumberOfPaths) {
 
 // This test verifies that the algorithm returns the shortest path from the
 // candidate paths produced at each spur.
-TEST(DISABLED_KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
+TEST(KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
   // Topology:
   //
   //    0 ---- 3 ---- 6     Arcs        length
@@ -247,20 +247,30 @@ TEST(DISABLED_KShortestPathsYenTest, ShortestPathSelectedFromCandidates) {
 
   const KShortestPaths<StaticGraph<>> paths =
       YenKShortestPaths(graph, lengths, /*source=*/0,
-                        /*destination=*/6, /*k=*/10);
+                        /*destination=*/6, /*k=*/14);
 
-  EXPECT_THAT(paths.paths, ElementsAre(std::vector<int>{0, 2, 6},  //
-                                       std::vector<int>{0, 3, 6},
-                                       std::vector<int>{0, 2, 1, 3, 6},
-                                       std::vector<int>{0, 3, 1, 2, 6},
-                                       std::vector<int>{0, 2, 7, 3, 6},
-                                       std::vector<int>{0, 3, 7, 2, 6},
-                                       std::vector<int>{0, 2, 7, 5, 1, 3, 6},
-                                       std::vector<int>{0, 3, 7, 5, 1, 2, 6},
-                                       std::vector<int>{0, 2, 4, 5, 1, 3, 6},
-                                       std::vector<int>{0, 3, 7, 5, 4, 2, 6}));
   EXPECT_THAT(paths.distances,
-              ElementsAre(200, 200, 400, 400, 400, 400, 600, 600, 600, 600));
+              ElementsAre(200, 200,            //
+                          400, 400, 400, 400,  //
+                          600, 600, 600, 600, 600, 600, 600, 600));
+
+  EXPECT_THAT(
+      paths.paths,
+      testing::UnorderedElementsAre(
+          // 200
+          std::vector<int>{0, 2, 6}, std::vector<int>{0, 3, 6},
+          // 400
+          std::vector<int>{0, 2, 1, 3, 6}, std::vector<int>{0, 3, 1, 2, 6},
+          std::vector<int>{0, 2, 7, 3, 6}, std::vector<int>{0, 3, 7, 2, 6},
+          // 600
+          std::vector<int>{0, 2, 7, 5, 1, 3, 6},
+          std::vector<int>{0, 3, 7, 5, 1, 2, 6},
+          std::vector<int>{0, 2, 4, 5, 1, 3, 6},
+          std::vector<int>{0, 3, 7, 5, 4, 2, 6},
+          std::vector<int>{0, 2, 4, 5, 7, 3, 6},
+          std::vector<int>{0, 2, 8, 5, 1, 3, 6},
+          std::vector<int>{0, 3, 7, 5, 8, 2, 6},
+          std::vector<int>{0, 2, 8, 5, 7, 3, 6}));
 }
 
 namespace internal {

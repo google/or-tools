@@ -75,7 +75,7 @@ class SatWrapper {
   // the SAT solver is not able to prove it; After some decisions / learned
   // conflicts, the SAT solver might be able to prove UNSAT and so this will
   // return true.
-  bool IsModelUnsat() const { return sat_solver_->IsModelUnsat(); }
+  bool IsModelUnsat() const { return sat_solver_->ModelIsUnsat(); }
 
   // Return the current solver VariablesAssignment.
   const sat::VariablesAssignment& SatAssignment() const {

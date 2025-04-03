@@ -257,7 +257,7 @@ class SatPresolver {
   // Finds the literal from the clause that occur the less in the clause
   // database.
   Literal FindLiteralWithShortestOccurrenceList(
-      const std::vector<Literal>& clause);
+      absl::Span<const Literal> clause);
   LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
       const std::vector<Literal>& clause, Literal to_exclude);
 

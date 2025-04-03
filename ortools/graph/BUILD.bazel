@@ -44,6 +44,22 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "graph_test",
+    size = "small",
+    srcs = ["graph_test.cc"],
+    deps = [
+        ":graph",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "flow_graph",
     hdrs = ["flow_graph.h"],
@@ -833,6 +849,17 @@ cc_library(
 cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
+)
+
+cc_test(
+    name = "iterators_test",
+    size = "small",
+    srcs = ["iterators_test.cc"],
+    deps = [
+        ":iterators",
+        "//ortools/base:gmock_main",
+        "//ortools/base:int_type",
+    ],
 )
 
 cc_library(

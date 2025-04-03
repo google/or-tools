@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/opb_reader.h"
 
 #include <memory>
 #include <string>
@@ -28,7 +28,6 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_symmetries.h"
-#include "ortools/sat/opb_reader.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -96,6 +95,20 @@ TEST(LoadAndValidateBooleanProblemTest, ZeroCoefficients) {
       file::JoinPath(::testing::TempDir(), "file2.opb");
   CHECK_OK(file::SetContents(filename, file, file::Defaults()));
   EXPECT_FALSE(reader.LoadAndValidate(filename, &problem));
+}
+
+TEST(LoadAndValidateBooleanProblemTest, IntegerOverflow) {
+  std::string file =
+      "min: 1 x1 1 x2 ;\n"
+      "1 x1 2 x2 >= 1 ;\n"
+      "1 x1 123456789123456789123456789 x2 >= 1 ;\n";
+  CpModelProto problem;
+  OpbReader reader;
+  const std::string filename =
+      file::JoinPath(::testing::TempDir(), "file2.opb");
+  CHECK_OK(file::SetContents(filename, file, file::Defaults()));
+  EXPECT_FALSE(reader.LoadAndValidate(filename, &problem));
+  EXPECT_FALSE(reader.model_is_supported());
 }
 
 void FindSymmetries(

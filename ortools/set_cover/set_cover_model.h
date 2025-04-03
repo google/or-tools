@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/set_cover/base_types.h"
@@ -250,13 +251,13 @@ class SetCoverModel {
   // Returns a vector of row views, each corresponding to a partition of the
   // problem. The partitions are defined by the given partition points.
   std::vector<SparseRowView> CutSparseRowViewInSlices(
-      const std::vector<SubsetIndex>& partition_points);
+      absl::Span<const SubsetIndex> partition_points);
 
   // Returns the union of the rows of the given row views.
   // The returned view is valid only as long as the given row views are valid.
   // The indices in the rows are sorted.
   SparseRowView ReduceSparseRowViewSlices(
-      const std::vector<SparseRowView>& row_slices);
+      absl::Span<const SparseRowView> row_slices);
 
   // Returns true if the problem is feasible, i.e. if the subsets cover all
   // the elements. Could be const, but it updates the feasibility_duration_

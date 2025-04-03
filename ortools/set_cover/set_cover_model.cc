@@ -428,7 +428,7 @@ SparseRowView SetCoverModel::ComputeSparseRowViewSlice(SubsetIndex begin_subset,
 }
 
 std::vector<SparseRowView> SetCoverModel::CutSparseRowViewInSlices(
-    const std::vector<SubsetIndex>& partition_points) {
+    absl::Span<const SubsetIndex> partition_points) {
   std::vector<SparseRowView> row_views;
   row_views.reserve(partition_points.size());
   SubsetIndex begin_subset(0);
@@ -441,7 +441,7 @@ std::vector<SparseRowView> SetCoverModel::CutSparseRowViewInSlices(
 }
 
 SparseRowView SetCoverModel::ReduceSparseRowViewSlices(
-    const std::vector<SparseRowView>& slices) {
+    absl::Span<const SparseRowView> slices) {
   SparseRowView result_rows;
   // This is not a ReduceTree. This will be done later through parallelism.
   result_rows.reserve(num_elements_);
