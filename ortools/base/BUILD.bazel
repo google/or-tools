@@ -326,6 +326,7 @@ cc_library(
     hdrs = ["strong_int.h"],
     deps = [
       ":int_type",
+      "@abseil-cpp//absl/log:absl_log",
       "@abseil-cpp//absl/numeric:int128",
       "@abseil-cpp//absl/strings",
       "@abseil-cpp//absl/strings:str_format",
