@@ -194,9 +194,9 @@ function expand_codescape_config() {
   # https://www.mips.com/mips-toolchain-configurations/
   # mips-img: MIPS32R6 and MIPS64R6
   case "${TARGET}" in
-    "mips" | "mipsel" | "mips64" | "mips64el" | \
-    "mips32-r6" | "mips32el-r6" | "mips64-r6" | "mips64el-r6" )
-      # IMG Toolchain MIPS32R6 and MIPS64R6
+    "mips64" | "mips64el" | \
+    "mips64-r6" | "mips64el-r6" )
+      # IMG Toolchain MIPS64R6
       # ref: https://codescape.mips.com/components/toolchain/2024.10-02/downloads.html
       local -r DATE=2024.10-02
       local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
@@ -214,16 +214,6 @@ function expand_codescape_config() {
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
 
   case "${TARGET}" in
-    "mips" | "mips32-r6")
-      local -r MIPS_FLAGS="-EB -mips32r6 -mabi=32"
-      local -r FLAVOUR="mips-r6-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
-    "mipsel" | "mips32el-r6")
-      local -r MIPS_FLAGS="-EL -mips32r6 -mabi=32"
-      local -r FLAVOUR="mipsel-r6-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
     "mips64" | "mips64-r6")
       local -r MIPS_FLAGS="-EB -mips64r6 -mabi=64"
       local -r FLAVOUR="mips-r6-hard"
