@@ -87,10 +87,18 @@ public sealed class CpSolver : IDisposable
         _log_callback = new LogCallbackDelegate(del);
     }
 
-    public void ClearLogCallback()
+    public void Dispose()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _best_bound_callback?.Dispose();
         _log_callback?.Dispose();
-        _log_callback = null;
+        ReleaseSolveWrapper();
+
+        _disposed = true;
     }
 
     public void SetBestBoundCallback(DoubleToVoidDelegate del)
