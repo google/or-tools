@@ -147,9 +147,6 @@ class SatSolver {
   // return true.
   bool ModelIsUnsat() const { return model_is_unsat_; }
 
-  // TODO(user): remove this function.
-  bool IsModelUnsat() const { return model_is_unsat_; }  // DEPRECATED
-
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they were added.
   void AddPropagator(SatPropagator* propagator);
@@ -338,7 +335,7 @@ class SatSolver {
   // Helper functions to get the correct status when one of the functions above
   // returns false.
   Status UnsatStatus() const {
-    return IsModelUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
+    return ModelIsUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
   }
 
   // Extract the current problem clauses. The Output type must support the two
@@ -349,7 +346,7 @@ class SatSolver {
   // TODO(user): also copy the removable clauses?
   template <typename Output>
   void ExtractClauses(Output* out) {
-    CHECK(!IsModelUnsat());
+    CHECK(!ModelIsUnsat());
     Backtrack(0);
     if (!FinishPropagation()) return;
 

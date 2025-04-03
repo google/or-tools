@@ -25,6 +25,16 @@
 // Loopless path: path not going through the same node more than once. Also
 // called simple path.
 //
+// The implementations do not support multigraphs, i.e. graphs with several
+// arcs between the same source and destination nodes. One way to work around
+// this limitation is to create dummy nodes between the source and destination
+// nodes, with one of the edges carrying the weight and the other having a zero
+// weight. This transformation slightly increases the size of the graph.
+// If you have n edges between the nodes s and t, with the weights w_i, do the
+// following: create n - 1 nodes (d_i for i from 2 to n), create n - 1 edges
+// between s and d_i with weight w_i, create n - 1 edges between d_i and t with
+// weight 0.
+//
 //
 // Design choices
 // ==============

@@ -345,7 +345,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   }
 
   // This can be proved during the call to RestoreSolverToAssumptionLevel().
-  if (sat_propagator_->IsModelUnsat()) {
+  if (sat_propagator_->ModelIsUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;
     return best_cost == std::numeric_limits<int64_t>::max()

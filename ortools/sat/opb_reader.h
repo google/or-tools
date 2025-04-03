@@ -50,6 +50,10 @@ class OpbReader {
   // Returns the number of variables in the problem.
   int num_variables() const { return num_variables_; }
 
+  // Returns true if the model is supported. A model is not supported if it
+  // contains an integer that does not fit in int64_t.
+  bool model_is_supported() const { return model_is_supported_; }
+
   // Loads the given opb filename into the given problem.
   // Returns true on success.
   bool LoadAndValidate(const std::string& filename, CpModelProto* model) {
@@ -58,6 +62,7 @@ class OpbReader {
 
     num_variables_ = 0;
     int num_lines = 0;
+    model_is_supported_ = true;
 
     // Read constraints line by line (1 constraint per line).
     // We process into a temporary structure to support non linear constraints
@@ -65,6 +70,10 @@ class OpbReader {
     for (const std::string& line : FileLines(filename)) {
       ++num_lines;
       ProcessNewLine(line);
+      if (!model_is_supported_) {
+        LOG(ERROR) << "Unsupported model: '" << filename << "'";
+        return false;
+      }
     }
     if (num_lines == 0) {
       LOG(ERROR) << "File '" << filename << "' is empty or can't be read.";
@@ -110,7 +119,7 @@ class OpbReader {
     int64_t soft_cost = std::numeric_limits<int64_t>::max();
   };
 
-  // Since the problem name is not stored in the cnf format, we infer it from
+  // Since the problem name is not stored in the opb format, we infer it from
   // the file name.
   static std::string ExtractProblemName(const std::string& filename) {
     const int found = filename.find_last_of('/');
@@ -132,21 +141,20 @@ class OpbReader {
         const std::string& word = words[i];
         if (word.empty() || word[0] == ';') continue;
         if (word[0] == 'x') {
-          int index;
-          CHECK(absl::SimpleAtoi(word.substr(1), &index));
+          const int index = ParseIndex(word.substr(1));
           num_variables_ = std::max(num_variables_, index);
           objective_.back().literals.push_back(
               PbLiteralToCpModelLiteral(index));
         } else if (word[0] == '~' && word[1] == 'x') {
-          int index;
-          CHECK(absl::SimpleAtoi(word.substr(2), &index));
+          const int index = ParseIndex(word.substr(2));
           num_variables_ = std::max(num_variables_, index);
           objective_.back().literals.push_back(
               NegatedRef(PbLiteralToCpModelLiteral(index)));
         } else {
-          int64_t coefficient;
-          CHECK(absl::SimpleAtoi(word, &coefficient));
-          objective_.push_back({coefficient, {}});
+          // Note that coefficient always appear before the variable/variables.
+          PbTerm term;
+          if (!ParseInt64Into(word, &term.coeff)) return;
+          objective_.emplace_back(std::move(term));
         }
       }
 
@@ -165,40 +173,35 @@ class OpbReader {
       const std::string& word = words[i];
       CHECK(!word.empty());
       if (word[0] == '[') {  // Soft constraint.
-        int64_t soft_cost;
-        CHECK(absl::SimpleAtoi(word.substr(1, word.size() - 2), &soft_cost));
-        constraint.soft_cost = soft_cost;
+        if (!ParseInt64Into(word.substr(1, word.size() - 2),
+                            &constraint.soft_cost)) {
+          return;
+        }
       } else if (word == ">=") {
         CHECK_LT(i + 1, words.size());
-        int64_t rhs;
-        CHECK(absl::SimpleAtoi(words[i + 1], &rhs));
         constraint.type = GE_OPERATION;
-        constraint.rhs = rhs;
+        if (!ParseInt64Into(words[i + 1], &constraint.rhs)) return;
         break;
       } else if (word == "=") {
         CHECK_LT(i + 1, words.size());
-        int64_t rhs;
-        CHECK(absl::SimpleAtoi(words[i + 1], &rhs));
         constraint.type = EQ_OPERATION;
-        constraint.rhs = rhs;
+        if (!ParseInt64Into(words[i + 1], &constraint.rhs)) return;
         break;
       } else if (word[0] == 'x') {
-        int index;
-        CHECK(absl::SimpleAtoi(word.substr(1), &index));
+        const int index = ParseIndex(word.substr(1));
         num_variables_ = std::max(num_variables_, index);
         constraint.terms.back().literals.push_back(
             PbLiteralToCpModelLiteral(index));
       } else if (word[0] == '~' && word[1] == 'x') {
-        int index;
-        CHECK(absl::SimpleAtoi(word.substr(2), &index));
+        const int index = ParseIndex(word.substr(2));
         num_variables_ = std::max(num_variables_, index);
         constraint.terms.back().literals.push_back(
             NegatedRef(PbLiteralToCpModelLiteral(index)));
       } else {
         // Note that coefficient always appear before the variable/variables.
-        int64_t coefficient;
-        CHECK(absl::SimpleAtoi(word, &coefficient));
-        constraint.terms.push_back({coefficient, {}});
+        PbTerm term;
+        if (!ParseInt64Into(word, &term.coeff)) return;
+        constraint.terms.emplace_back(std::move(term));
       }
     }
 
@@ -255,6 +258,20 @@ class OpbReader {
 
   static int PbLiteralToCpModelLiteral(int pb_literal) {
     return pb_literal > 0 ? pb_literal - 1 : -pb_literal;
+  }
+
+  bool ParseInt64Into(const std::string& word, int64_t* value) {
+    if (!absl::SimpleAtoi(word, value)) {
+      model_is_supported_ = false;
+      return false;
+    }
+    return true;
+  }
+
+  static int ParseIndex(const std::string& word) {
+    int index;
+    CHECK(absl::SimpleAtoi(word, &index));
+    return index;
   }
 
   int GetVariable(const PbTerm& term, CpModelProto* model) {
@@ -346,6 +363,7 @@ class OpbReader {
   std::vector<PbTerm> objective_;
   std::vector<PbConstraint> constraints_;
   absl::flat_hash_map<absl::Span<const int>, int> product_to_var_;
+  bool model_is_supported_ = true;
 };
 
 }  // namespace sat
