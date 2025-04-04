@@ -60,37 +60,28 @@ class SubModelView {
 
   BaseInt max_subset_index() const { return model_->num_subsets(); }
   BaseInt max_element_index() const { return model_->num_elements(); }
-  BaseInt num_subsets() const {
-    return col_view_is_valid_ ? cols_focus_.size() : max_subset_index();
-  }
-  BaseInt num_elements() const {
-    return row_view_is_valid_ ? rows_focus_.size() : max_element_index();
-  }
+  BaseInt num_subsets() const { return cols_focus_.size(); }
+  BaseInt num_elements() const { return rows_focus_.size(); }
 
   auto subset_costs() const
       -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
-    return IndexListView(&model_->subset_costs(), columns_focus());
+    return IndexListView(&model_->subset_costs(), &cols_focus_);
   }
   auto columns() const
       -> SparseFilteredView<SparseColumnView, std::vector<SubsetIndex>,
-                            ElementBoolVector, SubsetToIntVector> {
-    return SparseFilteredView(&model_->columns(), columns_focus(), rows_flags(),
-                              &columns_sizes_);
+                            ElementToIntVector, SubsetToIntVector> {
+    return SparseFilteredView(&model_->columns(), &cols_focus_, &rows_sizes_,
+                              &cols_sizes_);
   }
   auto rows() const
       -> SparseFilteredView<SparseRowView, std::vector<ElementIndex>,
-                            SubsetBoolVector, ElementToIntVector> {
-    return SparseFilteredView(&model_->rows(), rows_focus(), columns_flags(),
+                            SubsetToIntVector, ElementToIntVector> {
+    return SparseFilteredView(&model_->rows(), &rows_focus_, &cols_sizes_,
                               &rows_sizes_);
   }
-  auto SubsetRange() const
-      -> IndexListView<IntRange<SubsetIndex>, std::vector<SubsetIndex>> {
-    return IndexListView(&all_columns_range_, columns_focus());
-  }
-  auto ElementRange() const
-      -> IndexListView<IntRange<ElementIndex>, std::vector<ElementIndex>> {
-    return IndexListView(&all_rows_range_, rows_focus());
-  }
+  const std::vector<SubsetIndex>& SubsetRange() const { return cols_focus_; }
+  const std::vector<ElementIndex>& ElementRange() const { return rows_focus_; }
+
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
@@ -104,42 +95,18 @@ class SubModelView {
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
-  const std::vector<SubsetIndex>* columns_focus() const {
-    return col_view_is_valid_ ? &cols_focus_ : nullptr;
-  };
-  const std::vector<ElementIndex>* rows_focus() const {
-    return row_view_is_valid_ ? &rows_focus_ : nullptr;
-  };
-  const SubsetBoolVector* columns_flags() const {
-    return col_view_is_valid_ ? &cols_flags_ : nullptr;
-  };
-  const ElementBoolVector* rows_flags() const {
-    return row_view_is_valid_ ? &rows_flags_ : nullptr;
-  };
-
   void MakeIdentityColumnsView();
   void MakeIdentityRowsView();
 
   const Model* model_;
-  SubsetToIntVector columns_sizes_;
+  SubsetToIntVector cols_sizes_;
   ElementToIntVector rows_sizes_;
 
-  bool col_view_is_valid_;
-  bool row_view_is_valid_;
-  IntRange<SubsetIndex> all_columns_range_;
-  IntRange<ElementIndex> all_rows_range_;
   std::vector<SubsetIndex> cols_focus_;
   std::vector<ElementIndex> rows_focus_;
-  SubsetBoolVector cols_flags_;
-  ElementBoolVector rows_flags_;
 
-  // Primal fixing data
   std::vector<SubsetIndex> fixed_columns_;
   Cost fixed_cost_;
-
-  // Dual fixing data
-  Cost fixed_multipliers_sum_;
-  SubsetCostVector cols_fixed_multipliers_sums_;
 };
 
 class Solution {
@@ -330,6 +297,8 @@ absl::StatusOr<PrimalDualState> RunThreePhase(
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
+
+using CoreModel = SubModelView;
 
 // TODO(c4v4): with the introduction of SubModelView, this needs to be updated.
 class FullToCoreModel : public Model {

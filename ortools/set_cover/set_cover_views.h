@@ -56,55 +56,37 @@ class IndexListView {
       std::remove_reference_t<decltype(*std::declval<index_iterator>())>>;
 
   struct IndexListViewIterator {
-    IndexListViewIterator(const ContainerT* container, BaseInt index)
-        : container_(container),
-          pos_(idx_or_iter{.index = index}),
-          use_index_(true) {}
     IndexListViewIterator(const ContainerT* container, index_iterator iter)
-        : container_(container),
-          pos_(idx_or_iter{.iter = iter}),
-          use_index_(false) {}
+        : container_(container), iter_(iter) {}
 
     bool operator==(const IndexListViewIterator& other) const {
       DCHECK_EQ(container_, other.container_);
-      return use_index_ ? pos_.index == other.pos_.index
-                        : pos_.iter == other.pos_.iter;
+      return iter_ == other.iter_;
     }
     bool operator!=(const IndexListViewIterator& other) const {
       return !(*this == other);
     }
     IndexListViewIterator& operator++() {
-      if (use_index_) {
-        ++pos_.index;
-      } else {
-        ++pos_.iter;
-      }
+      ++iter_;
       return *this;
     }
     decltype(auto) operator*() const {
-      auto index = use_index_ ? index_type(pos_.index) : *pos_.iter;
-      DCHECK(0 <= index && index < container_->size());
-      return (*container_)[index];
+      DCHECK(0 <= *iter_ && *iter_ < container_->size());
+      return (*container_)[*iter_];
     }
 
    private:
     const ContainerT* container_;
-    union idx_or_iter {
-      BaseInt index;
-      index_iterator iter;
-    } pos_;
-    bool use_index_;
+    index_iterator iter_;
   };
 
   IndexListView(const ContainerT* container, const IndexListT* indices)
       : container_(container), indices_(indices) {}
-  BaseInt size() const {
-    return indices_ ? indices_->size() : container_->size();
-  }
+  BaseInt size() const { return indices_->size(); }
   bool empty() const { return size() == 0; }
   decltype(auto) AtRelativeIndex(BaseInt index) const {
     DCHECK(0 <= index && index < size());
-    return (*container_)[indices_ ? (*indices_)[index] : index_type(index)];
+    return (*container_)[(*indices_)[index]];
   }
   decltype(auto) operator[](index_type index) const {
     DCHECK(0 <= index && index < container_->size());
@@ -112,16 +94,10 @@ class IndexListView {
   }
 
   IndexListViewIterator begin() const {
-    if (indices_) {
-      return IndexListViewIterator(container_, indices_->begin());
-    }
-    return IndexListViewIterator(container_, 0ULL);
+    return IndexListViewIterator(container_, indices_->begin());
   }
   IndexListViewIterator end() const {
-    if (indices_) {
-      return IndexListViewIterator(container_, indices_->end());
-    }
-    return IndexListViewIterator(container_, container_->size());
+    return IndexListViewIterator(container_, indices_->end());
   }
 
  private:
@@ -134,7 +110,7 @@ class IndexListView {
 // those elements for which the corresponding boolean vector entry is set to
 // true. If the boolean vector pointer is null, the view includes all elements
 // from the container without applying any filtering.
-template <typename ContainerT, typename BoolVectorT>
+template <typename ContainerT, typename EnableVectorT>
 class IndexListFilter {
  public:
   using container_iterator = decltype(std::declval<const ContainerT>().begin());
@@ -142,7 +118,7 @@ class IndexListFilter {
   class IndexListFilterIterator {
    public:
     IndexListFilterIterator(container_iterator iterator, container_iterator end,
-                            const BoolVectorT* is_active)
+                            const EnableVectorT* is_active)
         : iterator_(iterator), end_(end), is_active_(is_active) {
       AdjustToValidValue();
     }
@@ -161,17 +137,17 @@ class IndexListFilter {
 
    private:
     void AdjustToValidValue() {
-      while (is_active_ && iterator_ != end_ && !(*is_active_)[*iterator_]) {
+      while (iterator_ != end_ && !(*is_active_)[*iterator_]) {
         ++iterator_;
       }
     }
 
     container_iterator iterator_;
     container_iterator end_;
-    const BoolVectorT* is_active_;
+    const EnableVectorT* is_active_;
   };
 
-  IndexListFilter(const ContainerT* container, const BoolVectorT* is_active_,
+  IndexListFilter(const ContainerT* container, const EnableVectorT* is_active_,
                   BaseInt size)
       : container_(container), is_active_(is_active_), size_(size) {}
   IndexListFilterIterator begin() const {
@@ -187,7 +163,7 @@ class IndexListFilter {
 
  private:
   const ContainerT* container_;
-  const BoolVectorT* is_active_;
+  const EnableVectorT* is_active_;
   BaseInt size_;
 };
 
@@ -198,13 +174,13 @@ class IndexListFilter {
 // 2. The second dimension (elements of each sub-container) is further filtered
 //    using a boolean vector, which determines which elements within the
 //    sub-container are included in the view.
-template <typename SparseContainer2D, typename IndexListT, typename BoolVectorT,
-          typename SizeVectorT>
+template <typename SparseContainer2D, typename IndexListT,
+          typename EnableVectorT, typename SizeVectorT>
 class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
  public:
   using base = IndexListView<SparseContainer2D, IndexListT>;
   using dim2_container_type = typename SparseContainer2D::value_type;
-  using dim2_view_type = IndexListFilter<dim2_container_type, BoolVectorT>;
+  using dim2_view_type = IndexListFilter<dim2_container_type, EnableVectorT>;
   using dim1_view_iterator = decltype(std::declval<base>().begin());
   using sizes_view_type = IndexListView<SizeVectorT, IndexListT>;
   using sizes_iterator = decltype(std::declval<sizes_view_type>().begin());
@@ -214,7 +190,7 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
   class SparseFocus2DViewIterator {
    public:
     SparseFocus2DViewIterator(dim1_view_iterator iter,
-                              const BoolVectorT* active_elements,
+                              const EnableVectorT* active_elements,
                               sizes_iterator size_iter)
         : iter_(iter),
           active_elements_(active_elements),
@@ -236,14 +212,14 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
 
    private:
     dim1_view_iterator iter_;
-    const BoolVectorT* active_elements_;
+    const EnableVectorT* active_elements_;
     sizes_iterator sizes_iter_;
   };
 
   SparseFilteredView() = default;
   SparseFilteredView(const SparseContainer2D* container,
                      const IndexListT* focus_indices,
-                     const BoolVectorT* active_elements,
+                     const EnableVectorT* active_elements,
                      const SizeVectorT* sizes)
       : base(container, focus_indices),
         active_elements_(active_elements),
@@ -262,7 +238,7 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
   }
 
  private:
-  const BoolVectorT* active_elements_;
+  const EnableVectorT* active_elements_;
   sizes_view_type sizes_;
 };
 
