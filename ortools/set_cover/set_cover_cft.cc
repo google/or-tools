@@ -82,19 +82,24 @@ class CoverCounters {
 }  // namespace
 
 bool SubModelView::ComputeFeasibility() const {
-  CHECK_GT(num_elements(), 0);
-  CHECK_GT(num_subsets(), 0);
-  CHECK_EQ(columns().size(), num_subsets());
-  CHECK_EQ(subset_costs().size(), num_subsets());
+  CHECK_GT(max_element_index(), 0);
+  CHECK_GT(max_subset_index(), 0);
+  CHECK_GT(columns().size(), 0);
+  CHECK_GT(subset_costs().size(), 0);
   for (Cost cost : subset_costs()) {
     CHECK_GT(cost, 0.0);
   }
-  CoverCounters possible_coverage(num_elements());
+  CoverCounters possible_coverage(max_element_index());
   size_t num_covered_rows = 0;
-  for (const auto& column : columns()) {
-    num_covered_rows += possible_coverage.Cover(column);
+  for (SubsetIndex j : SubsetRange()) {
+    num_covered_rows += possible_coverage.Cover(columns()[j]);
   }
-  VLOG(1) << "num_uncoverable_elements = " << num_elements() - num_covered_rows;
+  for (SubsetIndex j : fixed_columns_) {
+    num_covered_rows += possible_coverage.Cover(columns()[j]);
+  }
+
+  VLOG(1) << "num_uncoverable_elements = "
+          << max_element_index() - num_covered_rows;
   for (ElementIndex i : ElementRange()) {
     if (possible_coverage[i] == 0) {
       LOG(ERROR) << "Element " << i << " is not covered.";
@@ -123,7 +128,7 @@ Cost ComputeReducedCosts(const SubModelView& model,
 
 DualState::DualState(const SubModelView& model)
     : lower_bound_(),
-      multipliers_(model.num_elements(), std::numeric_limits<Cost>::max()),
+      multipliers_(model.max_element_index(), std::numeric_limits<Cost>::max()),
       reduced_costs_() {
   DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
     for (SubsetIndex j : model.rows()[i]) {
@@ -133,22 +138,55 @@ DualState::DualState(const SubModelView& model)
   });
 }
 
-absl::Status ValidateSubModel(SubModelView& model) {
-  if (model.rows().size() != model.num_elements()) {
+absl::Status ValidateSubModel(const SubModelView& model) {
+  if (model.rows().size() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no rows.");
   }
-  if (model.columns().size() != model.num_subsets()) {
+  if (model.columns().size() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no columns.");
   }
-  if (model.subset_costs().size() != model.num_subsets()) {
+  if (model.rows().size() != model.num_elements()) {
+    return absl::InvalidArgumentError("Sub-Model elements/rows num mismatch.");
+  }
+  if (model.columns().size() != model.num_subsets()) {
+    return absl::InvalidArgumentError(
+        "Sub-Model subsets/columns num mismatch.");
+  }
+  if (model.subset_costs().size() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no subset costs.");
   }
-  if (model.num_elements() <= 0) {
+  if (model.max_element_index() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no elements.");
   }
-  if (model.num_subsets() <= 0) {
+  if (model.max_subset_index() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no subsets.");
   }
+
+  for (SubsetIndex j : model.SubsetRange()) {
+    BaseInt j_size = 0;
+    const auto column = model.columns()[j];
+    for (ElementIndex i : column) {
+      ++j_size;
+    }
+    if (j_size != column.size() || (j_size == 0) != (column.empty())) {
+      return absl::InvalidArgumentError(absl::StrCat("Sub-Model column ", j,
+                                                     " size mismatch:", j_size,
+                                                     " != ", column.size()));
+    }
+  }
+
+  for (ElementIndex i : model.ElementRange()) {
+    BaseInt i_size = 0;
+    const auto row = model.rows()[i];
+    for (SubsetIndex j : row) {
+      ++i_size;
+    }
+    if (i_size != row.size() || (i_size == 0) != (row.empty())) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Sub-Model row ", i, " size mismatch:", i_size, " != ", row.size()));
+    }
+  }
+
   if (!model.ComputeFeasibility()) {
     return absl::InvalidArgumentError("Sub-Model is infeasible.");
   }
@@ -159,7 +197,7 @@ absl::Status ValidateFeasibleSolution(const SubModelView& model,
                                       const Solution& solution,
                                       Cost tolerance) {
   AccurateSum<Cost> solution_cost;
-  CoverCounters coverage(model.num_elements());
+  CoverCounters coverage(model.max_element_index());
   for (SubsetIndex j : solution.subsets()) {
     solution_cost.Add(model.subset_costs()[j]);
     coverage.Cover(model.columns()[j]);
@@ -175,7 +213,7 @@ absl::Status ValidateFeasibleSolution(const SubModelView& model,
   return absl::OkStatus();
 }
 
-void SubModelView::RestoreFullModel(const Model* model) {
+SubModelView::SubModelView(const Model* model) {
   model_ = model;
   all_columns_range_ = IntRange<SubsetIndex>(model->num_subsets());
   all_rows_range_ = IntRange<ElementIndex>(model->num_elements());
@@ -189,64 +227,125 @@ void SubModelView::RestoreFullModel(const Model* model) {
   }
   col_view_is_valid_ = false;
   row_view_is_valid_ = false;
-  columns_focus_.clear();
+  cols_focus_.clear();
   rows_focus_.clear();
-  columns_flags_.clear();
+  cols_flags_.clear();
   rows_flags_.clear();
   fixed_columns_.clear();
   fixed_cost_ = 0.0;
 }
 
+void SubModelView::MakeIdentityColumnsView() {
+  col_view_is_valid_ = true;
+  cols_flags_.resize(model_->num_subsets(), true);
+  cols_focus_.resize(model_->num_subsets());
+  absl::c_iota(cols_focus_, 0);
+}
+void SubModelView::MakeIdentityRowsView() {
+  row_view_is_valid_ = true;
+  rows_flags_.resize(model_->num_elements(), true);
+  rows_focus_.resize(model_->num_elements());
+  absl::c_iota(rows_focus_, 0);
+}
 Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   Cost old_fixed_cost = fixed_cost_;
   if (columns_to_fix.empty()) {
     return fixed_cost_ - old_fixed_cost;
   }
   if (!col_view_is_valid_) {
-    columns_flags_.resize(model_->num_subsets(), true);
-    columns_focus_.resize(model_->num_subsets());
-    absl::c_iota(columns_focus_, 0);
+    MakeIdentityColumnsView();
   }
   if (!row_view_is_valid_) {
-    rows_flags_.resize(model_->num_elements(), true);
-    rows_focus_.resize(model_->num_elements());
-    absl::c_iota(rows_focus_, 0);
+    MakeIdentityRowsView();
   }
   // Mark rows that now are covered by fixed columns and thus can be ignored
   for (SubsetIndex j : columns_to_fix) {
-    if (columns_flags_[j]) {
-      columns_flags_[j] = false;
-      fixed_cost_ += model_->subset_costs()[j];
-      fixed_columns_.push_back(j);
-      for (ElementIndex i : model_->columns()[j]) {
-        rows_flags_[i] = false;
-        --rows_sizes_[i];  // Could probably be zeroed
-      }
+    fixed_cost_ += model_->subset_costs()[j];
+    fixed_columns_.push_back(j);
+    DCHECK(cols_flags_[j]);
+    cols_flags_[j] = false;
+    for (ElementIndex i : model_->columns()[j]) {
+      rows_flags_[i] = false;
     }
   }
   // Recompute columns sizes and discard empty columns
+  cols_focus_.clear();
   for (SubsetIndex j : SubsetRange()) {
-    if (columns_flags_[j]) {
+    if (cols_flags_[j]) {
       columns_sizes_[j] = 0;
-      for (ElementIndex i : model_->columns()[j]) {
-        if (rows_flags_[i]) {
-          ++columns_sizes_[j];
-        }
+      for (ElementIndex i : columns()[j]) {
+        ++columns_sizes_[j];
       }
-      // Remove empty columns
-      if (columns_sizes_[j] == 0) {
-        columns_flags_[j] = false;
+      if (columns_sizes_[j] > 0) {
+        cols_focus_.push_back(j);
+      } else {
+        cols_flags_[j] = false;
       }
     }
   }
   gtl::STLEraseAllFromSequenceIf(
       &rows_focus_, [&](ElementIndex i) { return !rows_flags_[i]; });
-  gtl::STLEraseAllFromSequenceIf(&columns_focus_, [&](SubsetIndex j) {
-    return !columns_flags_[j] ||
-           none_of(model_->columns()[j],
-                   [&](ElementIndex i) { return rows_flags_[i]; });
-  });
   return fixed_cost_ - old_fixed_cost;
+}
+
+void SubModelView::SetFocus(const std::vector<SubsetIndex>& columns_focus,
+                            const ElementBoolVector& rows_enable_flags) {
+  if (columns_focus.empty()) {
+    return;
+  }
+  DCHECK(rows_enable_flags.size() == model_->num_elements());
+  col_view_is_valid_ = true;
+  row_view_is_valid_ = true;
+
+  cols_flags_.assign(model_->num_subsets(), false);
+  columns_sizes_.resize(model_->num_subsets(), 0);
+  rows_sizes_.assign(model_->num_elements(), 0);
+
+  for (SubsetIndex j : columns_focus) {
+    for (ElementIndex i : model_->columns()[j]) {
+      if (rows_enable_flags[i]) {
+        rows_flags_[i] = true;
+        ++rows_sizes_[i];
+        ++columns_sizes_[j];
+      }
+    }
+    if (columns_sizes_[j] >= 0) {
+      cols_flags_[j] = true;
+      cols_focus_.push_back(j);
+    }
+  }
+  for (ElementIndex i : model_->ElementRange()) {
+    if (rows_flags_[i]) {
+      rows_focus_.push_back(i);
+    }
+  }
+}
+
+void SubModelView::SetFocus(const std::vector<SubsetIndex>& columns_focus) {
+  if (columns_focus.empty()) {
+    return;
+  }
+  col_view_is_valid_ = true;
+  row_view_is_valid_ = true;
+
+  cols_flags_.assign(model_->num_subsets(), false);
+  columns_sizes_.resize(model_->num_subsets(), 0);
+  rows_sizes_.assign(model_->num_elements(), 0);
+
+  cols_focus_ = columns_focus;
+  for (SubsetIndex j : cols_focus_) {
+    cols_flags_[j] = true;
+    columns_sizes_[j] = model_->columns()[j].size();
+    for (ElementIndex i : model_->columns()[j]) {
+      rows_flags_[i] = true;
+      ++rows_sizes_[i];
+    }
+  }
+  for (ElementIndex i : model_->ElementRange()) {
+    if (rows_flags_[i]) {
+      rows_focus_.push_back(i);
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -254,11 +353,12 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
 ///////////////////////////////////////////////////////////////////////
 
 BoundCBs::BoundCBs(const SubModelView& model)
-    : squared_norm_(static_cast<Cost>(model.num_elements())),
-      direction_(ElementCostVector(model.num_elements(), .0)),
+    : squared_norm_(static_cast<Cost>(model.max_element_index())),
+      direction_(ElementCostVector(model.max_element_index(), .0)),
       prev_best_lb_(std::numeric_limits<Cost>::lowest()),
-      max_iter_countdown_(10 * model.num_elements()),  // Arbitrary from [1]
-      exit_test_countdown_(300),                       // Arbitrary from [1]
+      max_iter_countdown_(10 *
+                          model.max_element_index()),  // Arbitrary from [1]
+      exit_test_countdown_(300),                       // Arbitrrary from [1]
       exit_test_period_(300),                          // Arbitrary from [1]
       step_size_(0.1),                                 // Arbitrary from [1]
       last_min_lb_seen_(std::numeric_limits<Cost>::max()),
@@ -268,7 +368,10 @@ BoundCBs::BoundCBs(const SubModelView& model)
 {}
 
 bool BoundCBs::ExitCondition(const SubgradientContext& context) {
-  if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol) {
+  if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol ||
+      context.best_dual_state.lower_bound() >=
+          context.best_solution.cost() - .999  // Note: assumes integral costs
+  ) {
     return true;
   }
   if (--exit_test_countdown_ > 0) {
@@ -364,11 +467,13 @@ void SubgradientOptimization(SubModelView& model, SubgradientCBs& cbs,
   DCHECK_OK(ValidateSubModel(model));
   DCHECK_OK(ValidateFeasibleSolution(model, best_state.solution));
 
-  ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
+  ElementCostVector subgradient =
+      ElementCostVector(model.max_element_index(), .0);
   DualState dual_state = best_state.dual_state;
   Solution solution = best_state.solution;
 
-  ElementCostVector multipliers_delta(model.num_elements());  // to avoid allocs
+  ElementCostVector multipliers_delta(
+      model.max_element_index());  // to avoid allocs
   SubgradientContext context = {.model = model,
                                 .current_dual_state = dual_state,
                                 .best_dual_state = best_state.dual_state,
@@ -377,7 +482,7 @@ void SubgradientOptimization(SubModelView& model, SubgradientCBs& cbs,
   size_t iter = 0;
   while (!cbs.ExitCondition(context)) {
     // Compute subgradient (O(nnz))
-    subgradient.assign(model.num_elements(), 1.0);
+    subgradient.assign(model.max_element_index(), 1.0);
     for (SubsetIndex j : model.SubsetRange()) {
       if (dual_state.reduced_costs()[j] < .0) {
         for (ElementIndex i : model.columns()[j]) {
@@ -404,11 +509,12 @@ void SubgradientOptimization(SubModelView& model, SubgradientCBs& cbs,
       std::cout << "Core model has been updated.\n";
       dual_state = best_state.dual_state;
     }
-
-    std::cout << "Subgradient Iteration: " << ++iter
-              << "\n  Lower bound:      " << dual_state.lower_bound()
-              << " (best: " << best_state.dual_state.lower_bound()
-              << ")\n  Solution cost: " << best_state.solution.cost() << "\n";
+    if (++iter % 50 == 0)
+      std::cout << "Subgradient Iteration: " << iter
+                << "\n  Lower bound:      " << dual_state.lower_bound()
+                << " (best: " << best_state.dual_state.lower_bound()
+                << ")\n  Solution cost:   " << solution.cost()
+                << "     (best: " << best_state.solution.cost() << ")\n";
   }
 }
 
@@ -432,10 +538,20 @@ class GreedyScores {
         worst_good_score_(std::numeric_limits<Cost>::lowest()),
         scores_(),
         reduced_costs_(dual_state.reduced_costs()),
-        covering_counts_(model.num_subsets()),
-        score_map_(model.num_subsets()) {
+        covering_counts_(model.max_subset_index()),
+        score_map_(model.max_subset_index()) {
     BaseInt s = 0;
     for (SubsetIndex j : model.SubsetRange()) {
+      if (model.columns()[j].empty()) {
+        std::cout << "Column " << j << " with size "
+                  << model.columns()[j].size() << ": ";
+        for (ElementIndex i : model.columns()[j]) {
+          std::cout << i.value() << ' ';
+        }
+        std::cout << "is empty\n";
+      }
+
+      DCHECK(!model.columns()[j].empty());
       covering_counts_[j] = model.columns()[j].size();
       Cost j_score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
       scores_.push_back({j_score, j});
@@ -558,7 +674,7 @@ class RedundancyRemover {
   RedundancyRemover(const SubModelView& model, CoverCounters& total_coverage)
       : redund_set_(),
         total_coverage_(total_coverage),
-        partial_coverage_(model.num_elements()),
+        partial_coverage_(model.max_element_index()),
         partial_cost_(.0),
         partial_size_(0),
         partial_cov_count_(0),
@@ -657,7 +773,7 @@ class RedundancyRemover {
 Solution RunMultiplierBasedGreedy(const SubModelView& model,
                                   const DualState& dual_state,
                                   Cost cost_cutoff) {
-  std::vector<SubsetIndex> sol_subsets;
+  std::vector<SubsetIndex> sol_subsets = model.fixed_columns();
   CoverGreedly(model, dual_state, cost_cutoff,
                std::numeric_limits<BaseInt>::max(), sol_subsets);
   return Solution(model, std::move(sol_subsets));
@@ -681,7 +797,7 @@ Cost CoverGreedly(const SubModelView& model, const DualState& dual_state,
 
   // Process input solution (if not empty)
   BaseInt num_rows_to_cover = model.num_elements();
-  CoverCounters covered_rows(model.num_elements());
+  CoverCounters covered_rows(model.max_element_index());
   for (SubsetIndex j : sol_subsets) {
     num_rows_to_cover -= covered_rows.Cover(model.columns()[j]);
     if (num_rows_to_cover == 0) {
@@ -722,7 +838,7 @@ void FixBestColumns(SubModelView& model, PrimalDualState& state) {
   auto& [best_sol, dual_state] = state;
 
   std::vector<SubsetIndex> cols_to_fix;
-  CoverCounters row_coverage(model.num_elements());
+  CoverCounters row_coverage(model.max_element_index());
   for (SubsetIndex j : model.SubsetRange()) {
     if (dual_state.reduced_costs()[j] < -0.001) {
       cols_to_fix.push_back(j);
@@ -744,7 +860,12 @@ void FixBestColumns(SubModelView& model, PrimalDualState& state) {
 
   // Fix columns and update the model
   std::vector<ElementIndex> new_to_old_map;
-  model.FixColumns(cols_to_fix);
+  Cost fixed_cost_delta = model.FixColumns(cols_to_fix);
+
+  std::cout << "Fixed " << cols_to_fix.size()
+            << " new columns with cost: " << fixed_cost_delta << '\n';
+  std::cout << "Globally fixed " << model.fixed_columns().size()
+            << " columns, with cost " << model.fixed_cost() << '\n';
 
   // Update multipliers for the reduced model
   // dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
@@ -799,25 +920,32 @@ absl::StatusOr<PrimalDualState> RunThreePhase(SubModelView& model,
             << "\nStarting 3-phase algorithm\n";
 
   PrimalDualState curr_state = best_state;
-  BoundCBs dual_bound_cbs(model);
-  HeuristicCBs heuristic_cbs;
   BaseInt iter_count = 0;
   absl::BitGen rnd;
-  while (model.num_elements() > 0) {
+  while (model.num_elements() > 0 &&
+         curr_state.dual_state.lower_bound() <
+             best_state.solution.cost() - .999  // note: assumes integral costs
+  ) {
     ++iter_count;
 
     // Phase 1: refine the current dual_state and model
+    BoundCBs dual_bound_cbs(model);
     SubgradientOptimization(model, dual_bound_cbs, curr_state);
     if (iter_count == 1) {
       best_state.dual_state = curr_state.dual_state;
     }
     // Phase 2: search for good solutions
+    HeuristicCBs heuristic_cbs;
     heuristic_cbs.set_step_size(dual_bound_cbs.step_size());
     SubgradientOptimization(model, heuristic_cbs, curr_state);
     if (curr_state.solution.cost() < best_state.solution.cost()) {
       best_state = curr_state;
     }
     std::cout << "Iterartion " << iter_count
+              << "\n - Active subsets: " << model.num_subsets() << "/"
+              << model.max_subset_index()
+              << "\n - Active elements: " << model.num_elements() << "/"
+              << model.max_element_index()
               << "\n - Lower bound: " << curr_state.dual_state.lower_bound()
               << "\n - Solution cost: " << curr_state.solution.cost() << '\n';
 
@@ -864,7 +992,10 @@ void FillTentativeCoreModel(const Model& full_model,
   for (const SparseRow& row : full_model.rows()) {
     BaseInt countdown = kMinCov;
     for (SubsetIndex j : row) {
-      if (--countdown > 0 && !selected[j]) {
+      if (--countdown <= 0) {
+        break;
+      }
+      if (!selected[j]) {
         selected[j] = true;
         columns_map.push_back(j);
       }
@@ -992,7 +1123,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
 }
 
 void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
-                                          const PrimalDualState& core_state) {
+                                           const PrimalDualState& core_state) {
   DCHECK_GE(core_state.dual_state.lower_bound(), full_dual_state.lower_bound());
   DCHECK_GE(core_state.solution.cost(), .0);
 

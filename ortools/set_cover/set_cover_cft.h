@@ -54,12 +54,19 @@ struct PrimalDualState;
 class SubModelView {
  public:
   SubModelView() = default;
-  SubModelView(const Model* model) { RestoreFullModel(model); }
+  SubModelView(const Model* model);
 
   virtual ~SubModelView() = default;
 
-  BaseInt num_subsets() const { return model_->num_subsets(); }
-  BaseInt num_elements() const { return model_->num_elements(); }
+  BaseInt max_subset_index() const { return model_->num_subsets(); }
+  BaseInt max_element_index() const { return model_->num_elements(); }
+  BaseInt num_subsets() const {
+    return col_view_is_valid_ ? cols_focus_.size() : max_subset_index();
+  }
+  BaseInt num_elements() const {
+    return row_view_is_valid_ ? rows_focus_.size() : max_element_index();
+  }
+
   auto subset_costs() const
       -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
     return IndexListView(&model_->subset_costs(), columns_focus());
@@ -84,26 +91,34 @@ class SubModelView {
       -> IndexListView<IntRange<ElementIndex>, std::vector<ElementIndex>> {
     return IndexListView(&all_rows_range_, rows_focus());
   }
+  const std::vector<SubsetIndex>& fixed_columns() const {
+    return fixed_columns_;
+  }
+  Cost fixed_cost() const { return fixed_cost_; }
 
   bool ComputeFeasibility() const;
-
-  virtual void RestoreFullModel(const Model* model);
-  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
-  virtual bool UpdateCore(PrimalDualState& state) { return false; }
+  void SetFocus(const std::vector<SubsetIndex>& columns_focus);
+  void SetFocus(const std::vector<SubsetIndex>& columns_focus,
+                const ElementBoolVector& rows_flags);
+  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
   const std::vector<SubsetIndex>* columns_focus() const {
-    return col_view_is_valid_ ? &columns_focus_ : nullptr;
+    return col_view_is_valid_ ? &cols_focus_ : nullptr;
   };
   const std::vector<ElementIndex>* rows_focus() const {
     return row_view_is_valid_ ? &rows_focus_ : nullptr;
   };
   const SubsetBoolVector* columns_flags() const {
-    return col_view_is_valid_ ? &columns_flags_ : nullptr;
+    return col_view_is_valid_ ? &cols_flags_ : nullptr;
   };
   const ElementBoolVector* rows_flags() const {
     return row_view_is_valid_ ? &rows_flags_ : nullptr;
   };
+
+  void MakeIdentityColumnsView();
+  void MakeIdentityRowsView();
 
   const Model* model_;
   SubsetToIntVector columns_sizes_;
@@ -113,13 +128,18 @@ class SubModelView {
   bool row_view_is_valid_;
   IntRange<SubsetIndex> all_columns_range_;
   IntRange<ElementIndex> all_rows_range_;
-  std::vector<SubsetIndex> columns_focus_;
+  std::vector<SubsetIndex> cols_focus_;
   std::vector<ElementIndex> rows_focus_;
-  SubsetBoolVector columns_flags_;
+  SubsetBoolVector cols_flags_;
   ElementBoolVector rows_flags_;
 
+  // Primal fixing data
   std::vector<SubsetIndex> fixed_columns_;
   Cost fixed_cost_;
+
+  // Dual fixing data
+  Cost fixed_multipliers_sum_;
+  SubsetCostVector cols_fixed_multipliers_sums_;
 };
 
 class Solution {
@@ -165,8 +185,8 @@ class DualState {
   // NOTE: This function contains one of the two O(nnz) subgradient steps
   template <typename Op>
   void DualUpdate(const SubModelView& model, Op multiplier_operator) {
-    multipliers_.resize(model.num_elements());
-    reduced_costs_.resize(model.num_subsets());
+    multipliers_.resize(model.max_element_index());
+    reduced_costs_.resize(model.max_subset_index());
     lower_bound_ = .0;
     // Update multipliers
     for (ElementIndex i : model.ElementRange()) {
@@ -200,7 +220,7 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
   return numerator / denominator;
 }
 
-absl::Status ValidateModel(const SubModelView& model);
+absl::Status ValidateSubModel(const SubModelView& model);
 absl::Status ValidateFeasibleSolution(const SubModelView& model,
                                       const Solution& solution,
                                       Cost tolerance = 1e-6);
@@ -237,9 +257,7 @@ class BoundCBs : public SubgradientCBs {
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
-                    Solution& solution) override {
-    solution.Clear();
-  }
+                    Solution& solution) override {}
   bool UpdateCoreModel(SubModelView& core_model,
                        PrimalDualState& best_state) override;
 

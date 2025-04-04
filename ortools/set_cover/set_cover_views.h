@@ -82,7 +82,9 @@ class IndexListView {
       return *this;
     }
     decltype(auto) operator*() const {
-      return (*container_)[use_index_ ? index_type(pos_.index) : *pos_.iter];
+      auto index = use_index_ ? index_type(pos_.index) : *pos_.iter;
+      DCHECK(0 <= index && index < container_->size());
+      return (*container_)[index];
     }
 
    private:
@@ -141,7 +143,9 @@ class IndexListFilter {
    public:
     IndexListFilterIterator(container_iterator iterator, container_iterator end,
                             const BoolVectorT* is_active)
-        : iterator_(iterator), end_(end), is_active_(is_active) {}
+        : iterator_(iterator), end_(end), is_active_(is_active) {
+      AdjustToValidValue();
+    }
     bool operator==(const IndexListFilterIterator& other) const {
       return iterator_ == other.iterator_;
     }
@@ -150,24 +154,26 @@ class IndexListFilter {
     }
     IndexListFilterIterator& operator++() {
       ++iterator_;
+      AdjustToValidValue();
       return *this;
     }
-    decltype(auto) operator*() const {
+    decltype(auto) operator*() const { return *iterator_; }
+
+   private:
+    void AdjustToValidValue() {
       while (is_active_ && iterator_ != end_ && !(*is_active_)[*iterator_]) {
         ++iterator_;
       }
-      return *iterator_;
     }
 
-   private:
-    mutable container_iterator iterator_;
+    container_iterator iterator_;
     container_iterator end_;
     const BoolVectorT* is_active_;
   };
 
   IndexListFilter(const ContainerT* container, const BoolVectorT* is_active_,
                   BaseInt size)
-      : container_(container), is_active_(is_active_) {}
+      : container_(container), is_active_(is_active_), size_(size) {}
   IndexListFilterIterator begin() const {
     return IndexListFilterIterator(container_->begin(), container_->end(),
                                    is_active_);
@@ -202,6 +208,8 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
   using dim1_view_iterator = decltype(std::declval<base>().begin());
   using sizes_view_type = IndexListView<SizeVectorT, IndexListT>;
   using sizes_iterator = decltype(std::declval<sizes_view_type>().begin());
+  using index_type = std::remove_reference_t<
+      std::remove_cv_t<decltype(*std::declval<IndexListT>().begin())>>;
 
   class SparseFocus2DViewIterator {
    public:
@@ -223,7 +231,7 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
       return *this;
     }
     dim2_view_type operator*() const {
-      return IndexListFilter(&*iter_, active_elements_, *sizes_iter_);
+      return dim2_view_type(&(*iter_), active_elements_, *sizes_iter_);
     }
 
    private:
@@ -249,9 +257,8 @@ class SparseFilteredView : public IndexListView<SparseContainer2D, IndexListT> {
     return SparseFocus2DViewIterator(base::end(), active_elements_,
                                      sizes_.end());
   }
-  template <typename T>
-  dim2_view_type operator[](T j) const {
-    return dim2_view_type(&base::operator[](j), active_elements_, sizes_[j]);
+  dim2_view_type operator[](index_type i) const {
+    return dim2_view_type(&base::operator[](i), active_elements_, sizes_[i]);
   }
 
  private:
