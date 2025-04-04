@@ -59,23 +59,6 @@ int64_t AffineValue(const ViewOfAffineLinearExpressionProto& affine,
   return affine.coeff * solution[affine.var] + affine.offset;
 }
 
-LinearExpressionProto ExprDiff(const LinearExpressionProto& a,
-                               const LinearExpressionProto& b) {
-  LinearExpressionProto result;
-  result.set_offset(a.offset() - b.offset());
-  result.mutable_vars()->Reserve(a.vars().size() + b.vars().size());
-  result.mutable_coeffs()->Reserve(a.vars().size() + b.vars().size());
-  for (int i = 0; i < a.vars().size(); ++i) {
-    result.add_vars(a.vars(i));
-    result.add_coeffs(a.coeffs(i));
-  }
-  for (int i = 0; i < b.vars().size(); ++i) {
-    result.add_vars(b.vars(i));
-    result.add_coeffs(-b.coeffs(i));
-  }
-  return result;
-}
-
 LinearExpressionProto LinearExprSum(LinearExpressionProto a,
                                     LinearExpressionProto b) {
   LinearExpressionProto result;
@@ -1105,56 +1088,38 @@ int64_t CompiledAllDiffConstraint::ComputeViolation(
   return violation;
 }
 
-// ----- NoOverlapBetweenTwoIntervals -----
+// ----- CompiledNoOverlapWithTwoIntervals -----
 
-NoOverlapBetweenTwoIntervals::NoOverlapBetweenTwoIntervals(
-    int interval_0, int interval_1, const CpModelProto& cp_model) {
-  const ConstraintProto& ct0 = cp_model.constraints(interval_0);
-  const ConstraintProto& ct1 = cp_model.constraints(interval_1);
-
-  // The more compact the better, hence the size + int[].
-  num_enforcements_ =
-      ct0.enforcement_literal().size() + ct1.enforcement_literal().size();
-  if (num_enforcements_ > 0) {
-    enforcements_.reset(new int[num_enforcements_]);
-    int i = 0;
-    for (const int lit : ct0.enforcement_literal()) enforcements_[i++] = lit;
-    for (const int lit : ct1.enforcement_literal()) enforcements_[i++] = lit;
+template <bool has_enforcement>
+int64_t CompiledNoOverlapWithTwoIntervals<has_enforcement>::ViolationDelta(
+    int /*var*/, int64_t /*old_value*/, absl::Span<const int64_t> solution) {
+  if (has_enforcement) {
+    for (const int lit : enforcements_) {
+      if (!LiteralValue(lit, solution)) return -violation_;
+    }
   }
 
-  // We prefer to use start + size instead of end so that moving "start" moves
-  // the whole interval around (for the non-fixed duration case).
-  end_minus_start_1_ =
-      ExprDiff(LinearExprSum(ct0.interval().start(), ct0.interval().size()),
-               ct1.interval().start());
-  end_minus_start_2_ =
-      ExprDiff(LinearExprSum(ct1.interval().start(), ct1.interval().size()),
-               ct0.interval().start());
+  const int64_t s1 = AffineValue(interval1_.start, solution);
+  const int64_t e1 = AffineValue(interval1_.end, solution);
+  const int64_t s2 = AffineValue(interval2_.start, solution);
+  const int64_t e2 = AffineValue(interval2_.end, solution);
+  const int64_t repair = std::min(e2 - s1, e1 - s2);
+  if (repair <= 0) return -violation_;  // disjoint
+  return repair - violation_;
 }
 
-// Same as NoOverlapMinRepairDistance().
-int64_t NoOverlapBetweenTwoIntervals::ComputeViolationInternal(
-    absl::Span<const int64_t> solution) {
-  for (int i = 0; i < num_enforcements_; ++i) {
-    if (!LiteralValue(enforcements_[i], solution)) return 0;
-  }
-  const int64_t diff1 = ExprValue(end_minus_start_1_, solution);
-  const int64_t diff2 = ExprValue(end_minus_start_2_, solution);
-  return std::max(std::min(diff1, diff2), int64_t{0});
-}
-
-std::vector<int> NoOverlapBetweenTwoIntervals::UsedVariables(
+template <bool has_enforcement>
+std::vector<int>
+CompiledNoOverlapWithTwoIntervals<has_enforcement>::UsedVariables(
     const CpModelProto& /*model_proto*/) const {
   std::vector<int> result;
-  for (int i = 0; i < num_enforcements_; ++i) {
-    result.push_back(PositiveRef(enforcements_[i]));
+  if (has_enforcement) {
+    for (const int ref : enforcements_) result.push_back(PositiveRef(ref));
   }
-  for (const int var : end_minus_start_1_.vars()) {
-    result.push_back(PositiveRef(var));
-  }
-  for (const int var : end_minus_start_2_.vars()) {
-    result.push_back(PositiveRef(var));
-  }
+  interval1_.start.AppendVarTo(result);
+  interval1_.end.AppendVarTo(result);
+  interval2_.start.AppendVarTo(result);
+  interval2_.end.AppendVarTo(result);
   gtl::STLSortAndRemoveDuplicates(&result);
   result.shrink_to_fit();
   return result;
@@ -1291,6 +1256,7 @@ CompiledNoOverlap2dWithTwoBoxes<has_enforcement>::UsedVariables(
   box2_.y_min.AppendVarTo(result);
   box2_.y_max.AppendVarTo(result);
   gtl::STLSortAndRemoveDuplicates(&result);
+  result.shrink_to_fit();
   return result;
 }
 
@@ -1722,20 +1688,31 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
         for (int i = 0; i + 1 < size; ++i) {
-          const IntervalConstraintProto& interval_i =
-              cp_model_.constraints(ct.no_overlap().intervals(i)).interval();
+          const ConstraintProto& proto_i =
+              cp_model_.constraints(ct.no_overlap().intervals(i));
+          const IntervalConstraintProto& interval_i = proto_i.interval();
           const int64_t min_start_i = ExprMin(interval_i.start(), cp_model_);
           const int64_t max_end_i = ExprMax(interval_i.end(), cp_model_);
           for (int j = i + 1; j < size; ++j) {
-            const IntervalConstraintProto& interval_j =
-                cp_model_.constraints(ct.no_overlap().intervals(j)).interval();
+            const ConstraintProto& proto_j =
+                cp_model_.constraints(ct.no_overlap().intervals(j));
+            const IntervalConstraintProto& interval_j = proto_j.interval();
             const int64_t min_start_j = ExprMin(interval_j.start(), cp_model_);
             const int64_t max_end_j = ExprMax(interval_j.end(), cp_model_);
             if (min_start_i >= max_end_j || min_start_j >= max_end_i) continue;
 
-            constraints_.emplace_back(new NoOverlapBetweenTwoIntervals(
-                ct.no_overlap().intervals(i), ct.no_overlap().intervals(j),
-                cp_model_));
+            const bool has_enforcement =
+                !proto_i.enforcement_literal().empty() ||
+                !proto_j.enforcement_literal().empty();
+            if (has_enforcement) {
+              constraints_.emplace_back(
+                  new CompiledNoOverlapWithTwoIntervals<true>(proto_i,
+                                                              proto_j));
+            } else {
+              constraints_.emplace_back(
+                  new CompiledNoOverlapWithTwoIntervals<false>(proto_i,
+                                                               proto_j));
+            }
           }
         }
       }
@@ -2202,7 +2179,7 @@ int64_t CompiledReservoirConstraint::IncrementalViolation(
   int64_t previous_time = std::numeric_limits<int64_t>::min();
 
   // TODO(user): This code is the hotspot for our local search on cumulative.
-  // It can probably be slighlty improved. We might also be able to abort early
+  // It can probably be slightly improved. We might also be able to abort early
   // if we know that capacity is high enough compared to the highest point of
   // the profile.
   int i = 0;

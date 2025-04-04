@@ -975,6 +975,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   std::vector<SolutionCrush::StateVar> new_state_vars;
   std::vector<SolutionCrush::TransitionVar> new_transition_vars;
   for (int time = 0; time < n; ++time) {
+    if (context->time_limit()->LimitReached()) return;
     // All these vectors have the same size. We will use them to enforce a
     // local table constraint representing one step of the automaton at the
     // given time.

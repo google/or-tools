@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -540,50 +541,6 @@ class CompiledAllDiffConstraint : public CompiledConstraintWithProto {
   std::vector<int64_t> values_;
 };
 
-// Special constraint for no overlap between two intervals.
-// We usually expand small no-overlap in n^2 such constraint, so we want to
-// be compact and efficient here.
-class NoOverlapBetweenTwoIntervals : public CompiledConstraint {
- public:
-  NoOverlapBetweenTwoIntervals(int interval_0, int interval_1,
-                               const CpModelProto& cp_model);
-  ~NoOverlapBetweenTwoIntervals() override = default;
-
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
-    return ComputeViolationInternal(solution);
-  }
-
-  // Note(user): this is the same implementation as the base one, but it
-  // avoid one virtual call !
-  int64_t ViolationDelta(
-      int /*var*/, int64_t /*old_value*/,
-      absl::Span<const int64_t> solution_with_new_value) final {
-    return ComputeViolationInternal(solution_with_new_value) - violation();
-  }
-
-  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
-
- private:
-  int64_t ComputeViolationInternal(absl::Span<const int64_t> solution);
-
-  int num_enforcements_;
-  std::unique_ptr<int[]> enforcements_;
-  LinearExpressionProto end_minus_start_1_;
-  LinearExpressionProto end_minus_start_2_;
-};
-
-class CompiledNoOverlap2dConstraint : public CompiledConstraintWithProto {
- public:
-  CompiledNoOverlap2dConstraint(const ConstraintProto& ct_proto,
-                                const CpModelProto& cp_model);
-  ~CompiledNoOverlap2dConstraint() override = default;
-
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
-
- private:
-  const CpModelProto& cp_model_;
-};
-
 // This is more compact and faster to destroy than storing a
 // LinearExpressionProto.
 struct ViewOfAffineLinearExpressionProto {
@@ -604,6 +561,67 @@ struct ViewOfAffineLinearExpressionProto {
   int var = 0;
   int64_t coeff = 0;
   int64_t offset = 0;
+};
+
+// Special constraint for no overlap between two intervals.
+// We usually expand small no-overlap in n^2 such constraint, so we want to
+// be compact and efficient here.
+template <bool has_enforcement = true>
+class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
+ public:
+  struct Interval {
+    explicit Interval(const ConstraintProto& x)
+        : start(x.interval().start()), end(x.interval().end()) {}
+    ViewOfAffineLinearExpressionProto start;
+    ViewOfAffineLinearExpressionProto end;
+  };
+
+  CompiledNoOverlapWithTwoIntervals(const ConstraintProto& x1,
+                                    const ConstraintProto& x2)
+      : interval1_(x1), interval2_(x2) {
+    if (has_enforcement) {
+      enforcements_.assign(x1.enforcement_literal().begin(),
+                           x1.enforcement_literal().end());
+      enforcements_.insert(enforcements_.end(),
+                           x2.enforcement_literal().begin(),
+                           x2.enforcement_literal().end());
+      gtl::STLSortAndRemoveDuplicates(&enforcements_);
+    }
+  }
+
+  ~CompiledNoOverlapWithTwoIntervals() final = default;
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
+    // Optimization hack: If we create a ComputeViolationInternal() that we call
+    // from here and in ViolationDelta(), then the later is not inlined below in
+    // ViolationDelta() where it matter a lot for performance.
+    violation_ = 0;
+    violation_ = ViolationDelta(0, 0, solution);
+    return violation_;
+  }
+
+  int64_t ViolationDelta(
+      int /*var*/, int64_t /*old_value*/,
+      absl::Span<const int64_t> solution_with_new_value) final;
+
+  std::vector<int> UsedVariables(const CpModelProto& model_proto) const final;
+
+ private:
+  std::vector<int> enforcements_;
+  const Interval interval1_;
+  const Interval interval2_;
+};
+
+class CompiledNoOverlap2dConstraint : public CompiledConstraintWithProto {
+ public:
+  CompiledNoOverlap2dConstraint(const ConstraintProto& ct_proto,
+                                const CpModelProto& cp_model);
+  ~CompiledNoOverlap2dConstraint() override = default;
+
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+
+ private:
+  const CpModelProto& cp_model_;
 };
 
 template <bool has_enforcement = true>
@@ -668,8 +686,8 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
 };
 
 // This can be used to encode reservoir or a cumulative constraints for LS. We
-// have a set of event time, and we use for overal violation the sum of overload
-// over time.
+// have a set of event time, and we use for overall violation the sum of
+// overload over time.
 //
 // This version support an incremental computation when just a few events
 // changes, which is roughly O(n) instead of O(n log n) which makes it

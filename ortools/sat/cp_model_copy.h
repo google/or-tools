@@ -65,6 +65,12 @@ class ModelCopy {
   // Inactive variables will be fixed to their lower bound.
   void CreateVariablesFromDomains(absl::Span<const Domain> domains);
 
+  // Advanced usage. When a model was copied, interval_mapping[i] will contain
+  // for a copied interval with original index i, its new index.
+  absl::Span<const int64_t> InternalIntervalMapping() const {
+    return interval_mapping_;
+  }
+
  private:
   // Overwrites the out_model to be unsat. Returns false.
   // The arguments are used to log which constraint caused unsat.
@@ -141,10 +147,11 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context);
 
 // Same as ImportModelWithBasicPresolveIntoContext() except that variable
-// domains are read from domains.
+// domains are read from domains and constraint might be filtered.
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
     const CpModelProto& in_model, absl::Span<const Domain> domains,
-    std::function<bool(int)> active_constraints, PresolveContext* context);
+    std::function<bool(int)> active_constraints, PresolveContext* context,
+    std::vector<int>* interval_mapping);
 
 // Copies the non constraint, non variables part of the model.
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
