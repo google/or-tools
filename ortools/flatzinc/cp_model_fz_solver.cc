@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -30,6 +31,7 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
+#include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/flatzinc/checker.h"
@@ -64,6 +66,10 @@ int FalseLiteral(int var) { return -var - 1; }
 
 // Helper class to convert a flatzinc model to a CpModelProto.
 struct CpModelProtoWithMapping {
+  CpModelProtoWithMapping()
+      : arena(std::make_unique<google::protobuf::Arena>()),
+        proto(*google::protobuf::Arena::Create<CpModelProto>(arena.get())) {}
+
   // Returns a constant CpModelProto variable created on-demand.
   int LookupConstant(int64_t value);
 
@@ -135,7 +141,8 @@ struct CpModelProtoWithMapping {
       SolverLogger* logger);
 
   // The output proto.
-  CpModelProto proto;
+  std::unique_ptr<google::protobuf::Arena> arena;
+  CpModelProto& proto;
   SatParameters parameters;
 
   // Mapping from flatzinc variables to CpModelProto variables.
