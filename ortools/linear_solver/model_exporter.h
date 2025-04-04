@@ -41,6 +41,12 @@ struct MPModelExportOptions {
    * was chosen so that SCIP can read the files.
    */
   int max_line_length = 10000;
+
+  /**
+   * For .mps files only. Decides whether to use gzip compression when exporting
+   * models to files.
+   */
+  bool use_gzip_compression = false;
 };
 
 /**
