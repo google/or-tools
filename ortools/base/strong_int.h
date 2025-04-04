@@ -54,8 +54,8 @@
 // For example, the below demonstrates a case where the 2 are not equivalent
 // at compile time and can lead to subtle initialization bugs:
 //
-//    DEFINE_STRONG_INT_TYPE(MyStrongInt8, int8);
-//    int8 foo = 1024;        // Compile error: const conversion to ...
+//    DEFINE_STRONG_INT_TYPE(MyStrongInt8, int8_t);
+//    int8_t foo = 1024;        // Compile error: const conversion to ...
 //    MyStrongInt8 foo(1024); // Compiles ok: foo has undefined / 0 value.
 //
 // Usage:
@@ -120,20 +120,18 @@
 #ifndef OR_TOOLS_BASE_STRONG_INT_H_
 #define OR_TOOLS_BASE_STRONG_INT_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iosfwd>
 #include <iterator>
 #include <limits>
 #include <ostream>
 #include <string>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "absl/base/attributes.h"
-#include "absl/base/macros.h"
-#include "absl/base/port.h"
-#include "absl/log/absl_log.h"
+#include "absl/meta/type_traits.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
@@ -178,7 +176,7 @@ struct NullStrongIntValidator {
 
   // Verify initialization of StrongInt<T> from arg, type U.
   template <typename T, typename U>
-  static constexpr bool ValidateInit(U arg) {
+  static constexpr bool ValidateInit(U /*arg*/) {
     return true;
   }
   // Verify -value.
@@ -291,8 +289,8 @@ class StrongInt {
   //
   // Example: Assume you have two StrongInt types.
   //
-  //      DEFINE_STRONG_INT_TYPE(Bytes, int64);
-  //      DEFINE_STRONG_INT_TYPE(Megabytes, int64);
+  //      DEFINE_STRONG_INT_TYPE(Bytes, int64_t);
+  //      DEFINE_STRONG_INT_TYPE(Megabytes, int64_t);
   //
   //  If you want to be able to (explicitly) construct an instance of Bytes from
   //  an instance of Megabytes, simply define a converter function in the same
@@ -371,7 +369,7 @@ class StrongInt {
     ++value_;
     return *this;
   }
-  StrongInt operator++(int postfix_flag) {  // x++
+  StrongInt operator++(int /*postfix_flag*/) {  // x++
     ValidatorType::template ValidateAdd<ValueType>(value_, ValueType(1));
     StrongInt temp(*this);
     ++value_;
@@ -382,7 +380,7 @@ class StrongInt {
     --value_;
     return *this;
   }
-  StrongInt operator--(int postfix_flag) {  // x--
+  StrongInt operator--(int /*postfix_flag*/) {  // x--
     ValidatorType::template ValidateSubtract<ValueType>(value_, ValueType(1));
     StrongInt temp(*this);
     --value_;
@@ -467,7 +465,7 @@ class StrongInt {
 //
 // Note: The user is also able to provide a custom AbslStringify. Example:
 //
-//    DEFINE_STRONG_INT_TYPE(MyStrongInt, int64);
+//    DEFINE_STRONG_INT_TYPE(MyStrongInt, int64_t);
 //
 //    template <typename Sink>
 //    void AbslStringify(Sink &sink, MyStrongInt arg) { ... }
@@ -518,7 +516,7 @@ bool AbslParseFlag(absl::string_view text,
     value = static_cast<ValueType>(larger_value);
   }
 
-  // TODO(dploch): We shouldn't crash in flag parsing.
+  // TODO(user): We shouldn't crash in flag parsing.
   // Validator should be re-tooled to return meaningful values.
   *out = StrongInt<TagType, ValueType, ValidatorType>(value);
   return true;
@@ -537,8 +535,8 @@ std::ostream& operator<<(std::ostream& os,
   return os << arg.value();
 }
 
-// Provide the << operator, primarily for logging purposes. Specialized for int8
-// so that an integer and not a character is printed.
+// Provide the << operator, primarily for logging purposes. Specialized for
+// int8_t so that an integer and not a character is printed.
 template <typename TagType, typename ValidatorType>
 std::ostream& operator<<(std::ostream& os,
                          StrongInt<TagType, int8_t, ValidatorType> arg) {
@@ -546,7 +544,7 @@ std::ostream& operator<<(std::ostream& os,
 }
 
 // Provide the << operator, primarily for logging purposes. Specialized for
-// uint8 so that an integer and not a character is printed.
+// uint8_t so that an integer and not a character is printed.
 template <typename TagType, typename ValidatorType>
 std::ostream& operator<<(std::ostream& os,
                          StrongInt<TagType, uint8_t, ValidatorType> arg) {

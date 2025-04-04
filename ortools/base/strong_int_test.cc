@@ -1,6 +1,20 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Unit test cases for StrongInt.
 #include "ortools/base/strong_int.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <sstream>
@@ -15,8 +29,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/substitute.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 
 namespace util_intops {
 namespace {
@@ -94,7 +108,7 @@ TYPED_TEST(StrongIntTest, TestCtors) {
     EXPECT_EQ(V(76), y.value());
   }
 
-  {  // Test construction from int8.
+  {  // Test construction from int8_t.
     constexpr int8_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
@@ -106,13 +120,13 @@ TYPED_TEST(StrongIntTest, TestCtors) {
     EXPECT_EQ(V(-76), y.value());
   }
 
-  {  // Test construction from uint8.
+  {  // Test construction from uint8_t.
     uint8_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
   }
 
-  {  // Test construction from int16.
+  {  // Test construction from int16_t.
     int16_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
@@ -122,13 +136,13 @@ TYPED_TEST(StrongIntTest, TestCtors) {
     EXPECT_EQ(V(-76), y.value());
   }
 
-  {  // Test construction from uint16.
+  {  // Test construction from uint16_t.
     uint16_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
   }
 
-  {  // Test construction from int32.
+  {  // Test construction from int32_t.
     int32_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
@@ -138,13 +152,13 @@ TYPED_TEST(StrongIntTest, TestCtors) {
     EXPECT_EQ(V(-76), y.value());
   }
 
-  {  // Test construction from uint32.
+  {  // Test construction from uint32_t.
     uint32_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
   }
 
-  {  // Test construction from int64.
+  {  // Test construction from int64_t.
     int64_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
@@ -154,7 +168,7 @@ TYPED_TEST(StrongIntTest, TestCtors) {
     EXPECT_EQ(V(-76), y.value());
   }
 
-  {  // Test construction from uint64.
+  {  // Test construction from uint64_t.
     uint64_t i = 93;
     T x(i);
     EXPECT_EQ(V(93), x.value());
@@ -392,14 +406,6 @@ TYPED_TEST(StrongIntTest, TestAssignmentOperator) {
     EXPECT_EQ(y.value(), (x = y).value());
     EXPECT_EQ(y.value(), x.value());
   }
-#if 0  // These should fail to compile.
-  {
-    T x(12);
-    x = 34;     // Can't assign from int.
-    x = V(34);  // Can't assign from ValueType.
-    x = 34.0;   // Can't assign from double.
-  }
-#endif
 }
 
 #define TEST_T_OP_T(xval, op, yval)                                           \
@@ -436,18 +442,6 @@ TYPED_TEST(StrongIntTest, TestPlusOperators) {
   TEST_T_OP_T(-9, +, -3)
   // Test addition by zero.
   TEST_T_OP_T(93, +, 0);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x + 3;     // Can't operate on int.
-    x += 3;
-    x + V(3);  // Can't operate on ValueType.
-    x += V(3);
-    x + 3.0;   // Can't operate on double.
-    x += 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestMinusOperators) {
@@ -468,18 +462,6 @@ TYPED_TEST(StrongIntTest, TestMinusOperators) {
   TEST_T_OP_T(93, -, 0);
   // Test subtraction from zero.
   TEST_T_OP_T(0, -, 93);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x - 3;     // Can't operate on int.
-    x -= 3;
-    x - V(3);  // Can't operate on ValueType.
-    x -= V(3);
-    x - 3.0;   // Can't operate on double.
-    x -= 3.0;
-  }
-#endif
 }
 
 #define TEST_T_OP_NUM(xval, op, numtype, yval)                              \
@@ -519,6 +501,7 @@ TYPED_TEST(StrongIntTest, TestMinusOperators) {
     }                                                                       \
   }
 
+// NOLINTNEXTLINE: google-readability-function-size
 TYPED_TEST(StrongIntTest, TestMultiplyOperators) {
   using T = typename TestFixture::T;
   using V = typename TestFixture::V;
@@ -548,28 +531,28 @@ TYPED_TEST(StrongIntTest, TestMultiplyOperators) {
     TEST_T_OP_NUM(93, *, V, -1);
     TEST_NUM_OP_T(V, 93, *, -1);
   }
-  // Test multiplication by int8.
+  // Test multiplication by int8_t.
   TEST_T_OP_NUM(39, *, int8_t, 2);
   TEST_NUM_OP_T(int8_t, 39, *, 2);
-  // Test multiplication by uint8.
+  // Test multiplication by uint8_t.
   TEST_T_OP_NUM(39, *, uint8_t, 2);
   TEST_NUM_OP_T(uint8_t, 39, *, 2);
-  // Test multiplication by int16.
+  // Test multiplication by int16_t.
   TEST_T_OP_NUM(39, *, int16_t, 2);
   TEST_NUM_OP_T(int16_t, 39, *, 2);
-  // Test multiplication by uint16.
+  // Test multiplication by uint16_t.
   TEST_T_OP_NUM(39, *, uint16_t, 2);
   TEST_NUM_OP_T(uint16_t, 39, *, 2);
-  // Test multiplication by int32.
+  // Test multiplication by int32_t.
   TEST_T_OP_NUM(39, *, int32_t, 2);
   TEST_NUM_OP_T(int32_t, 39, *, 2);
-  // Test multiplication by uint32.
+  // Test multiplication by uint32_t.
   TEST_T_OP_NUM(39, *, uint32_t, 2);
   TEST_NUM_OP_T(uint32_t, 39, *, 2);
-  // Test multiplication by int64.
+  // Test multiplication by int64_t.
   TEST_T_OP_NUM(39, *, int64_t, 2);
   TEST_NUM_OP_T(int64_t, 39, *, 2);
-  // Test multiplication by uint64.
+  // Test multiplication by uint64_t.
   TEST_T_OP_NUM(39, *, uint64_t, 2);
   TEST_NUM_OP_T(uint64_t, 39, *, 2);
   if constexpr (std::is_fundamental_v<V>) {
@@ -583,14 +566,6 @@ TYPED_TEST(StrongIntTest, TestMultiplyOperators) {
     TEST_T_OP_NUM(39, *, long double, 2.1);
     TEST_NUM_OP_T(long double, 39, *, 2.1);
   }
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x * T(3);  // Can't operate on IntType.
-    x *= T(3);
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestDivideOperators) {
@@ -609,21 +584,21 @@ TYPED_TEST(StrongIntTest, TestDivideOperators) {
   TEST_T_OP_NUM(93, /, V, 1);
   // Test division by a negative.
   TEST_T_OP_NUM(93, /, V, -1);
-  // Test division by int8.
+  // Test division by int8_t.
   TEST_T_OP_NUM(93, /, int8_t, 2);
-  // Test division by uint8.
+  // Test division by uint8_t.
   TEST_T_OP_NUM(93, /, uint8_t, 2);
-  // Test division by int16.
+  // Test division by int16_t.
   TEST_T_OP_NUM(93, /, int16_t, 2);
-  // Test division by uint16.
+  // Test division by uint16_t.
   TEST_T_OP_NUM(93, /, uint16_t, 2);
-  // Test division by int32.
+  // Test division by int32_t.
   TEST_T_OP_NUM(93, /, int32_t, 2);
-  // Test division by uint32.
+  // Test division by uint32_t.
   TEST_T_OP_NUM(93, /, uint32_t, 2);
-  // Test division by int64.
+  // Test division by int64_t.
   TEST_T_OP_NUM(93, /, int64_t, 2);
-  // Test division by uint64.
+  // Test division by uint64_t.
   TEST_T_OP_NUM(93, /, uint64_t, 2);
   if constexpr (std::is_fundamental_v<V>) {
     // Test division by float.
@@ -633,14 +608,6 @@ TYPED_TEST(StrongIntTest, TestDivideOperators) {
     // Test division by long double.
     TEST_T_OP_NUM(93, /, long double, 2.1);
   }
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x / T(3);  // Can't operate on IntType.
-    x /= T(3);
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestModuloOperators) {
@@ -659,34 +626,24 @@ TYPED_TEST(StrongIntTest, TestModuloOperators) {
   TEST_T_OP_NUM(93, %, V, 1);
   // Test modulo by a negative.
   TEST_T_OP_NUM(93, %, V, -5);
-  // Test modulo by int8.
+  // Test modulo by int8_t.
   TEST_T_OP_NUM(93, %, int8_t, 5);
-  // Test modulo by uint8.
+  // Test modulo by uint8_t.
   TEST_T_OP_NUM(93, %, uint8_t, 5);
-  // Test modulo by int16.
+  // Test modulo by int16_t.
   TEST_T_OP_NUM(93, %, int16_t, 5);
-  // Test modulo by uint16.
+  // Test modulo by uint16_t.
   TEST_T_OP_NUM(93, %, uint16_t, 5);
-  // Test modulo by int32.
+  // Test modulo by int32_t.
   TEST_T_OP_NUM(93, %, int32_t, 5);
-  // Test modulo by uint32.
+  // Test modulo by uint32_t.
   TEST_T_OP_NUM(93, %, uint32_t, 5);
-  // Test modulo by int64.
+  // Test modulo by int64_t.
   TEST_T_OP_NUM(93, %, int64_t, 5);
-  // Test modulo by uint64.
+  // Test modulo by uint64_t.
   TEST_T_OP_NUM(93, %, uint64_t, 5);
   // Test modulo by a larger value.
   TEST_T_OP_NUM(93, %, V, 100);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x % T(3);          // Can't operate on IntType.
-    x %= T(3);
-    x % 3.0;           // Can't operate on float.
-    x %= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestLeftShiftOperators) {
@@ -697,16 +654,6 @@ TYPED_TEST(StrongIntTest, TestLeftShiftOperators) {
   TEST_T_OP_NUM(0x09, <<, int, 3);
   // Test shift by zero.
   TEST_T_OP_NUM(0x09, <<, int, 0);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x << T(3);          // Can't operate on IntType.
-    x <<= T(3);
-    x << 3.0;           // Can't operate on float.
-    x <<= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestRightShiftOperators) {
@@ -717,16 +664,6 @@ TYPED_TEST(StrongIntTest, TestRightShiftOperators) {
   TEST_T_OP_NUM(0x09, >>, int, 3);
   // Test shift by zero.
   TEST_T_OP_NUM(0x09, >>, int, 0);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x >> T(3);          // Can't operate on IntType.
-    x >>= T(3);
-    x >> 3.0;           // Can't operate on float.
-    x >>= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestBitAndOperators) {
@@ -737,16 +674,6 @@ TYPED_TEST(StrongIntTest, TestBitAndOperators) {
   TEST_T_OP_T(0x09, &, 0x03);
   // Test bit-and by zero.
   TEST_T_OP_T(0x09, &, 0x00);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x & 3;             // Can't operate on int.
-    x &= 3;
-    x & 3.0;           // Can't operate on float.
-    x &= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestBitOrOperators) {
@@ -757,16 +684,6 @@ TYPED_TEST(StrongIntTest, TestBitOrOperators) {
   TEST_T_OP_T(0x09, |, 0x03);
   // Test bit-or by zero.
   TEST_T_OP_T(0x09, |, 0x00);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x | 3;             // Can't operate on int.
-    x |= 3;
-    x | 3.0;           // Can't operate on float.
-    x |= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestBitXorOperators) {
@@ -777,16 +694,6 @@ TYPED_TEST(StrongIntTest, TestBitXorOperators) {
   TEST_T_OP_T(0x09, ^, 0x03);
   // Test bit-xor by zero.
   TEST_T_OP_T(0x09, ^, 0x00);
-
-#if 0  // These should fail to compile.
-  {
-    T x(9);
-    x ^ 3;             // Can't operate on int.
-    x ^= 3;
-    x ^ 3.0;           // Can't operate on float.
-    x ^= 3.0;
-  }
-#endif
 }
 
 TYPED_TEST(StrongIntTest, TestComparisonOperators) {
@@ -1066,7 +973,7 @@ struct StrongIntTestHelper {
   template <typename U, typename = typename std::enable_if<
                             std::is_constructible<StrongInt<void, T>, U>::value,
                             void>::type>
-  StrongIntTestHelper(U x) {}  // NOLINT
+  StrongIntTestHelper(U /*x*/) {}  // NOLINT
 };
 
 static_assert(!std::is_convertible<void, StrongIntTestHelper<int>>::value, "");
