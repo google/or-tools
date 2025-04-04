@@ -84,7 +84,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
-    if (active_constraints != nullptr && !active_constraints(c)) continue;
+    if (active_constraints != nullptr && !active_constraints(c)) {
+      continue;
+    }
     const ConstraintProto& ct = in_model.constraints(c);
     if (first_copy) {
       if (!PrepareEnforcementCopyWithDup(ct)) continue;
@@ -915,7 +917,8 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
 
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
     const CpModelProto& in_model, absl::Span<const Domain> domains,
-    std::function<bool(int)> active_constraints, PresolveContext* context) {
+    std::function<bool(int)> active_constraints, PresolveContext* context,
+    std::vector<int>* interval_mapping) {
   CHECK_EQ(domains.size(), in_model.variables_size());
   ModelCopy copier(context);
   copier.CreateVariablesFromDomains(domains);
@@ -923,6 +926,8 @@ bool ImportModelAndDomainsWithBasicPresolveIntoContext(
                                           active_constraints)) {
     CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(in_model,
                                                                  context);
+    interval_mapping->assign(copier.InternalIntervalMapping().begin(),
+                             copier.InternalIntervalMapping().end());
     return true;
   }
   return !context->ModelIsUnsat();

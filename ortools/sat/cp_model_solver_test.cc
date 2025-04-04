@@ -995,8 +995,8 @@ TEST(SolveCpModelTest, SolutionHintBasicTest) {
 
 TEST(SolveCpModelTest, SolutionHintRepairTest) {
   SatParameters params;
-  params.set_cp_model_presolve(false);
   params.set_num_workers(1);
+  params.set_cp_model_presolve(false);
 
   // NOTE(user): This test doesn't ensure that the hint is repaired. It only
   // makes sure that the solver doesn't crash if the hint is perturbed.
@@ -4585,6 +4585,130 @@ TEST(PresolveCpModelTest, IntModBug) {
   params.set_cp_model_presolve(false);
   CpSolverResponse response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(PresolveCpModelTest, CumulativeBugWithEmptyInterval) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: [ 0, 37 ] }
+        variables { domain: [ 1, 1 ] }
+        variables { domain: [ 2, 2 ] }
+        variables { domain: [ 0, 1 ] }
+        variables { domain: [ 0, 0 ] }
+        variables { domain: [ 1, 4 ] }
+        variables { domain: [ 1, 4 ] }
+        variables { domain: [ 0, 3 ] }
+        variables { domain: [ 0, 0 ] }
+        variables { domain: [ 0, 3 ] }
+        variables { domain: [ 1, 1 ] }
+        constraints {
+          interval {
+            start { offset: 2 }
+            end { offset: 2 }
+            size {}
+          }
+        }
+        constraints {
+          interval {
+            start {
+              vars: [ 3 ]
+              coeffs: [ 1 ]
+              offset: 1
+            }
+            end {
+              vars: [ 5 ]
+              coeffs: [ 1 ]
+            }
+            size {
+              vars: [ 7 ]
+              coeffs: [ 1 ]
+            }
+          }
+        }
+        constraints {
+          interval {
+            start { offset: 1 }
+            end {
+              vars: [ 6 ]
+              coeffs: [ 1 ]
+            }
+            size {
+              vars: [ 6 ]
+              coeffs: [ 1 ]
+              offset: -1
+            }
+          }
+        }
+        constraints {
+          linear {
+            vars: [ 3, 5 ]
+            coeffs: [ -1, 1 ]
+            domain: [ 1, 4 ]
+          }
+        }
+        constraints {
+          linear {
+            vars: [ 3, 5, 7 ]
+            coeffs: [ 1, -1, 1 ]
+            domain: [ -1, -1 ]
+          }
+        }
+        constraints {
+          linear {
+            vars: [ 10, 5 ]
+            coeffs: [ -1, 1 ]
+            domain: [ 1, 4 ]
+          }
+        }
+        constraints {
+          linear {
+            vars: [ 3, 6 ]
+            coeffs: [ -1, 1 ]
+            domain: [ 1, 4 ]
+          }
+        }
+        constraints {
+          linear {
+            vars: [ 0, 9 ]
+            coeffs: [ -1, 2 ]
+            domain: [ -37, 0 ]
+          }
+        }
+        constraints {
+          cumulative {
+            capacity {
+              vars: [ 9 ]
+              coeffs: [ 1 ]
+            }
+            intervals: [ 0, 1, 2 ]
+            demands { offset: 1 }
+            demands { offset: 1 }
+            demands { offset: 2 }
+          }
+        }
+        objective {
+          vars: [ 0, 6 ]
+          scaling_factor: 1
+          coeffs: [ 1, -1 ]
+          domain: [ -4, 37 ]
+        }
+      )pb");
+
+  SatParameters params;
+  params.set_max_time_in_seconds(4.0);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+
+  params.set_log_search_progress(true);
+  params.set_linearization_level(2);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), 0);
+
+  params.set_cp_model_presolve(false);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), 0);
 }
 
 }  // namespace

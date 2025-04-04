@@ -41,6 +41,26 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_test",
+    size = "small",
+    srcs = ["cp_model_test.cc"],
+    deps = [
+        ":cp_model",
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_solver",
+        ":model",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:container_logging",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "model",
     hdrs = ["model.h"],
@@ -2838,7 +2858,6 @@ cc_library(
         ":cuts",
         ":integer",
         ":integer_base",
-        ":intervals",
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
@@ -2854,6 +2873,7 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

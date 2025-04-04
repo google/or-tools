@@ -625,7 +625,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   {
     SatParameters new_params = base_params;
-    new_params.set_use_variables_shaving_search(true);
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
@@ -915,9 +914,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
 
     // TODO(user): Enable shaving search in interleave mode.
     // Currently it do not respect ^C, and has no per chunk time limit.
-    if ((params.use_objective_shaving_search() ||
-         params.use_variables_shaving_search()) &&
-        params.interleave_search()) {
+    if ((params.use_objective_shaving_search()) && params.interleave_search()) {
       continue;
     }
 

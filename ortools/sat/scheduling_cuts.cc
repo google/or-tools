@@ -905,7 +905,7 @@ struct CachedIntervalData {
 };
 
 void GenerateCutsBetweenPairOfNonOverlappingTasks(
-    absl::string_view cut_name,
+    absl::string_view cut_name, bool ignore_zero_size_intervals,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
     std::vector<CachedIntervalData> events, IntegerValue capacity_max,
     Model* model, LinearConstraintManager* manager) {
@@ -937,6 +937,10 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
         // Checks hypothesis from the cut.
         if (start_min_2 >= start_min_1 + duration_min_1 ||
             start_min_1 >= start_min_2 + duration_min_2) {
+          return;
+        }
+        if (ignore_zero_size_intervals &&
+            (duration_min_1 <= 0 || duration_min_2 <= 0)) {
           return;
         }
         const IntegerValue coeff_1 = duration_min_1 + start_min_1 - start_min_2;
@@ -1028,8 +1032,8 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
 
     const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
     GenerateCutsBetweenPairOfNonOverlappingTasks(
-        "Cumulative", manager->LpValues(), std::move(events), capacity_max,
-        model, manager);
+        "Cumulative", /* ignore_zero_size_intervals= */ true,
+        manager->LpValues(), std::move(events), capacity_max, model, manager);
     return true;
   };
   return result;
@@ -1056,8 +1060,9 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
     }
 
     GenerateCutsBetweenPairOfNonOverlappingTasks(
-        "NoOverlap", manager->LpValues(), std::move(events), IntegerValue(1),
-        model, manager);
+        "NoOverlap", /* ignore_zero_size_intervals= */ false,
+        manager->LpValues(), std::move(events), IntegerValue(1), model,
+        manager);
     return true;
   };
 
