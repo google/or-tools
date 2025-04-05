@@ -31,6 +31,7 @@ using Model = SetCoverModel;
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
 struct PrimalDualState;
+struct Solution;
 
 // The SubModelView abstraction provides a mechanism to interact with a subset
 // of the rows and columns of a SetCoverModel, effectively creating a filtered
@@ -55,6 +56,9 @@ class SubModelView {
  public:
   SubModelView() = default;
   SubModelView(const Model* model);
+  SubModelView(const Model* model,
+               const std::vector<SubsetIndex>& columns_focus,
+               const ElementBoolVector& rows_flags = {});
 
   virtual ~SubModelView() = default;
 
@@ -88,13 +92,14 @@ class SubModelView {
   Cost fixed_cost() const { return fixed_cost_; }
 
   bool ComputeFeasibility() const;
-  void SetFocus(const std::vector<SubsetIndex>& columns_focus);
   void SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                const ElementBoolVector& rows_flags);
-  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+                const ElementBoolVector& rows_flags = {});
+  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  Solution MakeGloabalSolution(const Solution& core_solution) const;
 
  private:
+  void PrintSummary() const;
   void MakeIdentityColumnsView();
   void MakeIdentityRowsView();
 
@@ -106,14 +111,18 @@ class SubModelView {
   std::vector<ElementIndex> rows_focus_;
 
   std::vector<SubsetIndex> fixed_columns_;
-  Cost fixed_cost_;
+  Cost fixed_cost_ = .0;
 };
+
+// Temporary: using a SubModelView for the (small) core model is inefficient.
+// It should be replace by a dedicated class.
+using CoreModel = SubModelView;
 
 class Solution {
  public:
   Solution() = default;
   template <typename SubsetsT>
-  Solution(const SubModelView& model, SubsetsT&& subsets)
+  Solution(const CoreModel& model, SubsetsT&& subsets)
       : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
     for (SubsetIndex j : subsets_) {
       cost_ += model.subset_costs()[j];
@@ -138,20 +147,20 @@ class Solution {
   std::vector<SubsetIndex> subsets_;
 };
 
-Cost ComputeReducedCosts(const SubModelView& model,
+Cost ComputeReducedCosts(const CoreModel& model,
                          const ElementCostVector& multipliers,
                          SubsetCostVector& reduced_costs);
 
 class DualState {
  public:
-  DualState(const SubModelView& model);
+  DualState(const CoreModel& model);
   Cost lower_bound() const { return lower_bound_; }
   const ElementCostVector& multipliers() const { return multipliers_; }
   const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
 
   // NOTE: This function contains one of the two O(nnz) subgradient steps
   template <typename Op>
-  void DualUpdate(const SubModelView& model, Op multiplier_operator) {
+  void DualUpdate(const CoreModel& model, Op multiplier_operator) {
     multipliers_.resize(model.max_element_index());
     reduced_costs_.resize(model.max_subset_index());
     lower_bound_ = .0;
@@ -180,15 +189,15 @@ struct PrimalDualState {
 // specific cases, the denominator should always be greater than the
 // numerator. This function checks that.
 inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
-  DCHECK_GE(numerator, .0);
+  DCHECK_GE(numerator, -1e-6);
   if (numerator < 1e-6) {
     return 0.0;
   }
   return numerator / denominator;
 }
 
-absl::Status ValidateSubModel(const SubModelView& model);
-absl::Status ValidateFeasibleSolution(const SubModelView& model,
+absl::Status ValidateSubModel(const CoreModel& model);
+absl::Status ValidateFeasibleSolution(const CoreModel& model,
                                       const Solution& solution,
                                       Cost tolerance = 1e-6);
 
@@ -197,7 +206,7 @@ absl::Status ValidateFeasibleSolution(const SubModelView& model,
 ///////////////////////////////////////////////////////////////////////
 
 struct SubgradientContext {
-  const SubModelView& model;
+  const CoreModel& model;
   const DualState& current_dual_state;
   const DualState& best_dual_state;
   const Solution& best_solution;
@@ -210,7 +219,7 @@ class SubgradientCBs {
   virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(SubModelView&, PrimalDualState&) = 0;
+  virtual bool UpdateCoreModel(CoreModel&, PrimalDualState&) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
@@ -218,14 +227,14 @@ class BoundCBs : public SubgradientCBs {
  public:
   static constexpr Cost kTol = 1e-6;
 
-  BoundCBs(const SubModelView& model);
+  BoundCBs(const CoreModel& model);
   Cost step_size() const { return step_size_; }
   bool ExitCondition(const SubgradientContext& context) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override {}
-  bool UpdateCoreModel(SubModelView& core_model,
+  bool UpdateCoreModel(CoreModel& core_model,
                        PrimalDualState& best_state) override;
 
  private:
@@ -242,6 +251,7 @@ class BoundCBs : public SubgradientCBs {
   BaseInt max_iter_countdown_;
   BaseInt exit_test_countdown_;
   BaseInt exit_test_period_;
+  BaseInt last_core_update_countdown_;
 
   // Step size
   void UpdateStepSize(Cost lower_bound);
@@ -252,7 +262,7 @@ class BoundCBs : public SubgradientCBs {
   BaseInt step_size_update_period_;
 };
 
-void SubgradientOptimization(SubModelView& core_model, SubgradientCBs& cbs,
+void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
 
 ////////////////////////////////////////////////////////////////////////
@@ -260,10 +270,10 @@ void SubgradientOptimization(SubModelView& core_model, SubgradientCBs& cbs,
 ////////////////////////////////////////////////////////////////////////
 
 Solution RunMultiplierBasedGreedy(
-    const SubModelView& model, const DualState& dual_state,
+    const CoreModel& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
 
-Cost CoverGreedly(const SubModelView& model, const DualState& dual_state,
+Cost CoverGreedly(const CoreModel& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt size_cutoff,
                   std::vector<SubsetIndex>& sol_subsets);
 
@@ -276,13 +286,16 @@ class HeuristicCBs : public SubgradientCBs {
   HeuristicCBs() : step_size_(0.1), countdown_(250) {};
   void set_step_size(Cost step_size) { step_size_ = step_size; }
   bool ExitCondition(const SubgradientContext& context) override {
-    return --countdown_ <= 0;
+    Cost upper_bound =
+        context.best_solution.cost() - context.model.fixed_cost();
+    Cost lower_bound = context.best_dual_state.lower_bound();
+    return upper_bound - .999 < lower_bound || --countdown_ <= 0;
   }
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(SubModelView& model, PrimalDualState& state) override {
+  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override {
     return false;
   }
 
@@ -292,16 +305,14 @@ class HeuristicCBs : public SubgradientCBs {
 };
 
 absl::StatusOr<PrimalDualState> RunThreePhase(
-    SubModelView& model, const Solution& init_solution = {});
+    CoreModel& model, const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-using CoreModel = SubModelView;
-
-// TODO(c4v4): with the introduction of SubModelView, this needs to be updated.
-class FullToCoreModel : public Model {
+class FullToCoreModel : public CoreModel {
+  using base = CoreModel;
   struct UpdateTrigger {
     BaseInt countdown;
     BaseInt period;
@@ -309,20 +320,16 @@ class FullToCoreModel : public Model {
   };
 
  public:
-  FullToCoreModel(Model&& full_model);
-
-  template <typename... Args>
-  FullToCoreModel(Args&&... args)
-      : FullToCoreModel(Model(std::forward<Args>(args)...)) {}
-
-  bool UpdateCore(PrimalDualState& core_state) /* override */;
+  FullToCoreModel(const Model* full_model);
+  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
+  bool UpdateCore(PrimalDualState& core_state) override;
 
  private:
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            const PrimalDualState& core_state);
 
-  std::vector<SubsetIndex> columns_map_;
-  Model full_model_;
+  const Model* full_model_;
+  SubModelView fixing_model_view_;
   DualState full_dual_state_;
 
   BaseInt update_countdown_;

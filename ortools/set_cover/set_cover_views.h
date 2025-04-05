@@ -57,27 +57,27 @@ class IndexListView {
 
   struct IndexListViewIterator {
     IndexListViewIterator(const ContainerT* container, index_iterator iter)
-        : container_(container), iter_(iter) {}
+        : container_(container), index_iter_(iter) {}
 
     bool operator==(const IndexListViewIterator& other) const {
       DCHECK_EQ(container_, other.container_);
-      return iter_ == other.iter_;
+      return index_iter_ == other.index_iter_;
     }
     bool operator!=(const IndexListViewIterator& other) const {
       return !(*this == other);
     }
     IndexListViewIterator& operator++() {
-      ++iter_;
+      ++index_iter_;
       return *this;
     }
     decltype(auto) operator*() const {
-      DCHECK(0 <= *iter_ && *iter_ < container_->size());
-      return (*container_)[*iter_];
+      DCHECK(0 <= *index_iter_ && *index_iter_ < container_->size());
+      return (*container_)[*index_iter_];
     }
 
    private:
     const ContainerT* container_;
-    index_iterator iter_;
+    index_iterator index_iter_;
   };
 
   IndexListView(const ContainerT* container, const IndexListT* indices)
