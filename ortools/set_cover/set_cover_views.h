@@ -71,7 +71,8 @@ class IndexListView {
       return *this;
     }
     decltype(auto) operator*() const {
-      DCHECK(0 <= *index_iter_ && *index_iter_ < container_->size());
+      DCHECK(index_type(0) <= *index_iter_ &&
+             *index_iter_ < index_type(container_->size()));
       return (*container_)[*index_iter_];
     }
 
@@ -89,7 +90,7 @@ class IndexListView {
     return (*container_)[(*indices_)[index]];
   }
   decltype(auto) operator[](index_type index) const {
-    DCHECK(0 <= index && index < container_->size());
+    DCHECK(index_type(0) <= index && index < index_type(container_->size()));
     return (*container_)[index];
   }
 

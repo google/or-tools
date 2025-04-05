@@ -17,7 +17,8 @@
 #include <absl/algorithm/container.h>
 #include <absl/base/internal/pretty_function.h>
 
-#include "absl/status/status.h"
+#include <limits>
+
 #include "absl/status/statusor.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -25,11 +26,41 @@
 
 namespace operations_research::scp {
 
-using Model = SetCoverModel;
-
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
+using ElementMappingVector =
+    util_intops::StrongVector<ElementIndex, ElementIndex>;
+using SubsetMappingVector = util_intops::StrongVector<SubsetIndex, SubsetIndex>;
+using Model = SetCoverModel;
+
+// Forward declarations, see below for the definition of the classes.
+class SubModelView;
+class SubModel;
+
+// The CFT algorithm generates sub-models in two distinct ways:
+//
+// 1. This approach incrementally fixes specific columns into the
+// solution. Once a column is fixed, it is excluded from future decisions, as it
+// is already part of the solution. Additionally, rows that are covered by the
+// fixed columns are removed from consideration as well, along with any columns
+// that exclusively cover those rows, as they become redundant. The fixing
+// process starts with the entire model and progressively fixes more columns
+// until the model becomes empty. This method is well-suited for a "view-based"
+// approach, which avoids duplicating data and minimizes memory usage.
+//
+// 2. This method creates a "core" sub-model by focusing on a
+// subset of columns and optionally a subset of rows. The core model is derived
+// from the original model but is significantly smaller, as it typically
+// includes only a limited number of columns per row (on average, around six
+// columns per row). Unlike the incremental nature of `FixingModel`, core models
+// are constructed from scratch during each update. This type of small model can
+// probably take advantage of the `SubModel` class, which stores the sub-modle
+// explicitly in memory, avoiding looping over "inactive" columns and rows.
+// Both SubModelView (lightweight but potentially slower) and SubModel (heavier
+// but faster) can be used as a core model.
+using CoreModel = SubModel;
+
 struct PrimalDualState;
 struct Solution;
 
@@ -91,7 +122,6 @@ class SubModelView {
   }
   Cost fixed_cost() const { return fixed_cost_; }
 
-  bool ComputeFeasibility() const;
   void SetFocus(const std::vector<SubsetIndex>& columns_focus,
                 const ElementBoolVector& rows_flags = {});
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
@@ -99,7 +129,6 @@ class SubModelView {
   Solution MakeGloabalSolution(const Solution& core_solution) const;
 
  private:
-  void PrintSummary() const;
   void MakeIdentityColumnsView();
   void MakeIdentityRowsView();
 
@@ -114,15 +143,58 @@ class SubModelView {
   Cost fixed_cost_ = .0;
 };
 
-// Temporary: using a SubModelView for the (small) core model is inefficient.
-// It should be replace by a dedicated class.
-using CoreModel = SubModelView;
+// SumModel represent a subset of the original model excplicitly storing the
+// mappend indices in a SetCoverModel object.
+class SubModel : Model {
+ public:
+  SubModel() = default;
+  SubModel(const Model* model);
+  SubModel(const Model* model, const std::vector<SubsetIndex>& columns_focus,
+           const ElementBoolVector& rows_flags = {});
+  virtual ~SubModel() = default;
+
+  // Member function relevant for the CFT inherited from Model
+  using Model::columns;
+  using Model::ElementRange;
+  using Model::num_elements;
+  using Model::num_subsets;
+  using Model::rows;
+  using Model::subset_costs;
+  using Model::SubsetRange;
+
+  BaseInt max_subset_index() const { return num_subsets(); }
+  BaseInt max_element_index() const { return num_elements(); }
+  Cost fixed_cost() const { return fixed_cost_; }
+  const std::vector<SubsetIndex>& fixed_columns() const {
+    return fixed_columns_;
+  }
+
+  void SetFocus(const std::vector<SubsetIndex>& columns_focus,
+                const ElementBoolVector& rows_flags = {});
+  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  Solution MakeGloabalSolution(const Solution& core_solution) const;
+
+ private:
+  static constexpr SubsetIndex null_subset_index =
+      std::numeric_limits<SubsetIndex>::max();
+  static constexpr ElementIndex null_element_index =
+      std::numeric_limits<ElementIndex>::max();
+
+  const Model* model_;
+  ElementMappingVector core2full_row_map_;
+  ElementMappingVector full2core_row_map_;
+  SubsetMappingVector core2full_col_map_;
+
+  Cost fixed_cost_ = .0;
+  std::vector<SubsetIndex> fixed_columns_;
+};
 
 class Solution {
  public:
   Solution() = default;
-  template <typename SubsetsT>
-  Solution(const CoreModel& model, SubsetsT&& subsets)
+  template <typename SubModelT, typename SubsetsT>
+  Solution(const SubModelT& model, SubsetsT&& subsets)
       : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
     for (SubsetIndex j : subsets_) {
       cost_ += model.subset_costs()[j];
@@ -147,20 +219,47 @@ class Solution {
   std::vector<SubsetIndex> subsets_;
 };
 
-Cost ComputeReducedCosts(const CoreModel& model,
+template <typename SubModelT>
+Cost ComputeReducedCosts(const SubModelT& model,
                          const ElementCostVector& multipliers,
-                         SubsetCostVector& reduced_costs);
+                         SubsetCostVector& reduced_costs) {
+  // Compute new reduced costs (O(nnz))
+  Cost negative_sum = .0;
+  for (SubsetIndex j : model.SubsetRange()) {
+    reduced_costs[j] = model.subset_costs()[j];
+    for (ElementIndex i : model.columns()[j]) {
+      reduced_costs[j] -= multipliers[i];
+    }
+    if (reduced_costs[j] < .0) {
+      negative_sum += reduced_costs[j];
+    }
+  }
+  return negative_sum;
+}
 
 class DualState {
  public:
-  DualState(const CoreModel& model);
+  template <typename SubModelT>
+  DualState(const SubModelT& model)
+      : lower_bound_(),
+        multipliers_(model.max_element_index(),
+                     std::numeric_limits<Cost>::max()),
+        reduced_costs_() {
+    DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
+      for (SubsetIndex j : model.rows()[i]) {
+        Cost candidate = model.subset_costs()[j] / model.columns()[j].size();
+        i_multiplier = std::min(i_multiplier, candidate);
+      }
+    });
+  }
+
   Cost lower_bound() const { return lower_bound_; }
   const ElementCostVector& multipliers() const { return multipliers_; }
   const SubsetCostVector& reduced_costs() const { return reduced_costs_; }
 
   // NOTE: This function contains one of the two O(nnz) subgradient steps
-  template <typename Op>
-  void DualUpdate(const CoreModel& model, Op multiplier_operator) {
+  template <typename SubModelT, typename Op>
+  void DualUpdate(const SubModelT& model, Op multiplier_operator) {
     multipliers_.resize(model.max_element_index());
     reduced_costs_.resize(model.max_subset_index());
     lower_bound_ = .0;
@@ -195,11 +294,6 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
   }
   return numerator / denominator;
 }
-
-absl::Status ValidateSubModel(const CoreModel& model);
-absl::Status ValidateFeasibleSolution(const CoreModel& model,
-                                      const Solution& solution,
-                                      Cost tolerance = 1e-6);
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////// SUBGRADIENT /////////////////////////////
