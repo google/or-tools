@@ -562,5 +562,7 @@ cc_library(
 cc_library(
     name = "scheduling",
     hdrs = ["scheduling.h"],
-    deps = ["@abseil-cpp//absl/log:check"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+    ],
 )

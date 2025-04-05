@@ -820,7 +820,7 @@ void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {
 }
 
 Literal SatPresolver::FindLiteralWithShortestOccurrenceList(
-    const std::vector<Literal>& clause) {
+    absl::Span<const Literal> clause) {
   DCHECK(!clause.empty());
   Literal result = clause.front();
   int best_size = literal_to_clause_sizes_[result];

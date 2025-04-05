@@ -112,7 +112,7 @@ void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver,
   CHECK(nullptr != info);
 
   // This should never be called if the problem is UNSAT.
-  CHECK(!solver->IsModelUnsat());
+  CHECK(!solver->ModelIsUnsat());
 
   // Fixed variables.
   info->fixed_literals.clear();

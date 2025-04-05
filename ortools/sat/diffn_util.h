@@ -269,15 +269,18 @@ std::vector<int> GetIntervalArticulationPoints(
     std::vector<IndexedInterval>* intervals);
 
 struct ItemWithVariableSize {
-  int index;
   struct Interval {
+    bool IsFixed() const {
+      return start_min == start_max && end_min == end_max;
+    }
+
     IntegerValue start_min;
     IntegerValue start_max;
     IntegerValue end_min;
     IntegerValue end_max;
   };
-  Interval x;
-  Interval y;
+
+  bool IsFixed() const { return x.IsFixed() && y.IsFixed(); }
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const ItemWithVariableSize& item) {
@@ -286,6 +289,10 @@ struct ItemWithVariableSize {
                  item.x.end_max, item.y.start_min, item.y.start_max,
                  item.y.end_min, item.y.end_max);
   }
+
+  int index;
+  Interval x;
+  Interval y;
 };
 
 struct PairwiseRestriction {

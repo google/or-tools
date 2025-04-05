@@ -457,6 +457,11 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   bool recompute_all_cache_ = true;
   Bitset64<int> recompute_cache_;
 
+  // For large problems, LNS will have a lot of fixed intervals.
+  // And fixed intervals will never changes, so there is no point recomputing
+  // the cache for them.
+  std::vector<int> non_fixed_intervals_;
+
   // Reason vectors.
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;

@@ -82,10 +82,17 @@ class VariablesShavingSolver : public SubSolver {
   struct State {
     int var_index;
     bool minimize;
+
+    // We have two modes:
+    // - When "shave_using_objective" is true, we shave by minimizing the value
+    //   of a variable.
+    // - When false, we restrict its domain and detect feasible/infeasible.
     Domain reduced_domain;
+    bool shave_using_objective = false;
   };
 
   VariablesShavingSolver(const SatParameters& local_parameters,
+                         NeighborhoodGeneratorHelper* helper,
                          SharedClasses* shared);
 
   ~VariablesShavingSolver() override;
@@ -110,11 +117,12 @@ class VariablesShavingSolver : public SubSolver {
 
   bool FindNextVar(State* state) ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  void CopyModelConnectedToVar(State* state, Model* local_sat_model,
-                               CpModelProto* shaving_proto)
+  void CopyModelConnectedToVar(State* state, Model* local_model,
+                               CpModelProto* shaving_proto,
+                               bool* has_no_overlap_2d)
       ABSL_SHARED_LOCKS_REQUIRED(mutex_);
 
-  bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_sat_model,
+  bool ResetAndSolveModel(int64_t task_id, State* state, Model* local_model,
                           CpModelProto* shaving_proto);
 
   // This is fixed at construction.
@@ -129,7 +137,7 @@ class VariablesShavingSolver : public SubSolver {
   const CpModelProto& model_proto_;
 
   absl::Mutex mutex_;
-  int current_index_ = -1;
+  int64_t current_index_ = -1;
   std::vector<Domain> var_domains_ ABSL_GUARDED_BY(mutex_);
 
   // Stats.

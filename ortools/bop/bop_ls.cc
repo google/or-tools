@@ -665,7 +665,7 @@ int SatWrapper::ApplyDecision(sat::Literal decision_literal,
   const int old_decision_level = sat_solver_->CurrentDecisionLevel();
   const int new_trail_index =
       sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision_literal);
-  if (sat_solver_->IsModelUnsat()) {
+  if (sat_solver_->ModelIsUnsat()) {
     return old_decision_level + 1;
   }
 

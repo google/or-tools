@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -194,9 +195,9 @@ TEST(BinaryImplicationGraphTest, TransitiveReduction) {
     graph->AddBinaryClause(Literal(i, false), Literal(i, true));
   }
 
-  EXPECT_EQ(graph->num_implications(), 10 * 9);
+  EXPECT_EQ(graph->ComputeNumImplicationsForLog(), 10 * 9);
   EXPECT_TRUE(graph->ComputeTransitiveReduction());
-  EXPECT_EQ(graph->num_implications(), 9 * 2);
+  EXPECT_EQ(graph->ComputeNumImplicationsForLog(), 9 * 2);
 }
 
 // This basically just test our DCHECKs.
@@ -217,9 +218,9 @@ TEST(BinaryImplicationGraphTest, BasicRandomTransitiveReduction) {
     graph->AddImplication(Literal(a, true), Literal(b, true));
   }
 
-  EXPECT_EQ(graph->num_implications(), 2 * num_added);
+  EXPECT_EQ(graph->ComputeNumImplicationsForLog(), 2 * num_added);
   EXPECT_TRUE(graph->ComputeTransitiveReduction());
-  EXPECT_LT(graph->num_implications(), num_added);
+  EXPECT_LT(graph->ComputeNumImplicationsForLog(), num_added);
 }
 
 // We generate a random 2-SAT problem, and check that the propagation is
@@ -419,6 +420,38 @@ TEST(BinaryImplicationGraphTest, RandomImpliedLiteral) {
     seen.insert(graph->RandomImpliedLiteral(Literal(+1)));
   }
   EXPECT_THAT(seen, UnorderedLiteralsAre(-2, -4, -5, +6, +7));
+}
+
+TEST(BinaryImplicationGraphTest, DetectEquivalencePropagateThings) {
+  Model model;
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  trail->Resize(10);
+  graph->Resize(10);
+
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({+1, +2, +3, +4})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({-2, -1, +3, +4})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({-4, -1, +2, +3})));
+  EXPECT_TRUE(graph->AddAtMostOne(Literals({-3, -1, +2, +4})));
+  EXPECT_TRUE(graph->DetectEquivalences());
+}
+
+void TryAmoEquivalences(absl::Span<const std::vector<int>> cliques) {
+  Model model;
+  auto* trail = model.GetOrCreate<Trail>();
+  auto* graph = model.GetOrCreate<BinaryImplicationGraph>();
+  trail->Resize(1000);
+  graph->Resize(1000);
+  for (const auto& clique : cliques) {
+    std::vector<Literal> literals;
+    for (const int i : clique) {
+      literals.push_back(Literal(i));
+    }
+    if (!graph->AddAtMostOne(literals)) {
+      return;
+    }
+  }
+  graph->DetectEquivalences();
 }
 
 }  // namespace

@@ -1044,7 +1044,7 @@ message SatParameters {
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.
-  optional double shaving_search_deterministic_time = 205 [default = 0.001];
+  optional double shaving_search_deterministic_time = 205 [default = 0.1];
 
   // Specifies the threshold between two modes in the shaving procedure.
   // If the range of the variable/objective is less than this threshold, then
@@ -1062,8 +1062,9 @@ message SatParameters {
   optional bool use_objective_shaving_search = 253 [default = false];
 
   // This search takes all Boolean or integer variables, and maximize or
-  // minimize them in order to reduce their domain.
-  optional bool use_variables_shaving_search = 289 [default = false];
+  // minimize them in order to reduce their domain. -1 is automatic, otherwise
+  // value 0 disables it, and 1, 2, or 3 changes something.
+  optional int32 variables_shaving_level = 289 [default = -1];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.

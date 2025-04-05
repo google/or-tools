@@ -1524,6 +1524,7 @@ bool FixedModuloPropagator::PropagateSignsAndTargetRange() {
   // The sign of target_ is fixed by the sign of expr_.
   if (integer_trail_->LowerBound(expr_) >= 0 &&
       integer_trail_->LowerBound(target_) < 0) {
+    // expr >= 0 => target >= 0.
     if (!integer_trail_->SafeEnqueue(target_.GreaterOrEqual(0),
                                      {expr_.GreaterOrEqual(0)})) {
       return false;
@@ -1532,8 +1533,27 @@ bool FixedModuloPropagator::PropagateSignsAndTargetRange() {
 
   if (integer_trail_->UpperBound(expr_) <= 0 &&
       integer_trail_->UpperBound(target_) > 0) {
+    // expr <= 0 => target <= 0.
     if (!integer_trail_->SafeEnqueue(target_.LowerOrEqual(0),
                                      {expr_.LowerOrEqual(0)})) {
+      return false;
+    }
+  }
+
+  if (integer_trail_->LowerBound(target_) > 0 &&
+      integer_trail_->LowerBound(expr_) <= 0) {
+    // target > 0 => expr > 0.
+    if (!integer_trail_->SafeEnqueue(expr_.GreaterOrEqual(1),
+                                     {target_.GreaterOrEqual(1)})) {
+      return false;
+    }
+  }
+
+  if (integer_trail_->UpperBound(target_) < 0 &&
+      integer_trail_->UpperBound(expr_) >= 0) {
+    // target < 0 => expr < 0.
+    if (!integer_trail_->SafeEnqueue(expr_.LowerOrEqual(-1),
+                                     {target_.LowerOrEqual(-1)})) {
       return false;
     }
   }

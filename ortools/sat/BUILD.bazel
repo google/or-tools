@@ -41,6 +41,26 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_test",
+    size = "small",
+    srcs = ["cp_model_test.cc"],
+    deps = [
+        ":cp_model",
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_solver",
+        ":model",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:container_logging",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "model",
     hdrs = ["model.h"],
@@ -101,6 +121,7 @@ cc_library(
     deps = [
         ":diffn_util",
         ":integer",
+        ":integer_base",
         ":model",
         ":no_overlap_2d_helper",
         ":scheduling_helpers",
@@ -218,6 +239,21 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_utils_test",
+    size = "small",
+    srcs = ["cp_model_utils_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/base:stl_util",
+        "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
 cc_library(
     name = "synchronization",
     srcs = ["synchronization.cc"],
@@ -259,6 +295,24 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "synchronization_test",
+    size = "small",
+    srcs = ["synchronization_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":integer_base",
+        ":model",
+        ":synchronization",
+        ":util",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:random_engine",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
@@ -708,6 +762,27 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_solver_test",
+    size = "medium",
+    srcs = ["cp_model_solver_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_solver",
+        ":cp_model_test_utils",
+        ":lp_utils",
+        ":model",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "cp_model_mapping",
     hdrs = ["cp_model_mapping.h"],
@@ -1038,6 +1113,36 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
         "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_test(
+    name = "cp_model_presolve_test",
+    size = "small",
+    srcs = ["cp_model_presolve_test.cc"],
+    tags = ["noautofuzz"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_presolve",
+        ":cp_model_solver",
+        ":cp_model_utils",
+        ":lp_utils",
+        ":model",
+        ":presolve_context",
+        ":sat_parameters_cc_proto",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/port:proto_utils",
+        "//ortools/util:logging",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
@@ -2372,28 +2477,6 @@ cc_library(
     ],
 )
 
-cc_test(
-    name = "boolean_problem_test",
-    size = "small",
-    srcs = [
-        "boolean_problem_test.cc",
-        "opb_reader.h",
-    ],
-    deps = [
-        ":boolean_problem",
-        ":boolean_problem_cc_proto",
-        "//ortools/algorithms:sparse_permutation",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:gmock_main",
-        "//ortools/base:path",
-        "//ortools/util:filelineiter",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
 cc_library(
     name = "linear_relaxation",
     srcs = ["linear_relaxation.cc"],
@@ -3307,6 +3390,27 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "2d_orthogonal_packing_test",
+    srcs = ["2d_orthogonal_packing_test.cc"],
+    deps = [
+        ":2d_orthogonal_packing",
+        ":2d_orthogonal_packing_testing",
+        ":diffn_util",
+        ":integer_base",
+        ":synchronization",
+        "//ortools/algorithms:binary_search",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@com_google_benchmark//:benchmark",
+    ],
+)
+
 cc_library(
     name = "2d_try_edge_propagator",
     srcs = ["2d_try_edge_propagator.cc"],
@@ -3320,6 +3424,7 @@ cc_library(
         ":synchronization",
         ":util",
         "//ortools/base:stl_util",
+        "//ortools/set_cover:base_types",
         "//ortools/set_cover:set_cover_heuristics",
         "//ortools/set_cover:set_cover_invariant",
         "//ortools/set_cover:set_cover_model",
@@ -3328,6 +3433,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -3737,19 +3843,60 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "opb_reader",
+    hdrs = ["opb_reader.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "opb_reader_test",
+    size = "small",
+    srcs = [
+        "opb_reader_test.cc",
+    ],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_checker",
+        ":cp_model_symmetries",
+        ":opb_reader",
+        ":sat_parameters_cc_proto",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "//ortools/util:filelineiter",
+        "//ortools/util:logging",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_binary(
     name = "sat_runner",
     srcs = [
-        "opb_reader.h",
         "sat_runner.cc",
     ],
     deps = [
-        ":boolean_problem",
-        ":boolean_problem_cc_proto",
         ":cp_model_cc_proto",
         ":cp_model_solver",
         ":cp_model_utils",
         ":model",
+        ":opb_reader",
         ":sat_cnf_reader",
         ":sat_parameters_cc_proto",
         "//ortools/base",

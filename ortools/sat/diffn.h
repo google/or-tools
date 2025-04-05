@@ -168,10 +168,6 @@ class RectanglePairwisePropagator : public PropagatorInterface {
 
   // Return false if a conflict is found.
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemWithVariableSize> items,
-      std::vector<PairwiseRestriction>* restrictions);
-
-  bool FindRestrictionsAndPropagateConflict(
       absl::Span<const ItemWithVariableSize> items1,
       absl::Span<const ItemWithVariableSize> items2,
       std::vector<PairwiseRestriction>* restrictions);
@@ -186,7 +182,6 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  std::vector<Rectangle> fixed_non_zero_area_rectangles_;
   std::vector<ItemWithVariableSize> fixed_non_zero_area_boxes_;
   std::vector<ItemWithVariableSize> non_fixed_non_zero_area_boxes_;
   std::vector<ItemWithVariableSize> horizontal_zero_area_boxes_;

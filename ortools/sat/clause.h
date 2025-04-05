@@ -520,10 +520,12 @@ class BinaryImplicationGraph : public SatPropagator {
   // Resizes the data structure.
   void Resize(int num_variables);
 
-  // Returns true if there is no constraints in this class.
-  bool IsEmpty() const final {
-    return num_implications_ == 0 && at_most_ones_.empty();
-  }
+  // Returns the "size" of this class, that is 2 * num_boolean_variables as
+  // updated by the larger Resize() call.
+  int64_t literal_size() const { return implications_.size(); }
+
+  // Returns true if no constraints where ever added to this class.
+  bool IsEmpty() const final { return no_constraint_ever_added_; }
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).
@@ -721,9 +723,12 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns the number of current implications. Note that a => b and not(b)
   // => not(a) are counted separately since they appear separately in our
   // propagation lists. The number of size 2 clauses that represent the same
-  // thing is half this number.
-  int64_t num_implications() const { return num_implications_; }
-  int64_t literal_size() const { return implications_.size(); }
+  // thing is half this number. This should only be used in logs.
+  int64_t ComputeNumImplicationsForLog() const {
+    int64_t result = 0;
+    for (const auto& list : implications_) result += list.size();
+    return result;
+  }
 
   // Extract all the binary clauses managed by this class. The Output type must
   // support an AddBinaryClause(Literal a, Literal b) function.
@@ -863,7 +868,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // If the final AMO size is smaller than the at_most_one_expansion_size
   // parameters, we fully expand it.
-  bool CleanUpAndAddAtMostOnes(int base_index);
+  ABSL_MUST_USE_RESULT bool CleanUpAndAddAtMostOnes(int base_index);
 
   // To be used in DCHECKs().
   bool InvariantsAreOk();
@@ -877,6 +882,11 @@ class BinaryImplicationGraph : public SatPropagator {
   ModelRandomGenerator* random_;
   Trail* trail_;
   DratProofHandler* drat_proof_handler_ = nullptr;
+
+  // When problems do not have any implications or at_most_ones this allows to
+  // reduce the number of work we do here. This will be set to true the first
+  // time something is added.
+  bool no_constraint_ever_added_ = true;
 
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.

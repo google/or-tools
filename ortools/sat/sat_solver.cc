@@ -1408,7 +1408,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
     SOLVER_LOG(logger_, "Number of clauses (size > 2): ",
                clauses_propagator_->num_clauses());
     SOLVER_LOG(logger_, "Number of binary clauses: ",
-               binary_implication_graph_->num_implications());
+               binary_implication_graph_->ComputeNumImplicationsForLog());
     SOLVER_LOG(logger_, "Number of linear constraints: ",
                pb_constraints_->NumberOfConstraints());
     SOLVER_LOG(logger_, "Number of fixed variables: ", trail_->Index());
@@ -1812,7 +1812,8 @@ std::string SatSolver::RunningStatisticsString() const {
       clauses_propagator_->num_clauses() -
           clauses_propagator_->num_removable_clauses(),
       clauses_propagator_->num_removable_clauses(),
-      binary_implication_graph_->num_implications(), restart_->NumRestarts(),
+      binary_implication_graph_->ComputeNumImplicationsForLog(),
+      restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
 }
 

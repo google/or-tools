@@ -1834,13 +1834,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       continue;
     }
 
-    // TODO(user): these should probably be interleaved_subsolvers.
-    if (local_params.use_variables_shaving_search()) {
-      full_worker_subsolvers.push_back(
-          std::make_unique<VariablesShavingSolver>(local_params, shared));
-      continue;
-    }
-
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
         /*split_in_chunks=*/params.interleave_search(), shared));
@@ -1852,6 +1845,28 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     ++num_interleaved_subsolver_that_do_not_need_solution;
     interleaved_subsolvers.push_back(
         std::make_unique<FeasibilityPumpSolver>(params, shared));
+  }
+
+  // Add variables shaving if enabled.
+  // TODO(user): Like for feasibility jump, alternates better the variable that
+  // we shave with the parameters that we use, and the time limit effort.
+  int shaving_level = params.variables_shaving_level() >= 0
+                          ? params.variables_shaving_level()
+                          : params.num_workers() / 20;
+  if (shaving_level > 0) {
+    if (shaving_level > 3) shaving_level = 3;
+    const std::string names[] = {"variables_shaving", "variables_shaving_no_lp",
+                                 "variables_shaving_max_lp"};
+    for (int i = 0; i < shaving_level; ++i) {
+      if (name_filter.Keep(names[i])) {
+        const SatParameters& local_params = name_to_params.at(names[i]);
+        ++num_interleaved_subsolver_that_do_not_need_solution;
+        reentrant_interleaved_subsolvers.push_back(
+            std::make_unique<VariablesShavingSolver>(local_params, helper,
+                                                     shared));
+        continue;
+      }
+    }
   }
 
   // Add rins/rens.
