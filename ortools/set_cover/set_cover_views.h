@@ -187,8 +187,86 @@ class ValueFilterView {
     return util::at(container_, index);
   }
 
-  BaseInt size() const { return is_active_ ? size_ : container_->size(); }
+ private:
+  const ContainerT* container_;
+  const EnableVectorT* is_active_;
+  BaseInt size_;
+};
+
+// Somewhat equivalent to ValueFilterView<StrongIntRange, EnableVectorT>
+// Looping over this view is equivalent to:
+//
+// auto c_it = container.begin();
+// auto active_it = is_active.begin();
+// for (; active_it != is_active.end(); ++active_it, ++c_it) {
+//   if (*active_it) {
+//     your_code(*c_it);
+//   }
+// }
+//
+template <typename ContainerT, typename EnableVectorT>
+class IndexFilterView {
+ public:
+  using value_type = util::range_value_type<ContainerT>;
+  using container_iterator = util::range_const_iterator_type<ContainerT>;
+  using enable_iterator = util::range_const_iterator_type<EnableVectorT>;
+
+  struct IndexFilterViewIterator
+      : util::IteratorCRTP<IndexFilterViewIterator, value_type> {
+    IndexFilterViewIterator(container_iterator iterator,
+                            enable_iterator is_active_begin,
+                            enable_iterator is_active_end)
+        : iterator_(iterator),
+          is_active_iter_(is_active_begin),
+          is_active_end_(is_active_end) {
+      AdjustToValidValue();
+    }
+    bool operator!=(const IndexFilterViewIterator& other) const {
+      return iterator_ != other.iterator_;
+    }
+    IndexFilterViewIterator& operator++() {
+      ++is_active_iter_;
+      ++iterator_;
+      AdjustToValidValue();
+      return *this;
+    }
+    decltype(auto) operator*() const { return *iterator_; }
+
+   private:
+    void AdjustToValidValue() {
+      while (is_active_iter_ != is_active_end_ && !*is_active_iter_) {
+        ++is_active_iter_;
+        ++iterator_;
+      }
+    }
+
+    container_iterator iterator_;
+    enable_iterator is_active_iter_;
+    enable_iterator is_active_end_;
+  };
+
+  IndexFilterView(const ContainerT* container, const EnableVectorT* is_active_,
+                  BaseInt size)
+      : container_(container), is_active_(is_active_), size_(size) {
+    DCHECK(container != nullptr);
+    DCHECK(is_active_ != nullptr);
+    DCHECK_EQ(container->size(), is_active_->size());
+  }
+  IndexFilterViewIterator begin() const {
+    return IndexFilterViewIterator(container_->begin(), is_active_->begin(),
+                                   is_active_->end());
+  }
+  IndexFilterViewIterator end() const {
+    return IndexFilterViewIterator(container_->end(), is_active_->end(),
+                                   is_active_->end());
+  }
+  BaseInt size() const { return size_; }
   bool empty() const { return size() == 0; }
+
+  template <typename IndexT>
+  decltype(auto) operator[](IndexT index) const {
+    return util::at(container_, index);
+  }
 
  private:
   const ContainerT* container_;
