@@ -20,6 +20,7 @@
 #include <absl/types/span.h>
 
 #include <limits>
+#include <random>
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/status_macros.h"
@@ -166,20 +167,20 @@ absl::Status ValidateSubModel(const SubModelT& model) {
   return absl::OkStatus();
 }
 
-template <typename SubModelT>
-absl::Status ValidateFeasibleSolution(const SubModelT& model,
+absl::Status ValidateFeasibleSolution(const CoreModel& model,
                                       const Solution& solution,
                                       Cost tolerance = 1e-6) {
   AccurateSum<Cost> solution_cost;
-  CoverCounters coverage(model.num_elements());
-  for (SubsetIndex j : solution.subsets()) {
-    solution_cost.Add(model.subset_costs()[j]);
-    coverage.Cover(model.columns()[j]);
+  const Model& full_model = model.full_model();
+  CoverCounters coverage(full_model.num_elements());
+  for (SubsetIndex full_j : solution.subsets()) {
+    solution_cost.Add(full_model.subset_costs()[full_j]);
+    coverage.Cover(full_model.columns()[full_j]);
   }
   if (!AreWithinAbsoluteOrRelativeTolerances(
           solution_cost.Value(), solution.cost(), tolerance, tolerance))
     return absl::InvalidArgumentError("Solution cost is incorrect.");
-  for (ElementIndex i : model.ElementRange()) {
+  for (ElementIndex i : full_model.ElementRange()) {
     if (coverage[i] == 0) {
       return absl::InvalidArgumentError("Solution is infeasible.");
     }
@@ -198,7 +199,7 @@ void PrintSubModelSummary(const SubModelT& model) {
 
 SubModelView::SubModelView(const Model* model)
     : base_view(model, &cols_sizes_, &rows_sizes_, &cols_focus_, &rows_focus_),
-      model_(model),
+      full_model_(model),
       cols_sizes_(model->num_subsets()),
       rows_sizes_(model->num_elements()) {
   cols_focus_.reserve(model->num_subsets());
@@ -221,10 +222,10 @@ SubModelView::SubModelView(const Model* model,
                            const std::vector<SubsetIndex>& columns_focus,
                            const ElementBoolVector& rows_enable_flags)
     : base_view(model, &cols_sizes_, &rows_sizes_, &cols_focus_, &rows_focus_),
-      model_(model) {
-  rows_sizes_.resize(model_->num_elements(), 0);
-  for (ElementIndex i : model_->ElementRange()) {
-    rows_sizes_[i] = model_->rows()[i].size();
+      full_model_(model) {
+  rows_sizes_.resize(full_model_->num_elements(), 0);
+  for (ElementIndex i : full_model_->ElementRange()) {
+    rows_sizes_[i] = full_model_->rows()[i].size();
   }
   SetFocus(columns_focus, rows_enable_flags);
 }
@@ -237,10 +238,10 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
 
   for (SubsetIndex j : columns_to_fix) {
     DCHECK(cols_sizes_[j] > 0);
-    fixed_cost_ += model_->subset_costs()[j];
+    fixed_cost_ += full_model_->subset_costs()[j];
     fixed_columns_.push_back(j);
     cols_sizes_[j] = 0;
-    for (ElementIndex i : model_->columns()[j]) {
+    for (ElementIndex i : full_model_->columns()[j]) {
       rows_sizes_[i] = 0;
     }
   }
@@ -248,7 +249,7 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   gtl::STLEraseAllFromSequenceIf(&cols_focus_, [&](SubsetIndex j) {
     if (cols_sizes_[j] > 0) {
       cols_sizes_[j] = 0;
-      for (ElementIndex i : model_->columns()[j]) {
+      for (ElementIndex i : full_model_->columns()[j]) {
         cols_sizes_[j] += rows_sizes_[i] > 0 ? 1 : 0;
       }
     }
@@ -271,15 +272,15 @@ void SubModelView::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   cols_focus_.clear();
   rows_focus_.clear();
 
-  ElementBoolVector enabled_rows(model_->num_elements(), false);
-  for (ElementIndex i : model_->ElementRange()) {
+  ElementBoolVector enabled_rows(full_model_->num_elements(), false);
+  for (ElementIndex i : full_model_->ElementRange()) {
     enabled_rows[i] = (rows_enable_flags.empty() || rows_enable_flags[i]) &&
                       (rows_sizes_[i] > 0);
   }
-  cols_sizes_.assign(model_->num_subsets(), 0);
-  rows_sizes_.assign(model_->num_elements(), 0);
+  cols_sizes_.assign(full_model_->num_subsets(), 0);
+  rows_sizes_.assign(full_model_->num_elements(), 0);
   for (SubsetIndex j : columns_focus) {
-    for (ElementIndex i : model_->columns()[j]) {
+    for (ElementIndex i : full_model_->columns()[j]) {
       if (enabled_rows[i] > 0) {
         ++cols_sizes_[j];
         ++rows_sizes_[i];
@@ -289,7 +290,7 @@ void SubModelView::SetFocus(const std::vector<SubsetIndex>& columns_focus,
       cols_focus_.push_back(j);
     }
   }
-  for (ElementIndex i : model_->ElementRange()) {
+  for (ElementIndex i : full_model_->ElementRange()) {
     if (rows_sizes_[i] > 0) {
       rows_focus_.push_back(i);
     }
@@ -298,22 +299,9 @@ void SubModelView::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   DCHECK_OK(ValidateSubModel(*this));
 }
 
-Solution SubModelView::MakeGloabalSolution(
-    const Solution& core_solution) const {
-  Solution full_solution;
-  for (SubsetIndex j : fixed_columns_) {
-    full_solution.AddSubset(j, model_->subset_costs()[j]);
-  }
-  for (SubsetIndex j : core_solution.subsets()) {
-    full_solution.AddSubset(j, model_->subset_costs()[j]);
-  }
-  DCHECK_EQ(full_solution.cost(), core_solution.cost() + fixed_cost_);
-  return full_solution;
-}
-
 SubModel::SubModel(const Model* model)
     : Model(*model),
-      model_(model),
+      full_model_(model),
       core2full_row_map_(model->num_elements()),
       full2core_row_map_(model->num_elements()),
       core2full_col_map_(model->num_subsets()) {
@@ -322,16 +310,20 @@ SubModel::SubModel(const Model* model)
   absl::c_iota(core2full_col_map_, SubsetIndex());
 }
 
-SubModel::SubModel(
-    const Model* model, const std::vector<SubsetIndex>& columns_focus,
-    const ElementBoolVector& rows_flags)
-    : Model(), model_(model), full2core_row_map_(model->num_elements()) {
+SubModel::SubModel(const Model* model,
+                   const std::vector<SubsetIndex>& columns_focus,
+                   const ElementBoolVector& rows_flags)
+    : Model(), full_model_(model), full2core_row_map_(model->num_elements()) {
   absl::c_iota(full2core_row_map_, ElementIndex());
   SetFocus(columns_focus, rows_flags);
 }
 
+// Note: Assumes that columns_focus covers all rows for which rows_flags is true
+// (i.e.: non-covered rows should be set to false to rows_flags). This property
+// get exploited to keep the rows in the same ordering of the original model
+// using "cleanish" code.
 void SubModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                                const ElementBoolVector& rows_flags) {
+                        const ElementBoolVector& rows_flags) {
   if (columns_focus.empty()) {
     return;
   }
@@ -342,22 +334,23 @@ void SubModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   core2full_row_map_.clear();
   core2full_col_map_.clear();
 
-  ElementBoolVector enabled_rows(model_->num_elements(), false);
-  for (ElementIndex i : model_->ElementRange()) {
-    enabled_rows[i] = (rows_flags.empty() || rows_flags[i]) &&
-                      (full2core_row_map_[i] != null_element_index);
+  for (ElementIndex full_i : full_model_->ElementRange()) {
+    if ((rows_flags.empty() || rows_flags[full_i]) &&
+        (full2core_row_map_[full_i] != null_element_index)) {
+      full2core_row_map_[full_i] = ElementIndex(core2full_row_map_.size());
+      core2full_row_map_.push_back(full_i);
+    } else {
+      full2core_row_map_[full_i] = null_element_index;
+    }
   }
-  full2core_row_map_.assign(model_->num_elements(), null_element_index);
 
-  for (SubsetIndex j : columns_focus) {
-    submodel.AddEmptySubset(model_->subset_costs()[j]);
-    for (ElementIndex i : model_->columns()[j]) {
-      if (enabled_rows[i]) {
-        if (full2core_row_map_[i] == null_element_index) {
-          full2core_row_map_[i] = ElementIndex(core2full_row_map_.size());
-          core2full_row_map_.push_back(i);
-        }
-        submodel.AddElementToLastSubset(full2core_row_map_[i]);
+  for (SubsetIndex full_j : columns_focus) {
+    core2full_col_map_.push_back(full_j);
+    submodel.AddEmptySubset(full_model_->subset_costs()[full_j]);
+    for (ElementIndex full_i : full_model_->columns()[full_j]) {
+      ElementIndex core_i = full2core_row_map_[full_i];
+      if (core_i != null_element_index) {
+        submodel.AddElementToLastSubset(core_i);
       }
     }
     // TODO(c4v4): Ideally, this should be a branch that allows optional column
@@ -368,7 +361,6 @@ void SubModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
     // not expected to occur, we assume they won't, even though this approach is
     // not the most robust solution.
     DCHECK(!submodel.columns().back().empty());
-    core2full_col_map_.push_back(j);
   }
 
   submodel.CreateSparseRowView();
@@ -376,8 +368,7 @@ void SubModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   DCHECK_OK(ValidateSubModel(*this));
 }
 
-Cost SubModel::FixColumns(
-    const std::vector<SubsetIndex>& columns_to_fix) {
+Cost SubModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   Cost old_fixed_cost = fixed_cost_;
   if (columns_to_fix.empty()) {
     return fixed_cost_ - old_fixed_cost;
@@ -386,51 +377,48 @@ Cost SubModel::FixColumns(
   // Mark columns and row that will be removed from the core model
   // The "to-be-removed" indices are marked by setting the relative core->full
   // mappings to null_*_index.
-  BaseInt new_num_rows = num_focus_elements();
   for (SubsetIndex old_core_j : columns_to_fix) {
     fixed_cost_ += subset_costs()[old_core_j];
     fixed_columns_.push_back(core2full_col_map_[old_core_j]);
     core2full_col_map_[old_core_j] = null_subset_index;
     for (ElementIndex old_core_i : columns()[old_core_j]) {
-      ElementIndex& full_i = core2full_row_map_[old_core_i];
-      new_num_rows -= (full_i != null_element_index ? 1 : 0);
-      full_i = null_element_index;
+      core2full_row_map_[old_core_i] = null_element_index;
+    }
+  }
+
+  full2core_row_map_.assign(full_model_->num_elements(), null_element_index);
+  ElementMappingVector new_c2f_row_map;  // Future core->full mapping.
+  for (ElementIndex old_core_i : ElementRange()) {
+    ElementIndex full_i = core2full_row_map_[old_core_i];
+    if (full_i != null_element_index) {
+      full2core_row_map_[full_i] = ElementIndex(new_c2f_row_map.size());
+      new_c2f_row_map.push_back(full_i);
     }
   }
 
   // Fill a new core model by applying the remapping from the old core to the
   // new core (brace yourself: index-hell).
   Model new_submodel;
-  ElementMappingVector new_c2f_row_map;  // Future core->full mapping.
-  full2core_row_map_.assign(model_->num_elements(), null_element_index);
   BaseInt new_core_j = 0;
   // Loop over old core column indices.
   for (SubsetIndex old_core_j : SubsetRange()) {
     // If the column is not marked, then it should be mapped.
-    if (core2full_col_map_[old_core_j] != null_subset_index) {
+    SubsetIndex full_j = core2full_col_map_[old_core_j];
+    if (full_j != null_subset_index) {
       // Put the full index in the proper (new) position.
       // Note that old_core_j >= new_core_j is always true.
-      core2full_col_map_[SubsetIndex(new_core_j)] =
-          core2full_col_map_[old_core_j];
-      ++new_core_j;
+      SubsetIndex new_j(new_core_j++);
+      core2full_col_map_[new_j] = full_j;
 
       // Add the column to the new model.
-      new_submodel.AddEmptySubset(model_->subset_costs()[old_core_j]);
+      new_submodel.AddEmptySubset(full_model_->subset_costs()[full_j]);
       // Loop over the old core column (with old core row indices).
       for (ElementIndex old_core_i : columns()[old_core_j]) {
         // If the row is not marked, then it should be mapped.
-        if (core2full_row_map_[old_core_i] != null_element_index) {
-          ElementIndex full_i = core2full_row_map_[old_core_i];
-          ElementIndex& new_core_i = full2core_row_map_[full_i];
-          // As soon as a new row is mapped, it gets inserted into the
-          // full->core row mapping. If such an index is still null, then it
-          // means that it needs to be mapped.
-          if (new_core_i == null_element_index) {
-            // Map the unmapped row index.
-            new_core_i = ElementIndex(new_c2f_row_map.size());
-            new_c2f_row_map.push_back(full_i);
-          }
-          // The new column will have the new core row index.
+        ElementIndex full_i = core2full_row_map_[old_core_i];
+        if (full_i != null_element_index) {
+          ElementIndex new_core_i = full2core_row_map_[full_i];
+          DCHECK(new_core_i != null_element_index);
           new_submodel.AddElementToLastSubset(new_core_i);
         }
       }
@@ -438,23 +426,28 @@ Cost SubModel::FixColumns(
   }
   core2full_col_map_.resize(new_core_j);
   core2full_row_map_ = std::move(new_c2f_row_map);
+  new_submodel.CreateSparseRowView();
+  static_cast<Model&>(*this) = std::move(new_submodel);
 
   PrintSubModelSummary(*this);
   DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(absl::c_is_sorted(core2full_col_map_));
+  DCHECK(absl::c_is_sorted(core2full_row_map_));
   return fixed_cost_ - old_fixed_cost;
 }
 
-Solution SubModel::MakeGloabalSolution(
-    const Solution& core_solution) const {
-  Solution full_solution;
-  for (SubsetIndex j : fixed_columns_) {
-    full_solution.AddSubset(j, model_->subset_costs()[j]);
+Solution::Solution(const CoreModel& model,
+                   const std::vector<SubsetIndex>& core_subsets)
+    : cost_(), subsets_() {
+  subsets_.reserve(core_subsets.size() + model.fixed_columns().size());
+  cost_ = model.fixed_cost();
+  for (SubsetIndex full_j : model.fixed_columns()) {
+    subsets_.push_back(full_j);
   }
-  for (SubsetIndex j : core_solution.subsets()) {
-    full_solution.AddSubset(core2full_col_map_[j], subset_costs()[j]);
+  for (SubsetIndex core_j : core_subsets) {
+    SubsetIndex full_j = model.MapCoreToFullSubsetIndex(core_j);
+    AddSubset(full_j, model.subset_costs()[core_j]);
   }
-  DCHECK_EQ(full_solution.cost(), core_solution.cost() + fixed_cost_);
-  return full_solution;
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -583,7 +576,6 @@ void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
 
   ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
   DualState dual_state = best_state.dual_state;
-  Cost upper_bound = best_state.solution.cost() - model.fixed_cost();
   Solution solution;
 
   ElementCostVector multipliers_delta(model.num_elements());  // to avoid allocs
@@ -613,17 +605,17 @@ void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
     }
 
     cbs.RunHeuristic(context, solution);
-    if (!solution.subsets().empty() && solution.cost() < upper_bound) {
-      best_state.solution = model.MakeGloabalSolution(solution);
-      upper_bound = solution.cost();
+    if (!solution.subsets().empty() &&
+        solution.cost() < best_state.solution.cost()) {
+      best_state.solution = solution;
     }
 
     if (++iter % 50 == 0)
       std::cout << "Subgradient " << iter << " -- Bounds: Lower "
                 << dual_state.lower_bound() << ", best "
                 << best_state.dual_state.lower_bound() << " - Upper "
-                << upper_bound << ", global " << best_state.solution.cost()
-                << "\n";
+                << best_state.solution.cost() - model.fixed_cost()
+                << ", global " << best_state.solution.cost() << "\n";
 
     if (cbs.UpdateCoreModel(model, best_state)) {
       std::cout << "Core model has been updated.\n";
@@ -632,8 +624,9 @@ void SubgradientOptimization(CoreModel& model, SubgradientCBs& cbs,
   }
   std::cout << "Subgradient End" << " -- Bounds: Lower "
             << dual_state.lower_bound() << ", best "
-            << best_state.dual_state.lower_bound() << " - Upper " << upper_bound
-            << ", global " << best_state.solution.cost() << "\n";
+            << best_state.dual_state.lower_bound() << " - Upper "
+            << best_state.solution.cost() - model.fixed_cost() << ", global "
+            << best_state.solution.cost() << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -659,15 +652,6 @@ class GreedyScores {
         score_map_(model.num_subsets()) {
     BaseInt s = 0;
     for (SubsetIndex j : model.SubsetRange()) {
-      if (model.columns()[j].empty()) {
-        std::cout << "Column " << j << " with size "
-                  << model.columns()[j].size() << ": ";
-        for (ElementIndex i : model.columns()[j]) {
-          std::cout << i.value() << ' ';
-        }
-        std::cout << "is empty\n";
-      }
-
       DCHECK(!model.columns()[j].empty());
       covering_counts_[j] = model.columns()[j].size();
       Cost j_score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
@@ -703,7 +687,6 @@ class GreedyScores {
                           [](Score a, Score b) { return a.score < b.score; });
     SubsetIndex j_star = min_score.idx;
     DCHECK_LT(min_score.score, max_score);
-
     return j_star;
   }
 
@@ -891,10 +874,10 @@ class RedundancyRemover {
 Solution RunMultiplierBasedGreedy(const CoreModel& model,
                                   const DualState& dual_state,
                                   Cost cost_cutoff) {
-  std::vector<SubsetIndex> sol_subsets = model.fixed_columns();
+  std::vector<SubsetIndex> sol_subsets;
   CoverGreedly(model, dual_state, cost_cutoff,
                std::numeric_limits<BaseInt>::max(), sol_subsets);
-  return Solution(model, std::move(sol_subsets));
+  return Solution(model, sol_subsets);
 }
 
 Cost CoverGreedly(const CoreModel& model, const DualState& dual_state,
@@ -954,6 +937,20 @@ namespace {
 void FixBestColumns(CoreModel& model, PrimalDualState& state) {
   auto& [best_sol, dual_state] = state;
 
+  // This approach is not the most efficient but prioritizes clarity and the
+  // current abstraction system. We save the current core multipliers, mapped to
+  // the full model's element indices. By organizing the multipliers using the
+  // full model indices, we can easily map them to the new core model indices
+  // after fixing columns. Note: This mapping isn't strictly necessary because
+  // fixing columns effectively removes rows, and the remaining multipliers
+  // naturally shift to earlier positions. A simple iteration would suffice to
+  // discard multipliers for rows no longer in the new core model.
+  ElementCostVector full_multipliers(model.num_elements(), .0);
+  for (ElementIndex core_i : model.ElementRange()) {
+    ElementIndex full_i = model.MapCoreToFullElementIndex(core_i);
+    full_multipliers[full_i] = dual_state.multipliers()[core_i];
+  }
+
   std::vector<SubsetIndex> cols_to_fix;
   CoverCounters row_coverage(model.num_elements());
   for (SubsetIndex j : model.SubsetRange()) {
@@ -984,15 +981,15 @@ void FixBestColumns(CoreModel& model, PrimalDualState& state) {
             << " columns, with cost " << model.fixed_cost() << '\n';
 
   // Update multipliers for the reduced model
-  dual_state.DualUpdate(model, [&](ElementIndex, Cost) {
-    // TODO: map multipliers
-    CHECK((std::is_same_v<CoreModel, SubModelView>))
-        << "Core model is not a SubModelView";
+  dual_state.DualUpdate(model, [&](ElementIndex core_i, Cost& multiplier) {
+    // Note: if SubModelView is used as CoreModel, then this mapping is always
+    // the identity mapping and can be removed
+    multiplier = full_multipliers[model.MapCoreToFullElementIndex(core_i)];
   });
 }
 
 void RandomizeDualState(const CoreModel& model, DualState& dual_state,
-                        absl::BitGen& rnd) {
+                        std::mt19937& rnd) {
   dual_state.DualUpdate(model, [&](ElementIndex, Cost& i_multiplier) {
     i_multiplier *= absl::Uniform(rnd, 0.9, 1.1);
   });
@@ -1040,7 +1037,7 @@ absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
 
   PrimalDualState curr_state = best_state;
   BaseInt iter_count = 0;
-  absl::BitGen rnd;
+  std::mt19937 rnd(0xcf7);
   while (model.num_focus_elements() > 0 &&
          // note: assumes integral costs
          curr_state.dual_state.lower_bound() <
@@ -1048,7 +1045,7 @@ absl::StatusOr<PrimalDualState> RunThreePhase(CoreModel& model,
     ++iter_count;
     std::cout << "\n\n3Phase iteration: " << iter_count << '\n';
     std::cout << " Active size: rows " << model.num_focus_elements() << "/"
-              << model.num_focus_elements() << ", columns "
+              << model.num_elements() << ", columns "
               << model.num_focus_subsets() << "/" << model.num_subsets()
               << '\n';
 
@@ -1123,6 +1120,8 @@ std::vector<SubsetIndex> ComputeTentativeFocus(const Model& full_model) {
       }
     }
   }
+  // NOTE: unnecessary, but it keeps equivalence between SubModelView/SubModel
+  absl::c_sort(columns_focus);
   return columns_focus;
 }
 
@@ -1214,25 +1213,30 @@ FullToCoreModel::FullToCoreModel(const Model* full_model)
   DCHECK_OK(ValidateSubModel(FullModelWithFixingView()));
 }
 
+void FullToCoreModel::ResetPricingPeriod() {
+  update_countdown_ = 10;
+  update_period_ = 10;
+  update_max_period_ = std::min(1000, full_model_->num_elements() / 3);
+}
+
 Cost FullToCoreModel::FixColumns(
     const std::vector<SubsetIndex>& columns_to_fix) {
-  auto full_model_view = FullModelWithFixingView();
   for (SubsetIndex core_j : columns_to_fix) {
     SubsetIndex full_j = CoreModel::MapCoreToFullSubsetIndex(core_j);
     DCHECK(cols_sizes_[full_j] > 0);
     cols_sizes_[full_j] = 0;
-    for (ElementIndex full_i : full_model_view.columns()[full_j]) {
+    for (ElementIndex full_i : full_model_->columns()[full_j]) {
       rows_sizes_[full_i] = 0;
     }
   }
+  auto full_model_view = FullModelWithFixingView();
   for (SubsetIndex full_j : full_model_view.SubsetRange()) {
-    if (cols_sizes_[full_j] > 0) {
-      cols_sizes_[full_j] = 0;
-      for (ElementIndex full_i : full_model_view.columns()[full_j]) {
-        cols_sizes_[full_j] += rows_sizes_[full_i] > 0 ? 1 : 0;
-      }
+    cols_sizes_[full_j] = 0;
+    for (ElementIndex full_i : full_model_view.columns()[full_j]) {
+      cols_sizes_[full_j] += rows_sizes_[full_i] > 0 ? 1 : 0;
     }
   }
+  ResetPricingPeriod();
   return base::FixColumns(columns_to_fix);
 }
 
@@ -1242,29 +1246,34 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
   }
   auto full_model_view = FullModelWithFixingView();
 
-  full_dual_state_.DualUpdate(full_model_view,
-                              [&](ElementIndex i, Cost& i_mult) {
-                                i_mult = core_state.dual_state.multipliers()[i];
-                              });
+  full_dual_state_.DualUpdate(
+      full_model_view, [&](ElementIndex full_i, Cost& i_mult) {
+        ElementIndex core_i = MapFullToCoreElementIndex(full_i);
+        i_mult = core_state.dual_state.multipliers()[core_i];
+      });
   std::cout << "Lower bounds: Real " << full_dual_state_.lower_bound()
             << ", Core " << core_state.dual_state.lower_bound() << '\n';
   UpdatePricingPeriod(full_dual_state_, core_state);
 
-  SubsetBoolVector selected(full_model_view.num_subsets(), false);
-  std::vector<SubsetIndex> new_column_map;
+  SubsetBoolVector selected_columns(full_model_view.num_subsets(), false);
+  std::vector<SubsetIndex> new_core_columns;
 
   // Always retain best solution in the core model
   for (SubsetIndex full_j : core_state.solution.subsets()) {
-    SubsetIndex new_j = SubsetIndex(new_column_map.size());
-    new_column_map.push_back(full_j);
-    selected[full_j] = true;
+    if (cols_sizes_[full_j] > 0) {
+      new_core_columns.push_back(full_j);
+      selected_columns[full_j] = true;
+    }
   }
 
   SelecteMinRedCostColumns(full_model_view, full_dual_state_.reduced_costs(),
-                           new_column_map, selected);
+                           new_core_columns, selected_columns);
   SelectMinRedCostByRow(full_model_view, full_dual_state_.reduced_costs(),
-                        new_column_map, selected);
-  SetFocus(new_column_map);
+                        new_core_columns, selected_columns);
+
+  // NOTE: unnecessary, but it keeps equivalence between SubModelView/SubModel
+  absl::c_sort(new_core_columns);
+  SetFocus(new_core_columns);
   core_state.dual_state.DualUpdate(*this, [](ElementIndex i, Cost& i_mult) {
     // multipliers didn't cange, but reduced cost must be recomputed
   });

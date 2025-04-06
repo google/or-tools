@@ -59,8 +59,8 @@ class SubModel;
 // explicitly in memory, avoiding looping over "inactive" columns and rows.
 // Both SubModelView (lightweight but potentially slower) and SubModel (heavier
 // but faster) can be used as a core model.
-using CoreModel = SubModel;
 // using CoreModel = SubModelView;
+using CoreModel = SubModel;
 
 struct PrimalDualState;
 struct Solution;
@@ -94,6 +94,7 @@ class SubModelView : public IndexListSubModelView {
                const ElementBoolVector& rows_flags = {});
 
   virtual ~SubModelView() = default;
+  const Model& full_model() const { return *full_model_; }
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
@@ -103,13 +104,12 @@ class SubModelView : public IndexListSubModelView {
                 const ElementBoolVector& rows_flags = {});
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
-  Solution MakeGloabalSolution(const Solution& core_solution) const;
 
  private:
   void MakeIdentityColumnsView();
   void MakeIdentityRowsView();
 
-  const Model* model_;
+  const Model* full_model_;
   SubsetToIntVector cols_sizes_;
   ElementToIntVector rows_sizes_;
 
@@ -133,14 +133,16 @@ class SubModel : Model {
   // Member function relevant for the CFT inherited from Model
   using Model::columns;
   using Model::ElementRange;
-  using Model::num_elements;
-  using Model::num_subsets;
+
   using Model::rows;
   using Model::subset_costs;
   using Model::SubsetRange;
 
-  BaseInt num_focus_subsets() const { return num_subsets(); }
-  BaseInt num_focus_elements() const { return num_elements(); }
+  const Model& full_model() const { return *full_model_; }
+  BaseInt num_subsets() const { return full_model_->num_subsets(); }
+  BaseInt num_elements() const { return full_model_->num_elements(); }
+  BaseInt num_focus_subsets() const { return Model::num_subsets(); }
+  BaseInt num_focus_elements() const { return Model::num_elements(); }
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     return core2full_row_map_[core_i];
   }
@@ -160,7 +162,6 @@ class SubModel : Model {
                 const ElementBoolVector& rows_flags = {});
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
-  Solution MakeGloabalSolution(const Solution& core_solution) const;
 
  private:
   static constexpr SubsetIndex null_subset_index =
@@ -168,7 +169,7 @@ class SubModel : Model {
   static constexpr ElementIndex null_element_index =
       std::numeric_limits<ElementIndex>::max();
 
-  const Model* model_;
+  const Model* full_model_;
   ElementMappingVector core2full_row_map_;
   ElementMappingVector full2core_row_map_;
   SubsetMappingVector core2full_col_map_;
@@ -180,13 +181,8 @@ class SubModel : Model {
 class Solution {
  public:
   Solution() = default;
-  template <typename SubModelT, typename SubsetsT>
-  Solution(const SubModelT& model, SubsetsT&& subsets)
-      : cost_(.0), subsets_(std::forward<SubsetsT>(subsets)) {
-    for (SubsetIndex j : subsets_) {
-      cost_ += model.subset_costs()[j];
-    }
-  }
+  Solution(const CoreModel& model,
+           const std::vector<SubsetIndex>& core_subsets);
 
   double cost() const { return cost_; }
   const std::vector<SubsetIndex>& subsets() const { return subsets_; }
@@ -403,6 +399,7 @@ class FullToCoreModel : public CoreModel {
   FullToCoreModel(const Model* full_model);
   Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   bool UpdateCore(PrimalDualState& core_state) override;
+  void ResetPricingPeriod();
 
  private:
   void UpdatePricingPeriod(const DualState& full_dual_state,
