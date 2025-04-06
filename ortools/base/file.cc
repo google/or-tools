@@ -44,16 +44,6 @@
 File::File(FILE* descriptor, absl::string_view name)
     : f_(descriptor), name_(name) {}
 
-bool File::Delete(absl::string_view filename) {
-  std::string null_terminated_name = std::string(filename);
-  return remove(null_terminated_name.c_str()) == 0;
-}
-
-bool File::Exists(absl::string_view filename) {
-  std::string null_terminated_name = std::string(filename);
-  return access(null_terminated_name.c_str(), F_OK) == 0;
-}
-
 size_t File::Size() {
   struct stat f_stat;
   stat(name_.c_str(), &f_stat);
@@ -61,21 +51,6 @@ size_t File::Size() {
 }
 
 bool File::Flush() { return fflush(f_) == 0; }
-
-// Deletes "this" on closing.
-bool File::Close() {
-  bool ok = true;
-  if (f_ == nullptr) {
-    return ok;
-  }
-  if (fclose(f_) == 0) {
-    f_ = nullptr;
-  } else {
-    ok = false;
-  }
-  delete this;
-  return ok;
-}
 
 // Deletes "this" on closing.
 absl::Status File::Close(int /*flags*/) {
@@ -94,15 +69,8 @@ absl::Status File::Close(int /*flags*/) {
   return status;
 }
 
-void File::ReadOrDie(void* buf, size_t size) {
-  CHECK_EQ(fread(buf, 1, size, f_), size);
-}
-
 size_t File::Read(void* buf, size_t size) { return fread(buf, 1, size, f_); }
 
-void File::WriteOrDie(const void* buf, size_t size) {
-  CHECK_EQ(fwrite(buf, 1, size, f_), size);
-}
 size_t File::Write(const void* buf, size_t size) {
   return fwrite(buf, 1, size, f_);
 }
@@ -121,10 +89,6 @@ File* File::Open(absl::string_view filename, absl::string_view mode) {
   if (f_des == nullptr) return nullptr;
   File* f = new File(f_des, filename);
   return f;
-}
-
-char* File::ReadLine(char* output, uint64_t max_length) {
-  return fgets(output, max_length, f_);
 }
 
 int64_t File::ReadToString(std::string* line, uint64_t max_length) {
@@ -153,11 +117,6 @@ int64_t File::ReadToString(std::string* line, uint64_t max_length) {
 
 size_t File::WriteString(absl::string_view str) {
   return Write(str.data(), str.size());
-}
-
-bool File::WriteLine(absl::string_view line) {
-  if (Write(line.data(), line.size()) != line.size()) return false;
-  return Write("\n", 1) == 1;
 }
 
 absl::string_view File::filename() const { return name_; }
@@ -211,7 +170,7 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   }
 #if defined(_MSC_VER)
   // On windows, binary files needs to be opened with the "rb" flags.
-  file->Close();
+  file->Close(options);
   // Retry in binary mode.
   status = file::Open(filename, "rb", &file, options);
   if (!status.ok()) return status;
@@ -257,10 +216,6 @@ bool ReadFileToString(absl::string_view file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(absl::string_view data, absl::string_view file_name) {
-  return SetContents(file_name, data, file::Defaults()).ok();
-}
-
 namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
  public:
@@ -299,33 +254,18 @@ bool ReadFileToProto(absl::string_view file_name,
   return false;
 }
 
-void ReadFileToProtoOrDie(absl::string_view file_name,
-                          google::protobuf::Message* proto) {
-  CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
-}
-
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
                            absl::string_view file_name) {
   std::string proto_string;
   return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
-         WriteStringToFile(proto_string, file_name);
-}
-
-void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                absl::string_view file_name) {
-  CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
+         file::SetContents(file_name, proto_string, file::Defaults()).ok();
 }
 
 bool WriteProtoToFile(const google::protobuf::Message& proto,
                       absl::string_view file_name) {
   std::string proto_string;
   return proto.AppendToString(&proto_string) &&
-         WriteStringToFile(proto_string, file_name);
-}
-
-void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           absl::string_view file_name) {
-  CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
+         file::SetContents(file_name, proto_string, file::Defaults()).ok();
 }
 
 absl::Status GetTextProto(absl::string_view filename,
