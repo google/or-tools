@@ -15,7 +15,11 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <bzlib.h>
+#if defined(USE_BZIP2)
 #include <zlib.h>
+#endif
 
 #include <cstdint>
 #if defined(_MSC_VER)
@@ -46,12 +50,15 @@ namespace {
 enum class Format {
   NORMAL_FILE,
   GZIP_FILE,
+  BZIP2_FILE
 };
 
 static Format GetFormatFromName(absl::string_view name) {
   const int size = name.size();
   if (size > 4 && name.substr(size - 3) == ".gz") {
     return Format::GZIP_FILE;
+  } else if (size > 5 && name.substr(size - 4) == ".bz2") {
+    return Format::BZIP2_FILE;
   } else {
     return Format::NORMAL_FILE;
   }
@@ -183,6 +190,72 @@ class GzFile : public File {
   private:
    gzFile f_;
  };
+
+ #if defined(USE_BZIP2)
+ class Bz2File : public File {
+  public:
+  Bz2File(BZFILE* bz_file, absl::string_view name) : File(name), f_(bz_file) {}
+   virtual ~Bz2File() = default;
+ 
+   // Reads "size" bytes to buf from file, buf should be pre-allocated.
+   size_t Read(void* buf, size_t size) override {
+     return BZ2_bzread(f_, buf, size);
+   }
+ 
+   // Writes "size" bytes of buf to file, buf should be pre-allocated.
+   size_t Write(const void* buf, size_t size) override {
+     return BZ2_bzwrite(f_, const_cast<void*>(buf), size);
+   }
+ 
+   // Closes the file and delete the underlying FILE* descriptor.
+   absl::Status Close(int flags) override {
+     absl::Status status;
+     if (f_ == nullptr) {
+       return absl::OkStatus();
+     }
+     BZ2_bzclose(f_);
+     f_ = nullptr;
+     delete this;
+     return absl::OkStatus();
+   }
+ 
+   // Flushes buffer.
+   bool Flush() override { return BZ2_bzflush(f_) == 0; }
+ 
+   // Returns file size.
+   size_t Size() override {
+    BZFILE* file;
+    std::string null_terminated_name = std::string(name_);
+    #if defined(_MSC_VER)
+    file = BZ2_bzopen (null_terminated_name.c_str(), "rb");
+    #else
+    file = BZ2_bzopen (null_terminated_name.c_str(), "r");
+    #endif
+    if (!file) {
+      LOG(FATAL) << "Cannot get the size of '" << name_
+                 << "': " << strerror(errno);
+    }
+
+    const int kLength = 5 * 1024;
+    unsigned char buffer[kLength];
+    size_t uncompressed_size = 0;
+    while (1) {
+      int err;
+      int bytes_read;
+      bytes_read = BZ2_bzread(file, buffer, kLength - 1);
+      uncompressed_size += bytes_read;
+      if (bytes_read < kLength - 1) break;
+    }
+    BZ2_bzclose(file);
+    return uncompressed_size;
+   }
+ 
+   bool Open() const override { return f_ != nullptr; }
+ 
+  private:
+   BZFILE* f_;
+ };
+ #endif  // USE_BZIP2
  
 }  // namespace
 
@@ -215,13 +288,21 @@ File* File::Open(absl::string_view file_name, absl::string_view mode) {
     case Format::GZIP_FILE: {
       gzFile gz_file =
           gzopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
-      if (!gz_file) {
-        return nullptr;
-      }
+      if (!gz_file) return nullptr;
       return new GzFile(gz_file, file_name);
     }
+    case Format::BZIP2_FILE: {
+#if defined(USE_BZIP2)
+      BZFILE* bz_file =
+          BZ2_bzopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
+      if (!bz_file) return nullptr;
+      return new Bz2File(bz_file, file_name);
+#else
+    LOG(ERROR) << "Using bzip2 files is not supported";
+    return nullptr;
+#endif
+    }
   }
-  return nullptr;
 }
 
 int64_t File::ReadToString(std::string* line, uint64_t max_length) {
