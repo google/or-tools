@@ -15,6 +15,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <zlib.h>
 
 #include <cstdint>
 #if defined(_MSC_VER)
@@ -41,39 +42,151 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 
-File::File(FILE* descriptor, absl::string_view name)
-    : f_(descriptor), name_(name) {}
+namespace {
+enum class Format {
+  NORMAL_FILE,
+  GZIP_FILE,
+};
 
-size_t File::Size() {
-  struct stat f_stat;
-  stat(name_.c_str(), &f_stat);
-  return f_stat.st_size;
+static Format GetFormatFromName(absl::string_view name) {
+  const int size = name.size();
+  if (size > 4 && name.substr(size - 3) == ".gz") {
+    return Format::GZIP_FILE;
+  } else {
+    return Format::NORMAL_FILE;
+  }
 }
 
-bool File::Flush() { return fflush(f_) == 0; }
+class CFile : public File {
+ public:
+  CFile(FILE* c_file, absl::string_view name) : File(name), f_(c_file) {}
+  virtual ~CFile() = default;
 
-// Deletes "this" on closing.
-absl::Status File::Close(int /*flags*/) {
-  absl::Status status;
-  if (f_ == nullptr) {
+  // Reads "size" bytes to buf from file, buf should be pre-allocated.
+  size_t Read(void* buf, size_t size) override {
+    return fread(buf, 1, size, f_);
+  }
+
+  // Writes "size" bytes of buf to file, buf should be pre-allocated.
+  size_t Write(const void* buf, size_t size) override {
+    return fwrite(buf, 1, size, f_);
+  }
+
+  // Closes the file and delete the underlying FILE* descriptor.
+  absl::Status Close(int flags) override {
+    absl::Status status;
+    if (f_ == nullptr) {
+      return status;
+    }
+    if (fclose(f_) == 0) {
+      f_ = nullptr;
+    } else {
+      status.Update(
+          absl::Status(absl::StatusCode::kInvalidArgument,
+                       absl::StrCat("Could not close file '", name_, "'")));
+    }
+    delete this;
     return status;
   }
-  if (fclose(f_) == 0) {
-    f_ = nullptr;
-  } else {
-    status.Update(
-        absl::Status(absl::StatusCode::kInvalidArgument,
-                     absl::StrCat("Could not close file '", name_, "'")));
+
+  // Flushes buffer.
+  bool Flush() override { return fflush(f_) == 0; }
+
+  // Returns file size.
+  size_t Size() override {
+    struct stat f_stat;
+    stat(name_.c_str(), &f_stat);
+    return f_stat.st_size;
   }
-  delete this;
-  return status;
-}
 
-size_t File::Read(void* buf, size_t size) { return fread(buf, 1, size, f_); }
+  bool Open() const override { return f_ != nullptr; }
 
-size_t File::Write(const void* buf, size_t size) {
-  return fwrite(buf, 1, size, f_);
-}
+ private:
+  FILE* f_;
+};
+
+class GzFile : public File {
+  public:
+  GzFile(gzFile gz_file, absl::string_view name) : File(name), f_(gz_file) {}
+   virtual ~GzFile() = default;
+
+   // Reads "size" bytes to buf from file, buf should be pre-allocated.
+   size_t Read(void* buf, size_t size) override {
+     return gzread(f_, buf, size);
+   }
+
+   // Writes "size" bytes of buf to file, buf should be pre-allocated.
+   size_t Write(const void* buf, size_t size) override {
+     return gzwrite(f_, buf, size);
+   }
+
+   // Closes the file and delete the underlying FILE* descriptor.
+   absl::Status Close(int flags) override {
+     absl::Status status;
+     if (f_ == nullptr) {
+       return status;
+     }
+     if (gzclose(f_) == 0) {
+       f_ = nullptr;
+     } else {
+       status.Update(
+           absl::Status(absl::StatusCode::kInvalidArgument,
+                        absl::StrCat("Could not close file '", name_, "'")));
+     }
+     delete this;
+     return status;
+   }
+ 
+   // Flushes buffer.
+   bool Flush() override { return gzflush(f_, Z_FINISH) == Z_OK; }
+ 
+   // Returns file size.
+   size_t Size() override {
+    gzFile file;
+    std::string null_terminated_name = std::string(name_);
+    #if defined(_MSC_VER)
+    file = gzopen (null_terminated_name.c_str(), "rb");
+    #else
+    file = gzopen (null_terminated_name.c_str(), "r");
+    #endif
+    if (! file) {
+      LOG(FATAL) << "Cannot get the size of '" << name_
+                 << "': " << strerror(errno);
+    }
+
+    const int kLength = 5 * 1024;
+    unsigned char buffer[kLength];
+    size_t uncompressed_size = 0;
+    while (1) {
+      int err;
+      int bytes_read;
+      bytes_read = gzread(file, buffer, kLength - 1);
+      uncompressed_size += bytes_read;
+      if (bytes_read < kLength - 1) {
+        if (gzeof(file)) {
+          break;
+        } else {
+          const char* error_string;
+          error_string = gzerror(file, &err);
+          if (err) {
+            LOG(FATAL) << "Error " << error_string;
+          }
+        }
+      }
+    }
+    gzclose(file);
+    return uncompressed_size;
+   }
+
+   bool Open() const override { return f_ != nullptr; }
+ 
+  private:
+   gzFile f_;
+ };
+ 
+}  // namespace
+
+File::File(absl::string_view name) : name_(name) {}
 
 File* File::OpenOrDie(absl::string_view filename, absl::string_view mode) {
   File* f = File::Open(filename, mode);
@@ -84,11 +197,24 @@ File* File::OpenOrDie(absl::string_view filename, absl::string_view mode) {
 File* File::Open(absl::string_view filename, absl::string_view mode) {
   std::string null_terminated_name = std::string(filename);
   std::string null_terminated_mode = std::string(mode);
-  FILE* f_des =
-      fopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
-  if (f_des == nullptr) return nullptr;
-  File* f = new File(f_des, filename);
-  return f;
+  const Format format = GetFormatFromName(filename);
+  switch (format) {
+    case Format::NORMAL_FILE: {
+      FILE* c_file =
+          fopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
+      if (c_file == nullptr) return nullptr;
+      return new CFile(c_file, filename);
+    }
+    case Format::GZIP_FILE: {
+      gzFile gz_file =
+          gzopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
+      if (!gz_file) {
+        return nullptr;
+      }
+      return new GzFile(gz_file, filename);
+    }
+  }
+  return nullptr;
 }
 
 int64_t File::ReadToString(std::string* line, uint64_t max_length) {
@@ -120,8 +246,6 @@ size_t File::WriteString(absl::string_view str) {
 }
 
 absl::string_view File::filename() const { return name_; }
-
-bool File::Open() const { return f_ != nullptr; }
 
 void File::Init() {}
 
@@ -160,7 +284,11 @@ absl::StatusOr<std::string> GetContents(absl::string_view path,
 absl::Status GetContents(absl::string_view filename, std::string* output,
                          Options options) {
   File* file;
+#if defined(_MSC_VER)
+  auto status = file::Open(filename, "rb", &file, options);
+#else
   auto status = file::Open(filename, "r", &file, options);
+#endif
   if (!status.ok()) return status;
 
   const int64_t size = file->Size();
@@ -168,21 +296,9 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
     status.Update(file->Close(options));
     return status;
   }
-#if defined(_MSC_VER)
-  // On windows, binary files needs to be opened with the "rb" flags.
-  file->Close(options);
-  // Retry in binary mode.
-  status = file::Open(filename, "rb", &file, options);
-  if (!status.ok()) return status;
-
-  const int64_t b_size = file->Size();
-  if (file->ReadToString(output, b_size) == b_size) {
-    status.Update(file->Close(options));
-    return status;
-  }
-#endif  // _MSC_VER
 
   file->Close(options).IgnoreError();  // Even if ReadToString() fails!
+
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not read from '", filename, "'."));
 }

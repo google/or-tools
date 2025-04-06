@@ -223,6 +223,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
+        "@zlib",
     ],
 )
 
