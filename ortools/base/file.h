@@ -31,12 +31,12 @@ class File {
   // Opens file "name" with flags specified by "mode".
   // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
   // The caller should call Close() to free the File after closing it.
-  static File* Open(absl::string_view filename, absl::string_view mode);
+  static File* Open(absl::string_view file_name, absl::string_view mode);
 
   // Opens file "name" with flags specified by "mode".
   // If open failed, program will exit.
   // The caller should call Close() to free the File after closing it.
-  static File* OpenOrDie(absl::string_view filename, absl::string_view mode);
+  static File* OpenOrDie(absl::string_view file_name, absl::string_view mode);
 #endif  // SWIG
 
   File(absl::string_view name);
@@ -88,11 +88,11 @@ inline Options Defaults() { return 0xBABA; }
 // ---- File API ----
 
 // The caller should free the File after closing it by passing *f to delete.
-absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
+absl::Status Open(absl::string_view file_name, absl::string_view mode, File** f,
                   Options options);
 // The caller should free the File after closing it by passing the returned
 // pointer to delete.
-File* OpenOrDie(absl::string_view filename, absl::string_view mode,
+File* OpenOrDie(absl::string_view file_name, absl::string_view mode,
                 Options options);
 
 absl::Status Delete(absl::string_view path, Options options);
@@ -103,10 +103,10 @@ absl::Status Exists(absl::string_view path, Options options);
 absl::StatusOr<std::string> GetContents(absl::string_view path,
                                         Options options);
 
-absl::Status GetContents(absl::string_view filename, std::string* output,
+absl::Status GetContents(absl::string_view file_name, std::string* output,
                          Options options);
 
-absl::Status SetContents(absl::string_view filename, absl::string_view contents,
+absl::Status SetContents(absl::string_view file_name, absl::string_view contents,
                          Options options);
 
 absl::Status WriteString(File* file, absl::string_view contents,
@@ -114,31 +114,31 @@ absl::Status WriteString(File* file, absl::string_view contents,
 
 // ---- Protobuf API ----
 
-absl::Status GetTextProto(absl::string_view filename,
+absl::Status GetTextProto(absl::string_view file_name,
                           google::protobuf::Message* proto, Options options);
 
 template <typename T>
-absl::StatusOr<T> GetTextProto(absl::string_view filename, Options options) {
+absl::StatusOr<T> GetTextProto(absl::string_view file_name, Options options) {
   T proto;
-  RETURN_IF_ERROR(GetTextProto(filename, &proto, options));
+  RETURN_IF_ERROR(GetTextProto(file_name, &proto, options));
   return proto;
 }
 
-absl::Status SetTextProto(absl::string_view filename,
+absl::Status SetTextProto(absl::string_view file_name,
                           const google::protobuf::Message& proto,
                           Options options);
 
-absl::Status GetBinaryProto(absl::string_view filename,
+absl::Status GetBinaryProto(absl::string_view file_name,
                             google::protobuf::Message* proto, Options options);
 template <typename T>
 
-absl::StatusOr<T> GetBinaryProto(absl::string_view filename, Options options) {
+absl::StatusOr<T> GetBinaryProto(absl::string_view file_name, Options options) {
   T proto;
-  RETURN_IF_ERROR(GetBinaryProto(filename, &proto, options));
+  RETURN_IF_ERROR(GetBinaryProto(file_name, &proto, options));
   return proto;
 }
 
-absl::Status SetBinaryProto(absl::string_view filename,
+absl::Status SetBinaryProto(absl::string_view file_name,
                             const google::protobuf::Message& proto,
                             Options options);
 
