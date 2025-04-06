@@ -339,47 +339,136 @@ class TwoLevelsView : public Lvl1ViewT {
   const EnableVectorT* active_items_;
 };
 
-  const EnableVectorT* active_elements_;
-  sizes_view_type sizes_;
-};
+class IndexListSubModelView {
+ public:
+  IndexListSubModelView() = default;
+  IndexListSubModelView(const SetCoverModel* model,
+                        const SubsetToIntVector* cols_sizes,
+                        const ElementToIntVector* rows_sizes,
+                        const std::vector<SubsetIndex>* cols_focus,
+                        const std::vector<ElementIndex>* rows_focus)
+      : model_(model),
+        cols_sizes_(cols_sizes),
+        rows_sizes_(rows_sizes),
+        cols_focus_(cols_focus),
+        rows_focus_(rows_focus) {}
 
-// Represents a range of integral values, typically used to convert a boolean
-// vector into a sequence of indices. This allows iteration over the indices
-// corresponding to `true` values in the boolean vector, enabling  filtering and
-// traversal of elements without allocation needed for the index list.
-template <typename IntType>
-struct IntRange {
-  struct IntRangeIterator {
-    IntType index_;
-    bool operator==(const IntRangeIterator& other) const {
-      return index_ == other.index_;
+  BaseInt num_subsets() const { return model_->num_subsets(); }
+  BaseInt num_elements() const { return model_->num_elements(); }
+  BaseInt num_focus_subsets() const { return cols_focus_->size(); }
+  BaseInt num_focus_elements() const { return rows_focus_->size(); }
+
+  auto subset_costs() const
+      -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
+    return IndexListView(&model_->subset_costs(), cols_focus_);
   }
-    bool operator!=(const IntRangeIterator& other) const {
-      return index_ != other.index_;
+  auto columns() const -> TwoLevelsView<
+      IndexListView<SparseColumnView, std::vector<SubsetIndex>>,
+      IndexListView<SubsetToIntVector, std::vector<SubsetIndex>>,
+      ElementToIntVector> {
+    return TwoLevelsView(IndexListView(&model_->columns(), cols_focus_),
+                         IndexListView(cols_sizes_, cols_focus_), rows_sizes_);
   }
-    IntRangeIterator& operator++() {
-      ++index_;
-      return *this;
-    }
-    IntType operator*() const { return index_; }
-  };
-
-  IntRange() = default;
-  IntRange(BaseInt size_) : begin_(), size_(size_) {}
-  IntRange(IntType begin, BaseInt size_t) : begin_(begin), size_(size) {}
-
-  BaseInt size() const { return size_; }
-  bool empty() const { return size() == 0; }
-  IntRangeIterator begin() const { return IntRangeIterator{begin_}; }
-  IntRangeIterator end() const { return IntRangeIterator{begin_ + size_}; }
-  IntType operator[](IntType index) const {
-    DCHECK(IntType{} <= index && index < size_);
-    return begin_ + index;
+  auto rows() const -> TwoLevelsView<
+      IndexListView<SparseRowView, std::vector<ElementIndex>>,
+      IndexListView<ElementToIntVector, std::vector<ElementIndex>>,
+      SubsetToIntVector> {
+    return TwoLevelsView(IndexListView(&model_->rows(), rows_focus_),
+                         IndexListView(rows_sizes_, rows_focus_), cols_sizes_);
+  }
+  const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
+  const std::vector<ElementIndex>& ElementRange() const { return *rows_focus_; }
+  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    return core_i;
+  }
+  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    return full_i;
+  }
+  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    return core_j;
   }
 
  private:
-  IntType begin_;
-  BaseInt size_;  // Storing end_ does not work with StrongInt
+  const SetCoverModel* model_;
+  const SubsetToIntVector* cols_sizes_;
+  const ElementToIntVector* rows_sizes_;
+  const std::vector<SubsetIndex>* cols_focus_;
+  const std::vector<ElementIndex>* rows_focus_;
+};
+
+class FilteredSubModelView {
+ public:
+  FilteredSubModelView()
+      : subset_range_(SubsetIndex()), element_range_(ElementIndex()) {}
+  FilteredSubModelView(const SetCoverModel* model,
+                       const SubsetToIntVector* cols_sizes,
+                       const ElementToIntVector* rows_sizes,
+                       BaseInt num_subsets, BaseInt num_elements)
+      : model_(model),
+        cols_sizes_(cols_sizes),
+        rows_sizes_(rows_sizes),
+        num_subsets_(num_subsets),
+        num_elements_(num_elements),
+        subset_range_(model_->SubsetRange()),
+        element_range_(model_->ElementRange()) {}
+
+  BaseInt num_subsets() const { return model_->num_subsets(); }
+  BaseInt num_elements() const { return model_->num_elements(); }
+  BaseInt num_focus_subsets() const { return num_subsets_; }
+  BaseInt num_focus_elements() const { return num_elements_; }
+
+  auto subset_costs() const
+      -> IndexFilterView<SubsetCostVector, SubsetToIntVector> {
+    return IndexFilterView(&model_->subset_costs(), cols_sizes_, num_subsets_);
+  }
+  auto columns() const
+      -> TwoLevelsView<IndexFilterView<SparseColumnView, SubsetToIntVector>,
+                       IndexFilterView<SubsetToIntVector, SubsetToIntVector>,
+                       ElementToIntVector> {
+    return TwoLevelsView(
+        IndexFilterView(&model_->columns(), cols_sizes_, num_subsets_),
+        IndexFilterView(cols_sizes_, cols_sizes_, num_subsets_), rows_sizes_);
+  }
+  auto rows() const
+      -> TwoLevelsView<IndexFilterView<SparseRowView, ElementToIntVector>,
+                       IndexFilterView<ElementToIntVector, ElementToIntVector>,
+                       SubsetToIntVector> {
+    return TwoLevelsView(
+        IndexFilterView(&model_->rows(), rows_sizes_, num_elements_),
+        IndexFilterView(rows_sizes_, rows_sizes_, num_elements_), cols_sizes_);
+  }
+  auto SubsetRange() const -> ValueFilterView<SubsetRange, SubsetToIntVector> {
+    return ValueFilterView(&subset_range_, cols_sizes_, num_subsets_);
+  }
+  auto ElementRange() const
+      -> ValueFilterView<ElementRange, ElementToIntVector> {
+    return ValueFilterView(&element_range_, rows_sizes_, num_elements_);
+  }
+  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    return core_i;
+  }
+  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    return full_i;
+  }
+  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    return core_j;
+  }
+
+ private:
+  const SetCoverModel* model_;
+  const SubsetToIntVector* cols_sizes_;
+  const ElementToIntVector* rows_sizes_;
+  BaseInt num_subsets_;
+  BaseInt num_elements_;
+
+  // Views only accept pointers (to avoid passing temporaries), so ranges have
+  // to be stored somewhere where their lifetime is longer that the range-view
+  // returned.
+  // Note that an alternative would see a specialization of the basic view types
+  // defined above, but that would introduce evon more boilerplate and code
+  // duplication.
+  ::operations_research::SubsetRange subset_range_;
+  ::operations_research::ElementRange element_range_;
 };
 
 }  // namespace operations_research::scp
