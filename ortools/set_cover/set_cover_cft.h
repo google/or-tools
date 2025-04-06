@@ -60,6 +60,7 @@ class SubModel;
 // Both SubModelView (lightweight but potentially slower) and SubModel (heavier
 // but faster) can be used as a core model.
 using CoreModel = SubModel;
+// using CoreModel = SubModelView;
 
 struct PrimalDualState;
 struct Solution;
@@ -83,8 +84,9 @@ struct Solution;
 // views are unfiltered. This allows the compiler to optimize operations by
 // treating the identity view as a special case, enabling techniques like loop
 // hoisting.
-class SubModelView {
+class SubModelView : public IndexListSubModelView {
  public:
+  using base_view = IndexListSubModelView;
   SubModelView() = default;
   SubModelView(const Model* model);
   SubModelView(const Model* model,
@@ -92,31 +94,6 @@ class SubModelView {
                const ElementBoolVector& rows_flags = {});
 
   virtual ~SubModelView() = default;
-
-  BaseInt max_subset_index() const { return model_->num_subsets(); }
-  BaseInt max_element_index() const { return model_->num_elements(); }
-  BaseInt num_subsets() const { return cols_focus_.size(); }
-  BaseInt num_elements() const { return rows_focus_.size(); }
-
-  auto subset_costs() const
-      -> IndexListView<SubsetCostVector, std::vector<SubsetIndex>> {
-    return IndexListView(&model_->subset_costs(), &cols_focus_);
-  }
-  auto columns() const
-      -> SparseFilteredView<SparseColumnView, std::vector<SubsetIndex>,
-                            ElementToIntVector, SubsetToIntVector> {
-    return SparseFilteredView(&model_->columns(), &cols_focus_, &rows_sizes_,
-                              &cols_sizes_);
-  }
-  auto rows() const
-      -> SparseFilteredView<SparseRowView, std::vector<ElementIndex>,
-                            SubsetToIntVector, ElementToIntVector> {
-    return SparseFilteredView(&model_->rows(), &rows_focus_, &cols_sizes_,
-                              &rows_sizes_);
-  }
-  const std::vector<SubsetIndex>& SubsetRange() const { return cols_focus_; }
-  const std::vector<ElementIndex>& ElementRange() const { return rows_focus_; }
-
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
@@ -162,8 +139,18 @@ class SubModel : Model {
   using Model::subset_costs;
   using Model::SubsetRange;
 
-  BaseInt max_subset_index() const { return num_subsets(); }
-  BaseInt max_element_index() const { return num_elements(); }
+  BaseInt num_focus_subsets() const { return num_subsets(); }
+  BaseInt num_focus_elements() const { return num_elements(); }
+  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    return core2full_row_map_[core_i];
+  }
+  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    return full2core_row_map_[full_i];
+  }
+  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    return core2full_col_map_[core_j];
+  }
+
   Cost fixed_cost() const { return fixed_cost_; }
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
@@ -242,8 +229,7 @@ class DualState {
   template <typename SubModelT>
   DualState(const SubModelT& model)
       : lower_bound_(),
-        multipliers_(model.max_element_index(),
-                     std::numeric_limits<Cost>::max()),
+        multipliers_(model.num_elements(), std::numeric_limits<Cost>::max()),
         reduced_costs_() {
     DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
       for (SubsetIndex j : model.rows()[i]) {
@@ -260,8 +246,8 @@ class DualState {
   // NOTE: This function contains one of the two O(nnz) subgradient steps
   template <typename SubModelT, typename Op>
   void DualUpdate(const SubModelT& model, Op multiplier_operator) {
-    multipliers_.resize(model.max_element_index());
-    reduced_costs_.resize(model.max_subset_index());
+    multipliers_.resize(model.num_elements());
+    reduced_costs_.resize(model.num_subsets());
     lower_bound_ = .0;
     // Update multipliers
     for (ElementIndex i : model.ElementRange()) {
@@ -422,8 +408,17 @@ class FullToCoreModel : public CoreModel {
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            const PrimalDualState& core_state);
 
+  FilteredSubModelView FullModelWithFixingView() const {
+    return FilteredSubModelView(full_model_, &cols_sizes_, &rows_sizes_,
+                                num_subsets_, num_elements_);
+  }
+
   const Model* full_model_;
-  SubModelView fixing_model_view_;
+  SubsetToIntVector cols_sizes_;
+  ElementToIntVector rows_sizes_;
+  BaseInt num_subsets_;
+  BaseInt num_elements_;
+
   DualState full_dual_state_;
 
   BaseInt update_countdown_;
