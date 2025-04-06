@@ -44,14 +44,6 @@ class File {
   // Reads "size" bytes to buff from file, buff should be pre-allocated.
   size_t Read(void* buff, size_t size);
 
-  // Reads "size" bytes to buff from file, buff should be pre-allocated.
-  // If read failed, program will exit.
-  void ReadOrDie(void* buff, size_t size);
-
-  // Reads a line from file to a string.
-  // Each line must be no more than max_length bytes.
-  char* ReadLine(char* output, uint64_t max_length);
-
   // Reads the whole file to a string, with a maximum length of 'max_length'.
   // Returns the number of bytes read.
   int64_t ReadToString(std::string* line, uint64_t max_length);
@@ -59,18 +51,10 @@ class File {
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
   size_t Write(const void* buff, size_t size);
 
-  // Writes "size" bytes of buff to file, buff should be pre-allocated.
-  // If write failed, program will exit.
-  void WriteOrDie(const void* buff, size_t size);
-
   // Writes a string to file.
   size_t WriteString(absl::string_view str);
 
-  // Writes a string to file and append a "\n".
-  bool WriteLine(absl::string_view line);
-
   // Closes the file and delete the underlying FILE* descriptor.
-  bool Close();
   absl::Status Close(int flags);
 
   // Flushes buffer.
@@ -84,12 +68,6 @@ class File {
 
   // Returns the file name.
   absl::string_view filename() const;
-
-  // Deletes a file.
-  static bool Delete(absl::string_view filename);
-
-  // Tests if a file exists.
-  static bool Exists(absl::string_view filename);
 
   bool Open() const;
 
@@ -108,6 +86,8 @@ inline Options Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
 
+// ---- File API ----
+
 // The caller should free the File after closing it by passing *f to delete.
 absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
                   Options options);
@@ -115,54 +95,53 @@ absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
 // pointer to delete.
 File* OpenOrDie(absl::string_view filename, absl::string_view mode,
                 Options options);
+
+absl::Status Delete(absl::string_view path, Options options);
+absl::Status Exists(absl::string_view path, Options options);
+
+// ---- Content API ----
+
+absl::StatusOr<std::string> GetContents(absl::string_view path,
+                                        Options options);
+
+absl::Status GetContents(absl::string_view filename, std::string* output,
+                         Options options);
+
+absl::Status SetContents(absl::string_view filename, absl::string_view contents,
+                         Options options);
+
+absl::Status WriteString(File* file, absl::string_view contents,
+                         Options options);
+
+// ---- Protobuf API ----
+
 absl::Status GetTextProto(absl::string_view filename,
                           google::protobuf::Message* proto, Options options);
+
 template <typename T>
 absl::StatusOr<T> GetTextProto(absl::string_view filename, Options options) {
   T proto;
   RETURN_IF_ERROR(GetTextProto(filename, &proto, options));
   return proto;
 }
+
 absl::Status SetTextProto(absl::string_view filename,
                           const google::protobuf::Message& proto,
                           Options options);
+
 absl::Status GetBinaryProto(absl::string_view filename,
                             google::protobuf::Message* proto, Options options);
 template <typename T>
+
 absl::StatusOr<T> GetBinaryProto(absl::string_view filename, Options options) {
   T proto;
   RETURN_IF_ERROR(GetBinaryProto(filename, &proto, options));
   return proto;
 }
+
 absl::Status SetBinaryProto(absl::string_view filename,
                             const google::protobuf::Message& proto,
                             Options options);
-absl::Status SetContents(absl::string_view filename, absl::string_view contents,
-                         Options options);
-absl::StatusOr<std::string> GetContents(absl::string_view path,
-                                        Options options);
-absl::Status GetContents(absl::string_view filename, std::string* output,
-                         Options options);
-absl::Status WriteString(File* file, absl::string_view contents,
-                         Options options);
-
-bool ReadFileToString(absl::string_view file_name, std::string* output);
-bool WriteStringToFile(absl::string_view data, absl::string_view file_name);
-bool ReadFileToProto(absl::string_view file_name,
-                     google::protobuf::Message* proto);
-void ReadFileToProtoOrDie(absl::string_view file_name,
-                          google::protobuf::Message* proto);
-bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           absl::string_view file_name);
-void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                absl::string_view file_name);
-bool WriteProtoToFile(const google::protobuf::Message& proto,
-                      absl::string_view file_name);
-void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           absl::string_view file_name);
-
-absl::Status Delete(absl::string_view path, Options options);
-absl::Status Exists(absl::string_view path, Options options);
 
 }  // namespace file
 

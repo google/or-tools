@@ -27,7 +27,7 @@ const int RecordWriter::kMagicNumber = 0x3ed7230a;
 
 RecordWriter::RecordWriter(File* file) : file_(file), use_compression_(true) {}
 
-bool RecordWriter::Close() { return file_->Close(); }
+bool RecordWriter::Close() { return file_->Close(file::Defaults()).ok(); }
 
 void RecordWriter::set_use_compression(bool use_compression) {
   use_compression_ = use_compression;
@@ -52,7 +52,7 @@ std::string RecordWriter::Compress(std::string const& s) const {
 
 RecordReader::RecordReader(File* const file) : file_(file) {}
 
-bool RecordReader::Close() { return file_->Close(); }
+bool RecordReader::Close() { return file_->Close(file::Defaults()).ok(); }
 
 void RecordReader::Uncompress(const char* const source, uint64_t source_size,
                               char* const output_buffer,
