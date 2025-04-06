@@ -15,8 +15,6 @@
 #define OR_TOOLS_BASE_FILE_H_
 
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
 #include <string>
 
 #include "absl/status/status.h"
@@ -41,27 +39,33 @@ class File {
   static File* OpenOrDie(absl::string_view filename, absl::string_view mode);
 #endif  // SWIG
 
-  // Reads "size" bytes to buff from file, buff should be pre-allocated.
-  size_t Read(void* buff, size_t size);
+  File(absl::string_view name);
+  virtual ~File() = default;
+
+  // Reads "size" bytes to buf from file, buff should be pre-allocated.
+  virtual size_t Read(void* buf, size_t size) = 0;
+
+  // Writes "size" bytes of buf to file, buff should be pre-allocated.
+  virtual size_t Write(const void* buf, size_t size) = 0;
+
+  // Closes the file and delete the underlying FILE* descriptor.
+  virtual absl::Status Close(int flags) = 0;
+
+  // Flushes buffer.
+  virtual bool Flush() = 0;
+
+  // Returns file size.
+  virtual size_t Size() = 0;
+
+  // Returns wether the file is currently open.
+  virtual bool Open() const = 0;
 
   // Reads the whole file to a string, with a maximum length of 'max_length'.
   // Returns the number of bytes read.
   int64_t ReadToString(std::string* line, uint64_t max_length);
 
-  // Writes "size" bytes of buff to file, buff should be pre-allocated.
-  size_t Write(const void* buff, size_t size);
-
   // Writes a string to file.
   size_t WriteString(absl::string_view str);
-
-  // Closes the file and delete the underlying FILE* descriptor.
-  absl::Status Close(int flags);
-
-  // Flushes buffer.
-  bool Flush();
-
-  // Returns file size.
-  size_t Size();
 
   // Inits internal data structures.
   static void Init();
@@ -69,12 +73,7 @@ class File {
   // Returns the file name.
   absl::string_view filename() const;
 
-  bool Open() const;
-
- private:
-  File(FILE* descriptor, absl::string_view name);
-
-  FILE* f_;
+ protected:
   std::string name_;
 };
 
