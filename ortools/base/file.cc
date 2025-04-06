@@ -188,22 +188,29 @@ class GzFile : public File {
 
 File::File(absl::string_view name) : name_(name) {}
 
-File* File::OpenOrDie(absl::string_view filename, absl::string_view mode) {
-  File* f = File::Open(filename, mode);
-  CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
+File* File::OpenOrDie(absl::string_view file_name, absl::string_view mode) {
+  File* f = File::Open(file_name, mode);
+  CHECK(f != nullptr) << absl::StrCat("Could not open '", file_name, "'");
   return f;
 }
 
-File* File::Open(absl::string_view filename, absl::string_view mode) {
-  std::string null_terminated_name = std::string(filename);
+File* File::Open(absl::string_view file_name, absl::string_view mode) {
+  std::string null_terminated_name = std::string(file_name);
   std::string null_terminated_mode = std::string(mode);
-  const Format format = GetFormatFromName(filename);
+#if defined(_MSC_VER)
+  if (null_terminated_mode == "r") {
+    null_terminated_mode = "rb";
+  } else if (null_terminated_mode == "w") {
+    null_terminated_mode = "wb";
+  }
+#endif
+  const Format format = GetFormatFromName(file_name);
   switch (format) {
     case Format::NORMAL_FILE: {
       FILE* c_file =
           fopen(null_terminated_name.c_str(), null_terminated_mode.c_str());
       if (c_file == nullptr) return nullptr;
-      return new CFile(c_file, filename);
+      return new CFile(c_file, file_name);
     }
     case Format::GZIP_FILE: {
       gzFile gz_file =
@@ -211,7 +218,7 @@ File* File::Open(absl::string_view filename, absl::string_view mode) {
       if (!gz_file) {
         return nullptr;
       }
-      return new GzFile(gz_file, filename);
+      return new GzFile(gz_file, file_name);
     }
   }
   return nullptr;
@@ -250,24 +257,24 @@ absl::string_view File::filename() const { return name_; }
 void File::Init() {}
 
 namespace file {
-absl::Status Open(absl::string_view filename, absl::string_view mode, File** f,
+absl::Status Open(absl::string_view file_name, absl::string_view mode, File** f,
                   Options options) {
   if (options == Defaults()) {
-    *f = File::Open(filename, mode);
+    *f = File::Open(file_name, mode);
     if (*f != nullptr) {
       return absl::OkStatus();
     }
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
-                      absl::StrCat("Could not open '", filename, "'"));
+                      absl::StrCat("Could not open '", file_name, "'"));
 }
 
-File* OpenOrDie(absl::string_view filename, absl::string_view mode,
+File* OpenOrDie(absl::string_view file_name, absl::string_view mode,
                 Options options) {
   File* f;
   CHECK_EQ(options, Defaults());
-  f = File::Open(filename, mode);
-  CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
+  f = File::Open(file_name, mode);
+  CHECK(f != nullptr) << absl::StrCat("Could not open '", file_name, "'");
   return f;
 }
 
@@ -281,14 +288,11 @@ absl::StatusOr<std::string> GetContents(absl::string_view path,
   return contents;
 }
 
-absl::Status GetContents(absl::string_view filename, std::string* output,
+absl::Status GetContents(absl::string_view file_name, std::string* output,
                          Options options) {
   File* file;
-#if defined(_MSC_VER)
-  auto status = file::Open(filename, "rb", &file, options);
-#else
-  auto status = file::Open(filename, "r", &file, options);
-#endif
+  // For windows, the "b" is added in file::Open.
+  auto status = file::Open(file_name, "r", &file, options);
   if (!status.ok()) return status;
 
   const int64_t size = file->Size();
@@ -300,7 +304,7 @@ absl::Status GetContents(absl::string_view filename, std::string* output,
   file->Close(options).IgnoreError();  // Even if ReadToString() fails!
 
   return absl::Status(absl::StatusCode::kInvalidArgument,
-                      absl::StrCat("Could not read from '", filename, "'."));
+                      absl::StrCat("Could not read from '", file_name, "'."));
 }
 
 absl::Status WriteString(File* file, absl::string_view contents,
@@ -314,22 +318,15 @@ absl::Status WriteString(File* file, absl::string_view contents,
       absl::StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-absl::Status SetContents(absl::string_view filename, absl::string_view contents,
+absl::Status SetContents(absl::string_view file_name, absl::string_view contents,
                          Options options) {
   File* file;
-#if defined(_MSC_VER)
-  auto status = file::Open(filename, "wb", &file, options);
-#else
-  auto status = file::Open(filename, "w", &file, options);
-#endif
+  // For windows, the "b" is added in file::Open.
+  auto status = file::Open(file_name, "w", &file, options);
   if (!status.ok()) return status;
   status = file::WriteString(file, contents, options);
   status.Update(file->Close(options));  // Even if WriteString() fails!
   return status;
-}
-
-bool ReadFileToString(absl::string_view file_name, std::string* output) {
-  return GetContents(file_name, output, file::Defaults()).ok();
 }
 
 namespace {
@@ -341,91 +338,86 @@ class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
 };
 }  // namespace
 
-bool ReadFileToProto(absl::string_view file_name,
-                     google::protobuf::Message* proto) {
-  std::string str;
-  if (!ReadFileToString(file_name, &str)) {
-    LOG(INFO) << "Could not read " << file_name;
-    return false;
-  }
-  // Attempt to decode ASCII before deciding binary. Do it in this order because
-  // it is much harder for a binary encoding to happen to be a valid ASCII
-  // encoding than the other way around. For instance "index: 1\n" is a valid
-  // (but nonsensical) binary encoding. We want to avoid printing errors for
-  // valid binary encodings if the ASCII parsing fails, and so specify a no-op
-  // error collector.
-  NoOpErrorCollector error_collector;
-  google::protobuf::TextFormat::Parser parser;
-  parser.RecordErrorsTo(&error_collector);
-  if (parser.ParseFromString(str, proto)) {
-    return true;
-  }
-  if (proto->ParseFromString(str)) {
-    return true;
-  }
-  // Re-parse the ASCII, just to show the diagnostics (we could also get them
-  // out of the ErrorCollector but this way is easier).
-  google::protobuf::TextFormat::ParseFromString(str, proto);
-  LOG(INFO) << "Could not parse contents of " << file_name;
-  return false;
-}
-
-bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           absl::string_view file_name) {
-  std::string proto_string;
-  return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
-         file::SetContents(file_name, proto_string, file::Defaults()).ok();
-}
-
-bool WriteProtoToFile(const google::protobuf::Message& proto,
-                      absl::string_view file_name) {
-  std::string proto_string;
-  return proto.AppendToString(&proto_string) &&
-         file::SetContents(file_name, proto_string, file::Defaults()).ok();
-}
-
-absl::Status GetTextProto(absl::string_view filename,
+absl::Status GetTextProto(absl::string_view file_name,
                           google::protobuf::Message* proto, Options options) {
   if (options == Defaults()) {
-    if (ReadFileToProto(filename, proto)) return absl::OkStatus();
+    std::string str;
+    if (!GetContents(file_name, &str, file::Defaults()).ok()) {
+      VLOG(1) << "Could not read '" << file_name << "'";
+      return absl::Status(
+          absl::StatusCode::kInvalidArgument,
+          absl::StrCat("Could not read proto from '", file_name, "'."));
+    }
+
+    // Attempt to decode ASCII before deciding binary. Do it in this order because
+    // it is much harder for a binary encoding to happen to be a valid ASCII
+    // encoding than the other way around. For instance "index: 1\n" is a valid
+    // (but nonsensical) binary encoding. We want to avoid printing errors for
+    // valid binary encodings if the ASCII parsing fails, and so specify a no-op
+    // error collector.
+    NoOpErrorCollector error_collector;
+    google::protobuf::TextFormat::Parser parser;
+    parser.RecordErrorsTo(&error_collector);
+
+    if (parser.ParseFromString(str, proto)) {  // Text format.
+      return absl::OkStatus();
+    }
+
+    if (proto->ParseFromString(str)) {  // Binary format.
+      return absl::OkStatus();
+    }
+
+    // Re-parse the ASCII, just to show the diagnostics (we could also get them
+    // out of the ErrorCollector but this way is easier).
+    google::protobuf::TextFormat::ParseFromString(str, proto);
+    VLOG(1) << "Could not parse contents of '" << file_name << "'";
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
-      absl::StrCat("Could not read proto from '", filename, "'."));
+      absl::StrCat("Could not read proto from '", file_name, "'."));
 }
 
-absl::Status SetTextProto(absl::string_view filename,
+absl::Status SetTextProto(absl::string_view file_name,
                           const google::protobuf::Message& proto,
                           Options options) {
   if (options == Defaults()) {
-    if (WriteProtoToASCIIFile(proto, filename)) return absl::OkStatus();
+    std::string proto_string;
+    if (google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
+        file::SetContents(file_name, proto_string, file::Defaults()).ok()) {
+      return absl::OkStatus();
+    }
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
-      absl::StrCat("Could not write proto to '", filename, "'."));
+      absl::StrCat("Could not write proto to '", file_name, "'."));
 }
 
-absl::Status GetBinaryProto(const absl::string_view filename,
+absl::Status GetBinaryProto(const absl::string_view file_name,
                             google::protobuf::Message* proto, Options options) {
   std::string str;
-  if (options == Defaults() && ReadFileToString(filename, &str) &&
+  if (options == Defaults() &&
+      GetContents(file_name, &str, file::Defaults()).ok() &&
       proto->ParseFromString(str)) {
     return absl::OkStatus();
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
-      absl::StrCat("Could not read proto from '", filename, "'."));
+      absl::StrCat("Could not read proto from '", file_name, "'."));
 }
 
-absl::Status SetBinaryProto(absl::string_view filename,
+absl::Status SetBinaryProto(absl::string_view file_name,
                             const google::protobuf::Message& proto,
                             Options options) {
   if (options == Defaults()) {
-    if (WriteProtoToFile(proto, filename)) return absl::OkStatus();
+    std::string proto_string;
+    if (proto.AppendToString(&proto_string) &&
+        file::SetContents(file_name, proto_string, file::Defaults()).ok()) {
+      return absl::OkStatus();
+    }
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
-      absl::StrCat("Could not write proto to '", filename, "'."));
+      absl::StrCat("Could not write proto to '", file_name, "'."));
 }
 
 absl::Status Delete(absl::string_view path, Options options) {
