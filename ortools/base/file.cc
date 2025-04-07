@@ -16,10 +16,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <bzlib.h>
 #if defined(USE_BZIP2)
-#include <zlib.h>
+#include <bzlib.h>
 #endif
+#include <zlib.h>
 
 #include <cstdint>
 #if defined(_MSC_VER)
