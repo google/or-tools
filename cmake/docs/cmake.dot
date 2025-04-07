@@ -34,6 +34,13 @@ digraph CMake {
         label = "madler/zlib.git + cmake patch";
       }
 
+      subgraph clusterBZIP2 {
+        BZip2 [label="BZip2::BZip2", color=royalblue];
+
+        color=royalblue;
+        label = "bzip2/bzip2.git + cmake patch";
+      }
+
       subgraph clusterAbsl {
         Absl [label="absl::absl_*", color=royalblue];
 
@@ -195,6 +202,7 @@ digraph CMake {
       PKG_CPP -> EX_CPP;
 
       ZLIB -> OR_SRC;
+      BZip2 -> OR_SRC;
       Absl -> OR_SRC;
       Protobuf -> OR_SRC;
       Re2 -> OR_SRC;

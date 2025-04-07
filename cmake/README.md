@@ -114,6 +114,7 @@ the option `-DBUILD_DEPS=ON` (`OFF` by default) or compile some of them using
 the options below (see [CMake Options](#cmake-options) below).
 
 *   zlib (`BUILD_ZLIB`),
+*   bzip2 (`BUILD_BZip2`),
 *   Google Abseil-cpp (`BUILD_absl`),
 *   Google Protobuf (`BUILD_Protobuf`),
 *   COIN-OR solvers:
@@ -196,6 +197,7 @@ cmake -S. -Bbuild -LH
 | | | |
 | `BUILD_DEPS` | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
 | `BUILD_ZLIB` | OFF* | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON` |
+| `BUILD_BZip2` | OFF* | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_absl` | OFF* | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_Protobuf` | OFF* | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
 | `BUILD_re2`  | OFF* | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |

@@ -516,8 +516,6 @@ bool AbslParseFlag(absl::string_view text,
     value = static_cast<ValueType>(larger_value);
   }
 
-  // TODO(user): We shouldn't crash in flag parsing.
-  // Validator should be re-tooled to return meaningful values.
   *out = StrongInt<TagType, ValueType, ValidatorType>(value);
   return true;
 }
@@ -693,6 +691,7 @@ StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
 // Numeric_limits override for strong int.
 namespace std {
 // Allow StrongInt to be used as a key to hashable containers.
+// NOLINTNEXTLINE(google3-runtime-std-hash-specialization)
 template <typename Tag, typename Value, typename Validator>
 struct hash<util_intops::StrongInt<Tag, Value, Validator>>
     : ::util_intops::StrongInt<Tag, Value, Validator>::Hasher {};

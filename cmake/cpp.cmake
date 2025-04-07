@@ -578,6 +578,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
+  BZip2::BZip2
   ${ABSL_DEPS}
   protobuf::libprotobuf
   ${RE2_DEPS}

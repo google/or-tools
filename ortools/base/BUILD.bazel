@@ -246,7 +246,6 @@ cc_library(
         "helpers.h",
         "options.h",
     ],
-    defines = ["USE_BZIP2"],
     deps = [
         ":status_macros",
         "@abseil-cpp//absl/log",

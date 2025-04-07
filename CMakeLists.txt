@@ -176,6 +176,10 @@ CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 
+CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
+message(STATUS "Build BZip2: ${BUILD_BZip2}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
