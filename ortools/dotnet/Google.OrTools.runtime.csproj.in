@@ -29,6 +29,9 @@
       $<@need_unix_zlib_lib@:;$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
       $<@need_windows_zlib_lib@:;$<TARGET_FILE:ZLIB::ZLIB>>
 
+      $<@need_unix_bzip2_lib@:;$<TARGET_SONAME_FILE:BZip2::BZip2>>
+      $<@need_windows_bzip2_lib@:;$<TARGET_FILE:BZip2::BZip2>>
+
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::base>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_optional_access>>

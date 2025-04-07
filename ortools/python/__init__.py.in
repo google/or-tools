@@ -57,7 +57,7 @@ def _load_ortools_libs():
         except:
             logger.error(f"ImportError: Cannot import WinDLL")
         else:
-            for dll in ["zlib1.dll",
+            for dll in ["zlib1.dll", "bz2.dll",
                         "abseil_dll.dll", "utf8_validity.dll", "re2.dll", "libprotobuf.dll",
                         "highs.dll", "libscip.dll",
                         "ortools.dll"]:

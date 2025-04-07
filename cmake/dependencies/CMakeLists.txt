@@ -80,6 +80,7 @@ if(BUILD_BZip2)
   message(CHECK_START "Fetching BZip2")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   set(ENABLE_LIB_ONLY ON)
+  set(ENABLE_TESTS OFF)
   FetchContent_Declare(
     BZip2
     GIT_REPOSITORY "https://gitlab.com/bzip2/bzip2.git"
