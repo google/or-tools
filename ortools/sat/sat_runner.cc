@@ -163,20 +163,23 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
               default:
                 break;
             }
-            std::string line;
-            for (int i = 0; i < num_variables; ++i) {
-              if (r.solution(i)) {
-                absl::StrAppend(&line, "x", i + 1, " ");
-              } else {
-                absl::StrAppend(&line, "-x", i + 1, " ");
+            if (r.status() == CpSolverStatus::OPTIMAL ||
+                r.status() == CpSolverStatus::FEASIBLE) {
+              std::string line;
+              for (int i = 0; i < num_variables; ++i) {
+                if (r.solution(i)) {
+                  absl::StrAppend(&line, "x", i + 1, " ");
+                } else {
+                  absl::StrAppend(&line, "-x", i + 1, " ");
+                }
+                if (line.size() >= 75) {
+                  std::cout << "v " << line << std::endl;
+                  line.clear();
+                }
               }
-              if (line.size() >= 75) {
+              if (!line.empty()) {
                 std::cout << "v " << line << std::endl;
-                line.clear();
               }
-            }
-            if (!line.empty()) {
-              std::cout << "v " << line << std::endl;
             }
           };
     }
