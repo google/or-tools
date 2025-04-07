@@ -726,13 +726,12 @@ TYPED_TEST(GenericGraphInterfaceTest, GraphWithNodesButNoArc) {
   EXPECT_EQ(ArcIndex(0), graph.num_arcs());
   int count = 0;
   for (const NodeIndex node : graph.AllNodes()) {
-    for (const __attribute__((unused)) ArcIndex arc :
-         graph.OutgoingArcs(node)) {
+    for ([[maybe_unused]] const ArcIndex arc : graph.OutgoingArcs(node)) {
       ++count;
     }
   }
   EXPECT_EQ(0, count);
-  for (const __attribute__((unused)) ArcIndex arc : graph.AllForwardArcs()) {
+  for ([[maybe_unused]] const ArcIndex arc : graph.AllForwardArcs()) {
     ++count;
   }
   EXPECT_EQ(0, count);
@@ -917,11 +916,7 @@ TEST(CompleteGraphTest, NonEmptyGraph) {
     for (const auto arc : graph.OutgoingArcs(node)) {
       EXPECT_EQ(node, graph.Tail(arc));
       ++count;
-      for (const auto arc_from_tail :
-           graph.OutgoingArcsStartingFrom(node, arc)) {
-        EXPECT_EQ(arc_from_tail, arc);
-        break;
-      }
+      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
     }
     EXPECT_EQ(kNumNodes, count);
     count = 0;
@@ -938,10 +933,7 @@ TEST(CompleteBipartiteGraphTest, EmptyGraph) {
   EXPECT_EQ(0, graph.num_nodes());
   EXPECT_EQ(0, graph.size());
   EXPECT_EQ(0, graph.num_arcs());
-  for (const auto arc : graph.AllForwardArcs()) {
-    EXPECT_TRUE(false);
-    EXPECT_TRUE(graph.IsArcValid(arc));
-  }
+  EXPECT_TRUE(graph.AllForwardArcs().empty());
 }
 
 TEST(CompleteBipartiteGraphTest, OneRightNodeGraph) {
@@ -978,11 +970,7 @@ TEST(CompleteBipartiteGraphTest, NonEmptyGraph) {
       EXPECT_EQ(node, graph.Tail(arc));
       EXPECT_EQ(kNumLeftNodes + count, graph.Head(arc));
       ++count;
-      for (const auto arc_from_tail :
-           graph.OutgoingArcsStartingFrom(node, arc)) {
-        EXPECT_EQ(arc_from_tail, arc);
-        break;
-      }
+      EXPECT_EQ(*(graph.OutgoingArcsStartingFrom(node, arc).begin()), arc);
     }
     EXPECT_EQ(node < kNumLeftNodes ? kNumRightNodes : 0, count);
     count = 0;
