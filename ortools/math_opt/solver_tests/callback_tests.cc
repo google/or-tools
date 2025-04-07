@@ -671,6 +671,9 @@ TEST_P(CallbackTest, EventSolutionFilter) {
 }
 
 TEST_P(CallbackTest, EventNodeCut) {
+  if (GetParam().solver_type == SolverType::kGscip) {
+    GTEST_SKIP() << "This test does not work with SCIP v900";
+  }
   if (!GetParam().supported_events.contains(CallbackEvent::kMipNode)) {
     GTEST_SKIP() << "Test skipped because this solver does not support "
                     "CallbackEvent::kMipNode.";

@@ -1099,6 +1099,9 @@ TEST_P(LargeInstanceIpParameterTest, IterationLimit) {
 }
 
 TEST_P(LargeInstanceIpParameterTest, NodeLimit) {
+  if (GetParam().solver_type == SolverType::kHighs) {
+    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns unimplemented";
+  }
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Model> model, Load23588());
   SolveParameters params = GetParam().base_parameters;
   params.node_limit = 1;
@@ -1219,6 +1222,9 @@ TEST_P(LargeInstanceIpParameterTest, BestBoundLimit) {
 }
 
 TEST_P(LargeInstanceIpParameterTest, SolutionLimit) {
+  if (GetParam().solver_type == SolverType::kHighs) {
+    GTEST_SKIP() << "Ignoring this test as Highs 1.7+ returns unimplemented";
+  }
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Model> model, Load23588());
   SolveParameters params = GetParam().base_parameters;
   params.solution_limit = 1;
