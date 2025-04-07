@@ -133,6 +133,7 @@ TEST(RelativeGapLimitTest, BooleanLinearOptimizationProblem) {
 
   Model model;
   SatParameters params;
+  params.set_num_workers(1);
   params.set_relative_gap_limit(1e10);  // Should stop at the first solution!
 
   int num_solutions = 0;

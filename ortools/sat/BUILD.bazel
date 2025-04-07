@@ -3903,7 +3903,7 @@ cc_binary(
         "//ortools/base:file",
         "//ortools/base:path",
         "//ortools/util:file_util",
-        "//ortools/util:filelineiter",
+        "//ortools/util:logging",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
