@@ -16,10 +16,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <bzlib.h>
 #if defined(USE_BZIP2)
-#include <zlib.h>
+#include <bzlib.h>
 #endif
+#include <zlib.h>
 
 #include <cstdint>
 #if defined(_MSC_VER)
@@ -143,10 +143,10 @@ class GzFile : public File {
      delete this;
      return status;
    }
- 
+
    // Flushes buffer.
    bool Flush() override { return gzflush(f_, Z_FINISH) == Z_OK; }
- 
+
    // Returns file size.
    size_t Size() override {
     gzFile file;
@@ -186,7 +186,7 @@ class GzFile : public File {
    }
 
    bool Open() const override { return f_ != nullptr; }
- 
+
   private:
    gzFile f_;
  };
@@ -196,17 +196,17 @@ class GzFile : public File {
   public:
   Bz2File(BZFILE* bz_file, absl::string_view name) : File(name), f_(bz_file) {}
    virtual ~Bz2File() = default;
- 
+
    // Reads "size" bytes to buf from file, buf should be pre-allocated.
    size_t Read(void* buf, size_t size) override {
      return BZ2_bzread(f_, buf, size);
    }
- 
+
    // Writes "size" bytes of buf to file, buf should be pre-allocated.
    size_t Write(const void* buf, size_t size) override {
      return BZ2_bzwrite(f_, const_cast<void*>(buf), size);
    }
- 
+
    // Closes the file and delete the underlying FILE* descriptor.
    absl::Status Close(int flags) override {
      absl::Status status;
@@ -218,10 +218,10 @@ class GzFile : public File {
      delete this;
      return absl::OkStatus();
    }
- 
+
    // Flushes buffer.
    bool Flush() override { return BZ2_bzflush(f_) == 0; }
- 
+
    // Returns file size.
    size_t Size() override {
     BZFILE* file;
@@ -249,14 +249,14 @@ class GzFile : public File {
     BZ2_bzclose(file);
     return uncompressed_size;
    }
- 
+
    bool Open() const override { return f_ != nullptr; }
- 
+
   private:
    BZFILE* f_;
  };
  #endif  // USE_BZIP2
- 
+
 }  // namespace
 
 File::File(absl::string_view name) : name_(name) {}
