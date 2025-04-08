@@ -311,6 +311,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
     simplex_params_.set_change_status_to_imprecise(false);
   }
   simplex_.SetParameters(simplex_params_);
+  // Warning: SetRandom() must be called after SetParameters().
+  simplex_.SetRandom(*random_);
   if (parameters_.search_branching() == SatParameters::LP_SEARCH) {
     compute_reduced_cost_averages_ = true;
   }
@@ -2156,6 +2158,7 @@ bool LinearProgrammingConstraint::Propagate() {
   }
 
   simplex_.SetParameters(simplex_params_);
+  simplex_.SetRandom(*random_);
   if (!SolveLp()) return true;
   if (!AnalyzeLp()) return false;
 

@@ -939,10 +939,6 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
             start_min_1 >= start_min_2 + duration_min_2) {
           return;
         }
-        if (ignore_zero_size_intervals &&
-            (duration_min_1 <= 0 || duration_min_2 <= 0)) {
-          return;
-        }
         const IntegerValue coeff_1 = duration_min_1 + start_min_1 - start_min_2;
         const IntegerValue coeff_2 = duration_min_2 + start_min_2 - start_min_1;
         const IntegerValue rhs = duration_min_1 * duration_min_2 +
@@ -967,6 +963,11 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
 
       // Encode only the interesting pairs.
       if (e1.demand_min + e2.demand_min <= capacity_max) continue;
+
+      if (ignore_zero_size_intervals &&
+          (e1.size_min <= 0 || e2.size_min <= 0)) {
+        continue;
+      }
 
       const bool interval_1_can_precede_2 = e1.end_min <= e2.start_max;
       const bool interval_2_can_precede_1 = e2.end_min <= e1.start_max;

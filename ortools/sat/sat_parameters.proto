@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 321
+// NEXT TAG: 322
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -878,6 +878,21 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_disjunctive_constraint_in_cumulative = 80 [default = true];
+
+  // If less than this number of boxes are present in a no-overlap 2d, we
+  // create 4 Booleans per pair of boxes:
+  // - Box 2 is after Box 1 on x.
+  // - Box 1 is after Box 2 on x.
+  // - Box 2 is after Box 1 on y.
+  // - Box 1 is after Box 2 on y.
+  //
+  // Note that at least one of them must be true, and at most one on x and one
+  // on y can be true.
+  //
+  // This can significantly help in closing small problem. The SAT reasoning
+  // can be a lot more powerful when we take decision on such positional
+  // relations.
+  optional int32 no_overlap_2d_boolean_relations_limit = 321 [default = 10];
 
   // When this is true, the no_overlap_2d constraint is reinforced with
   // propagators from the cumulative constraints. It consists of ignoring the

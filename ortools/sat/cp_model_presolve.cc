@@ -6655,7 +6655,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       const int interval = proto->intervals(i);
       const LinearExpressionProto& demand_expr = proto->demands(i);
       if (context_->ConstraintIsOptional(interval)) continue;
-      if (context_->SizeMin(interval) == 0) continue;
+      if (context_->SizeMin(interval) <= 0) continue;
       bool domain_changed = false;
       if (!context_->IntersectDomainWith(demand_expr, {0, capacity_max},
                                          &domain_changed)) {
