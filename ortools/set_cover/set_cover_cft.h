@@ -26,75 +26,146 @@
 
 namespace operations_research::scp {
 
+// Implementation of:
+// Caprara, Alberto, Matteo Fischetti, and Paolo Toth. 1999. “A Heuristic
+// Method for the Set Covering Problem.” Operations Research 47 (5): 730–43.
+// https://www.jstor.org/stable/223097
+//
+// Hereafter referred to as CFT.
+//
+// SUMMARY
+// The CFT algorithm is a heuristic approach to the set-covering problem. At its
+// core, it combines a primal greedy heuristic with dual information obtained
+// from the optimization of the Lagrangian relaxation of the problem.
+//
+// STRUCTURE
+// The core of the algorithm is the 3Phase:
+// 1. Subgradient optimization of the Lagrangian relaxation.
+// 2. A primal greedy heuristic guided by the dual information.
+// 3. Fixing some of the "best" columns (in terms of reduced costs) into the
+//    solution (diving).
+// + Repeat until an exit criterion is met.
+//
+// The paper also considers an optional outer loop, which invokes the 3Phase
+// process and then fixes some columns from the current best solution. This
+// introduces two levels of diving: the outer loop fixes "primal-good" columns
+// (based on the best solution), while the inner loop fixes "dual-good" columns
+// (based on reduced costs).
+// NOTE: The outer loop is not implemented in this version (yet - April 2025).
+//
+// Key characteristics of the algorithm:
+//
+// - The CFT algorithm is tailored for instances where the number of columns is
+//   significantly larger than the number of rows.
+//
+// - To improve efficiency, a core model approach is used. This involves
+//   selecting a small subset of columns based on their reduced costs, thereby
+//   substantially reducing the problem size handled in the internal steps.
+//
+// - Due to the use of the core model and column fixing, the algorithm rarely
+//   considers the entire problem. Instead, it operates on a small "window" of
+//   the problem. Efficiently managing this small window is a central aspect of
+//   any CFT implementation.
+//
+// - The core model scheme also enables an alternative implementation where the
+//   algorithm starts with a small model and progressively adds columns through
+//   a column-generation procedure. While this column generation procedure is
+//   problem-dependent and cannot be implemented here, the architecture of this
+//   implementation is designed to be extensible, allowing for such a procedure
+//   to be added in the future.
+//
+
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
-using ElementMappingVector =
-    util_intops::StrongVector<ElementIndex, ElementIndex>;
-using SubsetMappingVector = util_intops::StrongVector<SubsetIndex, SubsetIndex>;
+
+// TODO(anyone): since we are working within the scp namespace, the "SetCover*"
+// prefix became redundant and can be removed. For now, only redefine it
+// locally.
 using Model = SetCoverModel;
 
+// When a sub-model is created, indicies are compacted to be consecutive and
+// strarting from 0 (to reduce memory usage). Core ElementIndex to original
+// ElementIndex mappings are stored to translate back to the original model
+// space.
+using ElementMappingVector =
+    util_intops::StrongVector<ElementIndex, ElementIndex>;
+
+// The same applies to SubsetIndex, which also needs to be mapped back to the
+// original indexing space.
+using SubsetMappingVector = util_intops::StrongVector<SubsetIndex, SubsetIndex>;
+
 // Forward declarations, see below for the definition of the classes.
-class SubModelView;
-class SubModel;
-
-// The CFT algorithm generates sub-models in two distinct ways:
-//
-// 1. This approach incrementally fixes specific columns into the
-// solution. Once a column is fixed, it is excluded from future decisions, as it
-// is already part of the solution. Additionally, rows that are covered by the
-// fixed columns are removed from consideration as well, along with any columns
-// that exclusively cover those rows, as they become redundant. The fixing
-// process starts with the entire model and progressively fixes more columns
-// until the model becomes empty. This method is well-suited for a "view-based"
-// approach, which avoids duplicating data and minimizes memory usage.
-//
-// 2. This method creates a "core" sub-model by focusing on a
-// subset of columns and optionally a subset of rows. The core model is derived
-// from the original model but is significantly smaller, as it typically
-// includes only a limited number of columns per row (on average, around six
-// columns per row). Unlike the incremental nature of `FixingModel`, core models
-// are constructed from scratch during each update. This type of small model can
-// probably take advantage of the `SubModel` class, which stores the sub-modle
-// explicitly in memory, avoiding looping over "inactive" columns and rows.
-// Both SubModelView (lightweight but potentially slower) and SubModel (heavier
-// but faster) can be used as a core model.
-// using CoreModel = SubModelView;
-using CoreModel = SubModel;
-
 struct PrimalDualState;
 struct Solution;
 
-// The SubModelView abstraction provides a mechanism to interact with a subset
-// of the rows and columns of a SetCoverModel, effectively creating a filtered
-// view of the model. This abstraction allows operations to be performed on a
-// restricted portion of the model without modifying the original data
-// structure.
+// The CFT algorithm generates sub-models in two distinct ways:
 //
-// The filtering is achieved using index lists and boolean vectors, which define
-// the active rows and columns. These filters are applied dynamically, meaning
-// that the views are constructed on-the-fly as needed, based on the provided
-// indices and flags. This approach ensures flexibility and avoids unnecessary
-// duplication of data.
+// 1. It fixes specific columns (incrementally) into any generated solution.
+//    Once a column is fixed, it is excluded from future decisions, as it is
+//    already part of the solution. Additionally, rows that are covered by the
+//    fixed columns are removed from consideration as well, along with any
+//    columns that exclusively cover those rows, as they become redundant. The
+//    fixing process starts with the entire model and progressively fixes more
+//    columns until it becomes empty. A "view-based" sub-model is well-suited
+//    for this part.
 //
-// To optimize performance, all the underneath views handle explicitly the
-// "identity view" case (where no filtering is applied, and the view represents
-// the entire model). In this scenario, explicit boolean flags
-// (`col_view_is_valid_` and `row_view_is_valid_`) are used to indicate that the
-// views are unfiltered. This allows the compiler to optimize operations by
-// treating the identity view as a special case, enabling techniques like loop
-// hoisting.
+// 2. The CFT mostly works on a "core" sub-model by focusing on a subset of
+//    columns. The core model is derived from the original model but is
+//    significantly smaller, as it typically includes only a limited number of
+//    columns per row (on average, around six columns per row). Unlike the
+//    incremental nature of column fixing, core models are constructed from
+//    scratch during each update. This type of small model can take advantage of
+//    a Model object which stores the sub-model explicitly in memory, avoiding
+//    looping over "inactive" columns and rows. Both SubModelView and CoreModel
+//    can be used as a core model.
+//
+// Two types of "core-model" representations are implemented, both of which can
+// be used interchangeably:
+//
+// 1. SubModelView: A lightweight view of the original model. It dynamically
+//    filters and exposes only the active rows and columns from the original
+//    data structures, skipping "inactive" items.
+//
+// 2. CoreModel: A fully compacted and explicit representation of a sub-model.
+//    It stores the filtered data explicitly, making it more suitable
+//    for scenarios where compact storage and faster access are required.
+//
+// While CoreModel stores an explicit representation of the sub-model,
+// SubModelView maintains vectors sized according to the original model's
+// dimensions. As a result, depending on the dimensions of the original model,
+// CoreModel can actually be more memory-efficient.
+class SubModelView;
+class CoreModel;
+using SubModel = CoreModel;
+
+// `SubModelView` provides a mechanism to interact with a subset of the rows and
+// columns of a SetCoverModel, effectively creating a filtered view of the
+// model. This abstraction allows operations to be performed on a restricted
+// portion of the model without modifying the original data structure. The
+// filtering is achieved using index lists and sizes vectors, which define the
+// active rows and columns. This approach ensures flexibility and avoids
+// unnecessary duplication of data. Columns/rows sizes are uses to both keep
+// track of the number of elements in them and also provide the "activation"
+// status: (item size == 0) <==> inactive
+// SubModelView inherits from IndexListSubModelView, which provides the "view"
+// machinery.
 class SubModelView : public IndexListSubModelView {
- public:
   using base_view = IndexListSubModelView;
+
+ public:
+  // Empty initialization to facilitate delayed construction
   SubModelView() = default;
+
+  // Identity sub-model: all items are considered
   SubModelView(const Model* model);
+
+  // Focus construction: create a sub-model with only the required items
   SubModelView(const Model* model,
                const std::vector<SubsetIndex>& columns_focus,
                const ElementBoolVector& rows_flags = {});
 
   virtual ~SubModelView() = default;
-  const Model& full_model() const { return *full_model_; }
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
@@ -106,34 +177,45 @@ class SubModelView : public IndexListSubModelView {
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
-  void MakeIdentityColumnsView();
-  void MakeIdentityRowsView();
-
+  // Pointer to the original model
   const Model* full_model_;
+
+  // Columns/rows sizes after filtering (size==0 <==> inactive)
   SubsetToIntVector cols_sizes_;
   ElementToIntVector rows_sizes_;
 
+  // List of columns/rows currectly active
   std::vector<SubsetIndex> cols_focus_;
   std::vector<ElementIndex> rows_focus_;
 
+  // Fixing data
   std::vector<SubsetIndex> fixed_columns_;
   Cost fixed_cost_ = .0;
 };
 
-// SumModel represent a subset of the original model excplicitly storing the
-// mappend indices in a SetCoverModel object.
-class SubModel : Model {
+// CoreModel stores a subset of the filtered columns and rows in an explicit
+// Model object.
+// The indices are compacted and mapped to the range [0, <sub-model-size>],
+// effectively creating a smaller set-covering model. Similar to SubModelView,
+// the core model supports column fixing and focusing on a subset of the
+// original model. Mappings are maintained to translate indices back to the
+// original model space.
+class CoreModel : private Model {
  public:
-  SubModel() = default;
-  SubModel(const Model* model);
-  SubModel(const Model* model, const std::vector<SubsetIndex>& columns_focus,
-           const ElementBoolVector& rows_flags = {});
-  virtual ~SubModel() = default;
+  // Empty initialization to facilitate delayed construction
+  CoreModel() = default;
+
+  // Identity sub-model: all items are considered
+  CoreModel(const Model* model);
+
+  // Focus construction: create a sub-model with only the required items
+  CoreModel(const Model* model, const std::vector<SubsetIndex>& columns_focus,
+            const ElementBoolVector& rows_flags = {});
+  virtual ~CoreModel() = default;
 
   // Member function relevant for the CFT inherited from Model
   using Model::columns;
   using Model::ElementRange;
-
   using Model::rows;
   using Model::subset_costs;
   using Model::SubsetRange;
@@ -144,12 +226,18 @@ class SubModel : Model {
   BaseInt num_focus_subsets() const { return Model::num_subsets(); }
   BaseInt num_focus_elements() const { return Model::num_elements(); }
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
+    DCHECK(core2full_row_map_[core_i] != null_element_index);
     return core2full_row_map_[core_i];
   }
   ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
+    DCHECK(full2core_row_map_[full_i] != null_element_index);
     return full2core_row_map_[full_i];
   }
   SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
+    DCHECK(core2full_col_map_[core_j] != null_subset_index);
     return core2full_col_map_[core_j];
   }
 
@@ -164,25 +252,27 @@ class SubModel : Model {
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
+  // Pointer to the original model
+  const Model* full_model_;
+
+  ElementMappingVector full2core_row_map_;
+  ElementMappingVector core2full_row_map_;
+  SubsetMappingVector core2full_col_map_;
+
+  // Fixing data
+  Cost fixed_cost_ = .0;
+  std::vector<SubsetIndex> fixed_columns_;
+
   static constexpr SubsetIndex null_subset_index =
       std::numeric_limits<SubsetIndex>::max();
   static constexpr ElementIndex null_element_index =
       std::numeric_limits<ElementIndex>::max();
-
-  const Model* full_model_;
-  ElementMappingVector core2full_row_map_;
-  ElementMappingVector full2core_row_map_;
-  SubsetMappingVector core2full_col_map_;
-
-  Cost fixed_cost_ = .0;
-  std::vector<SubsetIndex> fixed_columns_;
 };
 
 class Solution {
  public:
   Solution() = default;
-  Solution(const CoreModel& model,
-           const std::vector<SubsetIndex>& core_subsets);
+  Solution(const SubModel& model, const std::vector<SubsetIndex>& core_subsets);
 
   double cost() const { return cost_; }
   const std::vector<SubsetIndex>& subsets() const { return subsets_; }
@@ -282,7 +372,7 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
 ///////////////////////////////////////////////////////////////////////
 
 struct SubgradientContext {
-  const CoreModel& model;
+  const SubModel& model;
   const DualState& current_dual_state;
   const DualState& best_dual_state;
   const Solution& best_solution;
@@ -295,7 +385,7 @@ class SubgradientCBs {
   virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(CoreModel&, PrimalDualState&) = 0;
+  virtual bool UpdateCoreModel(SubModel&, PrimalDualState&) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
@@ -303,14 +393,14 @@ class BoundCBs : public SubgradientCBs {
  public:
   static constexpr Cost kTol = 1e-6;
 
-  BoundCBs(const CoreModel& model);
+  BoundCBs(const SubModel& model);
   Cost step_size() const { return step_size_; }
   bool ExitCondition(const SubgradientContext& context) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override {}
-  bool UpdateCoreModel(CoreModel& core_model,
+  bool UpdateCoreModel(SubModel& core_model,
                        PrimalDualState& best_state) override;
 
  private:
@@ -338,7 +428,7 @@ class BoundCBs : public SubgradientCBs {
   BaseInt step_size_update_period_;
 };
 
-void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
+void SubgradientOptimization(SubModel& core_model, SubgradientCBs& cbs,
                              PrimalDualState& best_state);
 
 ////////////////////////////////////////////////////////////////////////
@@ -346,10 +436,10 @@ void SubgradientOptimization(CoreModel& core_model, SubgradientCBs& cbs,
 ////////////////////////////////////////////////////////////////////////
 
 Solution RunMultiplierBasedGreedy(
-    const CoreModel& model, const DualState& dual_state,
+    const SubModel& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
 
-Cost CoverGreedly(const CoreModel& model, const DualState& dual_state,
+Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt size_cutoff,
                   std::vector<SubsetIndex>& sol_subsets);
 
@@ -371,7 +461,7 @@ class HeuristicCBs : public SubgradientCBs {
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(CoreModel& model, PrimalDualState& state) override {
+  bool UpdateCoreModel(SubModel& model, PrimalDualState& state) override {
     return false;
   }
 
@@ -381,14 +471,14 @@ class HeuristicCBs : public SubgradientCBs {
 };
 
 absl::StatusOr<PrimalDualState> RunThreePhase(
-    CoreModel& model, const Solution& init_solution = {});
+    SubModel& model, const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-class FullToCoreModel : public CoreModel {
-  using base = CoreModel;
+class FullToCoreModel : public SubModel {
+  using base = SubModel;
   struct UpdateTrigger {
     BaseInt countdown;
     BaseInt period;

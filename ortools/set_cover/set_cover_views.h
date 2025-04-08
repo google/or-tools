@@ -353,6 +353,7 @@ class IndexListSubModelView {
         cols_focus_(cols_focus),
         rows_focus_(rows_focus) {}
 
+  const SetCoverModel& full_model() const { return *model_; }
   BaseInt num_subsets() const { return model_->num_subsets(); }
   BaseInt num_elements() const { return model_->num_elements(); }
   BaseInt num_focus_subsets() const { return cols_focus_->size(); }
@@ -379,12 +380,15 @@ class IndexListSubModelView {
   const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
   const std::vector<ElementIndex>& ElementRange() const { return *rows_focus_; }
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
     return core_i;
   }
   ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
     return full_i;
   }
   SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
     return core_j;
   }
 
@@ -412,6 +416,7 @@ class FilteredSubModelView {
         subset_range_(model_->SubsetRange()),
         element_range_(model_->ElementRange()) {}
 
+  const SetCoverModel& full_model() const { return *model_; }
   BaseInt num_subsets() const { return model_->num_subsets(); }
   BaseInt num_elements() const { return model_->num_elements(); }
   BaseInt num_focus_subsets() const { return num_subsets_; }
@@ -445,12 +450,15 @@ class FilteredSubModelView {
     return ValueFilterView(&element_range_, rows_sizes_, num_elements_);
   }
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
     return core_i;
   }
   ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
+    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
     return full_i;
   }
   SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
     return core_j;
   }
 
@@ -464,9 +472,9 @@ class FilteredSubModelView {
   // Views only accept pointers (to avoid passing temporaries), so ranges have
   // to be stored somewhere where their lifetime is longer that the range-view
   // returned.
-  // Note that an alternative would see a specialization of the basic view types
-  // defined above, but that would introduce evon more boilerplate and code
-  // duplication.
+  // Note that an alternative would see a specialization of the basic view
+  // types defined above, but that would introduce evon more boilerplate and
+  // code duplication.
   ::operations_research::SubsetRange subset_range_;
   ::operations_research::ElementRange element_range_;
 };
