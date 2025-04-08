@@ -97,7 +97,9 @@ constexpr const uint64_t kDeterministicSeed = 42;
 
 namespace {
 
-bool UseAbslRandom() { return false; }
+bool UseAbslRandom(const GlopParameters& parameters) {
+  return parameters.use_absl_random();
+}
 
 }  // namespace
 
@@ -108,8 +110,7 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
-      random_(UseAbslRandom() ? absl::BitGenRef(absl_random_)
-                              : absl::BitGenRef(deterministic_random_)),
+      random_(absl::BitGenRef(deterministic_random_)),
       basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_),
       primal_edge_norms_(compact_matrix_, variables_info_,
@@ -876,7 +877,7 @@ void RevisedSimplex::UpdateBasis(ColIndex entering_col, RowIndex basis_row,
   DCHECK(variables_info_.GetIsBasicBitRow().IsSet(leaving_col));
 
   // Make leaving_col leave the basis and update relevant data.
-  // Note thate the leaving variable value is not necessarily at its exact
+  // Note that the leaving variable value is not necessarily at its exact
   // bound, which is like a bound shift.
   variables_info_.UpdateToNonBasicStatus(leaving_col, leaving_variable_status);
   DCHECK(leaving_variable_status == VariableStatus::AT_UPPER_BOUND ||
@@ -3678,10 +3679,21 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
   return objective_scaling_factor_ * (sum + objective_offset_);
 }
 
+void RevisedSimplex::SetRandom(absl::BitGenRef random) {
+  random_ = random;
+  dual_prices_.SetRandom(random_);
+  entering_variable_.SetRandom(random_);
+  reduced_costs_.SetRandom(random_);
+  primal_prices_.SetRandom(random_);
+}
+
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
   deterministic_random_.seed(parameters.random_seed());
   absl_random_ = absl::BitGen(absl::SeedSeq({parameters.random_seed()}));
+  SetRandom((UseAbslRandom(parameters)
+                 ? absl::BitGenRef(absl_random_)
+                 : absl::BitGenRef(deterministic_random_)));
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();
@@ -3911,7 +3923,7 @@ void RevisedSimplex::ComputeBasicVariablesForState(
 
 void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
   if (VLOG_IS_ON(3)) {
-    // This function has a complexity in O(num_non_zeros_in_matrix).
+    variable_name_.resize(num_cols_, "");
     DisplayInfoOnVariables();
 
     std::string output = "z = " + StringifyWithFlags(ComputeObjectiveValue());
@@ -3944,10 +3956,11 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
   }
 }
 
-void RevisedSimplex::DisplayProblem() const {
+void RevisedSimplex::DisplayProblem() {
   // This function has a complexity in O(num_rows * num_cols *
   // num_non_zeros_in_row).
   if (VLOG_IS_ON(3)) {
+    variable_name_.resize(num_cols_, "");
     DisplayInfoOnVariables();
     std::string output = "min: ";
     bool has_objective = false;
