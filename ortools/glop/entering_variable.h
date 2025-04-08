@@ -74,12 +74,14 @@ class EnteringVariable {
   // Sets the parameters.
   void SetParameters(const GlopParameters& parameters);
 
+  void SetRandom(absl::BitGenRef random) { random_ = random; }
+
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
 
   // Deterministic time used by some of the functions of this class.
   //
-  // TODO(user): Be exhausitive and more precise.
+  // TODO(user): Be exhaustive and more precise.
   double DeterministicTime() const {
     return DeterministicTimeForFpOperations(num_operations_);
   }
