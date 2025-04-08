@@ -1051,7 +1051,7 @@ int64_t CompiledIntModConstraint::ComputeViolation(
                      std::abs(rhs) + std::abs(mod_value - target_value)});
   } else {
     // Different signs.
-    // We use the sum of the absolute value to have a better gradiant.
+    // We use the sum of the absolute value to have a better gradient.
     // We could also use the min of target_move and the expr_move.
     return std::abs(target_value) + std::abs(expr_value);
   }
