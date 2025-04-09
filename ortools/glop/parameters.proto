@@ -405,9 +405,6 @@ message GlopParameters {
   optional int32 random_seed = 43 [default = 1];
 
   // Whether to use absl::BitGen instead of MTRandom.
-  // MOE:begin_strip
-  // Note that in unit tests if this field is not explicitly set it will be
-  // default to true. MOE:end_strip
   optional bool use_absl_random = 72 [default = false];
 
   // Number of threads in the OMP parallel sections. If left to 1, the code will
