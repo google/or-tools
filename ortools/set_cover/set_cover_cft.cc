@@ -657,8 +657,8 @@ class GreedyScores {
         score_map_(model.num_subsets()) {
     BaseInt s = 0;
     for (SubsetIndex j : model.SubsetRange()) {
-      DCHECK(!model.columns()[j].empty());
-      covering_counts_[j] = model.columns()[j].size();
+      DCHECK(model.column_size(j) > 0);
+      covering_counts_[j] = model.column_size(j);
       Cost j_score = ComputeScore(reduced_costs_[j], covering_counts_[j]);
       scores_.push_back({j_score, j});
       score_map_[j] = s++;
@@ -939,6 +939,20 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
 //////////////////////// THREE PHASE ALGORITHM ////////////////////////
 ///////////////////////////////////////////////////////////////////////
 namespace {
+
+DualState MakeTentativeDualState(const SubModel& model) {
+  DualState tentative_dual_state(model);
+  tentative_dual_state.DualUpdate(
+      model, [&](ElementIndex i, Cost& i_multiplier) {
+        i_multiplier = std::numeric_limits<Cost>::max();
+        for (SubsetIndex j : model.rows()[i]) {
+          Cost candidate = model.subset_costs()[j] / model.column_size(j);
+          i_multiplier = std::min(i_multiplier, candidate);
+        }
+      });
+  return tentative_dual_state;
+}
+
 void FixBestColumns(SubModel& model, PrimalDualState& state) {
   auto& [best_sol, dual_state] = state;
 
@@ -1030,7 +1044,7 @@ absl::StatusOr<PrimalDualState> RunThreePhase(SubModel& model,
   RETURN_IF_ERROR(ValidateSubModel(model));
 
   PrimalDualState best_state = {.solution = init_solution,
-                                .dual_state = DualState(model)};
+                                .dual_state = MakeTentativeDualState(model)};
   if (best_state.solution.Empty()) {
     best_state.solution =
         RunMultiplierBasedGreedy(model, best_state.dual_state);

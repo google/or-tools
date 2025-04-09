@@ -359,16 +359,10 @@ class DualState {
  public:
   template <typename SubModelT>
   DualState(const SubModelT& model)
-      : lower_bound_(),
-        multipliers_(model.num_elements(), std::numeric_limits<Cost>::max()),
-        reduced_costs_() {
-    DualUpdate(model, [&](ElementIndex i, Cost& i_multiplier) {
-      for (SubsetIndex j : model.rows()[i]) {
-        Cost candidate = model.subset_costs()[j] / model.columns()[j].size();
-        i_multiplier = std::min(i_multiplier, candidate);
-      }
-    });
-  }
+      : lower_bound_(.0),
+        multipliers_(model.num_elements(), .0),
+        reduced_costs_(model.subset_costs().begin(),
+                       model.subset_costs().end()) {}
 
   Cost lower_bound() const { return lower_bound_; }
   const ElementCostVector& multipliers() const { return multipliers_; }
