@@ -317,6 +317,11 @@ CoreModel::CoreModel(const Model* model)
       full2core_row_map_(model->num_elements()),
       core2full_col_map_(model->num_subsets()) {
   DCHECK(full_model_ != nullptr);
+  CHECK(ElementIndex(full_model_->num_elements()) < null_element_index)
+      << "Max element index is reserved.";
+  CHECK(SubsetIndex(full_model_->num_subsets()) < null_subset_index)
+      << "Max subset index is reserved.";
+
   absl::c_iota(core2full_row_map_, ElementIndex());
   absl::c_iota(full2core_row_map_, ElementIndex());
   absl::c_iota(core2full_col_map_, SubsetIndex());
@@ -327,6 +332,11 @@ CoreModel::CoreModel(const Model* model,
                      const ElementBoolVector& rows_flags)
     : Model(), full_model_(model), full2core_row_map_(model->num_elements()) {
   DCHECK(full_model_ != nullptr);
+  CHECK(ElementIndex(full_model_->num_elements()) < null_element_index)
+      << "Max element index is reserved.";
+  CHECK(SubsetIndex(full_model_->num_subsets()) < null_subset_index)
+      << "Max subset index is reserved.";
+
   absl::c_iota(full2core_row_map_, ElementIndex());
   SetFocus(columns_focus, rows_flags);
 }
@@ -392,6 +402,7 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   for (SubsetIndex old_core_j : columns_to_fix) {
     fixed_cost_ += subset_costs()[old_core_j];
     fixed_columns_.push_back(core2full_col_map_[old_core_j]);
+
     core2full_col_map_[old_core_j] = null_subset_index;
     for (ElementIndex old_core_i : columns()[old_core_j]) {
       core2full_row_map_[old_core_i] = null_element_index;
@@ -417,11 +428,6 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
     // If the column is not marked, then it should be mapped.
     SubsetIndex full_j = core2full_col_map_[old_core_j];
     if (full_j != null_subset_index) {
-      // Put the full index in the proper (new) position.
-      // Note that old_core_j >= new_core_j is always true.
-      SubsetIndex new_j(new_core_j++);
-      core2full_col_map_[new_j] = full_j;
-
       bool first_row = true;
       // Loop over the old core column (with old core row indices).
       for (ElementIndex old_core_i : columns()[old_core_j]) {
@@ -432,6 +438,11 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
             // SetCoverModel lacks a way to remove columns
             first_row = false;
             new_submodel.AddEmptySubset(full_model_->subset_costs()[full_j]);
+
+            // Put the full index in the proper (new) position.
+            // Note that old_core_j >= new_core_j is always true.
+            SubsetIndex new_j(new_core_j++);
+            core2full_col_map_[new_j] = full_j;
           }
           ElementIndex new_core_i = full2core_row_map_[full_i];
           DCHECK(new_core_i != null_element_index);
@@ -983,8 +994,8 @@ void FixBestColumns(SubModel& model, PrimalDualState& state) {
   });
 
   // Ensure at least a minimum number of columns are fixed
-  BaseInt fix_at_least = cols_to_fix.size() +
-                         std::max<BaseInt>(1, model.num_focus_elements() / 200);
+  BaseInt fix_at_least =
+      cols_to_fix.size() + std::max<BaseInt>(1, model.num_elements() / 200);
   CoverGreedly(model, state.dual_state, std::numeric_limits<Cost>::max(),
                fix_at_least, cols_to_fix);
 
@@ -1078,17 +1089,21 @@ absl::StatusOr<PrimalDualState> RunThreePhase(SubModel& model,
     std::cout << "\nHeuristic Phase:\n";
     SubgradientOptimization(model, heuristic_cbs, curr_state);
     if (curr_state.solution.cost() < best_state.solution.cost()) {
-      best_state = curr_state;
+      best_state.solution = curr_state.solution;
     }
 
     std::cout << "\n3Phase Bounds: Lower "
-              << curr_state.dual_state.lower_bound() << ", Upper "
-              << curr_state.solution.cost() << '\n';
+              << best_state.dual_state.lower_bound() << ", Upper "
+              << best_state.solution.cost() << '\n';
 
     // Phase 3: Fix the best columns (diving)
     FixBestColumns(model, curr_state);
     RandomizeDualState(model, curr_state.dual_state, rnd);
   }
+
+  std::cout << "\n\n3Phase End\n";
+  std::cout << "Final Bounds: Lower " << best_state.dual_state.lower_bound()
+            << ", Upper " << best_state.solution.cost() << '\n';
 
   return best_state;
 }
@@ -1177,11 +1192,11 @@ static void SelectMinRedCostByRow(const FilteredSubModelView& full_model,
   DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
   DCHECK_EQ(selected.size(), full_model.num_subsets());
 
-  for (ElementIndex i : full_model.ElementRange()) {
+  for (const auto& row : full_model.rows()) {
     // Collect best `kMinCov` columns covering row `i`
     SubsetIndex best_cols[kMinCov];
     BaseInt best_size = 0;
-    for (SubsetIndex j : full_model.rows()[i]) {
+    for (SubsetIndex j : row) {
       if (best_size < kMinCov) {
         best_cols[best_size++] = j;
         continue;

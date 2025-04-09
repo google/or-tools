@@ -37,6 +37,7 @@ namespace operations_research::scp {
 // The CFT algorithm is a heuristic approach to the set-covering problem. At its
 // core, it combines a primal greedy heuristic with dual information obtained
 // from the optimization of the Lagrangian relaxation of the problem.
+// (Note: columns/subsets and rows/elements will be used interchangeably.)
 //
 // STRUCTURE
 // The core of the algorithm is the 3Phase:
@@ -166,14 +167,32 @@ class SubModelView : public IndexListSubModelView {
                const ElementBoolVector& rows_flags = {});
 
   virtual ~SubModelView() = default;
+
+  ///////// Core-model interface: /////////
+
+  // Current fixed cost: sum of the cost of the fixed columns
+  Cost fixed_cost() const { return fixed_cost_; }
+
+  // List of fixed columns.
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
-  Cost fixed_cost() const { return fixed_cost_; }
 
+  // Redefine the active items. The new sub-model will ignore all columns not in
+  // focus and (optionally) the rows for which row_flags is not true. It does
+  // not overwrite the current fixing.
   void SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                const ElementBoolVector& rows_flags = {});
+                const ElementBoolVector& rows_enable_flags = {});
+
+  // Fix the provided columns, removing them for the submodel. Rows now covered
+  // by fixed columns are also removed from the submodel along with non-fixed
+  // columns that only cover those rows.
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  // Hook function for specializations. This function can be used to define a
+  // "small" core model considering a subset of the full model through the use
+  // of column-generation or by only selecting columns with good reduced cost in
+  // the full model.
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
@@ -211,15 +230,10 @@ class CoreModel : private Model {
   // Focus construction: create a sub-model with only the required items
   CoreModel(const Model* model, const std::vector<SubsetIndex>& columns_focus,
             const ElementBoolVector& rows_flags = {});
+
   virtual ~CoreModel() = default;
 
-  // Member function relevant for the CFT inherited from Model
-  using Model::columns;
-  using Model::ElementRange;
-  using Model::rows;
-  using Model::subset_costs;
-  using Model::SubsetRange;
-
+  ///////// Sub-model view interface: /////////
   const Model& full_model() const { return *full_model_; }
   BaseInt num_subsets() const { return full_model_->num_subsets(); }
   BaseInt num_elements() const { return full_model_->num_elements(); }
@@ -240,15 +254,37 @@ class CoreModel : private Model {
     DCHECK(core2full_col_map_[core_j] != null_subset_index);
     return core2full_col_map_[core_j];
   }
+  // Member function relevant for the CFT inherited from Model
+  using Model::columns;
+  using Model::ElementRange;
+  using Model::rows;
+  using Model::subset_costs;
+  using Model::SubsetRange;
 
+  ///////// Core-model interface: /////////
+
+  // Current fixed cost: sum of the cost of the fixed columns
   Cost fixed_cost() const { return fixed_cost_; }
+  // List of fixed columns.
   const std::vector<SubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
 
+  // Redefine the active items. The new sub-model will ignore all columns not in
+  // focus and (optionally) the rows for which row_flags is not true. It does
+  // not overwrite the current fixing.
   void SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                const ElementBoolVector& rows_flags = {});
+                const ElementBoolVector& rows_enable_flags = {});
+
+  // Fix the provided columns, removing them for the submodel. Rows now covered
+  // by fixed columns are also removed from the submodel along with non-fixed
+  // columns that only cover those rows.
   virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  // Hook function for specializations. This function can be used to define a
+  // "small" core model considering a subset of the full model through the use
+  // of column-generation or by only selecting columns with good reduced cost in
+  // the full model.
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
@@ -269,6 +305,8 @@ class CoreModel : private Model {
       std::numeric_limits<ElementIndex>::max();
 };
 
+// Small class to store the solution of a sub-model. It contains the cost and
+// the subset list.
 class Solution {
  public:
   Solution() = default;
@@ -292,24 +330,21 @@ class Solution {
   std::vector<SubsetIndex> subsets_;
 };
 
-template <typename SubModelT>
-Cost ComputeReducedCosts(const SubModelT& model,
-                         const ElementCostVector& multipliers,
-                         SubsetCostVector& reduced_costs) {
-  // Compute new reduced costs (O(nnz))
-  Cost negative_sum = .0;
-  for (SubsetIndex j : model.SubsetRange()) {
-    reduced_costs[j] = model.subset_costs()[j];
-    for (ElementIndex i : model.columns()[j]) {
-      reduced_costs[j] -= multipliers[i];
-    }
-    if (reduced_costs[j] < .0) {
-      negative_sum += reduced_costs[j];
-    }
+// In the narrow scope of the CFT subgradient, there are often divisions
+// between non-negative quantities (e.g., to compute a relative gap). In these
+// specific cases, the denominator should always be greater than the
+// numerator. This function checks that.
+inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
+  DCHECK_GE(numerator, -1e-6);
+  if (numerator < 1e-6) {
+    return 0.0;
   }
-  return negative_sum;
+  return numerator / denominator;
 }
 
+// Dual information related to a SubModel.
+// Stores multipliers, reduced costs, and the lower bound, and provides an
+// interface that keeps them alligned.
 class DualState {
  public:
   template <typename SubModelT>
@@ -345,32 +380,42 @@ class DualState {
   }
 
  private:
+  // Single hot point to optimize once for the different use cases.
+  template <typename ModelT>
+  static Cost ComputeReducedCosts(const ModelT& model,
+                                  const ElementCostVector& multipliers,
+                                  SubsetCostVector& reduced_costs) {
+    // Compute new reduced costs (O(nnz))
+    Cost negative_sum = .0;
+    for (SubsetIndex j : model.SubsetRange()) {
+      reduced_costs[j] = model.subset_costs()[j];
+      for (ElementIndex i : model.columns()[j]) {
+        reduced_costs[j] -= multipliers[i];
+      }
+      if (reduced_costs[j] < .0) {
+        negative_sum += reduced_costs[j];
+      }
+    }
+    return negative_sum;
+  }
+
   Cost lower_bound_;
   ElementCostVector multipliers_;
   SubsetCostVector reduced_costs_;
 };
 
+// Utility aggregate to store and pass around both primal and dual states.
 struct PrimalDualState {
   Solution solution;
   DualState dual_state;
 };
 
-// In the narrow scope of the CFT subgradient, there are often divisions
-// between non-negative quantities (e.g., to compute a relative gap). In these
-// specific cases, the denominator should always be greater than the
-// numerator. This function checks that.
-inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
-  DCHECK_GE(numerator, -1e-6);
-  if (numerator < 1e-6) {
-    return 0.0;
-  }
-  return numerator / denominator;
-}
-
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////// SUBGRADIENT /////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+// Utilitiy aggregate used by the SubgradientOptimization procedure to
+// communicate pass the needed information to the SubgradientCBs interface.
 struct SubgradientContext {
   const SubModel& model;
   const DualState& current_dual_state;
@@ -379,6 +424,8 @@ struct SubgradientContext {
   const ElementCostVector& subgradient;
 };
 
+// Generic set of callbacks hooks used to specialized the behavior of the
+// subgradient optimization
 class SubgradientCBs {
  public:
   virtual bool ExitCondition(const SubgradientContext&) = 0;
@@ -389,6 +436,13 @@ class SubgradientCBs {
   virtual ~SubgradientCBs() = default;
 };
 
+// Subgradient optimization procedure. Optimizes the Lagrangian relaxation of
+// the Set-Covering problem until a termination criterion si met.
+void SubgradientOptimization(SubModel& core_model, SubgradientCBs& cbs,
+                             PrimalDualState& best_state);
+
+// Subgradient callbacks implementation focused on improving the current best
+// dual bound.
 class BoundCBs : public SubgradientCBs {
  public:
   static constexpr Cost kTol = 1e-6;
@@ -428,17 +482,21 @@ class BoundCBs : public SubgradientCBs {
   BaseInt step_size_update_period_;
 };
 
-void SubgradientOptimization(SubModel& core_model, SubgradientCBs& cbs,
-                             PrimalDualState& best_state);
-
 ////////////////////////////////////////////////////////////////////////
 /////////////////////// MULTIPLIERS BASED GREEDY ///////////////////////
 ////////////////////////////////////////////////////////////////////////
 
+// Higher level function that return a function obtained by the dual multiplier
+// based greedy.
 Solution RunMultiplierBasedGreedy(
     const SubModel& model, const DualState& dual_state,
     Cost cost_cutoff = std::numeric_limits<BaseInt>::max());
 
+// Lower level greedy function which creates or completes a "solution" (seen as
+// set of subsets of the current SubModel) until a cutoff size or cost is
+// reached.
+// Note: since the cutoff might be reached, the returned solution might not be
+// feasible.
 Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt size_cutoff,
                   std::vector<SubsetIndex>& sol_subsets);
@@ -447,6 +505,9 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
 //////////////////////// THREE PHASE ALGORITHM ////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+// Subgradient callbacks implementation focused on wandering near the optimal
+// multipliers and invoke the multipliers based greedy heuristic at each
+// iteration.
 class HeuristicCBs : public SubgradientCBs {
  public:
   HeuristicCBs() : step_size_(0.1), countdown_(250) {};
@@ -477,6 +538,9 @@ absl::StatusOr<PrimalDualState> RunThreePhase(
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+// CoreModel extractor. Stores a pointer to the full model and specilized
+// UpdateCore in such a way to updated the SubModel (stored as base class) and
+// focus the search on a small windows of the full model.
 class FullToCoreModel : public SubModel {
   using base = SubModel;
   struct UpdateTrigger {
@@ -490,15 +554,19 @@ class FullToCoreModel : public SubModel {
   Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   bool UpdateCore(PrimalDualState& core_state) override;
   void ResetPricingPeriod();
+  const DualState& best_dual_state() const { return best_dual_state_; }
 
  private:
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            const PrimalDualState& core_state);
+  void UpdateDualState(const DualState& core_dual_state,
+                       DualState& full_dual_state, DualState& best_dual_state);
 
   FilteredSubModelView FullModelWithFixingView() const {
-    return FilteredSubModelView(full_model_, &cols_sizes_, &rows_sizes_,
+    return FilteredSubModelView(full_model_, &is_focus_col_, &is_focus_row_,
                                 num_subsets_, num_elements_);
   }
+  absl::Status FullToSubModelInvariantCheck();
 
   const Model* full_model_;
   SubsetToIntVector cols_sizes_;
