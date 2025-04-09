@@ -82,6 +82,8 @@ target_sources(glop PRIVATE
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
   ortools/base/basictypes.h
+  ortools/base/case.cc
+  ortools/base/case.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
@@ -130,6 +132,8 @@ target_sources(glop PRIVATE
   ortools/lp_data/lp_data.h
   ortools/lp_data/lp_data_utils.cc
   ortools/lp_data/lp_data_utils.h
+  ortools/lp_data/lp_parser.cc
+  ortools/lp_data/lp_parser.h
   ortools/lp_data/lp_print_utils.cc
   ortools/lp_data/lp_print_utils.h
   ortools/lp_data/lp_types.cc
@@ -145,8 +149,8 @@ target_sources(glop PRIVATE
   ortools/lp_data/sparse.cc
   ortools/lp_data/sparse.h
   ortools/lp_data/sparse_column.cc
-  ortools/port/sysinfo.h
   ortools/port/sysinfo.cc
+  ortools/port/sysinfo.h
   ortools/util/file_util.cc
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
@@ -160,14 +164,7 @@ target_sources(glop PRIVATE
   ortools/util/strong_integers.h
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
-  )
-if(BUILD_LP_PARSER)
-  target_sources(glop PRIVATE
-    ortools/base/case.cc
-    ortools/base/case.h
-    ortools/lp_data/lp_parser.cc
-    ortools/lp_data/lp_parser.h)
-endif()
+)
 
 if(WIN32)
   list(APPEND GLOP_COMPILE_DEFINITIONS "__WIN32__")

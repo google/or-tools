@@ -48,9 +48,7 @@
 #if defined(USE_PDLP)
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
 #endif  // defined(USE_PDLP)
-#if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
-#endif  // defined(USE_LP_PARSER)
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/xpress/environment.h"
 
@@ -121,7 +119,6 @@ bool ModelBuilderHelper::ImportFromMpsFile(const std::string& mps_file) {
   return true;
 }
 
-#if defined(USE_LP_PARSER)
 bool ModelBuilderHelper::ImportFromLpString(const std::string& lp_string) {
   absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_string);
   if (!model_or.ok()) return false;
@@ -139,7 +136,6 @@ bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
   model_ = model_or.value();
   return true;
 }
-#endif  // #if defined(USE_LP_PARSER)
 
 const MPModelProto& ModelBuilderHelper::model() const { return model_; }
 

@@ -382,10 +382,8 @@ class ModelBuilderHelper {
 
   bool ImportFromMpsString(const std::string& mps_string);
   bool ImportFromMpsFile(const std::string& mps_file);
-#if defined(USE_LP_PARSER)
   bool ImportFromLpString(const std::string& lp_string);
   bool ImportFromLpFile(const std::string& lp_file);
-#endif  // defined(USE_LP_PARSER)
 
   const MPModelProto& model() const;
   MPModelProto* mutable_model();

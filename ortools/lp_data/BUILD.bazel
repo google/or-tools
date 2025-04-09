@@ -240,7 +240,6 @@ cc_library(
     srcs = ["lp_parser.cc"],
     hdrs = ["lp_parser.h"],
     copts = SAFE_FP_CODE,
-    defines = ["USE_LP_PARSER"],
     deps = [
         ":base",
         ":lp_data",

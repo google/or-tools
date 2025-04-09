@@ -123,10 +123,6 @@ include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
-## LP Parser
-CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
-message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
-
 ## MathOpt
 CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
 message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
@@ -378,13 +374,13 @@ if(BUILD_DOTNET)
   endif()
   message(STATUS ".Net: Use .Net Core 3.1 LTS support: ${USE_DOTNET_CORE_31}")
 
-  option(USE_DOTNET_6 "Use .Net 6.0 LTS support" ON)
+  option(USE_DOTNET_6 "Use .Net 6.0 LTS support" OFF)
   message(STATUS ".Net: Use .Net 6.0 LTS support: ${USE_DOTNET_6}")
 
   option(USE_DOTNET_7 "Use .Net 7.0 support" OFF)
   message(STATUS ".Net: Use .Net 7.0 support: ${USE_DOTNET_7}")
 
-  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" OFF)
+  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" ON)
   message(STATUS ".Net: Use .Net 8.0 support: ${USE_DOTNET_8}")
 
   option(USE_DOTNET_9 "Use .Net 9.0 support" OFF)
