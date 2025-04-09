@@ -16,6 +16,7 @@
 
 #include <absl/algorithm/container.h>
 #include <absl/base/internal/pretty_function.h>
+#include <absl/status/status.h>
 
 #include <limits>
 
@@ -239,6 +240,15 @@ class CoreModel : private Model {
   BaseInt num_elements() const { return full_model_->num_elements(); }
   BaseInt num_focus_subsets() const { return Model::num_subsets(); }
   BaseInt num_focus_elements() const { return Model::num_elements(); }
+  BaseInt column_size(SubsetIndex j) const {
+    DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
+    return columns()[j].size();
+  }
+  BaseInt row_size(ElementIndex i) const {
+    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
+    return rows()[i].size();
+  }
+
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
     DCHECK(core2full_row_map_[core_i] != null_element_index);
@@ -569,12 +579,27 @@ class FullToCoreModel : public SubModel {
   absl::Status FullToSubModelInvariantCheck();
 
   const Model* full_model_;
-  SubsetToIntVector cols_sizes_;
-  ElementToIntVector rows_sizes_;
+
+  // Note: The `is_focus_col_` vector duplicates information already present in
+  // `SubModelView::cols_sizes_`. However, it does not overlap with any data
+  // stored in `CoreModel`. Since `CoreModel` is expected to be the primary use
+  // case, this vector is explicitly maintained here to ensure compatibility.
+  SubsetBoolVector is_focus_col_;
+
+  // Note: The `is_focus_row_` vector is functionally redundant with either
+  // `CoreModel::full2core_row_map_` or `SubModelView::rows_sizes_`. These
+  // existing structures could be used to create the filtered view of the full
+  // model. However, doing so would require generalizing the current view
+  // system to work with generic functors instead of vectors of integral types.
+  // Since the number of elements is assumed to be not prohibitive, a simpler
+  // implementation that avoids this memory optimization was preferred.
+  ElementBoolVector is_focus_row_;
+
   BaseInt num_subsets_;
   BaseInt num_elements_;
 
   DualState full_dual_state_;
+  DualState best_dual_state_;
 
   BaseInt update_countdown_;
   BaseInt update_period_;

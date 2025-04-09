@@ -113,22 +113,6 @@ bool ComputeSubModelFeasibility(const SubModelT& model) {
 
 template <typename SubModelT>
 absl::Status ValidateSubModel(const SubModelT& model) {
-  if (model.rows().size() <= 0) {
-    return absl::InvalidArgumentError("Sub-Model has no rows.");
-  }
-  if (model.columns().size() <= 0) {
-    return absl::InvalidArgumentError("Sub-Model has no columns.");
-  }
-  if (model.rows().size() != model.num_focus_elements()) {
-    return absl::InvalidArgumentError("Sub-Model elements/rows num mismatch.");
-  }
-  if (model.columns().size() != model.num_focus_subsets()) {
-    return absl::InvalidArgumentError(
-        "Sub-Model subsets/columns num mismatch.");
-  }
-  if (model.subset_costs().size() <= 0) {
-    return absl::InvalidArgumentError("Sub-Model has no subset costs.");
-  }
   if (model.num_elements() <= 0) {
     return absl::InvalidArgumentError("Sub-Model has no elements.");
   }
@@ -138,33 +122,28 @@ absl::Status ValidateSubModel(const SubModelT& model) {
 
   for (SubsetIndex j : model.SubsetRange()) {
     const auto column = model.columns()[j];
-    if (column.empty()) {
+    if (model.column_size(j) == 0) {
       return absl::InvalidArgumentError(
           absl::StrCat("Column ", j, " is empty."));
     }
-    BaseInt j_size = 0;
-    for (ElementIndex i : column) {
-      ++j_size;
-    }
-    if (j_size != column.size()) {
-      return absl::InvalidArgumentError(absl::StrCat("Sub-Model column ", j,
-                                                     " size mismatch:", j_size,
-                                                     " != ", column.size()));
+    BaseInt j_size = std::distance(column.begin(), column.end());
+    if (j_size != model.column_size(j)) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Sub-Model size mismatch on column ", j, ", ", j_size,
+                       " != ", model.column_size(j)));
     }
   }
 
   for (ElementIndex i : model.ElementRange()) {
     const auto row = model.rows()[i];
-    if (row.empty()) {
+    if (model.row_size(i) == 0) {
       return absl::InvalidArgumentError(absl::StrCat("Row ", i, " is empty."));
     }
-    BaseInt i_size = 0;
-    for (SubsetIndex j : row) {
-      ++i_size;
-    }
-    if (i_size != row.size()) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Sub-Model row ", i, " size mismatch:", i_size, " != ", row.size()));
+    BaseInt i_size = std::distance(row.begin(), row.end());
+    if (i_size != model.row_size(i)) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Sub-Model size mismatch on row ", i, ", ", i_size,
+                       " != ", model.row_size(i)));
     }
   }
 
@@ -258,10 +237,9 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   gtl::STLEraseAllFromSequenceIf(&cols_focus_, [&](SubsetIndex j) {
     DCHECK(full_model_ != nullptr);
     if (cols_sizes_[j] > 0) {
-      cols_sizes_[j] = 0;
-      for (ElementIndex i : full_model_->columns()[j]) {
-        cols_sizes_[j] += rows_sizes_[i] > 0 ? 1 : 0;
-      }
+      cols_sizes_[j] = absl::c_count_if(full_model_->columns()[j], [&](auto i) {
+        return rows_sizes_[i] > 0;
+      });
     }
     return cols_sizes_[j] == 0;
   });
@@ -1226,22 +1204,17 @@ static void SelectMinRedCostByRow(const FilteredSubModelView& full_model,
 FullToCoreModel::FullToCoreModel(const Model* full_model)
     : SubModel(full_model, ComputeTentativeFocus(*full_model)),
       full_model_(full_model),
-      cols_sizes_(full_model->num_subsets()),
-      rows_sizes_(full_model->num_elements()),
+      is_focus_col_(full_model->num_subsets(), true),
+      is_focus_row_(full_model->num_elements(), true),
       num_subsets_(full_model->num_subsets()),
       num_elements_(full_model->num_elements()),
       full_dual_state_(*full_model),
+      best_dual_state_(full_dual_state_),
       update_countdown_(10),
       update_period_(10),
       update_max_period_(std::min(1000, full_model_->num_elements() / 3)) {
-  for (SubsetIndex j : full_model_->SubsetRange()) {
-    cols_sizes_[j] = full_model_->columns()[j].size();
-  }
-  for (ElementIndex i : full_model_->ElementRange()) {
-    rows_sizes_[i] = full_model_->rows()[i].size();
-  }
   DCHECK_OK(ValidateSubModel(*this));
-  DCHECK_OK(ValidateSubModel(FullModelWithFixingView()));
+  DCHECK_OK(FullToSubModelInvariantCheck());
 }
 
 void FullToCoreModel::ResetPricingPeriod() {
@@ -1254,44 +1227,47 @@ Cost FullToCoreModel::FixColumns(
     const std::vector<SubsetIndex>& columns_to_fix) {
   for (SubsetIndex core_j : columns_to_fix) {
     SubsetIndex full_j = SubModel::MapCoreToFullSubsetIndex(core_j);
-    DCHECK(cols_sizes_[full_j] > 0);
-    cols_sizes_[full_j] = 0;
+    DCHECK(is_focus_col_[full_j] > 0);
+    is_focus_col_[full_j] = false;
     for (ElementIndex full_i : full_model_->columns()[full_j]) {
-      rows_sizes_[full_i] = 0;
+      is_focus_row_[full_i] = false;
     }
   }
-  auto full_model_view = FullModelWithFixingView();
-  for (SubsetIndex full_j : full_model_view.SubsetRange()) {
-    cols_sizes_[full_j] = 0;
-    for (ElementIndex full_i : full_model_view.columns()[full_j]) {
-      cols_sizes_[full_j] += rows_sizes_[full_i] > 0 ? 1 : 0;
+  for (SubsetIndex full_j : full_model_->SubsetRange()) {
+    if (!is_focus_col_[full_j]) {
+      continue;
+    }
+    is_focus_col_[full_j] = false;
+    for (ElementIndex full_i : full_model_->columns()[full_j]) {
+      if (is_focus_row_[full_i]) {
+        is_focus_col_[full_j] = true;
+        break;
+      }
     }
   }
   ResetPricingPeriod();
-  return base::FixColumns(columns_to_fix);
+  Cost fixed_cost = base::FixColumns(columns_to_fix);
+  DCHECK_OK(FullToSubModelInvariantCheck());
+  return fixed_cost;
 }
 
 bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
   if (--update_countdown_ > 0) {
     return false;
   }
-  auto full_model_view = FullModelWithFixingView();
 
-  full_dual_state_.DualUpdate(
-      full_model_view, [&](ElementIndex full_i, Cost& i_mult) {
-        ElementIndex core_i = MapFullToCoreElementIndex(full_i);
-        i_mult = core_state.dual_state.multipliers()[core_i];
-      });
+  UpdateDualState(core_state.dual_state, full_dual_state_, best_dual_state_);
+  UpdatePricingPeriod(full_dual_state_, core_state);
   std::cout << "Lower bounds: Real " << full_dual_state_.lower_bound()
             << ", Core " << core_state.dual_state.lower_bound() << '\n';
-  UpdatePricingPeriod(full_dual_state_, core_state);
 
+  auto full_model_view = FullModelWithFixingView();
   SubsetBoolVector selected_columns(full_model_view.num_subsets(), false);
   std::vector<SubsetIndex> new_core_columns;
 
   // Always retain best solution in the core model
   for (SubsetIndex full_j : core_state.solution.subsets()) {
-    if (cols_sizes_[full_j] > 0) {
+    if (is_focus_col_[full_j] > 0) {
       new_core_columns.push_back(full_j);
       selected_columns[full_j] = true;
     }
@@ -1308,6 +1284,8 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
   core_state.dual_state.DualUpdate(*this, [](ElementIndex i, Cost& i_mult) {
     // multipliers didn't cange, but reduced cost must be recomputed
   });
+
+  DCHECK_OK(FullToSubModelInvariantCheck());
   return true;
 }
 
@@ -1330,6 +1308,77 @@ void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
     update_period_ = 10;
   }
   update_countdown_ = update_period_;
+}
+
+void FullToCoreModel::UpdateDualState(const DualState& core_dual_state,
+                                      DualState& full_dual_state,
+                                      DualState& best_dual_state) {
+  auto full_model_view = FullModelWithFixingView();
+  full_dual_state_.DualUpdate(
+      full_model_view, [&](ElementIndex full_i, Cost& i_mult) {
+        ElementIndex core_i = MapFullToCoreElementIndex(full_i);
+        i_mult = core_dual_state.multipliers()[core_i];
+      });
+
+  // Here, we simply check if any columns have been fixed, and only update the
+  // best dual state when no fixing is in place.
+  //
+  // Mapping a "local" dual state to a global one is possible. This would
+  // involve keeping the multipliers for non-focused elements fixed, updating
+  // the multipliers for focused elements, and then computing the dual state for
+  // the entire model. However, this approach is not implemented here. Such a
+  // strategy is unlikely to improve the best dual state unless the focus is
+  // *always* limited to a small subset of elements (and therefore the LB sucks
+  // and it is easy to improve) and the CFT is applied exclusively within that
+  // narrow scope, but this falls outside the current scope of this project.
+  if (fixed_columns().empty() &&
+      full_dual_state_.lower_bound() > best_dual_state_.lower_bound()) {
+    best_dual_state_ = full_dual_state_;
+  }
+}
+
+absl::Status FullToCoreModel::FullToSubModelInvariantCheck() {
+  const SubModel& sub_model = *this;
+  FilteredSubModelView full_model_view = FullModelWithFixingView();
+
+  if (full_model_view.num_subsets() < sub_model.num_subsets()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("SubModelView has ", sub_model.num_subsets(),
+                     " subsets, but the full model has ",
+                     full_model_view.num_subsets(), " subsets."));
+  }
+  if (full_model_view.num_elements() != sub_model.num_elements()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("SubModelView has ", sub_model.num_elements(),
+                     " elements, but the full model has ",
+                     full_model_view.num_elements(), " elements."));
+  }
+  for (SubsetIndex core_j : sub_model.SubsetRange()) {
+    SubsetIndex full_j = sub_model.MapCoreToFullSubsetIndex(core_j);
+    if (!is_focus_col_[full_j]) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Subset ", core_j, " in sub-model but its mapped subset ", full_j,
+          " not found in full model view."));
+    }
+  }
+  for (ElementIndex core_i : sub_model.ElementRange()) {
+    ElementIndex full_i = sub_model.MapCoreToFullElementIndex(core_i);
+    if (!is_focus_row_[full_i]) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Element ", core_i, " in sub-model but its mapped element ", full_i,
+          " not found in full model view."));
+    }
+  }
+  for (ElementIndex full_i : full_model_view.ElementRange()) {
+    ElementIndex core_i = sub_model.MapFullToCoreElementIndex(full_i);
+    if (core_i < ElementIndex() ||
+        ElementIndex(sub_model.num_elements()) < core_i) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Element ", full_i,
+          " in full model view but has no mapped element in sub-model."));
+    }
+  }
+  return absl::OkStatus();
 }
 
 }  // namespace operations_research::scp

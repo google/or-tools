@@ -165,9 +165,8 @@ class ValueFilterView {
     const EnableVectorT* is_active_;
   };
 
-  ValueFilterView(const ContainerT* container, const EnableVectorT* is_active,
-                  BaseInt size)
-      : container_(container), is_active_(is_active), size_(size) {
+  ValueFilterView(const ContainerT* container, const EnableVectorT* is_active)
+      : container_(container), is_active_(is_active) {
     DCHECK(container != nullptr);
     DCHECK(is_active != nullptr);
   }
@@ -179,9 +178,6 @@ class ValueFilterView {
     return ValueFilterViewIterator(container_->end(), container_->end(),
                                    is_active_);
   }
-  BaseInt size() const { return size_; }
-  bool empty() const { return size() == 0; }
-
   template <typename IndexT>
   decltype(auto) operator[](IndexT index) const {
     return util::at(container_, index);
@@ -190,7 +186,6 @@ class ValueFilterView {
  private:
   const ContainerT* container_;
   const EnableVectorT* is_active_;
-  BaseInt size_;
 };
 
 // Somewhat equivalent to ValueFilterView<StrongIntRange, EnableVectorT>
@@ -245,9 +240,8 @@ class IndexFilterView {
     enable_iterator is_active_end_;
   };
 
-  IndexFilterView(const ContainerT* container, const EnableVectorT* is_active_,
-                  BaseInt size)
-      : container_(container), is_active_(is_active_), size_(size) {
+  IndexFilterView(const ContainerT* container, const EnableVectorT* is_active_)
+      : container_(container), is_active_(is_active_) {
     DCHECK(container != nullptr);
     DCHECK(is_active_ != nullptr);
     DCHECK_EQ(container->size(), is_active_->size());
@@ -260,8 +254,6 @@ class IndexFilterView {
     return IndexFilterViewIterator(container_->end(), is_active_->end(),
                                    is_active_->end());
   }
-  BaseInt size() const { return size_; }
-  bool empty() const { return size() == 0; }
 
   template <typename IndexT>
   decltype(auto) operator[](IndexT index) const {
@@ -271,7 +263,6 @@ class IndexFilterView {
  private:
   const ContainerT* container_;
   const EnableVectorT* is_active_;
-  BaseInt size_;
 };
 
 // This view provides a mechanism to access and filter elements in a 2D
@@ -281,61 +272,51 @@ class IndexFilterView {
 // 2. The second dimension (items of each sub-container) is further filtered
 //    using a boolean vector, which determines which elements within the
 //    sub-container are included in the view.
-template <typename Lvl1ViewT, typename SizeViewT, typename EnableVectorT>
+template <typename Lvl1ViewT, typename EnableVectorT>
 class TwoLevelsView : public Lvl1ViewT {
  public:
   using level1_iterator = util::range_const_iterator_type<Lvl1ViewT>;
   using level1_value = util::range_value_type<Lvl1ViewT>;
   using level2_type = ValueFilterView<level1_value, EnableVectorT>;
-  using sizes_iterator = util::range_const_iterator_type<SizeViewT>;
 
   struct SparseFocus2DViewIterator
       : util::IteratorCRTP<SparseFocus2DViewIterator, level2_type> {
     SparseFocus2DViewIterator(level1_iterator iter,
-                              const EnableVectorT* active_items,
-                              sizes_iterator size_iter)
-        : iter_(iter), active_items_(active_items), sizes_iter_(size_iter) {}
+                              const EnableVectorT* active_items)
+        : iter_(iter), active_items_(active_items) {}
     bool operator!=(const SparseFocus2DViewIterator& other) const {
       return iter_ != other.iter_;
     }
     SparseFocus2DViewIterator& operator++() {
       ++iter_;
-      ++sizes_iter_;
       return *this;
     }
     level2_type operator*() const {
-      return level2_type(&(*iter_), active_items_, *sizes_iter_);
+      return level2_type(&(*iter_), active_items_);
     }
 
    private:
     level1_iterator iter_;
     const EnableVectorT* active_items_;
-    sizes_iterator sizes_iter_;
   };
 
   TwoLevelsView() = default;
-  TwoLevelsView(Lvl1ViewT lvl1_view, SizeViewT sizes_view,
-                const EnableVectorT* active_items)
-      : Lvl1ViewT(lvl1_view),
-        sizes_view_(sizes_view),
-        active_items_(active_items) {}
+  TwoLevelsView(Lvl1ViewT lvl1_view, const EnableVectorT* active_items)
+      : Lvl1ViewT(lvl1_view), active_items_(active_items) {}
   SparseFocus2DViewIterator begin() const {
-    return SparseFocus2DViewIterator(Lvl1ViewT::begin(), active_items_,
-                                     sizes_view_.begin());
+    return SparseFocus2DViewIterator(Lvl1ViewT::begin(), active_items_);
   }
   SparseFocus2DViewIterator end() const {
-    return SparseFocus2DViewIterator(Lvl1ViewT::end(), active_items_,
-                                     sizes_view_.end());
+    return SparseFocus2DViewIterator(Lvl1ViewT::end(), active_items_);
   }
 
   template <typename indexT>
   level2_type operator[](indexT i) const {
     auto& level2_container = Lvl1ViewT::operator[](i);
-    return level2_type(&level2_container, active_items_, sizes_view_[i]);
+    return level2_type(&level2_container, active_items_);
   }
 
  private:
-  SizeViewT sizes_view_;
   const EnableVectorT* active_items_;
 };
 
@@ -365,31 +346,37 @@ class IndexListSubModelView {
   }
   auto columns() const -> TwoLevelsView<
       IndexListView<SparseColumnView, std::vector<SubsetIndex>>,
-      IndexListView<SubsetToIntVector, std::vector<SubsetIndex>>,
       ElementToIntVector> {
     return TwoLevelsView(IndexListView(&model_->columns(), cols_focus_),
-                         IndexListView(cols_sizes_, cols_focus_), rows_sizes_);
+                         rows_sizes_);
   }
-  auto rows() const -> TwoLevelsView<
-      IndexListView<SparseRowView, std::vector<ElementIndex>>,
-      IndexListView<ElementToIntVector, std::vector<ElementIndex>>,
-      SubsetToIntVector> {
+  auto rows() const
+      -> TwoLevelsView<IndexListView<SparseRowView, std::vector<ElementIndex>>,
+                       SubsetToIntVector> {
     return TwoLevelsView(IndexListView(&model_->rows(), rows_focus_),
-                         IndexListView(rows_sizes_, rows_focus_), cols_sizes_);
+                         cols_sizes_);
   }
   const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
   const std::vector<ElementIndex>& ElementRange() const { return *rows_focus_; }
-  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
-    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
-    return core_i;
+  ElementIndex MapCoreToFullElementIndex(ElementIndex i) const {
+    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
+    return i;
   }
-  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
-    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
-    return full_i;
+  ElementIndex MapFullToCoreElementIndex(ElementIndex i) const {
+    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
+    return i;
   }
-  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
-    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
-    return core_j;
+  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex j) const {
+    DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
+    return j;
+  }
+  BaseInt column_size(SubsetIndex j) const {
+    DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
+    return (*cols_sizes_)[j];
+  }
+  BaseInt row_size(ElementIndex i) const {
+    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
+    return (*rows_sizes_)[i];
   }
 
  private:
@@ -400,17 +387,21 @@ class IndexListSubModelView {
   const std::vector<ElementIndex>* rows_focus_;
 };
 
+// A lightweight sub-model view that uses boolean vectors to enable or disable
+// specific items. Iterating over all active columns or rows is less efficient,
+// particularly when only a small subset is active.
+// NOTE: this view does **not** store any size-related information.
 class FilteredSubModelView {
  public:
   FilteredSubModelView()
       : subset_range_(SubsetIndex()), element_range_(ElementIndex()) {}
   FilteredSubModelView(const SetCoverModel* model,
-                       const SubsetToIntVector* cols_sizes,
-                       const ElementToIntVector* rows_sizes,
-                       BaseInt num_subsets, BaseInt num_elements)
+                       const SubsetBoolVector* cols_sizes,
+                       const ElementBoolVector* rows_sizes, BaseInt num_subsets,
+                       BaseInt num_elements)
       : model_(model),
-        cols_sizes_(cols_sizes),
-        rows_sizes_(rows_sizes),
+        is_focus_col_(cols_sizes),
+        is_focus_row_(rows_sizes),
         num_subsets_(num_subsets),
         num_elements_(num_elements),
         subset_range_(model_->SubsetRange()),
@@ -423,31 +414,27 @@ class FilteredSubModelView {
   BaseInt num_focus_elements() const { return num_elements_; }
 
   auto subset_costs() const
-      -> IndexFilterView<SubsetCostVector, SubsetToIntVector> {
-    return IndexFilterView(&model_->subset_costs(), cols_sizes_, num_subsets_);
+      -> IndexFilterView<SubsetCostVector, SubsetBoolVector> {
+    return IndexFilterView(&model_->subset_costs(), is_focus_col_);
   }
   auto columns() const
-      -> TwoLevelsView<IndexFilterView<SparseColumnView, SubsetToIntVector>,
-                       IndexFilterView<SubsetToIntVector, SubsetToIntVector>,
-                       ElementToIntVector> {
-    return TwoLevelsView(
-        IndexFilterView(&model_->columns(), cols_sizes_, num_subsets_),
-        IndexFilterView(cols_sizes_, cols_sizes_, num_subsets_), rows_sizes_);
+      -> TwoLevelsView<IndexFilterView<SparseColumnView, SubsetBoolVector>,
+                       ElementBoolVector> {
+    return TwoLevelsView(IndexFilterView(&model_->columns(), is_focus_col_),
+                         is_focus_row_);
   }
   auto rows() const
-      -> TwoLevelsView<IndexFilterView<SparseRowView, ElementToIntVector>,
-                       IndexFilterView<ElementToIntVector, ElementToIntVector>,
-                       SubsetToIntVector> {
-    return TwoLevelsView(
-        IndexFilterView(&model_->rows(), rows_sizes_, num_elements_),
-        IndexFilterView(rows_sizes_, rows_sizes_, num_elements_), cols_sizes_);
+      -> TwoLevelsView<IndexFilterView<SparseRowView, ElementBoolVector>,
+                       SubsetBoolVector> {
+    return TwoLevelsView(IndexFilterView(&model_->rows(), is_focus_row_),
+                         is_focus_col_);
   }
-  auto SubsetRange() const -> ValueFilterView<SubsetRange, SubsetToIntVector> {
-    return ValueFilterView(&subset_range_, cols_sizes_, num_subsets_);
+  auto SubsetRange() const -> ValueFilterView<SubsetRange, SubsetBoolVector> {
+    return ValueFilterView(&subset_range_, is_focus_col_);
   }
   auto ElementRange() const
-      -> ValueFilterView<ElementRange, ElementToIntVector> {
-    return ValueFilterView(&element_range_, rows_sizes_, num_elements_);
+      -> ValueFilterView<ElementRange, ElementBoolVector> {
+    return ValueFilterView(&element_range_, is_focus_row_);
   }
   ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
@@ -464,8 +451,8 @@ class FilteredSubModelView {
 
  private:
   const SetCoverModel* model_;
-  const SubsetToIntVector* cols_sizes_;
-  const ElementToIntVector* rows_sizes_;
+  const SubsetBoolVector* is_focus_col_;
+  const ElementBoolVector* is_focus_row_;
   BaseInt num_subsets_;
   BaseInt num_elements_;
 
