@@ -298,6 +298,10 @@ class CoreModel : private Model {
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
  private:
+  void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);
+  ElementMappingVector MakeOrFillBothRowMaps();
+  Model MakeNewCoreModel(const ElementMappingVector& new_c2f_col_map);
+
   // Pointer to the original model
   const Model* full_model_;
 

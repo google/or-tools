@@ -336,6 +336,7 @@ void CoreModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   core2full_row_map_.clear();
   core2full_col_map_.clear();
 
+  // First update maps marking removed elements and compacting indices.
   for (ElementIndex full_i : full_model_->ElementRange()) {
     if ((rows_flags.empty() || rows_flags[full_i]) &&
         (full2core_row_map_[full_i] != null_element_index)) {
@@ -346,6 +347,7 @@ void CoreModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
     }
   }
 
+  // Now we can fill the new core model
   for (SubsetIndex full_j : columns_focus) {
     core2full_col_map_.push_back(full_j);
     bool first_row = true;
@@ -367,16 +369,11 @@ void CoreModel::SetFocus(const std::vector<SubsetIndex>& columns_focus,
   DCHECK_OK(ValidateSubModel(*this));
 }
 
-Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
-  DCHECK(full_model_ != nullptr);
-  Cost old_fixed_cost = fixed_cost_;
-  if (columns_to_fix.empty()) {
-    return fixed_cost_ - old_fixed_cost;
-  }
-
-  // Mark columns and row that will be removed from the core model
-  // The "to-be-removed" indices are marked by setting the relative core->full
-  // mappings to null_*_index.
+// Mark columns and row that will be removed from the core model
+// The "to-be-removed" indices are marked by setting the relative core->full
+// mappings to null_*_index.
+void CoreModel::MarkNewFixingInMaps(
+    const std::vector<SubsetIndex>& columns_to_fix) {
   for (SubsetIndex old_core_j : columns_to_fix) {
     fixed_cost_ += subset_costs()[old_core_j];
     fixed_columns_.push_back(core2full_col_map_[old_core_j]);
@@ -386,7 +383,11 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
       core2full_row_map_[old_core_i] = null_element_index;
     }
   }
+}
 
+// Once fixed columns and covered rows are marked, we need to create a new row
+// mapping, both core->full(returned) and full->core(modifed in-place)
+ElementMappingVector CoreModel::MakeOrFillBothRowMaps() {
   full2core_row_map_.assign(full_model_->num_elements(), null_element_index);
   ElementMappingVector new_c2f_row_map;  // Future core->full mapping.
   for (ElementIndex old_core_i : ElementRange()) {
@@ -396,9 +397,15 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
       new_c2f_row_map.push_back(full_i);
     }
   }
+  return new_c2f_row_map;
+}
 
-  // Fill a new core model by applying the remapping from the old core to the
-  // new core (brace yourself: index-hell).
+// Create a new core model by applying the remapping from the old core model to
+// the new one considering the given column fixing.
+// Both the old and new core->full row mappings are required too keep track of
+// what changed, the old mapping gets overwritten with the new one at the end.
+// Empty columns are detected and removed - or better - not added.
+Model CoreModel::MakeNewCoreModel(const ElementMappingVector& new_c2f_row_map) {
   Model new_submodel;
   BaseInt new_core_j = 0;
   // Loop over old core column indices.
@@ -429,15 +436,35 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
       }
     }
   }
+
   core2full_col_map_.resize(new_core_j);
   core2full_row_map_ = std::move(new_c2f_row_map);
   new_submodel.CreateSparseRowView();
-  static_cast<Model&>(*this) = std::move(new_submodel);
+
+  return new_submodel;
+}
+
+Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
+  DCHECK(full_model_ != nullptr);
+  if (columns_to_fix.empty()) {
+    return .0;
+  }
+  Cost old_fixed_cost = fixed_cost_;
+
+  // Mark columns to be fixed and rows that will be covered by them
+  MarkNewFixingInMaps(columns_to_fix);
+
+  // Compute new core->full(returned) and full->core(modified original) row maps
+  ElementMappingVector new_c2f_row_map = MakeOrFillBothRowMaps();
+
+  // Create new model object applying the computed mappings
+  static_cast<Model&>(*this) = MakeNewCoreModel(new_c2f_row_map);
 
   PrintSubModelSummary(*this);
   DCHECK_OK(ValidateSubModel(*this));
   DCHECK(absl::c_is_sorted(core2full_col_map_));
   DCHECK(absl::c_is_sorted(core2full_row_map_));
+
   return fixed_cost_ - old_fixed_cost;
 }
 
