@@ -619,19 +619,10 @@ PYBIND11_MODULE(model_builder_helper, m) {
            py::arg("mps_string"))
       .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,
            py::arg("mps_file"))
-#if defined(USE_LP_PARSER)
       .def("import_from_lp_string", &ModelBuilderHelper::ImportFromLpString,
            py::arg("lp_string"))
       .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
            py::arg("lp_file"))
-#else
-            .def("import_from_lp_string", [](const std::string& lp_string) {
-              LOG(INFO) << "Parsing LP string is not compiled in";
-            })
-            .def("import_from_lp_file", [](const std::string& lp_file) {
-              LOG(INFO) << "Parsing LP file is not compiled in";
-            })
-#endif
       .def(
           "fill_model_from_sparse_data",
           [](ModelBuilderHelper* helper,

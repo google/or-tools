@@ -34,11 +34,9 @@ if(NOT TARGET protobuf::libprotobuf)
   endif()
 endif()
 
-if(@BUILD_LP_PARSER@)
-  # re2 may not provide a CMake config files
-  if(NOT TARGET re2::re2)
-    find_dependency(re2 REQUIRED)
-  endif()
+# re2 may not provide a CMake config files
+if(NOT TARGET re2::re2)
+  find_dependency(re2 REQUIRED)
 endif()
 
 if(@USE_COINOR@)

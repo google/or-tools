@@ -33,11 +33,8 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
-#if defined(USE_LP_PARSER)
 #include "re2/re2.h"
-#endif  // defined(USE_LP_PARSER)
 
-#if defined(USE_LP_PARSER)
 namespace operations_research {
 namespace glop {
 
@@ -465,5 +462,3 @@ absl::StatusOr<MPModelProto> ModelProtoFromLpFormat(absl::string_view model) {
 }
 
 }  // namespace operations_research
-
-#endif  // defined(USE_LP_PARSER)

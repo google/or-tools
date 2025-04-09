@@ -133,15 +133,11 @@ MPModelRequest ReadMipModel(const std::string& input) {
   MPModelRequest request_proto;
   MPModelProto model_proto;
   if (absl::EndsWith(input, ".lp")) {
-#if defined(USE_LP_PARSER)
     std::string data;
     CHECK_OK(file::GetContents(input, &data, file::Defaults()));
     absl::StatusOr<MPModelProto> result = ModelProtoFromLpFormat(data);
     CHECK_OK(result);
     model_proto = std::move(result).value();
-#else   // !defined(USE_LP_PARSER)
-    LOG(FATAL) << "Support for parsing LP format is not compiled in.";
-#endif  // !defined(USE_LP_PARSER)
   } else if (absl::EndsWith(input, ".mps") ||
              absl::EndsWith(input, ".mps.gz")) {
     QCHECK_OK(glop::MPSReader().ParseFile(input, &model_proto))

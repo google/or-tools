@@ -53,9 +53,6 @@ if(MSVC AND BUILD_SHARED_LIBS)
 endif()
 
 # Optional built-in components
-if(BUILD_LP_PARSER)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_LP_PARSER")
-endif()
 if(BUILD_MATH_OPT)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_MATH_OPT")
   set(MATH_OPT_DIR math_opt)
@@ -671,13 +668,11 @@ install(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   COMPONENT Devel)
-if(BUILD_LP_PARSER)
-  install(
-    FILES
-    "${PROJECT_SOURCE_DIR}/cmake/Findre2.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
-    COMPONENT Devel)
-endif()
+install(
+  FILES
+  "${PROJECT_SOURCE_DIR}/cmake/Findre2.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}/modules"
+  COMPONENT Devel)
 if(USE_COINOR)
   install(
     FILES

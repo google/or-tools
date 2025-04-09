@@ -377,7 +377,6 @@ cc_library(
 cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
-    defines = ["USE_LP_PARSER"],
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",
