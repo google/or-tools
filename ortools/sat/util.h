@@ -327,6 +327,12 @@ class ModelRandomGenerator : public absl::BitGenRef {
       absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
     }
   }
+
+  explicit ModelRandomGenerator(const absl::BitGenRef& bit_gen_ref)
+      : absl::BitGenRef(deterministic_random_) {
+    absl::BitGenRef::operator=(bit_gen_ref);
+  }
+
   explicit ModelRandomGenerator(Model* model)
       : ModelRandomGenerator(*model->GetOrCreate<SatParameters>()) {}
 

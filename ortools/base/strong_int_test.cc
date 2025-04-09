@@ -181,7 +181,7 @@ TYPED_TEST(StrongIntTest, TestCtors) {
       EXPECT_EQ(V(93), x.value());
 
       // It is undefined to init an unsigned int from a negative float.
-      if (std::numeric_limits<V>::is_signed) {
+      if constexpr (std::numeric_limits<V>::is_signed) {
         float j = -76.1;
         T y(j);
         EXPECT_EQ(V(-76.1), y.value());
@@ -194,7 +194,7 @@ TYPED_TEST(StrongIntTest, TestCtors) {
       EXPECT_EQ(V(93), x.value());
 
       // It is undefined to init an unsigned int from a negative double.
-      if (std::numeric_limits<V>::is_signed) {
+      if constexpr (std::numeric_limits<V>::is_signed) {
         double j = -76.1;
         T y(j);
         EXPECT_EQ(V(-76.1), y.value());
@@ -207,7 +207,7 @@ TYPED_TEST(StrongIntTest, TestCtors) {
       EXPECT_EQ(V(93), x.value());
 
       // It is undefined to init an unsigned int from a negative long double.
-      if (std::numeric_limits<V>::is_signed) {
+      if constexpr (std::numeric_limits<V>::is_signed) {
         long double j = -76.1;
         T y(j);
         EXPECT_EQ(V(-76.1), y.value());
@@ -312,7 +312,7 @@ TYPED_TEST(StrongIntTest, TestAbslParseFlagInvalid) {
 
   T t;
   std::string error;
-  if (std::numeric_limits<V>::is_signed) {
+  if constexpr (std::numeric_limits<V>::is_signed) {
     EXPECT_DEATH(absl::ParseFlag("-123", &t, &error), "PositiveValidator");
   } else {
     EXPECT_FALSE(absl::ParseFlag("-123", &t, &error));
@@ -323,7 +323,7 @@ TYPED_TEST(StrongIntTest, TestAbslParseFlagInvalid) {
 TYPED_TEST(StrongIntTest, TestCtorDeath) {
   using V = typename TestFixture::V;
 
-  if (std::numeric_limits<V>::is_signed) {
+  if constexpr (std::numeric_limits<V>::is_signed) {
     struct CustomTag {};
     using T = StrongInt<CustomTag, V, PositiveValidator>;
     EXPECT_DEATH(T(static_cast<V>(-123)), "PositiveValidator");
@@ -509,7 +509,7 @@ TYPED_TEST(StrongIntTest, TestMultiplyOperators) {
   // Test positive vs. positive multiplication.
   TEST_T_OP_NUM(9, *, V, 3);
   TEST_NUM_OP_T(V, 9, *, 3);
-  if (std::is_signed<V>::value) {
+  if constexpr (std::is_signed<V>::value) {
     // Test negative vs. positive multiplication.
     TEST_T_OP_NUM(-9, *, V, 3);
     TEST_NUM_OP_T(V, -9, *, 3);
@@ -526,7 +526,7 @@ TYPED_TEST(StrongIntTest, TestMultiplyOperators) {
   // Test multiplication by zero.
   TEST_T_OP_NUM(93, *, V, 0);
   TEST_NUM_OP_T(V, 93, *, 0);
-  if (std::is_signed<V>::value) {
+  if constexpr (std::is_signed<V>::value) {
     // Test multiplication by a negative.
     TEST_T_OP_NUM(93, *, V, -1);
     TEST_NUM_OP_T(V, 93, *, -1);
@@ -574,16 +574,20 @@ TYPED_TEST(StrongIntTest, TestDivideOperators) {
 
   // Test positive vs. positive division.
   TEST_T_OP_NUM(9, /, V, 3);
-  // Test negative vs. positive division.
-  TEST_T_OP_NUM(-9, /, V, 3);
-  // Test positive vs. negative division.
-  TEST_T_OP_NUM(9, /, V, -3);
-  // Test negative vs. negative division.
-  TEST_T_OP_NUM(-9, /, V, -3);
+  if constexpr (std::is_signed<V>::value) {
+    // Test negative vs. positive division.
+    TEST_T_OP_NUM(-9, /, V, 3);
+    // Test positive vs. negative division.
+    TEST_T_OP_NUM(9, /, V, -3);
+    // Test negative vs. negative division.
+    TEST_T_OP_NUM(-9, /, V, -3);
+  }
   // Test division by one.
   TEST_T_OP_NUM(93, /, V, 1);
-  // Test division by a negative.
-  TEST_T_OP_NUM(93, /, V, -1);
+  if constexpr (std::is_signed<V>::value) {
+    // Test division by a negative.
+    TEST_T_OP_NUM(93, /, V, -1);
+  }
   // Test division by int8_t.
   TEST_T_OP_NUM(93, /, int8_t, 2);
   // Test division by uint8_t.

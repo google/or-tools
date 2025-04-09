@@ -133,6 +133,7 @@ TEST(RelativeGapLimitTest, BooleanLinearOptimizationProblem) {
 
   Model model;
   SatParameters params;
+  params.set_num_workers(1);
   params.set_relative_gap_limit(1e10);  // Should stop at the first solution!
 
   int num_solutions = 0;
@@ -4709,6 +4710,45 @@ TEST(PresolveCpModelTest, CumulativeBugWithEmptyInterval) {
   response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(response.inner_objective_lower_bound(), 0);
+}
+
+TEST(PresolveCpModelTest, CumulativeBug3) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: 1 domain: 1 }
+        variables { domain: 0 domain: 6 }
+        variables { domain: 0 domain: 6 }
+        variables { domain: 0 domain: 6 }
+        constraints {
+          enforcement_literal: 0
+          interval {
+            start { vars: 1 coeffs: 1 }
+            end { vars: 3 coeffs: 1 }
+            size { vars: 2 coeffs: -1 offset: 2 }
+          }
+        }
+        constraints {
+          cumulative {
+            capacity { offset: 1 }
+            intervals: 0
+            demands { vars: 1 coeffs: 1 offset: 1 }
+          }
+        }
+        objective { vars: 1 coeffs: -1 }
+      )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), -6);
+
+  params.set_cp_model_presolve(false);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.inner_objective_lower_bound(), -6);
 }
 
 }  // namespace

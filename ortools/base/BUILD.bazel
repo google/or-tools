@@ -252,7 +252,9 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
+        "@bzip2//:bz2",
         "@com_google_protobuf//:protobuf",
+        "@zlib",
     ],
 )
 

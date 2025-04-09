@@ -67,6 +67,8 @@ class ReducedCosts {
   // next call to GetReducedCosts().
   bool NeedsBasisRefactorization() const;
 
+  void SetRandom(absl::BitGenRef random) { random_ = random; }
+
   // Checks the precision of the entering variable choice now that the direction
   // is computed. Returns its precise version. This will also trigger a
   // reduced cost recomputation if it was deemed too imprecise.
@@ -306,6 +308,8 @@ class PrimalPrices {
   // Returns the best candidate out of the dual infeasible positions to enter
   // the basis during a primal simplex iterations.
   ColIndex GetBestEnteringColumn();
+
+  void SetRandom(absl::BitGenRef random) { prices_.SetRandom(random); }
 
   // Similar to the other UpdateBeforeBasisPivot() functions.
   //

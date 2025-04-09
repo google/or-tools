@@ -26,6 +26,10 @@ if(NOT BUILD_ZLIB AND NOT TARGET ZLIB::ZLIB)
  find_package(ZLIB REQUIRED)
 endif()
 
+if(NOT BUILD_BZip2 AND NOT TARGET BZip2::BZip2)
+ find_package(BZip2 REQUIRED)
+endif()
+
 if(NOT BUILD_absl AND NOT TARGET absl::base)
   find_package(absl REQUIRED)
 endif()

@@ -24,7 +24,7 @@ package operations_research.glop;
 option java_package = "com.google.ortools.glop";
 option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.Glop";
-// next id = 72
+// next id = 73
 message GlopParameters {
   // Supported algorithms for scaling:
   // EQUILIBRATION - progressive scaling by row and column norms until the
@@ -403,6 +403,9 @@ message GlopParameters {
   // limit, they might of course yield different results because one will have
   // advanced farther than the other.
   optional int32 random_seed = 43 [default = 1];
+
+  // Whether to use absl::BitGen instead of MTRandom.
+  optional bool use_absl_random = 72 [default = false];
 
   // Number of threads in the OMP parallel sections. If left to 1, the code will
   // not create any OMP threads and will remain single-threaded.

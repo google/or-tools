@@ -11,8 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <cstdlib>
+#include <functional>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -23,6 +27,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
@@ -36,7 +41,9 @@
 #include "ortools/sat/opb_reader.h"
 #include "ortools/sat/sat_cnf_reader.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(
@@ -67,6 +74,8 @@ ABSL_FLAG(bool, wcnf_use_strong_slack, true,
           "enforce the fact that when it is true, the clause must be false.");
 ABSL_FLAG(bool, fingerprint_intermediate_solutions, false,
           "Attach the fingerprint of intermediate solutions to the output.");
+ABSL_FLAG(bool, competition_mode, false,
+          "If true, output the log in a competition format.");
 
 namespace operations_research {
 namespace sat {
@@ -90,14 +99,94 @@ std::string ExtractName(absl::string_view full_filename) {
   return filename;
 }
 
+void LogInPbCompetitionFormat(int num_variables, bool has_objective,
+                              Model* model, SatParameters* parameters) {
+  const auto log_callback = [](const std::string& multi_line_input) {
+    if (multi_line_input.empty()) {
+      std::cout << "c" << std::endl;
+      return;
+    }
+    const std::vector<absl::string_view> lines =
+        absl::StrSplit(multi_line_input, '\n');
+    for (const absl::string_view& line : lines) {
+      std::cout << "c " << line << std::endl;
+    }
+  };
+  model->GetOrCreate<SolverLogger>()->AddInfoLoggingCallback(log_callback);
+  parameters->set_log_to_stdout(false);
+
+  const auto response_callback = [](const CpSolverResponse& r) {
+    std::cout << "o " << static_cast<int64_t>(r.objective_value()) << std::endl;
+  };
+  model->Add(NewFeasibleSolutionObserver(response_callback));
+
+  const auto final_response_callback = [num_variables,
+                                        has_objective](CpSolverResponse* r) {
+    switch (r->status()) {
+      case CpSolverStatus::OPTIMAL:
+        if (has_objective) {
+          std::cout << "s OPTIMUM FOUND " << std::endl;
+        } else {
+          std::cout << "s SATISFIABLE" << std::endl;
+        }
+        break;
+      case CpSolverStatus::FEASIBLE:
+        std::cout << "s SATISFIABLE" << std::endl;
+        break;
+      case CpSolverStatus::INFEASIBLE:
+        std::cout << "s UNSATISFIABLE" << std::endl;
+        break;
+      case CpSolverStatus::MODEL_INVALID:
+        std::cout << "s UNSUPPORTED" << std::endl;
+        break;
+      case CpSolverStatus::UNKNOWN:
+        std::cout << "s UNKNOWN" << std::endl;
+        break;
+      default:
+        break;
+    }
+    if (r->status() == CpSolverStatus::OPTIMAL ||
+        r->status() == CpSolverStatus::FEASIBLE) {
+      std::string line;
+      for (int i = 0; i < num_variables; ++i) {
+        if (r->solution(i)) {
+          absl::StrAppend(&line, "x", i + 1, " ");
+        } else {
+          absl::StrAppend(&line, "-x", i + 1, " ");
+        }
+        if (line.size() >= 75) {
+          std::cout << "v " << line << std::endl;
+          line.clear();
+        }
+      }
+      if (!line.empty()) {
+        std::cout << "v " << line << std::endl;
+      }
+    }
+  };
+  model->GetOrCreate<SharedResponseManager>()->AddFinalResponsePostprocessor(
+      final_response_callback);
+}
+
 bool LoadProblem(const std::string& filename, absl::string_view hint_file,
-                 absl::string_view domain_file, CpModelProto* cp_model) {
+                 absl::string_view domain_file, CpModelProto* cp_model,
+                 Model* model, SatParameters* parameters) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2") ||
-      absl::EndsWith(filename, ".opb.gz")) {
+      absl::EndsWith(filename, ".opb.gz") || absl::EndsWith(filename, ".wbo") ||
+      absl::EndsWith(filename, ".wbo.bz2") ||
+      absl::EndsWith(filename, ".wbo.gz")) {
     OpbReader reader;
     if (!reader.LoadAndValidate(filename, cp_model)) {
-      LOG(FATAL) << "Cannot load file '" << filename << "'.";
+      if (absl::GetFlag(FLAGS_competition_mode)) {
+        std::cout << "s UNSUPPORTED" << std::endl;
+      }
+      return false;
+    }
+
+    if (absl::GetFlag(FLAGS_competition_mode)) {
+      LogInPbCompetitionFormat(reader.num_variables(),
+                               cp_model->has_objective(), model, parameters);
     }
   } else if (absl::EndsWith(filename, ".cnf") ||
              absl::EndsWith(filename, ".cnf.xz") ||
@@ -159,11 +248,11 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
   if (cp_model->name().empty()) {
     cp_model->set_name(ExtractName(filename));
   }
-
   return true;
 }
 
 int Run() {
+  Model model;
   SatParameters parameters;
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
@@ -182,13 +271,14 @@ int Run() {
   CpModelProto* cp_model =
       google::protobuf::Arena::Create<CpModelProto>(&arena);
   if (!LoadProblem(absl::GetFlag(FLAGS_input), absl::GetFlag(FLAGS_hint_file),
-                   absl::GetFlag(FLAGS_domain_file), cp_model)) {
-    CpSolverResponse response;
-    response.set_status(CpSolverStatus::MODEL_INVALID);
+                   absl::GetFlag(FLAGS_domain_file), cp_model, &model,
+                   &parameters)) {
+    if (!absl::GetFlag(FLAGS_competition_mode)) {
+      LOG(FATAL) << "Cannot load file '" << absl::GetFlag(FLAGS_input) << "'.";
+    }
     return EXIT_SUCCESS;
   }
 
-  Model model;
   model.Add(NewSatParameters(parameters));
   if (absl::GetFlag(FLAGS_fingerprint_intermediate_solutions)) {
     // Let's add a solution callback that will display the fingerprint of all

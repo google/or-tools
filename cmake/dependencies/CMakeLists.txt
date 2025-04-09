@@ -74,6 +74,28 @@ if(BUILD_ZLIB)
 endif()
 
 # ##############################################################################
+# BZip2
+# ##############################################################################
+if(BUILD_BZip2)
+  message(CHECK_START "Fetching BZip2")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(ENABLE_LIB_ONLY ON)
+  set(ENABLE_TESTS OFF)
+  FetchContent_Declare(
+    BZip2
+    GIT_REPOSITORY "https://gitlab.com/bzip2/bzip2.git"
+    GIT_TAG "master"
+    # GIT_TAG "bzip2-1.0.8" # CMake support not available
+    GIT_SHALLOW TRUE
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/bzip2.patch"
+  )
+  FetchContent_MakeAvailable(BZip2)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+# ##############################################################################
 # ABSEIL-CPP
 # ##############################################################################
 if(BUILD_absl)

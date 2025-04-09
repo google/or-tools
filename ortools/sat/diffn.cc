@@ -34,6 +34,7 @@
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/2d_try_edge_propagator.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/disjunctive.h"
@@ -45,6 +46,7 @@
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -176,23 +178,21 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
                                  const std::vector<IntervalVariable>& y,
                                  Model* model) {
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  NoOverlap2DConstraintHelper* no_overlap_helper =
+  NoOverlap2DConstraintHelper* helper_2d =
       repository->GetOrCreate2DHelper(x, y);
 
   GenericLiteralWatcher* const watcher =
       model->GetOrCreate<GenericLiteralWatcher>();
 
-  CreateAndRegisterMandatoryOverlapPropagator(no_overlap_helper, model, watcher,
-                                              3);
+  CreateAndRegisterMandatoryOverlapPropagator(helper_2d, model, watcher, 3);
 
   NonOverlappingRectanglesDisjunctivePropagator* constraint =
-      new NonOverlappingRectanglesDisjunctivePropagator(no_overlap_helper,
-                                                        model);
+      new NonOverlappingRectanglesDisjunctivePropagator(helper_2d, model);
   constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
   model->TakeOwnership(constraint);
 
   RectanglePairwisePropagator* pairwise_propagator =
-      new RectanglePairwisePropagator(no_overlap_helper, model);
+      new RectanglePairwisePropagator(helper_2d, model);
   watcher->SetPropagatorPriority(pairwise_propagator->RegisterWith(watcher), 4);
   model->TakeOwnership(pairwise_propagator);
 
@@ -235,7 +235,7 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
 
   if (params.use_area_energetic_reasoning_in_no_overlap_2d()) {
     NonOverlappingRectanglesEnergyPropagator* energy_constraint =
-        new NonOverlappingRectanglesEnergyPropagator(no_overlap_helper, model);
+        new NonOverlappingRectanglesEnergyPropagator(helper_2d, model);
     GenericLiteralWatcher* const watcher =
         model->GetOrCreate<GenericLiteralWatcher>();
     watcher->SetPropagatorPriority(energy_constraint->RegisterWith(watcher), 5);
@@ -243,7 +243,82 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
   }
 
   if (params.use_try_edge_reasoning_in_no_overlap_2d()) {
-    CreateAndRegisterTryEdgePropagator(no_overlap_helper, model, watcher, 5);
+    CreateAndRegisterTryEdgePropagator(helper_2d, model, watcher, 5);
+  }
+
+  // Create all 2D "precedence" Booleans.
+  //
+  // TODO(user): For now we only deal with mandatory boxes.
+  //
+  // TODO(user): Like we do for 1D, one way to scale this is to only create such
+  // Boolean dynamically as we need to take a decision, and the previously
+  // created one are all assigned. It is a bit trickier though because of
+  // the extra constraints between these Booleans. Maybe one easy step is to
+  // create all 4 Booleans for a given pair of boxes at once.
+  //
+  // TODO(user): Tricky, it would be better to use the helper_2d instead of the
+  // general repository, however, as we add constraints, this propagates which
+  // might swap/change the underlying x_helper and y_helper...
+  const int num_boxes = x.size();
+  if (num_boxes < params.no_overlap_2d_boolean_relations_limit()) {
+    auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
+    auto* sat_solver = model->GetOrCreate<SatSolver>();
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
+
+    // Creates and returns the Boolean equivalent to a <= b.
+    const auto f = [repository, integer_trail, encoder](
+                       const AffineExpression& a, const AffineExpression& b) {
+      if (a.var == b.var) {
+        return (a.constant <= b.constant) ? encoder->GetTrueLiteral()
+                                          : encoder->GetFalseLiteral();
+      }
+      if (integer_trail->UpperBound(a) <= integer_trail->LowerBound(b)) {
+        return encoder->GetTrueLiteral();
+      }
+      if (integer_trail->LowerBound(a) > integer_trail->UpperBound(b)) {
+        return encoder->GetFalseLiteral();
+      }
+      repository->CreatePrecedenceLiteral(a, b);
+      const LiteralIndex index = repository->GetPrecedenceLiteral(a, b);
+      CHECK(index != kNoLiteralIndex);
+      return Literal(index);
+    };
+
+    for (int i = 0; i < num_boxes; ++i) {
+      if (repository->IsOptional(x[i])) continue;
+      if (repository->IsOptional(y[i])) continue;
+      for (int j = i + 1; j < num_boxes; ++j) {
+        if (repository->IsOptional(x[j])) continue;
+        if (repository->IsOptional(y[j])) continue;
+
+        // At most one of these two x options is true.
+        const Literal x_ij = f(repository->End(x[i]), repository->Start(x[j]));
+        const Literal x_ji = f(repository->End(x[j]), repository->Start(x[i]));
+        if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
+             integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
+            !implications->AddAtMostOne({x_ij, x_ji})) {
+          sat_solver->NotifyThatModelIsUnsat();
+          return;
+        }
+
+        // At most one of these two y options is true.
+        const Literal y_ij = f(repository->End(y[i]), repository->Start(y[j]));
+        const Literal y_ji = f(repository->End(y[j]), repository->Start(y[i]));
+        if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
+             integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
+            !implications->AddAtMostOne({y_ij, y_ji})) {
+          sat_solver->NotifyThatModelIsUnsat();
+          return;
+        }
+
+        // At least one of the 4 options is true.
+        if (!sat_solver->AddProblemClause({x_ij, x_ji, y_ij, y_ji})) {
+          return;
+        }
+      }
+    }
   }
 }
 

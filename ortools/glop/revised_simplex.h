@@ -248,6 +248,11 @@ class RevisedSimplex {
 
   void SetLogger(SolverLogger* logger) { logger_ = logger; }
 
+  // Note: SetParameters() calls SetRandom() on its implementation, so if you
+  // want to set the parameters and then set the random generator, you should
+  // call SetRandom() after SetParameters().
+  void SetRandom(absl::BitGenRef random);
+
   // Advanced usage. For fast incremental call to the solver, it is better not
   // to use LinearProgram at all. This api allows to directly modify the
   // internal data of glop and then call solve.
@@ -376,7 +381,7 @@ class RevisedSimplex {
   void DisplayRevisedSimplexDebugInfo();
 
   // Displays the Linear Programming problem as it was input.
-  void DisplayProblem() const;
+  void DisplayProblem();
 
   // Returns the current objective value. This is just the sum of the current
   // variable values times their current cost.

@@ -76,6 +76,8 @@ class DynamicMaximum {
   // Removes the given index from the set of candidates.
   void Remove(Index position);
 
+  void SetRandom(absl::BitGenRef random) { random_ = random; }
+
   // Adds an element to the set of candidate and sets its value. If the element
   // is already present, this updates its value. The value must be finite.
   void AddOrUpdate(Index position, Fractional value);

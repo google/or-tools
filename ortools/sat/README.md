@@ -39,7 +39,7 @@ The optimization model description and related utilities:
 
 ## SAT solver
 
-Stand-alone SAT solver and related files. Note that this is more than a basic
+Standalone SAT solver and related files. Note that this is more than a basic
 SAT solver as it already includes non-clause constraints. However, these do not
 work on the general integer problems that the CP solver handles.
 
@@ -170,7 +170,7 @@ CP solver built on top of the SAT solver:
     objects and manages the memory ownership of all the solver classes.
 *   [optimization.h](../sat/optimization.h):
     Algorithms to solve an optimization problem using a satisfiability solver as
-    a black box.
+    an opaque-box.
 *   [lp_utils.h](../sat/lp_utils.h):
     Utility to scale and convert a MIP model into CP.
 
