@@ -453,6 +453,28 @@ TEST(ElementalTest, Attr2RespondsToElementDeletionKey1) {
   EXPECT_THAT(elemental.AttrNonDefaults(DoubleAttr2::kLinConCoef), IsEmpty());
 }
 
+TEST(ElementalTest, SymmetricAttr2) {
+  using Key = AttrKeyFor<SymmetricDoubleAttr2>;
+  Elemental elemental;
+  const VariableId x0 = elemental.AddElement<ElementType::kVariable>("x1");
+  const VariableId x1 = elemental.AddElement<ElementType::kVariable>("x2");
+  const VariableId x2 = elemental.AddElement<ElementType::kVariable>("x3");
+
+  const auto q01 = Key(x0, x1);
+  const auto q21 = Key(x2, x1);
+  const auto q12 = Key(x1, x2);
+
+  elemental.SetAttr(SymmetricDoubleAttr2::kObjQuadCoef, q01, 42.0);
+  elemental.SetAttr(SymmetricDoubleAttr2::kObjQuadCoef, q21, 43.0);
+  elemental.SetAttr(SymmetricDoubleAttr2::kObjQuadCoef, q12, 44.0);
+
+  EXPECT_EQ(elemental.AttrNumNonDefaults(SymmetricDoubleAttr2::kObjQuadCoef),
+            2);
+
+  EXPECT_THAT(elemental.AttrNonDefaults(SymmetricDoubleAttr2::kObjQuadCoef),
+              UnorderedElementsAre(q01, q12));
+}
+
 TEST(ElementalTest, SymmetricAttr2RespondsToElementDeletionKey0) {
   using Key = AttrKeyFor<SymmetricDoubleAttr2>;
   Elemental elemental;
