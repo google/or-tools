@@ -304,7 +304,7 @@ class AttrStorage {
   static_assert(std::is_trivially_copyable_v<V>);
 
   // Generally avoid, provided to make working with std::array easier.
-  explicit AttrStorage() : AttrStorage({}) {}
+  explicit AttrStorage() : AttrStorage(V{}) {}
 
   // The default value of the attribute is its value when the model is created
   // (e.g. for linear_constraint_coefficient, 0.0).
