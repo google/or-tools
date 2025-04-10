@@ -263,8 +263,10 @@ class ImpliedBoundsProcessor {
   struct BestImpliedBoundInfo {
     double var_lp_value = 0.0;
     double bool_lp_value = 0.0;
-    bool is_positive;
     IntegerValue implied_bound;
+
+    // When VariableIsPositive(bool_var) then it is when this is one that the
+    // bound is implied. Otherwise it is when this is zero.
     IntegerVariable bool_var = kNoIntegerVariable;
 
     double SlackLpValue(IntegerValue lb) const {

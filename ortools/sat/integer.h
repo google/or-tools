@@ -240,13 +240,17 @@ class IntegerEncoder {
     return temp_associated_vars_;
   }
 
-  // If it exists, returns a [0,1] integer variable which is equal to 1 iff the
+  // If it exists, returns a [0, 1] integer variable which is equal to 1 iff the
   // given literal is true. Returns kNoIntegerVariable if such variable does not
   // exist. Note that one can create one by creating a new IntegerVariable and
   // calling AssociateToIntegerEqualValue().
+  //
+  // Note that this will only return "positive" IntegerVariable.
   IntegerVariable GetLiteralView(Literal lit) const {
     if (lit.Index() >= literal_view_.size()) return kNoIntegerVariable;
-    return literal_view_[lit];
+    const IntegerVariable result = literal_view_[lit];
+    DCHECK(result == kNoIntegerVariable || VariableIsPositive(result));
+    return result;
   }
 
   // If this is true, then a literal can be linearized with an affine expression
@@ -343,8 +347,8 @@ class IntegerEncoder {
   // Used by GetAllAssociatedVariables().
   mutable std::vector<IntegerVariable> temp_associated_vars_;
 
-  // Store for a given LiteralIndex its IntegerVariable view or kNoLiteralIndex
-  // if there is none.
+  // Store for a given LiteralIndex its IntegerVariable view or kNoVariableIndex
+  // if there is none. Note that only positive IntegerVariable will appear here.
   util_intops::StrongVector<LiteralIndex, IntegerVariable> literal_view_;
 
   // Mapping (variable == value) -> associated literal. Note that even if

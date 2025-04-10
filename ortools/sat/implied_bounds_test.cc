@@ -145,7 +145,6 @@ TEST(ImpliedBoundsTest, ReadBoundsFromTrail) {
   EXPECT_EQ(result.size(), 1);
   EXPECT_EQ(result[0].literal_view, view);
   EXPECT_EQ(result[0].lower_bound, IntegerValue(9));
-  EXPECT_TRUE(result[0].is_positive);
 }
 
 TEST(ImpliedBoundsTest, DetectEqualityFromMin) {
