@@ -14,6 +14,7 @@
 #include "ortools/util/sigint.h"
 
 #include <csignal>
+#include <cstdlib>
 #include <functional>
 
 #include "ortools/base/logging.h"

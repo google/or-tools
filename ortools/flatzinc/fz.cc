@@ -194,6 +194,7 @@ int main(int argc, char** argv) {
     std::string currentLine;
     while (std::getline(std::cin, currentLine)) {
       input.append(currentLine);
+      input.append("\n");
     }
   } else {
     if (residual_flags.empty()) {

@@ -1,0 +1,954 @@
+# proto-file: ortools/sat/cp_model.proto
+# proto-message: operations_research.sat.CpModelProto
+
+variables { domain: [0, 41] }
+variables { domain: [0, 53] }
+variables { domain: [40, 40] }
+variables { domain: [41, 41] }
+variables { domain: [17, 17] }
+variables { domain: [42, 42] }
+variables { domain: [14, 14] }
+variables { domain: [28, 28] }
+variables { domain: [0, 47] }
+variables { domain: [0, 51] }
+variables { domain: [0, 51] }
+variables { domain: [0, 55] }
+variables { domain: [0, 51] }
+variables { domain: [0, 55] }
+variables { domain: [0, 41] }
+variables { domain: [0, 53] }
+variables { domain: [0, 51] }
+variables { domain: [0, 47] }
+variables { domain: [2, 2] }
+variables { domain: [34, 34] }
+variables { domain: [0, 43] }
+variables { domain: [0, 55] }
+variables { domain: [0, 0] }
+variables { domain: [55, 55] }
+variables { domain: [0, 0] }
+variables { domain: [12, 12] }
+variables { domain: [12, 12] }
+variables { domain: [35, 35] }
+variables { domain: [10, 10] }
+variables { domain: [17, 17] }
+variables { domain: [4, 4] }
+variables { domain: [35, 35] }
+variables { domain: [24, 24] }
+variables { domain: [41, 41] }
+variables { domain: [0, 0] }
+variables { domain: [20, 20] }
+variables { domain: [0, 43] }
+variables { domain: [0, 49] }
+variables { domain: [0, 57] }
+variables { domain: [0, 55] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [6, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [3, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [1, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+variables { domain: [0, 23] }
+constraints {
+  interval {
+    start { vars: [0] coeffs: [1] }
+    end { vars: [0] coeffs: [1] offset: 20 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [1] coeffs: [1] }
+    end { vars: [1] coeffs: [1] offset: 4 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 40 }
+    end { offset: 60 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 41 }
+    end { offset: 55 }
+    size { offset: 14 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 17 }
+    end { offset: 21 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 42 }
+    end { offset: 52 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 14 }
+    end { offset: 20 }
+    size { offset: 6 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 28 }
+    end { offset: 32 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [8] coeffs: [1] }
+    end { vars: [8] coeffs: [1] offset: 14 }
+    size { offset: 14 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [9] coeffs: [1] }
+    end { vars: [9] coeffs: [1] offset: 6 }
+    size { offset: 6 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [10] coeffs: [1] }
+    end { vars: [10] coeffs: [1] offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [11] coeffs: [1] }
+    end { vars: [11] coeffs: [1] offset: 2 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [12] coeffs: [1] }
+    end { vars: [12] coeffs: [1] offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [13] coeffs: [1] }
+    end { vars: [13] coeffs: [1] offset: 2 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [14] coeffs: [1] }
+    end { vars: [14] coeffs: [1] offset: 20 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [15] coeffs: [1] }
+    end { vars: [15] coeffs: [1] offset: 4 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [16] coeffs: [1] }
+    end { vars: [16] coeffs: [1] offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [17] coeffs: [1] }
+    end { vars: [17] coeffs: [1] offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 2 }
+    end { offset: 4 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 34 }
+    end { offset: 40 }
+    size { offset: 6 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [20] coeffs: [1] }
+    end { vars: [20] coeffs: [1] offset: 18 }
+    size { offset: 18 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [21] coeffs: [1] }
+    end { vars: [21] coeffs: [1] offset: 2 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { }
+    end { offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 55 }
+    end { offset: 75 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { }
+    end { offset: 8 }
+    size { offset: 8 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 12 }
+    end { offset: 14 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 12 }
+    end { offset: 14 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 35 }
+    end { offset: 51 }
+    size { offset: 16 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 10 }
+    end { offset: 14 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 17 }
+    end { offset: 35 }
+    size { offset: 18 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 4 }
+    end { offset: 12 }
+    size { offset: 8 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 35 }
+    end { offset: 55 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 24 }
+    end { offset: 40 }
+    size { offset: 16 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 41 }
+    end { offset: 61 }
+    size { offset: 20 }
+  }
+}
+constraints {
+  interval {
+    start { }
+    end { offset: 10 }
+    size { offset: 10 }
+  }
+}
+constraints {
+  interval {
+    start { offset: 20 }
+    end { offset: 34 }
+    size { offset: 14 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [36] coeffs: [1] }
+    end { vars: [36] coeffs: [1] offset: 18 }
+    size { offset: 18 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [37] coeffs: [1] }
+    end { vars: [37] coeffs: [1] offset: 8 }
+    size { offset: 8 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [38] coeffs: [1] }
+    end { vars: [38] coeffs: [1] offset: 4 }
+    size { offset: 4 }
+  }
+}
+constraints {
+  interval {
+    start { vars: [39] coeffs: [1] }
+    end { vars: [39] coeffs: [1] offset: 2 }
+    size { offset: 2 }
+  }
+}
+constraints {
+  linear {
+    vars: [8, 10, 40]
+    coeffs: [1, -1, -1]
+    domain: [-74, 12]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 10, 40]
+    coeffs: [1, -1, 1]
+    domain: [-12, 70]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 42]
+    coeffs: [1, -1]
+    domain: [-23, 13]
+  }
+}
+constraints {
+  linear {
+    vars: [0, 43]
+    coeffs: [1, -1]
+    domain: [-23, 22]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 20, 45]
+    coeffs: [1, -1, -1]
+    domain: [-66, 14]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 20, 45]
+    coeffs: [1, -1, 1]
+    domain: [-14, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 12, 46]
+    coeffs: [1, -1, -1]
+    domain: [-74, 10]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 12, 46]
+    coeffs: [1, -1, 1]
+    domain: [-10, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 48]
+    coeffs: [-1, -1]
+    domain: [-66, -21]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 16, 49]
+    coeffs: [1, -1, -1]
+    domain: [-74, 12]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 16, 49]
+    coeffs: [1, -1, 1]
+    domain: [-12, 70]
+  }
+}
+constraints {
+  linear {
+    vars: [38, 50]
+    coeffs: [-1, -1]
+    domain: [-80, -9]
+  }
+}
+constraints {
+  linear {
+    vars: [38, 50]
+    coeffs: [-1, 1]
+    domain: [-19, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [16, 52]
+    coeffs: [1, -1]
+    domain: [-23, 37]
+  }
+}
+constraints {
+  linear {
+    vars: [16, 52]
+    coeffs: [1, 1]
+    domain: [11, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 53]
+    coeffs: [-1, -1]
+    domain: [-66, -2]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 53]
+    coeffs: [-1, 1]
+    domain: [-26, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 14, 56]
+    coeffs: [1, -1, -1]
+    domain: [-64, 17]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 14, 56]
+    coeffs: [1, -1, 1]
+    domain: [-17, 70]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 57]
+    coeffs: [-1, -1]
+    domain: [-70, -4]
+  }
+}
+constraints {
+  linear {
+    vars: [8, 57]
+    coeffs: [-1, 1]
+    domain: [-24, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 58]
+    coeffs: [1, -1]
+    domain: [-23, 17]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 58]
+    coeffs: [1, 1]
+    domain: [3, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 59]
+    coeffs: [-1, -1]
+    domain: [-66, -6]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 59]
+    coeffs: [-1, 1]
+    domain: [-28, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 14, 61]
+    coeffs: [1, -1, -1]
+    domain: [-64, 15]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 14, 61]
+    coeffs: [1, -1, 1]
+    domain: [-15, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [12, 62]
+    coeffs: [1, -1]
+    domain: [-23, 10]
+  }
+}
+constraints {
+  linear {
+    vars: [14, 63]
+    coeffs: [1, -1]
+    domain: [-23, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [14, 63]
+    coeffs: [1, 1]
+    domain: [1, 64]
+  }
+}
+constraints {
+  linear {
+    vars: [0, 65]
+    coeffs: [1, -1]
+    domain: [-23, 15]
+  }
+}
+constraints {
+  linear {
+    vars: [14, 38, 66]
+    coeffs: [1, -1, -1]
+    domain: [-80, 12]
+  }
+}
+constraints {
+  linear {
+    vars: [14, 38, 66]
+    coeffs: [1, -1, 1]
+    domain: [-12, 64]
+  }
+}
+constraints {
+  linear {
+    vars: [38, 67]
+    coeffs: [-1, -1]
+    domain: [-80, -14]
+  }
+}
+constraints {
+  linear {
+    vars: [38, 67]
+    coeffs: [-1, 1]
+    domain: [-34, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 16, 68]
+    coeffs: [1, -1, -1]
+    domain: [-74, 10]
+  }
+}
+constraints {
+  linear {
+    vars: [10, 16, 68]
+    coeffs: [1, -1, 1]
+    domain: [-10, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 69]
+    coeffs: [-1, -1]
+    domain: [-66, -2]
+  }
+}
+constraints {
+  linear {
+    vars: [36, 69]
+    coeffs: [-1, 1]
+    domain: [-22, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 11, 70]
+    coeffs: [1, -1, -1]
+    domain: [-78, 4]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 11, 70]
+    coeffs: [1, -1, 1]
+    domain: [-4, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 72]
+    coeffs: [1, -1]
+    domain: [-23, 46]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 72]
+    coeffs: [1, 1]
+    domain: [24, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [1, 73]
+    coeffs: [1, -1]
+    domain: [-23, 28]
+  }
+}
+constraints {
+  linear {
+    vars: [1, 73]
+    coeffs: [1, 1]
+    domain: [6, 76]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 21, 75]
+    coeffs: [1, -1, -1]
+    domain: [-78, 2]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 21, 75]
+    coeffs: [1, -1, 1]
+    domain: [-2, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 13, 76]
+    coeffs: [1, -1, -1]
+    domain: [-78, 2]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 13, 76]
+    coeffs: [1, -1, 1]
+    domain: [-2, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 78]
+    coeffs: [-1, -1]
+    domain: [-72, -30]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 17, 79]
+    coeffs: [1, -1, -1]
+    domain: [-70, 8]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 17, 79]
+    coeffs: [1, -1, 1]
+    domain: [-8, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [39, 80]
+    coeffs: [-1, -1]
+    domain: [-78, -25]
+  }
+}
+constraints {
+  linear {
+    vars: [39, 80]
+    coeffs: [-1, 1]
+    domain: [-31, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [17, 82]
+    coeffs: [1, 1]
+    domain: [26, 70]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 83]
+    coeffs: [-1, -1]
+    domain: [-72, -22]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 83]
+    coeffs: [-1, 1]
+    domain: [-34, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 15, 86]
+    coeffs: [1, -1, -1]
+    domain: [-76, 5]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 15, 86]
+    coeffs: [1, -1, 1]
+    domain: [-5, 74]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 87]
+    coeffs: [-1, -1]
+    domain: [-74, -23]
+  }
+}
+constraints {
+  linear {
+    vars: [9, 87]
+    coeffs: [-1, 1]
+    domain: [-33, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 88]
+    coeffs: [1, -1]
+    domain: [-23, 27]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 88]
+    coeffs: [1, 1]
+    domain: [7, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 89]
+    coeffs: [-1, -1]
+    domain: [-72, -33]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 15, 91]
+    coeffs: [1, -1, -1]
+    domain: [-76, 3]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 15, 91]
+    coeffs: [1, -1, 1]
+    domain: [-3, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 92]
+    coeffs: [1, -1]
+    domain: [-23, 28]
+  }
+}
+constraints {
+  linear {
+    vars: [13, 92]
+    coeffs: [1, 1]
+    domain: [12, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [15, 93]
+    coeffs: [1, -1]
+    domain: [-23, 45]
+  }
+}
+constraints {
+  linear {
+    vars: [15, 93]
+    coeffs: [1, 1]
+    domain: [25, 76]
+  }
+}
+constraints {
+  linear {
+    vars: [1, 95]
+    coeffs: [1, -1]
+    domain: [-23, 29]
+  }
+}
+constraints {
+  linear {
+    vars: [1, 95]
+    coeffs: [1, 1]
+    domain: [11, 76]
+  }
+}
+constraints {
+  linear {
+    vars: [15, 39, 96]
+    coeffs: [1, -1, -1]
+    domain: [-78, 3]
+  }
+}
+constraints {
+  linear {
+    vars: [15, 39, 96]
+    coeffs: [1, -1, 1]
+    domain: [-3, 76]
+  }
+}
+constraints {
+  linear {
+    vars: [39, 97]
+    coeffs: [-1, -1]
+    domain: [-78, -30]
+  }
+}
+constraints {
+  linear {
+    vars: [39, 97]
+    coeffs: [-1, 1]
+    domain: [-52, 23]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 17, 98]
+    coeffs: [1, -1, -1]
+    domain: [-70, 6]
+  }
+}
+constraints {
+  linear {
+    vars: [11, 17, 98]
+    coeffs: [1, -1, 1]
+    domain: [-6, 78]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 99]
+    coeffs: [-1, -1]
+    domain: [-72, -23]
+  }
+}
+constraints {
+  linear {
+    vars: [37, 99]
+    coeffs: [-1, 1]
+    domain: [-47, 23]
+  }
+}
+constraints {
+  no_overlap_2d {
+    x_intervals: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38]
+    y_intervals: [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39]
+  }
+}
+objective {
+  vars: [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+  coeffs: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  domain: [0, 24]
+}

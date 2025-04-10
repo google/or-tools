@@ -454,14 +454,6 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
       literal_view_[literal] = var;
     }
   }
-  if (value == -1 && domain.Min() >= -1 && domain.Max() <= 0) {
-    if (literal.Index() >= literal_view_.size()) {
-      literal_view_.resize(literal.Index().value() + 1, kNoIntegerVariable);
-      literal_view_[literal] = NegationOf(var);
-    } else if (literal_view_[literal] == kNoIntegerVariable) {
-      literal_view_[literal] = NegationOf(var);
-    }
-  }
 
   // We use the "do not insert if present" behavior of .insert() to do just one
   // lookup.

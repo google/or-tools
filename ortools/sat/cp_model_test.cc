@@ -1196,13 +1196,11 @@ TEST(CpModelTest, TestNoOverlap) {
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
-    variables { domain: 1 domain: 1 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     constraints {
-      enforcement_literal: 2
       interval {
         start { vars: 0 coeffs: 1 }
         end { vars: 1 coeffs: 1 }
@@ -1210,23 +1208,20 @@ TEST(CpModelTest, TestNoOverlap) {
       }
     }
     constraints {
-      enforcement_literal: 2
       interval {
-        start { vars: 3 coeffs: 1 }
-        end { vars: 4 coeffs: 1 }
+        start { vars: 2 coeffs: 1 }
+        end { vars: 3 coeffs: 1 }
         size { offset: 5 }
       }
     }
     constraints {
-      enforcement_literal: 2
       interval {
-        start { vars: 5 coeffs: 1 }
-        end { vars: 6 coeffs: 1 }
+        start { vars: 4 coeffs: 1 }
+        end { vars: 5 coeffs: 1 }
         size { offset: 5 }
       }
     }
-    constraints { no_overlap { intervals: 0 intervals: 1 intervals: 2 } }
-  )pb");
+    constraints { no_overlap { intervals: 0 intervals: 1 intervals: 2 } })pb");
   EXPECT_THAT(cp_model.Proto(), EqualsProto(expected_model));
 }
 
@@ -1257,7 +1252,6 @@ TEST(CpModelTest, TestNoOverlap2D) {
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     variables { domain: 5 domain: 5 }
-    variables { domain: 1 domain: 1 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
@@ -1265,7 +1259,6 @@ TEST(CpModelTest, TestNoOverlap2D) {
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     constraints {
-      enforcement_literal: 3
       interval {
         start { vars: 0 coeffs: 1 }
         end { vars: 1 coeffs: 1 }
@@ -1273,26 +1266,23 @@ TEST(CpModelTest, TestNoOverlap2D) {
       }
     }
     constraints {
-      enforcement_literal: 3
       interval {
-        start { vars: 4 coeffs: 1 }
-        end { vars: 5 coeffs: 1 }
+        start { vars: 3 coeffs: 1 }
+        end { vars: 4 coeffs: 1 }
         size { vars: 2 coeffs: 1 }
       }
     }
     constraints {
-      enforcement_literal: 3
       interval {
-        start { vars: 6 coeffs: 1 }
-        end { vars: 7 coeffs: 1 }
+        start { vars: 5 coeffs: 1 }
+        end { vars: 6 coeffs: 1 }
         size { vars: 2 coeffs: 1 }
       }
     }
     constraints {
-      enforcement_literal: 3
       interval {
-        start { vars: 8 coeffs: 1 }
-        end { vars: 9 coeffs: 1 }
+        start { vars: 7 coeffs: 1 }
+        end { vars: 8 coeffs: 1 }
         size { vars: 2 coeffs: 1 }
       }
     }
@@ -1325,13 +1315,11 @@ TEST(CpModelTest, TestCumulative) {
   const CpModelProto expected_model = ParseTestProto(R"pb(
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
-    variables { domain: 1 domain: 1 }
     variables { domain: 0 domain: 20 }
     variables { domain: 0 domain: 20 }
     variables { domain: 5 domain: 10 }
     variables { domain: 5 domain: 10 }
     constraints {
-      enforcement_literal: 2
       interval {
         start { vars: 0 coeffs: 1 }
         end { vars: 1 coeffs: 1 }
@@ -1339,23 +1327,21 @@ TEST(CpModelTest, TestCumulative) {
       }
     }
     constraints {
-      enforcement_literal: 2
       interval {
-        start { vars: 3 coeffs: 1 }
-        end { vars: 4 coeffs: 1 }
+        start { vars: 2 coeffs: 1 }
+        end { vars: 3 coeffs: 1 }
         size { offset: 5 }
       }
     }
     constraints {
       cumulative {
-        capacity: { vars: 5 coeffs: 1 }
+        capacity { vars: 4 coeffs: 1 }
         intervals: 0
         intervals: 1
-        demands { vars: 6 coeffs: 1 }
+        demands { vars: 5 coeffs: 1 }
         demands { offset: 8 }
       }
-    }
-  )pb");
+    })pb");
   EXPECT_THAT(cp_model.Proto(), EqualsProto(expected_model));
 }
 

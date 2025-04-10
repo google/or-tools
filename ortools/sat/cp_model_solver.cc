@@ -2407,7 +2407,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Always add the timing information to a response. Note that it is important
   // to add this after the log/dump postprocessor since we execute them in
   // reverse order.
-  auto* shared_time_limit = model->GetOrCreate<ModelSharedTimeLimit>();
+  ModelSharedTimeLimit* shared_time_limit =
+      model->GetOrCreate<ModelSharedTimeLimit>();
   shared_response_manager->AddResponsePostprocessor(
       [&wall_timer, &user_timer,
        &shared_time_limit](CpSolverResponse* response) {
@@ -2446,7 +2447,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Register SIGINT handler if requested by the parameters.
   if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
-        [&shared_time_limit]() { shared_time_limit->Stop(); });
+        [shared_time_limit]() { shared_time_limit->Stop(); });
   }
 #endif  // __PORTABLE_PLATFORM__
 

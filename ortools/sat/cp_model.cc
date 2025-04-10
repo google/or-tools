@@ -610,6 +610,9 @@ LinearExpr IntervalVar::EndExpr() const {
 BoolVar IntervalVar::PresenceBoolVar() const {
   DCHECK(builder_ != nullptr);
   if (builder_ == nullptr) return BoolVar();
+  if (builder_->Proto().constraints(index_).enforcement_literal_size() == 0) {
+    return builder_->TrueVar();
+  }
   return BoolVar(builder_->Proto().constraints(index_).enforcement_literal(0),
                  builder_);
 }
@@ -712,12 +715,25 @@ BoolVar CpModelBuilder::FalseVar() {
 IntervalVar CpModelBuilder::NewIntervalVar(const LinearExpr& start,
                                            const LinearExpr& size,
                                            const LinearExpr& end) {
-  return NewOptionalIntervalVar(start, size, end, TrueVar());
+  const int index = cp_model_.constraints_size();
+  ConstraintProto* const ct = cp_model_.add_constraints();
+  IntervalConstraintProto* const interval = ct->mutable_interval();
+  *interval->mutable_start() = LinearExprToProto(start);
+  *interval->mutable_size() = LinearExprToProto(size);
+  *interval->mutable_end() = LinearExprToProto(end);
+  return IntervalVar(index, this);
 }
 
 IntervalVar CpModelBuilder::NewFixedSizeIntervalVar(const LinearExpr& start,
                                                     int64_t size) {
-  return NewOptionalFixedSizeIntervalVar(start, size, TrueVar());
+  const int index = cp_model_.constraints_size();
+  ConstraintProto* const ct = cp_model_.add_constraints();
+  IntervalConstraintProto* const interval = ct->mutable_interval();
+  *interval->mutable_start() = LinearExprToProto(start);
+  interval->mutable_size()->set_offset(size);
+  *interval->mutable_end() = LinearExprToProto(start);
+  interval->mutable_end()->set_offset(interval->end().offset() + size);
+  return IntervalVar(index, this);
 }
 
 IntervalVar CpModelBuilder::NewOptionalIntervalVar(const LinearExpr& start,

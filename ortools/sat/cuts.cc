@@ -2063,9 +2063,10 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
     // and slack in [0, ub - lb].
     const IntegerValue diff = entry.lower_bound - lb;
     CHECK_GE(diff, 0);
-    const double bool_lp_value = entry.is_positive
-                                     ? lp_values[entry.literal_view]
-                                     : 1.0 - lp_values[entry.literal_view];
+    const double bool_lp_value =
+        VariableIsPositive(entry.literal_view)
+            ? lp_values[entry.literal_view]
+            : 1.0 - lp_values[PositiveVariable(entry.literal_view)];
     const double slack_lp_value =
         lp_values[var] - ToDouble(lb) - bool_lp_value * ToDouble(diff);
 
@@ -2075,14 +2076,14 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
       LinearConstraint ib_cut;
       ib_cut.lb = kMinIntegerValue;
       std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-      if (entry.is_positive) {
+      if (VariableIsPositive(entry.literal_view)) {
         // X >= Indicator * (bound - lb) + lb
         terms.push_back({entry.literal_view, diff});
         terms.push_back({var, IntegerValue(-1)});
         ib_cut.ub = -lb;
       } else {
         // X >= -Indicator * (bound - lb) + bound
-        terms.push_back({entry.literal_view, -diff});
+        terms.push_back({PositiveVariable(entry.literal_view), -diff});
         terms.push_back({var, IntegerValue(-1)});
         ib_cut.ub = -entry.lower_bound;
       }
@@ -2100,7 +2101,6 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
       result.var_lp_value = lp_values[var];
       result.bool_lp_value = bool_lp_value;
       result.implied_bound = entry.lower_bound;
-      result.is_positive = entry.is_positive;
       result.bool_var = entry.literal_view;
     }
   }
@@ -2153,11 +2153,11 @@ bool ImpliedBoundsProcessor::DecomposeWithImpliedLowerBound(
 
   // We have X/-X = info.diff * Boolean + slack.
   bool_term.coeff = term.coeff * bound_diff;
-  bool_term.expr_vars[0] = info.bool_var;
+  bool_term.expr_vars[0] = PositiveVariable(info.bool_var);
   bool_term.expr_coeffs[1] = 0;
   bool_term.bound_diff = IntegerValue(1);
   bool_term.lp_value = info.bool_lp_value;
-  if (info.is_positive) {
+  if (VariableIsPositive(info.bool_var)) {
     bool_term.expr_coeffs[0] = IntegerValue(1);
     bool_term.expr_offset = IntegerValue(0);
   } else {

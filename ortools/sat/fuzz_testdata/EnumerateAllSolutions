@@ -20,8 +20,20 @@ variables {
 constraints {
   all_diff {
     exprs {
-      vars: [0, 1, 2, 3]
-      coeffs: [1, 1, 1, 1]
+      vars: [0]
+      coeffs: [1]
+    }
+    exprs {
+      vars: [1]
+      coeffs: [1]
+    }
+    exprs {
+      vars: [2]
+      coeffs: [1]
+    }
+    exprs {
+      vars: [3]
+      coeffs: [1]
     }
   }
 }
