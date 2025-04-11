@@ -12,7 +12,7 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 # External users should depend only on ":mathopt" and import "mathopt".
 # Hence other libraries are private.
@@ -72,6 +72,45 @@ py_library(
     ],
 )
 
+py_test(
+    name = "hash_model_storage_test",
+    size = "small",
+    srcs = ["hash_model_storage_test.py"],
+    deps = [
+        ":hash_model_storage",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "model_storage_test",
+    size = "small",
+    srcs = ["model_storage_test.py"],
+    deps = [
+        ":hash_model_storage",
+        ":model_storage",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
+py_test(
+    name = "model_storage_update_test",
+    size = "small",
+    srcs = ["model_storage_update_test.py"],
+    deps = [
+        ":hash_model_storage",
+        ":model_storage",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
 py_library(
     name = "model",
     srcs = ["model.py"],
@@ -91,6 +130,37 @@ py_library(
     ],
 )
 
+py_test(
+    name = "model_element_test",
+    size = "small",
+    srcs = ["model_element_test.py"],
+    deps = [
+        ":indicator_constraints",
+        ":linear_constraints",
+        ":model",
+        ":objectives",
+        ":quadratic_constraints",
+        ":variables",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "model_test",
+    size = "small",
+    srcs = ["model_test.py"],
+    deps = [
+        ":linear_constraints",
+        ":model",
+        ":variables",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
 py_library(
     name = "linear_constraints",
     srcs = ["linear_constraints.py"],
@@ -99,6 +169,18 @@ py_library(
         ":variables",
         "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
+    ],
+)
+
+py_test(
+    name = "linear_expression_test",
+    size = "small",
+    srcs = ["linear_expression_test.py"],
+    deps = [
+        ":bounded_expressions",
+        ":model",
+        ":variables",
+        requirement("absl-py"),
     ],
 )
 
@@ -111,6 +193,22 @@ py_library(
         ":quadratic_constraints",
         ":variables",
         "//ortools/math_opt:sparse_containers_py_pb2",
+    ],
+)
+
+py_test(
+    name = "sparse_containers_test",
+    size = "small",
+    srcs = ["sparse_containers_test.py"],
+    deps = [
+        ":linear_constraints",
+        ":model",
+        ":quadratic_constraints",
+        ":sparse_containers",
+        ":variables",
+        requirement("absl-py"),
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
     ],
 )
 
@@ -128,6 +226,20 @@ py_library(
     ],
 )
 
+py_test(
+    name = "solution_test",
+    size = "small",
+    srcs = ["solution_test.py"],
+    deps = [
+        ":model",
+        ":solution",
+        requirement("absl-py"),
+        "//ortools/math_opt:solution_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
 py_library(
     name = "quadratic_constraints",
     srcs = ["quadratic_constraints.py"],
@@ -139,6 +251,15 @@ py_library(
     ],
 )
 
+py_test(
+    name = "quadratic_constraints_test",
+    srcs = ["quadratic_constraints_test.py"],
+    deps = [
+        ":model",
+        requirement("absl-py"),
+    ],
+)
+
 py_library(
     name = "indicator_constraints",
     srcs = ["indicator_constraints.py"],
@@ -147,6 +268,17 @@ py_library(
         ":variables",
         "//ortools/math_opt/elemental/python:enums",
         "//ortools/math_opt/python/elemental",
+    ],
+)
+
+py_test(
+    name = "indicator_constraints_test",
+    srcs = ["indicator_constraints_test.py"],
+    deps = [
+        ":indicator_constraints",
+        ":model",
+        ":variables",
+        requirement("absl-py"),
     ],
 )
 
@@ -175,6 +307,35 @@ py_library(
     ],
 )
 
+py_test(
+    name = "objectives_test",
+    size = "small",
+    srcs = ["objectives_test.py"],
+    deps = [
+        ":model",
+        ":objectives",
+        ":variables",
+        requirement("absl-py"),
+        "//ortools/math_opt/elemental/python:cpp_elemental",
+    ],
+)
+
+py_test(
+    name = "model_objective_test",
+    size = "small",
+    srcs = ["model_objective_test.py"],
+    deps = [
+        ":model",
+        ":objectives",
+        ":variables",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
 py_library(
     name = "parameters",
     srcs = ["parameters.py"],
@@ -182,6 +343,26 @@ py_library(
         "//ortools/glop:parameters_py_pb2",
         "//ortools/gscip:gscip_proto_py_pb2",
         "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/solvers:glpk_py_pb2",
+        "//ortools/math_opt/solvers:gurobi_py_pb2",
+        "//ortools/math_opt/solvers:highs_py_pb2",
+        "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/pdlp:solvers_py_pb2",
+        "//ortools/sat:sat_parameters_py_pb2",
+    ],
+)
+
+py_test(
+    name = "parameters_test",
+    size = "small",
+    srcs = ["parameters_test.py"],
+    deps = [
+        ":parameters",
+        requirement("absl-py"),
+        "//ortools/glop:parameters_py_pb2",
+        "//ortools/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
         "//ortools/math_opt/solvers:glpk_py_pb2",
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
@@ -205,6 +386,23 @@ py_library(
     ],
 )
 
+py_test(
+    name = "model_parameters_test",
+    size = "small",
+    srcs = ["model_parameters_test.py"],
+    deps = [
+        ":model",
+        ":model_parameters",
+        ":solution",
+        ":sparse_containers",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_parameters_py_pb2",
+        "//ortools/math_opt:solution_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)
+
 py_library(
     name = "callback",
     srcs = ["callback.py"],
@@ -214,6 +412,21 @@ py_library(
         ":sparse_containers",
         ":variables",
         "//ortools/math_opt:callback_py_pb2",
+    ],
+)
+
+py_test(
+    name = "callback_test",
+    size = "small",
+    srcs = ["callback_test.py"],
+    deps = [
+        ":callback",
+        ":model",
+        ":sparse_containers",
+        requirement("absl-py"),
+        "//ortools/math_opt:callback_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
     ],
 )
 
@@ -227,6 +440,20 @@ py_library(
         ":variables",
         requirement("immutabledict"),
         "//ortools/math_opt:infeasible_subsystem_py_pb2",
+    ],
+)
+
+py_test(
+    name = "compute_infeasible_subsystem_result_test",
+    size = "small",
+    srcs = ["compute_infeasible_subsystem_result_test.py"],
+    deps = [
+        ":compute_infeasible_subsystem_result",
+        ":model",
+        ":result",
+        requirement("absl-py"),
+        "//ortools/math_opt:infeasible_subsystem_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
     ],
 )
 
@@ -255,15 +482,44 @@ py_library(
     deps = [requirement("absl-py")],
 )
 
+py_test(
+    name = "message_callback_test",
+    srcs = ["message_callback_test.py"],
+    deps = [
+        ":message_callback",
+        requirement("absl-py"),
+    ],
+)
+
 py_library(
     name = "statistics",
     srcs = ["statistics.py"],
     deps = [":model"],
 )
 
+py_test(
+    name = "statistics_test",
+    srcs = ["statistics_test.py"],
+    deps = [
+        ":model",
+        ":statistics",
+        requirement("absl-py"),
+    ],
+)
+
 py_library(
     name = "bounded_expressions",
     srcs = ["bounded_expressions.py"],
+)
+
+py_test(
+    name = "bounded_expressions_test",
+    size = "small",
+    srcs = ["bounded_expressions_test.py"],
+    deps = [
+        ":bounded_expressions",
+        requirement("absl-py"),
+    ],
 )
 
 py_library(
@@ -287,11 +543,40 @@ py_library(
     ],
 )
 
+py_test(
+    name = "normalized_inequality_test",
+    size = "small",
+    srcs = ["normalized_inequality_test.py"],
+    deps = [
+        ":bounded_expressions",
+        ":model",
+        ":normalized_inequality",
+        ":variables",
+        requirement("absl-py"),
+    ],
+)
+
 py_library(
     name = "normalize",
     srcs = ["normalize.py"],
     visibility = ["//ortools/math_opt/python:__subpackages__"],
     deps = ["@com_google_protobuf//:protobuf_python"],
+)
+
+py_test(
+    name = "normalize_test",
+    srcs = ["normalize_test.py"],
+    deps = [
+        ":normalize",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_parameters_py_pb2",
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt:result_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
 )
 
 py_library(
@@ -302,10 +587,32 @@ py_library(
     ],
 )
 
+py_test(
+    name = "expressions_test",
+    srcs = ["expressions_test.py"],
+    deps = [
+        ":expressions",
+        ":model",
+        ":variables",
+        requirement("absl-py"),
+    ],
+)
+
 py_library(
     name = "solver_resources",
     srcs = ["solver_resources.py"],
     deps = ["//ortools/math_opt:rpc_py_pb2"],
+)
+
+py_test(
+    name = "solver_resources_test",
+    srcs = ["solver_resources_test.py"],
+    deps = [
+        ":solver_resources",
+        requirement("absl-py"),
+        "//ortools/math_opt:rpc_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
 )
 
 py_library(
@@ -314,11 +621,33 @@ py_library(
     deps = ["//ortools/math_opt:rpc_py_pb2"],
 )
 
+py_test(
+    name = "errors_test",
+    srcs = ["errors_test.py"],
+    deps = [
+        ":errors",
+        requirement("absl-py"),
+        "//ortools/math_opt:rpc_py_pb2",
+    ],
+)
+
 py_library(
     name = "init_arguments",
     srcs = ["init_arguments.py"],
     deps = [
         "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/solvers:gurobi_py_pb2",
+    ],
+)
+
+py_test(
+    name = "init_arguments_test",
+    srcs = ["init_arguments_test.py"],
+    deps = [
+        ":init_arguments",
+        requirement("absl-py"),
+        "//ortools/math_opt:parameters_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
         "//ortools/math_opt/solvers:gurobi_py_pb2",
     ],
 )

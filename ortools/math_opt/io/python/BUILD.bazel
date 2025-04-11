@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:defs.bzl", "py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -29,4 +31,16 @@ pybind_extension(
             "@pybind11_abseil//pybind11_abseil:status_casters",
             "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
         ],
+)
+
+py_test(
+    name = "mps_converter_test",
+    srcs = ["mps_converter_test.py"],
+    deps = [
+        ":mps_converter",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt/python:mathopt",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
 )
