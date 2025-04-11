@@ -531,9 +531,21 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   direction_ = context.subgradient;
   MakeMinimalCoverageSubgradient(context, direction_);
 
+  if (prev_direction_.empty()) {
+    prev_direction_ = direction_;
+  }
+
   squared_norm_ = .0;
+  // Stabilize current direction and compute squared norm
   for (ElementIndex i : context.model.ElementRange()) {
+    direction_[i] = stabilization_coeff * direction_[i] +
+                    (1.0 - stabilization_coeff) * prev_direction_[i];
+    if ((context.current_dual_state.multipliers()[i] <= .0) &&
+        (direction_[i] < .0)) {
+      direction_[i] = 0;
+    }
     squared_norm_ += direction_[i] * direction_[i];
+    prev_direction_[i] = direction_[i];
   }
 
   Cost upper_bound = context.best_solution.cost() - context.model.fixed_cost();
@@ -553,15 +565,19 @@ void BoundCBs::UpdateStepSize(Cost lower_bound) {
 
     Cost delta = last_max_lb_seen_ - last_min_lb_seen_;
     Cost gap = DivideIfGE0(delta, last_max_lb_seen_);
-    if (gap <= .001) {       //
-      step_size_ *= 1.5;     // Arbitray
-    } else if (gap > .01) {  // from [1]
-      step_size_ /= 2.0;     //
+    if (gap <= .001) {    // Arbitray from [1]
+      step_size_ *= 1.5;  // Arbitray from [1]
+
+      // Arbitrary from c4v4
+      stabilization_coeff = (1.0 + stabilization_coeff) / 2.0;
+
+    } else if (gap > .01) {  // Arbitray from [1]
+      step_size_ /= 2.0;     // Arbitray from [1]
     }
     last_min_lb_seen_ = std::numeric_limits<Cost>::max();
     last_max_lb_seen_ = .0;
     // Not described in the paper, but in rare cases the subgradient diverges
-    step_size_ = std::clamp(step_size_, 1e-6, 10.0);
+    step_size_ = std::clamp(step_size_, 1e-6, 10.0);  // Arbitrary from c4v4
   }
 }
 
@@ -593,8 +609,8 @@ bool BoundCBs::UpdateCoreModel(SubModel& core_model,
     // grant at least 10 iterations before the next exit test
     prev_best_lb_ =
         std::min(prev_best_lb_, best_state.dual_state.lower_bound());
-    exit_test_countdown_ = std::max(exit_test_countdown_, 20);
-    max_iter_countdown_ = std::max(max_iter_countdown_, 20);
+    exit_test_countdown_ = std::max<BaseInt>(exit_test_countdown_, 20);
+    max_iter_countdown_ = std::max<BaseInt>(max_iter_countdown_, 20);
     last_core_update_countdown_ = 20;
     return true;
   }
@@ -630,7 +646,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
     cbs.ComputeMultipliersDelta(context, multipliers_delta);
     dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-      i_mult = std::max(.0, i_mult + multipliers_delta[i]);
+      i_mult = std::max<Cost>(.0, i_mult + multipliers_delta[i]);
     });
     if (dual_state.lower_bound() > best_state.dual_state.lower_bound()) {
       best_state.dual_state = dual_state;
@@ -1250,10 +1266,8 @@ FullToCoreModel::FullToCoreModel(const Model* full_model)
       num_subsets_(full_model->num_subsets()),
       num_elements_(full_model->num_elements()),
       full_dual_state_(*full_model),
-      best_dual_state_(full_dual_state_),
-      update_countdown_(10),
-      update_period_(10),
-      update_max_period_(std::min(1000, full_model_->num_elements() / 3)) {
+      best_dual_state_(full_dual_state_) {
+  ResetPricingPeriod();
   DCHECK_OK(ValidateSubModel(*this));
   DCHECK_OK(FullToSubModelInvariantCheck());
 }
@@ -1261,7 +1275,7 @@ FullToCoreModel::FullToCoreModel(const Model* full_model)
 void FullToCoreModel::ResetPricingPeriod() {
   update_countdown_ = 10;
   update_period_ = 10;
-  update_max_period_ = std::min(1000, full_model_->num_elements() / 3);
+  update_max_period_ = std::min<BaseInt>(1000, full_model_->num_elements() / 3);
 }
 
 Cost FullToCoreModel::FixColumns(
@@ -1340,11 +1354,11 @@ void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
       core_state.dual_state.lower_bound() - full_dual_state.lower_bound();
   Cost ratio = DivideIfGE0(delta, core_state.solution.cost());
   if (ratio <= 1e-6) {
-    update_period_ = std::min(update_max_period_, 10 * update_period_);
+    update_period_ = std::min<BaseInt>(update_max_period_, 10 * update_period_);
   } else if (ratio <= 0.02) {
-    update_period_ = std::min(update_max_period_, 5 * update_period_);
+    update_period_ = std::min<BaseInt>(update_max_period_, 5 * update_period_);
   } else if (ratio <= 0.2) {
-    update_period_ = std::min(update_max_period_, 2 * update_period_);
+    update_period_ = std::min<BaseInt>(update_max_period_, 2 * update_period_);
   } else {
     update_period_ = 10;
   }
