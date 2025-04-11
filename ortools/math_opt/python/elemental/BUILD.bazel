@@ -24,6 +24,7 @@ py_library(
     srcs = ["elemental.py"],
     deps = [
         requirement("numpy"),
+        requirement("typing-extensions"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt/elemental/python:enums",
