@@ -246,9 +246,9 @@ cmake -S. -Bbuild -LH
 | `USE_DOTNET_48`  | OFF | Enable .Net Framework 4.8 support<br>Only available if `BUILD_DOTNET=ON` |
 | `USE_DOTNET_STD_21`  | OFF | Enable .Net Standard 2.1 support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
 | `USE_DOTNET_CORE_31`  | OFF | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
-| `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_6`  | OFF | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
 | `USE_DOTNET_7`  | OFF | Enable .Net 7 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_8`  | OFF | Enable .Net 8 LTS support<br>Only available if `BUILD_DOTNET=ON` |
+| `USE_DOTNET_8`  | ON  | Enable .Net 8 LTS support<br>Only available if `BUILD_DOTNET=ON` |
 | `USE_DOTNET_9`  | OFF | Enable .Net 9 support<br>Only available if `BUILD_DOTNET=ON` |
 | `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
 | | | |
