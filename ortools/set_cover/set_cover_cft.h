@@ -86,17 +86,6 @@ namespace operations_research::scp {
 // locally.
 using Model = SetCoverModel;
 
-// When a sub-model is created, indicies are compacted to be consecutive and
-// strarting from 0 (to reduce memory usage). Core ElementIndex to original
-// ElementIndex mappings are stored to translate back to the original model
-// space.
-using ElementMappingVector =
-    util_intops::StrongVector<ElementIndex, ElementIndex>;
-
-// The same applies to SubsetIndex, which also needs to be mapped back to the
-// original indexing space.
-using SubsetMappingVector = util_intops::StrongVector<SubsetIndex, SubsetIndex>;
-
 // Forward declarations, see below for the definition of the classes.
 struct PrimalDualState;
 struct Solution;
@@ -152,8 +141,8 @@ using SubModel = CoreModel;
 // status: (item size == 0) <==> inactive
 // SubModelView inherits from IndexListSubModelView, which provides the "view"
 // machinery.
-class SubModelView : public IndexListSubModelView {
-  using base_view = IndexListSubModelView;
+class SubModelView : public IndexListModelView {
+  using base_view = IndexListModelView;
 
  public:
   // Empty initialization to facilitate delayed construction
@@ -164,8 +153,7 @@ class SubModelView : public IndexListSubModelView {
 
   // Focus construction: create a sub-model with only the required items
   SubModelView(const Model* model,
-               const std::vector<SubsetIndex>& columns_focus,
-               const ElementBoolVector& rows_flags = {});
+               const std::vector<FullSubsetIndex>& columns_focus);
 
   virtual ~SubModelView() = default;
 
@@ -175,15 +163,14 @@ class SubModelView : public IndexListSubModelView {
   Cost fixed_cost() const { return fixed_cost_; }
 
   // List of fixed columns.
-  const std::vector<SubsetIndex>& fixed_columns() const {
+  const std::vector<FullSubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
 
   // Redefine the active items. The new sub-model will ignore all columns not in
   // focus and (optionally) the rows for which row_flags is not true. It does
   // not overwrite the current fixing.
-  void SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                const ElementBoolVector& rows_enable_flags = {});
+  void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
 
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
@@ -209,7 +196,7 @@ class SubModelView : public IndexListSubModelView {
   std::vector<ElementIndex> rows_focus_;
 
   // Fixing data
-  std::vector<SubsetIndex> fixed_columns_;
+  std::vector<FullSubsetIndex> fixed_columns_;
   Cost fixed_cost_ = .0;
 };
 
@@ -229,15 +216,14 @@ class CoreModel : private Model {
   CoreModel(const Model* model);
 
   // Focus construction: create a sub-model with only the required items
-  CoreModel(const Model* model, const std::vector<SubsetIndex>& columns_focus,
-            const ElementBoolVector& rows_flags = {});
+  CoreModel(const Model* model,
+            const std::vector<FullSubsetIndex>& columns_focus);
 
   virtual ~CoreModel() = default;
 
   ///////// Sub-model view interface: /////////
-  const Model& full_model() const { return *full_model_; }
-  BaseInt num_subsets() const { return full_model_->num_subsets(); }
-  BaseInt num_elements() const { return full_model_->num_elements(); }
+  BaseInt num_subsets() const { return full_model_.num_subsets(); }
+  BaseInt num_elements() const { return full_model_.num_elements(); }
   BaseInt num_focus_subsets() const { return Model::num_subsets(); }
   BaseInt num_focus_elements() const { return Model::num_elements(); }
   BaseInt column_size(SubsetIndex j) const {
@@ -249,19 +235,18 @@ class CoreModel : private Model {
     return rows()[i].size();
   }
 
-  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+  FullElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
     DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
-    DCHECK(core2full_row_map_[core_i] != null_element_index);
     return core2full_row_map_[core_i];
   }
-  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
-    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
+  ElementIndex MapFullToCoreElementIndex(FullElementIndex full_i) const {
+    DCHECK(FullElementIndex() <= full_i &&
+           full_i < FullElementIndex(num_elements()));
     DCHECK(full2core_row_map_[full_i] != null_element_index);
     return full2core_row_map_[full_i];
   }
-  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+  FullSubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
     DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
-    DCHECK(core2full_col_map_[core_j] != null_subset_index);
     return core2full_col_map_[core_j];
   }
   // Member function relevant for the CFT inherited from Model
@@ -276,15 +261,14 @@ class CoreModel : private Model {
   // Current fixed cost: sum of the cost of the fixed columns
   Cost fixed_cost() const { return fixed_cost_; }
   // List of fixed columns.
-  const std::vector<SubsetIndex>& fixed_columns() const {
+  const std::vector<FullSubsetIndex>& fixed_columns() const {
     return fixed_columns_;
   }
 
   // Redefine the active items. The new sub-model will ignore all columns not in
   // focus and (optionally) the rows for which row_flags is not true. It does
   // not overwrite the current fixing.
-  void SetFocus(const std::vector<SubsetIndex>& columns_focus,
-                const ElementBoolVector& rows_enable_flags = {});
+  void SetFocus(const std::vector<FullSubsetIndex>& columns_focus);
 
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
@@ -299,24 +283,28 @@ class CoreModel : private Model {
 
  private:
   void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);
-  ElementMappingVector MakeOrFillBothRowMaps();
-  Model MakeNewCoreModel(const ElementMappingVector& new_c2f_col_map);
+  CoreToFullElementMapVector MakeOrFillBothRowMaps();
+  Model MakeNewCoreModel(const CoreToFullElementMapVector& new_c2f_col_map);
 
   // Pointer to the original model
-  const Model* full_model_;
+  StrongModelView full_model_;
 
-  ElementMappingVector full2core_row_map_;
-  ElementMappingVector core2full_row_map_;
-  SubsetMappingVector core2full_col_map_;
+  FullToCoreElementMapVector full2core_row_map_;
+  CoreToFullElementMapVector core2full_row_map_;
+  CoreToFullSubsetMapVector core2full_col_map_;
 
   // Fixing data
   Cost fixed_cost_ = .0;
-  std::vector<SubsetIndex> fixed_columns_;
+  std::vector<FullSubsetIndex> fixed_columns_;
 
   static constexpr SubsetIndex null_subset_index =
       std::numeric_limits<SubsetIndex>::max();
   static constexpr ElementIndex null_element_index =
       std::numeric_limits<ElementIndex>::max();
+  static constexpr FullSubsetIndex null_full_subset_index =
+      std::numeric_limits<FullSubsetIndex>::max();
+  static constexpr FullElementIndex null_full_element_index =
+      std::numeric_limits<FullElementIndex>::max();
 };
 
 // Small class to store the solution of a sub-model. It contains the cost and
@@ -327,9 +315,8 @@ class Solution {
   Solution(const SubModel& model, const std::vector<SubsetIndex>& core_subsets);
 
   double cost() const { return cost_; }
-  const std::vector<SubsetIndex>& subsets() const { return subsets_; }
-  std::vector<SubsetIndex>& subsets() { return subsets_; }
-  void AddSubset(SubsetIndex subset, Cost cost) {
+  const std::vector<FullSubsetIndex>& subsets() const { return subsets_; }
+  void AddSubset(FullSubsetIndex subset, Cost cost) {
     subsets_.push_back(subset);
     cost_ += cost;
   }
@@ -341,7 +328,7 @@ class Solution {
 
  private:
   Cost cost_;
-  std::vector<SubsetIndex> subsets_;
+  std::vector<FullSubsetIndex> subsets_;
 };
 
 // In the narrow scope of the CFT subgradient, there are often divisions
@@ -582,17 +569,34 @@ class FullToCoreModel : public SubModel {
   const DualState& best_dual_state() const { return best_dual_state_; }
 
  private:
+  decltype(auto) IsFocusCol(FullSubsetIndex j) {
+    return is_focus_col_[static_cast<SubsetIndex>(j)];
+  }
+  decltype(auto) IsFocusRow(FullElementIndex i) {
+    return is_focus_row_[static_cast<ElementIndex>(i)];
+  }
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            const PrimalDualState& core_state);
   void UpdateDualState(const DualState& core_dual_state,
                        DualState& full_dual_state, DualState& best_dual_state);
 
-  FilteredSubModelView FullModelWithFixingView() const {
-    return FilteredSubModelView(full_model_, &is_focus_col_, &is_focus_row_,
-                                num_subsets_, num_elements_);
+  // Views are not composable (for now), so we can either access the full_model
+  // with the strongly typed view or with the filtered view.
+
+  // Access the full model filtered by the current columns fixed.
+  FilterModelView FixingFullModelView() const {
+    return FilterModelView(full_model_, &is_focus_col_, &is_focus_row_,
+                           num_subsets_, num_elements_);
   }
+
+  // Access the full model with the strongly typed view.
+  StrongModelView StrongTypedFullModelView() const {
+    return StrongModelView(full_model_);
+  }
+
   absl::Status FullToSubModelInvariantCheck();
 
+ private:
   const Model* full_model_;
 
   // Note: The `is_focus_col_` vector duplicates information already present in
@@ -620,6 +624,9 @@ class FullToCoreModel : public SubModel {
   BaseInt update_period_;
   BaseInt update_max_period_;
 };
+
+// Coverage counter to decide the number of columns to keep in the core model.
+static constexpr BaseInt kMinCov = 5;
 
 }  // namespace operations_research::scp
 

@@ -20,23 +20,108 @@
 #include "ortools/set_cover/set_cover_model.h"
 #include "views.h"
 
-namespace operations_research::scp {
+namespace operations_research {
 
-class IndexListSubModelView {
+#define SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FROM, TO)     \
+  constexpr TO StrongIntConvert(FROM j, TO* /*unused*/) { \
+    return TO(static_cast<FROM::ValueType>(j));           \
+  }
+
+DEFINE_STRONG_INT_TYPE(FullSubsetIndex, BaseInt);
+DEFINE_STRONG_INT_TYPE(FullElementIndex, BaseInt);
+
+SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(SubsetIndex, FullSubsetIndex);
+SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FullSubsetIndex, SubsetIndex);
+SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(ElementIndex, FullElementIndex);
+SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FullElementIndex, ElementIndex);
+
+using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
+using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
+using FullElementBoolVector = util_intops::StrongVector<FullElementIndex, bool>;
+using FullSubsetBoolVector = util_intops::StrongVector<FullSubsetIndex, bool>;
+
+// When a sub-model is created, indicies are compacted to be consecutive and
+// strarting from 0 (to reduce memory usage). Core ElementIndex to original
+// ElementIndex mappings are stored to translate back to the original model
+// space.
+using FullToCoreElementMapVector =
+    util_intops::StrongVector<FullElementIndex, ElementIndex>;
+using CoreToFullElementMapVector =
+    util_intops::StrongVector<ElementIndex, FullElementIndex>;
+
+// The same applies to SubsetIndex, which also needs to be mapped back to the
+// original indexing space.
+using FullToCoreSubsetMapVector =
+    util_intops::StrongVector<FullSubsetIndex, SubsetIndex>;
+using CoreToFullSubsetMapVector =
+    util_intops::StrongVector<SubsetIndex, FullSubsetIndex>;
+
+class StrongModelView {
+ private:
+  // Transformations to convert between the core and full model columns.
+  struct SparseColTransform {
+    auto operator()(const SparseColumn& column) const
+        -> util_intops::TransformView<
+            ElementIndex, ColumnEntryIndex,
+            util_intops::TypeCastTransform<ElementIndex, FullElementIndex>> {
+      return {&column};
+    }
+  };
+
+  // Transformations to convert between the core and full model rows.
+  struct SparseRowTransform {
+    auto operator()(const SparseRow& row) const -> util_intops::TransformView<
+        SubsetIndex, RowEntryIndex,
+        util_intops::TypeCastTransform<SubsetIndex, FullSubsetIndex>> {
+      return {&row};
+    }
+  };
+
  public:
-  IndexListSubModelView() = default;
-  IndexListSubModelView(const SetCoverModel* model,
-                        const SubsetToIntVector* cols_sizes,
-                        const ElementToIntVector* rows_sizes,
-                        const std::vector<SubsetIndex>* cols_focus,
-                        const std::vector<ElementIndex>* rows_focus)
+  StrongModelView() = default;
+  StrongModelView(const SetCoverModel* model) : model_(model) {}
+
+  BaseInt num_subsets() const { return model_->num_subsets(); }
+  BaseInt num_elements() const { return model_->num_elements(); }
+
+  auto subset_costs() const
+      -> util_intops::TransformView<Cost, FullSubsetIndex> {
+    return {&model_->subset_costs()};
+  }
+  auto columns() const
+      -> util_intops::TransformView<SparseColumn, FullSubsetIndex,
+                                    SparseColTransform> {
+    return {&model_->columns()};
+  }
+  auto rows() const -> util_intops::TransformView<SparseRow, FullElementIndex,
+                                                  SparseRowTransform> {
+    return {&model_->rows()};
+  }
+  auto SubsetRange() const -> util_intops::StrongIntRange<FullSubsetIndex> {
+    return {FullSubsetIndex(), FullSubsetIndex(num_subsets())};
+  }
+  auto ElementRange() const -> util_intops::StrongIntRange<FullElementIndex> {
+    return {FullElementIndex(), FullElementIndex(num_elements())};
+  }
+
+ private:
+  const SetCoverModel* model_;
+};
+
+class IndexListModelView {
+ public:
+  IndexListModelView() = default;
+  IndexListModelView(const SetCoverModel* model,
+                     const SubsetToIntVector* cols_sizes,
+                     const ElementToIntVector* rows_sizes,
+                     const std::vector<SubsetIndex>* cols_focus,
+                     const std::vector<ElementIndex>* rows_focus)
       : model_(model),
         cols_sizes_(cols_sizes),
         rows_sizes_(rows_sizes),
         cols_focus_(cols_focus),
         rows_focus_(rows_focus) {}
 
-  const SetCoverModel& full_model() const { return *model_; }
   BaseInt num_subsets() const { return model_->num_subsets(); }
   BaseInt num_elements() const { return model_->num_elements(); }
   BaseInt num_focus_subsets() const { return cols_focus_->size(); }
@@ -56,17 +141,18 @@ class IndexListSubModelView {
   }
   const std::vector<SubsetIndex>& SubsetRange() const { return *cols_focus_; }
   const std::vector<ElementIndex>& ElementRange() const { return *rows_focus_; }
-  ElementIndex MapCoreToFullElementIndex(ElementIndex i) const {
-    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
-    return i;
+  FullElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
+    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
+    return static_cast<FullElementIndex>(core_i);
   }
-  ElementIndex MapFullToCoreElementIndex(ElementIndex i) const {
-    DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
-    return i;
+  ElementIndex MapFullToCoreElementIndex(FullElementIndex full_i) const {
+    DCHECK(FullElementIndex() <= full_i &&
+           full_i < FullElementIndex(num_elements()));
+    return static_cast<ElementIndex>(full_i);
   }
-  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex j) const {
-    DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
-    return j;
+  FullSubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
+    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
+    return static_cast<FullSubsetIndex>(core_j);
   }
   BaseInt column_size(SubsetIndex j) const {
     DCHECK(SubsetIndex() <= j && j < SubsetIndex(num_subsets()));
@@ -89,20 +175,19 @@ class IndexListSubModelView {
 // specific items. Iterating over all active columns or rows is less efficient,
 // particularly when only a small subset is active.
 // NOTE: this view does **not** store any size-related information.
-class FilteredSubModelView {
+class FilterModelView {
  public:
-  FilteredSubModelView() = default;
-  FilteredSubModelView(const SetCoverModel* model,
-                       const SubsetBoolVector* cols_sizes,
-                       const ElementBoolVector* rows_sizes, BaseInt num_subsets,
-                       BaseInt num_elements)
+  FilterModelView() = default;
+  FilterModelView(const SetCoverModel* model,
+                  const SubsetBoolVector* cols_sizes,
+                  const ElementBoolVector* rows_sizes, BaseInt num_subsets,
+                  BaseInt num_elements)
       : model_(model),
         is_focus_col_(cols_sizes),
         is_focus_row_(rows_sizes),
         num_subsets_(num_subsets),
         num_elements_(num_elements) {}
 
-  const SetCoverModel& full_model() const { return *model_; }
   BaseInt num_subsets() const { return model_->num_subsets(); }
   BaseInt num_elements() const { return model_->num_elements(); }
   BaseInt num_focus_subsets() const { return num_subsets_; }
@@ -123,24 +208,12 @@ class FilteredSubModelView {
     return {{&model_->rows(), is_focus_row_}, is_focus_col_};
   }
   auto SubsetRange() const
-      -> util_intops::FilterIndicesView<SubsetIndex, SubsetBoolVector> {
+      -> util_intops::FilterIndexRangeView<SubsetIndex, SubsetBoolVector> {
     return {is_focus_col_};
   }
   auto ElementRange() const
-      -> util_intops::FilterIndicesView<ElementIndex, ElementBoolVector> {
+      -> util_intops::FilterIndexRangeView<ElementIndex, ElementBoolVector> {
     return {is_focus_row_};
-  }
-  ElementIndex MapCoreToFullElementIndex(ElementIndex core_i) const {
-    DCHECK(ElementIndex() <= core_i && core_i < ElementIndex(num_elements()));
-    return core_i;
-  }
-  ElementIndex MapFullToCoreElementIndex(ElementIndex full_i) const {
-    DCHECK(ElementIndex() <= full_i && full_i < ElementIndex(num_elements()));
-    return full_i;
-  }
-  SubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
-    DCHECK(SubsetIndex() <= core_j && core_j < SubsetIndex(num_subsets()));
-    return core_j;
   }
 
  private:
@@ -151,6 +224,6 @@ class FilteredSubModelView {
   BaseInt num_elements_;
 };
 
-}  // namespace operations_research::scp
+}  // namespace operations_research
 
 #endif /* OR_TOOLS_SET_COVER_SET_COVER_VIEWS_H */

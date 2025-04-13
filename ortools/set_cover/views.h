@@ -78,7 +78,7 @@ decltype(auto) at(const ValueRangeT* container, IndexT index) {
 // }
 //
 template <typename IntT, typename EnableVectorT>
-class FilterIndicesView {
+class FilterIndexRangeView {
  public:
   struct FilterIndicesViewIterator
       : util::IteratorCRTP<FilterIndicesViewIterator, IntT> {
@@ -109,7 +109,8 @@ class FilterIndicesView {
     const EnableVectorT* is_active_;
   };
 
-  FilterIndicesView(const EnableVectorT* is_active) : is_active_(is_active) {}
+  FilterIndexRangeView(const EnableVectorT* is_active)
+      : is_active_(is_active) {}
   FilterIndicesViewIterator begin() const {
     return FilterIndicesViewIterator(IntT(0), is_active_);
   }
@@ -397,6 +398,71 @@ class TwoLevelsView : public Lvl1ViewT {
 
  private:
   const EnableVectorT* active_items_;
+};
+
+struct NoTransform {
+  template <typename T>
+  T&& operator()(T&& value) const {
+    return std::forward<T>(value);
+  }
+};
+
+template <typename FromT, typename ToT>
+struct TypeCastTransform {
+  ToT operator()(FromT value) const { return static_cast<ToT>(value); }
+};
+
+// View applying stateless transformation to the values of a continugous
+// container. Looping over this view is equivalent to:
+//
+// for (IndexT i(0); i < IndexT(container.size()); ++i) {
+//   your_code(ValueTransformT()(values_[static_cast<size_t>(i)]));
+// }
+//
+template <typename ValueT, typename IndexT,
+          typename ValueTransformT = NoTransform>
+class TransformView {
+ public:
+  using value_type = const ValueT;
+  using value_iterator = typename absl::Span<value_type>::iterator;
+
+  struct TransformViewIterator
+      : util::IteratorCRTP<TransformViewIterator, value_type> {
+    TransformViewIterator(value_iterator iterator) : iterator_(iterator) {}
+    bool operator!=(const TransformViewIterator& other) const {
+      return iterator_ != other.iterator_;
+    }
+    TransformViewIterator& operator++() {
+      ++iterator_;
+      return *this;
+    }
+    decltype(auto) operator*() const { return ValueTransformT()(*iterator_); }
+
+   private:
+    value_iterator iterator_;
+  };
+
+  TransformView() = default;
+
+  template <typename ValueRangeT>
+  TransformView(const ValueRangeT* values)
+      : values_(absl::MakeConstSpan(*values)) {}
+
+  auto size() const { return values_.size(); }
+  bool empty() const { return values_.empty(); }
+
+  decltype(auto) operator[](IndexT index) const {
+    return ValueTransformT()(values_[static_cast<size_t>(index)]);
+  }
+  TransformViewIterator begin() const {
+    return TransformViewIterator(values_.begin());
+  }
+  TransformViewIterator end() const {
+    return TransformViewIterator(values_.end());
+  }
+
+ private:
+  absl::Span<value_type> values_;
 };
 
 }  // namespace util_intops
