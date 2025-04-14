@@ -4751,6 +4751,57 @@ TEST(PresolveCpModelTest, CumulativeBug3) {
   EXPECT_EQ(response.inner_objective_lower_bound(), -6);
 }
 
+TEST(PresolveCpModelTest, CumulativeBug4) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: 0 domain: 1 }
+        variables { domain: 0 domain: 6 }
+        variables { domain: -920 domain: -15 domain: 1540 domain: 1692 }
+        variables { domain: 0 domain: 6 }
+        variables { domain: 0 domain: 1 }
+        variables { domain: -1 domain: 0 domain: 4096 domain: 4096 }
+        variables { domain: 0 domain: 17 }
+        constraints {
+          enforcement_literal: 0
+          interval {
+            start { vars: 1 coeffs: 1 }
+            end { vars: 3 coeffs: 1 }
+            size { vars: 2 coeffs: 1 offset: 2 }
+          }
+        }
+        constraints {
+          enforcement_literal: 4
+          interval {
+            start { offset: 2 }
+            end { vars: 6 coeffs: 1 }
+            size { vars: 5 coeffs: 1 }
+          }
+        }
+        constraints {
+          cumulative {
+            capacity { offset: 1 }
+            intervals: 1
+            demands { vars: 6 coeffs: 1 }
+          }
+        }
+        constraints { bool_xor { literals: 0 literals: 4 } }
+      )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_cp_model_presolve(false);
+  params.set_cp_model_probing_level(0);
+  params.set_symmetry_level(0);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  params.set_cp_model_presolve(true);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

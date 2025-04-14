@@ -1376,9 +1376,10 @@ void PresolveContext::InitializeNewDomains() {
 }
 
 void PresolveContext::LoadSolutionHint() {
-  absl::flat_hash_map<int, int64_t> hint_values;
-  if (working_model->has_solution_hint()) {
+  const int num_vars = working_model->variables().size();
+  if (working_model->has_solution_hint() || num_vars == 0) {
     const auto hint_proto = working_model->solution_hint();
+    absl::flat_hash_map<int, int64_t> hint_values;
     int num_changes = 0;
     for (int i = 0; i < hint_proto.vars().size(); ++i) {
       const int var = hint_proto.vars(i);
@@ -1393,13 +1394,13 @@ void PresolveContext::LoadSolutionHint() {
     if (num_changes > 0) {
       UpdateRuleStats("hint: moved var hint within its domain.", num_changes);
     }
-    for (int i = 0; i < working_model->variables().size(); ++i) {
+    for (int i = 0; i < num_vars; ++i) {
       if (!hint_values.contains(i) && IsFixed(i)) {
         hint_values[i] = FixedValue(i);
       }
     }
+    solution_crush_.LoadSolution(num_vars, hint_values);
   }
-  solution_crush_.LoadSolution(working_model->variables().size(), hint_values);
 }
 
 void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {

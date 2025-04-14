@@ -82,7 +82,7 @@ std::function<void(Model*)> Cumulative(
       // If the interval can be of size zero, it currently do not count towards
       // the capacity. TODO(user): Change that since we have optional interval
       // for this.
-      if (intervals->MinSize(vars[i]) == 0) {
+      if (intervals->MinSize(vars[i]) <= 0) {
         enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
             intervals->Size(vars[i]).GreaterOrEqual(IntegerValue(1))));
       }

@@ -58,10 +58,11 @@ TEST(NeighborhoodGeneratorHelperTest, ActiveVariables) {
   const CpSolverResponse solution = SolveCpModel(proto, &model);
   EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
 
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
@@ -113,10 +114,11 @@ TYPED_TEST(GeneratorTest, BasicContract) {
   EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
-  shared_response_manager->InitializeObjective(proto);
   Model main_model;
   ModelSharedTimeLimit time_limit(&main_model);
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  shared_response_manager->InitializeObjective(proto);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
   TypeParam generator(&helper, "test");
@@ -150,8 +152,9 @@ TYPED_TEST(GeneratorTest, NoReduction) {
   EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -187,9 +190,10 @@ TYPED_TEST(GeneratorTest, ReadyToGenerate) {
   const CpSolverResponse solution = SolveWithParameters(proto, params);
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
-  shared_response_manager->InitializeObjective(proto);
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  shared_response_manager->InitializeObjective(proto);
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, model.GetOrCreate<SatParameters>(),
                                      shared_response_manager, &time_limit);
@@ -215,8 +219,9 @@ TYPED_TEST(GeneratorTest, ModelWithoutConstraintDoNotCrash) {
   EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -242,8 +247,9 @@ TEST(GeneratorTest, UCBScore) {
   EXPECT_EQ(solution.status(), CpSolverStatus::OPTIMAL);
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -273,13 +279,14 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRINS) {
   proto.mutable_objective()->add_coeffs(1);
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
-  shared_response_manager->InitializeObjective(proto);
   SharedLPSolutionRepository lp_solutions(/*num_solutions_to_keep=*/1);
   SharedIncompleteSolutionManager incomplete_solutions;
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  shared_response_manager->InitializeObjective(proto);
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -315,12 +322,13 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRENS) {
   proto.mutable_objective()->add_coeffs(1);
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedLPSolutionRepository lp_solutions(/*num_solutions_to_keep=*/1);
   SharedIncompleteSolutionManager incomplete_solutions;
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -360,8 +368,9 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, ValueOutOfDomain) {
   lp_solutions.Synchronize();
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -410,12 +419,13 @@ TEST(LocalBranchingNeighborhoodGeneratorTest,
     solution: [ 0, 0, 0 ])pb");
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
-  shared_response_manager->InitializeObjective(proto);
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  shared_response_manager->InitializeObjective(proto);
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -479,12 +489,13 @@ TEST(LocalBranchingNeighborhoodGeneratorTest,
     solution: [ 1, 1, 2 ])pb");
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
-  shared_response_manager->InitializeObjective(proto);
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
+  shared_response_manager->InitializeObjective(proto);
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit);
@@ -537,8 +548,9 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
   SharedBoundsManager shared_bounds_manager(proto);
 
   SatParameters params;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
@@ -594,11 +606,12 @@ TEST(NeighborhoodGeneratorHelperTest, FixGivenVariables) {
     solution: [ 2, 3, 4 ])pb");
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
@@ -646,11 +659,12 @@ TEST(NeighborhoodGeneratorHelperTest, InfeasibleCopyAndFixVariables) {
     solution: [ 2, 3, -2 ])pb");
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
 
   SatParameters params;
   Model main_model;
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   ModelSharedTimeLimit time_limit(&main_model);
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
@@ -800,12 +814,13 @@ TEST(NeighborhoodGeneratorHelperTest, GetSchedulingPrecedences) {
     solution: [ 0, 0, 2, 3, 3, 4, 5, 5, 5, 6, 8, 8, 9 ])pb");
 
   Model model;
-  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   SharedBoundsManager shared_bounds_manager(proto);
 
   SatParameters params;
   Model main_model;
   ModelSharedTimeLimit time_limit(&main_model);
+  auto* shared_response_manager =
+      main_model.GetOrCreate<SharedResponseManager>();
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
   random_engine_t random;

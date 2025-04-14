@@ -13231,11 +13231,10 @@ namespace {
 
 // Updates the solution hint in the proto with the crushed solution values.
 void UpdateHintInProto(PresolveContext* context) {
-  CpModelProto* proto = context->working_model;
-  if (!proto->has_solution_hint()) return;
   if (context->ModelIsUnsat()) return;
 
   SolutionCrush& crush = context->solution_crush();
+  if (!crush.SolutionIsLoaded()) return;
   const int num_vars = context->working_model->variables().size();
   for (int i = 0; i < num_vars; ++i) {
     // If the initial hint is incomplete or infeasible, the crushed hint might
@@ -13251,7 +13250,7 @@ void UpdateHintInProto(PresolveContext* context) {
           i, {{relation.representative, relation.coeff}}, relation.offset);
     }
   }
-  crush.StoreSolutionAsHint(*proto);
+  crush.StoreSolutionAsHint(*context->working_model);
 }
 
 // Canonicalizes the routes constraints node expressions. In particular,
