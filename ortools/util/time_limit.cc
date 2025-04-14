@@ -14,12 +14,17 @@
 #include "ortools/util/time_limit.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 
+#include "absl/flags/flag.h"
+#include "absl/log/die_if_null.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/time/time.h"
 
 ABSL_FLAG(bool, time_limit_use_usertime, false,
           "If true, rely on the user time in the TimeLimit class. This is "
@@ -30,6 +35,13 @@ namespace operations_research {
 // static constants.
 const double TimeLimit::kSafetyBufferSeconds = 1e-4;
 const int TimeLimit::kHistorySize = 100;
+
+TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
+    : safety_buffer_ns_(static_cast<int64_t>(kSafetyBufferSeconds * 1e9)),
+      running_max_(kHistorySize),
+      external_boolean_as_limit_(nullptr) {
+  ResetTimers(limit_in_seconds, deterministic_limit);
+}
 
 std::string TimeLimit::DebugString() const {
   std::string buffer = absl::StrCat(

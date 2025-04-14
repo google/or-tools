@@ -462,14 +462,26 @@ class NestedTimeLimit {
   TimeLimit time_limit_;
 };
 
-// ################## Implementations below #####################
+class TimeLimitCheckEveryNCalls {
+ public:
+  TimeLimitCheckEveryNCalls(int N, TimeLimit* time_limit)
+      : time_limit_(time_limit), count_(0), frequency_(N) {}
 
-inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
-    : safety_buffer_ns_(static_cast<int64_t>(kSafetyBufferSeconds * 1e9)),
-      running_max_(kHistorySize),
-      external_boolean_as_limit_(nullptr) {
-  ResetTimers(limit_in_seconds, deterministic_limit);
-}
+  bool LimitReached() {
+    if (count_++ == frequency_) {
+      if (time_limit_->LimitReached()) return true;
+      count_ = 0;
+    }
+    return false;
+  }
+
+ private:
+  TimeLimit* time_limit_;
+  int count_;
+  const int frequency_;
+};
+
+// ################## Implementations below #####################
 
 inline void TimeLimit::ResetTimers(double limit_in_seconds,
                                    double deterministic_limit) {
