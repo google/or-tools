@@ -2693,7 +2693,9 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>> seen;
   int num_redundant = 0;
   int num_fixed = 0;
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit_);
   for (LiteralIndex a_index(0); a_index < implications_.size(); ++a_index) {
+    if (time_limit_check.LimitReached()) return true;
     if (trail_->Assignment().LiteralIsAssigned(Literal(a_index))) {
       ++num_fixed;
       if (!implications_[a_index].empty()) {
@@ -2735,6 +2737,7 @@ bool BinaryImplicationGraph::InvariantsAreOk() {
   VLOG(2) << "num_redundant " << num_redundant;
   VLOG(2) << "num_fixed " << num_fixed;
   for (LiteralIndex a_index(0); a_index < implications_.size(); ++a_index) {
+    if (time_limit_check.LimitReached()) return true;
     const LiteralIndex not_a_index = Literal(a_index).NegatedIndex();
     for (const Literal b : implications_[a_index]) {
       if (is_removed_[b]) {

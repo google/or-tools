@@ -1798,7 +1798,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
   // Synchronize() is called before any LNS neighborhood solvers.
   auto unique_helper = std::make_unique<NeighborhoodGeneratorHelper>(
-      &shared->model_proto, &params, shared->response, shared->bounds.get());
+      &shared->model_proto, &params, shared->response, shared->time_limit,
+      shared->bounds.get());
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 

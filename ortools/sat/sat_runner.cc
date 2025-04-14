@@ -177,13 +177,7 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
       absl::EndsWith(filename, ".wbo.bz2") ||
       absl::EndsWith(filename, ".wbo.gz")) {
     OpbReader reader;
-    if (!reader.LoadAndValidate(filename, cp_model)) {
-      if (absl::GetFlag(FLAGS_competition_mode)) {
-        std::cout << "s UNSUPPORTED" << std::endl;
-      }
-      return false;
-    }
-
+    reader.LoadAndValidate(filename, cp_model);
     if (absl::GetFlag(FLAGS_competition_mode)) {
       LogInPbCompetitionFormat(reader.num_variables(),
                                cp_model->has_objective(), model, parameters);

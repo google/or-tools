@@ -72,11 +72,13 @@ namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
-    SharedResponseManager* shared_response, SharedBoundsManager* shared_bounds)
+    SharedResponseManager* shared_response,
+    ModelSharedTimeLimit* global_time_limit, SharedBoundsManager* shared_bounds)
     : SubSolver("neighborhood_helper", HELPER),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_bounds_(shared_bounds),
+      global_time_limit_(global_time_limit),
       shared_response_(shared_response) {
   // Initialize proto memory.
   local_arena_storage_.assign(Neighborhood::kDefaultArenaSizePerVariable *
@@ -99,6 +101,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
+  if (global_time_limit_->LimitReached()) return;
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;

@@ -109,6 +109,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
+                              ModelSharedTimeLimit* global_time_limit,
                               SharedBoundsManager* shared_bounds = nullptr);
 
   // SubSolver interface.
@@ -322,6 +323,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
   SharedBoundsManager* shared_bounds_;
+  ModelSharedTimeLimit* global_time_limit_;
   SharedResponseManager* shared_response_;
 
   // Arena holding the memory of the CpModelProto* of this class. This saves the

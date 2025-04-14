@@ -1847,17 +1847,11 @@ void LsEvaluator::CompileConstraintsAndObjective(
     }
   }
 
-  static constexpr int kTimeoutCheckInterval = 1000;
-  int next_timeout_check_counter = 0;
+  TimeLimitCheckEveryNCalls checker(1000, time_limit_);
   for (int c = 0; c < cp_model_.constraints_size(); ++c) {
     if (ignored_constraints[c]) continue;
     CompileOneConstraint(cp_model_.constraints(c));
-    if (next_timeout_check_counter++ == kTimeoutCheckInterval) {
-      if (time_limit_->LimitReached()) {
-        break;
-      }
-      next_timeout_check_counter = 0;
-    }
+    if (checker.LimitReached()) break;
   }
 
   for (const ConstraintProto& ct : additional_constraints) {

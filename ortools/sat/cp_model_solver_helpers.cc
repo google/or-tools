@@ -1215,8 +1215,8 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   // Load the constraints.
   int num_ignored_constraints = 0;
-  int time_limit_check_count = 0;
-  static const int kTimeLimitCheckFrequency = 1000;
+
+  TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit);
   absl::flat_hash_set<ConstraintProto::ConstraintCase> unsupported_types;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) {
@@ -1229,11 +1229,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
       continue;
     }
 
-    ++time_limit_check_count;
-    if (time_limit_check_count >= kTimeLimitCheckFrequency) {
-      if (time_limit->LimitReached()) return;
-      time_limit_check_count = 0;
-    }
+    if (time_limit_check.LimitReached()) return;
 
     // We propagate after each new Boolean constraint but not the integer
     // ones. So we call FinishPropagation() manually here.
