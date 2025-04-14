@@ -52,7 +52,7 @@ using ::operations_research::math_opt::AttrKey;
 using ::operations_research::math_opt::is_attr_key_v;
 
 // The conversion performed by `PyToCppEnum` is rather expensive as it requires
-// doing lookups (`PyObject_{Has,Get}AttrString()`, `PyType_GetName()`), type
+// doing lookups (`PyObject_{Has,Get}AttrString()`), type
 // checking, and conversions. `PyToCppEnum` is invoked several times by
 // `pybind11` to select which overload to call. We've found this to eventually
 // be a bottleneck in benchmarks, costing nearly as much time as actually
@@ -85,8 +85,7 @@ bool PyToCppEnum(PyObject* const py_enum, EnumT& cpp_enum,
   EnumCacheValue& enum_value = it->second;
   if (inserted) {
     // Cache miss, so we need to do the conversion work.
-    enum_value.enum_name =
-        py::reinterpret_steal<py::str>(PyType_GetName(py_enum->ob_type));
+    enum_value.enum_name = py_enum->ob_type->tp_name;
     if (!PyObject_HasAttrString(py_enum, "value")) {
       // This is not even an enum, so we can't convert it. Does not happen
       // unless the user is doing something shady.
