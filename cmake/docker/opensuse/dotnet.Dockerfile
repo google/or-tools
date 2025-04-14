@@ -3,7 +3,7 @@ FROM ortools/cmake:opensuse_swig AS env
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 RUN zypper refresh \
-&& zypper install -y wget tar awk gzip libicu-devel
+&& zypper install -y wget tar awk gzip libicu-devel findutils
 
 ## .Net 8.0
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
