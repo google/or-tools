@@ -107,7 +107,7 @@ TEST(LoadAndValidateBooleanProblemTest, IntegerOverflow) {
   const std::string filename =
       file::JoinPath(::testing::TempDir(), "file2.opb");
   CHECK_OK(file::SetContents(filename, file, file::Defaults()));
-  EXPECT_FALSE(reader.LoadAndValidate(filename, &problem));
+  EXPECT_TRUE(reader.LoadAndValidate(filename, &problem));
   EXPECT_FALSE(reader.model_is_supported());
 }
 
