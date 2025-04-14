@@ -145,8 +145,7 @@ public class Loader {
         Path tempPath = unpackNativeResources(resourceURI);
         // libraries order does matter <LibraryName, isMandatory> !
         List<Map.Entry<String, Boolean>> dlls =
-            Arrays.asList(
-                (new AbstractMap.SimpleEntry("zlib1", true)),
+            Arrays.asList((new AbstractMap.SimpleEntry("zlib1", true)),
                 (new AbstractMap.SimpleEntry("bz2", true)),
                 (new AbstractMap.SimpleEntry("abseil_dll", true)),
                 (new AbstractMap.SimpleEntry("re2", true)),
