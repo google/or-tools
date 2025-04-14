@@ -20,7 +20,6 @@
 
 #include <limits>
 
-#include "absl/status/statusor.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_submodel.h"
 #include "ortools/set_cover/set_cover_views.h"
@@ -122,6 +121,7 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
 // interface that keeps them alligned.
 class DualState {
  public:
+  DualState() = default;
   template <typename SubModelT>
   DualState(const SubModelT& model)
       : lower_bound_(.0),
@@ -317,8 +317,8 @@ class HeuristicCBs : public SubgradientCBs {
   BaseInt countdown_;
 };
 
-absl::StatusOr<PrimalDualState> RunThreePhase(
-    SubModel& model, const Solution& init_solution = {});
+PrimalDualState RunThreePhase(SubModel& model,
+                              const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
@@ -368,7 +368,7 @@ class FullToCoreModel : public SubModel {
     return StrongModelView(full_model_);
   }
 
-  absl::Status FullToSubModelInvariantCheck();
+  bool FullToSubModelInvariantCheck();
 
  private:
   const Model* full_model_;

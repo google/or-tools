@@ -245,41 +245,44 @@ class CoreModel : private Model {
 };
 
 template <typename SubModelT>
-absl::Status ValidateSubModel(const SubModelT& model) {
+bool ValidateSubModel(const SubModelT& model) {
   if (model.num_elements() <= 0) {
-    return absl::InvalidArgumentError("Sub-Model has no elements.");
+    std::cerr << "Sub-Model has no elements.\n";
+    return false;
   }
   if (model.num_subsets() <= 0) {
-    return absl::InvalidArgumentError("Sub-Model has no subsets.");
+    std::cerr << "Sub-Model has no subsets.\n";
+    return false;
   }
 
   for (SubsetIndex j : model.SubsetRange()) {
     const auto& column = model.columns()[j];
     if (model.column_size(j) == 0) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Column ", j, " is empty."));
+      std::cerr << "Column " << j << " is empty.\n";
+      return false;
     }
     BaseInt j_size = std::distance(column.begin(), column.end());
     if (j_size != model.column_size(j)) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Sub-Model size mismatch on column ", j, ", ", j_size,
-                       " != ", model.column_size(j)));
+      std::cerr << "Sub-Model size mismatch on column " << j << ", " << j_size
+                << " != " << model.column_size(j) << "\n";
+      return false;
     }
   }
 
   for (ElementIndex i : model.ElementRange()) {
     const auto& row = model.rows()[i];
     if (model.row_size(i) == 0) {
-      return absl::InvalidArgumentError(absl::StrCat("Row ", i, " is empty."));
+      std::cerr << "Row " << i << " is empty.\n";
+      return false;
     }
     BaseInt i_size = std::distance(row.begin(), row.end());
     if (i_size != model.row_size(i)) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Sub-Model size mismatch on row ", i, ", ", i_size,
-                       " != ", model.row_size(i)));
+      std::cerr << "Sub-Model size mismatch on row " << i << ", " << i_size
+                << " != " << model.row_size(i) << "\n";
+      return false;
     }
   }
-  return absl::OkStatus();
+  return true;
 }
 
 }  // namespace operations_research::scp

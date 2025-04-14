@@ -45,7 +45,7 @@ SubModelView::SubModelView(const Model* model)
   fixed_columns_.clear();
   fixed_cost_ = 0.0;
   PrintSubModelSummary(*this);
-  DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(ValidateSubModel(*this));
 }
 
 SubModelView::SubModelView(const Model* model,
@@ -89,7 +89,7 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
       &rows_focus_, [&](ElementIndex i) { return !rows_sizes_[i]; });
 
   PrintSubModelSummary(*this);
-  DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(ValidateSubModel(*this));
   return fixed_cost_ - old_fixed_cost;
 }
 
@@ -126,7 +126,7 @@ void SubModelView::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
     }
   }
   PrintSubModelSummary(*this);
-  DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(ValidateSubModel(*this));
 }
 
 CoreModel::CoreModel(const Model* model)
@@ -194,7 +194,7 @@ void CoreModel::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
 
   submodel.CreateSparseRowView();
   PrintSubModelSummary(*this);
-  DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(ValidateSubModel(*this));
 }
 
 // Mark columns and row that will be removed from the core model
@@ -289,7 +289,7 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   static_cast<Model&>(*this) = MakeNewCoreModel(new_c2f_row_map);
 
   PrintSubModelSummary(*this);
-  DCHECK_OK(ValidateSubModel(*this));
+  DCHECK(ValidateSubModel(*this));
   DCHECK(absl::c_is_sorted(core2full_col_map_));
   DCHECK(absl::c_is_sorted(core2full_row_map_));
 

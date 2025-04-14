@@ -233,7 +233,7 @@ bool BoundCBs::UpdateCoreModel(SubModel& core_model,
 
 void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
                              PrimalDualState& best_state) {
-  DCHECK_OK(ValidateSubModel(model));
+  DCHECK(ValidateSubModel(model));
 
   ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
   DualState dual_state = best_state.dual_state;
@@ -695,9 +695,8 @@ void HeuristicCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   }
 }
 
-absl::StatusOr<PrimalDualState> RunThreePhase(SubModel& model,
-                                              const Solution& init_solution) {
-  RETURN_IF_ERROR(ValidateSubModel(model));
+PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
+  DCHECK(ValidateSubModel(model));
 
   PrimalDualState best_state = {.solution = init_solution,
                                 .dual_state = MakeTentativeDualState(model)};
@@ -861,8 +860,8 @@ FullToCoreModel::FullToCoreModel(const Model* full_model)
       full_dual_state_(*full_model),
       best_dual_state_(full_dual_state_) {
   ResetPricingPeriod();
-  DCHECK_OK(ValidateSubModel(*this));
-  DCHECK_OK(FullToSubModelInvariantCheck());
+  DCHECK(ValidateSubModel(*this));
+  DCHECK(FullToSubModelInvariantCheck());
 }
 
 void FullToCoreModel::ResetPricingPeriod() {
@@ -895,7 +894,7 @@ Cost FullToCoreModel::FixColumns(
   }
   ResetPricingPeriod();
   Cost fixed_cost = base::FixColumns(columns_to_fix);
-  DCHECK_OK(FullToSubModelInvariantCheck());
+  DCHECK(FullToSubModelInvariantCheck());
   return fixed_cost;
 }
 
@@ -933,7 +932,7 @@ bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
     // multipliers didn't cange, but reduced cost must be recomputed
   });
 
-  DCHECK_OK(FullToSubModelInvariantCheck());
+  DCHECK(FullToSubModelInvariantCheck());
   return true;
 }
 
@@ -986,36 +985,38 @@ void FullToCoreModel::UpdateDualState(const DualState& core_dual_state,
   }
 }
 
-absl::Status FullToCoreModel::FullToSubModelInvariantCheck() {
+bool FullToCoreModel::FullToSubModelInvariantCheck() {
   const SubModel& sub_model = *this;
   StrongModelView typed_full_model = StrongTypedFullModelView();
 
   if (typed_full_model.num_subsets() < sub_model.num_subsets()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("SubModelView has ", sub_model.num_subsets(),
-                     " subsets, but the full model has ",
-                     typed_full_model.num_subsets(), " subsets."));
+    std::cerr << absl::StrCat("SubModelView has ", sub_model.num_subsets(),
+                              " subsets, but the full model has ",
+                              typed_full_model.num_subsets(), " subsets.\n");
+    return false;
   }
   if (typed_full_model.num_elements() != sub_model.num_elements()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("SubModelView has ", sub_model.num_elements(),
-                     " elements, but the full model has ",
-                     typed_full_model.num_elements(), " elements."));
+    std::cerr << absl::StrCat("SubModelView has ", sub_model.num_elements(),
+                              " elements, but the full model has ",
+                              typed_full_model.num_elements(), " elements.\n");
+    return false;
   }
   for (SubsetIndex core_j : sub_model.SubsetRange()) {
     FullSubsetIndex full_j = sub_model.MapCoreToFullSubsetIndex(core_j);
     if (!is_focus_col_[static_cast<SubsetIndex>(full_j)]) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Subset ", core_j, " in sub-model but its mapped subset ", full_j,
-          " not found in full model view."));
+      std::cerr << absl::StrCat("Subset ", core_j,
+                                " in sub-model but its mapped subset ", full_j,
+                                " not found in full model view.\n");
+      return false;
     }
   }
   for (ElementIndex core_i : sub_model.ElementRange()) {
     FullElementIndex full_i = sub_model.MapCoreToFullElementIndex(core_i);
     if (!is_focus_row_[static_cast<ElementIndex>(full_i)]) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Element ", core_i, " in sub-model but its mapped element ", full_i,
-          " not found in full model view."));
+      std::cerr << absl::StrCat("Element ", core_i,
+                                " in sub-model but its mapped element ", full_i,
+                                " not found in full model view.\n");
+      return false;
     }
   }
   for (FullElementIndex full_i : typed_full_model.ElementRange()) {
@@ -1025,12 +1026,13 @@ absl::Status FullToCoreModel::FullToSubModelInvariantCheck() {
     ElementIndex core_i = sub_model.MapFullToCoreElementIndex(full_i);
     if (core_i < ElementIndex() ||
         ElementIndex(sub_model.num_elements()) < core_i) {
-      return absl::InvalidArgumentError(absl::StrCat(
+      std::cerr << absl::StrCat(
           "Element ", full_i,
-          " in full model view but has no mapped element in sub-model."));
+          " in full model view but has no mapped element in sub-model.\n");
+      return false;
     }
   }
-  return absl::OkStatus();
+  return true;
 }
 
 }  // namespace operations_research::scp
