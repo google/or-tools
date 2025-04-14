@@ -70,9 +70,18 @@ class OpbReader {
     for (const std::string& line : FileLines(filename)) {
       ++num_lines;
       ProcessNewLine(line);
+
+      // Check if the model is supported. It is not supported if one constant
+      // contains an integer that does not fit in int64_t.
+      // In that case, we create a dummy model with a single variable that
+      // overflows.
       if (!model_is_supported_) {
-        LOG(ERROR) << "Unsupported model: '" << filename << "'";
-        return false;
+        model->Clear();
+        IntegerVariableProto* var = model->add_variables();
+        var->add_domain(std::numeric_limits<int64_t>::min());
+        var->add_domain(std::numeric_limits<int64_t>::max());
+        num_variables_ = 1;
+        return true;
       }
     }
     if (num_lines == 0) {
@@ -262,6 +271,7 @@ class OpbReader {
 
   bool ParseInt64Into(const std::string& word, int64_t* value) {
     if (!absl::SimpleAtoi(word, value)) {
+      VLOG(1) << "Failed to parse int64_t: " << word;
       model_is_supported_ = false;
       return false;
     }

@@ -272,7 +272,7 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
     // Creates and returns the Boolean equivalent to a <= b.
     const auto f = [repository, integer_trail, encoder](
                        const AffineExpression& a, const AffineExpression& b) {
-      if (a.var == b.var) {
+      if (a.var == b.var && a.coeff == b.coeff) {
         return (a.constant <= b.constant) ? encoder->GetTrueLiteral()
                                           : encoder->GetFalseLiteral();
       }

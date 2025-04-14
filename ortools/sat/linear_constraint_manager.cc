@@ -852,8 +852,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   }
 
   int num_added = 0;
-  int num_skipped_checks = 0;
-  const int kCheckFrequency = 100;
+  TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   std::vector<double> orthogonality_score(new_constraints_by_score.size(), 1.0);
   for (int i = 0; i < constraint_limit; ++i) {
@@ -865,10 +864,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints_by_score.size(); ++j) {
       // Checks the time limit, and returns if the lp has changed.
-      if (++num_skipped_checks >= kCheckFrequency) {
-        if (time_limit_->LimitReached()) return current_lp_is_changed_;
-        num_skipped_checks = 0;
-      }
+      if (time_limit_check.LimitReached()) return current_lp_is_changed_;
 
       const ConstraintIndex new_index = new_constraints_by_score[j].first;
       if (constraint_infos_[new_index].is_in_lp) continue;

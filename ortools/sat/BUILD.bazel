@@ -1803,6 +1803,26 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "integer_search_test",
+    size = "small",
+    srcs = ["integer_search_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_mapping",
+        ":cp_model_solver",
+        ":integer",
+        ":integer_base",
+        ":integer_search",
+        ":model",
+        ":sat_parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/util:random_engine",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
 cc_library(
     name = "lb_tree_search",
     srcs = ["lb_tree_search.cc"],
@@ -3673,6 +3693,37 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "cp_model_lns_test",
+    size = "small",
+    srcs = ["cp_model_lns_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_lns",
+        ":cp_model_solver",
+        ":cp_model_solver_helpers",
+        ":cp_model_test_utils",
+        ":cp_model_utils",
+        ":integer_base",
+        ":model",
+        ":sat_parameters_cc_proto",
+        ":synchronization",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:bitset",
+        "//ortools/util:random_engine",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_library(
     name = "feasibility_pump",
     srcs = ["feasibility_pump.cc"],
@@ -3827,6 +3878,19 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "drat_checker_test",
+    srcs = ["drat_checker_test.cc"],
+    deps = [
+        ":drat_checker",
+        ":sat_base",
+        "//ortools/base:file",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
         "@abseil-cpp//absl/types:span",
     ],
 )
