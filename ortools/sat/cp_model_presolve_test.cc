@@ -7921,6 +7921,26 @@ TEST(PresolveCpModelTest, InnerObjectiveLowerBound) {
   EXPECT_EQ(r.inner_objective_lower_bound(), 8);
 }
 
+TEST(PresolveCpModelTest, ModelWithoutVariables) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        constraints {
+          all_diff {
+            exprs { offset: 1 }
+            exprs { offset: 2 }
+          }
+        }
+      )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_cp_model_presolve(false);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

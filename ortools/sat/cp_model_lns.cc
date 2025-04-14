@@ -101,7 +101,10 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
-  if (global_time_limit_->LimitReached()) return;
+  if (shared_response_->ProblemIsSolved() ||
+      global_time_limit_->LimitReached()) {
+    return;
+  }
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;

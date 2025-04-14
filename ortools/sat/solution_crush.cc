@@ -629,6 +629,7 @@ void SolutionCrush::AssignVariableToPackingArea(
     const CompactVectorVector<int, Rectangle>& areas, const CpModelProto& model,
     absl::Span<const int> x_intervals, absl::Span<const int> y_intervals,
     absl::Span<const BoxInAreaLiteral> box_in_area_lits) {
+  if (!solution_is_loaded_) return;
   struct RectangleTypeAndIndex {
     enum class Type {
       kHintedBox,
