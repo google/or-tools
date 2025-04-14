@@ -22,18 +22,36 @@
 
 namespace operations_research {
 
-#define SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FROM, TO)     \
+// In the CFT algorithm, indices from different models are frequently used,
+// and mixing them can lead to errors. To prevent such mistakes, strong-typed
+// wrappers are employed. There are three available approaches for handling
+// these indices:
+// 1. Full-model strong-typed indices + {Subset,Element}Index for the core model
+// 2. Core-model strong-typed indices + {Subset,Element}Index for the full model
+// 3. Define new strong-typed indices both full-model and core-model
+// Introducing a new set of strong-typed indices, however, can lead to a
+// cascade of code duplication (or template proliferation). It also requires
+// additional "view" boilerplate to properly handle the different types,
+// increasing complexity.
+// Currently, the simplest approach is to define only full-model indices while
+// reusing the original strong types for the core model. The main challenge
+// arises in FullToCoreModel, where a "filtered" full-model must be handled. In
+// such cases, static casts are employed to manage the type conversions
+// effectively.
+DEFINE_STRONG_INT_TYPE(FullSubsetIndex, BaseInt);
+DEFINE_STRONG_INT_TYPE(FullElementIndex, BaseInt);
+
+// Syntactic sugar to define strong typed indices casts.
+// Note: look at `strong_int.h` for more details about `StrongIntConvert`
+#define ENABLE_EXPLICIT_STRONG_TYPE_CAST(FROM, TO)        \
   constexpr TO StrongIntConvert(FROM j, TO* /*unused*/) { \
     return TO(static_cast<FROM::ValueType>(j));           \
   }
 
-DEFINE_STRONG_INT_TYPE(FullSubsetIndex, BaseInt);
-DEFINE_STRONG_INT_TYPE(FullElementIndex, BaseInt);
-
-SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(SubsetIndex, FullSubsetIndex);
-SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FullSubsetIndex, SubsetIndex);
-SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(ElementIndex, FullElementIndex);
-SCP_EXPLICIT_INDEX_STRONG_TYPE_CAST(FullElementIndex, ElementIndex);
+ENABLE_EXPLICIT_STRONG_TYPE_CAST(SubsetIndex, FullSubsetIndex);
+ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullSubsetIndex, SubsetIndex);
+ENABLE_EXPLICIT_STRONG_TYPE_CAST(ElementIndex, FullElementIndex);
+ENABLE_EXPLICIT_STRONG_TYPE_CAST(FullElementIndex, ElementIndex);
 
 using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
 using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
