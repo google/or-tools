@@ -42,6 +42,10 @@ static constexpr double kInfinity = std::numeric_limits<float>::infinity();
 
 using CL = SetCoverInvariant::ConsistencyLevel;
 
+bool SetCoverSolutionGenerator::CheckInvariantConsistency() const {
+  return inv_->CheckConsistency(consistency_level_);
+}
+
 // TrivialSolutionGenerator.
 
 bool TrivialSolutionGenerator::NextSolution(
@@ -505,10 +509,8 @@ bool SteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
     DCHECK(inv()->ComputeIsRedundant(best_subset));
     DCHECK_GT(costs[best_subset], 0.0);
     inv()->Deselect(best_subset, CL::kFreeAndUncovered);
-
-    for (IntersectingSubsetsIterator it(*model(), best_subset); !it.at_end();
-         ++it) {
-      const SubsetIndex subset = *it;
+    for (const SubsetIndex subset :
+         IntersectingSubsetsRange(*model(), best_subset)) {
       if (!inv()->ComputeIsRedundant(subset)) {
         pq.Remove(subset.value());
       }
@@ -544,7 +546,7 @@ bool LazySteepestSearch::NextSolution(const SubsetBoolVector& in_focus) {
   }
   std::vector<BaseInt> cost_permutation(selected_costs.size());
   std::iota(cost_permutation.begin(), cost_permutation.end(), 0);
-  // TODO(user): use RadixSort and sort on Cost,we need doubles and payloads.
+  // TODO(user): use RadixSort with doubles and payloads.
   std::sort(cost_permutation.begin(), cost_permutation.end(),
             [&selected_costs](const BaseInt i, const BaseInt j) {
               if (selected_costs[i] == selected_costs[j]) {
@@ -826,29 +828,35 @@ std::vector<SubsetIndex> ClearRandomSubsets(BaseInt num_subsets,
 }
 
 std::vector<SubsetIndex> ClearRandomSubsets(absl::Span<const SubsetIndex> focus,
-                                            BaseInt num_subsets,
+                                            BaseInt num_subsets_to_choose,
                                             SetCoverInvariant* inv) {
-  num_subsets = std::min<BaseInt>(num_subsets, focus.size());
-  CHECK_GE(num_subsets, 0);
+  num_subsets_to_choose =
+      std::min<BaseInt>(num_subsets_to_choose, focus.size());
+  CHECK_GE(num_subsets_to_choose, 0);
   std::vector<SubsetIndex> chosen_indices;
   for (const SubsetIndex subset : focus) {
     if (inv->is_selected()[subset]) {
       chosen_indices.push_back(subset);
     }
   }
-  SampleSubsets(&chosen_indices, num_subsets);
+  SampleSubsets(&chosen_indices, num_subsets_to_choose);
   BaseInt num_deselected = 0;
   for (const SubsetIndex subset : chosen_indices) {
-    inv->Deselect(subset, CL::kCostAndCoverage);
-    ++num_deselected;
-    for (IntersectingSubsetsIterator it(*inv->model(), subset); !it.at_end();
-         ++it) {
-      if (!inv->is_selected()[subset]) continue;
+    if (inv->is_selected()[subset]) {  // subset may have been deselected in a
+                                       // previous iteration.
       inv->Deselect(subset, CL::kCostAndCoverage);
       ++num_deselected;
     }
-    // Note that num_deselected may exceed num_subsets by more than 1.
-    if (num_deselected > num_subsets) break;
+    for (const SubsetIndex connected_subset :
+         IntersectingSubsetsRange(*inv->model(), subset)) {
+      // connected_subset may have been deselected in a previous iteration.
+      if (inv->is_selected()[connected_subset]) {
+        inv->Deselect(connected_subset, CL::kCostAndCoverage);
+        ++num_deselected;
+      }
+    }
+    // Note that num_deselected may exceed num_subsets_to_choose by more than 1.
+    if (num_deselected > num_subsets_to_choose) break;
   }
   return chosen_indices;
 }

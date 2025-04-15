@@ -95,8 +95,9 @@ ABSL_FLAG(int, max_elements_for_classic, 5000,
 
 ABSL_FLAG(bool, benchmarks, false, "Run benchmarks.");
 ABSL_FLAG(std::string, benchmarks_dir, "", "Benchmarks directory.");
+ABSL_FLAG(bool, collate_scp, false, "Collate the SCP benchmarks.");
 
-// TODO(user): Add a flags to:
+// TODO(user): Add flags to:
 // - Choose problems by name or by size: filter_name, max_elements, max_subsets.
 // - Exclude problems by name: exclude_name.
 // - Choose which solution generators to run.
@@ -124,18 +125,14 @@ void LogStats(const SetCoverModel& model) {
   LOG(INFO) << header << model.ToVerboseString(sep);
   LOG(INFO) << header << "cost" << sep
             << model.ComputeCostStats().ToVerboseString(sep);
-  LOG(INFO) << header << "row stats" << sep
+  LOG(INFO) << header << "row size stats" << sep
             << model.ComputeRowStats().ToVerboseString(sep);
   LOG(INFO) << header << "row size deciles" << sep
             << absl::StrJoin(model.ComputeRowDeciles(), sep);
-  LOG(INFO) << header << "row delta byte size stats" << sep
-            << model.ComputeRowDeltaSizeStats().ToVerboseString(sep);
-  LOG(INFO) << header << "column stats" << sep
+  LOG(INFO) << header << "column size stats" << sep
             << model.ComputeColumnStats().ToVerboseString(sep);
   LOG(INFO) << header << "column size deciles" << sep
             << absl::StrJoin(model.ComputeColumnDeciles(), sep);
-  LOG(INFO) << header << "column delta byte size stats" << sep
-            << model.ComputeColumnDeltaSizeStats().ToVerboseString(sep);
   LOG(INFO) << header << "num_singleton_rows" << sep
             << model.ComputeNumSingletonRows() << sep << "num_singleton_columns"
             << sep << model.ComputeNumSingletonColumns();
@@ -391,10 +388,11 @@ std::string FormatModelAndStats(const SetCoverModel& model) {
   } else {  // CSV
     const std::string header =
         absl::StrCat(Separator(), model.name(), Separator());
-    return absl::StrCat(
-        header, model.ToString(Separator()), Eol(), header, "column stats",
-        Separator(), FormatStats(model.ComputeColumnStats()), Eol(), header,
-        "row stats", Separator(), FormatStats(model.ComputeRowStats()));
+    return absl::StrCat(header, model.ToString(Separator()), Eol(), header,
+                        "column size stats", Separator(),
+                        FormatStats(model.ComputeColumnStats()), Eol(), header,
+                        "row size stats", Separator(),
+                        FormatStats(model.ComputeRowStats()), Eol());
   }
 }
 
@@ -502,17 +500,36 @@ std::vector<BenchmarksTableRow> BenchmarksTable() {
 // directory specified by the --benchmarks_dir flag.
 // Use a macro to be able to compute the size of the array at compile time.
 #define BUILD_VECTOR(files) BuildVector(files, ABSL_ARRAYSIZE(files))
-  return std::vector<BenchmarksTableRow>{
-      {"scp-orlib", BUILD_VECTOR(kScp4To6Files), FileFormat::ORLIB},
-      {"scp-orlib", BUILD_VECTOR(kScpAToEFiles), FileFormat::ORLIB},
-      {"scp-orlib", BUILD_VECTOR(kScpNrFiles), FileFormat::ORLIB},
-      {"scp-orlib", BUILD_VECTOR(kScpClrFiles), FileFormat::ORLIB},
-      {"scp-orlib", BUILD_VECTOR(kScpCycFiles), FileFormat::ORLIB},
-      {"scp-rail", BUILD_VECTOR(kRailFiles), FileFormat::RAIL},
-      {"scp-wedelin", BUILD_VECTOR(kWedelinFiles), FileFormat::ORLIB},
-      {"scp-balas", BUILD_VECTOR(kBalasFiles), FileFormat::ORLIB},
-      {"scp-fimi", BUILD_VECTOR(kFimiFiles), FileFormat::FIMI},
-  };
+  std::vector<BenchmarksTableRow> result;
+  std::vector<std::string> all_scp_files;
+  if (absl::GetFlag(FLAGS_collate_scp)) {
+    all_scp_files = BUILD_VECTOR(kScp4To6Files);
+    all_scp_files.insert(all_scp_files.end(), kScpAToEFiles,
+                         kScpAToEFiles + ABSL_ARRAYSIZE(kScpAToEFiles));
+    all_scp_files.insert(all_scp_files.end(), kScpNrFiles,
+                         kScpNrFiles + ABSL_ARRAYSIZE(kScpNrFiles));
+    all_scp_files.insert(all_scp_files.end(), kScpCycFiles,
+                         kScpCycFiles + ABSL_ARRAYSIZE(kScpCycFiles));
+    result = {{"scp-orlib", all_scp_files, FileFormat::ORLIB}};
+  } else {
+    result = {
+        {"scp-orlib", BUILD_VECTOR(kScp4To6Files), FileFormat::ORLIB},
+        {"scp-orlib", BUILD_VECTOR(kScpAToEFiles), FileFormat::ORLIB},
+        {"scp-orlib", BUILD_VECTOR(kScpNrFiles), FileFormat::ORLIB},
+        {"scp-orlib", BUILD_VECTOR(kScpClrFiles), FileFormat::ORLIB},
+        {"scp-orlib", BUILD_VECTOR(kScpCycFiles), FileFormat::ORLIB},
+    };
+  }
+  result.insert(
+      result.end(),
+      {
+          {"scp-rail", BUILD_VECTOR(kRailFiles), FileFormat::RAIL},
+          {"scp-wedelin", BUILD_VECTOR(kWedelinFiles), FileFormat::ORLIB},
+          {"scp-balas", BUILD_VECTOR(kBalasFiles), FileFormat::ORLIB},
+          {"scp-fimi", BUILD_VECTOR(kFimiFiles), FileFormat::FIMI},
+      });
+  return result;
+
 #undef BUILD_VECTOR
 }
 
@@ -529,10 +546,12 @@ void Benchmarks() {
               << kEol;
   }
   for (const auto& [dir, files, input_format] : kBenchmarks) {
-    GeometricMean first_cost_ratio_geomean;
-    GeometricMean first_speedup_geomean;
-    GeometricMean improvement_cost_ratio_geomean;
-    GeometricMean improvement_speedup_geomean;
+    GeometricMean element_vs_classic_cost_ratio_geomean;
+    GeometricMean element_vs_classic_speedup_geomean;
+    GeometricMean lazy_vs_classic_cost_ratio_geomean;
+    GeometricMean lazy_vs_classic_speedup_geomean;
+    GeometricMean lazy_steepest_vs_steepest_cost_ratio_geomean;
+    GeometricMean lazy_steepest_vs_steepest_speedup_geomean;
     GeometricMean combined_cost_ratio_geomean;
     GeometricMean combined_speedup_geomean;
     GeometricMean tlns_cost_ratio_geomean;
@@ -570,40 +589,56 @@ void Benchmarks() {
         DCHECK(classic_inv.CheckConsistency(CL::kCostAndCoverage));
       }
 
-      SetCoverInvariant inv(&model);
-      LazyElementDegreeSolutionGenerator lazy_element_degree(&inv);
+      SetCoverInvariant element_degree_inv(&model);
+      ElementDegreeSolutionGenerator element_degree(&element_degree_inv);
+      CHECK(element_degree.NextSolution());
+      DCHECK(element_degree_inv.CheckConsistency(CL::kCostAndCoverage));
+
+      absl::StrAppend(&output, ReportBothParts(classic, element_degree));
+
+      SetCoverInvariant lazy_inv(&model);
+      LazyElementDegreeSolutionGenerator lazy_element_degree(&lazy_inv);
       CHECK(lazy_element_degree.NextSolution());
-      DCHECK(inv.CheckConsistency(CL::kCostAndCoverage));
+      DCHECK(lazy_inv.CheckConsistency(CL::kCostAndCoverage));
 
       absl::StrAppend(&output, ReportBothParts(classic, lazy_element_degree));
-      LazySteepestSearch lazy_steepest(&inv);
+
+      LazySteepestSearch lazy_steepest(&lazy_inv);
       lazy_steepest.NextSolution();
       absl::StrAppend(&output, ReportBothParts(steepest, lazy_steepest));
 
       if (run_classic_solvers) {
-        first_cost_ratio_geomean.Add(CostRatio(classic, lazy_element_degree));
-        first_speedup_geomean.Add(Speedup(classic, lazy_element_degree));
-        improvement_cost_ratio_geomean.Add(CostRatio(steepest, lazy_steepest));
-        improvement_speedup_geomean.Add(Speedup(steepest, lazy_steepest));
+        element_vs_classic_cost_ratio_geomean.Add(
+            CostRatio(classic, element_degree));
+        element_vs_classic_speedup_geomean.Add(
+            Speedup(classic, element_degree));
+        lazy_vs_classic_cost_ratio_geomean.Add(
+            CostRatio(classic, lazy_element_degree));
+        lazy_vs_classic_speedup_geomean.Add(
+            Speedup(classic, lazy_element_degree));
+        lazy_steepest_vs_steepest_cost_ratio_geomean.Add(
+            CostRatio(steepest, lazy_steepest));
+        lazy_steepest_vs_steepest_speedup_geomean.Add(
+            Speedup(steepest, lazy_steepest));
         combined_cost_ratio_geomean.Add(CostRatio(classic, lazy_steepest));
         combined_speedup_geomean.Add(SpeedupOnCumulatedTimes(
             classic, steepest, lazy_element_degree, lazy_steepest));
       }
 
-      Cost best_cost = inv.cost();
-      SubsetBoolVector best_assignment = inv.is_selected();
+      Cost best_cost = lazy_inv.cost();
+      SubsetBoolVector best_assignment = lazy_inv.is_selected();
       if (absl::GetFlag(FLAGS_tlns)) {
         WallTimer timer;
-        LazySteepestSearch steepest(&inv);
+        LazySteepestSearch steepest(&lazy_inv);
         timer.Start();
         for (int i = 0; i < 500; ++i) {
           std::vector<SubsetIndex> range =
-              ClearRandomSubsets(0.1 * inv.trace().size(), &inv);
+              ClearRandomSubsets(0.1 * lazy_inv.trace().size(), &lazy_inv);
           CHECK(lazy_element_degree.NextSolution());
           CHECK(steepest.NextSolution());
-          if (inv.cost() < best_cost) {
-            best_cost = inv.cost();
-            best_assignment = inv.is_selected();
+          if (lazy_inv.cost() < best_cost) {
+            best_cost = lazy_inv.cost();
+            best_assignment = lazy_inv.is_selected();
           }
         }
         timer.Stop();
@@ -619,16 +654,21 @@ void Benchmarks() {
     }
 
     if (absl::GetFlag(FLAGS_summarize)) {
-      std::cout << "First speedup geometric mean: "
-                << first_speedup_geomean.Get() << kEol
-                << "First cost ratio geometric mean: "
-                << first_cost_ratio_geomean.Get() << kEol
-                << "Improvement speedup geometric mean: "
-                << improvement_speedup_geomean.Get() << kEol
-                << "Improvement cost ratio geometric mean: "
-                << improvement_cost_ratio_geomean.Get() << kEol
-                << "Combined speedup geometric mean: "
-                << combined_speedup_geomean.Get() << kEol;
+      std::cout
+          << "Element degree / classic speedup geometric mean: "
+          << element_vs_classic_speedup_geomean.Get() << kEol
+          << "Element degree / classic cost ratio geometric mean: "
+          << element_vs_classic_cost_ratio_geomean.Get() << kEol
+          << "Lazy element degree / classic speedup geometric mean: "
+          << lazy_vs_classic_speedup_geomean.Get() << kEol
+          << "Lazy element degree / classic cost ratio geometric mean: "
+          << lazy_vs_classic_cost_ratio_geomean.Get() << kEol
+          << "Improvement element degree / classic speedup geometric mean: "
+          << lazy_steepest_vs_steepest_speedup_geomean.Get() << kEol
+          << "Improvement cost ratio geometric mean: "
+          << lazy_steepest_vs_steepest_cost_ratio_geomean.Get() << kEol
+          << "Combined speedup geometric mean: "
+          << combined_speedup_geomean.Get() << kEol;
       if (absl::GetFlag(FLAGS_tlns)) {
         std::cout << "TLNS cost ratio geometric mean: "
                   << tlns_cost_ratio_geomean.Get() << kEol;

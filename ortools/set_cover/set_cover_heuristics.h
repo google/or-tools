@@ -14,8 +14,6 @@
 #ifndef OR_TOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 #define OR_TOOLS_SET_COVER_SET_COVER_HEURISTICS_H_
 
-#include <stdbool.h>
-
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -55,10 +53,12 @@ class SetCoverSolutionGenerator {
   // By default, the maximum number of iterations is set to infinity, and the
   // maximum time in seconds is set to infinity as well (and the time limit is
   // not yet implemented).
-  SetCoverSolutionGenerator(SetCoverInvariant* inv,
-                            absl::string_view class_name,
-                            absl::string_view name)
+  SetCoverSolutionGenerator(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      absl::string_view class_name, absl::string_view name)
       : run_time_(absl::ZeroDuration()),
+        consistency_level_(consistency_level),
         inv_(inv),
         class_name_(class_name),
         name_(name),
@@ -126,6 +126,8 @@ class SetCoverSolutionGenerator {
   // Same as above, but with a vector of Booleans as focus.
   virtual bool NextSolution(const SubsetBoolVector& in_focus) = 0;
 
+  bool CheckInvariantConsistency() const;
+
  protected:
   // Accessors.
   SetCoverModel* model() const { return inv_->model(); }
@@ -136,6 +138,9 @@ class SetCoverSolutionGenerator {
 
   // run_time_ is an abstract duration for the time spent in NextSolution().
   absl::Duration run_time_;
+
+  // The consistency needed by the solution generator.
+  SetCoverInvariant::ConsistencyLevel consistency_level_;
 
  private:
   // The data structure that will maintain the invariant for the model.
@@ -165,10 +170,11 @@ class SetCoverSolutionGenerator {
 // subset indices if needed.
 class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
  public:
-  explicit SubsetListBasedSolutionGenerator(SetCoverInvariant* inv,
-                                            absl::string_view class_name,
-                                            absl::string_view name)
-      : SetCoverSolutionGenerator(inv, class_name, name) {}
+  explicit SubsetListBasedSolutionGenerator(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      absl::string_view class_name, absl::string_view name)
+      : SetCoverSolutionGenerator(inv, consistency_level, class_name, name) {}
 
   bool NextSolution(absl::Span<const SubsetIndex> _) override { return false; }
 
@@ -201,10 +207,11 @@ class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
 // Booleans if needed.
 class BoolVectorBasedSolutionGenerator : public SetCoverSolutionGenerator {
  public:
-  explicit BoolVectorBasedSolutionGenerator(SetCoverInvariant* inv,
-                                            absl::string_view class_name,
-                                            absl::string_view name)
-      : SetCoverSolutionGenerator(inv, class_name, name) {}
+  explicit BoolVectorBasedSolutionGenerator(
+      SetCoverInvariant* inv,
+      SetCoverInvariant::ConsistencyLevel consistency_level,
+      absl::string_view class_name, absl::string_view name)
+      : SetCoverSolutionGenerator(inv, consistency_level, class_name, name) {}
 
   bool NextSolution(const SubsetBoolVector& _) override { return false; }
 
@@ -241,7 +248,9 @@ class TrivialSolutionGenerator : public SubsetListBasedSolutionGenerator {
       : TrivialSolutionGenerator(inv, "TrivialGenerator") {}
 
   TrivialSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "TrivialGenerator", name) {}
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "TrivialGenerator", name) {}
 
   using SubsetListBasedSolutionGenerator::NextSolution;
   bool NextSolution(absl::Span<const SubsetIndex> focus) final;
@@ -260,7 +269,9 @@ class RandomSolutionGenerator : public SubsetListBasedSolutionGenerator {
       : RandomSolutionGenerator(inv, "RandomGenerator") {}
 
   RandomSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "RandomGenerator", name) {}
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "RandomGenerator", name) {}
 
   using SubsetListBasedSolutionGenerator::NextSolution;
   bool NextSolution(absl::Span<const SubsetIndex> focus) final;
@@ -293,7 +304,9 @@ class GreedySolutionGenerator : public SubsetListBasedSolutionGenerator {
       : GreedySolutionGenerator(inv, "GreedyGenerator") {}
 
   GreedySolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "GreedyGenerator", name) {}
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "GreedyGenerator", name) {}
 
   using SubsetListBasedSolutionGenerator::NextSolution;
   bool NextSolution(absl::Span<const SubsetIndex> focus) final;
@@ -314,7 +327,9 @@ class ElementDegreeSolutionGenerator : public BoolVectorBasedSolutionGenerator {
       : ElementDegreeSolutionGenerator(inv, "ElementDegreeGenerator") {}
 
   ElementDegreeSolutionGenerator(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(inv, "ElementDegreeGenerator", name) {}
+      : BoolVectorBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "ElementDegreeGenerator", name) {}
 
   using BoolVectorBasedSolutionGenerator::NextSolution;
   bool NextSolution(const SubsetBoolVector& in_focus) final;
@@ -337,8 +352,9 @@ class LazyElementDegreeSolutionGenerator
 
   LazyElementDegreeSolutionGenerator(SetCoverInvariant* inv,
                                      absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(inv, "LazyElementDegreeGenerator",
-                                         name) {}
+      : BoolVectorBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
+            "LazyElementDegreeGenerator", name) {}
 
   using BoolVectorBasedSolutionGenerator::NextSolution;
   bool NextSolution(const SubsetBoolVector& in_focus) final;
@@ -358,7 +374,9 @@ class SteepestSearch : public BoolVectorBasedSolutionGenerator {
       : SteepestSearch(inv, "SteepestSearch") {}
 
   SteepestSearch(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(inv, "SteepestSearch", name) {}
+      : BoolVectorBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "SteepestSearch", name) {}
 
   using BoolVectorBasedSolutionGenerator::NextSolution;
   bool NextSolution(const SubsetBoolVector& in_focus) final;
@@ -375,7 +393,9 @@ class LazySteepestSearch : public BoolVectorBasedSolutionGenerator {
       : LazySteepestSearch(inv, "LazySteepestSearch") {}
 
   LazySteepestSearch(SetCoverInvariant* inv, absl::string_view name)
-      : BoolVectorBasedSolutionGenerator(inv, "LazySteepestSearch", name) {}
+      : BoolVectorBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage,
+            "LazySteepestSearch", name) {}
 
   using BoolVectorBasedSolutionGenerator::NextSolution;
   bool NextSolution(const SubsetBoolVector& in_focus) final;
@@ -459,7 +479,9 @@ class GuidedTabuSearch : public SubsetListBasedSolutionGenerator {
       : GuidedTabuSearch(inv, "GuidedTabuSearch") {}
 
   GuidedTabuSearch(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "GuidedTabuSearch", name),
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered,
+            "GuidedTabuSearch", name),
         lagrangian_factor_(kDefaultLagrangianFactor),
         penalty_factor_(kDefaultPenaltyFactor),
         epsilon_(kDefaultEpsilon),
@@ -549,7 +571,9 @@ class GuidedLocalSearch : public SubsetListBasedSolutionGenerator {
       : GuidedLocalSearch(inv, "GuidedLocalSearch") {}
 
   GuidedLocalSearch(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "GuidedLocalSearch", name),
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kRedundancy,
+            "GuidedLocalSearch", name),
         epsilon_(kDefaultEpsilon),
         alpha_(kDefaultAlpha) {
     Initialize();
