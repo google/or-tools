@@ -933,7 +933,7 @@ mutable struct SatParameters <: AbstractSatParameters
     exploit_objective::Bool
     probing_period_at_root::Int64
     use_probing_search::Bool
-    use_shaving_in_probing_search::Bool
+    shaving_deterministic_time_in_probing_search::Float64
     shaving_search_deterministic_time::Float64
     use_objective_lb_search::Bool
     use_objective_shaving_search::Bool
@@ -1154,8 +1154,8 @@ mutable struct SatParameters <: AbstractSatParameters
         exploit_objective = true,
         probing_period_at_root = Int64(0),
         use_probing_search = false,
-        use_shaving_in_probing_search = true,
-        shaving_search_deterministic_time = Float64(0.001),
+        shaving_deterministic_time_in_probing_search = Float64(0.001),
+        shaving_search_deterministic_time = Float64(0.1),
         use_objective_lb_search = false,
         use_objective_shaving_search = false,
         pseudo_cost_reliability_threshold = Int64(100),
@@ -1375,7 +1375,7 @@ mutable struct SatParameters <: AbstractSatParameters
             exploit_objective,
             probing_period_at_root,
             use_probing_search,
-            use_shaving_in_probing_search,
+            shaving_deterministic_time_in_probing_search,
             shaving_search_deterministic_time,
             use_objective_lb_search,
             use_objective_shaving_search,
@@ -1603,7 +1603,7 @@ function to_proto_struct(
         sat_parameters.exploit_objective,
         sat_parameters.probing_period_at_root,
         sat_parameters.use_probing_search,
-        sat_parameters.use_shaving_in_probing_search,
+        sat_parameters.shaving_deterministic_time_in_probing_search,
         sat_parameters.shaving_search_deterministic_time,
         sat_parameters.use_objective_lb_search,
         sat_parameters.use_objective_shaving_search,
