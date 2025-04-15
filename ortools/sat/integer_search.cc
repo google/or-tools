@@ -1921,15 +1921,14 @@ SatSolver::Status ContinuousProber::Probe() {
 
     // Adjust the active_limit.
     if (use_shaving_) {
-      const double deterministic_time =
-          parameters_.shaving_search_deterministic_time();
+      const double dtime = parameters_.shaving_search_deterministic_time();
       const bool something_has_been_detected =
           num_bounds_shaved_ != initial_num_bounds_shaved ||
           prober_->num_new_literals_fixed() != initial_num_literals_fixed;
       if (something_has_been_detected) {  // Reset the limit.
-        active_limit_ = deterministic_time;
-      } else if (active_limit_ < 25 * deterministic_time) {  // Bump the limit.
-        active_limit_ += deterministic_time;
+        active_limit_ = dtime;
+      } else if (active_limit_ <= 128 * dtime) {  // Bump the limit.
+        active_limit_ *= 2;
       }
     }
 
@@ -2047,8 +2046,8 @@ void ContinuousProber::LogStatistics() {
     shared_response_manager_->LogMessageWithThrottling(
         "Probe",
         absl::StrCat(
-            " (iterations=", iteration_,
-            " linearization_level=", parameters_.linearization_level(),
+            " (iterations=", iteration_, " linearization_level=",
+            parameters_.linearization_level(), " active_limit=", active_limit_,
             " shaving=", use_shaving_, " active_bool_vars=", bool_vars_.size(),
             " active_int_vars=", integer_trail_->NumIntegerVariables(),
             " literals fixed/probed=", prober_->num_new_literals_fixed(), "/",
