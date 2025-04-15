@@ -37,7 +37,9 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
       : SetCoverMip(inv, "SetCoverMip") {}
 
   SetCoverMip(SetCoverInvariant* inv, absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "Mip", name),
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kCostAndCoverage, "Mip",
+            name),
         mip_solver_(SetCoverMipSolver::SCIP),
         use_integers_(true) {}
 
@@ -48,6 +50,9 @@ class SetCoverMip : public SubsetListBasedSolutionGenerator {
 
   SetCoverMip& UseIntegers(bool use_integers) {
     use_integers_ = use_integers;
+    consistency_level_ =
+        use_integers_ ? SetCoverInvariant::ConsistencyLevel::kCostAndCoverage
+                      : SetCoverInvariant::ConsistencyLevel::kInconsistent;
     return *this;
   }
 

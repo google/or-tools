@@ -2,6 +2,8 @@ using ORToolsGenerated
 const OperationsResearch = ORToolsGenerated.Proto.operations_research
 const MathOpt = OperationsResearch.math_opt
 const SolverType = MathOpt.SolverTypeProto
+const SolveResultProto = MathOpt.SolveResultProto
+const PB = MathOpt.PB
 
 """
 Given the nature of the fields, we are using an alias for the VariablesProto struct.
@@ -379,11 +381,11 @@ function to_proto_struct(model::Model)::MathOpt.ModelProto
 
     return MathOpt.ModelProto(
         model.name,
-        to_proto_struct(model.variables),
+        model.variables,
         to_proto_struct(model.objective),
         auxiliary_objectives,
-        to_proto_struct(model.linear_constraints),
-        to_proto_struct(model.linear_constraint_matrix),
+        model.linear_constraints,
+        model.linear_constraint_matrix,
         quadratic_constraints,
         second_order_cone_constraints,
         sos1_constraints,
@@ -391,6 +393,9 @@ function to_proto_struct(model::Model)::MathOpt.ModelProto
         indicator_constraints,
     )
 end
+
+# The size of the encoded model
+encoded_model_size(model::Model) = PB._encoded_size(to_proto_struct(model))
 
 """
   Mutable wrapper struct for the GscipParameters struct.
