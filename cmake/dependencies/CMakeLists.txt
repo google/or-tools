@@ -181,9 +181,16 @@ if(BUILD_PYTHON)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-      GIT_TAG "v2.13.6"
-      GIT_SHALLOW TRUE
-      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11.patch"
+      #GIT_TAG "master" # COMPILE FAIL
+      #GIT_TAG "f365314" # 2025/03/24 COMPILE FAIL
+      #GIT_TAG "48eb5ad" # 2025/03/23 TEST PASS
+      # ...
+      #GIT_TAG "a1d00916" # 2024/08/15 TEST PASS
+      #GIT_TAG "bd5951b6" # 2024/08/14 TEST FAIL
+      GIT_TAG "v2.13.6" # TEST PASS with a1d00916 patch apply
+      #GIT_SHALLOW TRUE
+      PATCH_COMMAND git apply --ignore-whitespace
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11-v2.13.6.patch"
     )
     FetchContent_MakeAvailable(pybind11)
     list(POP_BACK CMAKE_MESSAGE_INDENT)
