@@ -650,7 +650,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
-    const double dtime = base_params.shaving_search_deterministic_time();
+    // Use a small deterministic time to avoid spending too much time on
+    // shaving by default. The probing workers will increase it as needed.
     new_params.set_shaving_search_deterministic_time(0.001);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddExtraSchedulingPropagators(new_params);
@@ -660,8 +661,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(0);
     strategies["probing_no_lp"] = new_params;
 
-    // Use the default deterministic time.
-    new_params.set_shaving_search_deterministic_time(dtime);
     // We want to spend more time on the LP here.
     new_params.set_linearization_level(2);
     new_params.set_add_lp_constraints_lazily(false);
