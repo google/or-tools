@@ -817,10 +817,8 @@ TEST(NeighborhoodGeneratorHelperTest, GetSchedulingPrecedences) {
   SharedBoundsManager shared_bounds_manager(proto);
 
   SatParameters params;
-  Model main_model;
-  ModelSharedTimeLimit time_limit(&main_model);
-  auto* shared_response_manager =
-      main_model.GetOrCreate<SharedResponseManager>();
+  ModelSharedTimeLimit time_limit(&model);
+  auto* shared_response_manager = model.GetOrCreate<SharedResponseManager>();
   NeighborhoodGeneratorHelper helper(&proto, &params, shared_response_manager,
                                      &time_limit, &shared_bounds_manager);
   random_engine_t random;
