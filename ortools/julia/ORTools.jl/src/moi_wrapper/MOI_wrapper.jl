@@ -1,6 +1,3 @@
-import MathOptInterface as MOI
-include("Type_wrappers.jl")
-
 const PARAM_SPLITTER = "__"
 const PARAM_FIELD_NAME_TO_INSTANCE_DICT = Dict(
     "gscip" => GScipParameters(),
@@ -53,6 +50,10 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # Indicator of whether an objective has been set
     objective_set::Bool
 
+    # Store solve results
+    # This structure is update after running the optimize! function
+    solve_result::Union{SolveResultProto,Nothing}
+
     # Constructor with optional parameters
     function Optimizer(;
         model_name::String = "",
@@ -81,6 +82,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             Set{Tuple{Type,Type}}(),
             constraint_indices_dict,
             false,
+            nothing,
         )
     end
 end
@@ -103,6 +105,7 @@ function MOI.empty!(model::Optimizer)
     model.constraint_types_present = Set{Tuple{Type,Type}}()
     model.constraint_indices_dict = Dict()
     model.objective_set = false
+    model.solve_result = nothing
 
     return nothing
 end
@@ -111,7 +114,8 @@ function MOI.is_empty(model::Optimizer)
     return isnothing(model.model) &&
            isnothing(model.parameters) &&
            model.solver_type == SolverType.SOLVER_TYPE_UNSPECIFIED &&
-           !model.objective_set
+           !model.objective_set &&
+           isnothing(model.solve_result)
 end
 
 """
@@ -1166,20 +1170,21 @@ end
 # Helper function to create a dictionary of terms to combine coefficients 
 # of terms(variables) if they are repeated.
 # For example: 3x + 5x <= 10 will be combined to 8x <= 10.
-function get_terms_dict(
+function get_terms_pairs(
     terms::Vector{MOI.ScalarAffineTerm{T}},
-)::Dict{Int64,Float64} where {T<:Real}
-    terms_dict = Dict{Int64,Float64}()
+)::Vector{Pair{Int64,Float64}} where {T<:Real}
+    terms_pairs = Dict{Int64,Float64}()
 
     for term in terms
-        if !haskey(terms_dict, term.variable.value)
-            terms_dict[term.variable.value] = term.coefficient
+        if !haskey(terms_pairs, term.variable.value)
+            terms_pairs[term.variable.value] = term.coefficient
         else
-            terms_dict[term.variable.value] += term.coefficient
+            terms_pairs[term.variable.value] += term.coefficient
         end
     end
 
-    return terms_dict
+    sorted_pairs = sort(collect(terms_pairs), by = x -> x[1])
+    return sorted_pairs
 end
 
 function MOI.add_constraint(
@@ -1204,17 +1209,17 @@ function MOI.add_constraint(
         push!(model.model.linear_constraints.upper_bounds, upper_bound)
         push!(model.model.linear_constraints.names, "")
 
-        terms_dict = get_terms_dict(terms)
+        terms_pairs = get_terms_pairs(terms)
 
         # Update the LinearConstaintMatrix (SparseDoubleVectorProto)
         # linear_constraint_matrix.row_ids are elements of linear_constraints.ids.
         # linear_constraint_matrix.column_ids are elements of variables.ids.
         # Matrix entries not specified are zero.
         # linear_constraint_matrix.coefficients must all be finite.
-        for term_index in keys(terms_dict)
+        for term_index in terms_pairs
             push!(model.model.linear_constraint_matrix.row_ids, constraint_index)
-            push!(model.model.linear_constraint_matrix.column_ids, term_index)
-            push!(model.model.linear_constraint_matrix.coefficients, terms_dict[term_index])
+            push!(model.model.linear_constraint_matrix.column_ids, term_index[1])
+            push!(model.model.linear_constraint_matrix.coefficients, term_index[2])
         end
 
         # Update the associated metadata.
@@ -1316,7 +1321,7 @@ end
 function MOI.get(
     model::Optimizer,
     ::MOI.ConstraintFunction,
-    c::MOI.ConstraintIndex{MOI.VariableIndex,Any},
+    c::MOI.ConstraintIndex{MOI.VariableIndex,<:Any},
 )
     if !MOI.is_empty(model)
         return MOI.VariableIndex(c.value)
@@ -1406,12 +1411,12 @@ function MOI.set(
         )
     end
 
-    terms_dict = get_terms_dict(terms)
+    terms_pairs = get_terms_pairs(terms)
 
-    for term_index in keys(terms_dict)
+    for term_index in terms_pairs
         push!(model.model.linear_constraint_matrix.row_ids, c.value)
-        push!(model.model.linear_constraint_matrix.column_ids, term_index)
-        push!(model.model.linear_constraint_matrix.coefficients, terms_dict[term_index])
+        push!(model.model.linear_constraint_matrix.column_ids, term_index[1])
+        push!(model.model.linear_constraint_matrix.coefficients, term_index[2])
     end
 
     return nothing
@@ -1810,11 +1815,11 @@ function MOI.set(
 
     terms = objective_function.terms
 
-    terms_dict = get_terms_dict(terms)
+    terms_pairs = get_terms_pairs(terms)
 
-    for term in keys(terms_dict)
-        push!(model.model.objective.linear_coefficients.ids, term)
-        push!(model.model.objective.linear_coefficients.values, terms_dict[term])
+    for term in terms_pairs
+        push!(model.model.objective.linear_coefficients.ids, term[1])
+        push!(model.model.objective.linear_coefficients.values, term[2])
     end
 
     model.model.objective.offset = Float64(objective_function.constant)
@@ -1880,6 +1885,42 @@ function MOI.supports(
 end
 
 function MOI.optimize!(model::Optimizer)
-    # TODO: b/384662497 implement this
+    status_msg = Ref(pointer(zeros(Int8, 1)))
+
+    # Serialize the model
+    io = IOBuffer()
+    e = PB.ProtoEncoder(io)
+    PB.encode(e, to_proto_struct(model.model))
+    model_proto = take!(io)
+    model_size = encoded_model_size(model.model)[1]
+
+    # Result proto with its accompanying size
+    solve_result_proto = Ref{Ptr{Cvoid}}()
+    result_size = Ref{Csize_t}(0)
+
+    result = MathOptSolve(
+        model_proto,
+        model_size,
+        Int(model.solver_type),
+        MathOptNewInterrupter(),
+        solve_result_proto,
+        result_size,
+        status_msg,
+    )
+
+    # A non-null status_msg indicates a failure in executing the solve call.
+    if status_msg[] != C_NULL
+        failure_status_message = unsafe_string(status_msg[])
+        # TODO: b/407544202 - Add error to SolveResult instead of printing it.
+        @error "The following failure was encountered when executing the solve call: $failure_status_message"
+        return
+    end
+
+    solve_result_proto =
+        unsafe_wrap(Vector{UInt8}, Ptr{UInt8}(solve_result_proto[]), result_size[])
+    io = IOBuffer(solve_result_proto)
+    d = PB.ProtoDecoder(io)
+    model.solve_result = PB.decode(d, SolveResultProto)
+
     return nothing
 end
