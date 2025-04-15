@@ -88,6 +88,7 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_IS_FINITE(restart_dl_average_ratio);
   TEST_IS_FINITE(restart_lbd_average_ratio);
   TEST_IS_FINITE(shared_tree_open_leaves_per_worker);
+  TEST_IS_FINITE(shaving_deterministic_time_in_probing_search);
   TEST_IS_FINITE(shaving_search_deterministic_time);
   TEST_IS_FINITE(strategy_change_increase_ratio);
   TEST_IS_FINITE(symmetry_detection_deterministic_time_limit);

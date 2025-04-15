@@ -1054,8 +1054,10 @@ message SatParameters {
   optional int32 probing_num_combinations_limit = 272 [default = 20000];
 
   // Add a shaving phase (where the solver tries to prove that the lower or
-  // upper bound of a variable are infeasible) to the probing search.
-  optional bool use_shaving_in_probing_search = 204 [default = true];
+  // upper bound of a variable are infeasible) to the probing search. (<= 0
+  // disables it).
+  optional double shaving_deterministic_time_in_probing_search = 204
+      [default = 0.001];
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.

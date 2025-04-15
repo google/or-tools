@@ -25,7 +25,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -1950,9 +1949,9 @@ SatSolver::Status ContinuousProber::Probe() {
 
     // Update the use_shaving_ parameter.
     // TODO(user): Currently, the heuristics is that we alternate shaving and
-    // not shaving, unless use_shaving_in_probing_search is false.
+    // not shaving, unless shaving_deterministic_time_in_probing_search is <= 0.
     use_shaving_ =
-        parameters_.use_shaving_in_probing_search() ? !use_shaving_ : false;
+        parameters_.shaving_deterministic_time_in_probing_search() > 0.0;
     trail_index_at_start_of_iteration_ = new_trail_index;
     integer_trail_index_at_start_of_iteration_ = new_integer_trail_index;
 
