@@ -26,6 +26,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_views.h"
+#include "ortools/set_cover/views.h"
 
 namespace operations_research::scp {
 
@@ -33,20 +34,22 @@ namespace operations_research::scp {
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
 namespace {
-class CoverCounters {
+
+template <typename IndexT = ElementIndex>
+class CoverCountersImpl {
  public:
-  CoverCounters(BaseInt nelems = 0) : cov_counters(nelems, 0) {}
+  CoverCountersImpl(BaseInt nelems = 0) : cov_counters(nelems, 0) {}
   void Reset(BaseInt nelems) { cov_counters.assign(nelems, 0); }
   BaseInt Size() const { return cov_counters.size(); }
-  BaseInt operator[](ElementIndex i) const {
-    assert(i < ElementIndex(cov_counters.size()));
+  BaseInt operator[](IndexT i) const {
+    assert(i < IndexT(cov_counters.size()));
     return cov_counters[i];
   }
 
   template <typename IterableT>
   BaseInt Cover(const IterableT& subset) {
     BaseInt covered = 0;
-    for (ElementIndex i : subset) {
+    for (IndexT i : subset) {
       covered += cov_counters[i] == 0 ? 1ULL : 0ULL;
       cov_counters[i]++;
     }
@@ -56,7 +59,7 @@ class CoverCounters {
   template <typename IterableT>
   BaseInt Uncover(const IterableT& subset) {
     BaseInt uncovered = 0;
-    for (ElementIndex i : subset) {
+    for (IndexT i : subset) {
       --cov_counters[i];
       uncovered += cov_counters[i] == 0 ? 1ULL : 0ULL;
     }
@@ -67,19 +70,22 @@ class CoverCounters {
   template <typename IterableT>
   bool IsRedundantCover(IterableT const& subset) const {
     return absl::c_all_of(subset,
-                          [&](ElementIndex i) { return cov_counters[i] > 0; });
+                          [&](IndexT i) { return cov_counters[i] > 0; });
   }
 
   // Check if all the elements would still be covered if the subset was removed.
   template <typename IterableT>
   bool IsRedundantUncover(IterableT const& subset) const {
     return absl::c_all_of(subset,
-                          [&](ElementIndex i) { return cov_counters[i] > 1; });
+                          [&](IndexT i) { return cov_counters[i] > 1; });
   }
 
  private:
-  ElementToIntVector cov_counters;
+  util_intops::StrongVector<IndexT, BaseInt> cov_counters;
 };
+
+using CoverCounters = CoverCountersImpl<ElementIndex>;
+using FullCoverCounters = CoverCountersImpl<FullElementIndex>;
 }  // namespace
 
 Solution::Solution(const SubModel& model,
@@ -648,7 +654,7 @@ void FixBestColumns(SubModel& model, PrimalDualState& state) {
                fix_at_least, cols_to_fix);
 
   // Fix columns and update the model
-  Cost fixed_cost_delta = model.FixColumns(cols_to_fix);
+  Cost fixed_cost_delta = model.FixMoreColumns(cols_to_fix);
 
   std::cout << "Fixed " << cols_to_fix.size()
             << " new columns with cost: " << fixed_cost_delta << '\n';
@@ -750,6 +756,103 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
   std::cout << "\n\n3Phase End\n";
   std::cout << "Final Bounds: Lower " << best_state.dual_state.lower_bound()
             << ", Upper " << best_state.solution.cost() << '\n';
+
+  return best_state;
+}
+
+///////////////////////////////////////////////////////////////////////
+///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
+///////////////////////////////////////////////////////////////////////
+
+namespace {
+
+struct GapContribution {
+  Cost gap;
+  FullSubsetIndex idx;
+};
+
+std::vector<FullSubsetIndex> SelectColumnByGapContribution(
+    const SubModel& model, const PrimalDualState& best_state,
+    BaseInt nrows_to_fix) {
+  const auto& [solution, dual_state] = best_state;
+
+  FullCoverCounters row_coverage(model.num_elements());
+  auto full_model = model.StrongTypedFullModelView();
+
+  for (FullSubsetIndex j : solution.subsets()) {
+    row_coverage.Cover(full_model.columns()[j]);
+  }
+
+  std::vector<GapContribution> gap_contributions;
+  for (FullSubsetIndex j : solution.subsets()) {
+    Cost j_gap = .0;
+    Cost reduced_cost = dual_state.reduced_costs()[static_cast<SubsetIndex>(j)];
+    for (FullElementIndex i : full_model.columns()[j]) {
+      Cost i_mult = dual_state.multipliers()[static_cast<ElementIndex>(i)];
+      j_gap += i_mult * (1.0 - 1.0 / row_coverage[i]);
+      reduced_cost -= i_mult;
+    }
+    j_gap += std::max<Cost>(reduced_cost, 0.0);
+    gap_contributions.push_back({j_gap, j});
+  }
+  absl::c_sort(gap_contributions, [](GapContribution g1, GapContribution g2) {
+    return g1.gap < g2.gap;
+  });
+
+  BaseInt covered_rows = 0;
+  row_coverage.Reset(model.num_elements());
+  std::vector<FullSubsetIndex> cols_to_fix;
+  for (auto [j_gap, j] : gap_contributions) {
+    covered_rows += row_coverage.Cover(full_model.columns()[j]);
+    if (covered_rows > nrows_to_fix) {
+      break;
+    }
+    cols_to_fix.push_back(static_cast<FullSubsetIndex>(j));
+  }
+  return cols_to_fix;
+}
+}  // namespace
+
+PrimalDualState RunCftHeuristic(SubModel& model,
+                                const Solution& init_solution) {
+  PrimalDualState best_state = {.solution = init_solution,
+                                .dual_state = MakeTentativeDualState(model)};
+  if (best_state.solution.Empty()) {
+    best_state.solution =
+        RunMultiplierBasedGreedy(model, best_state.dual_state);
+  }
+
+  Cost cost_cutoff = std::numeric_limits<Cost>::max();
+  double fix_minimum = .3;     // Arbitrary from [1]
+  double fix_increment = 1.1;  // Arbitrary from [1]
+  double fix_fraction = fix_minimum;
+
+  for (BaseInt iter_counter = 0; model.num_elements() > 0; ++iter_counter) {
+    auto [solution, dual_state] = RunThreePhase(model, best_state.solution);
+
+    if (iter_counter == 0) {
+      best_state.dual_state = std::move(dual_state);
+
+      // Arbitrary, assumes integral costs. Should be an algorithm parameter
+      cost_cutoff = best_state.dual_state.lower_bound() + .999;
+    }
+
+    fix_fraction = std::min(1.0, fix_fraction * fix_increment);
+    if (solution.cost() < best_state.solution.cost()) {
+      best_state.solution = solution;
+      fix_fraction = fix_minimum;
+    }
+    if (solution.cost() <= cost_cutoff) {
+      break;
+    }
+
+    std::vector<FullSubsetIndex> cols_to_fix = SelectColumnByGapContribution(
+        model, best_state, model.num_elements() * fix_fraction);
+
+    if (!cols_to_fix.empty()) {
+      model.ResetColumnFixing(cols_to_fix, best_state);
+    }
+  }
 
   return best_state;
 }
@@ -870,7 +973,7 @@ void FullToCoreModel::ResetPricingPeriod() {
   update_max_period_ = std::min<BaseInt>(1000, full_model_->num_elements() / 3);
 }
 
-Cost FullToCoreModel::FixColumns(
+Cost FullToCoreModel::FixMoreColumns(
     const std::vector<SubsetIndex>& columns_to_fix) {
   StrongModelView typed_full_model = StrongTypedFullModelView();
   for (SubsetIndex core_j : columns_to_fix) {
@@ -893,13 +996,43 @@ Cost FullToCoreModel::FixColumns(
     }
   }
   ResetPricingPeriod();
-  Cost fixed_cost = base::FixColumns(columns_to_fix);
+  Cost fixed_cost = base::FixMoreColumns(columns_to_fix);
   DCHECK(FullToSubModelInvariantCheck());
   return fixed_cost;
 }
 
-bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
-  if (--update_countdown_ > 0) {
+void FullToCoreModel::ResetColumnFixing(
+    const std::vector<FullSubsetIndex>& columns_to_fix,
+    PrimalDualState& state) {
+  is_focus_col_.assign(num_subsets_, true);
+  is_focus_row_.assign(num_elements_, true);
+  StrongModelView typed_full_model = StrongTypedFullModelView();
+  for (FullSubsetIndex full_j : columns_to_fix) {
+    IsFocusCol(full_j) = false;
+    for (FullElementIndex full_i : typed_full_model.columns()[full_j]) {
+      IsFocusRow(full_i) = false;
+    }
+  }
+  for (FullSubsetIndex full_j : typed_full_model.SubsetRange()) {
+    if (!IsFocusCol(full_j)) {
+      continue;
+    }
+    IsFocusCol(full_j) = false;
+    for (FullElementIndex full_i : typed_full_model.columns()[full_j]) {
+      if (IsFocusRow(full_i)) {
+        IsFocusCol(full_j) = true;
+        break;
+      }
+    }
+  }
+  ResetPricingPeriod();
+  base::ResetColumnFixing(columns_to_fix, state);
+  DCHECK(FullToSubModelInvariantCheck());
+}
+
+bool FullToCoreModel::UpdateCore(PrimalDualState& core_state,
+                                 bool force_update) {
+  if (!force_update && --update_countdown_ > 0) {
     return false;
   }
 

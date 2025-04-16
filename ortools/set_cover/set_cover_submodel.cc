@@ -14,6 +14,7 @@
 #include "ortools/set_cover/set_cover_submodel.h"
 
 #include "ortools/base/stl_util.h"
+#include "ortools/set_cover/set_cover_views.h"
 
 namespace operations_research::scp {
 
@@ -59,7 +60,8 @@ SubModelView::SubModelView(const Model* model,
   SetFocus(columns_focus);
 }
 
-Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
+Cost SubModelView::FixMoreColumns(
+    const std::vector<SubsetIndex>& columns_to_fix) {
   DCHECK(full_model_ != nullptr);
   Cost old_fixed_cost = fixed_cost_;
   if (columns_to_fix.empty()) {
@@ -91,6 +93,19 @@ Cost SubModelView::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   PrintSubModelSummary(*this);
   DCHECK(ValidateSubModel(*this));
   return fixed_cost_ - old_fixed_cost;
+}
+
+void SubModelView::ResetColumnFixing(
+    const std::vector<FullSubsetIndex>& columns_to_fix,
+    PrimalDualState& state) {
+  fixed_columns_ = columns_to_fix;
+  fixed_cost_ = .0;
+  for (FullSubsetIndex full_j : fixed_columns_) {
+    fixed_cost_ +=
+        full_model_->subset_costs()[static_cast<SubsetIndex>(full_j)];
+  }
+
+  UpdateCore(state, /*force update=*/true);
 }
 
 void SubModelView::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
@@ -273,7 +288,7 @@ Model CoreModel::MakeNewCoreModel(
   return new_submodel;
 }
 
-Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
+Cost CoreModel::FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   if (columns_to_fix.empty()) {
     return .0;
   }
@@ -294,6 +309,18 @@ Cost CoreModel::FixColumns(const std::vector<SubsetIndex>& columns_to_fix) {
   DCHECK(absl::c_is_sorted(core2full_row_map_));
 
   return fixed_cost_ - old_fixed_cost;
+}
+
+void CoreModel::ResetColumnFixing(
+    const std::vector<FullSubsetIndex>& columns_to_fix,
+    PrimalDualState& state) {
+  fixed_columns_ = columns_to_fix;
+  fixed_cost_ = .0;
+  for (FullSubsetIndex full_j : fixed_columns_) {
+    fixed_cost_ += full_model_.subset_costs()[full_j];
+  }
+
+  UpdateCore(state, /*force update=*/true);
 }
 
 }  // namespace operations_research::scp

@@ -57,6 +57,10 @@ using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
 using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
 using FullElementBoolVector = util_intops::StrongVector<FullElementIndex, bool>;
 using FullSubsetBoolVector = util_intops::StrongVector<FullSubsetIndex, bool>;
+using FullElementToIntVector =
+    util_intops::StrongVector<FullElementIndex, BaseInt>;
+using FullSubsetToIntVector =
+    util_intops::StrongVector<FullSubsetIndex, BaseInt>;
 
 // When a sub-model is created, indicies are compacted to be consecutive and
 // strarting from 0 (to reduce memory usage). Core ElementIndex to original

@@ -112,13 +112,20 @@ class SubModelView : public IndexListModelView {
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
-  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  virtual void ResetColumnFixing(
+      const std::vector<FullSubsetIndex>& columns_to_fix,
+      PrimalDualState& state);
 
   // Hook function for specializations. This function can be used to define a
   // "small" core model considering a subset of the full model through the use
   // of column-generation or by only selecting columns with good reduced cost in
   // the full model.
-  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  virtual bool UpdateCore(PrimalDualState& core_state,
+                          bool force_update = false) {
+    return false;
+  }
 
  private:
   // Pointer to the original model
@@ -210,13 +217,22 @@ class CoreModel : private Model {
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
-  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  virtual void ResetColumnFixing(
+      const std::vector<FullSubsetIndex>& columns_to_fix,
+      PrimalDualState& state);
 
   // Hook function for specializations. This function can be used to define a
   // "small" core model considering a subset of the full model through the use
   // of column-generation or by only selecting columns with good reduced cost in
   // the full model.
-  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  virtual bool UpdateCore(PrimalDualState& core_state,
+                          bool force_update = false) {
+    return false;
+  }
+
+  StrongModelView StrongTypedFullModelView() const { return full_model_; }
 
  private:
   void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);

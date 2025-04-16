@@ -321,6 +321,13 @@ PrimalDualState RunThreePhase(SubModel& model,
                               const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
+///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
+///////////////////////////////////////////////////////////////////////
+
+PrimalDualState RunCftHeuristic(SubModel& model,
+                                const Solution& init_solution = {});
+
+///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
@@ -337,8 +344,11 @@ class FullToCoreModel : public SubModel {
 
  public:
   FullToCoreModel(const Model* full_model);
-  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
-  bool UpdateCore(PrimalDualState& core_state) override;
+  Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
+  void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
+                         PrimalDualState& state) override;
+  bool UpdateCore(PrimalDualState& core_state,
+                  bool force_update = false) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
 
