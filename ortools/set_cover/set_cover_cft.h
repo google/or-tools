@@ -122,8 +122,9 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
 class DualState {
  public:
   DualState() = default;
+  DualState(const DualState&) = default;
   template <typename SubModelT>
-  DualState(const SubModelT& model)
+  explicit DualState(const SubModelT& model)
       : lower_bound_(.0),
         multipliers_(model.num_elements(), .0),
         reduced_costs_(model.subset_costs().begin(),
@@ -346,9 +347,8 @@ class FullToCoreModel : public SubModel {
   FullToCoreModel(const Model* full_model);
   Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
-                         PrimalDualState& state) override;
-  bool UpdateCore(PrimalDualState& core_state,
-                  bool force_update = false) override;
+                         const DualState& state) override;
+  bool UpdateCore(PrimalDualState& core_state) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
 
@@ -381,6 +381,9 @@ class FullToCoreModel : public SubModel {
   bool FullToSubModelInvariantCheck();
 
  private:
+  std::vector<FullSubsetIndex> SelectNewCoreColumns(
+      const std::vector<FullSubsetIndex>& forced_columns);
+
   const Model* full_model_;
 
   // Note: The `is_focus_col_` vector duplicates information already present in

@@ -14,6 +14,7 @@
 #include "ortools/set_cover/set_cover_submodel.h"
 
 #include "ortools/base/stl_util.h"
+#include "ortools/set_cover/set_cover_cft.h"
 #include "ortools/set_cover/set_cover_views.h"
 
 namespace operations_research::scp {
@@ -97,7 +98,7 @@ Cost SubModelView::FixMoreColumns(
 
 void SubModelView::ResetColumnFixing(
     const std::vector<FullSubsetIndex>& columns_to_fix,
-    PrimalDualState& state) {
+    const DualState& state) {
   fixed_columns_ = columns_to_fix;
   fixed_cost_ = .0;
   for (FullSubsetIndex full_j : fixed_columns_) {
@@ -105,7 +106,7 @@ void SubModelView::ResetColumnFixing(
         full_model_->subset_costs()[static_cast<SubsetIndex>(full_j)];
   }
 
-  UpdateCore(state, /*force update=*/true);
+  CHECK(!"Implementation not finished yet, the SetCoverModel object has not been filled");
 }
 
 void SubModelView::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
@@ -313,14 +314,34 @@ Cost CoreModel::FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) {
 
 void CoreModel::ResetColumnFixing(
     const std::vector<FullSubsetIndex>& columns_to_fix,
-    PrimalDualState& state) {
-  fixed_columns_ = columns_to_fix;
-  fixed_cost_ = .0;
-  for (FullSubsetIndex full_j : fixed_columns_) {
-    fixed_cost_ += full_model_.subset_costs()[full_j];
-  }
+    const DualState& dual_state) {
+  core2full_col_map_.clear();
+  core2full_row_map_.clear();
+  full2core_row_map_.assign(full_model_.num_elements(), ElementIndex());
 
-  UpdateCore(state, /*force update=*/true);
+  fixed_cost_ = .0;
+  fixed_columns_ = columns_to_fix;
+  for (FullSubsetIndex full_j : columns_to_fix) {
+    fixed_cost_ += full_model_.subset_costs()[full_j];
+    for (FullElementIndex full_i : full_model_.columns()[full_j]) {
+      full2core_row_map_[full_i] = null_element_index;
+    }
+  }
+  for (FullElementIndex full_i : full_model_.ElementRange()) {
+    if (full2core_row_map_[full_i] != null_element_index) {
+      full2core_row_map_[full_i] = ElementIndex(core2full_row_map_.size());
+      core2full_row_map_.push_back(full_i);
+    }
+  }
+  for (FullSubsetIndex full_j : full_model_.SubsetRange()) {
+    for (FullElementIndex full_i : full_model_.columns()[full_j]) {
+      if (full2core_row_map_[full_i] != null_element_index) {
+        core2full_col_map_.push_back(full_j);
+        break;
+      }
+    }
+  }
+  CHECK(!"Implementation not finished yet, the SetCoverModel object has not been filled");
 }
 
 }  // namespace operations_research::scp
