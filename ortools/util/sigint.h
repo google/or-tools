@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_SIGINT_H_
 #define OR_TOOLS_UTIL_SIGINT_H_
 
+#include <atomic>
 #include <functional>
 
 namespace operations_research {
@@ -30,7 +31,7 @@ class SigintHandler {
  private:
   static void ControlCHandler(int s);
 
-  int num_sigint_calls_ = 0;
+  std::atomic<int> num_sigint_calls_ = 0;
   thread_local static std::function<void()> handler_;
 };
 
