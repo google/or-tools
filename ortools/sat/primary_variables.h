@@ -40,11 +40,20 @@ namespace sat {
 // of the secondary variables.
 struct VariableRelationships {
   std::vector<int> secondary_variables;
-  std::vector<int> dependency_resolution_constraint_index;
+  std::vector<ConstraintProto> dependency_resolution_constraint;
+
   // A pair of(x, y) means that one needs to compute the value of y before
   // computing the value of x. This defines an implicit dependency DAG for
   // computing the secondary variables from the primary.
   std::vector<std::pair<int, int>> variable_dependencies;
+
+  // The list of model constraints that are redundant (ie., satisfied by
+  // construction) when the secondary variables are computed from the primary
+  // ones. In other words, a model has a solution for a set of primary
+  // variables {x_i} if and only if all the variable bounds and non-redundant
+  // constraints are satisfied after the secondary variables have been computed
+  // from the primary ones.
+  std::vector<int> redundant_constraint_indices;
 };
 
 // Compute the variable relationships for a given model. Note that there are

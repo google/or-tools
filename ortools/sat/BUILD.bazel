@@ -3920,6 +3920,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",

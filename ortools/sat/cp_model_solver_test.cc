@@ -956,6 +956,7 @@ TEST(SolveCpModelTest, HintWithNegativeRef) {
 TEST(SolveCpModelTest, SolutionHintBasicTest) {
   SatParameters params;
   params.set_cp_model_presolve(false);
+  params.set_num_workers(1);
   for (int loop = 0; loop < 50; ++loop) {
     CpModelProto model_proto;
 
