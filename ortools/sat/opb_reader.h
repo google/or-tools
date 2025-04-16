@@ -138,6 +138,9 @@ class OpbReader {
       return;
     }
 
+    // We ignore the number of soft constraints.
+    if (words[0] == "soft:") return;
+
     if (words[0] == "min:") {
       for (int i = 1; i < words.size(); ++i) {
         const std::string& word = words[i];
