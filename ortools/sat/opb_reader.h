@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -56,7 +57,8 @@ class OpbReader {
 
   // Loads the given opb filename into the given problem.
   // Returns true on success.
-  bool LoadAndValidate(const std::string& filename, CpModelProto* model) {
+  ABSL_MUST_USE_RESULT bool LoadAndValidate(const std::string& filename,
+                                            CpModelProto* model) {
     model->Clear();
     model->set_name(ExtractProblemName(filename));
 
@@ -72,17 +74,8 @@ class OpbReader {
       ProcessNewLine(line);
 
       // Check if the model is supported. It is not supported if one constant
-      // contains an integer that does not fit in int64_t.
-      // In that case, we create a dummy model with a single variable that
-      // overflows.
-      if (!model_is_supported_) {
-        model->Clear();
-        IntegerVariableProto* var = model->add_variables();
-        var->add_domain(std::numeric_limits<int64_t>::min());
-        var->add_domain(std::numeric_limits<int64_t>::max());
-        num_variables_ = 1;
-        return true;
-      }
+      // contains an integer that does not fit in an int64_t.
+      if (!model_is_supported_) return false;
     }
     if (num_lines == 0) {
       LOG(ERROR) << "File '" << filename << "' is empty or can't be read.";

@@ -227,11 +227,18 @@ class SetCoverInvariant {
 
   // Includes subset in the solution by setting is_selected_[subset] to true
   // and incrementally updating the invariant to the given consistency level.
-  void Select(SubsetIndex subset, ConsistencyLevel consistency);
+  // Returns false if the subset is already selected.
+  // This allows a programming style where Select is embedded in a DCHECK, or
+  // to write `if (Select(subset, consistency)) { ... }`, which is more readable
+  // than `if (!is_selected_[subset]) { Select(subset, consistency); ... }`
+  // The above is a good programming style for example to count how many
+  // elements were actually set.
+  bool Select(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Excludes subset from the solution by setting is_selected_[subset] to false
   // and incrementally updating the invariant to the given consistency level.
-  void Deselect(SubsetIndex subset, ConsistencyLevel consistency);
+  // Returns false if the subset is already deselected.
+  bool Deselect(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Returns the current solution as a proto.
   SetCoverSolutionResponse ExportSolutionAsProto() const;

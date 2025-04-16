@@ -346,7 +346,7 @@ class ContinuousProber {
 
  private:
   static const int kTestLimitPeriod = 20;
-  static const int kLogPeriod = 1000;
+  static const int kLogPeriod = 5000;
   static const int kSyncPeriod = 50;
 
   SatSolver::Status ShaveLiteral(Literal literal);

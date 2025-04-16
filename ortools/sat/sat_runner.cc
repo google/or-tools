@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -177,10 +178,31 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
       absl::EndsWith(filename, ".wbo.bz2") ||
       absl::EndsWith(filename, ".wbo.gz")) {
     OpbReader reader;
-    reader.LoadAndValidate(filename, cp_model);
+    if (!reader.LoadAndValidate(filename, cp_model)) {
+      if (!reader.model_is_supported()) {  // Some constants are too large.
+        if (absl::GetFlag(FLAGS_competition_mode)) {
+          // We output the official UNSUPPORTED status.
+          std::cout << "s UNSUPPORTED" << std::endl;
+          return false;  // Bypass the solve part.
+        } else {
+          // Create a dummy model with a single variable that overflows.
+          // This way, the solver will return MODEL_INVALID instead of
+          // crashing.
+          IntegerVariableProto* var = cp_model->add_variables();
+          var->add_domain(std::numeric_limits<int64_t>::min());
+          var->add_domain(std::numeric_limits<int64_t>::max());
+          return true;  // Will still call solve() to get the status.
+        }
+      } else {
+        return false;  // Bypass the solve part.
+      }
+    }
+
     if (absl::GetFlag(FLAGS_competition_mode)) {
-      LogInPbCompetitionFormat(reader.num_variables(),
-                               cp_model->has_objective(), model, parameters);
+      const int num_variables =
+          reader.model_is_supported() ? reader.num_variables() : 1;
+      LogInPbCompetitionFormat(num_variables, cp_model->has_objective(), model,
+                               parameters);
     }
   } else if (absl::EndsWith(filename, ".cnf") ||
              absl::EndsWith(filename, ".cnf.xz") ||

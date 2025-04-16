@@ -23,15 +23,18 @@ namespace operations_research {
 
 void SigintHandler::Register(const std::function<void()>& f) {
   handler_ = [this, f]() -> void {
-    ++num_sigint_calls_;
-    if (num_sigint_calls_ >= 3) {
-      LOG(INFO) << "^C pressed " << num_sigint_calls_
-                << " times. Forcing termination.";
+    const int num_sigint_calls = ++num_sigint_calls_;
+    if (num_sigint_calls < 3) {
+      LOG(INFO)
+          << "^C pressed " << num_sigint_calls << " times. "
+          << "Interrupting the solver. Press 3 times to force termination.";
+      if (num_sigint_calls == 1) f();
+    } else if (num_sigint_calls == 3) {
+      LOG(INFO) << "^C pressed 3 times. Forcing termination.";
       exit(EXIT_FAILURE);
+    } else {
+      // Another thread is already running exit(), do nothing.
     }
-    LOG(INFO) << "^C pressed " << num_sigint_calls_ << " times. "
-              << "Interrupting the solver. Press 3 times to force termination.";
-    if (num_sigint_calls_ == 1) f();
   };
   signal(SIGINT, &ControlCHandler);
 }

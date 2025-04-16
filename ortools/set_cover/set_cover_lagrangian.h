@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <tuple>
-#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -24,7 +23,6 @@
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
-#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 
@@ -55,7 +53,9 @@ class SetCoverLagrangian : public SubsetListBasedSolutionGenerator {
       : SetCoverLagrangian(inv, "Lagrangian") {}
 
   SetCoverLagrangian(SetCoverInvariant* inv, const absl::string_view name)
-      : SubsetListBasedSolutionGenerator(inv, "Lagrangian", name),
+      : SubsetListBasedSolutionGenerator(
+            inv, SetCoverInvariant::ConsistencyLevel::kInconsistent,
+            "Lagrangian", name),
         num_threads_(1),
         thread_pool_(nullptr) {}
 
