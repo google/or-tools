@@ -231,7 +231,8 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
       }
       var_is_secondary.Set(v);
       result.secondary_variables.push_back(v);
-      result.dependency_resolution_constraint_index.push_back(c);
+      result.dependency_resolution_constraint.push_back(model.constraints(c));
+      result.redundant_constraint_indices.push_back(c);
       break;
     }
 
@@ -295,14 +296,17 @@ VariableRelationships ComputeVariableRelationships(const CpModelProto& model) {
       var_is_secondary.Set(single_deducible_var);
       update_constraints_after_var_is_decided(single_deducible_var);
       result.secondary_variables.push_back(single_deducible_var);
-      result.dependency_resolution_constraint_index.push_back(c);
+      result.dependency_resolution_constraint.push_back(model.constraints(c));
+      result.redundant_constraint_indices.push_back(c);
     }
   }
 
   for (int i = 0; i < result.secondary_variables.size(); ++i) {
     const int var = result.secondary_variables[i];
-    const int c = result.dependency_resolution_constraint_index[i];
-    const ConstraintData& data = constraint_data[c];
+    ConstraintData data;
+    const ConstraintProto& ct = result.dependency_resolution_constraint[i];
+    GetRelationshipForConstraint(ct, &data.deducible_vars, &data.input_vars,
+                                 &data.preferred_to_deduce);
     for (const int v : data.input_vars) {
       if (var_is_secondary.IsSet(v)) {
         result.variable_dependencies.push_back({var, v});
@@ -326,9 +330,8 @@ bool ComputeAllVariablesFromPrimaryVariables(
   }
   for (int i = 0; i < relationships.secondary_variables.size(); ++i) {
     const int var = relationships.secondary_variables[i];
-    const int constraint_index =
-        relationships.dependency_resolution_constraint_index[i];
-    const ConstraintProto& ct = model.constraints(constraint_index);
+    const ConstraintProto& ct =
+        relationships.dependency_resolution_constraint[i];
     switch (ct.constraint_case()) {
       case ConstraintProto::kLinear: {
         const LinearConstraintProto& linear = ct.linear();
