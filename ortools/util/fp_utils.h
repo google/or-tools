@@ -29,7 +29,6 @@
 #include <limits>
 // Needed before fenv_access. See https://github.com/microsoft/STL/issues/2613.
 #include <numeric>  // IWYU pragma:keep.
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"

@@ -22,7 +22,6 @@
 #include <cstdlib>
 #include <limits>
 #include <utility>
-#include <vector>
 
 #include "absl/base/casts.h"
 #include "absl/log/check.h"
