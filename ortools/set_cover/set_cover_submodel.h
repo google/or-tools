@@ -125,7 +125,13 @@ class SubModelView : public IndexListModelView {
   // the full model.
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
+  StrongModelView StrongTypedFullModelView() const {
+    return StrongModelView(full_model_);
+  }
+
  private:
+  void ResetToIdentitySubModel();
+
   // Pointer to the original model
   const Model* full_model_;
 
@@ -233,6 +239,7 @@ class CoreModel : private Model {
   void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);
   CoreToFullElementMapVector MakeOrFillBothRowMaps();
   Model MakeNewCoreModel(const CoreToFullElementMapVector& new_c2f_col_map);
+  void ResetToIdentitySubModel();
 
   // Pointer to the original model
   StrongModelView full_model_;
