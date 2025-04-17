@@ -125,6 +125,7 @@ class StrongModelView {
   auto ElementRange() const -> util_intops::StrongIntRange<FullElementIndex> {
     return {FullElementIndex(), FullElementIndex(num_elements())};
   }
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;
@@ -184,6 +185,7 @@ class IndexListModelView {
     DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
     return (*rows_sizes_)[i];
   }
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;
@@ -237,6 +239,8 @@ class FilterModelView {
       -> util_intops::FilterIndexRangeView<ElementIndex, ElementBoolVector> {
     return {is_focus_row_};
   }
+
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;
