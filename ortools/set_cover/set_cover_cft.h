@@ -144,6 +144,7 @@ class DualState {
     for (ElementIndex i : model.ElementRange()) {
       multiplier_operator(i, multipliers_[i]);
       lower_bound_ += multipliers_[i];
+      DCHECK(std::isfinite(multipliers_[i]));
       DCHECK_GE(multipliers_[i], .0);
     }
     lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);

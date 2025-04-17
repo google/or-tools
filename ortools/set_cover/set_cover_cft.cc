@@ -23,7 +23,6 @@
 #include <limits>
 #include <random>
 
-#include "ortools/base/status_macros.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_submodel.h"
@@ -114,9 +113,10 @@ BoundCBs::BoundCBs(const SubModel& model)
       prev_best_lb_(std::numeric_limits<Cost>::lowest()),
       max_iter_countdown_(10 *
                           model.num_focus_elements()),  // Arbitrary from [1]
-      exit_test_countdown_(300),                        // Arbitrrary from [1]
+      exit_test_countdown_(300),                        // Arbitrary from [1]
       exit_test_period_(300),                           // Arbitrary from [1]
       step_size_(0.1),                                  // Arbitrary from [1]
+      last_core_update_countdown_(0),
       last_min_lb_seen_(std::numeric_limits<Cost>::max()),
       last_max_lb_seen_(.0),
       step_size_update_countdown_(20),  // Arbitrary from [1]
@@ -162,12 +162,18 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   for (ElementIndex i : context.model.ElementRange()) {
     direction_[i] = stabilization_coeff * direction_[i] +
                     (1.0 - stabilization_coeff) * prev_direction_[i];
-    if ((context.current_dual_state.multipliers()[i] <= .0) &&
-        (direction_[i] < .0)) {
+    Cost curr_i_mult = context.current_dual_state.multipliers()[i];
+    if ((curr_i_mult <= .0 && direction_[i] < .0) ||
+        (curr_i_mult > 1e9 && direction_[i] > .0)) {
       direction_[i] = 0;
     }
     squared_norm_ += direction_[i] * direction_[i];
     prev_direction_[i] = direction_[i];
+  }
+
+  if (squared_norm_ <= kTol) {
+    delta_mults.assign(context.model.num_elements(), .0);
+    return;
   }
 
   Cost upper_bound = context.best_solution.cost() - context.model.fixed_cost();
@@ -175,6 +181,7 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   Cost step_constant = step_size_ * delta / squared_norm_;
   for (ElementIndex i : context.model.ElementRange()) {
     delta_mults[i] = step_constant * direction_[i];
+    DCHECK(std::isfinite(delta_mults[i]));
   }
 }
 
@@ -267,7 +274,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
     cbs.ComputeMultipliersDelta(context, multipliers_delta);
     dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-      i_mult = std::max<Cost>(.0, i_mult + multipliers_delta[i]);
+      i_mult = std::clamp<Cost>(i_mult + multipliers_delta[i], .0, 1e9);
     });
     if (dual_state.lower_bound() > best_state.dual_state.lower_bound()) {
       best_state.dual_state = dual_state;
@@ -719,10 +726,7 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
   PrimalDualState curr_state = best_state;
   BaseInt iter_count = 0;
   std::mt19937 rnd(0xcf7);
-  while (model.num_focus_elements() > 0 &&
-         // note: assumes integral costs
-         curr_state.dual_state.lower_bound() <
-             best_state.solution.cost() - model.fixed_cost() - .999) {
+  while (model.num_focus_elements() > 0) {
     ++iter_count;
     std::cout << "\n\n3Phase iteration: " << iter_count << '\n';
     std::cout << " Active size: rows " << model.num_focus_elements() << "/"
@@ -737,6 +741,11 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
     if (iter_count == 1) {
       best_state.dual_state = curr_state.dual_state;
     }
+    if (curr_state.dual_state.lower_bound() >=
+        best_state.solution.cost() - model.fixed_cost() - .999) {
+      break;
+    }
+
     // Phase 2: search for good solutions
     HeuristicCBs heuristic_cbs;
     heuristic_cbs.set_step_size(dual_bound_cbs.step_size());
@@ -748,6 +757,10 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
     }
     if (curr_state.solution.cost() < best_state.solution.cost()) {
       best_state.solution = curr_state.solution;
+    }
+    if (curr_state.dual_state.lower_bound() >=
+        best_state.solution.cost() - model.fixed_cost() - .999) {
+      break;
     }
 
     std::cout << "\n3Phase Bounds: Lower "
@@ -1067,6 +1080,7 @@ void FullToCoreModel::ResetColumnFixing(
   }
   DCHECK_EQ(columns_to_fix.size(), full_columns_to_fix.size());
   FixMoreColumns(columns_to_fix);
+  DCHECK(FullToSubModelInvariantCheck());
 }
 
 bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
