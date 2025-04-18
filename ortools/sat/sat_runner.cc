@@ -171,23 +171,16 @@ void LogInPbCompetitionFormat(int num_variables, bool has_objective,
       final_response_callback);
 }
 
-void SetInterleavedWorkers(bool has_objective, SatParameters* parameters) {
+void SetInterleavedWorkers(SatParameters* parameters) {
   // Enable interleaved workers when num_workers is 1.
   if (parameters->num_workers() == 1) {
     parameters->set_interleave_search(true);
     parameters->set_use_rins_lns(false);
-    if (has_objective) {
-      parameters->add_subsolvers("default_lp");
-      parameters->add_subsolvers("quick_restart");
-      parameters->add_subsolvers("core_or_no_lp");
-      parameters->add_subsolvers("max_lp");
-      parameters->set_num_violation_ls(1);
-    } else {
-      parameters->add_subsolvers("default_lp");
-      parameters->add_subsolvers("no_lp");
-      parameters->add_subsolvers("max_lp");
-      parameters->add_subsolvers("quick_restart");
-    }
+    parameters->add_subsolvers("default_lp");
+    parameters->add_subsolvers("max_lp");
+    parameters->add_subsolvers("quick_restart");
+    parameters->add_subsolvers("core_or_no_lp");  // no_lp if no objective.
+    parameters->set_num_violation_ls(1);          // Off if no objective.
   }
 }
 
@@ -227,7 +220,7 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
                                parameters);
     }
     if (absl::GetFlag(FLAGS_force_interleave_search)) {
-      SetInterleavedWorkers(cp_model->has_objective(), parameters);
+      SetInterleavedWorkers(parameters);
     }
   } else if (absl::EndsWith(filename, ".cnf") ||
              absl::EndsWith(filename, ".cnf.xz") ||
