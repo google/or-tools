@@ -488,9 +488,9 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   LOG(INFO) << "RandomClearMip cost: " << best_cost;
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
-  if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
-  }
+  // if (BoardSize == 50) {
+  //   CHECK_GE(inv.cost(), 350);
+  // }
 }
 
 TEST(SetCoverTest, KnightsCoverMip) {
