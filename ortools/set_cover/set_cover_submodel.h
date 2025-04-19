@@ -26,6 +26,7 @@ using Model = SetCoverModel;
 // Forward declarations, see below for the definition of the classes.
 struct PrimalDualState;
 struct Solution;
+struct DualState;
 
 // The CFT algorithm generates sub-models in two distinct ways:
 //
@@ -112,7 +113,11 @@ class SubModelView : public IndexListModelView {
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
-  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  virtual void ResetColumnFixing(
+      const std::vector<FullSubsetIndex>& columns_to_fix,
+      const DualState& state);
 
   // Hook function for specializations. This function can be used to define a
   // "small" core model considering a subset of the full model through the use
@@ -120,7 +125,13 @@ class SubModelView : public IndexListModelView {
   // the full model.
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
+  StrongModelView StrongTypedFullModelView() const {
+    return StrongModelView(full_model_);
+  }
+
  private:
+  void ResetToIdentitySubModel();
+
   // Pointer to the original model
   const Model* full_model_;
 
@@ -210,7 +221,11 @@ class CoreModel : private Model {
   // Fix the provided columns, removing them for the submodel. Rows now covered
   // by fixed columns are also removed from the submodel along with non-fixed
   // columns that only cover those rows.
-  virtual Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix);
+  virtual Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix);
+
+  virtual void ResetColumnFixing(
+      const std::vector<FullSubsetIndex>& columns_to_fix,
+      const DualState& state);
 
   // Hook function for specializations. This function can be used to define a
   // "small" core model considering a subset of the full model through the use
@@ -218,10 +233,13 @@ class CoreModel : private Model {
   // the full model.
   virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
 
+  StrongModelView StrongTypedFullModelView() const { return full_model_; }
+
  private:
   void MarkNewFixingInMaps(const std::vector<SubsetIndex>& columns_to_fix);
   CoreToFullElementMapVector MakeOrFillBothRowMaps();
   Model MakeNewCoreModel(const CoreToFullElementMapVector& new_c2f_col_map);
+  void ResetToIdentitySubModel();
 
   // Pointer to the original model
   StrongModelView full_model_;

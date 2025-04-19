@@ -122,8 +122,9 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
 class DualState {
  public:
   DualState() = default;
+  DualState(const DualState&) = default;
   template <typename SubModelT>
-  DualState(const SubModelT& model)
+  explicit DualState(const SubModelT& model)
       : lower_bound_(.0),
         multipliers_(model.num_elements(), .0),
         reduced_costs_(model.subset_costs().begin(),
@@ -143,6 +144,7 @@ class DualState {
     for (ElementIndex i : model.ElementRange()) {
       multiplier_operator(i, multipliers_[i]);
       lower_bound_ += multipliers_[i];
+      DCHECK(std::isfinite(multipliers_[i]));
       DCHECK_GE(multipliers_[i], .0);
     }
     lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
@@ -321,6 +323,13 @@ PrimalDualState RunThreePhase(SubModel& model,
                               const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
+///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
+///////////////////////////////////////////////////////////////////////
+
+PrimalDualState RunCftHeuristic(SubModel& model,
+                                const Solution& init_solution = {});
+
+///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
@@ -337,7 +346,9 @@ class FullToCoreModel : public SubModel {
 
  public:
   FullToCoreModel(const Model* full_model);
-  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
+  Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
+  void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
+                         const DualState& state) override;
   bool UpdateCore(PrimalDualState& core_state) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
@@ -371,6 +382,9 @@ class FullToCoreModel : public SubModel {
   bool FullToSubModelInvariantCheck();
 
  private:
+  std::vector<FullSubsetIndex> SelectNewCoreColumns(
+      const std::vector<FullSubsetIndex>& forced_columns);
+
   const Model* full_model_;
 
   // Note: The `is_focus_col_` vector duplicates information already present in
