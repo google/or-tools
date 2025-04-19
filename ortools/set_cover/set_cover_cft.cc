@@ -30,11 +30,33 @@
 #include "ortools/set_cover/views.h"
 
 namespace operations_research::scp {
+#define CFT_MEASURE_TIME
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////// COMMON DEFINITIONS //////////////////////////
 ////////////////////////////////////////////////////////////////////////
 namespace {
+
+#ifdef CFT_MEASURE_TIME
+#define CFT_MEASURE_SCOPE_DURATION(Timer) \
+  Timer.Start();                          \
+  Defer pause_timer = [&] { Timer.Stop(); };
+
+thread_local WallTimer subgradient_time;
+thread_local WallTimer greedy_time;
+thread_local WallTimer three_phase_time;
+thread_local WallTimer refinement_time;
+#else
+#define CFT_MEASURE_SCOPE_DURATION(Timer)
+#endif
+
+// StopWatch does not add up duration of multiple invocations, Defer is a lower
+// level construct useful in this case.
+template <typename T>
+struct Defer : T {
+  Defer(T&& t) : T(std::forward<T>(t)) {}
+  ~Defer() { T::operator()(); }
+};
 
 template <typename IndexT = ElementIndex>
 class CoverCountersImpl {
@@ -248,6 +270,7 @@ bool BoundCBs::UpdateCoreModel(SubModel& core_model,
 
 void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
                              PrimalDualState& best_state) {
+  CFT_MEASURE_SCOPE_DURATION(subgradient_time);
   DCHECK(ValidateSubModel(model));
 
   ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
@@ -559,6 +582,8 @@ Solution RunMultiplierBasedGreedy(const SubModel& model,
 Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
                   Cost cost_cutoff, BaseInt stop_size,
                   std::vector<SubsetIndex>& sol_subsets) {
+  CFT_MEASURE_SCOPE_DURATION(greedy_time);
+
   Cost sol_cost = .0;
   for (SubsetIndex j : sol_subsets) {
     sol_cost += model.subset_costs()[j];
@@ -711,6 +736,7 @@ void HeuristicCBs::ComputeMultipliersDelta(const SubgradientContext& context,
 }
 
 PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
+  CFT_MEASURE_SCOPE_DURATION(three_phase_time);
   DCHECK(ValidateSubModel(model));
 
   PrimalDualState best_state = {.solution = init_solution,
@@ -834,6 +860,8 @@ std::vector<FullSubsetIndex> SelectColumnByGapContribution(
 
 PrimalDualState RunCftHeuristic(SubModel& model,
                                 const Solution& init_solution) {
+  CFT_MEASURE_SCOPE_DURATION(refinement_time);
+
   PrimalDualState best_state = {.solution = init_solution,
                                 .dual_state = MakeTentativeDualState(model)};
   if (best_state.solution.Empty()) {
@@ -876,7 +904,24 @@ PrimalDualState RunCftHeuristic(SubModel& model,
               << model.num_elements() << ", columns "
               << model.num_focus_subsets() << "/" << model.num_subsets()
               << '\n';
-  }
+#ifdef CFT_MEASURE_TIME
+  double subg_t = subgradient_time.Get();
+  double greedy_t = greedy_time.Get();
+  double three_phase_t = three_phase_time.Get();
+  double refinement_t = refinement_time.Get();
+
+  printf("Subgradient time:   %.2f(%.1f%%)\n", subg_t,
+         100 * subg_t / refinement_t);
+  printf("Greedy Heur time:   %.2f(%.1f%%)\n", greedy_t,
+         100 * greedy_t / refinement_t);
+  printf("SubG - Greedy time: %.2f(%.1f%%)\n", subg_t - greedy_t,
+         100 * (subg_t - greedy_t) / refinement_t);
+  printf("3Phase time:        %.2f(%.1f%%)\n", three_phase_t,
+         100 * three_phase_t / refinement_t);
+  printf("3Phase - Subg time: %.2f(%.1f%%)\n", three_phase_t - subg_t,
+         100 * (three_phase_t - subg_t) / refinement_t);
+  printf("Total CFT time:     %.2f(%.1f%%)\n", refinement_t, 100.0);
+#endif
 
   return best_state;
 }
