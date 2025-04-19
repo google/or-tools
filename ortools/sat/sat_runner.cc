@@ -222,6 +222,12 @@ bool LoadProblem(const std::string& filename, absl::string_view hint_file,
     if (absl::GetFlag(FLAGS_force_interleave_search)) {
       SetInterleavedWorkers(parameters);
     }
+    if (parameters->num_workers() >= 2 && parameters->num_workers() <= 15) {
+      // Works better without symmetries in search
+      // TODO(user): Investigate.
+      parameters->add_ignore_subsolvers("max_lp_sym");
+      parameters->add_extra_subsolvers("max_lp");
+    }
   } else if (absl::EndsWith(filename, ".cnf") ||
              absl::EndsWith(filename, ".cnf.xz") ||
              absl::EndsWith(filename, ".cnf.gz") ||

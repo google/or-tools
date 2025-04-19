@@ -47,6 +47,8 @@
 
 ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
+ABSL_FLAG(bool, force_interleave_search, false,
+          "If true, enable interleaved workers when num_workers is 1.");
 
 namespace operations_research {
 namespace sat {
@@ -1683,7 +1685,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     m.parameters.set_keep_all_feasible_solutions_in_presolve(true);
   } else if (num_workers == 1 && p.use_free_search) {  // Free search.
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    if (!p.search_all_solutions && p.ortools_mode) {
+    if (!p.search_all_solutions &&
+        (absl::GetFlag(FLAGS_force_interleave_search) || p.ortools_mode)) {
       m.parameters.set_interleave_search(true);
       m.parameters.set_use_rins_lns(false);
       m.parameters.add_subsolvers("default_lp");
