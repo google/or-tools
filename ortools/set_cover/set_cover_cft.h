@@ -245,13 +245,12 @@ class BoundCBs : public SubgradientCBs {
   // by using a "moving average" of the current and previous subgradients. The
   // current subgradient is weighted by a factor of alpha, while the previous
   // subgradients contribution is weighted by (1 - alpha). The parameter alpha
-  // is set to 0.5 by default but can be adjusted for tuning. The resulting
-  // stabilized subgradient is referred to as "direction" to distinguish it from
-  // the original subgradient.
-  Cost stabilization_coeff = 0.5;  // Arbitrary from c4v4
+  // is set to 0.5 by default but can be adjusted. The resulting stabilized
+  // subgradient is referred to as "direction" to distinguish it from the
+  // original subgradient.
+  Cost stabilization_coeff_ = 0.5;  // Arbitrary from c4v4
   ElementCostVector direction_;
-  ElementCostVector prev_direction_;
-
+  ElementCostVector stable_direction_;
   std::vector<SubsetIndex> lagrangian_solution_;
 
   // Stopping condition
@@ -259,10 +258,9 @@ class BoundCBs : public SubgradientCBs {
   BaseInt max_iter_countdown_;
   BaseInt exit_test_countdown_;
   BaseInt exit_test_period_;
-  BaseInt last_core_update_countdown_;
 
   // Step size
-  void UpdateStepSize(Cost lower_bound);
+  void UpdateStepSize(SubgradientContext context);
   Cost step_size_;
   Cost last_min_lb_seen_;
   Cost last_max_lb_seen_;

@@ -17,6 +17,7 @@
 #include <absl/random/random.h>
 #include <absl/status/status.h>
 #include <absl/strings/str_join.h>
+#include <absl/time/time.h>
 #include <absl/types/span.h>
 
 #include <iostream>
@@ -30,6 +31,11 @@
 #include "ortools/set_cover/views.h"
 
 namespace operations_research::scp {
+
+// Minimum distance between lower and upper bounds to consider them different.
+// If cost are all integral, can be set neear to 1.0
+#define CFT_BOUND_EPSILON .999
+#define CFT_MAX_MULTIPLIER 1e9
 #define CFT_MEASURE_TIME
 
 ////////////////////////////////////////////////////////////////////////
@@ -138,7 +144,6 @@ BoundCBs::BoundCBs(const SubModel& model)
       exit_test_countdown_(300),                        // Arbitrary from [1]
       exit_test_period_(300),                           // Arbitrary from [1]
       step_size_(0.1),                                  // Arbitrary from [1]
-      last_core_update_countdown_(0),
       last_min_lb_seen_(std::numeric_limits<Cost>::max()),
       last_max_lb_seen_(.0),
       step_size_update_countdown_(20),  // Arbitrary from [1]
@@ -146,18 +151,16 @@ BoundCBs::BoundCBs(const SubModel& model)
 {}
 
 bool BoundCBs::ExitCondition(const SubgradientContext& context) {
-  if (last_core_update_countdown_ > 0) {
-    --last_core_update_countdown_;
-    return false;
-  }
-  if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol ||
-      // Note: assumes integral costs
-      context.best_dual_state.lower_bound() >=
-          context.best_solution.cost() - context.model.fixed_cost() - .999) {
+  Cost best_lb = context.best_dual_state.lower_bound();
+  Cost best_ub = context.best_solution.cost() - context.model.fixed_cost();
+  if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol) {
     return true;
   }
   if (--exit_test_countdown_ > 0) {
     return false;
+  }
+  if (prev_best_lb_ >= best_ub - CFT_BOUND_EPSILON) {
+    return true;
   }
   exit_test_countdown_ = exit_test_period_;
   Cost best_lower_bound = context.best_dual_state.lower_bound();
@@ -169,28 +172,25 @@ bool BoundCBs::ExitCondition(const SubgradientContext& context) {
 
 void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
                                        ElementCostVector& delta_mults) {
-  Cost lower_bound = context.current_dual_state.lower_bound();
-  UpdateStepSize(lower_bound);
-
   direction_ = context.subgradient;
   MakeMinimalCoverageSubgradient(context, direction_);
 
-  if (prev_direction_.empty()) {
-    prev_direction_ = direction_;
+  if (stable_direction_.empty()) {
+    stable_direction_ = direction_;
   }
 
   squared_norm_ = .0;
   // Stabilize current direction and compute squared norm
   for (ElementIndex i : context.model.ElementRange()) {
-    direction_[i] = stabilization_coeff * direction_[i] +
-                    (1.0 - stabilization_coeff) * prev_direction_[i];
     Cost curr_i_mult = context.current_dual_state.multipliers()[i];
     if ((curr_i_mult <= .0 && direction_[i] < .0) ||
-        (curr_i_mult > 1e9 && direction_[i] > .0)) {
+        (curr_i_mult > CFT_MAX_MULTIPLIER && direction_[i] > .0)) {
       direction_[i] = 0;
     }
-    squared_norm_ += direction_[i] * direction_[i];
-    prev_direction_[i] = direction_[i];
+    stable_direction_[i] = stabilization_coeff_ * direction_[i] +
+                           (1.0 - stabilization_coeff_) * stable_direction_[i];
+
+    squared_norm_ += stable_direction_[i] * stable_direction_[i];
   }
 
   if (squared_norm_ <= kTol) {
@@ -198,16 +198,22 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
     return;
   }
 
+  UpdateStepSize(context);
   Cost upper_bound = context.best_solution.cost() - context.model.fixed_cost();
+  Cost lower_bound = context.current_dual_state.lower_bound();
   Cost delta = upper_bound - lower_bound;
   Cost step_constant = step_size_ * delta / squared_norm_;
+
+  auto& multipliers = context.current_dual_state.multipliers();
+  auto& best_multipliers = context.best_dual_state.multipliers();
   for (ElementIndex i : context.model.ElementRange()) {
-    delta_mults[i] = step_constant * direction_[i];
+    delta_mults[i] = step_constant * stable_direction_[i];
     DCHECK(std::isfinite(delta_mults[i]));
   }
 }
 
-void BoundCBs::UpdateStepSize(Cost lower_bound) {
+void BoundCBs::UpdateStepSize(SubgradientContext context) {
+  Cost lower_bound = context.current_dual_state.lower_bound();
   last_min_lb_seen_ = std::min(last_min_lb_seen_, lower_bound);
   last_max_lb_seen_ = std::max(last_max_lb_seen_, lower_bound);
 
@@ -216,12 +222,8 @@ void BoundCBs::UpdateStepSize(Cost lower_bound) {
 
     Cost delta = last_max_lb_seen_ - last_min_lb_seen_;
     Cost gap = DivideIfGE0(delta, last_max_lb_seen_);
-    if (gap <= .001) {    // Arbitray from [1]
-      step_size_ *= 1.5;  // Arbitray from [1]
-
-      // Arbitrary from c4v4
-      stabilization_coeff = (1.0 + stabilization_coeff) / 2.0;
-
+    if (gap <= .001) {       // Arbitray from [1]
+      step_size_ *= 1.5;     // Arbitray from [1]
     } else if (gap > .01) {  // Arbitray from [1]
       step_size_ /= 2.0;     // Arbitray from [1]
     }
@@ -257,12 +259,12 @@ void BoundCBs::MakeMinimalCoverageSubgradient(const SubgradientContext& context,
 bool BoundCBs::UpdateCoreModel(SubModel& core_model,
                                PrimalDualState& best_state) {
   if (core_model.UpdateCore(best_state)) {
-    // grant at least 10 iterations before the next exit test
     prev_best_lb_ =
         std::min(prev_best_lb_, best_state.dual_state.lower_bound());
-    exit_test_countdown_ = std::max<BaseInt>(exit_test_countdown_, 20);
-    max_iter_countdown_ = std::max<BaseInt>(max_iter_countdown_, 20);
-    last_core_update_countdown_ = 20;
+    // Grant at least `min_iters` iterations before the next exit test
+    constexpr BaseInt min_iters = 10;
+    exit_test_countdown_ = std::max<BaseInt>(exit_test_countdown_, min_iters);
+    max_iter_countdown_ = std::max<BaseInt>(max_iter_countdown_, min_iters);
     return true;
   }
   return false;
@@ -285,6 +287,14 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
                                 .subgradient = subgradient};
   size_t iter = 0;
   while (!cbs.ExitCondition(context)) {
+    // Poor multipliers can lead to wasted iterations or stagnation in the
+    // subgradient method. To address this, we adjust the multipliers to
+    // get closer the trivial lower bound (= 0).
+    if (dual_state.lower_bound() < .0) {
+      dual_state.DualUpdate(
+          model, [&](ElementIndex i, Cost& i_mult) { i_mult /= 10.0; });
+    }
+
     // Compute subgradient (O(nnz))
     subgradient.assign(model.num_elements(), 1.0);
     for (SubsetIndex j : model.SubsetRange()) {
@@ -297,7 +307,8 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
     cbs.ComputeMultipliersDelta(context, multipliers_delta);
     dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
-      i_mult = std::clamp<Cost>(i_mult + multipliers_delta[i], .0, 1e9);
+      i_mult = std::clamp<Cost>(i_mult + multipliers_delta[i], .0,
+                                CFT_MAX_MULTIPLIER);
     });
     if (dual_state.lower_bound() > best_state.dual_state.lower_bound()) {
       best_state.dual_state = dual_state;
@@ -628,6 +639,7 @@ Cost CoverGreedly(const SubModel& model, const DualState& dual_state,
 
   // Either remove redundant columns or discard solution
   RedundancyRemover remover(model, covered_rows);  // TODO(?): cache it!
+
   return remover.TryRemoveRedundantCols(model, cost_cutoff, sol_subsets);
 }
 
@@ -705,6 +717,9 @@ void FixBestColumns(SubModel& model, PrimalDualState& state) {
 
 void RandomizeDualState(const SubModel& model, DualState& dual_state,
                         std::mt19937& rnd) {
+  // In [1] this step is described, not completely sure if it actually helps
+  // or not. Seems to me one of those "throw in some randomness, it never hurts"
+  // thing.
   dual_state.DualUpdate(model, [&](ElementIndex, Cost& i_multiplier) {
     i_multiplier *= absl::Uniform(rnd, 0.9, 1.1);
   });
@@ -768,7 +783,7 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
       best_state.dual_state = curr_state.dual_state;
     }
     if (curr_state.dual_state.lower_bound() >=
-        best_state.solution.cost() - model.fixed_cost() - .999) {
+        best_state.solution.cost() - model.fixed_cost() - CFT_BOUND_EPSILON) {
       break;
     }
 
@@ -785,7 +800,7 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
       best_state.solution = curr_state.solution;
     }
     if (curr_state.dual_state.lower_bound() >=
-        best_state.solution.cost() - model.fixed_cost() - .999) {
+        best_state.solution.cost() - model.fixed_cost() - CFT_BOUND_EPSILON) {
       break;
     }
 
@@ -887,7 +902,7 @@ PrimalDualState RunCftHeuristic(SubModel& model,
     cost_cutoff = std::max<Cost>(cost_cutoff,
                                  fixed_cost_before + dual_state.lower_bound());
 
-    if (best_state.solution.cost() - .999 <= cost_cutoff) {
+    if (best_state.solution.cost() - CFT_BOUND_EPSILON <= cost_cutoff) {
       break;
     }
 
