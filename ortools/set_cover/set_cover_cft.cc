@@ -143,7 +143,8 @@ BoundCBs::BoundCBs(const SubModel& model)
                           model.num_focus_elements()),  // Arbitrary from [1]
       exit_test_countdown_(300),                        // Arbitrary from [1]
       exit_test_period_(300),                           // Arbitrary from [1]
-      step_size_(0.1),                                  // Arbitrary from [1]
+      unfixed_run_extension_(0),
+      step_size_(0.1),  // Arbitrary from [1]
       last_min_lb_seen_(std::numeric_limits<Cost>::max()),
       last_max_lb_seen_(.0),
       step_size_update_countdown_(20),  // Arbitrary from [1]
@@ -151,7 +152,7 @@ BoundCBs::BoundCBs(const SubModel& model)
 {}
 
 bool BoundCBs::ExitCondition(const SubgradientContext& context) {
-  Cost best_lb = context.best_dual_state.lower_bound();
+  Cost best_lb = context.best_lower_bound;
   Cost best_ub = context.best_solution.cost() - context.model.fixed_cost();
   if (--max_iter_countdown_ <= 0 || squared_norm_ <= kTol) {
     return true;
@@ -163,11 +164,19 @@ bool BoundCBs::ExitCondition(const SubgradientContext& context) {
     return true;
   }
   exit_test_countdown_ = exit_test_period_;
-  Cost best_lower_bound = context.best_dual_state.lower_bound();
+  Cost best_lower_bound = context.best_lower_bound;
   Cost abs_improvement = best_lower_bound - prev_best_lb_;
   Cost rel_improvement = DivideIfGE0(abs_improvement, best_lower_bound);
   prev_best_lb_ = best_lower_bound;
-  return abs_improvement < 1.0 && rel_improvement < .001;
+
+  if (abs_improvement >= 1.0 || rel_improvement >= .001) {
+    return false;
+  }
+
+  // (Not in [1]): During the first unfixed iteration we want to converge closer
+  // to the optimum
+  BaseInt extension = context.model.fixed_cost() < kTol ? 4 : 1;
+  return unfixed_run_extension_++ >= extension;
 }
 
 void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
@@ -175,22 +184,15 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   direction_ = context.subgradient;
   MakeMinimalCoverageSubgradient(context, direction_);
 
-  if (stable_direction_.empty()) {
-    stable_direction_ = direction_;
-  }
-
   squared_norm_ = .0;
-  // Stabilize current direction and compute squared norm
   for (ElementIndex i : context.model.ElementRange()) {
     Cost curr_i_mult = context.current_dual_state.multipliers()[i];
     if ((curr_i_mult <= .0 && direction_[i] < .0) ||
         (curr_i_mult > CFT_MAX_MULTIPLIER && direction_[i] > .0)) {
       direction_[i] = 0;
     }
-    stable_direction_[i] = stabilization_coeff_ * direction_[i] +
-                           (1.0 - stabilization_coeff_) * stable_direction_[i];
 
-    squared_norm_ += stable_direction_[i] * stable_direction_[i];
+    squared_norm_ += direction_[i] * direction_[i];
   }
 
   if (squared_norm_ <= kTol) {
@@ -202,12 +204,10 @@ void BoundCBs::ComputeMultipliersDelta(const SubgradientContext& context,
   Cost upper_bound = context.best_solution.cost() - context.model.fixed_cost();
   Cost lower_bound = context.current_dual_state.lower_bound();
   Cost delta = upper_bound - lower_bound;
-  Cost step_constant = step_size_ * delta / squared_norm_;
+  Cost step_constant = (step_size_ * delta) / squared_norm_;
 
-  auto& multipliers = context.current_dual_state.multipliers();
-  auto& best_multipliers = context.best_dual_state.multipliers();
   for (ElementIndex i : context.model.ElementRange()) {
-    delta_mults[i] = step_constant * stable_direction_[i];
+    delta_mults[i] = step_constant * direction_[i];
     DCHECK(std::isfinite(delta_mults[i]));
   }
 }
@@ -328,7 +328,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
                 << ", global " << best_state.solution.cost() << "\n";
 
     if (cbs.UpdateCoreModel(model, best_state)) {
-      std::cout << "Core model has been updated.\n";
+    std::cout << "Core model has been updated.\n";
       dual_state = best_state.dual_state;
     }
   }
@@ -1187,7 +1187,7 @@ void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
 
 void FullToCoreModel::UpdateDualState(const DualState& core_dual_state,
                                       DualState& full_dual_state,
-                                      DualState& best_dual_state) {
+    DualState& best_dual_state) {
   auto fixing_full_model = FixingFullModelView();
   full_dual_state_.DualUpdate(
       fixing_full_model, [&](ElementIndex full_i, Cost& i_mult) {

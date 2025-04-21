@@ -234,23 +234,7 @@ class BoundCBs : public SubgradientCBs {
 
  private:
   Cost squared_norm_;
-
-  // This addition implements a simplified stabilization technique inspired by
-  // works in the literature, such as:
-  // Frangioni, A., Gendron, B., Gorgone, E. (2015):
-  // "On the computational efficiency of subgradient methods: A case study in
-  // combinatorial optimization."
-  //
-  // The approach aims to reduce oscillations (zig-zagging) in the subgradient
-  // by using a "moving average" of the current and previous subgradients. The
-  // current subgradient is weighted by a factor of alpha, while the previous
-  // subgradients contribution is weighted by (1 - alpha). The parameter alpha
-  // is set to 0.5 by default but can be adjusted. The resulting stabilized
-  // subgradient is referred to as "direction" to distinguish it from the
-  // original subgradient.
-  Cost stabilization_coeff_ = 0.5;  // Arbitrary from c4v4
   ElementCostVector direction_;
-  ElementCostVector stable_direction_;
   std::vector<SubsetIndex> lagrangian_solution_;
 
   // Stopping condition
@@ -258,6 +242,7 @@ class BoundCBs : public SubgradientCBs {
   BaseInt max_iter_countdown_;
   BaseInt exit_test_countdown_;
   BaseInt exit_test_period_;
+  BaseInt unfixed_run_extension_;
 
   // Step size
   void UpdateStepSize(SubgradientContext context);
