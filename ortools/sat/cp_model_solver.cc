@@ -2140,6 +2140,13 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       --num_thread_available;
     }
     num_thread_available = std::max(num_thread_available, 0);
+    // If we are in interleaved mode with one worker, num_thread_available is
+    // always zero. We force it to 1 so that we at least have a
+    // feasibility_jump subsolver.
+    if (params.interleave_search() && params.num_workers() == 1) {
+      // TODO(user): the 1 should be a parameter.
+      num_thread_available = 1;
+    }
 
     const std::vector<SatParameters> all_params =
         RepeatParameters(name_filter.Filter(GetFirstSolutionBaseParams(params)),
