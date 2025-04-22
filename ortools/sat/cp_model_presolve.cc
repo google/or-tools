@@ -5909,6 +5909,39 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
     }
   }
 
+  {
+    // Special case for "all-diff" encoded as no-overlap.
+    int num_size_zero_or_one = 0;
+    for (const int index : proto->intervals()) {
+      const IntervalConstraintProto& interval =
+          context_->working_model->constraints(index).interval();
+      const LinearExpressionProto& size = interval.size();
+      if (size.vars().empty() && size.offset() >= 0 && size.offset() <= 1) {
+        ++num_size_zero_or_one;
+      } else {
+        break;  // early abort
+      }
+    }
+    const int initial_num_intervals = proto->intervals().size();
+    if (num_size_zero_or_one == initial_num_intervals) {
+      // If there is only size one, we can remove the size zero as there is
+      // no constraint on them.
+      int new_size = 0;
+      for (const int index : proto->intervals()) {
+        const IntervalConstraintProto& interval =
+            context_->working_model->constraints(index).interval();
+        if (interval.size().offset() == 0) continue;
+        proto->set_intervals(new_size++, index);
+      }
+      if (new_size < initial_num_intervals) {
+        proto->mutable_intervals()->Truncate(new_size);
+        changed = true;
+        context_->UpdateRuleStats("no_overlap: removed size 0 from all diff.");
+      }
+      context_->UpdateRuleStats("TODO no_overlap: only size one !");
+    }
+  }
+
   if (proto->intervals_size() == 1) {
     context_->UpdateRuleStats("no_overlap: only one interval");
     return RemoveConstraint(ct);
