@@ -256,11 +256,11 @@ void BoundCBs::MakeMinimalCoverageSubgradient(const SubgradientContext& context,
   }
 }
 
-bool BoundCBs::UpdateCoreModel(SubModel& core_model,
-                               PrimalDualState& best_state) {
-  if (core_model.UpdateCore(best_state)) {
-    prev_best_lb_ =
-        std::min(prev_best_lb_, best_state.dual_state.lower_bound());
+bool BoundCBs::UpdateCoreModel(SubgradientContext context,
+                               CoreModel& core_model, bool force) {
+  if (core_model.UpdateCore(context.best_lower_bound, context.best_multipliers,
+                            context.best_solution, force)) {
+    prev_best_lb_ = std::min(prev_best_lb_, context.best_lower_bound);
     // Grant at least `min_iters` iterations before the next exit test
     constexpr BaseInt min_iters = 10;
     exit_test_countdown_ = std::max<BaseInt>(exit_test_countdown_, min_iters);
@@ -277,12 +277,15 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
   ElementCostVector subgradient = ElementCostVector(model.num_elements(), .0);
   DualState dual_state = best_state.dual_state;
+  Cost best_lower_bound = dual_state.lower_bound();
+  ElementCostVector best_multipliers = dual_state.multipliers();
   Solution solution;
 
   ElementCostVector multipliers_delta(model.num_elements());  // to avoid allocs
   SubgradientContext context = {.model = model,
                                 .current_dual_state = dual_state,
-                                .best_dual_state = best_state.dual_state,
+                                .best_lower_bound = best_lower_bound,
+                                .best_multipliers = best_multipliers,
                                 .best_solution = best_state.solution,
                                 .subgradient = subgradient};
   size_t iter = 0;
@@ -310,8 +313,9 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
       i_mult = std::clamp<Cost>(i_mult + multipliers_delta[i], .0,
                                 CFT_MAX_MULTIPLIER);
     });
-    if (dual_state.lower_bound() > best_state.dual_state.lower_bound()) {
-      best_state.dual_state = dual_state;
+    if (dual_state.lower_bound() > best_lower_bound) {
+      best_lower_bound = dual_state.lower_bound();
+      best_multipliers = dual_state.multipliers();
     }
 
     cbs.RunHeuristic(context, solution);
@@ -322,21 +326,35 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
 
     if (++iter % 50 == 0)
       std::cout << "Subgradient " << iter << " -- Bounds: Lower "
-                << dual_state.lower_bound() << ", best "
-                << best_state.dual_state.lower_bound() << " - Upper "
+                << dual_state.lower_bound() << ", best " << best_lower_bound
+                << " - Upper "
                 << best_state.solution.cost() - model.fixed_cost()
                 << ", global " << best_state.solution.cost() << "\n";
 
-    if (cbs.UpdateCoreModel(model, best_state)) {
-    std::cout << "Core model has been updated.\n";
-      dual_state = best_state.dual_state;
+    if (cbs.UpdateCoreModel(context, model)) {
+      dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+        i_mult = best_multipliers[i];
+      });
+      best_lower_bound = dual_state.lower_bound();
     }
   }
+
+  if (cbs.UpdateCoreModel(context, model, /*force=*/true)) {
+    std::cout << "Core model has been updated.\n";
+    dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+      i_mult = best_multipliers[i];
+    });
+    best_lower_bound = dual_state.lower_bound();
+  }
+  best_state.dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
+    i_mult = best_multipliers[i];
+  });
+  DCHECK_EQ(best_state.dual_state.lower_bound(), best_lower_bound);
+
   std::cout << "Subgradient End" << " -- Bounds: Lower "
-            << dual_state.lower_bound() << ", best "
-            << best_state.dual_state.lower_bound() << " - Upper "
-            << best_state.solution.cost() - model.fixed_cost() << ", global "
-            << best_state.solution.cost() << "\n";
+            << dual_state.lower_bound() << ", best " << best_lower_bound
+            << " - Upper " << best_state.solution.cost() - model.fixed_cost()
+            << ", global " << best_state.solution.cost() << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -804,9 +822,9 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
       break;
     }
 
-    std::cout << "\n3Phase Bounds: Lower "
-              << best_state.dual_state.lower_bound() << ", Upper "
-              << best_state.solution.cost() << '\n';
+    std::cout << "\n3Phase Bounds: Residual Lower "
+              << curr_state.dual_state.lower_bound() + model.fixed_cost()
+              << ", Upper " << best_state.solution.cost() << '\n';
 
     // Phase 3: Fix the best columns (diving)
     FixBestColumns(model, curr_state);
@@ -814,7 +832,8 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
   }
 
   std::cout << "\n\n3Phase End\n";
-  std::cout << "Final Bounds: Lower " << best_state.dual_state.lower_bound()
+  std::cout << "Bounds: Residual Lower "
+            << curr_state.dual_state.lower_bound() + model.fixed_cost()
             << ", Upper " << best_state.solution.cost() << '\n';
 
   return best_state;
@@ -890,6 +909,7 @@ PrimalDualState RunCftHeuristic(SubModel& model,
   double fix_fraction = fix_minimum;
 
   for (BaseInt iter_counter = 0; model.num_elements() > 0; ++iter_counter) {
+    std::cout << "\n\nRefinement iteration: " << iter_counter << '\n';
     Cost fixed_cost_before = model.fixed_cost();
     auto [solution, dual_state] = RunThreePhase(model, best_state.solution);
     if (iter_counter == 0) {
@@ -901,7 +921,9 @@ PrimalDualState RunCftHeuristic(SubModel& model,
     }
     cost_cutoff = std::max<Cost>(cost_cutoff,
                                  fixed_cost_before + dual_state.lower_bound());
-
+    std::cout << "Refinement Bounds: Residual Lower " << cost_cutoff
+              << ", Real Lower " << best_state.dual_state.lower_bound()
+              << ", Upper " << best_state.solution.cost() << '\n';
     if (best_state.solution.cost() - CFT_BOUND_EPSILON <= cost_cutoff) {
       break;
     }
@@ -915,27 +937,29 @@ PrimalDualState RunCftHeuristic(SubModel& model,
     }
     std::cout << "Fixed " << cols_to_fix.size()
               << " new columns with cost: " << model.fixed_cost() << '\n';
-    std::cout << "Mode sizes: rows " << model.num_focus_elements() << "/"
+    std::cout << "Model sizes: rows " << model.num_focus_elements() << "/"
               << model.num_elements() << ", columns "
               << model.num_focus_subsets() << "/" << model.num_subsets()
               << '\n';
+  }
+
 #ifdef CFT_MEASURE_TIME
   double subg_t = subgradient_time.Get();
   double greedy_t = greedy_time.Get();
   double three_phase_t = three_phase_time.Get();
   double refinement_t = refinement_time.Get();
 
-  printf("Subgradient time:   %.2f(%.1f%%)\n", subg_t,
+  printf("Subgradient time:   %8.2f (%.1f%%)\n", subg_t,
          100 * subg_t / refinement_t);
-  printf("Greedy Heur time:   %.2f(%.1f%%)\n", greedy_t,
+  printf("Greedy Heur time:   %8.2f (%.1f%%)\n", greedy_t,
          100 * greedy_t / refinement_t);
-  printf("SubG - Greedy time: %.2f(%.1f%%)\n", subg_t - greedy_t,
+  printf("SubG - Greedy time: %8.2f (%.1f%%)\n", subg_t - greedy_t,
          100 * (subg_t - greedy_t) / refinement_t);
-  printf("3Phase time:        %.2f(%.1f%%)\n", three_phase_t,
+  printf("3Phase time:        %8.2f (%.1f%%)\n", three_phase_t,
          100 * three_phase_t / refinement_t);
-  printf("3Phase - Subg time: %.2f(%.1f%%)\n", three_phase_t - subg_t,
+  printf("3Phase - Subg time: %8.2f (%.1f%%)\n", three_phase_t - subg_t,
          100 * (three_phase_t - subg_t) / refinement_t);
-  printf("Total CFT time:     %.2f(%.1f%%)\n", refinement_t, 100.0);
+  printf("Total CFT time:     %8.2f (%.1f%%)\n", refinement_t, 100.0);
 #endif
 
   return best_state;
@@ -1143,36 +1167,36 @@ void FullToCoreModel::ResetColumnFixing(
   DCHECK(FullToSubModelInvariantCheck());
 }
 
-bool FullToCoreModel::UpdateCore(PrimalDualState& core_state) {
-  if (--update_countdown_ > 0) {
+bool FullToCoreModel::UpdateCore(Cost best_lower_bound,
+                                 const ElementCostVector& best_multipliers,
+                                 const Solution& best_solution, bool force) {
+  if (!force && --update_countdown_ > 0) {
     return false;
   }
 
-  UpdateDualState(core_state.dual_state, full_dual_state_, best_dual_state_);
+  UpdateMultipliers(best_multipliers, full_dual_state_, best_dual_state_);
   std::vector<FullSubsetIndex> new_core_columns =
-      SelectNewCoreColumns(core_state.solution.subsets());
+      SelectNewCoreColumns(best_solution.subsets());
   SetFocus(new_core_columns);
 
-  UpdatePricingPeriod(full_dual_state_, core_state);
-  std::cout << "Lower bounds: Real " << full_dual_state_.lower_bound()
-            << ", Core " << core_state.dual_state.lower_bound() << '\n';
-
-  // multipliers didn't cange, but reduced cost must be recomputed
-  core_state.dual_state.DualUpdate(*this, [](auto, auto) {});
+  UpdatePricingPeriod(full_dual_state_, best_lower_bound,
+                      best_solution.cost() - fixed_cost());
+  std::cout << "Core-update: Lower bounds: Real "
+            << full_dual_state_.lower_bound() << ", Core " << best_lower_bound
+            << '\n';
 
   DCHECK(FullToSubModelInvariantCheck());
   return true;
 }
 
 void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
-                                          const PrimalDualState& core_state) {
-  DCHECK_GE(core_state.dual_state.lower_bound() + 1e-6,
-            full_dual_state.lower_bound());
-  DCHECK_GE(core_state.solution.cost(), .0);
+                                          Cost core_lower_bound,
+                                          Cost core_upper_bound) {
+  DCHECK_GE(core_lower_bound + 1e-6, full_dual_state.lower_bound());
+  DCHECK_GE(core_upper_bound, .0);
 
-  Cost delta =
-      core_state.dual_state.lower_bound() - full_dual_state.lower_bound();
-  Cost ratio = DivideIfGE0(delta, core_state.solution.cost());
+  Cost delta = core_lower_bound - full_dual_state.lower_bound();
+  Cost ratio = DivideIfGE0(delta, core_upper_bound);
   if (ratio <= 1e-6) {
     update_period_ = std::min<BaseInt>(update_max_period_, 10 * update_period_);
   } else if (ratio <= 0.02) {
@@ -1185,15 +1209,15 @@ void FullToCoreModel::UpdatePricingPeriod(const DualState& full_dual_state,
   update_countdown_ = update_period_;
 }
 
-void FullToCoreModel::UpdateDualState(const DualState& core_dual_state,
-                                      DualState& full_dual_state,
+void FullToCoreModel::UpdateMultipliers(
+    const ElementCostVector& core_multipliers, DualState& full_dual_state,
     DualState& best_dual_state) {
   auto fixing_full_model = FixingFullModelView();
   full_dual_state_.DualUpdate(
       fixing_full_model, [&](ElementIndex full_i, Cost& i_mult) {
         ElementIndex core_i =
             MapFullToCoreElementIndex(static_cast<FullElementIndex>(full_i));
-        i_mult = core_dual_state.multipliers()[core_i];
+        i_mult = core_multipliers[core_i];
       });
 
   // Here, we simply check if any columns have been fixed, and only update the

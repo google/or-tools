@@ -100,7 +100,7 @@ class Solution {
   }
 
  private:
-  Cost cost_;
+  Cost cost_ = std::numeric_limits<Cost>::max();
   std::vector<FullSubsetIndex> subsets_;
 };
 
@@ -190,7 +190,11 @@ struct PrimalDualState {
 struct SubgradientContext {
   const SubModel& model;
   const DualState& current_dual_state;
-  const DualState& best_dual_state;
+
+  // Avoid copying unused reduced cost during subgradient
+  const Cost& best_lower_bound;
+  const ElementCostVector& best_multipliers;
+
   const Solution& best_solution;
   const ElementCostVector& subgradient;
 };
@@ -203,7 +207,8 @@ class SubgradientCBs {
   virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(SubModel&, PrimalDualState&) = 0;
+  virtual bool UpdateCoreModel(SubgradientContext context,
+                               CoreModel& core_model, bool force = false) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
@@ -225,8 +230,8 @@ class BoundCBs : public SubgradientCBs {
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override {}
-  bool UpdateCoreModel(SubModel& core_model,
-                       PrimalDualState& best_state) override;
+  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
+                       bool force = false) override;
 
  private:
   void MakeMinimalCoverageSubgradient(const SubgradientContext& context,
@@ -286,14 +291,15 @@ class HeuristicCBs : public SubgradientCBs {
   bool ExitCondition(const SubgradientContext& context) override {
     Cost upper_bound =
         context.best_solution.cost() - context.model.fixed_cost();
-    Cost lower_bound = context.best_dual_state.lower_bound();
+    Cost lower_bound = context.best_lower_bound;
     return upper_bound - .999 < lower_bound || --countdown_ <= 0;
   }
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(SubModel& model, PrimalDualState& state) override {
+  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
+                       bool force = false) override {
     return false;
   }
 
@@ -332,7 +338,9 @@ class FullToCoreModel : public SubModel {
   Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
                          const DualState& state) override;
-  bool UpdateCore(PrimalDualState& core_state) override;
+  bool UpdateCore(Cost best_lower_bound,
+                  const ElementCostVector& best_multipliers,
+                  const Solution& best_solution, bool force) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
 
@@ -344,9 +352,10 @@ class FullToCoreModel : public SubModel {
     return is_focus_row_[static_cast<ElementIndex>(i)];
   }
   void UpdatePricingPeriod(const DualState& full_dual_state,
-                           const PrimalDualState& core_state);
-  void UpdateDualState(const DualState& core_dual_state,
-                       DualState& full_dual_state, DualState& best_dual_state);
+                           Cost core_lower_bound, Cost core_upper_bound);
+  void UpdateMultipliers(const ElementCostVector& core_multipliers,
+                         DualState& full_dual_state,
+                         DualState& best_dual_state);
 
   // Views are not composable (for now), so we can either access the full_model
   // with the strongly typed view or with the filtered view.
@@ -366,7 +375,7 @@ class FullToCoreModel : public SubModel {
 
  private:
   std::vector<FullSubsetIndex> SelectNewCoreColumns(
-      const std::vector<FullSubsetIndex>& forced_columns);
+      const std::vector<FullSubsetIndex>& forced_columns = {});
 
   const Model* full_model_;
 

@@ -123,7 +123,11 @@ class SubModelView : public IndexListModelView {
   // "small" core model considering a subset of the full model through the use
   // of column-generation or by only selecting columns with good reduced cost in
   // the full model.
-  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  virtual bool UpdateCore(Cost best_lower_bound,
+                          const ElementCostVector& best_multipliers,
+                          const Solution& best_solution, bool force) {
+    return false;
+  }
 
   StrongModelView StrongTypedFullModelView() const {
     return StrongModelView(full_model_);
@@ -231,7 +235,11 @@ class CoreModel : private Model {
   // "small" core model considering a subset of the full model through the use
   // of column-generation or by only selecting columns with good reduced cost in
   // the full model.
-  virtual bool UpdateCore(PrimalDualState& core_state) { return false; }
+  virtual bool UpdateCore(Cost best_lower_bound,
+                          const ElementCostVector& best_multipliers,
+                          const Solution& best_solution, bool force) {
+    return false;
+  }
 
   StrongModelView StrongTypedFullModelView() const { return full_model_; }
 
