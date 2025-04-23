@@ -44,4 +44,97 @@ void BinPackingModel::SortWeights() {
   }
 }
 
+namespace {
+template <typename int_type>
+bool SimpleAtoValue(absl::string_view str, int_type* out) {
+  return absl::SimpleAtoi(str, out);
+}
+bool SimpleAtoValue(absl::string_view str, bool* out) {
+  return absl::SimpleAtob(str, out);
+}
+bool SimpleAtoValue(absl::string_view str, double* out) {
+  return absl::SimpleAtod(str, out);
+}
+bool SimpleAtoValue(absl::string_view str, float* out) {
+  return absl::SimpleAtof(str, out);
+}
+}  // namespace
+
+BinPackingModel ReadBpp(absl::string_view filename) {
+  BinPackingModel model;
+  BaseInt num_items = 0;
+  for (const std::string& line :
+       FileLines(filename, FileLineIterator::REMOVE_INLINE_CR |
+                               FileLineIterator::REMOVE_BLANK_LINES)) {
+    if (num_items == 0) {
+      if (!SimpleAtoValue(line, &num_items)) {
+        LOG(WARNING) << "Invalid number of elements in file: " << line;
+      }
+      continue;
+    }
+
+    Cost value = .0;
+    if (!SimpleAtoValue(line, &value)) {
+      LOG(WARNING) << "Invalid value in file: " << line;
+      continue;
+    }
+    if (model.bin_capacity() <= .0) {
+      model.set_bin_capacity(value);
+    } else {
+      model.AddItem(value);
+    }
+  }
+  DCHECK_GT(model.bin_capacity(), .0);
+  DCHECK_GT(model.weights().size(), .0);
+  DCHECK_EQ(num_items, model.weights().size());
+  model.SortWeights();
+  return model;
+}
+
+BinPackingModel ReadCsp(absl::string_view filename) {
+  BinPackingModel model;
+  BaseInt num_item_types = 0;
+  for (const std::string& line :
+       FileLines(filename, FileLineIterator::REMOVE_INLINE_CR |
+                               FileLineIterator::REMOVE_BLANK_LINES)) {
+    if (num_item_types == 0) {
+      if (!SimpleAtoValue(line, &num_item_types)) {
+        LOG(WARNING) << "Invalid number of elements in file: " << line;
+      }
+      continue;
+    }
+    if (model.bin_capacity() <= .0) {
+      Cost capacity = .0;
+      if (!SimpleAtoValue(line, &capacity)) {
+        LOG(WARNING) << "Invalid value in file: " << line;
+      }
+      model.set_bin_capacity(capacity);
+      continue;
+    }
+
+    std::pair<absl::string_view, absl::string_view> weight_and_demand =
+        absl::StrSplit(line, absl::ByAnyChar(" :\t"), absl::SkipEmpty());
+
+    Cost weight = .0;
+    if (!SimpleAtoValue(weight_and_demand.first, &weight)) {
+      LOG(WARNING) << "Invalid weight in file: " << line;
+      continue;
+    }
+
+    BaseInt demand = 0;
+    if (!SimpleAtoValue(weight_and_demand.second, &demand)) {
+      LOG(WARNING) << "Invalid demand in file: " << line;
+      continue;
+    }
+    for (BaseInt i = 0; i < demand; ++i) {
+      model.AddItem(weight);
+    }
+  }
+  DCHECK_GT(model.bin_capacity(), .0);
+  DCHECK_GT(model.weights().size(), .0);
+  DCHECK_GE(num_item_types, model.weights().size());
+  model.SortWeights();
+  return model;
+}
+
 }  // namespace operations_research

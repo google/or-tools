@@ -42,5 +42,8 @@ class BinPackingModel {
   ElementCostVector weigths_ = {};
 };
 
+BinPackingModel ReadBpp(absl::string_view filename);
+BinPackingModel ReadCsp(absl::string_view filename);
+
 }  // namespace operations_research
 #endif /* OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H */
