@@ -132,9 +132,31 @@ BinPackingModel ReadCsp(absl::string_view filename) {
   }
   DCHECK_GT(model.bin_capacity(), .0);
   DCHECK_GT(model.weights().size(), .0);
-  DCHECK_GE(num_item_types, model.weights().size());
+  DCHECK_GE(num_item_types, model.num_items());
   model.SortWeights();
   return model;
+}
+
+void BestFit(const BinPackingModel& model,
+             const std::vector<ElementIndex>& items, PartialBins& bins_data) {
+  BaseInt new_bin = bins_data.bins.size();
+  for (ElementIndex item : items) {
+    Cost item_weight = model.weights()[item];
+    BaseInt selected_bin = new_bin;
+    for (BaseInt bin = 0; bin < bins_data.bins.size(); ++bin) {
+      Cost max_load = model.bin_capacity() - item_weight;
+      if (bins_data.loads[bin] <= max_load &&
+          (selected_bin == new_bin ||
+           bins_data.loads[bin] > bins_data.loads[selected_bin])) {
+        selected_bin = bin;
+      }
+    }
+    bins_data.bins[selected_bin].push_back(item);
+    bins_data.loads[selected_bin] += item_weight;
+    if (selected_bin == new_bin) {
+      ++new_bin;
+    }
+  }
 }
 
 }  // namespace operations_research
