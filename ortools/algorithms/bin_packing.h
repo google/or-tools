@@ -50,10 +50,44 @@ struct PartialBins {
   std::vector<Cost> loads;
 };
 
+struct BinHash {
+  uint64_t operator()(const SparseColumn* bin) const {
+    return absl::HashOf(*bin);
+  }
+};
+
+using SubsetHashVector = util_intops::StrongVector<SubsetIndex, uint64_t>;
+
+class BinPackingSetCoverModel {
+ public:
+  const scp::Model& full_model() const { return full_model_; }
+
+  void AddBin(const SparseColumn& bin) {
+    DCHECK(absl::c_is_sorted(bin));
+    auto it = bin_set_.find(&bin);
+    if (it == bin_set_.end()) {
+      full_model_.AddEmptySubset(1.0);
+      for (ElementIndex i : bin) {
+        full_model_.AddElementToLastSubset(i);
+      }
+      bin_set_.insert(&full_model_.columns().back());
+    }
+  }
+
+ private:
+  scp::Model full_model_;
+  absl::flat_hash_set<const SparseColumn*, BinHash> bin_set_;
+};
+
 BinPackingModel ReadBpp(absl::string_view filename);
 BinPackingModel ReadCsp(absl::string_view filename);
 
 void BestFit(const BinPackingModel& model,
              const std::vector<ElementIndex>& items, PartialBins& bins_data);
+
+BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
+                                     PartialBins& best_solution,
+                                     BaseInt num_bins = 0);
+
 }  // namespace operations_research
 #endif /* OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H */
