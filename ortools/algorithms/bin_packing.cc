@@ -16,6 +16,7 @@
 
 #include <absl/algorithm/container.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/log/log.h>
 #include <absl/strings/str_split.h>
 #include <absl/strings/string_view.h>
 
@@ -88,6 +89,7 @@ BinPackingModel ReadBpp(absl::string_view filename) {
       continue;
     }
     if (model.bin_capacity() <= .0) {
+      DCHECK_GT(value, .0);
       model.set_bin_capacity(value);
     } else {
       model.AddItem(value);
@@ -148,24 +150,66 @@ BinPackingModel ReadCsp(absl::string_view filename) {
 
 void BestFit(const BinPackingModel& model,
              const std::vector<ElementIndex>& items, PartialBins& bins_data) {
-  BaseInt new_bin = bins_data.bins.size();
   for (ElementIndex item : items) {
     Cost item_weight = model.weights()[item];
-    BaseInt selected_bin = new_bin;
+    BaseInt selected_bin = bins_data.bins.size();
     for (BaseInt bin = 0; bin < bins_data.bins.size(); ++bin) {
       Cost max_load = model.bin_capacity() - item_weight;
       if (bins_data.loads[bin] <= max_load &&
-          (selected_bin == new_bin ||
+          (selected_bin == bins_data.bins.size() ||
            bins_data.loads[bin] > bins_data.loads[selected_bin])) {
         selected_bin = bin;
       }
     }
+    if (selected_bin == bins_data.bins.size()) {
+      bins_data.bins.emplace_back();
+      bins_data.loads.emplace_back();
+    }
     bins_data.bins[selected_bin].push_back(item);
     bins_data.loads[selected_bin] += item_weight;
-    if (selected_bin == new_bin) {
-      ++new_bin;
+  }
+}
+
+const SparseColumn& BinPackingSetCoverModel::BinPackingModelGlobals::GetBin(
+    SubsetIndex j) const {
+  if (j < SubsetIndex(full_model.num_subsets())) {
+    return full_model.columns()[j];
+  }
+  DCHECK(candidate_bin != nullptr);
+  return *candidate_bin;
+}
+
+uint64_t BinPackingSetCoverModel::BinHash::operator()(SubsetIndex j) const {
+  DCHECK(globals != nullptr);
+  return absl::HashOf(globals->GetBin(j));
+}
+
+uint64_t BinPackingSetCoverModel::BinEq::operator()(SubsetIndex j1,
+                                                    SubsetIndex j2) const {
+  DCHECK(globals != nullptr);
+  return globals->GetBin(j1) == globals->GetBin(j2);
+}
+
+void BinPackingSetCoverModel::AddBin(const SparseColumn& bin) {
+  if (TryInsertBin(bin)) {
+    globals_.full_model.AddEmptySubset(1.0);
+    for (ElementIndex i : bin) {
+      globals_.full_model.AddElementToLastSubset(i);
     }
   }
+}
+
+bool BinPackingSetCoverModel::TryInsertBin(const SparseColumn& bin) {
+  DCHECK(absl::c_is_sorted(bin));
+  DCHECK(absl::c_adjacent_find(bin) == bin.end());
+  DCHECK(globals_.candidate_bin == nullptr);
+  globals_.candidate_bin = &bin;
+
+  SubsetIndex candidate_j(globals_.full_model.num_subsets());
+  bool inserted = bin_set_.insert(candidate_j).second;
+
+  globals_.candidate_bin = nullptr;
+  return inserted;
 }
 
 void InsertBinsIntoModel(PartialBins& bins_data,
@@ -179,7 +223,6 @@ void InsertBinsIntoModel(PartialBins& bins_data,
 }
 
 BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
-                                     PartialBins& best_solution,
                                      BaseInt num_bins) {
   BinPackingSetCoverModel scp_model;
   PartialBins bins_data;
@@ -187,11 +230,9 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
 
   absl::c_iota(items, ElementIndex(0));
   BestFit(model, items, bins_data);
-  if (best_solution.bins.empty() ||
-      bins_data.bins.size() < best_solution.bins.size()) {
-    best_solution = bins_data;
-  }
   InsertBinsIntoModel(bins_data, scp_model);
+  BaseInt solution_bin_num = bins_data.bins.size();
+  VLOG(1) << "Best-fit solution: " << solution_bin_num << " bins";
 
   // Largest first
   if (!absl::c_is_sorted(model.weights(), std::greater<>())) {
@@ -201,9 +242,6 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
       return model.weights()[i1] > model.weights()[i2];
     });
     BestFit(model, items, bins_data);
-    if (bins_data.bins.size() < best_solution.bins.size()) {
-      best_solution = bins_data;
-    }
     InsertBinsIntoModel(bins_data, scp_model);
   }
 
@@ -211,6 +249,14 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
   while (scp_model.full_model().num_subsets() < num_bins) {
     // Generate bins all containing a specific item
     for (ElementIndex n : model.ItemRange()) {
+      BaseInt unique_bin_num = scp_model.full_model().num_subsets();
+      VLOG_EVERY_N_SEC(1, 5)
+          << "Generating bins: " << unique_bin_num << " / " << num_bins << " ("
+          << 100.0 * unique_bin_num / num_bins << "%)";
+      if (scp_model.full_model().num_subsets() >= num_bins) {
+        break;
+      }
+
       absl::c_shuffle(items, rnd);
 
       auto n_it = absl::c_find(items, n);
@@ -219,17 +265,23 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
 
       bins_data.bins.clear();
       bins_data.loads.clear();
-      for (BaseInt j = 0; j < best_solution.bins.size(); ++j) {
+      for (BaseInt j = 0; j < solution_bin_num; ++j) {
         bins_data.bins.push_back({n});
         bins_data.loads.push_back(model.weights()[n]);
-        BestFit(model, items, bins_data);
-        InsertBinsIntoModel(bins_data, scp_model);
       }
+      BestFit(model, items, bins_data);
+      InsertBinsIntoModel(bins_data, scp_model);
 
       items.push_back(n);
+
+      if (unique_bin_num == scp_model.full_model().num_subsets()) {
+        VLOG(1) << "No new bins generated.";
+        break;
+      }
     }
   }
 
+  scp_model.CompleteModel();
   return scp_model;
 }
 

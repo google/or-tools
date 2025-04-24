@@ -50,33 +50,52 @@ struct PartialBins {
   std::vector<Cost> loads;
 };
 
-struct BinHash {
-  uint64_t operator()(const SparseColumn* bin) const {
-    return absl::HashOf(*bin);
-  }
-};
-
 using SubsetHashVector = util_intops::StrongVector<SubsetIndex, uint64_t>;
 
 class BinPackingSetCoverModel {
- public:
-  const scp::Model& full_model() const { return full_model_; }
+  struct BinPackingModelGlobals {
+    // Dirty hack to avoid invalidation of pointers/references
+    // A pointer to this data structure is used to compute the hash of bins
+    // starting from their indices.
+    SetCoverModel full_model;
 
-  void AddBin(const SparseColumn& bin) {
-    DCHECK(absl::c_is_sorted(bin));
-    auto it = bin_set_.find(&bin);
-    if (it == bin_set_.end()) {
-      full_model_.AddEmptySubset(1.0);
-      for (ElementIndex i : bin) {
-        full_model_.AddElementToLastSubset(i);
-      }
-      bin_set_.insert(&full_model_.columns().back());
-    }
-  }
+    // External bins do not have a valid index in the model, a temporary pointer
+    // is used insteda (even dirtier hack).
+    const SparseColumn* candidate_bin;
+
+    const SparseColumn& GetBin(SubsetIndex j) const;
+  };
+
+  struct BinHash {
+    const BinPackingModelGlobals* globals;
+    uint64_t operator()(SubsetIndex j) const;
+  };
+
+  struct BinEq {
+    const BinPackingModelGlobals* globals;
+    uint64_t operator()(SubsetIndex j1, SubsetIndex j2) const;
+  };
+
+ public:
+  BinPackingSetCoverModel()
+      : globals_{SetCoverModel(), nullptr},
+        bin_set_({}, 0, BinHash{&globals_}, BinEq{&globals_}) {}
+  const SetCoverModel& full_model() const { return globals_.full_model; }
+
+  void AddBin(const SparseColumn& bin);
+  void CompleteModel() { globals_.full_model.CreateSparseRowView(); }
 
  private:
-  scp::Model full_model_;
-  absl::flat_hash_set<const SparseColumn*, BinHash> bin_set_;
+  bool TryInsertBin(const SparseColumn& bin);
+
+  BinPackingModelGlobals globals_;
+
+  // Contains bin indices, but it really should contains "bins" (aka,
+  // SparseColumn). However to avoid redundant allocations (in SetCoverModel and
+  // in the set) we cannot store them also here. We cannot also use
+  // iterators/pointers/references because they can be invalidated. So we store
+  // bin indices and do ungodly hacky shenanigans to get the bins from them.
+  absl::flat_hash_set<SubsetIndex, BinHash, BinEq> bin_set_;
 };
 
 BinPackingModel ReadBpp(absl::string_view filename);
@@ -86,7 +105,6 @@ void BestFit(const BinPackingModel& model,
              const std::vector<ElementIndex>& items, PartialBins& bins_data);
 
 BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
-                                     PartialBins& best_solution,
                                      BaseInt num_bins = 0);
 
 }  // namespace operations_research
