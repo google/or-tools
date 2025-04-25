@@ -388,6 +388,13 @@ class CpModelPresolver {
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
 
+  // We have an hash-map of know relation between two variables.
+  // In particular, this will include all known precedences a <= b.
+  //
+  // We reuse an IntegerVariable/IntegerValue based class via
+  // GetLinearExpression2FromProto() only visible in the .cc.
+  BestBinaryRelationBounds known_linear2_;
+
   struct IntervalConstraintEq {
     const CpModelProto* working_model;
     bool operator()(int a, int b) const;

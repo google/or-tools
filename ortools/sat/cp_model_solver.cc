@@ -483,15 +483,15 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
-    absl::StrAppend(
-        &result, "Search strategy: on ",
-        strategy.exprs().size() + strategy.variables().size(), " variables, ",
-        ProtoEnumToString<DecisionStrategyProto::VariableSelectionStrategy>(
-            strategy.variable_selection_strategy()),
-        ", ",
-        ProtoEnumToString<DecisionStrategyProto::DomainReductionStrategy>(
-            strategy.domain_reduction_strategy()),
-        "\n");
+    absl::StrAppend(&result, "Search strategy: on ",
+                    strategy.exprs().size() + strategy.variables().size(),
+                    " variables, ",
+                    DecisionStrategyProto::VariableSelectionStrategy_Name(
+                        strategy.variable_selection_strategy()),
+                    ", ",
+                    DecisionStrategyProto::DomainReductionStrategy_Name(
+                        strategy.domain_reduction_strategy()),
+                    "\n");
   }
 
   auto count_variables_by_type =
@@ -688,8 +688,8 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                                   bool has_objective) {
   std::string result;
   absl::StrAppend(&result, "CpSolverResponse summary:");
-  absl::StrAppend(&result, "\nstatus: ",
-                  ProtoEnumToString<CpSolverStatus>(response.status()));
+  absl::StrAppend(&result,
+                  "\nstatus: ", CpSolverStatus_Name(response.status()));
 
   if (has_objective && response.status() != CpSolverStatus::INFEASIBLE) {
     absl::StrAppendFormat(&result, "\nobjective: %.16g",
@@ -1710,7 +1710,7 @@ class LnsSolver : public SubSolver {
             " [d:", absl::StrFormat("%0.2e", data.difficulty), ", id:", task_id,
             ", dtime:", absl::StrFormat("%0.2f", data.deterministic_time), "/",
             data.deterministic_limit,
-            ", status:", ProtoEnumToString<CpSolverStatus>(data.status),
+            ", status:", CpSolverStatus_Name(data.status),
             ", #calls:", generator_->num_calls(),
             ", p:", fully_solved_proportion, "]");
       }
@@ -2795,6 +2795,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     } else {
       solution_is_feasible =
           SolutionIsFeasible(model_proto, response.solution());
+    }
+    if (solution_is_feasible && response.status() == CpSolverStatus::OPTIMAL) {
+      solution_is_feasible =
+          SolutionCanBeOptimal(model_proto, response.solution());
     }
 
     // We dump the response when infeasible, this might help debugging.

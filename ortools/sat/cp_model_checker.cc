@@ -2003,6 +2003,12 @@ bool SolutionIsFeasible(const CpModelProto& model,
     VLOG(2) << "Checker inner objective = " << inner_objective;
     VLOG(2) << "Checker scaled objective = " << scaled_objective;
   }
+
+  return true;
+}
+
+bool SolutionCanBeOptimal(const CpModelProto& model,
+                          absl::Span<const int64_t> variable_values) {
   if (absl::GetFlag(FLAGS_cp_model_check_dependent_variables)) {
     const VariableRelationships relationships =
         ComputeVariableRelationships(model);
@@ -2015,7 +2021,6 @@ bool SolutionIsFeasible(const CpModelProto& model,
                                                   &all_variables));
     CHECK(absl::MakeSpan(all_variables) == variable_values);
   }
-
   return true;
 }
 
