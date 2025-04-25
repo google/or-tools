@@ -27,6 +27,8 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
 #include "absl/log/flags.h"
 #include "absl/log/initialize.h"
