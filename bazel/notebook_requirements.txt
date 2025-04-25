@@ -325,8 +325,10 @@ traitlets==5.9.0
     #   nbformat
 types-protobuf==4.24.0.0
     # via mypy-protobuf
-typing-extensions==4.8.0
-    # via mypy
+typing-extensions==4.13.1
+    # via
+    #   -r bazel/notebook_requirements.in
+    #   mypy
 tzdata==2023.3
     # via pandas
 uri-template==1.3.0
