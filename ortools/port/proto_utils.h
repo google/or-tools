@@ -22,37 +22,38 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/message_lite.h"
 #include "google/protobuf/text_format.h"
-
-#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/util/parse_proto.h"
-#endif  // !defined(__PORTABLE_PLATFORM__)
 
 namespace operations_research {
 
 template <class P>
 std::string ProtobufDebugString(const P& message) {
-#if defined(__PORTABLE_PLATFORM__)
-  return std::string(message.GetTypeName());
-#else   // defined(__PORTABLE_PLATFORM__)
-  std::string output;
-  google::protobuf::TextFormat::PrintToString(message, &output);
-  absl::StripTrailingAsciiWhitespace(&output);
-  return output;
-#endif  // !defined(__PORTABLE_PLATFORM__)
+  if constexpr (std::is_base_of_v<google::protobuf::Message, P>) {
+    std::string output;
+    google::protobuf::TextFormat::PrintToString(message, &output);
+    absl::StripTrailingAsciiWhitespace(&output);
+    return output;
+  } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
+    return std::string(message.GetTypeName());
+  } else {
+    static_assert(false, "Unsupported type");
+  }
 }
 
 template <class P>
 std::string ProtobufShortDebugString(const P& message) {
-#if defined(__PORTABLE_PLATFORM__)
-  return std::string(message.GetTypeName());
-#else   // defined(__PORTABLE_PLATFORM__)
-  std::string output;
-  google::protobuf::TextFormat::Printer printer;
-  printer.SetSingleLineMode(true);
-  printer.PrintToString(message, &output);
-  absl::StripTrailingAsciiWhitespace(&output);
-  return output;
-#endif  // !defined(__PORTABLE_PLATFORM__)
+  if constexpr (std::is_base_of_v<google::protobuf::Message, P>) {
+    std::string output;
+    google::protobuf::TextFormat::Printer printer;
+    printer.SetSingleLineMode(true);
+    printer.PrintToString(message, &output);
+    absl::StripTrailingAsciiWhitespace(&output);
+    return output;
+  } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
+    return std::string(message.GetTypeName());
+  } else {
+    static_assert(false, "Unsupported type");
+  }
 }
 
 template <typename ProtoEnumType>
@@ -74,12 +75,15 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
 template <typename ProtoType>
 bool ProtobufTextFormatMergeFromString(absl::string_view proto_text_string,
                                        ProtoType* proto) {
-#if defined(__PORTABLE_PLATFORM__)
-  return false;
-#else   // !defined(__PORTABLE_PLATFORM__)
-  return google::protobuf::TextFormat::MergeFromString(
-      std::string(proto_text_string), proto);
-#endif  // !defined(__PORTABLE_PLATFORM__)
+  if constexpr (std::is_base_of_v<google::protobuf::Message, ProtoType>) {
+    return google::protobuf::TextFormat::MergeFromString(
+        std::string(proto_text_string), proto);
+  } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite,
+                                         ProtoType>) {
+    return false;
+  } else {
+    static_assert(false, "Unsupported type");
+  }
 }
 
 // Tries to parse `text` as a text format proto. On a success, stores the result
@@ -95,18 +99,21 @@ template <typename ProtoType>
 bool ProtobufParseTextProtoForFlag(absl::string_view text,
                                    ProtoType* message_out,
                                    std::string* error_out) {
-#if defined(__PORTABLE_PLATFORM__)
-  if (text.empty()) {
-    *message_out = ProtoType();
-    return true;
+  if constexpr (std::is_base_of_v<google::protobuf::Message, ProtoType>) {
+    return ParseTextProtoForFlag(text, message_out, error_out);
+  } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite,
+                                         ProtoType>) {
+    if (text.empty()) {
+      *message_out = ProtoType();
+      return true;
+    }
+    *error_out =
+        "cannot parse text protos on this platform (platform uses lite protos "
+        "do not support parsing text protos)";
+    return false;
+  } else {
+    static_assert(false, "Unsupported type");
   }
-  *error_out =
-      "cannot parse text protos on this platform (platform uses lite protos do "
-      "not support parsing text protos)";
-  return false;
-#else   // defined(__PORTABLE_PLATFORM__)
-  return ParseTextProtoForFlag(text, message_out, error_out);
-#endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
 // Prints the input proto to a string on a single line in a format compatible
