@@ -14,6 +14,7 @@
 """Build definitions for SWIG Java."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_java//java/common:java_common.bzl", "java_common")
 
@@ -195,8 +196,7 @@ def ortools_java_wrap_cc(
         visibility = ["//visibility:private"],
         **kwargs
     )
-
-    native.cc_library(
+    cc_library(
         name = cc_name,
         srcs = [outfile],
         hdrs = [outhdr] if use_directors else [],
