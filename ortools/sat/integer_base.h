@@ -19,11 +19,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -36,6 +38,12 @@
 
 namespace operations_research {
 namespace sat {
+
+// Callbacks that will be called when the search goes back to level 0.
+// Callbacks should return false if the propagation fails.
+struct LevelZeroCallbackHelper {
+  std::vector<std::function<bool()>> callbacks;
+};
 
 // Value type of an integer variable. An integer variable is always bounded
 // on both sides, and this type is also used to store the bounds [lb, ub] of the
@@ -334,6 +342,61 @@ H AbslHashValue(H h, const AffineExpression& e) {
 
   return h;
 }
+
+// A linear expression with at most two variables (coeffs can be zero).
+// And some utility to canonicalize them.
+struct LinearExpression2 {
+  // Take the negation of this expression.
+  void Negate() {
+    vars[0] = NegationOf(vars[0]);
+    vars[1] = NegationOf(vars[1]);
+  }
+
+  // This will not change any bounds on the LinearExpression2.
+  // That is we will not potentially Negate() the expression like
+  // CanonicalizeAndUpdateBounds() might do.
+  void SimpleCanonicalization();
+
+  // This fully canonicalize this, and update the given bounds accordingly.
+  void CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
+
+  bool operator==(const LinearExpression2& o) const {
+    return vars[0] == o.vars[0] && vars[1] == o.vars[1] &&
+           coeffs[0] == o.coeffs[0] && coeffs[1] == o.coeffs[1];
+  }
+
+  IntegerValue coeffs[2];
+  IntegerVariable vars[2];
+};
+
+template <typename H>
+H AbslHashValue(H h, const LinearExpression2& e) {
+  h = H::combine(std::move(h), e.vars[0]);
+  h = H::combine(std::move(h), e.vars[1]);
+  h = H::combine(std::move(h), e.coeffs[0]);
+  h = H::combine(std::move(h), e.coeffs[1]);
+  return h;
+}
+
+// Note that we only care about binary relation, not just simple variable bound.
+enum class RelationStatus { IS_TRUE, IS_FALSE, IS_UNKNOWN };
+class BestBinaryRelationBounds {
+ public:
+  // Register the fact that expr \in [lb, ub] is true.
+  //
+  // Returns true if this fact is new, that is if the bounds are tighter than
+  // the current ones.
+  bool Add(LinearExpression2 expr, IntegerValue lb, IntegerValue ub);
+
+  // Returns the known status of expr <= bound.
+  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
+                           IntegerValue ub);
+
+ private:
+  // The best bound on the given "canonicalized" expression.
+  absl::flat_hash_map<LinearExpression2, std::pair<IntegerValue, IntegerValue>>
+      best_bounds_;
+};
 
 // A model singleton that holds the root level integer variable domains.
 // we just store a single domain for both var and its negation.

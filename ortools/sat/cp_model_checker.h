@@ -68,6 +68,10 @@ bool SolutionIsFeasible(const CpModelProto& model,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
 
+// Verifies some invariants that any optimal solution must satisfy.
+bool SolutionCanBeOptimal(const CpModelProto& model,
+                          absl::Span<const int64_t> variable_values);
+
 // Checks a single constraint for feasibility.
 // This has some overhead, and should only be used for debugging.
 // The full model is needed for scheduling constraints that refers to intervals.

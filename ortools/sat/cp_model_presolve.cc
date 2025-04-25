@@ -98,6 +98,18 @@ namespace sat {
 
 namespace {
 
+LinearExpression2 GetLinearExpression2FromProto(int a, int64_t coeff_a, int b,
+                                                int64_t coeff_b) {
+  LinearExpression2 result;
+  DCHECK(RefIsPositive(a));
+  DCHECK(RefIsPositive(b));
+  result.vars[0] = IntegerVariable(2 * a);
+  result.vars[1] = IntegerVariable(2 * b);
+  result.coeffs[0] = IntegerValue(coeff_a);
+  result.coeffs[1] = IntegerValue(coeff_b);
+  return result;
+}
+
 // TODO(user): Just make sure this invariant is enforced in all our linear
 // constraint after copy, and simplify the code!
 bool LinearConstraintIsClean(const LinearConstraintProto& linear) {
@@ -1102,8 +1114,6 @@ bool CpModelPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
     unique_var_is_small_enough = context_->DomainOf(unique_var).Size() <= 1000;
   }
 
-  // This is a test.12y
-
   bool changed;
   if (is_one_var_affine_max && unique_var_is_small_enough) {
     changed = PropagateAndReduceAffineMax(ct);
@@ -1122,6 +1132,54 @@ bool CpModelPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
   if (ct->lin_max().exprs().empty()) {
     context_->UpdateRuleStats("lin_max: no exprs");
     return MarkConstraintAsFalse(ct);
+  }
+
+  // Try to reduce lin_max using known relation.
+  if (ct->lin_max().exprs().size() < 10) {
+    const int num_exprs = ct->lin_max().exprs().size();
+
+    bool simplified = false;
+    std::vector<bool> can_be_removed(num_exprs, false);
+    for (int i = 0; i < num_exprs; ++i) {
+      if (ct->lin_max().exprs(i).vars().size() != 1) continue;
+      for (int j = 0; j < num_exprs; ++j) {
+        if (i == j) continue;
+        if (can_be_removed[j]) continue;
+
+        // Note that we skip constant expressions as this should already be
+        // handled when we compute the domain of each expression and remove
+        // the ones that are smaller than the target.
+        if (ct->lin_max().exprs(j).vars().size() != 1) continue;
+
+        // Do we know if expr(i) <= expr(j) ?
+        const LinearExpression2 expr2 = GetLinearExpression2FromProto(
+            ct->lin_max().exprs(i).vars(0), ct->lin_max().exprs(i).coeffs(0),
+            ct->lin_max().exprs(j).vars(0), -ct->lin_max().exprs(j).coeffs(0));
+        const IntegerValue lb = kMinIntegerValue;
+        const IntegerValue ub(ct->lin_max().exprs(j).offset() -
+                              ct->lin_max().exprs(i).offset());
+        const RelationStatus status = known_linear2_.GetStatus(expr2, lb, ub);
+        if (status == RelationStatus::IS_TRUE) {
+          simplified = true;
+          can_be_removed[i] = true;
+          break;
+        }
+      }
+    }
+
+    if (simplified) {
+      context_->UpdateRuleStats(
+          "lin_max: removed expression smaller than others");
+      int new_size = 0;
+      for (int i = 0; i < num_exprs; ++i) {
+        if (can_be_removed[i]) continue;
+        *ct->mutable_lin_max()->mutable_exprs(new_size++) =
+            ct->lin_max().exprs(i);
+      }
+      google::protobuf::util::Truncate(ct->mutable_lin_max()->mutable_exprs(),
+                                       new_size);
+      context_->UpdateConstraintVariableUsage(c);
+    }
   }
 
   // If only one is left, we can convert to an equality. Note that we create a
@@ -2782,6 +2840,36 @@ bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
   const int var2 = arg.vars(1);
   const int64_t coeff1 = arg.coeffs(0);
   const int64_t coeff2 = arg.coeffs(1);
+
+  // Starts by updating our hash map of known relation.
+  {
+    const LinearExpression2 expr2 =
+        GetLinearExpression2FromProto(var1, coeff1, var2, coeff2);
+    const IntegerValue lb(arg.domain(0));
+    const IntegerValue ub(arg.domain(arg.domain().size() - 1));
+
+    const RelationStatus status = known_linear2_.GetStatus(expr2, lb, ub);
+    if (status == RelationStatus::IS_TRUE) {
+      // Note that we don't track what constraint implied the relation, so we
+      // cannot remove this constraint even if the relation is already known.
+      //
+      // However since we only add it if the relation is not
+      // enforced, this should be correct.
+      //
+      // Tricky: If the constraint domain is not simple, we cannot really deduce
+      // anything.
+      if (!ct->enforcement_literal().empty() &&
+          ct->linear().domain().size() == 2) {
+        context_->UpdateRuleStats("linear2: already known enforced relation");
+        return RemoveConstraint(ct);
+      }
+    } else if (status == RelationStatus::IS_FALSE) {
+      context_->UpdateRuleStats("linear2: infeasible relation");
+      return MarkConstraintAsFalse(ct);
+    } else if (ct->enforcement_literal().empty()) {
+      known_linear2_.Add(expr2, lb, ub);
+    }
+  }
 
   // If it is not an equality, we only presolve the constraint if one of
   // the variable is Boolean. Note that if both are Boolean, then a similar
@@ -9931,6 +10019,9 @@ void CpModelPresolver::DetectDuplicateConstraints() {
     context_->WriteObjectiveToProto();
   }
 
+  // If we detect duplicate intervals, we will remap constraints using them.
+  std::vector<int> interval_mapping;
+
   // Remove duplicate constraints.
   // Note that at this point the objective in the proto should be up to date.
   //
@@ -9947,6 +10038,13 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         rep == kObjectiveConstraint
             ? kObjectiveConstraint
             : context_->working_model->constraints(rep).constraint_case();
+
+    if (type == ConstraintProto::kInterval) {
+      interval_mapping.resize(context_->working_model->constraints().size(),
+                              -1);
+      CHECK_EQ(interval_mapping[rep], -1);
+      interval_mapping[dup] = rep;
+    }
 
     // For linear constraint, we merge their rhs since it was ignored in the
     // FindDuplicateConstraints() call.
@@ -9998,9 +10096,29 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         context_->ReadObjectiveFromProto();
       }
     }
+
+    // Remove the duplicate constraint.
     context_->working_model->mutable_constraints(dup)->Clear();
     context_->UpdateConstraintVariableUsage(dup);
     context_->UpdateRuleStats("duplicate: removed constraint");
+  }
+
+  if (!interval_mapping.empty()) {
+    context_->UpdateRuleStats("duplicate: remapped duplicate intervals");
+    const int num_constraints = context_->working_model->constraints().size();
+    for (int c = 0; c < num_constraints; ++c) {
+      bool changed = false;
+      ApplyToAllIntervalIndices(
+          [&interval_mapping, &changed](int* ref) {
+            const int new_ref = interval_mapping[*ref];
+            if (new_ref != -1) {
+              changed = true;
+              *ref = new_ref;
+            }
+          },
+          context_->working_model->mutable_constraints(c));
+      if (changed) context_->UpdateConstraintVariableUsage(c);
+    }
   }
 }
 
@@ -10030,6 +10148,12 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
   for (const auto& [dup, rep] : duplicates_without_enforcement) {
     auto* dup_ct = context_->working_model->mutable_constraints(dup);
     auto* rep_ct = context_->working_model->mutable_constraints(rep);
+
+    if (dup_ct->constraint_case() == ConstraintProto::kInterval) {
+      context_->UpdateRuleStats(
+          "TODO interval: same interval with different enforcement?");
+      continue;
+    }
 
     // Make sure our enforcement list are up to date: nothing fixed and that
     // its uses the literal representatives.
@@ -14201,10 +14325,6 @@ std::vector<std::pair<int, int>> FindDuplicateConstraints(
   for (int c = 0; c < num_constraints; ++c) {
     const auto type = model_proto.constraints(c).constraint_case();
     if (type == ConstraintProto::CONSTRAINT_NOT_SET) continue;
-
-    // TODO(user): we could delete duplicate identical interval, but we need
-    // to make sure reference to them are updated.
-    if (type == ConstraintProto::kInterval) continue;
 
     // Nothing we will presolve in this case.
     if (ignore_enforcement && type == ConstraintProto::kBoolAnd) continue;

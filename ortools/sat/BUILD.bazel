@@ -176,11 +176,12 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        "//ortools/base:stl_util",
         "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -1718,6 +1719,7 @@ cc_test(
 
 cc_library(
     name = "integer_base",
+    srcs = ["integer_base.cc"],
     hdrs = ["integer_base.h"],
     deps = [
         ":sat_base",
@@ -1726,9 +1728,20 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "integer_base_test",
+    size = "small",
+    srcs = ["integer_base_test.cc"],
+    deps = [
+        ":integer_base",
+        "//ortools/base:gmock_main",
     ],
 )
 
