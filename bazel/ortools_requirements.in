@@ -5,6 +5,7 @@ numpy==2.2.0
 protobuf==6.30.2
 requests==2.32.3
 scipy==1.14.1
+typing-extensions==4.13.1
 
 # OR-Tools build dependencies
 mypy==1.6.1
