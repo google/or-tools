@@ -99,8 +99,10 @@ class AttrKey {
   }
 
   // Element iteration.
-  constexpr const value_type* begin() const { return element_ids_.begin(); }
-  constexpr const value_type* end() const { return element_ids_.end(); }
+  constexpr const value_type* begin() const { return element_ids_.data(); }
+  constexpr const value_type* end() const {
+    return element_ids_.data() + element_ids_.size();
+  }
 
   // `AttrKey` is comparable (ordering is lexicographic) and hashable.
   //
