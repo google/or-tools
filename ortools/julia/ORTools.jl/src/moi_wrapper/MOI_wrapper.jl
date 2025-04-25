@@ -1924,3 +1924,164 @@ function MOI.optimize!(model::Optimizer)
 
     return nothing
 end
+
+function MOI.get(model::Optimizer, ::MOI.RawStatusString)::String
+    if !isnothing(model) && !isnothing(model.solve_result)
+        return string(model.solve_result.termination.reason)
+    end
+
+    return ""
+end
+
+"""
+Additional, typically solver-specific information about termination.
+"""
+struct ExtraTerminationDetailString <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::ExtraTerminationDetailString) = String
+
+function MOI.get(model::Optimizer, ::ExtraTerminationDetailString)::String
+    if !isnothing(model) && !isnothing(model.solve_result)
+        return model.solve_result.termination.detail
+    end
+
+    return ""
+end
+
+function MOI.get(model::Optimizer, ::MOI.TerminationStatus)::MOI.TerminationStatusCode
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.OPTIMIZE_NOT_CALLED
+    end
+
+    if model.solve_result.termination.reason ==
+       TerminationReasonProto.TERMINATION_REASON_OPTIMAL
+        # It is expected that the LimitProto is LIMIT_UNSPECIFIED when the termination reason is OPTIMAL.
+        return MOI.OPTIMAL
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_ITERATION
+        return MOI.ITERATION_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_TIME
+        return MOI.TIME_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_NODE
+        return MOI.NODE_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_SOLUTION
+        return MOI.SOLUTION_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_MEMORY
+        return MOI.MEMORY_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_OBJECTIVE
+        return MOI.OBJECTIVE_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_NORM
+        return MOI.NORM_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_INTERRUPTED
+        return MOI.INTERRUPTED
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_SLOW_PROGRESS
+        return MOI.SLOW_PROGRESS
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_OTHER
+        return MOI.OTHER_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_UNDETERMINED
+        # TODO: b/411325865 Follow up on support for LIMIT_UNDETERMINED in MOI.jl
+        # A fallback as there's currently no associated MOI.LIMIT_* that can represent this.
+        @info "The underlying solver does not expose which limit was reached and the actual limit is LIMIT_UNDETERMINED " \
+              "However, LIMIT_UNDETERMINED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        return MOI.OTHER_LIMIT
+    elseif model.solve_result.termination.limit == LimitProto.LIMIT_CUTOFF
+        # TODO: b/411328356 Follow up on support for LIMIT_CUTOFF in MOI.jl
+        # A fallback as there's currently no associated MOI.LIMIT_* that can represent this.
+        @info "The solver was run with a cutoff on the objective, indicating that the user did not want any solution " \
+              "worse than the cutoff, and the solver concluded there were no solutions at least as good as the cutoff. " \
+              "Typically no further solution information is provided. The actual limit is LIMIT_CUTOFF. " \
+              "However, LIMIT_CUTOFF is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        return MOI.OTHER_LIMIT
+    else
+        # TODO: b/411328207 Add attribute to capture more information about the limit when LIMIT_UNSPECIFIED is the returned limit.
+        # The else bit falls back to MOI.LIMIT_UNSPECIFIED if the termination reason wasn't TERMINATION_REASON_OPTIMAL
+        @info "The solver terminated but not from a limit and the actual limit is LIMIT_UNSPECIFIED, which is used as a null. " \
+              "However, LIMIT_UNSPECIFIED is not associated with a MOI.LIMIT_* hence the returned LIMIT is MOI.OTHER_LIMIT."
+        return MOI.OTHER_LIMIT
+    end
+end
+
+function MOI.get(model::Optimizer, attr::MOI.PrimalStatus)
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.NO_SOLUTION
+    end
+
+    if attr.result_index != 1
+        return MOI.NO_SOLUTION
+    elseif model.solve_result.termination.problem_status.primal_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_UNDETERMINED
+        return MOI.UNKNOWN_RESULT_STATUS
+    elseif model.solve_result.termination.problem_status.primal_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_FEASIBLE
+        return MOI.FEASIBLE_POINT
+    elseif model.solve_result.termination.problem_status.primal_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_INFEASIBLE
+        return MOI.INFEASIBLE_POINT
+    else
+        # For FEASIBILITY_STATUS_UNSPECIFIED which is a guard value representing no status
+        return MOI.NO_SOLUTION
+    end
+end
+
+function MOI.get(model::Optimizer, attr::MOI.DualStatus)
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.NO_SOLUTION
+    end
+
+    if attr.result_index != 1
+        return MOI.NO_SOLUTION
+    elseif model.solve_result.termination.problem_status.dual_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_UNDETERMINED
+        return MOI.UNKNOWN_RESULT_STATUS
+    elseif model.solve_result.termination.problem_status.dual_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_FEASIBLE
+        return MOI.FEASIBLE_SOLUTION
+    elseif model.solve_result.termination.problem_status.dual_status ==
+           FeasibilityStatusProto.FEASIBILITY_STATUS_INFEASIBLE
+        return MOI.INFEASIBLE_SOLUTION
+    else
+        # For FEASIBILITY_STATUS_UNSPECIFIED which is a guard value representing no status
+        return MOI.NO_SOLUTION
+    end
+end
+
+"""
+When the solver claims the the primal or dual problem is infeasible, but
+it does not know which (or if both are infeasible), this attribute returns `true`.
+It can be true only when primal_status = dual_status = FEASIBILITY_STATUS_UNDETERMINED
+(mapped to MOI.UNKNOWN_RESULT_STATUS). This extra information is often needed when 
+preprocessing determines there is no optimal solution to the problem
+(but can't determine if it is due to infeasibility, unboundedness, or both).
+"""
+struct PrimalOrDualInfeasible <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::PrimalOrDualInfeasible) = Bool
+
+function MOI.get(model::Optimizer, ::PrimalOrDualInfeasible)::Bool
+    if isnothing(model) || isnothing(model.solve_result)
+        return false
+    end
+
+    return model.solve_result.termination.problem_status.primal_status.primal_or_dual_infeasible
+end
+
+function MOI.get(model::Optimizer, attr::MOI.ObjectiveBound)
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(MOI.GetAttributeNotAllowed(attr))
+    end
+
+    return model.solve_result.termination.objective_bounds.primal_bound
+end
+
+"""
+When the solver claims there exists a dual solution that is numerically feasible
+(i.e. feasible up to the solvers tolerance), and whose objective value is
+dual_bound, this attribute returns the dual bound.
+"""
+struct DualObjectiveBound <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::DualObjectiveBound) = Float64
+
+function MOI.get(model::Optimizer, attr::DualObjectiveBound)
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(MOI.GetAttributeNotAllowed(attr))
+    end
+
+    return model.solve_result.termination.objective_bounds.dual_bound
+end
