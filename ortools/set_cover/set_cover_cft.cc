@@ -15,6 +15,7 @@
 
 #include <absl/algorithm/container.h>
 #include <absl/log/globals.h>
+#include <absl/log/log.h>
 #include <absl/random/random.h>
 #include <absl/status/status.h>
 #include <absl/strings/str_join.h>
@@ -25,6 +26,7 @@
 #include <limits>
 #include <random>
 
+#include "ortools/algorithms/radix_sort.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_submodel.h"
@@ -165,10 +167,9 @@ bool BoundCBs::ExitCondition(const SubgradientContext& context) {
     return true;
   }
   exit_test_countdown_ = exit_test_period_;
-  Cost best_lower_bound = context.best_lower_bound;
-  Cost abs_improvement = best_lower_bound - prev_best_lb_;
-  Cost rel_improvement = DivideIfGE0(abs_improvement, best_lower_bound);
-  prev_best_lb_ = best_lower_bound;
+  Cost abs_improvement = best_lb - prev_best_lb_;
+  Cost rel_improvement = DivideIfGE0(abs_improvement, best_lb);
+  prev_best_lb_ = best_lb;
 
   if (abs_improvement >= 1.0 || rel_improvement >= .001) {
     return false;
@@ -223,10 +224,12 @@ void BoundCBs::UpdateStepSize(SubgradientContext context) {
 
     Cost delta = last_max_lb_seen_ - last_min_lb_seen_;
     Cost gap = DivideIfGE0(delta, last_max_lb_seen_);
-    if (gap <= .001) {       // Arbitray from [1]
-      step_size_ *= 1.5;     // Arbitray from [1]
+    if (gap <= .001) {    // Arbitray from [1]
+      step_size_ *= 1.5;  // Arbitray from [1]
+      VLOG(4) << "[SUBG] Sep size set at " << step_size_;
     } else if (gap > .01) {  // Arbitray from [1]
       step_size_ /= 2.0;     // Arbitray from [1]
+      VLOG(4) << "[SUBG] Sep size set at " << step_size_;
     }
     last_min_lb_seen_ = std::numeric_limits<Cost>::max();
     last_max_lb_seen_ = .0;
@@ -261,7 +264,7 @@ bool BoundCBs::UpdateCoreModel(SubgradientContext context,
                                CoreModel& core_model, bool force) {
   if (core_model.UpdateCore(context.best_lower_bound, context.best_multipliers,
                             context.best_solution, force)) {
-    prev_best_lb_ = std::min(prev_best_lb_, context.best_lower_bound);
+    prev_best_lb_ = std::numeric_limits<Cost>::lowest();
     // Grant at least `min_iters` iterations before the next exit test
     constexpr BaseInt min_iters = 10;
     exit_test_countdown_ = std::max<BaseInt>(exit_test_countdown_, min_iters);
@@ -295,6 +298,7 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
     // subgradient method. To address this, we adjust the multipliers to
     // get closer the trivial lower bound (= 0).
     if (dual_state.lower_bound() < .0) {
+      VLOG(4) << "[SUBG] Dividing multipliers by 10";
       dual_state.DualUpdate(
           model, [&](ElementIndex i, Cost& i_mult) { i_mult /= 10.0; });
     }
@@ -325,11 +329,11 @@ void SubgradientOptimization(SubModel& model, SubgradientCBs& cbs,
       best_state.solution = solution;
     }
 
-    VLOG_EVERY_POW_2(4) << "[SUBG] " << iter
-                        << ": Bounds: Lower " << dual_state.lower_bound()
-                        << ", best " << best_lower_bound << " - Upper "
-                        << best_state.solution.cost() - model.fixed_cost()
-                        << ", global " << best_state.solution.cost();
+    VLOG_EVERY_N(4, 100) << "[SUBG] " << iter << ": Bounds: Lower "
+                         << dual_state.lower_bound() << ", best "
+                         << best_lower_bound << " - Upper "
+                         << best_state.solution.cost() - model.fixed_cost()
+                         << ", global " << best_state.solution.cost();
 
     if (cbs.UpdateCoreModel(context, model)) {
       dual_state.DualUpdate(model, [&](ElementIndex i, Cost& i_mult) {
@@ -779,8 +783,8 @@ PrimalDualState RunThreePhase(SubModel& model, const Solution& init_solution) {
   }
   VLOG(2) << "[3PHS] Initial lower bound: "
           << best_state.dual_state.lower_bound()
-          << "Initial solution cost: " << best_state.solution.cost()
-          << "Starting 3-phase algorithm";
+          << ", Initial solution cost: " << best_state.solution.cost()
+          << ", Starting 3-phase algorithm";
 
   PrimalDualState curr_state = best_state;
   BaseInt iter_count = 0;
@@ -1008,7 +1012,7 @@ void SelecteMinRedCostColumns(FilterModelView full_model,
   if (candidates.size() > max_size) {
     absl::c_nth_element(candidates, candidates.begin() + max_size - 1,
                         [&](SubsetIndex j1, SubsetIndex j2) {
-                          return reduced_costs[j1] < reduced_costs[j2];
+    return reduced_costs[j1] < reduced_costs[j2];
                         });
     candidates.resize(max_size);
   }
@@ -1024,7 +1028,7 @@ void SelecteMinRedCostColumns(FilterModelView full_model,
 static void SelectMinRedCostByRow(FilterModelView full_model,
                                   const SubsetCostVector& reduced_costs,
                                   std::vector<FullSubsetIndex>& columns_map,
-                                  FullSubsetBoolVector& selected) {
+    FullSubsetBoolVector& selected) {
   DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
   DCHECK_EQ(selected.size(), full_model.num_subsets());
 

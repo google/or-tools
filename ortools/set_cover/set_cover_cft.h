@@ -322,6 +322,9 @@ PrimalDualState RunCftHeuristic(SubModel& model,
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
+// Coverage counter to decide the number of columns to keep in the core model.
+static constexpr BaseInt kMinCov = 5;
+
 // CoreModel extractor. Stores a pointer to the full model and specilized
 // UpdateCore in such a way to updated the SubModel (stored as base class) and
 // focus the search on a small windows of the full model.
@@ -334,6 +337,7 @@ class FullToCoreModel : public SubModel {
   };
 
  public:
+  FullToCoreModel() = default;
   FullToCoreModel(const Model* full_model);
   Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
   void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
@@ -376,6 +380,7 @@ class FullToCoreModel : public SubModel {
  private:
   std::vector<FullSubsetIndex> SelectNewCoreColumns(
       const std::vector<FullSubsetIndex>& forced_columns = {});
+  void SizeUpdate();
 
   const Model* full_model_;
 
@@ -404,9 +409,6 @@ class FullToCoreModel : public SubModel {
   BaseInt update_period_;
   BaseInt update_max_period_;
 };
-
-// Coverage counter to decide the number of columns to keep in the core model.
-static constexpr BaseInt kMinCov = 5;
 
 }  // namespace operations_research::scp
 
