@@ -36,7 +36,8 @@ std::string ProtobufDebugString(const P& message) {
   } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
     return std::string(message.GetTypeName());
   } else {
-    static_assert(false, "Unsupported type");
+    LOG(FATAL) << "Unsupported type";
+    return "";
   }
 }
 
@@ -52,7 +53,8 @@ std::string ProtobufShortDebugString(const P& message) {
   } else if constexpr (std::is_base_of_v<google::protobuf::MessageLite, P>) {
     return std::string(message.GetTypeName());
   } else {
-    static_assert(false, "Unsupported type");
+    LOG(FATAL) << "Unsupported type";
+    return "";
   }
 }
 
@@ -82,7 +84,8 @@ bool ProtobufTextFormatMergeFromString(absl::string_view proto_text_string,
                                          ProtoType>) {
     return false;
   } else {
-    static_assert(false, "Unsupported type");
+    LOG(FATAL) << "Unsupported type";
+    return false;
   }
 }
 
@@ -112,7 +115,8 @@ bool ProtobufParseTextProtoForFlag(absl::string_view text,
         "do not support parsing text protos)";
     return false;
   } else {
-    static_assert(false, "Unsupported type");
+    LOG(FATAL) << "Unsupported type";
+    return false;
   }
 }
 
