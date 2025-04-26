@@ -1169,9 +1169,19 @@ void FullToCoreModel::ResetColumnFixing(
   DCHECK(FullToSubModelInvariantCheck());
 }
 
+void FullToCoreModel::SizeUpdate() {
+  num_subsets_ += full_model_->num_subsets() - num_subsets_;
+  is_focus_col_.resize(num_subsets_, true);
+}
+
 bool FullToCoreModel::UpdateCore(Cost best_lower_bound,
                                  const ElementCostVector& best_multipliers,
                                  const Solution& best_solution, bool force) {
+  SizeUpdate();
+  if (num_focus_subsets() == FixingFullModelView().num_focus_subsets()) {
+    return false;
+  }
+
   if (!force && --update_countdown_ > 0) {
     return false;
   }
