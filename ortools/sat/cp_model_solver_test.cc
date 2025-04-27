@@ -294,6 +294,7 @@ TEST(SolveCpModelTest, NonInstantiatedVariables) {
   params.set_instantiate_all_variables(false);
   params.set_search_branching(SatParameters::FIXED_SEARCH);
   params.set_cp_model_presolve(false);
+  params.set_num_workers(1);
   model.Add(NewSatParameters(params));
 
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
