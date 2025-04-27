@@ -973,9 +973,16 @@ PrimalDualState RunCftHeuristic(SubModel& model,
 
 namespace {
 std::vector<FullSubsetIndex> ComputeTentativeFocus(StrongModelView full_model) {
-  FullSubsetBoolVector selected(full_model.num_subsets(), false);
   std::vector<FullSubsetIndex> columns_focus;
+
+  if (full_model.num_subsets() <= 2 * kMinCov * full_model.num_elements()) {
+    columns_focus.resize(full_model.num_subsets());
+    absl::c_iota(columns_focus, FullSubsetIndex(0));
+    return columns_focus;
+  }
+
   columns_focus.reserve(full_model.num_elements() * kMinCov);
+  FullSubsetBoolVector selected(full_model.num_subsets(), false);
 
   // Select the first min_row_coverage columns for each row
   for (const auto& row : full_model.rows()) {
