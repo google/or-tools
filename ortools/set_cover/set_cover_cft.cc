@@ -1003,67 +1003,57 @@ std::vector<FullSubsetIndex> ComputeTentativeFocus(StrongModelView full_model) {
 }
 
 void SelecteMinRedCostColumns(FilterModelView full_model,
+                              const std::vector<SubsetIndex>& candidates,
+                              ElementToIntVector& row_coverage,
+                              BaseInt& rows_left_to_cover,
+                              BaseInt max_selection_size,
                               const SubsetCostVector& reduced_costs,
                               std::vector<FullSubsetIndex>& new_core_columns,
                               FullSubsetBoolVector& selected) {
-  DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
-  DCHECK_EQ(selected.size(), full_model.num_subsets());
-
-  std::vector<SubsetIndex> candidates;
-  for (SubsetIndex j : full_model.SubsetRange())
-    if (reduced_costs[j] < 0.1) {
-      candidates.push_back(j);
-    }
-
-  BaseInt max_size = 5 * full_model.num_focus_elements();
-  if (candidates.size() > max_size) {
-    absl::c_nth_element(candidates, candidates.begin() + max_size - 1,
-                        [&](SubsetIndex j1, SubsetIndex j2) {
+  DCHECK(absl::c_is_sorted(candidates, [&](auto j1, auto j2) {
     return reduced_costs[j1] < reduced_costs[j2];
-                        });
-    candidates.resize(max_size);
-  }
+  }));
+
+  BaseInt selected_size = 0;
   for (SubsetIndex j : candidates) {
+    if (reduced_costs[j] > 0.1 || selected_size >= max_selection_size) {
+      break;
+    }
     FullSubsetIndex j_full = static_cast<FullSubsetIndex>(j);
     if (!selected[j_full]) {
       selected[j_full] = true;
       new_core_columns.push_back(j_full);
+      for (ElementIndex i : full_model.columns()[j]) {
+        if (++row_coverage[i] == kMinCov) {
+          --rows_left_to_cover;
+        }
+      }
     }
   }
 }
 
-static void SelectMinRedCostByRow(FilterModelView full_model,
-                                  const SubsetCostVector& reduced_costs,
-                                  std::vector<FullSubsetIndex>& columns_map,
+static void SelectMinRedCostByRow(
+    FilterModelView full_model, const std::vector<SubsetIndex>& candidates,
+    ElementToIntVector& row_coverage, BaseInt& rows_left_to_cover,
+    BaseInt max_selection_size, const SubsetCostVector& reduced_costs,
+    std::vector<FullSubsetIndex>& new_core_columns,
     FullSubsetBoolVector& selected) {
-  DCHECK_EQ(reduced_costs.size(), full_model.num_subsets());
-  DCHECK_EQ(selected.size(), full_model.num_subsets());
+  DCHECK(absl::c_is_sorted(candidates, [&](auto j1, auto j2) {
+    return reduced_costs[j1] < reduced_costs[j2];
+  }));
 
-  for (const auto& row : full_model.rows()) {
-    // Collect best `kMinCov` columns covering row `i`
-    SubsetIndex best_cols[kMinCov];
-    BaseInt best_size = 0;
-    for (SubsetIndex j : row) {
-      if (best_size < kMinCov) {
-        best_cols[best_size++] = j;
-        continue;
-      }
-      if (reduced_costs[j] < reduced_costs[best_cols[kMinCov - 1]]) {
-        BaseInt n = kMinCov - 1;
-        while (n > 0 && reduced_costs[j] < reduced_costs[best_cols[n - 1]]) {
-          best_cols[n] = best_cols[n - 1];
-          --n;
-        }
-        best_cols[n] = j;
-      }
+  for (SubsetIndex j : candidates) {
+    if (rows_left_to_cover == 0) {
+      break;
     }
-
-    DCHECK(best_size > 0);
-    for (BaseInt s = 0; s < best_size; ++s) {
-      FullSubsetIndex j = static_cast<FullSubsetIndex>(best_cols[s]);
-      if (!selected[j]) {
-        selected[j] = true;
-        columns_map.push_back(j);
+    FullSubsetIndex j_full = static_cast<FullSubsetIndex>(j);
+    if (!selected[j_full]) {
+      selected[j_full] = true;
+      new_core_columns.push_back(j_full);
+      for (ElementIndex i : full_model.columns()[j]) {
+        if (++row_coverage[i] == kMinCov) {
+          --rows_left_to_cover;
+        }
       }
     }
   }
@@ -1132,10 +1122,23 @@ std::vector<FullSubsetIndex> FullToCoreModel::SelectNewCoreColumns(
     }
   }
 
-  SelecteMinRedCostColumns(fixing_full_model, full_dual_state_.reduced_costs(),
-                           new_core_columns, selected_columns);
-  SelectMinRedCostByRow(fixing_full_model, full_dual_state_.reduced_costs(),
-                        new_core_columns, selected_columns);
+  auto subset_range = fixing_full_model.SubsetRange();
+  std::vector<SubsetIndex> candidates(subset_range.begin(), subset_range.end());
+  const auto& full_reduced_costs = full_dual_state_.reduced_costs();
+  absl::c_sort(candidates, [&](auto j1, auto j2) {
+    return full_reduced_costs[j1] < full_reduced_costs[j2];
+  });
+
+  ElementToIntVector row_coverage(fixing_full_model.num_elements(), 0);
+  BaseInt rows_left_to_cover = fixing_full_model.num_elements();
+  BaseInt max_selection_size = kMinCov * fixing_full_model.num_elements();
+  SelecteMinRedCostColumns(fixing_full_model, candidates, row_coverage,
+                           rows_left_to_cover, max_selection_size,
+                           full_reduced_costs, new_core_columns,
+                           selected_columns);
+  SelectMinRedCostByRow(fixing_full_model, candidates, row_coverage,
+                        rows_left_to_cover, max_selection_size,
+                        full_reduced_costs, new_core_columns, selected_columns);
 
   // NOTE: unnecessary, but it keeps equivalence between SubModelView/SubModel
   absl::c_sort(new_core_columns);
