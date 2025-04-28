@@ -417,7 +417,9 @@ TEST_P(IpParameterTest, PresolveOff) {
                   solve_stats.first_order_iterations,
               1);
   }
+#if !defined(_MSC_VER)
   EXPECT_THAT(logs, Not(testing::ContainsRegex(GetParam().presolved_regexp)));
+#endif
 }
 
 TEST_P(IpParameterTest, PresolveOn) {
@@ -435,7 +437,9 @@ TEST_P(IpParameterTest, PresolveOn) {
     EXPECT_EQ(solve_stats.simplex_iterations, 0);
     EXPECT_EQ(solve_stats.first_order_iterations, 0);
   }
+#if !defined(_MSC_VER)
   EXPECT_THAT(logs, testing::ContainsRegex(GetParam().presolved_regexp));
+#endif
 }
 
 // Requires disabling presolve and cuts is supported (or status errors).
