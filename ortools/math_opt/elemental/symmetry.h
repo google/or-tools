@@ -53,7 +53,7 @@ template <int i, int j>
 struct ElementSymmetry {
   static_assert(0 <= i && i < j);
 
-  static constexpr std::string GetName() {
+  static std::string GetName() {
     return absl::StrFormat("ElementSymmetry<%i, %i>", i, j);
   };
 
