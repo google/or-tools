@@ -165,7 +165,7 @@ TEST(FormatAttrValueTest, FormatsInt64) {
 }
 
 TEST(FormatAttrValueTest, FormatsDouble) {
-  EXPECT_EQ(FormatAttrValue(4.2), "4.2");
+  EXPECT_EQ(FormatAttrValue(absl::SixDigits(4.2)), "4.2");
 }
 
 }  // namespace

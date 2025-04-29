@@ -129,6 +129,7 @@ cc_test(
         ":symmetry",
         "//ortools/base:gmock_main",
         "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
