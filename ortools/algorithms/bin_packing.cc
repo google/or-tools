@@ -418,6 +418,38 @@ void ExpKnap::Heuristic(
 bool BinPackingSetCoverModel::UpdateCore(
     Cost best_lower_bound, const ElementCostVector& best_multipliers,
     const scp::Solution& best_solution, bool force) {
+  if (--column_gen_countdown_ <= 0 && best_lower_bound != prev_lower_bound_) {
+    column_gen_countdown_ = column_gen_period_;
+    prev_lower_bound_ = best_lower_bound;
+    knapsack_solver_.Solve(best_multipliers, bpp_model_->weights(),
+                           bpp_model_->bin_capacity(),
+                           /*bnb_nodes_limit=*/1024);
+    const auto& exception_list = knapsack_solver_.maximal_exceptions();
+    ElementBoolVector solution = knapsack_solver_.break_solution();
+    BaseInt num_added_bins = 0;
+    SparseColumn bin;
+    for (const std::vector<ElementIndex>& exception : exception_list) {
+      for (ElementIndex i : exception) {
+        solution[i] = !solution[i];
+      }
+
+      bin.clear();
+      for (ElementIndex i : globals_.full_model.ElementRange()) {
+        if (solution[i]) {
+          bin.push_back(i);
+        }
+      }
+      num_added_bins += AddBin(bin) ? 1 : 0;
+
+      for (ElementIndex i : exception) {
+        solution[i] = !solution[i];
+      }
+    }
+    if (num_added_bins > 0) {
+      VLOG(4) << "[KPCG] Added " << num_added_bins << " / "
+              << globals_.full_model.num_subsets() << " bins";
+    }
+  }
 
   return scp::FullToCoreModel::UpdateCore(best_lower_bound, best_multipliers,
                                           best_solution, force);
