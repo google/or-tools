@@ -347,6 +347,8 @@ class FullToCoreModel : public SubModel {
                   const Solution& best_solution, bool force) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
+  bool FullToSubModelInvariantCheck();
+  void SizeUpdate();
 
  private:
   decltype(auto) IsFocusCol(FullSubsetIndex j) {
@@ -375,12 +377,8 @@ class FullToCoreModel : public SubModel {
     return StrongModelView(full_model_);
   }
 
-  bool FullToSubModelInvariantCheck();
-
- private:
   std::vector<FullSubsetIndex> SelectNewCoreColumns(
       const std::vector<FullSubsetIndex>& forced_columns = {});
-  void SizeUpdate();
 
   const Model* full_model_;
 

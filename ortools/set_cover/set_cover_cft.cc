@@ -1282,7 +1282,31 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
                                 " not found in full model view.\n");
       return false;
     }
+
+    // Assumes corresponding elements have the same order in both models
+    auto core_it = sub_model.columns()[core_j].begin();
+    for (FullElementIndex full_i : typed_full_model.columns()[full_j]) {
+      if (sub_model.MapFullToCoreElementIndex(full_i) != *core_it) {
+        continue;
+      }
+      if (sub_model.MapCoreToFullElementIndex(*core_it) != full_i) {
+        std::cerr << absl::StrCat(
+            "Subset ", core_j, " in sub-model has mapped element ", *core_it,
+            " but it is not the same as the full model.\n");
+        return false;
+      }
+      if (++core_it == sub_model.columns()[core_j].end()) {
+        break;
+      }
+    }
+    if (core_it != sub_model.columns()[core_j].end()) {
+      std::cerr << absl::StrCat("Subset ", core_j,
+                                " in sub-model has no mapped element ",
+                                *core_it, " in full model view.\n");
+      return false;
+    }
   }
+
   for (ElementIndex core_i : sub_model.ElementRange()) {
     FullElementIndex full_i = sub_model.MapCoreToFullElementIndex(core_i);
     if (!is_focus_row_[static_cast<ElementIndex>(full_i)]) {
