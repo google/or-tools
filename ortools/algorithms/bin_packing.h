@@ -67,6 +67,8 @@ class ExpKnap {
   void Solve(const ElementCostVector& profits, const ElementCostVector& weights,
              Cost capacity, BaseInt bnb_nodes_limit);
 
+  bool EleBranch(Cost profit_sum, Cost overweight, ItemIt out_item,
+                 ItemIt in_item);
 
   void Heuristic(const util_intops::StrongVector<ElementIndex, Item>& items);
 

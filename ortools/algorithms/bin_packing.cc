@@ -311,8 +311,60 @@ void ExpKnap::Solve(const ElementCostVector& profits,
   VLOG(5) << "[KPCG] Heuristic solution: cost "
           << break_profit_sum_ + best_delta_;
 
+  EleBranch(.0, break_weight_sum_ - capacity, break_it_ - 1, break_it_ + 1);
 }
 
+namespace {
+static Cost BoundCheck(Cost best_delta, Cost profit_delta, Cost overweight,
+                       ExpKnap::Item item) {
+  Cost bound = best_delta + 0.0;  // + 1.0 for integral profits
+  return (profit_delta - bound) * item.weight - overweight * item.profit;
+}
+}  // namespace
+
+// Adapted version from David Pisinger elebranch function:
+// https://hjemmesider.diku.dk/~pisinger/expknap.c
+bool ExpKnap::EleBranch(Cost profit_delta, Cost overweigth, ItemIt out_item,
+                        ItemIt in_item) {
+  if (bnb_node_countdown_-- <= 0) {
+    return false;
+  }
+  bool improved = false;
+
+  if (overweigth <= .0) {
+    if (profit_delta > best_delta_) {
+      best_delta_ = profit_delta;
+      improved = true;
+      VLOG(5) << "[KPCG] Improved best cost "
+              << break_profit_sum_ + best_delta_;
+    }
+
+    bool maximal = true;
+    while (bnb_node_countdown_ > 0 && in_item < items_.end() &&
+           BoundCheck(best_delta_, profit_delta, overweigth, *in_item) >= 0) {
+      exceptions_.push_back(in_item->index);
+      Cost next_delta = profit_delta + in_item->profit;
+      Cost next_oweight = overweigth + in_item->weight;
+      maximal &= !EleBranch(next_delta, next_oweight, out_item, ++in_item);
+      exceptions_.pop_back();
+    }
+
+    if (improved && maximal) {
+      maximal_exceptions_.push_back(exceptions_);
+    }
+    improved |= !maximal;
+  } else {
+    while (bnb_node_countdown_ > 0 && out_item >= items_.begin() &&
+           BoundCheck(best_delta_, profit_delta, overweigth, *out_item) >= 0) {
+      exceptions_.push_back(out_item->index);
+      Cost next_delta = profit_delta - out_item->profit;
+      Cost next_oweight = overweigth - out_item->weight;
+      improved |= EleBranch(next_delta, next_oweight, --out_item, in_item);
+      exceptions_.pop_back();
+    }
+  }
+  return improved;
+}
 
 void ExpKnap::Heuristic(
     const util_intops::StrongVector<ElementIndex, Item>& items) {
