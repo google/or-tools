@@ -1296,8 +1296,20 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
       return false;
     }
 
+    const auto& core_column = sub_model.columns()[core_j];
+    if (core_column.begin() == core_column.end()) {
+      std::cerr << absl::StrCat("Core subset ", core_j, " empty.\n");
+      return false;
+    }
+
+    const auto& full_column = typed_full_model.columns()[full_j];
+    if (full_column.begin() == full_column.end()) {
+      std::cerr << absl::StrCat("Full subset ", full_j, " empty.\n");
+      return false;
+    }
+
     // Assumes corresponding elements have the same order in both models
-    auto core_it = sub_model.columns()[core_j].begin();
+    auto core_it = core_column.begin();
     for (FullElementIndex full_i : typed_full_model.columns()[full_j]) {
       if (sub_model.MapFullToCoreElementIndex(full_i) != *core_it) {
         continue;
@@ -1308,11 +1320,11 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
             " but it is not the same as the full model.\n");
         return false;
       }
-      if (++core_it == sub_model.columns()[core_j].end()) {
+      if (++core_it == core_column.end()) {
         break;
       }
     }
-    if (core_it != sub_model.columns()[core_j].end()) {
+    if (core_it != core_column.end()) {
       std::cerr << absl::StrCat("Subset ", core_j,
                                 " in sub-model has no mapped element ",
                                 *core_it, " in full model view.\n");
@@ -1321,6 +1333,12 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
   }
 
   for (ElementIndex core_i : sub_model.ElementRange()) {
+    const auto& core_row = sub_model.rows()[core_i];
+    if (core_row.begin() == core_row.end()) {
+      std::cerr << absl::StrCat("Core row ", core_i, " empty.\n");
+      return false;
+    }
+
     FullElementIndex full_i = sub_model.MapCoreToFullElementIndex(core_i);
     if (!is_focus_row_[static_cast<ElementIndex>(full_i)]) {
       std::cerr << absl::StrCat("Element ", core_i,
@@ -1329,6 +1347,7 @@ bool FullToCoreModel::FullToSubModelInvariantCheck() {
       return false;
     }
   }
+
   for (FullElementIndex full_i : typed_full_model.ElementRange()) {
     if (!IsFocusRow(full_i)) {
       continue;
