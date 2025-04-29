@@ -21,8 +21,10 @@
 #include <absl/strings/str_split.h>
 #include <absl/strings/string_view.h>
 
+#include <vector>
+
 #include "ortools/set_cover/base_types.h"
-#include "ortools/set_cover/set_cover_submodel.h"
+#include "ortools/set_cover/set_cover_cft.h"
 
 namespace operations_research {
 
@@ -52,12 +54,14 @@ struct PartialBins {
 
 using SubsetHashVector = util_intops::StrongVector<SubsetIndex, uint64_t>;
 
-class BinPackingSetCoverModel {
+
+
+class BinPackingSetCoverModel : public scp::FullToCoreModel {
   struct BinPackingModelGlobals {
     // Dirty hack to avoid invalidation of pointers/references
     // A pointer to this data structure is used to compute the hash of bins
     // starting from their indices.
-    SetCoverModel full_model;
+    scp::Model full_model;
 
     // External bins do not have a valid index in the model, a temporary pointer
     // is used insteda (even dirtier hack).
@@ -77,25 +81,42 @@ class BinPackingSetCoverModel {
   };
 
  public:
-  BinPackingSetCoverModel()
-      : globals_{SetCoverModel(), nullptr},
-        bin_set_({}, 0, BinHash{&globals_}, BinEq{&globals_}) {}
-  const SetCoverModel& full_model() const { return globals_.full_model; }
+  BinPackingSetCoverModel(const BinPackingModel* bpp_model)
+      : globals_{scp::Model(), nullptr},
+        bpp_model_(bpp_model),
+        knapsack_solver_(),
+        bin_set_({}, 0, BinHash{&globals_}, BinEq{&globals_}),
+        column_gen_countdown_(10),
+        column_gen_period_(10) {}
+  const scp::Model& full_model() const { return globals_.full_model; }
 
-  void AddBin(const SparseColumn& bin);
-  void CompleteModel() { globals_.full_model.CreateSparseRowView(); }
+  bool AddBin(const SparseColumn& bin);
+  void CompleteModel() {
+    globals_.full_model.CreateSparseRowView();
+    static_cast<scp::FullToCoreModel&>(*this) =
+        scp::FullToCoreModel(&globals_.full_model);
+  }
+
+  bool UpdateCore(Cost best_lower_bound,
+                  const ElementCostVector& best_multipliers,
+                  const scp::Solution& best_solution, bool force) override;
 
  private:
   bool TryInsertBin(const SparseColumn& bin);
 
   BinPackingModelGlobals globals_;
+  const BinPackingModel* bpp_model_;
 
   // Contains bin indices, but it really should contains "bins" (aka,
-  // SparseColumn). However to avoid redundant allocations (in SetCoverModel and
+  // SparseColumn). However to avoid redundant allocations (in scp::Model and
   // in the set) we cannot store them also here. We cannot also use
   // iterators/pointers/references because they can be invalidated. So we store
   // bin indices and do ungodly hacky shenanigans to get the bins from them.
   absl::flat_hash_set<SubsetIndex, BinHash, BinEq> bin_set_;
+
+  Cost prev_lower_bound_;
+  BaseInt column_gen_countdown_;
+  BaseInt column_gen_period_;
 };
 
 BinPackingModel ReadBpp(absl::string_view filename);

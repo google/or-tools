@@ -190,13 +190,15 @@ uint64_t BinPackingSetCoverModel::BinEq::operator()(SubsetIndex j1,
   return globals->GetBin(j1) == globals->GetBin(j2);
 }
 
-void BinPackingSetCoverModel::AddBin(const SparseColumn& bin) {
+bool BinPackingSetCoverModel::AddBin(const SparseColumn& bin) {
   if (TryInsertBin(bin)) {
     globals_.full_model.AddEmptySubset(1.0);
     for (ElementIndex i : bin) {
       globals_.full_model.AddElementToLastSubset(i);
     }
+    return true;
   }
+  return false;
 }
 
 bool BinPackingSetCoverModel::TryInsertBin(const SparseColumn& bin) {
@@ -224,7 +226,7 @@ void InsertBinsIntoModel(PartialBins& bins_data,
 
 BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
                                      BaseInt num_bins) {
-  BinPackingSetCoverModel scp_model;
+  BinPackingSetCoverModel scp_model(&model);
   PartialBins bins_data;
   std::vector<ElementIndex> items(model.num_items());
 
@@ -285,4 +287,12 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
   return scp_model;
 }
 
+
+bool BinPackingSetCoverModel::UpdateCore(
+    Cost best_lower_bound, const ElementCostVector& best_multipliers,
+    const scp::Solution& best_solution, bool force) {
+
+  return scp::FullToCoreModel::UpdateCore(best_lower_bound, best_multipliers,
+                                          best_solution, force);
+}
 }  // namespace operations_research
