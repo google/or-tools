@@ -369,7 +369,8 @@ class FullToCoreModel : public SubModel {
   // Access the full model filtered by the current columns fixed.
   FilterModelView FixingFullModelView() const {
     return FilterModelView(full_model_, &is_focus_col_, &is_focus_row_,
-                           num_subsets_, num_elements_);
+                           full_model_->num_subsets(),
+                           full_model_->num_elements());
   }
 
   // Access the full model with the strongly typed view.
@@ -397,9 +398,8 @@ class FullToCoreModel : public SubModel {
   // implementation that avoids this memory optimization was preferred.
   ElementBoolVector is_focus_row_;
 
-  BaseInt num_subsets_;
-  BaseInt num_elements_;
-
+  BaseInt selection_coefficient_ = kMinCov;
+  Cost prev_best_lower_bound_;
   DualState full_dual_state_;
   DualState best_dual_state_;
 
