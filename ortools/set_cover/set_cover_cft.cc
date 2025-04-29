@@ -26,7 +26,6 @@
 #include <limits>
 #include <random>
 
-#include "ortools/algorithms/radix_sort.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_submodel.h"
@@ -1019,10 +1018,10 @@ void SelecteMinRedCostColumns(FilterModelView full_model,
     if (reduced_costs[j] > 0.1 || selected_size >= max_selection_size) {
       break;
     }
-    FullSubsetIndex j_full = static_cast<FullSubsetIndex>(j);
-    if (!selected[j_full]) {
-      selected[j_full] = true;
-      new_core_columns.push_back(j_full);
+    FullSubsetIndex full_j = static_cast<FullSubsetIndex>(j);
+    if (!selected[full_j]) {
+      selected[full_j] = true;
+      new_core_columns.push_back(full_j);
       for (ElementIndex i : full_model.columns()[j]) {
         if (++row_coverage[i] == kMinCov) {
           --rows_left_to_cover;
@@ -1046,10 +1045,10 @@ static void SelectMinRedCostByRow(
     if (rows_left_to_cover == 0) {
       break;
     }
-    FullSubsetIndex j_full = static_cast<FullSubsetIndex>(j);
-    if (!selected[j_full]) {
-      selected[j_full] = true;
-      new_core_columns.push_back(j_full);
+    FullSubsetIndex full_j = static_cast<FullSubsetIndex>(j);
+    if (!selected[full_j]) {
+      selected[full_j] = true;
+      new_core_columns.push_back(full_j);
       for (ElementIndex i : full_model.columns()[j]) {
         if (++row_coverage[i] == kMinCov) {
           --rows_left_to_cover;
@@ -1082,13 +1081,18 @@ void FullToCoreModel::ResetPricingPeriod() {
 
 Cost FullToCoreModel::FixMoreColumns(
     const std::vector<SubsetIndex>& columns_to_fix) {
+
   StrongModelView typed_full_model = StrongTypedFullModelView();
   for (SubsetIndex core_j : columns_to_fix) {
     FullSubsetIndex full_j = SubModel::MapCoreToFullSubsetIndex(core_j);
+    DCHECK(IsFocusCol(full_j));
     IsFocusCol(full_j) = false;
+    bool any_active = false;
     for (FullElementIndex full_i : typed_full_model.columns()[full_j]) {
+      any_active |= IsFocusRow(full_i);
       IsFocusRow(full_i) = false;
     }
+    DCHECK(any_active);
   }
   for (FullSubsetIndex full_j : typed_full_model.SubsetRange()) {
     if (!IsFocusCol(full_j)) {
@@ -1102,6 +1106,7 @@ Cost FullToCoreModel::FixMoreColumns(
       }
     }
   }
+
   ResetPricingPeriod();
   Cost fixed_cost = base::FixMoreColumns(columns_to_fix);
   DCHECK(FullToSubModelInvariantCheck());
@@ -1114,11 +1119,22 @@ std::vector<FullSubsetIndex> FullToCoreModel::SelectNewCoreColumns(
 
   FullSubsetBoolVector selected_columns(fixing_full_model.num_subsets(), false);
   std::vector<FullSubsetIndex> new_core_columns;
+  ElementToIntVector row_coverage(fixing_full_model.num_elements(), 0);
+  BaseInt rows_left_to_cover = fixing_full_model.num_elements();
+  BaseInt max_selection_size = kMinCov * fixing_full_model.num_elements();
+
   // Always retain best solution in the core model (if possible)
   for (FullSubsetIndex full_j : forced_columns) {
     if (IsFocusCol(full_j)) {
       new_core_columns.push_back(full_j);
       selected_columns[full_j] = true;
+
+      SubsetIndex j = static_cast<SubsetIndex>(full_j);
+      for (ElementIndex i : fixing_full_model.columns()[j]) {
+        if (++row_coverage[i] == kMinCov) {
+          --rows_left_to_cover;
+        }
+      }
     }
   }
 
@@ -1129,9 +1145,6 @@ std::vector<FullSubsetIndex> FullToCoreModel::SelectNewCoreColumns(
     return full_reduced_costs[j1] < full_reduced_costs[j2];
   });
 
-  ElementToIntVector row_coverage(fixing_full_model.num_elements(), 0);
-  BaseInt rows_left_to_cover = fixing_full_model.num_elements();
-  BaseInt max_selection_size = kMinCov * fixing_full_model.num_elements();
   SelecteMinRedCostColumns(fixing_full_model, candidates, row_coverage,
                            rows_left_to_cover, max_selection_size,
                            full_reduced_costs, new_core_columns,

@@ -185,7 +185,6 @@ void CoreModel::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
 
   // Now we can fill the new core model
   for (FullSubsetIndex full_j : columns_focus) {
-    core2full_col_map_.push_back(full_j);
     bool first_row = true;
     for (FullElementIndex full_i : full_model_.columns()[full_j]) {
       ElementIndex core_i = full2core_row_map_[full_i];
@@ -197,6 +196,10 @@ void CoreModel::SetFocus(const std::vector<FullSubsetIndex>& columns_focus) {
         }
         submodel.AddElementToLastSubset(core_i);
       }
+    }
+    // Handle empty columns
+    if (!first_row) {
+      core2full_col_map_.push_back(full_j);
     }
   }
 

@@ -194,7 +194,6 @@ class CoreModel : private Model {
   ElementIndex MapFullToCoreElementIndex(FullElementIndex full_i) const {
     DCHECK(FullElementIndex() <= full_i &&
            full_i < FullElementIndex(num_elements()));
-    DCHECK(full2core_row_map_[full_i] != null_element_index);
     return full2core_row_map_[full_i];
   }
   FullSubsetIndex MapCoreToFullSubsetIndex(SubsetIndex core_j) const {
