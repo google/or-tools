@@ -54,7 +54,6 @@ struct PartialBins {
 
 using SubsetHashVector = util_intops::StrongVector<SubsetIndex, uint64_t>;
 
-
 class ExpKnap {
  public:
   struct Item {
@@ -161,8 +160,10 @@ BinPackingModel ReadCsp(absl::string_view filename);
 void BestFit(const BinPackingModel& model,
              const std::vector<ElementIndex>& items, PartialBins& bins_data);
 
-BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
-                                     BaseInt num_bins = 0);
+BinPackingSetCoverModel GenerateInitialBins(const BinPackingModel& model);
+
+void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
+                       BinPackingSetCoverModel& scp_model, std::mt19937& rnd);
 
 }  // namespace operations_research
 #endif /* OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H */

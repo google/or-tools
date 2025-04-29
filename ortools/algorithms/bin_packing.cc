@@ -23,10 +23,8 @@
 #include <algorithm>
 #include <random>
 
-#include "ortools/algorithms/radix_sort.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_cft.h"
-#include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_submodel.h"
 #include "ortools/util/filelineiter.h"
 
@@ -224,30 +222,12 @@ void InsertBinsIntoModel(PartialBins& bins_data,
   }
 }
 
-BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
-                                     BaseInt num_bins) {
-  BinPackingSetCoverModel scp_model(&model);
+void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
+                       BinPackingSetCoverModel& scp_model, std::mt19937& rnd) {
   PartialBins bins_data;
   std::vector<ElementIndex> items(model.num_items());
-
   absl::c_iota(items, ElementIndex(0));
-  BestFit(model, items, bins_data);
-  InsertBinsIntoModel(bins_data, scp_model);
-  BaseInt solution_bin_num = bins_data.bins.size();
-  VLOG(1) << "Best-fit solution: " << solution_bin_num << " bins";
 
-  // Largest first
-  if (!absl::c_is_sorted(model.weights(), std::greater<>())) {
-    bins_data.bins.clear();
-    bins_data.loads.clear();
-    absl::c_sort(items, [&](auto i1, auto i2) {
-      return model.weights()[i1] > model.weights()[i2];
-    });
-    BestFit(model, items, bins_data);
-    InsertBinsIntoModel(bins_data, scp_model);
-  }
-
-  std::mt19937 rnd(0);
   while (scp_model.full_model().num_subsets() < num_bins) {
     // Generate bins all containing a specific item
     for (ElementIndex n : model.ItemRange()) {
@@ -267,7 +247,7 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
 
       bins_data.bins.clear();
       bins_data.loads.clear();
-      for (BaseInt j = 0; j < solution_bin_num; ++j) {
+      for (BaseInt j = 0; j < 10; ++j) {
         bins_data.bins.push_back({n});
         bins_data.loads.push_back(model.weights()[n]);
       }
@@ -281,6 +261,31 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
         break;
       }
     }
+  }
+
+  scp_model.CompleteModel();
+}
+
+BinPackingSetCoverModel GenerateInitialBins(const BinPackingModel& model) {
+  BinPackingSetCoverModel scp_model(&model);
+  PartialBins bins_data;
+  std::vector<ElementIndex> items(model.num_items());
+
+  absl::c_iota(items, ElementIndex(0));
+  BestFit(model, items, bins_data);
+  InsertBinsIntoModel(bins_data, scp_model);
+  BaseInt solution_bin_num = bins_data.bins.size();
+  VLOG(1) << "Best-fit solution: " << solution_bin_num << " bins";
+
+  // Largest first
+  if (!absl::c_is_sorted(model.weights(), std::greater<>())) {
+    bins_data.bins.clear();
+    bins_data.loads.clear();
+    absl::c_sort(items, [&](auto i1, auto i2) {
+      return model.weights()[i1] > model.weights()[i2];
+    });
+    BestFit(model, items, bins_data);
+    InsertBinsIntoModel(bins_data, scp_model);
   }
 
   scp_model.CompleteModel();
@@ -423,7 +428,7 @@ bool BinPackingSetCoverModel::UpdateCore(
     prev_lower_bound_ = best_lower_bound;
     knapsack_solver_.Solve(best_multipliers, bpp_model_->weights(),
                            bpp_model_->bin_capacity(),
-                           /*bnb_nodes_limit=*/1024);
+                           /*bnb_nodes_limit=*/10000);
     const auto& exception_list = knapsack_solver_.maximal_exceptions();
     ElementBoolVector solution = knapsack_solver_.break_solution();
     BaseInt num_added_bins = 0;
@@ -451,6 +456,8 @@ bool BinPackingSetCoverModel::UpdateCore(
     }
   }
 
+  scp::FullToCoreModel::SizeUpdate();
+  scp::FullToCoreModel::FullToSubModelInvariantCheck();
   return scp::FullToCoreModel::UpdateCore(best_lower_bound, best_multipliers,
                                           best_solution, force);
 }
