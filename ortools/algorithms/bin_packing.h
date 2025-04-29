@@ -55,6 +55,39 @@ struct PartialBins {
 using SubsetHashVector = util_intops::StrongVector<SubsetIndex, uint64_t>;
 
 
+class ExpKnap {
+ public:
+  struct Item {
+    Cost profit;  // profit
+    Cost weight;  // weight
+    ElementIndex index;
+  };
+  using ItemIt = std::vector<Item>::const_iterator;
+
+  void Solve(const ElementCostVector& profits, const ElementCostVector& weights,
+             Cost capacity, BaseInt bnb_nodes_limit);
+
+
+  void Heuristic(const util_intops::StrongVector<ElementIndex, Item>& items);
+
+  ElementBoolVector break_solution() const { return break_solution_; }
+
+  std::vector<std::vector<ElementIndex>> maximal_exceptions() const {
+    return maximal_exceptions_;
+  }
+
+ private:
+  Cost capacity_;                                        // capacity
+  util_intops::StrongVector<ElementIndex, Item> items_;  // items
+  ItemIt break_it_;
+  Cost break_profit_sum_;
+  Cost break_weight_sum_;
+  Cost best_delta_;
+  std::vector<ElementIndex> exceptions_;
+  std::vector<std::vector<ElementIndex>> maximal_exceptions_;
+  ElementBoolVector break_solution_;
+  BaseInt bnb_node_countdown_;
+};
 
 class BinPackingSetCoverModel : public scp::FullToCoreModel {
   struct BinPackingModelGlobals {
@@ -106,6 +139,7 @@ class BinPackingSetCoverModel : public scp::FullToCoreModel {
 
   BinPackingModelGlobals globals_;
   const BinPackingModel* bpp_model_;
+  ExpKnap knapsack_solver_;
 
   // Contains bin indices, but it really should contains "bins" (aka,
   // SparseColumn). However to avoid redundant allocations (in scp::Model and

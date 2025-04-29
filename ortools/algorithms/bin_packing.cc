@@ -287,6 +287,81 @@ BinPackingSetCoverModel GenerateBins(const BinPackingModel& model,
   return scp_model;
 }
 
+void ExpKnap::Solve(const ElementCostVector& profits,
+                    const ElementCostVector& weights, Cost capacity,
+                    BaseInt bnb_nodes_limit) {
+  capacity_ = capacity;
+  best_delta_ = .0;
+  exceptions_.clear();
+  maximal_exceptions_.clear();
+  break_solution_.assign(profits.size(), false);
+  items_.resize(profits.size());
+  bnb_node_countdown_ = bnb_nodes_limit;
+
+  for (ElementIndex i; i < ElementIndex(items_.size()); ++i) {
+    items_[i] = {std::max(1e-6, profits[i]), weights[i], i};
+  }
+
+  absl::c_sort(items_, [](Item i1, Item i2) {
+    return i1.profit / i1.weight > i2.profit / i2.weight;
+  });
+  Heuristic(items_);
+  maximal_exceptions_.push_back(exceptions_);
+  exceptions_.clear();
+  VLOG(5) << "[KPCG] Heuristic solution: cost "
+          << break_profit_sum_ + best_delta_;
+
+}
+
+
+void ExpKnap::Heuristic(
+    const util_intops::StrongVector<ElementIndex, Item>& items) {
+  exceptions_.clear();
+
+  break_profit_sum_ = break_weight_sum_ = .0;
+  break_it_ = items.begin();
+  while (break_it_ < items.end() &&
+         break_it_->weight <= capacity_ - break_weight_sum_) {
+    break_profit_sum_ += break_it_->profit;
+    break_weight_sum_ += break_it_->weight;
+    break_solution_[break_it_->index] = true;
+    ++break_it_;
+  }
+  Cost residual = capacity_ - break_weight_sum_;
+
+  VLOG(5) << "[KPCG] Break solution: cost " << break_profit_sum_
+          << ", residual " << residual;
+
+  Cost profit_delta_ub = residual * break_it_->profit / break_it_->weight;
+  if (profit_delta_ub == .0) {
+    return;
+  }
+
+  // Try filling the residual space with less efficient (maybe smaller) items
+  best_delta_ = .0;
+  for (auto it = break_it_; it < items.end(); it++) {
+    if (it->weight <= residual && it->profit > best_delta_) {
+      exceptions_ = {it->index};
+      best_delta_ = it->profit;
+      if (best_delta_ >= profit_delta_ub) {
+        return;
+      }
+    }
+  }
+
+  // Try removing an item and adding the break item
+  Cost min_weight = break_it_->weight - residual;
+  for (auto it = break_it_ - 1; it >= items.begin(); it--) {
+    Cost profit_delta = break_it_->profit - it->profit;
+    if (it->weight >= min_weight && profit_delta > best_delta_) {
+      exceptions_ = {break_it_->index, it->index};
+      best_delta_ = profit_delta;
+      if (best_delta_ >= profit_delta_ub) {
+        return;
+      }
+    }
+  }
+}
 
 bool BinPackingSetCoverModel::UpdateCore(
     Cost best_lower_bound, const ElementCostVector& best_multipliers,
