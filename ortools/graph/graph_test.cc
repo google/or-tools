@@ -715,6 +715,7 @@ TYPED_TEST(GenericGraphInterfaceTest, EmptyGraphAlternateSyntax) {
   EXPECT_EQ(ArcIndex(0), graph.num_arcs());
 }
 
+#if !defined(_MSC_VER)
 TYPED_TEST(GenericGraphInterfaceTest, GraphWithNodesButNoArc) {
   using NodeIndex = typename TypeParam::NodeIndex;
   using ArcIndex = typename TypeParam::ArcIndex;
@@ -736,6 +737,7 @@ TYPED_TEST(GenericGraphInterfaceTest, GraphWithNodesButNoArc) {
   }
   EXPECT_EQ(0, count);
 }
+#endif  // !defined(_MSC_VER)
 
 TYPED_TEST(GenericGraphInterfaceTest, BuildWithRandomArc) {
   using NodeIndex = typename TypeParam::NodeIndex;

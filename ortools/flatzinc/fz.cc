@@ -27,15 +27,16 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
-
+#include "absl/log/flags.h"
 #include "absl/log/initialize.h"
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
@@ -50,7 +51,7 @@ ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
 ABSL_FLAG(bool, display_all_solutions, false,
           "Display all improving solutions.");
-ABSL_FLAG(bool, free_search, false,
+ABSL_FLAG(bool, free_search, !kOrToolsMode,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
 ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");

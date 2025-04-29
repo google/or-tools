@@ -30,6 +30,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/util:parse_proto",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
