@@ -2,6 +2,11 @@ using ORToolsGenerated
 const OperationsResearch = ORToolsGenerated.Proto.operations_research
 const MathOpt = OperationsResearch.math_opt
 const SolverType = MathOpt.SolverTypeProto
+const SolveResultProto = MathOpt.SolveResultProto
+const TerminationReasonProto = MathOpt.TerminationReasonProto
+const LimitProto = MathOpt.LimitProto
+const FeasibilityStatusProto = MathOpt.FeasibilityStatusProto
+const PB = MathOpt.PB
 
 """
 Given the nature of the fields, we are using an alias for the VariablesProto struct.
@@ -379,11 +384,11 @@ function to_proto_struct(model::Model)::MathOpt.ModelProto
 
     return MathOpt.ModelProto(
         model.name,
-        to_proto_struct(model.variables),
+        model.variables,
         to_proto_struct(model.objective),
         auxiliary_objectives,
-        to_proto_struct(model.linear_constraints),
-        to_proto_struct(model.linear_constraint_matrix),
+        model.linear_constraints,
+        model.linear_constraint_matrix,
         quadratic_constraints,
         second_order_cone_constraints,
         sos1_constraints,
@@ -391,6 +396,9 @@ function to_proto_struct(model::Model)::MathOpt.ModelProto
         indicator_constraints,
     )
 end
+
+# The size of the encoded model
+encoded_model_size(model::Model) = PB._encoded_size(to_proto_struct(model))
 
 """
   Mutable wrapper struct for the GscipParameters struct.
@@ -928,7 +936,7 @@ mutable struct SatParameters <: AbstractSatParameters
     exploit_objective::Bool
     probing_period_at_root::Int64
     use_probing_search::Bool
-    shaving_deterministic_time_in_probing_search::Float64
+    use_shaving_in_probing_search::Bool
     shaving_search_deterministic_time::Float64
     use_objective_lb_search::Bool
     use_objective_shaving_search::Bool
@@ -1149,8 +1157,8 @@ mutable struct SatParameters <: AbstractSatParameters
         exploit_objective = true,
         probing_period_at_root = Int64(0),
         use_probing_search = false,
-        shaving_deterministic_time_in_probing_search = Float64(0.001),
-        shaving_search_deterministic_time = Float64(0.1),
+        use_shaving_in_probing_search = true,
+        shaving_search_deterministic_time = Float64(0.001),
         use_objective_lb_search = false,
         use_objective_shaving_search = false,
         pseudo_cost_reliability_threshold = Int64(100),
@@ -1370,7 +1378,7 @@ mutable struct SatParameters <: AbstractSatParameters
             exploit_objective,
             probing_period_at_root,
             use_probing_search,
-            shaving_deterministic_time_in_probing_search,
+            use_shaving_in_probing_search,
             shaving_search_deterministic_time,
             use_objective_lb_search,
             use_objective_shaving_search,
@@ -1598,7 +1606,7 @@ function to_proto_struct(
         sat_parameters.exploit_objective,
         sat_parameters.probing_period_at_root,
         sat_parameters.use_probing_search,
-        sat_parameters.shaving_deterministic_time_in_probing_search,
+        sat_parameters.use_shaving_in_probing_search,
         sat_parameters.shaving_search_deterministic_time,
         sat_parameters.use_objective_lb_search,
         sat_parameters.use_objective_shaving_search,

@@ -1,5 +1,11 @@
 module ORTools
-# TODO: b/384496822 - Run formatter across entire package
+
+import MathOptInterface as MOI
+using ORTools_jll
+
+include("moi_wrapper/Type_wrappers.jl")
+include("c_wrapper/c_wrapper.jl")
 include("moi_wrapper/MOI_wrapper.jl")
+
 
 end
