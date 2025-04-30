@@ -165,7 +165,8 @@ TEST(FormatAttrValueTest, FormatsInt64) {
 }
 
 TEST(FormatAttrValueTest, FormatsDouble) {
-  EXPECT_EQ(FormatAttrValue(absl::SixDigits(4.2)), "4.2");
+  // need a double with an exact binary representation
+  EXPECT_EQ(FormatAttrValue(4.5), "4.5");
 }
 
 }  // namespace
