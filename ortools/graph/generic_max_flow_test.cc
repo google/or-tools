@@ -352,9 +352,9 @@ void AddSourceAndSink(const typename Graph::NodeIndex num_tails,
 }
 
 template <typename Graph>
-void GenerateCompleteGraph(const typename Graph::NodeIndex num_tails,
-                           const typename Graph::NodeIndex num_heads,
-                           Graph* graph) {
+void GenerateCompleteGraphWithSourceAndSink(
+    const typename Graph::NodeIndex num_tails,
+    const typename Graph::NodeIndex num_heads, Graph* graph) {
   const typename Graph::NodeIndex num_nodes = num_tails + num_heads + 2;
   const typename Graph::ArcIndex num_arcs =
       num_tails * num_heads + num_tails + num_heads;
@@ -470,7 +470,7 @@ void FullAssignment(std::optional<FlowQuantity> unused,
                     typename Graph::NodeIndex num_tails,
                     typename Graph::NodeIndex num_heads) {
   Graph graph;
-  GenerateCompleteGraph(num_tails, num_heads, &graph);
+  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
   graph.Build();
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
@@ -590,7 +590,7 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
   Graph graph;
-  GenerateCompleteGraph(num_tails, num_heads, &graph);
+  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs());
   GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
