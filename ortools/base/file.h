@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_FILE_H_
 #define OR_TOOLS_BASE_FILE_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -39,7 +40,7 @@ class File {
   static File* OpenOrDie(absl::string_view file_name, absl::string_view mode);
 #endif  // SWIG
 
-  File(absl::string_view name);
+  explicit File(absl::string_view name);
   virtual ~File() = default;
 
   // Reads "size" bytes to buf from file, buff should be pre-allocated.
@@ -57,7 +58,7 @@ class File {
   // Returns file size.
   virtual size_t Size() = 0;
 
-  // Returns wether the file is currently open.
+  // Returns whether the file is currently open.
   virtual bool Open() const = 0;
 
   // Reads the whole file to a string, with a maximum length of 'max_length'.
@@ -106,8 +107,8 @@ absl::StatusOr<std::string> GetContents(absl::string_view path,
 absl::Status GetContents(absl::string_view file_name, std::string* output,
                          Options options);
 
-absl::Status SetContents(absl::string_view file_name, absl::string_view contents,
-                         Options options);
+absl::Status SetContents(absl::string_view file_name,
+                         absl::string_view contents, Options options);
 
 absl::Status WriteString(File* file, absl::string_view contents,
                          Options options);

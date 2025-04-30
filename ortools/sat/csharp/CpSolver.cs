@@ -134,33 +134,33 @@ public sealed class CpSolver : IDisposable
         {
             switch (expr)
             {
-            case LinearExprBuilder a:
-                constant += coefficient * a.Offset;
-                if (coefficient == 1)
-                {
-                    foreach (var sub in a.Terms)
+                case LinearExprBuilder a:
+                    constant += coefficient * a.Offset;
+                    if (coefficient == 1)
                     {
-                        _terms.Enqueue(sub);
+                        foreach (var sub in a.Terms)
+                        {
+                            _terms.Enqueue(sub);
+                        }
                     }
-                }
-                else
-                {
-                    foreach (var sub in a.Terms)
+                    else
                     {
-                        _terms.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                        foreach (var sub in a.Terms)
+                        {
+                            _terms.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                        }
                     }
-                }
 
-                break;
-            case IntVar intVar:
-                var index = intVar.GetIndex();
-                var value = index >= 0 ? Response!.Solution[index] : -Response!.Solution[-index - 1];
-                constant += coefficient * value;
-                break;
-            case NotBoolVar:
-                throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
-            default:
-                throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
+                    break;
+                case IntVar intVar:
+                    var index = intVar.GetIndex();
+                    var value = index >= 0 ? Response!.Solution[index] : -Response!.Solution[-index - 1];
+                    constant += coefficient * value;
+                    break;
+                case NotBoolVar:
+                    throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
+                default:
+                    throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
 
             if (!_terms.TryDequeue(out var term))
@@ -170,7 +170,8 @@ public sealed class CpSolver : IDisposable
 
             expr = term.expr;
             coefficient = term.coefficient;
-        } while (true);
+        }
+        while (true);
 
         return constant;
     }
@@ -249,6 +250,7 @@ class BestBoundCallbackDelegate : BestBoundCallback
     public BestBoundCallbackDelegate(DoubleToVoidDelegate del) => _delegate = del;
 
     public override void NewBestBound(double bound) => _delegate(bound);
+
 }
 
 } // namespace Google.OrTools.Sat

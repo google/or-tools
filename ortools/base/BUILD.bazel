@@ -37,6 +37,31 @@ filegroup(
 )
 
 cc_library(
+    name = "accurate_sum",
+    hdrs = ["accurate_sum.h"],
+)
+
+cc_library(
+    name = "adjustable_priority_queue",
+    hdrs = [
+        "adjustable_priority_queue.h",
+        "adjustable_priority_queue-inl.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
+    name = "array",
+    srcs = ["array_internal.h"],
+    hdrs = ["array.h"],
+    deps = [
+        "@abseil-cpp//absl/utility",
+    ],
+)
+
+cc_library(
     name = "base",
     srcs = [
         "version.cc",
@@ -82,28 +107,8 @@ cc_library(
 )
 
 cc_library(
-    name = "accurate_sum",
-    hdrs = ["accurate_sum.h"],
-)
-
-cc_library(
-    name = "adjustable_priority_queue",
-    hdrs = [
-        "adjustable_priority_queue.h",
-        "adjustable_priority_queue-inl.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
-    name = "array",
-    srcs = ["array_internal.h"],
-    hdrs = ["array.h"],
-    deps = [
-        "@abseil-cpp//absl/utility",
-    ],
+    name = "base_export",
+    hdrs = ["base_export.h"],
 )
 
 cc_library(
@@ -134,6 +139,31 @@ cc_library(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/flags:usage",
+    ],
+)
+
+cc_library(
+    name = "constant_divisor",
+    srcs = ["constant_divisor.cc"],
+    hdrs = ["constant_divisor.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
+    ],
+)
+
+cc_test(
+    name = "constant_divisor_test",
+    srcs = ["constant_divisor_test.cc"],
+    deps = [
+        ":constant_divisor",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
+        "@com_google_benchmark//:benchmark",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -243,28 +273,6 @@ cc_library(
 )
 
 cc_library(
-    name = "status_matchers",
-    hdrs = ["status_matchers.h"],
-    deps = [
-        ":base",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@com_google_googletest//:gtest",
-    ],
-)
-
-cc_library(
-    name = "message_matchers",
-    hdrs = ["message_matchers.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-        "@com_google_googletest//:gtest",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_library(
     name = "gmock",
     hdrs = ["gmock.h"],
     deps = [
@@ -328,30 +336,11 @@ cc_library(
     name = "intops",
     hdrs = ["strong_int.h"],
     deps = [
-      ":int_type",
-      "@abseil-cpp//absl/log:absl_log",
-      "@abseil-cpp//absl/numeric:int128",
-      "@abseil-cpp//absl/strings",
-      "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-cc_test(
-    name = "strong_int_test",
-    size = "small",
-    timeout = "long",
-    srcs = ["strong_int_test.cc"],
-    deps = [
-        ":intops",
-        ":base",
-        ":types",
-        "@abseil-cpp//absl/container:node_hash_map",
-        "@abseil-cpp//absl/flags:marshalling",
-        "@abseil-cpp//absl/hash:hash_testing",
+        ":int_type",
+        "@abseil-cpp//absl/log:absl_log",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -359,31 +348,6 @@ cc_library(
     name = "iterator_adaptors",
     hdrs = ["iterator_adaptors.h"],
     deps = [":base"],
-)
-
-cc_library(
-    name = "constant_divisor",
-    srcs = ["constant_divisor.cc"],
-    hdrs = ["constant_divisor.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/numeric:int128",
-    ],
-)
-
-cc_test(
-    name = "constant_divisor_test",
-    srcs = ["constant_divisor_test.cc"],
-    deps = [
-        ":constant_divisor",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/random:bit_gen_ref",
-        "@abseil-cpp//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
-    ],
 )
 
 cc_library(
@@ -416,11 +380,6 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
-)
-
-cc_library(
-    name = "base_export",
-    hdrs = ["base_export.h"],
 )
 
 cc_library(
@@ -457,6 +416,16 @@ cc_library(
     hdrs = ["memutil.h"],
     deps = [
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "message_matchers",
+    hdrs = ["message_matchers.h"],
+    deps = [
+        "@abseil-cpp//absl/strings",
+        "@com_google_googletest//:gtest",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -512,20 +481,6 @@ cc_library(
     deps = [
         ":base",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "temp_path",
-    srcs = ["temp_path.cc"],
-    hdrs = ["temp_path.h"],
-    deps = [
-        ":base",
-        ":file",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -597,6 +552,18 @@ cc_library(
 )
 
 cc_library(
+    name = "status_matchers",
+    hdrs = ["status_matchers.h"],
+    deps = [
+        ":base",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
     deps = [
@@ -611,6 +578,36 @@ cc_library(
     name = "stl_util",
     hdrs = ["stl_util.h"],
     deps = [":base"],
+)
+
+cc_library(
+    name = "strong_int",
+    hdrs = ["strong_int.h"],
+    deps = [
+        "@abseil-cpp//absl/meta:type_traits",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "strong_int_test",
+    size = "small",
+    timeout = "long",
+    srcs = ["strong_int_test.cc"],
+    deps = [
+        ":gmock",
+        ":logging",
+        ":strong_int",
+        "@abseil-cpp//absl/container:node_hash_map",
+        "@abseil-cpp//absl/flags:marshalling",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
@@ -638,6 +635,20 @@ cc_library(
     hdrs = ["sysinfo.h"],
     deps = [
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "temp_path",
+    srcs = ["temp_path.cc"],
+    hdrs = ["temp_path.h"],
+    deps = [
+        ":base",
+        ":file",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
 )
 
