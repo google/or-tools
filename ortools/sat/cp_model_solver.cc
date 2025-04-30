@@ -2335,6 +2335,19 @@ void RegisterSearchStatisticCallback(Model* global_model) {
         response->set_num_lp_iterations(num_lp_iters);
       });
 }
+
+void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
+#if !defined(__PORTABLE_PLATFORM__)
+  // Override parameters?
+  if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
+    SatParameters flag_params;
+    CHECK(google::protobuf::TextFormat::ParseFromString(
+        absl::GetFlag(FLAGS_cp_model_params), &flag_params));
+    params->MergeFrom(flag_params);
+  }
+#endif  // __PORTABLE_PLATFORM__
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2355,20 +2368,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       DumpModelProto(model_proto, model_proto.name());
     }
   }
-
-  // Override parameters?
-  if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
-    SatParameters params = *model->GetOrCreate<SatParameters>();
-    SatParameters flag_params;
-    CHECK(google::protobuf::TextFormat::ParseFromString(
-        absl::GetFlag(FLAGS_cp_model_params), &flag_params));
-    params.MergeFrom(flag_params);
-    *(model->GetOrCreate<SatParameters>()) = params;
-  }
 #endif  // __PORTABLE_PLATFORM__
 
-  // Enable the logging component.
+  MergeParamsWithFlagsAndDefaults(model->GetOrCreate<SatParameters>());
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
+
+  // Enable the logging component.
   SolverLogger* logger = model->GetOrCreate<SolverLogger>();
   logger->EnableLogging(params.log_search_progress());
   logger->SetLogToStdOut(params.log_to_stdout());

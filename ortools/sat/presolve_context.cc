@@ -794,7 +794,10 @@ bool PresolveContext::HasUnusedAffineVariable() const {
 
 // TODO(user): Also test var_to_constraints_ !!
 bool PresolveContext::ConstraintVariableUsageIsConsistent() {
-  if (is_unsat_) return true;  // We do not care in this case.
+  // We do not care in these cases.
+  if (is_unsat_) return true;
+  if (time_limit_->LimitReached()) return true;
+
   if (var_to_constraints_.size() != working_model->variables_size()) {
     LOG(INFO) << "Wrong var_to_constraints_ size!";
     return false;
