@@ -110,12 +110,12 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_SAMPLE_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ifeq ($(USE_DOTNET_8)_$(USE_DOTNET_CORE_31),ON_ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net8.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 else
- ifeq ($(USE_DOTNET_6),ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ ifeq ($(USE_DOTNET_8),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net8.0<\/TargetFramework>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
  else
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
@@ -151,9 +151,9 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-ifeq ($(USE_DOTNET_6),ON)
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+ifeq ($(USE_DOTNET_8),ON)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net8.0 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net8.0 -c Release $(ARGS)
 endif
 ifeq ($(USE_DOTNET_CORE_31),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
@@ -184,12 +184,12 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_SAMPLE_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ifeq ($(USE_DOTNET_8)_$(USE_DOTNET_CORE_31),ON_ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net8.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 else
- ifeq ($(USE_DOTNET_6),ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ ifeq ($(USE_DOTNET_8),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net8.0<\/TargetFramework>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
  else
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
@@ -225,9 +225,9 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-ifeq ($(USE_DOTNET_6),ON)
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net6.0 -c Release $(ARGS)
+ifeq ($(USE_DOTNET_8),ON)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net8.0 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" run --no-build --framework net8.0 -c Release $(ARGS)
 endif
 ifeq ($(USE_DOTNET_CORE_31),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
@@ -255,12 +255,12 @@ $(TEMP_DOTNET_DIR)/$1/%/%.csproj: \
  > $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
-ifeq ($(USE_DOTNET_6)_$(USE_DOTNET_CORE_31),ON_ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+ifeq ($(USE_DOTNET_8)_$(USE_DOTNET_CORE_31),ON_ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net8.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
 else
- ifeq ($(USE_DOTNET_6),ON)
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net6.0<\/TargetFramework>/' \
+ ifeq ($(USE_DOTNET_8),ON)
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>net8.0<\/TargetFramework>/' \
  $(TEMP_DOTNET_DIR)$S$1$S$$*$S$$*.csproj
  else
 	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFramework>netcoreapp3.1<\/TargetFramework>/' \
@@ -296,9 +296,9 @@ rdotnet_%: \
  $(TEMP_DOTNET_DIR)/$1/%/%.csproj \
  $(TEMP_DOTNET_DIR)/$1/%/%.cs \
  FORCE
-ifeq ($(USE_DOTNET_6),ON)
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net6.0 -c Release
-	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" test --no-build --framework net6.0 -c Release $(ARGS)
+ifeq ($(USE_DOTNET_8),ON)
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework net8.0 -c Release
+	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" test --no-build --framework net8.0 -c Release $(ARGS)
 endif
 ifeq ($(USE_DOTNET_CORE_31),ON)
 	cd $(TEMP_DOTNET_DIR)$S$1$S$$* && "$(DOTNET_BIN)" build --framework netcoreapp3.1 -c Release
@@ -659,7 +659,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_SAMPLE_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net8.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
@@ -694,7 +694,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_SAMPLE_LANG@/9.0/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
-	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net6.0<\/TargetFrameworks>/' \
+	$(SED) -i -e 's/@DOTNET_TFM@/<TargetFrameworks>netcoreapp3.1;net8.0<\/TargetFrameworks>/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
 	$(SED) -i -e 's/@DOTNET_PROJECT@/$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
  $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet$S$$*.csproj
@@ -741,7 +741,7 @@ endif
 ######################
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net6.0 \
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f net8.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
 	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
@@ -750,7 +750,7 @@ nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
 
 .PHONY: nuget_upload # Upload Nuget Package
 nuget_upload: nuget_archive
-	@echo Uploading Nuget package for "netcoreapp3.1;net6.0".
+	@echo Uploading Nuget package for "netcoreapp3.1;net8.0".
 	$(warning Not Implemented)
 
 endif  # HAS_DOTNET=ON

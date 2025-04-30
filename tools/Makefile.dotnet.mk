@@ -89,7 +89,7 @@ endif #ifeq SOURCE exist
 build: $(SOURCE)
 	"$(DOTNET_BIN)" build examples/$(SOURCE_NAME)/project.csproj
 run: build
-	"$(DOTNET_BIN)" run --no-build --framework net6.0 --project examples/$(SOURCE_NAME)/project.csproj -- $(ARGS)
+	"$(DOTNET_BIN)" run --no-build --framework net8.0 --project examples/$(SOURCE_NAME)/project.csproj -- $(ARGS)
 
 endif #ifeq SOURCE
 

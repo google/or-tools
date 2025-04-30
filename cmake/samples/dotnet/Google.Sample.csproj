@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <!-- see https://github.com/dotnet/docs/issues/12237 -->
     <RollForward>LatestMajor</RollForward>
     <AssemblyName>Google.Sample</AssemblyName>

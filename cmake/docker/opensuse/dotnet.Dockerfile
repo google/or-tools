@@ -3,13 +3,13 @@ FROM ortools/cmake:opensuse_swig AS env
 # .NET install
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-opensuse
 RUN zypper refresh \
-&& zypper install -y wget tar awk gzip libicu-devel
+&& zypper install -y wget tar awk gzip libicu-devel findutils
 
-## .Net 6.0
+## .Net 8.0
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
+&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

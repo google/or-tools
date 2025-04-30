@@ -101,12 +101,12 @@ make run SOURCE=examples/dotnet/Vrp/Vrp.cs
 
   ```shell
   dotnet build examples/dotnet/Vrp/Vrp.csproj
-  dotnet run --no-build --framework net6.0 --project examples/dotnet/Vrp/Vrp.csproj
+  dotnet run --no-build --framework net8.0 --project examples/dotnet/Vrp/Vrp.csproj
   ```
 
 - on Windows:
 
   ```shell
   dotnet build examples\dotnet\Vrp\Vrp.csproj
-  dotnet run --no-build --framework net6.0 --project examples\dotnet\Vrp\Vrp.csproj
+  dotnet run --no-build --framework net8.0 --project examples\dotnet\Vrp\Vrp.csproj
   ```

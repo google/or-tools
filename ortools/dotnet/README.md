@@ -25,11 +25,11 @@ and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 ## Requirement
 
-The library is compiled against `netcoreapp3.1` and `net6.0`, so you'll only
+The library is compiled against `netcoreapp3.1` and `net8.0`, so you'll only
 need:
 
 * .Net Core 3.1 LTS SDK
-* .Net 6.0 LTS SDK
+* .Net 8.0 LTS SDK
 
 note: We won't/can't rely on VS 2022 since we want a portable cross-platform
 [`dotnet/cli`](https://github.com/dotnet/cli) pipeline.
@@ -230,7 +230,7 @@ defined) should have this layout:
       \- Google.OrTools.dll
 ...
 ```
-note: `{framework}` could be `netcoreapp3.1` or/and `net6.0`
+note: `{framework}` could be `netcoreapp3.1` or/and `net8.0`
 
 ### Complete Google.OrTools Package
 
@@ -278,7 +278,7 @@ dotnet pack <build_dir>/dotnet/Google.OrTools
 
 ## Examples
 
-The Test projects show examples of building applications with `net6.0`.
+The Test projects show examples of building applications with `net8.0`.
 
 The F# example folder shows how to compile against the typical .NET Framework
 installed on machine.
