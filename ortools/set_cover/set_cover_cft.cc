@@ -1005,6 +1005,22 @@ std::vector<FullSubsetIndex> ComputeTentativeFocus(StrongModelView full_model) {
   return columns_focus;
 }
 
+// This class handles the logic for selecting columns based on their reduced
+// costs and the number of rows they cover. While this implementation is more
+// complex than what would typically be required for static `SetCoverModel`s, it
+// is designed to efficiently handle dynamically updated models where new
+// columns are generated over time. In this case, recomputing the row view from
+// scratch each time would introduce significant overhead. To avoid this, the
+// column selection logic operates solely on the column view, without relying on
+// the row view.
+//
+// NOTE: A cleaner alternative would involve modifying the `SetCoverModel`
+// implementation to support incremental updates to the row view as new columns
+// are added. This approach would reduce overhead while enabling a simpler and
+// more efficient column selection process.
+//
+// NOTE: The row-view based approach is available at commit:
+// a598cf83930629853f72b964ebcff01f7a9378e0
 class ColumnSelector {
  public:
   ColumnSelector(FilterModelView full_model,
@@ -1038,13 +1054,12 @@ class ColumnSelector {
       return false;
     }
     for (ElementIndex i : full_model_.columns()[j]) {
-      selected_[j] = true;
+      selected_[j] = true;  // Detect empty columns
       if (++row_cover_counts_[i] == kMinCov) {
         --rows_left_to_cover_;
       }
     }
-    // Skip empty comlumns
-    if (selected_[j]) {
+    if (selected_[j]) {  // Skip empty comlumns
       selection_.push_back(static_cast<FullSubsetIndex>(j));
     }
     return selected_[j];
@@ -1069,13 +1084,9 @@ class ColumnSelector {
         continue;
       }
       for (ElementIndex i : full_model_.columns()[j]) {
-        if (row_cover_counts_[i] >= kMinCov) {
-          continue;
-        }
-        selected_[j] = true;
-        if (++row_cover_counts_[i] == kMinCov) {
-          --rows_left_to_cover_;
-        }
+        ++row_cover_counts_[i];
+        rows_left_to_cover_ += (row_cover_counts_[i] == kMinCov ? 1 : 0);
+        selected_[j] = selected_[j] || (row_cover_counts_[i] <= kMinCov);
       }
       if (selected_[j]) {
         selection_.push_back(static_cast<FullSubsetIndex>(j));
@@ -1153,16 +1164,6 @@ Cost FullToCoreModel::FixMoreColumns(
   return fixed_cost;
 }
 
-std::vector<FullSubsetIndex> FullToCoreModel::SelectNewCoreColumns(
-    const std::vector<FullSubsetIndex>& forced_columns) {
-  ColumnSelector new_core_columns(FixingFullModelView(), forced_columns,
-                                  full_dual_state_.reduced_costs());
-  new_core_columns.SelecteMinRedCostColumns();
-  new_core_columns.SelectMinRedCostByRow();
-  new_core_columns.SortSelection();
-  return std::move(new_core_columns).selection();
-}
-
 void FullToCoreModel::ResetColumnFixing(
     const std::vector<FullSubsetIndex>& full_columns_to_fix,
     const DualState& dual_state) {
@@ -1221,9 +1222,13 @@ bool FullToCoreModel::UpdateCore(Cost best_lower_bound,
   prev_best_lower_bound_ = best_lower_bound;
 
   UpdateMultipliers(best_multipliers, full_dual_state_, best_dual_state_);
-  std::vector<FullSubsetIndex> new_core_columns =
-      SelectNewCoreColumns(best_solution.subsets());
-  SetFocus(new_core_columns);
+  ColumnSelector new_core_columns(FixingFullModelView(),
+                                  best_solution.subsets(),
+                                  full_dual_state_.reduced_costs());
+  new_core_columns.SelecteMinRedCostColumns();
+  new_core_columns.SelectMinRedCostByRow();
+  new_core_columns.SortSelection();
+  SetFocus(new_core_columns.selection());
 
   UpdatePricingPeriod(full_dual_state_, best_lower_bound,
                       best_solution.cost() - fixed_cost());
