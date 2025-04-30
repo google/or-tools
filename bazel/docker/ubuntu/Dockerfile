@@ -7,21 +7,23 @@ ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install system build dependencies
-RUN apt-get update -qq \
-&& apt-get install -yq git wget curl libssl-dev build-essential \
-&& apt-get install -yq python3-dev python3-pip python3-venv \
+RUN apt update -qq \
+&& apt install -yq git wget curl libssl-dev build-essential \
+&& apt install -yq python3-dev python3-pip python3-venv \
  python3-numpy python3-pandas \
-&& apt-get install -yq default-jdk \
-&& apt-get clean \
+&& apt install -yq default-jdk \
+&& apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Bazel
-RUN curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
+RUN apt install -y apt-transport-https curl gnupg \
+&& curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg \
+&& mv bazel-archive-keyring.gpg /usr/share/keyrings
 ARG TARGETARCH=amd64
-RUN echo "deb [arch=$TARGETARCH] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-RUN apt-get update -qq \
-&& apt-get install -yq bazel \
-&& apt-get clean \
+RUN echo "deb [arch=$TARGETARCH signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+RUN apt update -qq \
+&& apt install -yq bazel \
+&& apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 FROM env AS devel
