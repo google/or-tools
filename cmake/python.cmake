@@ -458,6 +458,9 @@ set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
 set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
 set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
 
+set(need_unix_bzip2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_BZip2}>>")
+set(need_windows_bzip2_lib "$<AND:${is_windows},$<BOOL:${BUILD_BZip2}>>")
+
 set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
 set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 
@@ -491,6 +494,11 @@ add_custom_command(
     $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
     $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
     $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
+    ${PYTHON_PROJECT}/.libs
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_BZip2}>,copy,true>
+    $<${need_unix_bzip2_lib}:$<TARGET_SONAME_FILE:BZip2::BZip2>>
+    $<${need_windows_bzip2_lib}:$<TARGET_FILE:BZip2::BZip2>>
     ${PYTHON_PROJECT}/.libs
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>

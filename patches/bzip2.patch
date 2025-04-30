@@ -1,0 +1,172 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c4b0b6e..30f7652 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,10 @@
+ cmake_minimum_required(VERSION 3.12)
+ 
++# option() honors normal variables.
++if (POLICY CMP0077)
++  cmake_policy(SET CMP0077 NEW)
++endif()
++
+ project(bzip2
+         VERSION 1.1.0
+         DESCRIPTION "This Bzip2/libbz2 a program and library for lossless block-sorting data compression."
+@@ -283,8 +288,8 @@ set(BZ2_SOURCES
+ add_library(bz2_ObjLib OBJECT)
+ target_sources(bz2_ObjLib
+     PRIVATE   ${BZ2_SOURCES}
+-    PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
+-    INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
++    bzlib_private.h
++    bzlib.h)
+ 
+ # Windows resource file
+ set(BZ2_RES "")
+@@ -299,21 +304,30 @@ endif()
+ 
+ if(ENABLE_SHARED_LIB)
+     # The libbz2 shared library.
+-    add_library(bz2 SHARED ${BZ2_RES})
+-    target_sources(bz2
+-        PRIVATE   ${BZ2_SOURCES}
+-                  ${CMAKE_CURRENT_SOURCE_DIR}/libbz2.def
+-        PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
+-        INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
++    add_library(BZip2 SHARED ${BZ2_RES})
++    target_sources(BZip2
++      PRIVATE   ${BZ2_SOURCES}
++      libbz2.def
++      bzlib_private.h
++      bzlib.h)
++    target_include_directories(BZip2 PUBLIC
++      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++      $<INSTALL_INTERFACE:include>
++    )
+ 
+     # Always use '-fPIC'/'-fPIE' option for shared libraries.
+-    set_property(TARGET bz2 PROPERTY POSITION_INDEPENDENT_CODE ON)
++    set_property(TARGET BZip2 PROPERTY POSITION_INDEPENDENT_CODE ON)
+ 
+-    set_target_properties(bz2 PROPERTIES
++    set_target_properties(BZip2 PROPERTIES
+         COMPILE_FLAGS "${WARNCFLAGS}"
+-        VERSION ${LT_VERSION} SOVERSION ${LT_SOVERSION})
+-    install(TARGETS bz2 DESTINATION ${CMAKE_INSTALL_LIBDIR})
++        VERSION ${LT_VERSION} SOVERSION ${LT_SOVERSION}
++        OUTPUT_NAME bz2
++    )
++    install(TARGETS BZip2
++      EXPORT ${PROJECT_NAME}Targets
++      DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++    add_library(BZip2::BZip2 ALIAS BZip2)
+ 
+     if(USE_OLD_SONAME)
+         # Hack to support the old libbz2.so.1.0 version by including an extra copy.
+@@ -323,16 +337,22 @@ if(ENABLE_SHARED_LIB)
+             add_library(bz2_old_soname SHARED ${BZ2_RES})
+             target_sources(bz2_old_soname
+                 PRIVATE   ${BZ2_SOURCES}
+-                          ${CMAKE_CURRENT_SOURCE_DIR}/libbz2.def
+-                PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
+-                INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h
++                libbz2.def
++                bzlib_private.h
++                bzlib.h
++            )
++            target_include_directories(bz2_old_soname PUBLIC
++              $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++              $<INSTALL_INTERFACE:include>
+             )
+             set_target_properties(bz2_old_soname PROPERTIES
+                 COMPILE_FLAGS "${WARNCFLAGS}"
+                 VERSION ${LT_SOVERSION}.${LT_AGE} SOVERSION ${LT_SOVERSION}.${LT_AGE}
+                 OUTPUT_NAME bz2
+             )
+-            install(TARGETS bz2_old_soname DESTINATION ${CMAKE_INSTALL_LIBDIR})
++            install(TARGETS bz2_old_soname
++              EXPORT ${PROJECT_NAME}Targets
++              DESTINATION ${CMAKE_INSTALL_LIBDIR})
+         endif()
+     endif()
+ endif()
+@@ -341,9 +361,13 @@ if(ENABLE_STATIC_LIB)
+     # The libbz2 static library.
+     add_library(bz2_static STATIC)
+     target_sources(bz2_static
+-        PRIVATE     ${BZ2_SOURCES}
+-        PUBLIC      ${CMAKE_CURRENT_SOURCE_DIR}/bzlib_private.h
+-        INTERFACE   ${CMAKE_CURRENT_SOURCE_DIR}/bzlib.h)
++      PRIVATE     ${BZ2_SOURCES}
++      bzlib_private.h
++      bzlib.h)
++    target_include_directories(bz2_static PUBLIC
++      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++      $<INSTALL_INTERFACE:include>
++    )
+ 
+     # Use '-fPIC'/'-fPIE' option for static libraries by default.
+     # You may build with ENABLE_STATIC_LIB_IS_PIC=OFF to disable PIC for the static library.
+@@ -357,8 +381,13 @@ if(ENABLE_STATIC_LIB)
+         SOVERSION           ${LT_SOVERSION}
+         ARCHIVE_OUTPUT_NAME bz2_static)
+     target_compile_definitions(bz2_static PUBLIC BZ2_STATICLIB)
+-    install(TARGETS bz2_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
++    install(TARGETS bz2_static
++      EXPORT ${PROJECT_NAME}Targets
++      DESTINATION ${CMAKE_INSTALL_LIBDIR})
+     install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++    if(NOT TARGET BZip2)
++      add_library(BZip2::BZip2 ALIAS bz2_static)
++    endif()
+ endif()
+ 
+ if(ENABLE_APP)
+@@ -373,7 +402,9 @@ if(ENABLE_APP)
+     else()
+         target_compile_definitions(bzip2 PUBLIC BZ_LCCWIN32=0 BZ_UNIX)
+     endif()
+-    install(TARGETS bzip2 DESTINATION ${CMAKE_INSTALL_BINDIR})
++    install(TARGETS bzip2
++      EXPORT ${PROJECT_NAME}Targets
++      DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+     # Create bzip2 copies bzcat and bunzip.
+     # The default behavior is altered in bzip2.c code by checking the program name.
+@@ -391,7 +422,9 @@ if(ENABLE_APP)
+     else()
+         target_compile_definitions(bzip2recover PUBLIC BZ_LCCWIN32=0 BZ_UNIX)
+     endif()
+-    install(TARGETS bzip2recover DESTINATION ${CMAKE_INSTALL_BINDIR})
++    install(TARGETS bzip2recover
++      EXPORT ${PROJECT_NAME}Targets
++      DESTINATION ${CMAKE_INSTALL_BINDIR})
+ 
+     if(ENABLE_EXAMPLES)
+         if(ENABLE_SHARED_LIB)
+@@ -399,8 +432,10 @@ if(ENABLE_APP)
+             add_executable(dlltest)
+             target_sources(dlltest
+                 PRIVATE   dlltest.c)
+-            target_link_libraries(dlltest bz2)
+-            install(TARGETS dlltest DESTINATION ${CMAKE_INSTALL_BINDIR})
++            target_link_libraries(dlltest BZip2)
++            install(TARGETS dlltest
++              EXPORT ${PROJECT_NAME}Targets
++              DESTINATION ${CMAKE_INSTALL_BINDIR})
+         endif()
+     endif()
+ 
+@@ -419,6 +454,10 @@ if(ENABLE_APP)
+ 
+ endif()
+ 
++install(EXPORT ${PROJECT_NAME}Targets
++  NAMESPACE BZip2::
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
++
+ if(ENABLE_APP AND Python3_FOUND)
+     enable_testing()
+     add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})

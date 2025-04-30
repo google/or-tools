@@ -16,6 +16,10 @@ if(NOT TARGET ZLIB::ZLIB)
   message(FATAL_ERROR "Target ZLIB::ZLIB not available.")
 endif()
 
+if(NOT TARGET BZip2::BZip2)
+  message(FATAL_ERROR "Target BZip2::BZip2 not available.")
+endif()
+
 if(NOT TARGET absl::base)
   message(FATAL_ERROR "Target absl::base not available.")
 endif()

@@ -114,6 +114,7 @@ the option `-DBUILD_DEPS=ON` (`OFF` by default) or compile some of them using
 the options below (see [CMake Options](#cmake-options) below).
 
 *   zlib (`BUILD_ZLIB`),
+*   bzip2 (`BUILD_BZip2`),
 *   Google Abseil-cpp (`BUILD_absl`),
 *   Google Protobuf (`BUILD_Protobuf`),
 *   COIN-OR solvers:

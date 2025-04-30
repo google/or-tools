@@ -11,6 +11,13 @@ digraph CMakeDeps {
     label = "madler/zlib.git + cmake patch";
   }
 
+  subgraph clusterBZip2 {
+    BZip2 [label="BZip2::BZip2"];
+
+    color=royalblue;
+    label = "bzip2/bzip2.git + cmake patch";
+  }
+
   subgraph clusterAbsl {
     Absl [label="absl::absl_*"];
 

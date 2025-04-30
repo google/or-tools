@@ -35,6 +35,7 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   ZLIB::ZLIB
+  BZip2::BZip2
   absl::base
   absl::strings
   absl::str_format
