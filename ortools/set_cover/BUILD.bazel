@@ -46,7 +46,20 @@ cc_library(
         "//ortools/base:intops",
         "//ortools/base:strong_vector",
         "//ortools/base:timer",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "base_types_test",
+    srcs = ["base_types_test.cc"],
+    deps = [
+        ":base_types",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/types:span",
+        "@com_google_benchmark//:benchmark",
     ],
 )
 
@@ -62,6 +75,7 @@ cc_library(
         "//ortools/algorithms:adjustable_k_ary_heap",
         "//ortools/base:threadpool",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/types:span",
     ],
@@ -84,6 +98,7 @@ cc_library(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
     ],
 )

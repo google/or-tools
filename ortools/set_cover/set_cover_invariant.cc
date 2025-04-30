@@ -341,15 +341,17 @@ BaseInt SetCoverInvariant::ComputeNumFreeElements(SubsetIndex subset) const {
   return num_free_elements;
 }
 
-void SetCoverInvariant::Select(SubsetIndex subset,
+bool SetCoverInvariant::Select(SubsetIndex subset,
                                ConsistencyLevel target_consistency) {
+  if (is_selected_[subset]) return false;
+
   const bool update_redundancy_info = target_consistency >= CL::kRedundancy;
   if (update_redundancy_info) {
     ClearRemovabilityInformation();
   }
   consistency_level_ = std::min(consistency_level_, target_consistency);
   DVLOG(1) << "Selecting subset " << subset;
-  DCHECK(!is_selected_[subset]);
+
   DCHECK(CheckConsistency(target_consistency));
   trace_.push_back(SetCoverDecision(subset, true));
   is_selected_[subset] = true;
@@ -362,7 +364,7 @@ void SetCoverInvariant::Select(SubsetIndex subset,
     for (const ElementIndex element : columns[subset]) {
       ++coverage_[element];
     }
-    return;
+    return true;
   }
   for (const ElementIndex element : columns[subset]) {
     if (coverage_[element] == 0) {
@@ -402,10 +404,14 @@ void SetCoverInvariant::Select(SubsetIndex subset,
   }
   DCHECK_EQ(num_free_elements_[subset], 0);
   DCHECK(CheckConsistency(target_consistency));
+  return true;
 }
 
-void SetCoverInvariant::Deselect(SubsetIndex subset,
+bool SetCoverInvariant::Deselect(SubsetIndex subset,
                                  ConsistencyLevel target_consistency) {
+  // NOMUTANTS -- This is a short-circuit to avoid doing any work
+  // when the subset is already deselected.
+  if (!is_selected_[subset]) return false;
   DCHECK(CheckConsistency(target_consistency));
   const bool update_redundancy_info = target_consistency >= CL::kRedundancy;
   if (update_redundancy_info) {
@@ -426,7 +432,7 @@ void SetCoverInvariant::Deselect(SubsetIndex subset,
     for (const ElementIndex element : columns[subset]) {
       --coverage_[element];
     }
-    return;
+    return true;
   }
   // This is a dissymmetry with Select, and only maintained in
   // consistency level kFreeAndUncovered and above.
@@ -461,6 +467,7 @@ void SetCoverInvariant::Deselect(SubsetIndex subset,
   // nor meaning in adding it a list of removable or non-removable
   // subsets. This is a dissymmetry with Select.
   DCHECK(CheckConsistency(target_consistency));
+  return true;
 }
 
 SetCoverSolutionResponse SetCoverInvariant::ExportSolutionAsProto() const {

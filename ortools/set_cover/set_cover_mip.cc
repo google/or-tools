@@ -135,7 +135,8 @@ bool SetCoverMip::NextSolution(absl::Span<const SubsetIndex> focus) {
   if (use_integers_) {
     using CL = SetCoverInvariant::ConsistencyLevel;
     for (const SubsetIndex subset : focus) {
-      if (vars[subset]->solution_value() > 0.9) {
+      if (vars[subset]->solution_value() > 0.9 &&
+          !inv()->is_selected()[subset]) {
         inv()->Select(subset, CL::kCostAndCoverage);
       }
     }

@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
@@ -395,7 +396,7 @@ class SetCoverModel {
 
   // Vector of rows. Each row corresponds to an element and contains the
   // subsets containing the element.
-  // The size is exactly the same as for columns_.
+  // The size is exactly the same as for columns_ (or there would be a bug.)
   SparseRowView rows_;
 
   // Vector of indices from 0 to columns.size() - 1. (Like std::iota, but built
@@ -407,52 +408,78 @@ class SetCoverModel {
   std::vector<SubsetIndex> all_subsets_;
 };
 
-// The IntersectingSubsetsIterator is a forward iterator that returns the next
+// IntersectingSubsetsIterator is a forward iterator that returns the next
 // intersecting subset for a fixed seed_subset.
 // The iterator is initialized with a model and a seed_subset and
 // allows a speedup in getting the intersecting subsets
 // by not storing them in memory.
 // The iterator is at the end when the last intersecting subset has been
 // returned.
-// TODO(user): Add the possibility for range-for loops.
 class IntersectingSubsetsIterator {
  public:
   IntersectingSubsetsIterator(const SetCoverModel& model,
-                              SubsetIndex seed_subset)
-      : intersecting_subset_(-1),
-        element_entry_(0),
-        subset_entry_(0),
+                              SubsetIndex seed_subset, bool at_end = false)
+      : model_(model),
         seed_subset_(seed_subset),
-        model_(model),
-        subset_seen_(model_.columns().size(), false) {
+        seed_column_(model_.columns()[seed_subset]),
+        seed_column_size_(ColumnEntryIndex(seed_column_.size())),
+        intersecting_subset_(0),  // meaningless, will be overwritten.
+        element_entry_(0),
+        rows_(model_.rows()),
+        subset_seen_() {
+    // For iterator to be as light as possible when created, we do not reserve
+    // space for the subset_seen_ vector, and we do not initialize it. This
+    // is done to avoid the overhead of creating the vector and initializing it
+    // when the iterator is created. The vector is created on the first call to
+    // the ++ operator.
     DCHECK(model_.row_view_is_valid());
-    subset_seen_[seed_subset] = true;  // Avoid iterating on `seed_subset`.
-    ++(*this);                         // Move to the first intersecting subset.
+    if (at_end) {
+      element_entry_ = seed_column_size_;
+      return;
+    }
+    for (; element_entry_ < seed_column_size_; ++element_entry_) {
+      const ElementIndex current_element = seed_column_[element_entry_];
+      const SparseRow& current_row = rows_[current_element];
+      const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
+      for (; subset_entry_ < current_row_size; ++subset_entry_) {
+        if (intersecting_subset_ == seed_subset_) continue;
+        intersecting_subset_ = current_row[subset_entry_];
+        return;
+      }
+      subset_entry_ = RowEntryIndex(0);  // 'carriage-return'
+    }
   }
 
   // Returns (true) whether the iterator is at the end.
-  bool at_end() const {
-    return element_entry_.value() == model_.columns()[seed_subset_].size();
-  }
+  bool at_end() const { return element_entry_ == seed_column_size_; }
 
   // Returns the intersecting subset.
   SubsetIndex operator*() const { return intersecting_subset_; }
 
-  // Move the iterator to the next intersecting subset.
+  // Disequality operator.
+  bool operator!=(const IntersectingSubsetsIterator& other) const {
+    return element_entry_ != other.element_entry_ ||
+           subset_entry_ != other.subset_entry_ ||
+           seed_subset_ != other.seed_subset_;
+  }
+
+  // Advances the iterator to the next intersecting subset.
   IntersectingSubsetsIterator& operator++() {
-    DCHECK(model_.row_view_is_valid());
-    DCHECK(!at_end());
-    const SparseRowView& rows = model_.rows();
-    const SparseColumn& column = model_.columns()[seed_subset_];
-    const ColumnEntryIndex column_size = ColumnEntryIndex(column.size());
-    for (; element_entry_ < column_size; ++element_entry_) {
-      const ElementIndex current_element = column[element_entry_];
-      const SparseRow& current_row = rows[current_element];
+    DCHECK(!at_end()) << "element_entry_ = " << element_entry_
+                      << " subset_entry_ = " << subset_entry_
+                      << " seed_column_size_ = " << seed_column_size_;
+    if (subset_seen_.empty()) {
+      subset_seen_.resize(model_.num_subsets(), false);
+      subset_seen_[seed_subset_] = true;
+    }
+    subset_seen_[intersecting_subset_] = true;
+    for (; element_entry_ < seed_column_size_; ++element_entry_) {
+      const ElementIndex current_element = seed_column_[element_entry_];
+      const SparseRow& current_row = rows_[current_element];
       const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
       for (; subset_entry_ < current_row_size; ++subset_entry_) {
         intersecting_subset_ = current_row[subset_entry_];
         if (!subset_seen_[intersecting_subset_]) {
-          subset_seen_[intersecting_subset_] = true;
           return *this;
         }
       }
@@ -462,6 +489,18 @@ class IntersectingSubsetsIterator {
   }
 
  private:
+  // The model to which the iterator is applying.
+  const SetCoverModel& model_;
+
+  // The seed subset.
+  SubsetIndex seed_subset_;
+
+  // A reference to the column of the seed subset, kept here for ease of access.
+  const SparseColumn& seed_column_;
+
+  // The size of the column of the seed subset.
+  ColumnEntryIndex seed_column_size_;
+
   // The intersecting subset.
   SubsetIndex intersecting_subset_;
 
@@ -471,16 +510,46 @@ class IntersectingSubsetsIterator {
   // The position of the entry in the row corresponding to `element_entry`.
   RowEntryIndex subset_entry_;
 
-  // The seed subset.
-  SubsetIndex seed_subset_;
-
-  // The model to which the iterator is applying.
-  const SetCoverModel& model_;
+  // A reference to the rows of the model, kept here for ease of access.
+  const SparseRowView& rows_;
 
   // A vector of Booleans indicating whether the current subset has been
   // already seen by the iterator.
   SubsetBoolVector subset_seen_;
 };
+
+// IntersectingSubsetsRange is a range of intersecting subsets for a fixed seed
+// subset. Can be used with range-based for-loops.
+class IntersectingSubsetsRange {
+ public:
+  using iterator = IntersectingSubsetsIterator;
+  using const_iterator = IntersectingSubsetsIterator;
+
+  IntersectingSubsetsRange(const SetCoverModel& model, SubsetIndex seed_subset)
+      : model_(model), seed_subset_(seed_subset) {}
+
+  iterator begin() { return IntersectingSubsetsIterator(model_, seed_subset_); }
+
+  iterator end() {
+    return IntersectingSubsetsIterator(model_, seed_subset_, true);
+  }
+
+  const_iterator begin() const {
+    return IntersectingSubsetsIterator(model_, seed_subset_);
+  }
+
+  const_iterator end() const {
+    return IntersectingSubsetsIterator(model_, seed_subset_, true);
+  }
+
+ private:
+  // The model to which the range is applying.
+  const SetCoverModel& model_;
+
+  // The seed subset for which the intersecting subsets are computed.
+  SubsetIndex seed_subset_;
+};
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_SET_COVER_SET_COVER_MODEL_H_
