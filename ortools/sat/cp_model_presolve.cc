@@ -3088,8 +3088,10 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
 bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   if (ct->constraint_case() != ConstraintProto::kLinear) return false;
   if (ct->linear().vars().size() <= 1) return false;
-
   if (context_->ModelIsUnsat()) return false;
+  // The transformation can add extra variables, and creates duplicate solutions
+  // when enumerate_all_solutions is true.
+  if (context_->params().enumerate_all_solutions()) return false;
 
   const LinearConstraintProto& linear_constraint = ct->linear();
   if (linear_constraint.domain_size() != 2) return false;
