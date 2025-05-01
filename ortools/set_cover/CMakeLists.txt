@@ -33,6 +33,9 @@ target_link_libraries(${NAME} PRIVATE
 
 if(BUILD_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
+  if(NOT USE_SCIP)
+    list(FILTER _TEST_SRCS EXCLUDE REGEX ".*/set_cover_test.cc")
+  endif()
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
     get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
