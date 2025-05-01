@@ -21,6 +21,7 @@
 #include <absl/strings/str_split.h>
 #include <absl/strings/string_view.h>
 
+#include <random>
 #include <vector>
 
 #include "ortools/set_cover/base_types.h"
@@ -61,21 +62,26 @@ class ExpKnap {
     Cost weight;  // weight
     ElementIndex index;
   };
-  using ItemIt = std::vector<Item>::const_iterator;
+  using ItemIt = std::vector<Item>::const_reverse_iterator;
 
-  void Solve(const ElementCostVector& profits, const ElementCostVector& weights,
-             Cost capacity, BaseInt bnb_nodes_limit);
+  void SaveBin();
+  void FindGoodColumns(const ElementCostVector& profits,
+                       const ElementCostVector& weights, Cost capacity,
+                       BaseInt bnb_nodes_limit);
+  void InitSolver(const ElementCostVector& profits,
+                  const ElementCostVector& weights, Cost capacity,
+                  BaseInt bnb_nodes_limit);
 
+  bool EleBranch();
   bool EleBranch(Cost profit_sum, Cost overweight, ItemIt out_item,
                  ItemIt in_item);
 
-  void Heuristic(const util_intops::StrongVector<ElementIndex, Item>& items);
+  void Heuristic();
 
-  ElementBoolVector break_solution() const { return break_solution_; }
-
-  std::vector<std::vector<ElementIndex>> maximal_exceptions() const {
-    return maximal_exceptions_;
+  const std::vector<SparseColumn>& collected_bins() const {
+    return collected_bins_;
   }
+  Cost best_cost() const { return break_profit_sum_ + best_delta_; }
 
  private:
   Cost capacity_;                                        // capacity
@@ -85,12 +91,17 @@ class ExpKnap {
   Cost break_weight_sum_;
   Cost best_delta_;
   std::vector<ElementIndex> exceptions_;
-  std::vector<std::vector<ElementIndex>> maximal_exceptions_;
-  ElementBoolVector break_solution_;
+  std::vector<SparseColumn> collected_bins_;
+  ElementBoolVector break_selection_;
+  ElementBoolVector inserted_items_;
+  SparseColumn break_solution_;
   BaseInt bnb_node_countdown_;
+  std::mt19937 rnd_;
 };
 
 class BinPackingSetCoverModel : public scp::FullToCoreModel {
+  using base = scp::FullToCoreModel;
+
   struct BinPackingModelGlobals {
     // Dirty hack to avoid invalidation of pointers/references
     // A pointer to this data structure is used to compute the hash of bins

@@ -21,8 +21,10 @@
 #include <absl/strings/string_view.h>
 
 #include <algorithm>
+#include <iterator>
 #include <random>
 
+#include "ortools/base/stl_util.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_cft.h"
 #include "ortools/set_cover/set_cover_submodel.h"
@@ -146,13 +148,13 @@ BinPackingModel ReadCsp(absl::string_view filename) {
   return model;
 }
 
-void BestFit(const BinPackingModel& model,
+void BestFit(const ElementCostVector& weights, Cost bin_capacity,
              const std::vector<ElementIndex>& items, PartialBins& bins_data) {
   for (ElementIndex item : items) {
-    Cost item_weight = model.weights()[item];
+    Cost item_weight = weights[item];
     BaseInt selected_bin = bins_data.bins.size();
     for (BaseInt bin = 0; bin < bins_data.bins.size(); ++bin) {
-      Cost max_load = model.bin_capacity() - item_weight;
+      Cost max_load = bin_capacity - item_weight;
       if (bins_data.loads[bin] <= max_load &&
           (selected_bin == bins_data.bins.size() ||
            bins_data.loads[bin] > bins_data.loads[selected_bin])) {
@@ -232,9 +234,9 @@ void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
     // Generate bins all containing a specific item
     for (ElementIndex n : model.ItemRange()) {
       BaseInt unique_bin_num = scp_model.full_model().num_subsets();
-      VLOG_EVERY_N_SEC(1, 5)
-          << "Generating bins: " << unique_bin_num << " / " << num_bins << " ("
-          << 100.0 * unique_bin_num / num_bins << "%)";
+      VLOG_EVERY_N_SEC(1, 1)
+          << "[RGEN] Generating bins: " << unique_bin_num << " / " << num_bins
+          << " (" << 100.0 * unique_bin_num / num_bins << "%)";
       if (scp_model.full_model().num_subsets() >= num_bins) {
         break;
       }
@@ -251,7 +253,7 @@ void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
         bins_data.bins.push_back({n});
         bins_data.loads.push_back(model.weights()[n]);
       }
-      BestFit(model, items, bins_data);
+      BestFit(model.weights(), model.bin_capacity(), items, bins_data);
       InsertBinsIntoModel(bins_data, scp_model);
 
       items.push_back(n);
@@ -272,51 +274,86 @@ BinPackingSetCoverModel GenerateInitialBins(const BinPackingModel& model) {
   std::vector<ElementIndex> items(model.num_items());
 
   absl::c_iota(items, ElementIndex(0));
-  BestFit(model, items, bins_data);
+  absl::c_sort(items, [&](auto i1, auto i2) {
+    return model.weights()[i1] > model.weights()[i2];
+  });
+  BestFit(model.weights(), model.bin_capacity(), items, bins_data);
   InsertBinsIntoModel(bins_data, scp_model);
-  BaseInt solution_bin_num = bins_data.bins.size();
-  VLOG(1) << "Best-fit solution: " << solution_bin_num << " bins";
-
-  // Largest first
-  if (!absl::c_is_sorted(model.weights(), std::greater<>())) {
-    bins_data.bins.clear();
-    bins_data.loads.clear();
-    absl::c_sort(items, [&](auto i1, auto i2) {
-      return model.weights()[i1] > model.weights()[i2];
-    });
-    BestFit(model, items, bins_data);
-    InsertBinsIntoModel(bins_data, scp_model);
-  }
+  VLOG(1) << "[BFIT] Largest first best-fit solution: " << bins_data.bins.size()
+          << " bins";
 
   scp_model.CompleteModel();
   return scp_model;
 }
 
-void ExpKnap::Solve(const ElementCostVector& profits,
-                    const ElementCostVector& weights, Cost capacity,
-                    BaseInt bnb_nodes_limit) {
+void ExpKnap::SaveBin() {
+  collected_bins_.back().clear();
+  for (ElementIndex i : exceptions_) {
+    break_selection_[i] = !break_selection_[i];
+  }
+  for (ElementIndex i : break_solution_) {
+    if (break_selection_[i]) {
+      collected_bins_.back().push_back(i);
+    }
+  }
+  for (ElementIndex i : exceptions_) {
+    if (break_selection_[i]) {
+      collected_bins_.back().push_back(i);
+    }
+    break_selection_[i] = !break_selection_[i];
+  }
+  absl::c_sort(collected_bins_.back());
+  DCHECK(absl::c_adjacent_find(collected_bins_.back()) ==
+         collected_bins_.back().end());
+}
+void ExpKnap::InitSolver(const ElementCostVector& profits,
+                         const ElementCostVector& weights, Cost capacity,
+                         BaseInt bnb_nodes_limit) {
   capacity_ = capacity;
+  items_.resize(profits.size());
+  collected_bins_.clear();
+  for (ElementIndex i; i < ElementIndex(items_.size()); ++i) {
+    items_[i] = {profits[i], weights[i], i};
+  }
+  absl::c_sort(items_, [](Item i1, Item i2) {
+    return i1.profit / i1.weight < i2.profit / i2.weight;
+  });
+
+  bnb_node_countdown_ = bnb_nodes_limit;
   best_delta_ = .0;
   exceptions_.clear();
-  maximal_exceptions_.clear();
-  break_solution_.assign(profits.size(), false);
-  items_.resize(profits.size());
+  break_selection_.assign(profits.size(), false);
+  break_solution_.clear();
+}
+
+void ExpKnap::FindGoodColumns(const ElementCostVector& profits,
+                              const ElementCostVector& weights, Cost capacity,
+                              BaseInt bnb_nodes_limit) {
+  InitSolver(profits, weights, capacity, bnb_nodes_limit);
+  Cost curr_best_cost = .0;
+  PartialBins more_bins;
+  std::vector<ElementIndex> remaining_items;
+
   bnb_node_countdown_ = bnb_nodes_limit;
+  inserted_items_.assign(profits.size(), false);
+  do {
+    collected_bins_.emplace_back();
+    Heuristic();
+    VLOG(5) << "[KPCG] Heuristic solution: cost "
+            << break_profit_sum_ + best_delta_;
+    EleBranch();
 
-  for (ElementIndex i; i < ElementIndex(items_.size()); ++i) {
-    items_[i] = {std::max(1e-6, profits[i]), weights[i], i};
-  }
+    for (ElementIndex i : collected_bins_.back()) {
+      inserted_items_[i] = true;
+    }
+    gtl::STLEraseAllFromSequenceIf(
+        &items_, [&](Item item) { return inserted_items_[item.index]; });
+  } while (!items_.empty() && break_profit_sum_ + best_delta_ > 1.0);
+}
 
-  absl::c_sort(items_, [](Item i1, Item i2) {
-    return i1.profit / i1.weight > i2.profit / i2.weight;
-  });
-  Heuristic(items_);
-  maximal_exceptions_.push_back(exceptions_);
+bool ExpKnap::EleBranch() {
   exceptions_.clear();
-  VLOG(5) << "[KPCG] Heuristic solution: cost "
-          << break_profit_sum_ + best_delta_;
-
-  EleBranch(.0, break_weight_sum_ - capacity, break_it_ - 1, break_it_ + 1);
+  return EleBranch(.0, break_weight_sum_ - capacity_, break_it_ - 1, break_it_);
 }
 
 namespace {
@@ -331,6 +368,8 @@ static Cost BoundCheck(Cost best_delta, Cost profit_delta, Cost overweight,
 // https://hjemmesider.diku.dk/~pisinger/expknap.c
 bool ExpKnap::EleBranch(Cost profit_delta, Cost overweigth, ItemIt out_item,
                         ItemIt in_item) {
+  VLOG(6) << "[KPCG] EleBranch: profit_delta " << profit_delta << " overweigth "
+          << overweigth;
   if (bnb_node_countdown_-- <= 0) {
     return false;
   }
@@ -345,7 +384,7 @@ bool ExpKnap::EleBranch(Cost profit_delta, Cost overweigth, ItemIt out_item,
     }
 
     bool maximal = true;
-    while (bnb_node_countdown_ > 0 && in_item < items_.end() &&
+    while (bnb_node_countdown_ > 0 && in_item < items_.rend() &&
            BoundCheck(best_delta_, profit_delta, overweigth, *in_item) >= 0) {
       exceptions_.push_back(in_item->index);
       Cost next_delta = profit_delta + in_item->profit;
@@ -355,11 +394,11 @@ bool ExpKnap::EleBranch(Cost profit_delta, Cost overweigth, ItemIt out_item,
     }
 
     if (improved && maximal) {
-      maximal_exceptions_.push_back(exceptions_);
+      SaveBin();
     }
     improved |= !maximal;
   } else {
-    while (bnb_node_countdown_ > 0 && out_item >= items_.begin() &&
+    while (bnb_node_countdown_ > 0 && out_item >= items_.rbegin() &&
            BoundCheck(best_delta_, profit_delta, overweigth, *out_item) >= 0) {
       exceptions_.push_back(out_item->index);
       Cost next_delta = profit_delta - out_item->profit;
@@ -371,17 +410,18 @@ bool ExpKnap::EleBranch(Cost profit_delta, Cost overweigth, ItemIt out_item,
   return improved;
 }
 
-void ExpKnap::Heuristic(
-    const util_intops::StrongVector<ElementIndex, Item>& items) {
+void ExpKnap::Heuristic() {
+  best_delta_ = break_profit_sum_ = break_weight_sum_ = .0;
+  break_it_ = items_.rbegin();
+  break_selection_.assign(items_.size(), false);
+  break_solution_.clear();
   exceptions_.clear();
-
-  break_profit_sum_ = break_weight_sum_ = .0;
-  break_it_ = items.begin();
-  while (break_it_ < items.end() &&
+  while (break_it_ < items_.rend() &&
          break_it_->weight <= capacity_ - break_weight_sum_) {
     break_profit_sum_ += break_it_->profit;
     break_weight_sum_ += break_it_->weight;
-    break_solution_[break_it_->index] = true;
+    break_selection_[break_it_->index] = true;
+    break_solution_.push_back(break_it_->index);
     ++break_it_;
   }
   Cost residual = capacity_ - break_weight_sum_;
@@ -391,16 +431,18 @@ void ExpKnap::Heuristic(
 
   Cost profit_delta_ub = residual * break_it_->profit / break_it_->weight;
   if (profit_delta_ub == .0) {
+    SaveBin();
     return;
   }
 
   // Try filling the residual space with less efficient (maybe smaller) items
   best_delta_ = .0;
-  for (auto it = break_it_; it < items.end(); it++) {
+  for (auto it = break_it_; it < items_.rend(); it++) {
     if (it->weight <= residual && it->profit > best_delta_) {
       exceptions_ = {it->index};
       best_delta_ = it->profit;
       if (best_delta_ >= profit_delta_ub) {
+        SaveBin();
         return;
       }
     }
@@ -408,57 +450,52 @@ void ExpKnap::Heuristic(
 
   // Try removing an item and adding the break item
   Cost min_weight = break_it_->weight - residual;
-  for (auto it = break_it_ - 1; it >= items.begin(); it--) {
+  for (auto it = break_it_ - 1; it >= items_.rbegin(); it--) {
     Cost profit_delta = break_it_->profit - it->profit;
     if (it->weight >= min_weight && profit_delta > best_delta_) {
       exceptions_ = {break_it_->index, it->index};
       best_delta_ = profit_delta;
       if (best_delta_ >= profit_delta_ub) {
+        SaveBin();
         return;
       }
     }
   }
+  SaveBin();
 }
 
 bool BinPackingSetCoverModel::UpdateCore(
     Cost best_lower_bound, const ElementCostVector& best_multipliers,
     const scp::Solution& best_solution, bool force) {
-  if (--column_gen_countdown_ <= 0 && best_lower_bound != prev_lower_bound_) {
-    column_gen_countdown_ = column_gen_period_;
+  if (!base::IsTimeToUpdate(best_lower_bound, force)) {
+    return false;
+  }
+
+  Cost full_lower_bound = base::UpdateMultipliers(best_multipliers);
+  if (scp::DivideIfGE0(std::abs(full_lower_bound - best_lower_bound),
+                       best_lower_bound) < 0.01 &&
+      best_lower_bound != prev_lower_bound_) {
     prev_lower_bound_ = best_lower_bound;
-    knapsack_solver_.Solve(best_multipliers, bpp_model_->weights(),
-                           bpp_model_->bin_capacity(),
-                           /*bnb_nodes_limit=*/10000);
-    const auto& exception_list = knapsack_solver_.maximal_exceptions();
-    ElementBoolVector solution = knapsack_solver_.break_solution();
+    knapsack_solver_.FindGoodColumns(best_multipliers, bpp_model_->weights(),
+                                     bpp_model_->bin_capacity(),
+                                     /*bnb_nodes_limit=*/1000);
     BaseInt num_added_bins = 0;
-    SparseColumn bin;
-    for (const std::vector<ElementIndex>& exception : exception_list) {
-      for (ElementIndex i : exception) {
-        solution[i] = !solution[i];
-      }
-
-      bin.clear();
-      for (ElementIndex i : globals_.full_model.ElementRange()) {
-        if (solution[i]) {
-          bin.push_back(i);
-        }
-      }
+    for (const SparseColumn& bin : knapsack_solver_.collected_bins()) {
       num_added_bins += AddBin(bin) ? 1 : 0;
-
-      for (ElementIndex i : exception) {
-        solution[i] = !solution[i];
-      }
     }
     if (num_added_bins > 0) {
       VLOG(4) << "[KPCG] Added " << num_added_bins << " / "
               << globals_.full_model.num_subsets() << " bins";
     }
+    base::SizeUpdate();
+    // TODO(user): add incremental update only for the new columns just added
+    base::UpdateMultipliers(best_multipliers);
   }
 
-  scp::FullToCoreModel::SizeUpdate();
-  scp::FullToCoreModel::FullToSubModelInvariantCheck();
-  return scp::FullToCoreModel::UpdateCore(best_lower_bound, best_multipliers,
-                                          best_solution, force);
+  if (base::num_focus_subsets() < FixingFullModelView().num_focus_subsets()) {
+    ComputeAndSetFocus(best_lower_bound, best_solution);
+    return true;
+  }
+  return false;
 }
 }  // namespace operations_research
