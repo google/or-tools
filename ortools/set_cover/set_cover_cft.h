@@ -336,6 +336,46 @@ class FullToCoreModel : public SubModel {
     BaseInt max_period;
   };
 
+  // This class handles the logic for selecting columns based on their reduced
+  // costs and the number of rows they cover. While this implementation is more
+  // complex than what would typically be required for static `SetCoverModel`s,
+  // it is designed to efficiently handle dynamically updated models where new
+  // columns are generated over time. In this case, recomputing the row view
+  // from scratch each time would introduce significant overhead. To avoid this,
+  // the column selection logic operates solely on the column view, without
+  // relying on the row view.
+  //
+  // NOTE: A cleaner alternative would involve modifying the `SetCoverModel`
+  // implementation to support incremental updates to the row view as new
+  // columns are added. This approach would reduce overhead while enabling a
+  // simpler and more efficient column selection process.
+  //
+  // NOTE: The row-view based approach is available at commit:
+  // a598cf83930629853f72b964ebcff01f7a9378e0
+  class ColumnSelector {
+   public:
+    const std::vector<FullSubsetIndex>& ComputeNewSelection(
+        FilterModelView full_model,
+        const std::vector<FullSubsetIndex>& forced_columns,
+        const SubsetCostVector& reduced_costs);
+
+   private:
+    bool SelectColumn(FilterModelView full_model, SubsetIndex j);
+    void SelecteMinRedCostColumns(FilterModelView full_model,
+                                  const SubsetCostVector& reduced_costs);
+    void SelectMinRedCostByRow(FilterModelView full_model,
+                               const SubsetCostVector& reduced_costs);
+
+   private:
+    std::vector<SubsetIndex> candidates_;
+    std::vector<SubsetIndex>::const_iterator first_unselected_;
+    ElementToIntVector row_cover_counts_;
+    BaseInt rows_left_to_cover_;
+
+    std::vector<FullSubsetIndex> selection_;
+    SubsetBoolVector selected_;
+  };
+
  public:
   FullToCoreModel() = default;
   FullToCoreModel(const Model* full_model);
@@ -348,9 +388,11 @@ class FullToCoreModel : public SubModel {
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
   bool FullToSubModelInvariantCheck();
-  void SizeUpdate();
 
- private:
+ protected:
+  void SizeUpdate();
+  bool IsTimeToUpdate(Cost best_lower_bound, bool force);
+
   decltype(auto) IsFocusCol(FullSubsetIndex j) {
     return is_focus_col_[static_cast<SubsetIndex>(j)];
   }
@@ -359,9 +401,8 @@ class FullToCoreModel : public SubModel {
   }
   void UpdatePricingPeriod(const DualState& full_dual_state,
                            Cost core_lower_bound, Cost core_upper_bound);
-  void UpdateMultipliers(const ElementCostVector& core_multipliers,
-                         DualState& full_dual_state,
-                         DualState& best_dual_state);
+  Cost UpdateMultipliers(const ElementCostVector& core_multipliers);
+  void ComputeAndSetFocus(Cost best_lower_bound, const Solution& best_solution);
 
   // Views are not composable (for now), so we can either access the full_model
   // with the strongly typed view or with the filtered view.
@@ -381,6 +422,7 @@ class FullToCoreModel : public SubModel {
   std::vector<FullSubsetIndex> SelectNewCoreColumns(
       const std::vector<FullSubsetIndex>& forced_columns = {});
 
+ private:
   const Model* full_model_;
 
   // Note: The `is_focus_col_` vector duplicates information already present in
@@ -406,6 +448,8 @@ class FullToCoreModel : public SubModel {
   BaseInt update_countdown_;
   BaseInt update_period_;
   BaseInt update_max_period_;
+
+  ColumnSelector col_selector_;  // Here to avoid reallocations
 };
 
 }  // namespace operations_research::scp
