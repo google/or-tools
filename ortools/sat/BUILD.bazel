@@ -3869,6 +3869,7 @@ cc_library(
         ":drat_writer",
         ":sat_base",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
