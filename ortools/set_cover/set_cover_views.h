@@ -57,6 +57,10 @@ using FullElementCostVector = util_intops::StrongVector<FullElementIndex, Cost>;
 using FullSubsetCostVector = util_intops::StrongVector<FullSubsetIndex, Cost>;
 using FullElementBoolVector = util_intops::StrongVector<FullElementIndex, bool>;
 using FullSubsetBoolVector = util_intops::StrongVector<FullSubsetIndex, bool>;
+using FullElementToIntVector =
+    util_intops::StrongVector<FullElementIndex, BaseInt>;
+using FullSubsetToIntVector =
+    util_intops::StrongVector<FullSubsetIndex, BaseInt>;
 
 // When a sub-model is created, indicies are compacted to be consecutive and
 // strarting from 0 (to reduce memory usage). Core ElementIndex to original
@@ -121,6 +125,7 @@ class StrongModelView {
   auto ElementRange() const -> util_intops::StrongIntRange<FullElementIndex> {
     return {FullElementIndex(), FullElementIndex(num_elements())};
   }
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;
@@ -180,6 +185,7 @@ class IndexListModelView {
     DCHECK(ElementIndex() <= i && i < ElementIndex(num_elements()));
     return (*rows_sizes_)[i];
   }
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;
@@ -233,6 +239,10 @@ class FilterModelView {
       -> util_intops::FilterIndexRangeView<ElementIndex, ElementBoolVector> {
     return {is_focus_row_};
   }
+  bool IsFocusCol(SubsetIndex j) const { return (*is_focus_col_)[j]; }
+  bool IsFocusRow(ElementIndex i) const { return (*is_focus_row_)[i]; }
+
+  const SetCoverModel& base() const { return *model_; }
 
  private:
   const SetCoverModel* model_;

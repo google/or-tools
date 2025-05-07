@@ -100,7 +100,7 @@ class Solution {
   }
 
  private:
-  Cost cost_;
+  Cost cost_ = std::numeric_limits<Cost>::max();
   std::vector<FullSubsetIndex> subsets_;
 };
 
@@ -122,8 +122,9 @@ inline Cost DivideIfGE0(Cost numerator, Cost denominator) {
 class DualState {
  public:
   DualState() = default;
+  DualState(const DualState&) = default;
   template <typename SubModelT>
-  DualState(const SubModelT& model)
+  explicit DualState(const SubModelT& model)
       : lower_bound_(.0),
         multipliers_(model.num_elements(), .0),
         reduced_costs_(model.subset_costs().begin(),
@@ -143,6 +144,7 @@ class DualState {
     for (ElementIndex i : model.ElementRange()) {
       multiplier_operator(i, multipliers_[i]);
       lower_bound_ += multipliers_[i];
+      DCHECK(std::isfinite(multipliers_[i]));
       DCHECK_GE(multipliers_[i], .0);
     }
     lower_bound_ += ComputeReducedCosts(model, multipliers_, reduced_costs_);
@@ -188,7 +190,11 @@ struct PrimalDualState {
 struct SubgradientContext {
   const SubModel& model;
   const DualState& current_dual_state;
-  const DualState& best_dual_state;
+
+  // Avoid copying unused reduced cost during subgradient
+  const Cost& best_lower_bound;
+  const ElementCostVector& best_multipliers;
+
   const Solution& best_solution;
   const ElementCostVector& subgradient;
 };
@@ -201,7 +207,8 @@ class SubgradientCBs {
   virtual void RunHeuristic(const SubgradientContext&, Solution&) = 0;
   virtual void ComputeMultipliersDelta(const SubgradientContext&,
                                        ElementCostVector& delta_mults) = 0;
-  virtual bool UpdateCoreModel(SubModel&, PrimalDualState&) = 0;
+  virtual bool UpdateCoreModel(SubgradientContext context,
+                               CoreModel& core_model, bool force = false) = 0;
   virtual ~SubgradientCBs() = default;
 };
 
@@ -223,8 +230,8 @@ class BoundCBs : public SubgradientCBs {
                                ElementCostVector& delta_mults) override;
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override {}
-  bool UpdateCoreModel(SubModel& core_model,
-                       PrimalDualState& best_state) override;
+  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
+                       bool force = false) override;
 
  private:
   void MakeMinimalCoverageSubgradient(const SubgradientContext& context,
@@ -232,24 +239,7 @@ class BoundCBs : public SubgradientCBs {
 
  private:
   Cost squared_norm_;
-
-  // This addition implements a simplified stabilization technique inspired by
-  // works in the literature, such as:
-  // Frangioni, A., Gendron, B., Gorgone, E. (2015):
-  // "On the computational efficiency of subgradient methods: A case study in
-  // combinatorial optimization."
-  //
-  // The approach aims to reduce oscillations (zig-zagging) in the subgradient
-  // by using a "moving average" of the current and previous subgradients. The
-  // current subgradient is weighted by a factor of alpha, while the previous
-  // subgradients contribution is weighted by (1 - alpha). The parameter alpha
-  // is set to 0.5 by default but can be adjusted for tuning. The resulting
-  // stabilized subgradient is referred to as "direction" to distinguish it from
-  // the original subgradient.
-  Cost stabilization_coeff = 0.5;  // Arbitrary from c4v4
   ElementCostVector direction_;
-  ElementCostVector prev_direction_;
-
   std::vector<SubsetIndex> lagrangian_solution_;
 
   // Stopping condition
@@ -257,10 +247,10 @@ class BoundCBs : public SubgradientCBs {
   BaseInt max_iter_countdown_;
   BaseInt exit_test_countdown_;
   BaseInt exit_test_period_;
-  BaseInt last_core_update_countdown_;
+  BaseInt unfixed_run_extension_;
 
   // Step size
-  void UpdateStepSize(Cost lower_bound);
+  void UpdateStepSize(SubgradientContext context);
   Cost step_size_;
   Cost last_min_lb_seen_;
   Cost last_max_lb_seen_;
@@ -301,14 +291,15 @@ class HeuristicCBs : public SubgradientCBs {
   bool ExitCondition(const SubgradientContext& context) override {
     Cost upper_bound =
         context.best_solution.cost() - context.model.fixed_cost();
-    Cost lower_bound = context.best_dual_state.lower_bound();
+    Cost lower_bound = context.best_lower_bound;
     return upper_bound - .999 < lower_bound || --countdown_ <= 0;
   }
   void RunHeuristic(const SubgradientContext& context,
                     Solution& solution) override;
   void ComputeMultipliersDelta(const SubgradientContext& context,
                                ElementCostVector& delta_mults) override;
-  bool UpdateCoreModel(SubModel& model, PrimalDualState& state) override {
+  bool UpdateCoreModel(SubgradientContext context, CoreModel& core_model,
+                       bool force = false) override {
     return false;
   }
 
@@ -321,8 +312,18 @@ PrimalDualState RunThreePhase(SubModel& model,
                               const Solution& init_solution = {});
 
 ///////////////////////////////////////////////////////////////////////
+///////////////////// OUTER REFINEMENT PROCEDURE //////////////////////
+///////////////////////////////////////////////////////////////////////
+
+PrimalDualState RunCftHeuristic(SubModel& model,
+                                const Solution& init_solution = {});
+
+///////////////////////////////////////////////////////////////////////
 //////////////////////// FULL TO CORE PRICING /////////////////////////
 ///////////////////////////////////////////////////////////////////////
+
+// Coverage counter to decide the number of columns to keep in the core model.
+static constexpr BaseInt kMinCov = 5;
 
 // CoreModel extractor. Stores a pointer to the full model and specilized
 // UpdateCore in such a way to updated the SubModel (stored as base class) and
@@ -335,14 +336,63 @@ class FullToCoreModel : public SubModel {
     BaseInt max_period;
   };
 
+  // This class handles the logic for selecting columns based on their reduced
+  // costs and the number of rows they cover. While this implementation is more
+  // complex than what would typically be required for static `SetCoverModel`s,
+  // it is designed to efficiently handle dynamically updated models where new
+  // columns are generated over time. In this case, recomputing the row view
+  // from scratch each time would introduce significant overhead. To avoid this,
+  // the column selection logic operates solely on the column view, without
+  // relying on the row view.
+  //
+  // NOTE: A cleaner alternative would involve modifying the `SetCoverModel`
+  // implementation to support incremental updates to the row view as new
+  // columns are added. This approach would reduce overhead while enabling a
+  // simpler and more efficient column selection process.
+  //
+  // NOTE: The row-view based approach is available at commit:
+  // a598cf83930629853f72b964ebcff01f7a9378e0
+  class ColumnSelector {
+   public:
+    const std::vector<FullSubsetIndex>& ComputeNewSelection(
+        FilterModelView full_model,
+        const std::vector<FullSubsetIndex>& forced_columns,
+        const SubsetCostVector& reduced_costs);
+
+   private:
+    bool SelectColumn(FilterModelView full_model, SubsetIndex j);
+    void SelecteMinRedCostColumns(FilterModelView full_model,
+                                  const SubsetCostVector& reduced_costs);
+    void SelectMinRedCostByRow(FilterModelView full_model,
+                               const SubsetCostVector& reduced_costs);
+
+   private:
+    std::vector<SubsetIndex> candidates_;
+    std::vector<SubsetIndex>::const_iterator first_unselected_;
+    ElementToIntVector row_cover_counts_;
+    BaseInt rows_left_to_cover_;
+
+    std::vector<FullSubsetIndex> selection_;
+    SubsetBoolVector selected_;
+  };
+
  public:
+  FullToCoreModel() = default;
   FullToCoreModel(const Model* full_model);
-  Cost FixColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
-  bool UpdateCore(PrimalDualState& core_state) override;
+  Cost FixMoreColumns(const std::vector<SubsetIndex>& columns_to_fix) override;
+  void ResetColumnFixing(const std::vector<FullSubsetIndex>& columns_to_fix,
+                         const DualState& state) override;
+  bool UpdateCore(Cost best_lower_bound,
+                  const ElementCostVector& best_multipliers,
+                  const Solution& best_solution, bool force) override;
   void ResetPricingPeriod();
   const DualState& best_dual_state() const { return best_dual_state_; }
+  bool FullToSubModelInvariantCheck();
 
- private:
+ protected:
+  void SizeUpdate();
+  bool IsTimeToUpdate(Cost best_lower_bound, bool force);
+
   decltype(auto) IsFocusCol(FullSubsetIndex j) {
     return is_focus_col_[static_cast<SubsetIndex>(j)];
   }
@@ -350,9 +400,9 @@ class FullToCoreModel : public SubModel {
     return is_focus_row_[static_cast<ElementIndex>(i)];
   }
   void UpdatePricingPeriod(const DualState& full_dual_state,
-                           const PrimalDualState& core_state);
-  void UpdateDualState(const DualState& core_dual_state,
-                       DualState& full_dual_state, DualState& best_dual_state);
+                           Cost core_lower_bound, Cost core_upper_bound);
+  Cost UpdateMultipliers(const ElementCostVector& core_multipliers);
+  void ComputeAndSetFocus(Cost best_lower_bound, const Solution& best_solution);
 
   // Views are not composable (for now), so we can either access the full_model
   // with the strongly typed view or with the filtered view.
@@ -360,7 +410,8 @@ class FullToCoreModel : public SubModel {
   // Access the full model filtered by the current columns fixed.
   FilterModelView FixingFullModelView() const {
     return FilterModelView(full_model_, &is_focus_col_, &is_focus_row_,
-                           num_subsets_, num_elements_);
+                           full_model_->num_subsets(),
+                           full_model_->num_elements());
   }
 
   // Access the full model with the strongly typed view.
@@ -368,7 +419,8 @@ class FullToCoreModel : public SubModel {
     return StrongModelView(full_model_);
   }
 
-  bool FullToSubModelInvariantCheck();
+  std::vector<FullSubsetIndex> SelectNewCoreColumns(
+      const std::vector<FullSubsetIndex>& forced_columns = {});
 
  private:
   const Model* full_model_;
@@ -388,19 +440,17 @@ class FullToCoreModel : public SubModel {
   // implementation that avoids this memory optimization was preferred.
   ElementBoolVector is_focus_row_;
 
-  BaseInt num_subsets_;
-  BaseInt num_elements_;
-
+  BaseInt selection_coefficient_ = kMinCov;
+  Cost prev_best_lower_bound_;
   DualState full_dual_state_;
   DualState best_dual_state_;
 
   BaseInt update_countdown_;
   BaseInt update_period_;
   BaseInt update_max_period_;
-};
 
-// Coverage counter to decide the number of columns to keep in the core model.
-static constexpr BaseInt kMinCov = 5;
+  ColumnSelector col_selector_;  // Here to avoid reallocations
+};
 
 }  // namespace operations_research::scp
 
