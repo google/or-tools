@@ -43,7 +43,7 @@
 [windows_dotnet_svg]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml
 
-Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
+Dockers \[AlmaLinux, Alpine, Archlinux, Debian, Fedora, OpenSuse, RockyLinux, Ubuntu\]x
 \[C++, Python, Java, .Net\]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: ./../../../actions/workflows/amd64_docker_cmake.yml/badge.svg?branch=main
