@@ -324,6 +324,7 @@ ortools_cxx_library(
   TESTING
 )
 
+if(USE_SCIP AND USE_GLOP)
 ortools_cxx_test(
   NAME
     ${_PREFIX}_test_models_test
@@ -334,9 +335,8 @@ ortools_cxx_test(
     GTest::gmock_main
     ortools::math_opt_test_models
     ortools::math_opt_matchers
-    #ortools::math_opt_glop_solver
-    #ortools::math_opt_gscipt_solver
 )
+endif()
 
 ortools_cxx_library(
   NAME
