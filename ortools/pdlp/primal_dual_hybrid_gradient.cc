@@ -11,6 +11,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// We solve a QP, which we call the "original QP", by applying preprocessing
+// including presolve and rescaling, which produces a new QP that we call the
+// "working QP". We then solve the working QP using the Primal Dual Hybrid
+// Gradient algorithm (PDHG). The optimality criteria are evaluated using the
+// original QP. There are three main modules in this file:
+// * The free function `PrimalDualHybridGradient()`, which is the user API, and
+//   is responsible for input validation that doesn't use
+//   ShardedQuadraticProgram, creating a `PreprocessSolver`, and calling
+//   `PreprocessSolver::PreprocessAndSolve()`.
+// * The class `PreprocessSolver`, which is responsible for everything that
+//   touches the original QP, including input validation that uses
+//   ShardedQuadraticProgram, the preprocessing, converting solutions to the
+//   working QP back to solutions to the original QP, and termination checks. It
+//   also creates a `Solver` object and calls `Solver::Solve()`.
+// * The class `Solver`, which is responsible for everything that only touches
+//   the working QP. It keeps a pointer to `PreprocessSolver` and calls methods
+//   on it when it needs access to the original QP, e.g. termination checks.
+//   When feasibility polishing is enabled the main solve's `Solver` object
+//   creates additional `Solver` objects periodically to do the feasibility
+//   polishing (in `Solver::TryPrimalPolishing()` and
+//   `Solver::TryDualPolishing()`).
+// The main reason for having two separate classes `PreprocessSolver` and
+// `Solver` is the fact that feasibility polishing mode uses a single
+// `PreprocessSolver` object with multiple `Solver` objects.
+
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 
 #include <algorithm>
@@ -313,6 +338,7 @@ SolverResult ConstructSolverResult(VectorXd primal_solution,
                       .solve_log = std::move(solve_log)};
 }
 
+// See comment at top of file.
 class PreprocessSolver {
  public:
   // Assumes that `qp` and `params` are valid.
@@ -505,6 +531,7 @@ class PreprocessSolver {
   IterationStatsCallback iteration_stats_callback_;
 };
 
+// See comment at top of file.
 class Solver {
  public:
   // `preprocess_solver` should not be nullptr, and the `PreprocessSolver`
@@ -555,6 +582,15 @@ class Solver {
   // than this cause termination because iterates are diverging, and likely to
   // cause infinite and NaN values.
   constexpr static double kDivergentMovement = 1.0e100;
+
+  // The total number of iterations in feasibility polishing is at most
+  // `4 * iterations_completed_ / kFeasibilityIterationFraction`.
+  // One factor of two is because there are both primal and dual feasibility
+  // polishing phases, and the other factor of two is because
+  // `next_feasibility_polishing_iteration` increases by a factor of 2 each
+  // feasibility polishing phase, so the sum of iteration limits is at most
+  // twice the last value.
+  constexpr static int kFeasibilityIterationFraction = 8;
 
   // Attempts to solve primal and dual feasibility subproblems starting at the
   // average iterate, for at most `iteration_limit` iterations each. If
@@ -2255,6 +2291,36 @@ IterationStats WorkFromFeasibilityPolishing(const SolveLog& solve_log) {
   return result;
 }
 
+bool TerminationReasonIsInterrupted(const TerminationReason reason) {
+  return reason == TERMINATION_REASON_INTERRUPTED_BY_USER;
+}
+
+bool TerminationReasonIsWorkLimitNotInterrupted(
+    const TerminationReason reason) {
+  return reason == TERMINATION_REASON_ITERATION_LIMIT ||
+         reason == TERMINATION_REASON_TIME_LIMIT ||
+         reason == TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT;
+}
+
+// Note: `TERMINATION_REASON_INTERRUPTED_BY_USER` is treated as a work limit
+// (that was determined in real-time by the user).
+bool TerminationReasonIsWorkLimit(const TerminationReason reason) {
+  return TerminationReasonIsWorkLimitNotInterrupted(reason) ||
+         TerminationReasonIsInterrupted(reason);
+}
+
+bool DoFeasibilityPolishingAfterLimitsReached(
+    const PrimalDualHybridGradientParams& params,
+    const TerminationReason reason) {
+  if (TerminationReasonIsWorkLimitNotInterrupted(reason)) {
+    return params.apply_feasibility_polishing_after_limits_reached();
+  }
+  if (TerminationReasonIsInterrupted(reason)) {
+    return params.apply_feasibility_polishing_if_solver_is_interrupted();
+  }
+  return false;
+}
+
 std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     const IterationType iteration_type, const bool force_numerical_termination,
     const std::atomic<bool>* interrupt_solve,
@@ -2272,12 +2338,12 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
   IterationStats stats = CreateSimpleIterationStats(restart);
   IterationStats full_work_stats =
       AddWorkStats(stats, work_from_feasibility_polishing);
+  std::optional<TerminationReasonAndPointType> simple_termination_reason =
+      CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                     full_work_stats, interrupt_solve);
   const bool check_termination =
       major_iteration_cycle % params_.termination_check_frequency() == 0 ||
-      CheckSimpleTerminationCriteria(params_.termination_criteria(),
-                                     full_work_stats, interrupt_solve)
-          .has_value() ||
-      force_numerical_termination;
+      simple_termination_reason.has_value() || force_numerical_termination;
   // We check termination on every major iteration.
   DCHECK(!is_major_iteration || check_termination);
   if (check_termination) {
@@ -2304,6 +2370,19 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     }
     // We've terminated.
     if (maybe_termination_reason.has_value()) {
+      if (iteration_type == IterationType::kNormal &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, maybe_termination_reason->reason)) {
+        const std::optional<SolverResult> feasibility_result =
+            TryFeasibilityPolishing(
+                iterations_completed_ / kFeasibilityIterationFraction,
+                interrupt_solve, solve_log);
+        if (feasibility_result.has_value()) {
+          LOG(INFO) << "Returning result from feasibility polishing after "
+                       "limits reached";
+          return *feasibility_result;
+        }
+      }
       IterationStats terminating_full_stats =
           AddWorkStats(stats, work_from_feasibility_polishing);
       return PickSolutionAndConstructSolverResult(
@@ -2573,15 +2652,6 @@ FeasibilityPolishingDetails BuildFeasibilityPolishingDetails(
   return details;
 }
 
-// Note: `TERMINATION_REASON_INTERRUPTED_BY_USER` is treated as a work limit
-// (that was determined in real-time by the user).
-bool TerminationReasonIsWorkLimit(const TerminationReason reason) {
-  return reason == TERMINATION_REASON_ITERATION_LIMIT ||
-         reason == TERMINATION_REASON_TIME_LIMIT ||
-         reason == TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT ||
-         reason == TERMINATION_REASON_INTERRUPTED_BY_USER;
-}
-
 std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     const int iteration_limit, const std::atomic<bool>* interrupt_solve,
     SolveLog& solve_log) {
@@ -2600,12 +2670,20 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
   // polishing, it is usually increased, and an experiment (on MIPLIB2017)
   // shows that this test reduces the iteration count by 3-4% on average.
   if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
-    if (params_.verbosity_level() >= 2) {
-      SOLVER_LOG(&preprocess_solver_->Logger(),
-                 "Skipping feasibility polishing because the objective gap "
-                 "is too large.");
+    std::optional<TerminationReasonAndPointType> simple_termination_reason =
+        CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                       TotalWorkSoFar(solve_log),
+                                       interrupt_solve);
+    if (!(simple_termination_reason.has_value() &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, simple_termination_reason->reason))) {
+      if (params_.verbosity_level() >= 2) {
+        SOLVER_LOG(&preprocess_solver_->Logger(),
+                   "Skipping feasibility polishing because the objective gap "
+                   "is too large.");
+      }
+      return std::nullopt;
     }
-    return std::nullopt;
   }
 
   if (params_.verbosity_level() >= 2) {
@@ -2623,7 +2701,17 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
   }
   if (TerminationReasonIsWorkLimit(
           primal_result.solve_log.termination_reason())) {
-    return std::nullopt;
+    // Have we also reached the overall work limit? If so, consider finishing
+    // the final polishing phase.
+    std::optional<TerminationReasonAndPointType> simple_termination_reason =
+        CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                       TotalWorkSoFar(solve_log),
+                                       interrupt_solve);
+    if (!(simple_termination_reason.has_value() &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, simple_termination_reason->reason))) {
+      return std::nullopt;
+    }
   } else if (primal_result.solve_log.termination_reason() !=
              TERMINATION_REASON_OPTIMAL) {
     // Note: `TERMINATION_REASON_PRIMAL_INFEASIBLE` could happen normally, but
@@ -2651,9 +2739,29 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
         TerminationReason_Name(dual_result.solve_log.termination_reason()));
   }
 
+  IterationStats full_stats = TotalWorkSoFar(solve_log);
+  std::optional<TerminationReasonAndPointType> simple_termination_reason =
+      CheckSimpleTerminationCriteria(params_.termination_criteria(), full_stats,
+                                     interrupt_solve);
   if (TerminationReasonIsWorkLimit(
           dual_result.solve_log.termination_reason())) {
-    return std::nullopt;
+    // Have we also reached the overall work limit? If so, consider falling out
+    // of the "if" test and returning the polishing solution anyway.
+    if (simple_termination_reason.has_value() &&
+        DoFeasibilityPolishingAfterLimitsReached(
+            params_, simple_termination_reason->reason)) {
+      preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+          params_, primal_result.primal_solution, dual_result.dual_solution,
+          POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
+          full_stats.add_convergence_information(), nullptr);
+      return ConstructSolverResult(
+          std::move(primal_result.primal_solution),
+          std::move(dual_result.dual_solution), full_stats,
+          simple_termination_reason->reason,
+          POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION, solve_log);
+    } else {
+      return std::nullopt;
+    }
   } else if (dual_result.solve_log.termination_reason() !=
              TERMINATION_REASON_OPTIMAL) {
     // Note: The comment in the corresponding location when checking the
@@ -2665,7 +2773,6 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     return std::nullopt;
   }
 
-  IterationStats full_stats = TotalWorkSoFar(solve_log);
   preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       params_, primal_result.primal_solution, dual_result.dual_solution,
       POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
@@ -2689,12 +2796,16 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
                                       full_stats,
                                       preprocess_solver_->OriginalBoundNorms(),
                                       /*force_numerical_termination=*/false);
-  if (earned_termination.has_value()) {
-    return ConstructSolverResult(std::move(primal_result.primal_solution),
-                                 std::move(dual_result.dual_solution),
-                                 full_stats, earned_termination->reason,
-                                 POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
-                                 solve_log);
+  if (earned_termination.has_value() ||
+      (simple_termination_reason.has_value() &&
+       DoFeasibilityPolishingAfterLimitsReached(
+           params_, simple_termination_reason->reason))) {
+    return ConstructSolverResult(
+        std::move(primal_result.primal_solution),
+        std::move(dual_result.dual_solution), full_stats,
+        earned_termination.has_value() ? earned_termination->reason
+                                       : simple_termination_reason->reason,
+        POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION, solve_log);
   }
   // Note: A typical termination check would now call
   // `CheckSimpleTerminationCriteria`. However, there is no obvious iterate to
@@ -2708,15 +2819,22 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
 
 TerminationCriteria ReduceWorkLimitsByPreviousWork(
     TerminationCriteria criteria, const int iteration_limit,
-    const IterationStats& previous_work) {
-  criteria.set_iteration_limit(std::max(
-      0, std::min(iteration_limit, criteria.iteration_limit() -
-                                       previous_work.iteration_number())));
-  criteria.set_kkt_matrix_pass_limit(
-      std::max(0.0, criteria.kkt_matrix_pass_limit() -
-                        previous_work.cumulative_kkt_matrix_passes()));
-  criteria.set_time_sec_limit(std::max(
-      0.0, criteria.time_sec_limit() - previous_work.cumulative_time_sec()));
+    const IterationStats& previous_work,
+    bool apply_feasibility_polishing_after_limits_reached) {
+  if (apply_feasibility_polishing_after_limits_reached) {
+    criteria.set_iteration_limit(iteration_limit);
+    criteria.set_kkt_matrix_pass_limit(std::numeric_limits<double>::infinity());
+    criteria.set_time_sec_limit(std::numeric_limits<double>::infinity());
+  } else {
+    criteria.set_iteration_limit(std::max(
+        0, std::min(iteration_limit, criteria.iteration_limit() -
+                                         previous_work.iteration_number())));
+    criteria.set_kkt_matrix_pass_limit(
+        std::max(0.0, criteria.kkt_matrix_pass_limit() -
+                          previous_work.cumulative_kkt_matrix_passes()));
+    criteria.set_time_sec_limit(std::max(
+        0.0, criteria.time_sec_limit() - previous_work.cumulative_time_sec()));
+  }
   return criteria;
 }
 
@@ -2725,9 +2843,13 @@ SolverResult Solver::TryPrimalPolishing(
     const std::atomic<bool>* interrupt_solve, SolveLog& solve_log) {
   PrimalDualHybridGradientParams primal_feasibility_params = params_;
   *primal_feasibility_params.mutable_termination_criteria() =
-      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
-                                     iteration_limit,
-                                     TotalWorkSoFar(solve_log));
+      ReduceWorkLimitsByPreviousWork(
+          params_.termination_criteria(), iteration_limit,
+          TotalWorkSoFar(solve_log),
+          params_.apply_feasibility_polishing_after_limits_reached());
+  if (params_.apply_feasibility_polishing_if_solver_is_interrupted()) {
+    interrupt_solve = nullptr;
+  }
 
   // This will save the original objective after the swap.
   VectorXd objective;
@@ -2785,9 +2907,13 @@ SolverResult Solver::TryDualPolishing(VectorXd starting_dual_solution,
                                       SolveLog& solve_log) {
   PrimalDualHybridGradientParams dual_feasibility_params = params_;
   *dual_feasibility_params.mutable_termination_criteria() =
-      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
-                                     iteration_limit,
-                                     TotalWorkSoFar(solve_log));
+      ReduceWorkLimitsByPreviousWork(
+          params_.termination_criteria(), iteration_limit,
+          TotalWorkSoFar(solve_log),
+          params_.apply_feasibility_polishing_after_limits_reached());
+  if (params_.apply_feasibility_polishing_if_solver_is_interrupted()) {
+    interrupt_solve = nullptr;
+  }
 
   // These will initially contain the homogenous variable and constraint
   // bounds, but will contain the original variable and constraint bounds
@@ -2883,14 +3009,6 @@ SolverResult Solver::Solve(const IterationType iteration_type,
     if (params_.use_feasibility_polishing() &&
         iteration_type == IterationType::kNormal &&
         iterations_completed_ >= next_feasibility_polishing_iteration) {
-      // The total number of iterations in feasibility polishing is at most
-      // `4 * iterations_completed_ / kFeasibilityIterationFraction`.
-      // One factor of two is because there are both primal and dual feasibility
-      // polishing phases, and the other factor of two is because
-      // `next_feasibility_polishing_iteration` increases by a factor of 2 each
-      // feasibility polishing phase, so the sum of iteration limits is at most
-      // twice the last value.
-      const int kFeasibilityIterationFraction = 8;
       const std::optional<SolverResult> feasibility_result =
           TryFeasibilityPolishing(
               iterations_completed_ / kFeasibilityIterationFraction,
@@ -2940,6 +3058,7 @@ SolverResult PrimalDualHybridGradient(
                                   std::move(iteration_stats_callback));
 }
 
+// See comment at top of file.
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     std::optional<PrimalAndDualSolution> initial_solution,

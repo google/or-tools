@@ -465,19 +465,23 @@ class NestedTimeLimit {
 class TimeLimitCheckEveryNCalls {
  public:
   TimeLimitCheckEveryNCalls(int N, TimeLimit* time_limit)
-      : time_limit_(time_limit), count_(0), frequency_(N) {}
+      : time_limit_(time_limit), frequency_(N) {}
 
   bool LimitReached() {
     if (count_++ == frequency_) {
-      if (time_limit_->LimitReached()) return true;
+      if (time_limit_->LimitReached()) {
+        stopped_ = true;
+        return true;
+      }
       count_ = 0;
     }
-    return false;
+    return stopped_;
   }
 
  private:
   TimeLimit* time_limit_;
-  int count_;
+  bool stopped_ = false;
+  int count_ = 0;
   const int frequency_;
 };
 
