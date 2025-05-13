@@ -19,6 +19,8 @@
 
 #include <cstddef>
 
+#include "ortools/graph/iterators.h"
+
 // NOTE: It may be unexpected, but views provide a subscript operator that
 // directly accesses the underlying original container using the original
 // indices. This behavior is particularly relevant in the context of the Set
@@ -180,6 +182,7 @@ class IndexListView {
   IndexListViewIterator end() const {
     return IndexListViewIterator(values_, indices_.end());
   }
+  absl::Span<value_type> base() const { return values_; }
 
  private:
   absl::Span<value_type> values_;
@@ -255,6 +258,7 @@ class ValueFilterView {
         << "Inactive value. Are you using relative indices?";
     return value;
   }
+  absl::Span<value_type> base() const { return values_; }
 
  private:
   absl::Span<value_type> values_;
@@ -329,6 +333,7 @@ class IndexFilterView {
     return IndexFilterViewIterator(values_.end(), is_active_->end(),
                                    is_active_->end());
   }
+  absl::Span<value_type> base() const { return values_; }
 
   // NOTE: uses indices of the original container, not the filtered one
   template <typename IndexT>
@@ -374,6 +379,7 @@ class TwoLevelsView : public Lvl1ViewT {
     level2_type operator*() const {
       return level2_type(&(*iter_), active_items_);
     }
+    const Lvl1ViewT& base() const { return *this; }
 
    private:
     level1_iterator iter_;
@@ -460,6 +466,7 @@ class TransformView {
   TransformViewIterator end() const {
     return TransformViewIterator(values_.end());
   }
+  absl::Span<value_type> base() const { return values_; }
 
  private:
   absl::Span<value_type> values_;
