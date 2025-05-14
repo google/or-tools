@@ -18,15 +18,17 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -34,6 +36,14 @@
 
 namespace operations_research {
 namespace sat {
+
+IntervalsRepository::IntervalsRepository(Model* model)
+    : model_(model),
+      assignment_(model->GetOrCreate<Trail>()->Assignment()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      implications_(model->GetOrCreate<BinaryImplicationGraph>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      relations_maps_(model->GetOrCreate<BinaryRelationsMaps>()) {}
 
 IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
                                                      IntegerVariable end,
@@ -78,7 +88,7 @@ IntervalVariable IntervalsRepository::CreateInterval(AffineExpression start,
 
 void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
     IntervalVariable a, IntervalVariable b) {
-  GetOrCreateDisjunctivePrecedenceLiteral(
+  GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
       IntervalDefinition{.start = Start(a),
                          .end = End(a),
                          .size = Size(a),
@@ -93,7 +103,8 @@ void IntervalsRepository::CreateDisjunctivePrecedenceLiteral(
                                            : std::nullopt});
 }
 
-LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
+LiteralIndex
+IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     const IntervalDefinition& a, const IntervalDefinition& b) {
   auto it = disjunctive_precedences_.find({a, b});
   if (it != disjunctive_precedences_.end()) return it->second.Index();
@@ -143,7 +154,26 @@ LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
     return kNoLiteralIndex;
   }
 
+  // Abort if the relation is already known.
+  if (relations_maps_->GetPrecedenceStatus(a.end, b.start) ==
+          RelationStatus::IS_TRUE ||
+      relations_maps_->GetPrecedenceStatus(b.end, a.start) ==
+          RelationStatus::IS_TRUE) {
+    return kNoLiteralIndex;
+  }
+
   // Create a new literal.
+  //
+  // TODO(user): If there are no enforcement and we already have at one of:
+  // - s <=> a.end <= b.start
+  // - t <=> b.end <= a.start
+  // We could use (s, not(s)) or (not(t), t) and make sure s = not(t) if both
+  // exists.
+  //
+  // TODO(user): Otherwise, an alternative solution is to create s and t (can be
+  // one more Boolean though), and have enforcement => s + t == 1. The later
+  // might not even be needed though, since interval equation should already
+  // enforce it.
   const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
   const Literal a_before_b = Literal(boolean_var, true);
   disjunctive_precedences_.insert({{a, b}, a_before_b});
@@ -151,9 +181,10 @@ LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
 
   // Also insert it in precedences.
   if (enforcement_literals.empty()) {
-    // TODO(user): also add the reverse like start_b + 1 <= end_a if negated?
-    precedences_.insert({{a.end, b.start}, a_before_b});
-    precedences_.insert({{b.end, a.start}, a_before_b.Negated()});
+    relations_maps_->AddReifiedPrecedenceIfNonTrivial(a_before_b, a.end,
+                                                      b.start);
+    relations_maps_->AddReifiedPrecedenceIfNonTrivial(a_before_b.Negated(),
+                                                      b.end, a.start);
   }
 
   enforcement_literals.push_back(a_before_b);
@@ -179,25 +210,22 @@ LiteralIndex IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteral(
   return a_before_b;
 }
 
-bool IntervalsRepository::CreatePrecedenceLiteral(AffineExpression x,
-                                                  AffineExpression y) {
-  if (precedences_.contains({x, y})) return false;
+bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
+    AffineExpression x, AffineExpression y) {
+  const LiteralIndex index = relations_maps_->GetReifiedPrecedence(x, y);
+  if (index != kNoLiteralIndex) return false;
 
   // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
   // Do not create l if the relation is always true or false.
-  if (integer_trail_->UpperBound(x) <= integer_trail_->LowerBound(y)) {
-    return false;
-  }
-  if (integer_trail_->LowerBound(x) > integer_trail_->UpperBound(y)) {
+  if (relations_maps_->GetPrecedenceStatus(x, y) !=
+      RelationStatus::IS_UNKNOWN) {
     return false;
   }
 
   // Create a new literal.
   const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
   const Literal x_before_y = Literal(boolean_var, true);
-
-  // TODO(user): Also add {{y_plus_one, x}, x_before_y.Negated()} ?
-  precedences_.insert({{x, y}, x_before_y});
+  relations_maps_->AddReifiedPrecedenceIfNonTrivial(x_before_y, x, y);
 
   AffineExpression y_plus_one = y;
   y_plus_one.constant += 1;
@@ -208,9 +236,20 @@ bool IntervalsRepository::CreatePrecedenceLiteral(AffineExpression x,
 
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     AffineExpression x, AffineExpression y) const {
-  const auto it = precedences_.find({x, y});
-  if (it != precedences_.end()) return it->second.Index();
-  return kNoLiteralIndex;
+  return relations_maps_->GetReifiedPrecedence(x, y);
+}
+
+Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
+                                                          AffineExpression y) {
+  {
+    const LiteralIndex index = GetPrecedenceLiteral(x, y);
+    if (index != kNoLiteralIndex) return Literal(index);
+  }
+
+  CHECK(CreatePrecedenceLiteralIfNonTrivial(x, y));
+  const LiteralIndex index = relations_maps_->GetReifiedPrecedence(x, y);
+  CHECK_NE(index, kNoLiteralIndex);
+  return Literal(index);
 }
 
 // TODO(user): Ideally we should sort the vector of variables, but right now

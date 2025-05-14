@@ -2485,10 +2485,11 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // be infered by some other variables in the conflict.
   // Note that we can skip the first position since this is the 1-UIP.
   int index = 1;
+  TimeLimitCheckEveryNCalls time_limit_check(100, time_limit_);
   for (int i = 1; i < conflict->size(); ++i) {
     const BooleanVariable var = (*conflict)[i].Variable();
     const AssignmentInfo& info = trail_->Info(var);
-    if (time_limit_->LimitReached() ||
+    if (time_limit_check.LimitReached() ||
         info.type == AssignmentType::kSearchDecision ||
         info.trail_index <= min_trail_index_per_level_[info.level] ||
         !CanBeInferedFromConflictVariables(var)) {

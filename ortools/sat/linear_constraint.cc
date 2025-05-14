@@ -171,6 +171,17 @@ LinearExpression LinearConstraintBuilder::BuildExpression() {
   return result;
 }
 
+double LinearConstraint::NormalizedViolation(
+    const util_intops::StrongVector<IntegerVariable, double>& lp_values) const {
+  const double activity = ComputeActivity(*this, lp_values);
+  const double violation =
+      std::max(activity - ToDouble(ub), ToDouble(lb) - activity);
+  if (violation <= 0.0) return 0.0;
+
+  const double l2_norm = ComputeL2Norm(*this);
+  return violation / l2_norm;
+}
+
 double ComputeActivity(
     const LinearConstraint& constraint,
     const util_intops::StrongVector<IntegerVariable, double>& values) {

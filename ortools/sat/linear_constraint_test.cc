@@ -13,7 +13,9 @@
 
 #include "ortools/sat/linear_constraint.h"
 
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -44,8 +46,11 @@ TEST(ComputeActivityTest, BasicBehavior) {
 
   util_intops::StrongVector<IntegerVariable, double> values = {0.5, 0.0,  1.4,
                                                                0.0, -2.1, 0.0};
-  EXPECT_NEAR(ComputeActivity(ct.Build(), values), 1 * 0.5 - 2 * 1.4 - 3 * 2.1,
-              1e-6);
+  const double expected_activity = 1 * 0.5 - 2 * 1.4 - 3 * 2.1;
+  EXPECT_NEAR(ComputeActivity(ct.Build(), values), expected_activity, 1e-6);
+  const double expected_violation =
+      std::abs(expected_activity) / std::sqrt(1 + 4 + 9);
+  EXPECT_NEAR(ct.Build().NormalizedViolation(values), expected_violation, 1e-6);
 }
 
 TEST(ComputeActivityTest, EmptyConstraint) {

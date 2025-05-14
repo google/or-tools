@@ -26,7 +26,15 @@ void LinearExpression2::SimpleCanonicalization() {
   if (coeffs[1] == 0) vars[1] = kNoIntegerVariable;
 
   // Corner case when the underlying variable is the same.
-  if (vars[0] == vars[1]) {
+  if (PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
+    // Make sure variable are positive before merging.
+    for (int i = 0; i < 2; ++i) {
+      if (!VariableIsPositive(vars[i])) {
+        coeffs[i] = -coeffs[i];
+        vars[i] = NegationOf(vars[i]);
+      }
+    }
+
     coeffs[0] += coeffs[1];
     coeffs[1] = 0;
     vars[1] = kNoIntegerVariable;
@@ -49,27 +57,30 @@ void LinearExpression2::SimpleCanonicalization() {
 }
 
 void LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
-                                                    IntegerValue& ub) {
-  // We need to be able to negate without overflow.
-  CHECK_GE(lb, kMinIntegerValue);
-  CHECK_LE(ub, kMaxIntegerValue);
-
+                                                    IntegerValue& ub,
+                                                    bool allow_negation) {
   SimpleCanonicalization();
   if (coeffs[0] == 0 || coeffs[1] == 0) return;  // abort.
 
-  bool negate = false;
-  if (coeffs[0] == 0) {
-    if (coeffs[1] != 0) {
-      negate = !VariableIsPositive(vars[1]);
+  if (allow_negation) {
+    bool negate = false;
+    if (coeffs[0] == 0) {
+      if (coeffs[1] != 0) {
+        negate = !VariableIsPositive(vars[1]);
+      }
+    } else {
+      negate = !VariableIsPositive(vars[0]);
     }
-  } else {
-    negate = !VariableIsPositive(vars[0]);
-  }
-  if (negate) {
-    Negate();
-    std::swap(lb, ub);
-    lb = -lb;
-    ub = -ub;
+    if (negate) {
+      Negate();
+
+      // We need to be able to negate without overflow.
+      CHECK_GE(lb, kMinIntegerValue);
+      CHECK_LE(ub, kMaxIntegerValue);
+      std::swap(lb, ub);
+      lb = -lb;
+      ub = -ub;
+    }
   }
 
   // Do gcd division.
@@ -108,7 +119,7 @@ bool BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
 
 RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
                                                    IntegerValue lb,
-                                                   IntegerValue ub) {
+                                                   IntegerValue ub) const {
   expr.CanonicalizeAndUpdateBounds(lb, ub);
   if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
     return RelationStatus::IS_UNKNOWN;

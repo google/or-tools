@@ -358,7 +358,8 @@ struct LinearExpression2 {
   void SimpleCanonicalization();
 
   // This fully canonicalize this, and update the given bounds accordingly.
-  void CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
+  void CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub,
+                                   bool allow_negation = false);
 
   bool operator==(const LinearExpression2& o) const {
     return vars[0] == o.vars[0] && vars[1] == o.vars[1] &&
@@ -368,6 +369,13 @@ struct LinearExpression2 {
   IntegerValue coeffs[2];
   IntegerVariable vars[2];
 };
+
+inline std::ostream& operator<<(std::ostream& os,
+                                const LinearExpression2& expr) {
+  os << absl::StrCat(expr.coeffs[0], " X", expr.vars[0], " + ", expr.coeffs[1],
+                     " X", expr.vars[1]);
+  return os;
+}
 
 template <typename H>
 H AbslHashValue(H h, const LinearExpression2& e) {
@@ -390,7 +398,7 @@ class BestBinaryRelationBounds {
 
   // Returns the known status of expr <= bound.
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
-                           IntegerValue ub);
+                           IntegerValue ub) const;
 
  private:
   // The best bound on the given "canonicalized" expression.

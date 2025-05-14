@@ -122,6 +122,12 @@ void GetRelationshipForConstraint(const ConstraintProto& ct,
       }
       return;
     }
+    case ConstraintProto::kExactlyOne: {
+      for (const int lit : ct.exactly_one().literals()) {
+        deducible_vars->insert(PositiveRef(lit));
+      }
+      return;
+    }
     default:
       break;
   }
@@ -612,6 +618,20 @@ bool ComputeAllVariablesFromPrimaryVariables(
         }
         product -= target.offset();
         (*solution)[var] = product / coeff_of_var;
+      } break;
+      case ConstraintProto::kExactlyOne: {
+        (*solution)[var] = 0;
+        int sum = 0;
+        for (const int lit : ct.exactly_one().literals()) {
+          const int positive_ref = PositiveRef(lit);
+          DCHECK(positive_ref == var ||
+                 !dependent_variables_set.IsSet(positive_ref));
+          sum += RefIsPositive(lit) ? (*solution)[positive_ref]
+                                    : 1 - (*solution)[positive_ref];
+        }
+        if (sum != 1) {
+          (*solution)[var] ^= 1;
+        }
       } break;
       default:
         break;

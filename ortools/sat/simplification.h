@@ -86,14 +86,15 @@ class SatPostsolver {
   int NumClauses() const { return clauses_start_.size(); }
   std::vector<Literal> Clause(int i) const {
     // TODO(user): we could avoid the copy here, but because clauses_literals_
-    // is a deque, we do need a special return class and cannot juste use
+    // is a deque, we do need a special return class and cannot just use
     // absl::Span<Literal> for instance.
-    const int begin = clauses_start_[i];
-    const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
-                                                  : clauses_literals_.size();
+    const int64_t begin = clauses_start_[i];
+    const int64_t end = i + 1 < clauses_start_.size()
+                            ? clauses_start_[i + 1]
+                            : clauses_literals_.size();
     std::vector<Literal> result(clauses_literals_.begin() + begin,
                                 clauses_literals_.begin() + end);
-    for (int j = 0; j < result.size(); ++j) {
+    for (int64_t j = 0; j < result.size(); ++j) {
       if (result[j] == associated_literal_[i]) {
         std::swap(result[0], result[j]);
         break;
@@ -118,7 +119,7 @@ class SatPostsolver {
 
   // Stores the arguments of the Add() calls: clauses_start_[i] is the index of
   // the first literal of the clause #i in the clauses_literals_ deque.
-  std::vector<int> clauses_start_;
+  std::vector<int64_t> clauses_start_;
   std::deque<Literal> clauses_literals_;
   std::vector<Literal> associated_literal_;
 

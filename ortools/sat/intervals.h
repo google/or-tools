@@ -42,12 +42,7 @@ namespace sat {
 // provides many helper functions to add precedences relation between intervals.
 class IntervalsRepository {
  public:
-  explicit IntervalsRepository(Model* model)
-      : model_(model),
-        assignment_(model->GetOrCreate<Trail>()->Assignment()),
-        sat_solver_(model->GetOrCreate<SatSolver>()),
-        implications_(model->GetOrCreate<BinaryImplicationGraph>()),
-        integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
+  explicit IntervalsRepository(Model* model);
 
   // This type is neither copyable nor movable.
   IntervalsRepository(const IntervalsRepository&) = delete;
@@ -149,18 +144,24 @@ class IntervalsRepository {
   // If such literal already exists this returns it.
   void CreateDisjunctivePrecedenceLiteral(IntervalVariable a,
                                           IntervalVariable b);
-  LiteralIndex GetOrCreateDisjunctivePrecedenceLiteral(
+  LiteralIndex GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
       const IntervalDefinition& a, const IntervalDefinition& b);
 
   // Creates a literal l <=> y >= x.
   // Returns true if such literal is "non-trivial" and was created.
-  bool CreatePrecedenceLiteral(AffineExpression x, AffineExpression y);
+  bool CreatePrecedenceLiteralIfNonTrivial(AffineExpression x,
+                                           AffineExpression y);
 
   // Returns a literal l <=> y >= x if it exist or kNoLiteralIndex
   // otherwise. This could be the one created by
-  // CreateDisjunctivePrecedenceLiteral() or CreatePrecedenceLiteral().
+  // CreateDisjunctivePrecedenceLiteral() or
+  // CreatePrecedenceLiteralIfNonTrivial().
   LiteralIndex GetPrecedenceLiteral(AffineExpression x,
                                     AffineExpression y) const;
+
+  // Combines the two calls. Note that we will only create literals when the
+  // relation is not known.
+  Literal GetOrCreatePrecedenceLiteral(AffineExpression x, AffineExpression y);
 
   const std::vector<SchedulingConstraintHelper*>& AllDisjunctiveHelpers()
       const {
@@ -188,6 +189,7 @@ class IntervalsRepository {
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
+  BinaryRelationsMaps* relations_maps_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
@@ -212,16 +214,10 @@ class IntervalsRepository {
       SchedulingDemandHelper*>
       demand_helper_repository_;
 
-  // Disjunctive and normal precedences.
-  //
-  // Note that for normal precedences, we use directly the affine expression so
-  // that if many intervals share the same start, we don't re-create Booleans
-  // for no reason.
+  // Disjunctive precedences.
   absl::flat_hash_map<std::pair<IntervalDefinition, IntervalDefinition>,
                       Literal>
       disjunctive_precedences_;
-  absl::flat_hash_map<std::pair<AffineExpression, AffineExpression>, Literal>
-      precedences_;
 
   // Disjunctive/Cumulative helpers_.
   std::vector<SchedulingConstraintHelper*> disjunctive_helpers_;

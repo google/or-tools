@@ -759,7 +759,7 @@ std::function<BooleanOrIntegerLiteral()> DisjunctivePrecedenceSearchHeuristic(
       const auto a = best_helper->GetIntervalDefinition(best_before);
       const auto b = best_helper->GetIntervalDefinition(best_after);
       return BooleanOrIntegerLiteral(
-          repo->GetOrCreateDisjunctivePrecedenceLiteral(a, b));
+          repo->GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(a, b));
     }
 
     return BooleanOrIntegerLiteral();
@@ -867,7 +867,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       open_tasks.push_back(first_skipped_task);
 
       // TODO(user): If the two box cannot overlap because of high demand, use
-      // repo.CreateDisjunctivePrecedenceLiteral() instead.
+      // repo.CreateDisjunctivePrecedenceLiteralIfNonTrivial() instead.
       //
       // TODO(user): Add heuristic ordering for creating interesting precedence
       // first.
@@ -908,8 +908,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             }
 
             // It shouldn't be able to fail since s can be before t.
-            CHECK(repo->CreatePrecedenceLiteral(helper->Ends()[s],
-                                                helper->Starts()[t]));
+            CHECK(repo->CreatePrecedenceLiteralIfNonTrivial(
+                helper->Ends()[s], helper->Starts()[t]));
           }
 
           // Branch on that precedence.
@@ -962,7 +962,7 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
               << " " << best_helper->TaskDebugString(best_after);
       const AffineExpression end_a = best_helper->Ends()[best_before];
       const AffineExpression start_b = best_helper->Starts()[best_after];
-      repo->CreatePrecedenceLiteral(end_a, start_b);
+      repo->CreatePrecedenceLiteralIfNonTrivial(end_a, start_b);
       return BooleanOrIntegerLiteral(
           repo->GetPrecedenceLiteral(end_a, start_b));
     }
@@ -1421,7 +1421,7 @@ LiteralIndex IntegerSearchHelper::GetDecisionLiteral(
 bool IntegerSearchHelper::GetDecision(
     const std::function<BooleanOrIntegerLiteral()>& f, LiteralIndex* decision) {
   *decision = kNoLiteralIndex;
-  while (!time_limit_->LimitReached()) {
+  do {
     BooleanOrIntegerLiteral new_decision;
     if (integer_trail_->InPropagationLoop()) {
       const IntegerVariable var =
@@ -1451,7 +1451,7 @@ bool IntegerSearchHelper::GetDecision(
 
     *decision = GetDecisionLiteral(new_decision);
     if (*decision != kNoLiteralIndex) break;
-  }
+  } while (!time_limit_->LimitReached());
   return true;
 }
 
