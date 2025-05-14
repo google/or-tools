@@ -21,7 +21,7 @@
 //
 // The Shortest Hamiltonian Path Problem (SHPP) is similar to the Traveling
 // Salesperson Problem (TSP).
-// You have to visit all the cities, starting from a given kOne and you
+// You have to visit all the cities, starting from a given one and you
 // do not need to return to your starting point. With the TSP, you can start
 // anywhere, but you have to return to your start location.
 //
@@ -41,12 +41,16 @@
 // Here is how the algorithm works:
 // Let us denote the nodes to be visited by their indices 0 .. n - 1
 // Let us pick 0 as the starting node.
-// Let d(i,j) denote the distance (or cost) from i to j.
-// f(S, j) where S is a set of nodes and j is a node in S is defined as follows:
+// Let cost(i,j) denote the cost (or distance) to go from i to j.
+// f(S, j), where S is a set of nodes and j is a node in S, is defined as the
+// total cost of the shortest path from 0 to j going through all nodes of S.
+//
+// We can prove easily that it satisfy the following relation:
 // f(S, j) = min (i in S \ {j},  f(S \ {j}, i) + cost(i, j))
 //                                           (j is an element of S)
+//
 // Note that this formulation, from the original Held-Karp paper is a bit
-// different, but equivalent to the kOne used in Caseau and Laburthe, Solving
+// different, but equivalent to the one used in Caseau and Laburthe, Solving
 // Small TSPs with Constraints, 1997, ICLP
 // f(S, j) = min (i in S, f(S \ {i}, i) + cost(i, j))
 //                                           (j is not an element of S)
@@ -73,6 +77,8 @@
 // To implement dynamic programming, we store the preceding results of
 // computing f(S,j) in an array M[Offset(S,j)]. See the comments about
 // LatticeMemoryManager::BaseOffset() to see how this is computed.
+// This is really what brings the performance of the algorithm, because memory
+// is accessed in sequential order, without risking to thrash the cache.
 //
 // Keywords: Traveling Salesman, Hamiltonian Path, Dynamic Programming,
 //           Held, Karp.
@@ -129,9 +135,9 @@ class Set {
   typedef Integer IntegerType;
 
   // Useful constants.
-  static constexpr Integer kOne = static_cast<Integer>(1);
-  static constexpr Integer kZero = static_cast<Integer>(0);
-  static const int MaxCardinality = 8 * sizeof(Integer);  // NOLINT
+  static constexpr Integer kOne = Integer{1};
+  static constexpr Integer kZero = Integer{0};
+  static constexpr int kMaxCardinality = std::numeric_limits<Integer>::digits;
 
   // Construct a set from an Integer.
   explicit Set(Integer n) : value_(n) {
@@ -143,7 +149,7 @@ class Set {
   Integer value() const { return value_; }
 
   static Set FullSet(Integer card) {
-    return card == 0 ? Set(0) : Set(~kZero >> (MaxCardinality - card));
+    return card == 0 ? Set(0) : Set(~kZero >> (kMaxCardinality - card));
   }
 
   // Returns the singleton set with 'n' as its only element.
@@ -355,12 +361,12 @@ class LatticeMemoryManager {
 template <typename Set, typename CostType>
 void LatticeMemoryManager<Set, CostType>::Init(int max_card) {
   DCHECK_LT(0, max_card);
-  DCHECK_GE(Set::MaxCardinality, max_card);
+  DCHECK_LE(max_card, Set::kMaxCardinality);
   if (max_card <= max_card_) return;
   max_card_ = max_card;
   binomial_coefficients_.resize(max_card_ + 1);
 
-  // Initialize binomial_coefficients_ using Pascal's triangle recursion.
+  // Initialize binomial_coefficients_ using Pascal's triangle recurrence
   for (int n = 0; n <= max_card_; ++n) {
     binomial_coefficients_[n].resize(n + 2);
     binomial_coefficients_[n][0] = 1;
@@ -418,7 +424,7 @@ uint64_t LatticeMemoryManager<Set, CostType>::BaseOffset(int card,
   DCHECK_EQ(card, node_rank);
   // Note(user): It is possible to get rid of base_offset_[card] by using a 2-D
   // array. It would also make it possible to free all the memory but the layer
-  // being constructed and the preceding kOne, if another lattice of paths is
+  // being constructed and the preceding one, if another lattice of paths is
   // constructed.
   // TODO(user): Evaluate the interest of the above.
   // There are 'card' f(set, j) to store. That is why we need to multiply
@@ -465,14 +471,14 @@ class HamiltonianPathSolver {
   // stored
  public:
   // In 2010, 26 was the maximum solvable with 24 Gigs of RAM, and it took
-  // several minutes. With this 2014 version of the code, kOne may go a little
+  // several minutes. With this 2014 version of the code, one may go a little
   // higher, but considering the complexity of the algorithm (n*2^n), and that
   // there are very good ways to solve TSP with more than 32 cities,
   // we limit ourselves to 32 cites.
   // This is why we define the type NodeSet to be 32-bit wide.
   // TODO(user): remove this limitation by using pruning techniques.
-  typedef uint32_t Integer;
-  typedef Set<Integer> NodeSet;
+  using Integer = uint32_t;
+  using NodeSet = Set<Integer>;
 
   explicit HamiltonianPathSolver(CostFunction cost);
   HamiltonianPathSolver(int num_nodes, CostFunction cost);
@@ -553,7 +559,7 @@ class HamiltonianPathSolver {
   // Returns the cost value between two nodes.
   CostType Cost(int i, int j) { return cost_(i, j); }
 
-  // Does all the Dynamic Progamming iterations.
+  // Does all the Dynamic Programming iterations.
   void Solve();
 
   // Computes a path by looking at the information in mem_.
@@ -618,7 +624,7 @@ HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
       robustness_checked_(false),
       triangle_inequality_checked_(false),
       solved_(false) {
-  CHECK_GE(NodeSet::MaxCardinality, num_nodes_);
+  CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
   CHECK(cost_.Check());
 }
 
@@ -636,7 +642,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::ChangeCostMatrix(
   solved_ = false;
   cost_.Reset(cost);
   num_nodes_ = num_nodes;
-  CHECK_GE(NodeSet::MaxCardinality, num_nodes_);
+  CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
   CHECK(cost_.Check());
 }
 
@@ -701,7 +707,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
 
   const NodeSet full_set = NodeSet::FullSet(num_nodes_);
 
-  // Get the cost of the tsp from node 0. It is the path that leaves 0 and goes
+  // Get the cost of the TSP from node 0. It is the path that leaves 0 and goes
   // through all other nodes, and returns at 0, with minimal cost.
   tsp_cost_ = mem_.Value(full_set, 0);
   tsp_path_ = ComputePath(tsp_cost_, full_set, 0);
@@ -710,7 +716,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   hamiltonian_costs_.resize(num_nodes_);
   // Compute the cost of the Hamiltonian paths starting from node 0, going
   // through all the other nodes, and ending at end_node. Compute the minimum
-  // kOne along the way.
+  // one along the way.
   CostType min_hamiltonian_cost = std::numeric_limits<CostType>::max();
   const NodeSet hamiltonian_set = full_set.RemoveElement(0);
   for (int end_node : hamiltonian_set) {
@@ -885,7 +891,7 @@ class PruningHamiltonianSolver {
   // guaranteed to be smaller than or equal to the cost of Hamiltonian path,
   // because Hamiltonian path is a spanning tree itself.
 
-  // TODO(user): Use generic map-based cache instead of lattice-based kOne.
+  // TODO(user): Use generic map-based cache instead of lattice-based one.
   // TODO(user): Use SaturatedArithmetic for better precision.
 
  public:

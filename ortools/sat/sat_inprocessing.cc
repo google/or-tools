@@ -156,9 +156,12 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     break;
   }
 
-  // TODO(user): Maintain the total number of literals in the watched clauses.
+  // Tricky: It is important to clean-up any potential equivalence left in
+  // case we aborted early due to the limit.
+  RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   if (!LevelZeroPropagate()) return false;
 
+  // TODO(user): Maintain the total number of literals in the watched clauses.
   SOLVER_LOG(
       logger_, "[Pure SAT presolve]", " num_fixed: ", trail_->Index(),
       " num_redundant: ", implication_graph_->num_redundant_literals() / 2, "/",

@@ -345,10 +345,8 @@ class SatSolver {
   //
   // TODO(user): also copy the removable clauses?
   template <typename Output>
-  void ExtractClauses(Output* out) {
-    CHECK(!ModelIsUnsat());
-    Backtrack(0);
-    if (!FinishPropagation()) return;
+  bool ExtractClauses(Output* out) {
+    if (!ResetToLevelZero()) return false;
 
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
@@ -366,6 +364,8 @@ class SatSolver {
         out->AddClause(clause->AsSpan());
       }
     }
+
+    return true;
   }
 
   // Functions to manage the set of learned binary clauses.

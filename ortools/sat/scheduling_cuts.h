@@ -138,7 +138,7 @@ struct CompletionTimeEvent {
 
   // Indicates if the events used the optional energy information from the
   // model.
-  bool use_energy = false;
+  bool use_decomposed_energy_min = false;
 
   // Indicates if the cut is lifted, that is if it includes tasks that are not
   // strictly contained in the current time window.

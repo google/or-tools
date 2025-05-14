@@ -8311,7 +8311,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
     sat_postsolver.FixVariable(sat_solver->LiteralTrail()[i]);
   }
-  sat_solver->ExtractClauses(&sat_presolver);
+  if (!sat_solver->ExtractClauses(&sat_presolver)) return false;
 
   // Run the presolve for a small number of passes.
   // TODO(user): Add a local time limit? this can be slow on big SAT problem.
