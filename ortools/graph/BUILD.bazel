@@ -858,7 +858,7 @@ cc_test(
     deps = [
         ":iterators",
         "//ortools/base:gmock_main",
-        "//ortools/base:int_type",
+        "//ortools/base:strong_int",
     ],
 )
 

@@ -18,12 +18,12 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "ortools/base/int_type.h"
+#include "ortools/base/strong_int.h"
 
 namespace util {
 namespace {
 
-DEFINE_INT_TYPE(TestIndex, int64_t);
+DEFINE_STRONG_INT_TYPE(TestIndex, int64_t);
 
 #if __cplusplus >= 202002L
 static_assert(std::random_access_iterator<IntegerRangeIterator<int>>);
