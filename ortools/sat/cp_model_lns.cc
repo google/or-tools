@@ -1247,7 +1247,7 @@ double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {
   return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
 }
 
-double NeighborhoodGenerator::Synchronize() {
+absl::Span<const double> NeighborhoodGenerator::Synchronize() {
   absl::MutexLock mutex_lock(&generator_mutex_);
 
   // To make the whole update process deterministic, we currently sort the
@@ -1258,7 +1258,7 @@ double NeighborhoodGenerator::Synchronize() {
   int num_fully_solved_in_batch = 0;
   int num_not_fully_solved_in_batch = 0;
 
-  double total_dtime = 0.0;
+  tmp_dtimes_.clear();
   for (const SolveData& data : solve_data_) {
     ++num_calls_;
 
@@ -1304,7 +1304,7 @@ double NeighborhoodGenerator::Synchronize() {
       current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
     }
 
-    total_dtime += data.deterministic_time;
+    tmp_dtimes_.push_back(data.deterministic_time);
   }
 
   // Update the difficulty.
@@ -1327,7 +1327,7 @@ double NeighborhoodGenerator::Synchronize() {
   }
 
   solve_data_.clear();
-  return total_dtime;
+  return tmp_dtimes_;
 }
 
 std::vector<int>
