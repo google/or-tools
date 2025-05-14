@@ -29,7 +29,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -979,11 +978,8 @@ void TopNCuts::AddCut(
     LinearConstraint ct, absl::string_view name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.num_terms == 0) return;
-  const double activity = ComputeActivity(ct, lp_solution);
-  const double violation =
-      std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
-  const double l2_norm = ComputeL2Norm(ct);
-  cuts_.Add({std::string(name), std::move(ct)}, violation / l2_norm);
+  const double normalized_violation = ct.NormalizedViolation(lp_solution);
+  cuts_.Add({std::string(name), std::move(ct)}, normalized_violation);
 }
 
 void TopNCuts::TransferToManager(LinearConstraintManager* manager) {

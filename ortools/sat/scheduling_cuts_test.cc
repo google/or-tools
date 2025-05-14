@@ -15,7 +15,6 @@
 
 #include <stdint.h>
 
-#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -37,6 +36,7 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -398,21 +398,21 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
 
   SchedulingConstraintHelper* helper =
       model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
-  CtEvent e1(0, helper);
-  e1.y_size_min = two;
-  CtEvent e2(1, helper);
-  e2.y_size_min = one;
-  CtEvent e3(2, helper);
-  e3.y_size_min = one;
-  std::vector<PermutableEvent> events = {{0, e1}, {1, e2}, {1, e3}};
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper({two, one, one}, helper, &model);
+  model.TakeOwnership(demands_helper);
+  CompletionTimeEvent e1(0, helper, demands_helper);
+  CompletionTimeEvent e2(1, helper, demands_helper);
+  CompletionTimeEvent e3(2, helper, demands_helper);
+  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
 
-  IntegerValue min_sum_of_end_mins(0);
-  IntegerValue min_sum_of_weighted_end_mins(0);
-  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(
-      events, two, min_sum_of_end_mins, min_sum_of_weighted_end_mins,
-      kMinIntegerValue, kMinIntegerValue));
+  IntegerValue min_sum_of_end_mins = 0;
+  IntegerValue min_sum_of_weighted_end_mins = 0;
+  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
+                                             min_sum_of_end_mins,
+                                             min_sum_of_weighted_end_mins));
   EXPECT_EQ(min_sum_of_end_mins, 17);
-  EXPECT_EQ(min_sum_of_weighted_end_mins, 21);
+  EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
 }
 
 TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
@@ -442,21 +442,22 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
 
   SchedulingConstraintHelper* helper =
       model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
-  CtEvent e1(0, helper);
-  e1.y_size_min = two;
-  CtEvent e2(1, helper);
-  e2.y_size_min = one;
-  CtEvent e3(2, helper);
-  e3.y_size_min = one;
-  std::vector<PermutableEvent> events = {{0, e1}, {1, e2}, {2, e3}};
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper({two, one, one}, helper, &model);
+  model.TakeOwnership(demands_helper);
 
-  IntegerValue min_sum_of_end_mins(0);
-  IntegerValue min_sum_of_weighted_end_mins(0);
-  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(
-      events, two, min_sum_of_end_mins, min_sum_of_weighted_end_mins,
-      kMinIntegerValue, kMinIntegerValue));
+  CompletionTimeEvent e1(0, helper, demands_helper);
+  CompletionTimeEvent e2(1, helper, demands_helper);
+  CompletionTimeEvent e3(2, helper, demands_helper);
+  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+
+  IntegerValue min_sum_of_end_mins = 0;
+  IntegerValue min_sum_of_weighted_end_mins = 0;
+  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
+                                             min_sum_of_end_mins,
+                                             min_sum_of_weighted_end_mins));
   EXPECT_EQ(min_sum_of_end_mins, 18);
-  EXPECT_EQ(min_sum_of_weighted_end_mins, 21);
+  EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
 }
 
 TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
@@ -486,19 +487,20 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
 
   SchedulingConstraintHelper* helper =
       model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
-  CtEvent e1(0, helper);
-  e1.y_size_min = two;
-  CtEvent e2(1, helper);
-  e2.y_size_min = one;
-  CtEvent e3(2, helper);
-  e3.y_size_min = one;
-  std::vector<PermutableEvent> events = {{0, e1}, {1, e2}, {2, e3}};
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper({two, one, one}, helper, &model);
+  model.TakeOwnership(demands_helper);
 
-  IntegerValue min_sum_of_end_mins(0);
-  IntegerValue min_sum_of_weighted_end_mins(0);
-  ASSERT_FALSE(ComputeMinSumOfWeightedEndMins(
-      events, two, min_sum_of_end_mins, min_sum_of_weighted_end_mins,
-      kMinIntegerValue, kMinIntegerValue));
+  CompletionTimeEvent e1(0, helper, demands_helper);
+  CompletionTimeEvent e2(1, helper, demands_helper);
+  CompletionTimeEvent e3(2, helper, demands_helper);
+  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+
+  IntegerValue min_sum_of_end_mins = 0;
+  IntegerValue min_sum_of_weighted_end_mins = 0;
+  ASSERT_FALSE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
+                                              min_sum_of_end_mins,
+                                              min_sum_of_weighted_end_mins));
 }
 
 int64_t ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
@@ -539,18 +541,25 @@ int64_t ExactMakespanBruteForce(absl::Span<const int> sizes,
 
   SchedulingConstraintHelper* helper =
       model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
-  std::vector<PermutableEvent> events;
+  std::vector<AffineExpression> demands_expr;
   for (int i = 0; i < demands.size(); ++i) {
-    CtEvent e(i, helper);
-    e.y_size_min = demands[i];
-    events.emplace_back(i, e);
+    demands_expr.push_back(AffineExpression(demands[i]));
+  }
+  SchedulingDemandHelper* demands_helper =
+      new SchedulingDemandHelper(demands_expr, helper, &model);
+  model.TakeOwnership(demands_helper);
+
+  std::vector<CompletionTimeEvent> events;
+  for (int i = 0; i < demands.size(); ++i) {
+    CompletionTimeEvent e(i, helper, demands_helper);
+    events.push_back(e);
   }
 
-  IntegerValue min_sum_of_end_mins(0);
-  IntegerValue min_sum_of_weighted_end_mins(0);
-  EXPECT_TRUE(ComputeMinSumOfWeightedEndMins(
-      events, IntegerValue(capacity), min_sum_of_end_mins,
-      min_sum_of_weighted_end_mins, kMinIntegerValue, kMinIntegerValue));
+  IntegerValue min_sum_of_end_mins = 0;
+  IntegerValue min_sum_of_weighted_end_mins = 0;
+  EXPECT_TRUE(ComputeMinSumOfWeightedEndMins(events, capacity, 0.01, 0.01,
+                                             min_sum_of_end_mins,
+                                             min_sum_of_weighted_end_mins));
   return min_sum_of_end_mins.value();
 }
 

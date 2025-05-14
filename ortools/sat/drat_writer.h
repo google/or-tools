@@ -16,12 +16,8 @@
 
 #include <string>
 
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/file.h"
-#else
-class File {};
-#endif  // !__PORTABLE_PLATFORM__
 #include "absl/types/span.h"
+#include "ortools/base/file.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {

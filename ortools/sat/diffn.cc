@@ -265,28 +265,8 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
   if (num_boxes < params.no_overlap_2d_boolean_relations_limit()) {
     auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
     auto* sat_solver = model->GetOrCreate<SatSolver>();
-    auto* encoder = model->GetOrCreate<IntegerEncoder>();
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
-
-    // Creates and returns the Boolean equivalent to a <= b.
-    const auto f = [repository, integer_trail, encoder](
-                       const AffineExpression& a, const AffineExpression& b) {
-      if (a.var == b.var && a.coeff == b.coeff) {
-        return (a.constant <= b.constant) ? encoder->GetTrueLiteral()
-                                          : encoder->GetFalseLiteral();
-      }
-      if (integer_trail->UpperBound(a) <= integer_trail->LowerBound(b)) {
-        return encoder->GetTrueLiteral();
-      }
-      if (integer_trail->LowerBound(a) > integer_trail->UpperBound(b)) {
-        return encoder->GetFalseLiteral();
-      }
-      repository->CreatePrecedenceLiteral(a, b);
-      const LiteralIndex index = repository->GetPrecedenceLiteral(a, b);
-      CHECK(index != kNoLiteralIndex);
-      return Literal(index);
-    };
 
     for (int i = 0; i < num_boxes; ++i) {
       if (repository->IsAbsent(x[i])) continue;
@@ -296,8 +276,10 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
         if (repository->IsAbsent(y[j])) continue;
 
         // At most one of these two x options is true.
-        const Literal x_ij = f(repository->End(x[i]), repository->Start(x[j]));
-        const Literal x_ji = f(repository->End(x[j]), repository->Start(x[i]));
+        const Literal x_ij = repository->GetOrCreatePrecedenceLiteral(
+            repository->End(x[i]), repository->Start(x[j]));
+        const Literal x_ji = repository->GetOrCreatePrecedenceLiteral(
+            repository->End(x[j]), repository->Start(x[i]));
         if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
              integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
             !implications->AddAtMostOne({x_ij, x_ji})) {
@@ -306,8 +288,10 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
         }
 
         // At most one of these two y options is true.
-        const Literal y_ij = f(repository->End(y[i]), repository->Start(y[j]));
-        const Literal y_ji = f(repository->End(y[j]), repository->Start(y[i]));
+        const Literal y_ij = repository->GetOrCreatePrecedenceLiteral(
+            repository->End(y[i]), repository->Start(y[j]));
+        const Literal y_ji = repository->GetOrCreatePrecedenceLiteral(
+            repository->End(y[j]), repository->Start(y[i]));
         if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
              integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
             !implications->AddAtMostOne({y_ij, y_ji})) {

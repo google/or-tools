@@ -27,15 +27,10 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/logging.h"
-#include "ortools/base/timer.h"
-#if !defined(__PORTABLE_PLATFORM__)
-#include "ortools/base/helpers.h"
-#include "ortools/base/options.h"
-#endif  // __PORTABLE_PLATFORM__
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -54,6 +49,10 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/options.h"
+#include "ortools/base/timer.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -92,9 +91,9 @@
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
-#if !defined(__PORTABLE_PLATFORM__)
+#if !defined(__EMBEDDED_PLATFORM__)
 #include "ortools/util/sigint.h"
-#endif  // __PORTABLE_PLATFORM__
+#endif  // __EMBEDDED_PLATFORM__
 #include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
@@ -1208,7 +1207,7 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if !defined(__EMBEDDED_PLATFORM__)
 
 class FeasibilityPumpSolver : public SubSolver {
  public:
@@ -1398,7 +1397,7 @@ class LnsSolver : public SubSolver {
           break;
       }
       const std::string_view search_info =
-          absl::StripPrefix(std::string_view(local_params.name()), "lns_");
+          absl::StripPrefix(absl::string_view(local_params.name()), "lns_");
       local_params.set_max_deterministic_time(data.deterministic_limit);
 
       std::string source_info =
@@ -2218,7 +2217,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   LaunchSubsolvers(params, shared, subsolvers, name_filter.AllIgnored());
 }
 
-#endif  // __PORTABLE_PLATFORM__
+#endif  // !defined(__EMBEDDED_PLATFORM__)
 
 // If the option use_sat_inprocessing is true, then before post-solving a
 // solution, we need to make sure we add any new clause required for postsolving
@@ -2263,18 +2262,27 @@ std::function<void(Model*)> NewBestBoundCallback(
   };
 }
 
-#if !defined(__PORTABLE_PLATFORM__)
+namespace {
+template <typename T>
+void ParseFromStringOrDie(absl::string_view str, T* proto) {
+  if constexpr (std::is_base_of_v<google::protobuf::Message, T>) {
+    CHECK(google::protobuf::TextFormat::ParseFromString(str, proto)) << str;
+  } else {
+    LOG(FATAL) << "Calling NewSatParameters() with a textual proto is not "
+                  "supported when using Lite Protobuf.";
+  }
+}
+}  // namespace
+
 // TODO(user): Support it on android.
 std::function<SatParameters(Model*)> NewSatParameters(
     const std::string& params) {
   sat::SatParameters parameters;
   if (!params.empty()) {
-    CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters))
-        << params;
+    ParseFromStringOrDie<SatParameters>(params, &parameters);
   }
   return NewSatParameters(parameters);
 }
-#endif  // __PORTABLE_PLATFORM__
 
 std::function<SatParameters(Model*)> NewSatParameters(
     const sat::SatParameters& parameters) {
@@ -2337,15 +2345,15 @@ void RegisterSearchStatisticCallback(Model* global_model) {
 }
 
 void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
-#if !defined(__PORTABLE_PLATFORM__)
-  // Override parameters?
-  if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
-    SatParameters flag_params;
-    CHECK(google::protobuf::TextFormat::ParseFromString(
-        absl::GetFlag(FLAGS_cp_model_params), &flag_params));
-    params->MergeFrom(flag_params);
+  if constexpr (std::is_base_of_v<google::protobuf::Message, SatParameters>) {
+    // Override parameters?
+    if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {
+      SatParameters flag_params;
+      ParseFromStringOrDie<SatParameters>(absl::GetFlag(FLAGS_cp_model_params),
+                                          &flag_params);
+      params->MergeFrom(flag_params);
+    }
   }
-#endif  // __PORTABLE_PLATFORM__
 }
 
 }  // namespace
@@ -2356,19 +2364,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   wall_timer->Start();
   user_timer->Start();
 
-#if !defined(__PORTABLE_PLATFORM__)
-  // Dump initial model?
-  if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    DumpModelProto(model_proto, "model");
-  }
-  if (absl::GetFlag(FLAGS_cp_model_export_model)) {
-    if (model_proto.name().empty()) {
-      DumpModelProto(model_proto, "unnamed_model");
-    } else {
-      DumpModelProto(model_proto, model_proto.name());
+  if constexpr (std::is_base_of_v<google::protobuf::Message, CpModelProto>) {
+    // Dump initial model?
+    if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
+      DumpModelProto(model_proto, "model");
+    }
+    if (absl::GetFlag(FLAGS_cp_model_export_model)) {
+      if (model_proto.name().empty()) {
+        DumpModelProto(model_proto, "unnamed_model");
+      } else {
+        DumpModelProto(model_proto, model_proto.name());
+      }
     }
   }
-#endif  // __PORTABLE_PLATFORM__
 
   MergeParamsWithFlagsAndDefaults(model->GetOrCreate<SatParameters>());
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
@@ -2389,20 +2397,21 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       absl::GetFlag(FLAGS_cp_model_dump_prefix));
   RegisterSearchStatisticCallback(model);
 
-#if !defined(__PORTABLE_PLATFORM__)
-  // Note that the postprocessors are executed in reverse order, so this
-  // will always dump the response just before it is returned since it is
-  // the first one we register.
-  if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
-    shared_response_manager->AddFinalResponsePostprocessor(
-        [](CpSolverResponse* response) {
-          const std::string file = absl::StrCat(
-              absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pb.txt");
-          LOG(INFO) << "Dumping response proto to '" << file << "'.";
-          CHECK(WriteModelProtoToFile(*response, file));
-        });
+  if constexpr (std::is_base_of_v<google::protobuf::Message,
+                                  CpSolverResponse>) {
+    // Note that the postprocessors are executed in reverse order, so this
+    // will always dump the response just before it is returned since it is
+    // the first one we register.
+    if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
+      shared_response_manager->AddFinalResponsePostprocessor(
+          [](CpSolverResponse* response) {
+            const std::string file = absl::StrCat(
+                absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pb.txt");
+            LOG(INFO) << "Dumping response proto to '" << file << "'.";
+            CHECK(WriteModelProtoToFile(*response, file));
+          });
+    }
   }
-#endif  // __PORTABLE_PLATFORM__
 
   // Always display the final response stats if requested.
   // This also copy the logs to the response if requested.
@@ -2456,13 +2465,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Initialize the time limit from the parameters.
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
 
-#if !defined(__PORTABLE_PLATFORM__)
+#if !defined(__EMBEDDED_PLATFORM__)
   // Register SIGINT handler if requested by the parameters.
   if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
         [shared_time_limit]() { shared_time_limit->Stop(); });
   }
-#endif  // __PORTABLE_PLATFORM__
+#endif  // __EMBEDDED_PLATFORM__
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
@@ -2868,31 +2877,33 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
   }
 
-#if !defined(__PORTABLE_PLATFORM__)
-  if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
-    DumpModelProto(*new_cp_model_proto, "presolved_model");
-    DumpModelProto(*mapping_proto, "mapping_model");
+  if constexpr (std::is_base_of_v<google::protobuf::Message, CpModelProto> &&
+                std::is_base_of_v<google::protobuf::Message, MPModelProto>) {
+    if (absl::GetFlag(FLAGS_cp_model_dump_models)) {
+      DumpModelProto(*new_cp_model_proto, "presolved_model");
+      DumpModelProto(*mapping_proto, "mapping_model");
 
-    // If the model is convertible to a MIP, we dump it too.
-    //
-    // TODO(user): We could try to dump our linear relaxation too.
-    MPModelProto mip_model;
-    if (ConvertCpModelProtoToMPModelProto(*new_cp_model_proto, &mip_model)) {
-      DumpModelProto(mip_model, "presolved_mp_model");
-    }
+      // If the model is convertible to a MIP, we dump it too.
+      //
+      // TODO(user): We could try to dump our linear relaxation too.
+      MPModelProto mip_model;
+      if (ConvertCpModelProtoToMPModelProto(*new_cp_model_proto, &mip_model)) {
+        DumpModelProto(mip_model, "presolved_mp_model");
+      }
 
-    // If the model is convertible to a pure SAT one, we dump it too.
-    std::string cnf_string;
-    if (ConvertCpModelProtoToCnf(*new_cp_model_proto, &cnf_string)) {
-      const std::string filename = absl::StrCat(
-          absl::GetFlag(FLAGS_cp_model_dump_prefix), "presolved_cnf_model.cnf");
-      LOG(INFO) << "Dumping cnf model to '" << filename << "'.";
-      const absl::Status status =
-          file::SetContents(filename, cnf_string, file::Defaults());
-      if (!status.ok()) LOG(ERROR) << status;
+      // If the model is convertible to a pure SAT one, we dump it too.
+      std::string cnf_string;
+      if (ConvertCpModelProtoToCnf(*new_cp_model_proto, &cnf_string)) {
+        const std::string filename =
+            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                         "presolved_cnf_model.cnf");
+        LOG(INFO) << "Dumping cnf model to '" << filename << "'.";
+        const absl::Status status =
+            file::SetContents(filename, cnf_string, file::Defaults());
+        if (!status.ok()) LOG(ERROR) << status;
+      }
     }
   }
-#endif  // __PORTABLE_PLATFORM__
 
   if (params.stop_after_presolve() || shared_time_limit->LimitReached()) {
     int64_t num_terms = 0;
@@ -2955,15 +2966,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LoadDebugSolution(*new_cp_model_proto, model);
 
   if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
-#if defined(__PORTABLE_PLATFORM__)
+#if defined(__EMBEDDED_PLATFORM__)
     if (/* DISABLES CODE */ (false)) {
       // We ignore the multithreading parameter in this case.
-#else   // __PORTABLE_PLATFORM__
+#else   // __EMBEDDED_PLATFORM__
     if (params.num_workers() > 1 || params.interleave_search() ||
         !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
         params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
-#endif  // __PORTABLE_PLATFORM__
+#endif  // __EMBEDDED_PLATFORM__
     } else {
       shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
 
@@ -2991,14 +3002,12 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
   return SolveCpModel(model_proto, &model);
 }
 
-#if !defined(__PORTABLE_PLATFORM__)
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
                                      const std::string& params) {
   Model model;
   model.Add(NewSatParameters(params));
   return SolveCpModel(model_proto, &model);
 }
-#endif  // !__PORTABLE_PLATFORM__
 
 }  // namespace sat
 }  // namespace operations_research

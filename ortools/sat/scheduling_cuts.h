@@ -18,11 +18,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 
 namespace operations_research {
@@ -100,21 +100,34 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 
 // Internal methods and data structures, useful for testing.
 
-// Base event type for scheduling cuts.
-struct BaseEvent {
-  BaseEvent(int t, SchedulingConstraintHelper* x_helper);
+// Stores the event for a task (interval, demand).
+// For a no_overlap constraint, demand is always between 0 and 1.
+// For a cumulative constraint, demand must be between 0 and capacity_max.
+struct CompletionTimeEvent {
+  CompletionTimeEvent(int t, SchedulingConstraintHelper* x_helper,
+                      SchedulingDemandHelper* demands_helper);
 
-  // Cache of the intervals bound on the x direction.
-  IntegerValue x_start_min;
-  IntegerValue x_start_max;
-  IntegerValue x_end_min;
-  IntegerValue x_end_max;
-  IntegerValue x_size_min;
-  IntegerValue x_size_max;
+  // The index of the task in the helper.
+  int task_index;
 
-  // Cache of the bounds on the y direction.
-  IntegerValue y_size_min;
-  IntegerValue y_size_max;
+  // Cache of the bounds of the interval.
+  IntegerValue start_min;
+  IntegerValue start_max;
+  IntegerValue end_min;
+  IntegerValue end_max;
+  IntegerValue size_min;
+
+  // The lp value of the end of the interval.
+  AffineExpression end;
+  double lp_end = 0.0;
+
+  // Cache of the bounds of the demand.
+  IntegerValue demand_min;
+
+  // If we know that the size on y is fixed, we can use some heuristic to
+  // compute the maximum subset sums under the capacity and use that instead
+  // of the full capacity.
+  bool demand_is_fixed = false;
 
   // The energy min of this event.
   IntegerValue energy_min;
@@ -126,24 +139,6 @@ struct BaseEvent {
   // Indicates if the events used the optional energy information from the
   // model.
   bool use_energy = false;
-
-  // If we know that the size on y is fixed, we can use some heuristic to
-  // compute the maximum subset sums under the capacity and use that instead
-  // of the full capacity.
-  bool y_size_is_fixed() const { return y_size_min == y_size_max; }
-  void PropagateDecomposedEnergy(const VariablesAssignment& assignment);
-};
-
-// Stores the event for a rectangle along the two axis x and y.
-//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
-//   For a cumulative constraint, y is the demand that must be between 0 and
-//       capacity_max.
-struct CtEvent : BaseEvent {
-  CtEvent(int t, SchedulingConstraintHelper* x_helper);
-
-  // The lp value of the end of the x interval.
-  AffineExpression x_end;
-  double x_lp_end;
 
   // Indicates if the cut is lifted, that is if it includes tasks that are not
   // strictly contained in the current time window.
@@ -160,30 +155,11 @@ struct CtEvent : BaseEvent {
 // small, like <= 10. They should also starts in index order.
 //
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
-struct PermutableEvent {
-  PermutableEvent(int i, CtEvent e)
-      : index(i),
-        start_min(e.x_start_min),
-        start_max(e.x_start_max),
-        size(e.x_size_min),
-        demand(e.y_size_min),
-        weight(e.y_size_min) {}
-
-  bool operator<(const PermutableEvent& o) const { return index < o.index; }
-
-  int index;  // for < to be used by std::next_permutation().
-  IntegerValue start_min;
-  IntegerValue start_max;
-  IntegerValue size;
-  IntegerValue demand;
-  IntegerValue weight;
-};
-bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
-                                    IntegerValue capacity_max,
-                                    IntegerValue& min_sum_of_end_mins,
-                                    IntegerValue& min_sum_of_weighted_end_mins,
-                                    IntegerValue unweighted_threshold,
-                                    IntegerValue weighted_threshold);
+bool ComputeMinSumOfWeightedEndMins(
+    absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
+    double sum_of_ends_lp, double sum_of_weighted_ends_lp,
+    IntegerValue& min_sum_of_end_mins,
+    IntegerValue& min_sum_of_weighted_end_mins);
 
 }  // namespace sat
 }  // namespace operations_research

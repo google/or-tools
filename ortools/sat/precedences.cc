@@ -1487,5 +1487,153 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   return num_added_constraints;
 }
 
+BinaryRelationsMaps::BinaryRelationsMaps(Model* model)
+    : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()) {
+  int index = 0;
+  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+      [index = index, trail = model->GetOrCreate<Trail>(), this]() mutable {
+        DCHECK_EQ(trail->CurrentDecisionLevel(), 0);
+        absl::flat_hash_set<Literal> relevant_true_literals;
+        for (; index < trail->Index(); ++index) {
+          const Literal l = (*trail)[index];
+          if (variable_appearing_in_reified_relations_.contains(l.Variable())) {
+            relevant_true_literals.insert(l);
+          }
+        }
+        if (relevant_true_literals.empty()) return true;
+
+        // Linear scan.
+        for (const auto [l, expr, ub] : all_reified_relations_) {
+          if (relevant_true_literals.contains(l)) {
+            AddRelationBounds(expr, kMinIntegerValue, ub);
+            VLOG(2) << "New fixed precedence: " << expr << " <= " << ub
+                    << " (was reified by " << l << ")";
+          } else if (relevant_true_literals.contains(l.Negated())) {
+            AddRelationBounds(expr, ub + 1, kMaxIntegerValue);
+            VLOG(2) << "New fixed precedence: " << expr << " > " << ub
+                    << " (was reified by not(" << l << "))";
+          }
+        }
+        return true;
+      });
+}
+
+BinaryRelationsMaps::~BinaryRelationsMaps() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"BinaryRelationsMaps/num_relations", num_updates_});
+  shared_stats_->AddStats(stats);
+}
+
+std::pair<IntegerValue, IntegerValue>
+BinaryRelationsMaps::GetImpliedLevelZeroBounds(
+    const LinearExpression2& expr) const {
+  // Compute the implied bounds on the expression.
+  IntegerValue implied_lb = 0;
+  IntegerValue implied_ub = 0;
+  if (expr.coeffs[0] != 0) {
+    CHECK_GE(expr.vars[0], 0);
+    implied_lb +=
+        expr.coeffs[0] * integer_trail_->LevelZeroLowerBound(expr.vars[0]);
+    implied_ub +=
+        expr.coeffs[0] * integer_trail_->LevelZeroUpperBound(expr.vars[0]);
+  }
+  if (expr.coeffs[1] != 0) {
+    CHECK_GE(expr.vars[1], 0);
+    implied_lb +=
+        expr.coeffs[1] * integer_trail_->LevelZeroLowerBound(expr.vars[1]);
+    implied_ub +=
+        expr.coeffs[1] * integer_trail_->LevelZeroUpperBound(expr.vars[1]);
+  }
+
+  return {implied_lb, implied_ub};
+}
+
+void BinaryRelationsMaps::AddRelationBounds(LinearExpression2 expr,
+                                            IntegerValue lb, IntegerValue ub) {
+  expr.CanonicalizeAndUpdateBounds(lb, ub);
+  const auto [implied_lb, implied_ub] = GetImpliedLevelZeroBounds(expr);
+  lb = std::max(lb, implied_lb);
+  ub = std::min(ub, implied_ub);
+
+  if (lb > ub) return;                               // unsat ??
+  if (lb == implied_lb && ub == implied_ub) return;  // trivially true.
+
+  if (best_upper_bounds_.Add(expr, lb, ub)) {
+    // TODO(user): Also push them to a global shared repository after
+    // remapping IntegerVariable to proto indices.
+    ++num_updates_;
+  }
+}
+
+RelationStatus BinaryRelationsMaps::GetStatus(LinearExpression2 expr,
+                                              IntegerValue lb,
+                                              IntegerValue ub) const {
+  expr.CanonicalizeAndUpdateBounds(lb, ub);
+  const auto [implied_lb, implied_ub] = GetImpliedLevelZeroBounds(expr);
+  lb = std::max(lb, implied_lb);
+  ub = std::min(ub, implied_ub);
+
+  // Returns directly if the status can be derived from the implied bounds.
+  if (lb > ub) return RelationStatus::IS_FALSE;
+  if (lb == implied_lb && ub == implied_ub) return RelationStatus::IS_TRUE;
+
+  // Relax as best_upper_bounds_.GetStatus() might have older bounds.
+  if (lb == implied_lb) lb = kMinIntegerValue;
+  if (ub == implied_ub) ub = kMaxIntegerValue;
+
+  return best_upper_bounds_.GetStatus(expr, lb, ub);
+}
+
+std::pair<LinearExpression2, IntegerValue> BinaryRelationsMaps::FromDifference(
+    const AffineExpression& a, const AffineExpression& b) const {
+  LinearExpression2 expr;
+  expr.vars[0] = a.var;
+  expr.vars[1] = b.var;
+  expr.coeffs[0] = a.coeff;
+  expr.coeffs[1] = -b.coeff;
+  IntegerValue lb = kMinIntegerValue;  // unused.
+  IntegerValue ub = b.constant - a.constant;
+  expr.CanonicalizeAndUpdateBounds(lb, ub, /*allow_negation=*/false);
+  return {std::move(expr), ub};
+}
+
+RelationStatus BinaryRelationsMaps::GetPrecedenceStatus(
+    AffineExpression a, AffineExpression b) const {
+  const auto [expr, ub] = FromDifference(a, b);
+  return GetStatus(expr, kMinIntegerValue, ub);
+}
+
+void BinaryRelationsMaps::AddReifiedPrecedenceIfNonTrivial(Literal l,
+                                                           AffineExpression a,
+                                                           AffineExpression b) {
+  const auto [expr, ub] = FromDifference(a, b);
+  const RelationStatus status = GetStatus(expr, kMinIntegerValue, ub);
+  if (status != RelationStatus::IS_UNKNOWN) return;
+
+  relation_to_lit_.insert({{expr, ub}, l});
+
+  variable_appearing_in_reified_relations_.insert(l.Variable());
+  all_reified_relations_.push_back({l, expr, ub});
+}
+
+LiteralIndex BinaryRelationsMaps::GetReifiedPrecedence(AffineExpression a,
+                                                       AffineExpression b) {
+  const auto [expr, ub] = FromDifference(a, b);
+  const RelationStatus status = GetStatus(expr, kMinIntegerValue, ub);
+  if (status == RelationStatus::IS_TRUE) {
+    return integer_encoder_->GetTrueLiteral().Index();
+  }
+  if (status == RelationStatus::IS_FALSE) {
+    return integer_encoder_->GetFalseLiteral().Index();
+  }
+
+  const auto it = relation_to_lit_.find({expr, ub});
+  if (it == relation_to_lit_.end()) return kNoLiteralIndex;
+  return it->second;
+}
+
 }  // namespace sat
 }  // namespace operations_research

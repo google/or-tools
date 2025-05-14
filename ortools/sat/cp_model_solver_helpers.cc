@@ -1070,6 +1070,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* repository = model->GetOrCreate<BinaryRelationRepository>();
+  auto* relations_maps = model->GetOrCreate<BinaryRelationsMaps>();
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // Load conditional precedences and always true binary relations.
@@ -1135,6 +1136,13 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
       if (vars.size() == 2) {
         repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
                         {vars[1], coeffs[1]}, rhs_min, rhs_max);
+
+        LinearExpression2 expr;
+        expr.vars[0] = vars[0];
+        expr.vars[1] = vars[1];
+        expr.coeffs[0] = coeffs[0];
+        expr.coeffs[1] = coeffs[1];
+        relations_maps->AddRelationBounds(expr, rhs_min, rhs_max);
       }
     } else {
       const Literal lit = mapping->Literal(ct.enforcement_literal(0));

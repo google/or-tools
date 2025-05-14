@@ -123,10 +123,8 @@ std::function<void(Model*)> NewBestBoundCallback(
    \endcode
  * before calling \c SolveCpModel().
  */
-#if !defined(__PORTABLE_PLATFORM__)
 std::function<SatParameters(Model*)> NewSatParameters(
     const std::string& params);
-#endif  // !__PORTABLE_PLATFORM__
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 

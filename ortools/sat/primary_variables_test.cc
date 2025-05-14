@@ -26,6 +26,8 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::Contains;
+using ::testing::ElementsAre;
+using ::testing::EqualsProto;
 using ::testing::Pair;
 
 TEST(PrimaryVariablesTest, BasicExample) {
@@ -112,6 +114,25 @@ TEST(PrimaryVariablesTest, WithIntProd) {
   EXPECT_TRUE(ComputeAllVariablesFromPrimaryVariables(model, relationships,
                                                       &all_variables));
   EXPECT_EQ(all_variables, solution);
+}
+
+TEST(PrimaryVariablesTest, WithExactlyOne) {
+  const CpModelProto model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints { exactly_one { literals: [ 0, 1, 2, 3 ] } }
+  )pb");
+  const VariableRelationships relationships =
+      ComputeVariableRelationships(model);
+  EXPECT_EQ(relationships.secondary_variables.size(), 1);
+  const ConstraintProto expected = ParseTestProto(R"pb(
+      exactly_one { literals: [ 0, 1, 2, 3 ] }
+  )pb");
+  EXPECT_THAT(relationships.dependency_resolution_constraint,
+              ElementsAre(EqualsProto(expected)));
 }
 
 }  // namespace

@@ -506,6 +506,7 @@ struct Relation {
 class BinaryRelationRepository {
  public:
   int size() const { return relations_.size(); }
+
   // The returned relation is guaranteed to only have positive variables.
   const Relation& relation(int index) const { return relations_[index]; }
 
@@ -572,6 +573,64 @@ class BinaryRelationRepository {
   absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
                       std::vector<int>>
       var_pair_to_relations_;
+};
+
+// TODO(user): Merge with BinaryRelationRepository. Note that this one provides
+// different indexing though, so it could be kept separate. The
+// LinearExpression2 data structure is also slightly more efficient.
+class BinaryRelationsMaps {
+ public:
+  explicit BinaryRelationsMaps(Model* model);
+  ~BinaryRelationsMaps();
+
+  // This mainly wraps BestBinaryRelationBounds, but in addition it checks the
+  // current LevelZero variable bounds to detect trivially true or false
+  // relation.
+  void AddRelationBounds(LinearExpression2 expr, IntegerValue lb,
+                         IntegerValue ub);
+  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
+                           IntegerValue ub) const;
+
+  // Return the status of a <= b;
+  RelationStatus GetPrecedenceStatus(AffineExpression a,
+                                     AffineExpression b) const;
+
+  // Register the fact that l <=> ( a <= b ).
+  // These are considered equivalence relation.
+  void AddReifiedPrecedenceIfNonTrivial(Literal l, AffineExpression a,
+                                        AffineExpression b);
+
+  // Returns kNoLiteralIndex if we don't have a literal <=> ( a <= b ), or
+  // returns that literal if we have one. Note that we will return the
+  // true/false literal if the status is known at level zero.
+  LiteralIndex GetReifiedPrecedence(AffineExpression a, AffineExpression b);
+
+ private:
+  // Return the pair (a - b) <= rhs.
+  std::pair<LinearExpression2, IntegerValue> FromDifference(
+      const AffineExpression& a, const AffineExpression& b) const;
+
+  std::pair<IntegerValue, IntegerValue> GetImpliedLevelZeroBounds(
+      const LinearExpression2& expr) const;
+
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* integer_encoder_;
+  SharedStatistics* shared_stats_;
+  BestBinaryRelationBounds best_upper_bounds_;
+
+  int64_t num_updates_ = 0;
+
+  // This stores relations l <=> (linear2 <= rhs).
+  absl::flat_hash_map<std::pair<LinearExpression2, IntegerValue>, Literal>
+      relation_to_lit_;
+
+  // This is used to detect relations that become fixed at level zero and
+  // "upgrade" them to non-enforced relations. Because we only do that when
+  // we fix variable, a linear scan shouldn't be too bad and is relatively
+  // compact memory wise.
+  absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
+  std::vector<std::tuple<Literal, LinearExpression2, IntegerValue>>
+      all_reified_relations_;
 };
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the
