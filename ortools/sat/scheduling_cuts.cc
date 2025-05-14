@@ -83,6 +83,7 @@ bool DecomposedEnergyIsPropagated(const VariablesAssignment& assignment, int t,
     return false;
   }
   if (num_false_literals == decomposed_energy.size()) return false;
+  if (decomposed_energy.size() == 1 && num_true_literals != 1) return false;
 
   // Checks the propagations of the bounds of the size and the demand.
   IntegerValue propagated_size_min = kMaxIntegerValue;
@@ -149,7 +150,7 @@ struct EnergyEvent {
   // If non empty, a decomposed view of the energy of this event.
   // First value in each pair is size, second is demand.
   std::vector<LiteralValueValue> decomposed_energy;
-  bool use_energy = false;
+  bool use_decomposed_energy = false;
 
   // We need this for linearizing the energy in some cases.
   AffineExpression demand;
@@ -649,6 +650,10 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       e.demand = demands_helper->Demands()[i];
       e.demand_min = demands_helper->DemandMin(i);
       e.decomposed_energy = demands_helper->DecomposedEnergies()[i];
+      if (e.decomposed_energy.size() == 1) {
+        // We know it was propagated correctly. We can remove this field.
+        e.decomposed_energy.clear();
+      }
       e.energy_min = demands_helper->EnergyMin(i);
       e.energy_is_quadratic = demands_helper->EnergyIsQuadratic(i);
       if (!helper->IsPresent(i)) {
@@ -743,7 +748,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     LinearExpression demand;
     double demand_lp = 0.0;
     bool is_positive = false;
-    bool use_energy = false;
+    bool use_decomposed_energy_min = false;
     bool is_optional = false;
   };
 
@@ -779,7 +784,8 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
       }
       e1.demand_lp = e1.demand.LpValue(lp_values);
       e1.is_positive = true;
-      e1.use_energy = !demands_helper->DecomposedEnergies()[i].empty();
+      e1.use_decomposed_energy_min =
+          !demands_helper->DecomposedEnergies()[i].empty();
       e1.is_optional = !helper->IsPresent(i);
 
       TimeTableEvent e2 = e1;
@@ -816,7 +822,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
 
         if (sum_of_demand_lp >= capacity_lp + kMinCutViolation) {
           // Create cut.
-          bool use_energy = false;
+          bool use_decomposed_energy_min = false;
           bool use_optional = false;
           LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
           cut.AddTerm(capacity, IntegerValue(-1));
@@ -834,13 +840,13 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
             }
 
             cut.AddLinearExpression(cut_event.demand, IntegerValue(1));
-            use_energy |= cut_event.use_energy;
+            use_decomposed_energy_min |= cut_event.use_decomposed_energy_min;
             use_optional |= cut_event.is_optional;
           }
 
           std::string cut_name = "CumulativeTimeTable";
           if (use_optional) cut_name += "_optional";
-          if (use_energy) cut_name += "_energy";
+          if (use_decomposed_energy_min) cut_name += "_energy";
           top_n_cuts.AddCut(cut.Build(), cut_name, lp_values);
         }
       }
@@ -1060,15 +1066,19 @@ CompletionTimeEvent::CompletionTimeEvent(int t,
     demand_min = 1;
     demand_is_fixed = true;
     energy_min = size_min;
-    use_energy = false;
+    use_decomposed_energy_min = false;
   } else {
     demand_min = demands_helper->DemandMin(t);
     demand_is_fixed = demands_helper->DemandIsFixed(t);
     // Default values for energy. Will be updated if decomposed energy is
     // not empty.
     energy_min = demand_min * size_min;
-    use_energy = false;
+    use_decomposed_energy_min = false;
     decomposed_energy = demands_helper->DecomposedEnergies()[t];
+    if (decomposed_energy.size() == 1) {
+      // We know everything is propagated, we can remove this field.
+      decomposed_energy.clear();
+    }
   }
 }
 
@@ -1079,7 +1089,8 @@ std::string CompletionTimeEvent::DebugString() const {
       ", size_min = ", size_min, ", end = ", end.DebugString(),
       ", lp_end = ", lp_end, ", size_min = ", size_min,
       " demand_min = ", demand_min, ", demand_is_fixed = ", demand_is_fixed,
-      ", energy_min = ", energy_min, ", use_energy = ", use_energy,
+      ", energy_min = ", energy_min,
+      ", use_decomposed_energy_min = ", use_decomposed_energy_min,
       ", lifted = ", lifted, ", decomposed_energy = [",
       absl::StrJoin(decomposed_energy, ", ",
                     [](std::string* out, const LiteralValueValue& e) {
@@ -1405,10 +1416,10 @@ CompletionTimeEvent CopyAndTrimEventAfter(const CompletionTimeEvent& old_event,
 
     DCHECK_GT(propagated_energy_min, 0);
     if (propagated_energy_min > event.energy_min) {
-      event.use_energy = true;
+      event.use_decomposed_energy_min = true;
       event.energy_min = propagated_energy_min;
     } else {
-      event.use_energy = false;
+      event.use_decomposed_energy_min = false;
     }
   }
   event.start_min = time;
@@ -1537,7 +1548,6 @@ void GenerateCompletionTimeCutsWithEnergy(
     double best_efficacy = 0.01;
     IntegerValue best_min_contrib = 0;
     bool best_uses_subset_sum = false;
-    bool best_uses_shapes = false;
 
     // Used in the first term of the rhs of the equation.
     IntegerValue sum_event_contributions = 0;
@@ -1545,8 +1555,6 @@ void GenerateCompletionTimeCutsWithEnergy(
     IntegerValue sum_energy = 0;
     // For normalization.
     IntegerValue sum_square_energy = 0;
-    // Does the cut uses shapes when computing individual event contributions.
-    bool uses_shapes = false;
 
     double lp_contrib = 0.0;
     IntegerValue current_start_min(kMaxIntegerValue);
@@ -1575,28 +1583,9 @@ void GenerateCompletionTimeCutsWithEnergy(
       //   area = event.demand_min * event.size_min * event.size_min
       // In the cumulative case, we can have energy_min > side_min * demand_min.
       // In that case, we use energy_min * size_min.
-      if (event.decomposed_energy.empty()) {
-        if (!AddProductTo(event.energy_min, event.size_min,
-                          &sum_event_contributions)) {
-          break;
-        }
-      } else {
-        IntegerValue min_shape_area = kMaxIntegerValue;
-        for (const auto& [literal, size, demand] : event.decomposed_energy) {
-          IntegerValue shape_area = CapProdI(CapProdI(size, size), demand);
-          if (assignment.LiteralIsFalse(literal)) continue;
-          if (assignment.LiteralIsTrue(literal)) {
-            min_shape_area = shape_area;
-            break;
-          } else {
-            min_shape_area = std::min(min_shape_area, shape_area);
-          }
-        }
-        CHECK_GE(min_shape_area, event.energy_min * event.size_min);
-        if (min_shape_area > event.energy_min * event.size_min) {
-          uses_shapes = true;
-        }
-        if (!AddTo(min_shape_area, &sum_event_contributions)) break;
+      if (!AddProductTo(event.energy_min, event.size_min,
+                        &sum_event_contributions)) {
+        break;
       }
       if (!AddSquareTo(event.energy_min, &sum_square_energy)) break;
 
@@ -1644,7 +1633,6 @@ void GenerateCompletionTimeCutsWithEnergy(
         best_end = i;
         best_min_contrib = min_contrib;
         best_uses_subset_sum = reachable_capacity < capacity_max;
-        best_uses_shapes = uses_shapes;
       }
     }
 
@@ -1657,13 +1645,12 @@ void GenerateCompletionTimeCutsWithEnergy(
       for (int i = 0; i <= best_end; ++i) {
         const CompletionTimeEvent& event = residual_tasks[i];
         is_lifted |= event.lifted;
-        add_energy_to_name |= event.use_energy;
+        add_energy_to_name |= event.use_decomposed_energy_min;
         cut.AddTerm(event.end, event.energy_min);
       }
       std::string full_name(cut_name);
       if (add_energy_to_name) full_name.append("_energy");
       if (is_lifted) full_name.append("_lifted");
-      if (best_uses_shapes) full_name.append("_shapes");
       if (best_uses_subset_sum) full_name.append("_subsetsum");
       top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
     }

@@ -2934,6 +2934,7 @@ cc_test(
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )

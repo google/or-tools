@@ -129,7 +129,7 @@ TEST(PrimaryVariablesTest, WithExactlyOne) {
       ComputeVariableRelationships(model);
   EXPECT_EQ(relationships.secondary_variables.size(), 1);
   const ConstraintProto expected = ParseTestProto(R"pb(
-      exactly_one { literals: [ 0, 1, 2, 3 ] }
+    exactly_one { literals: [ 0, 1, 2, 3 ] }
   )pb");
   EXPECT_THAT(relationships.dependency_resolution_constraint,
               ElementsAre(EqualsProto(expected)));

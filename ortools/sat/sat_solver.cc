@@ -1850,6 +1850,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // We remove the clauses that are always true and the fixed literals from the
   // others. Note that none of the clause should be all false because we should
   // have detected a conflict before this is called.
+  const int saved_index = trail_->Index();
   for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
     if (clause->IsRemoved()) continue;
 
@@ -1877,6 +1878,15 @@ void SatSolver::ProcessNewlyFixedVariables() {
       AddBinaryClauseInternal(clause->FirstLiteral(), clause->SecondLiteral());
       clauses_propagator_->LazyDetach(clause);
       ++num_binary;
+
+      // Tricky: AddBinaryClauseInternal() might fix literal if there is some
+      // unprocessed equivalent literal, and the binary clause turn out to be
+      // unary. This shouldn't happen otherwise the logic of
+      // RemoveFixedLiteralsAndTestIfTrue() might fail.
+      //
+      // TODO(user): This still happen in SAT22.Carry_Save_Fast_1.cnf.cnf.xz,
+      // it might not directly lead to a bug, but should still be fixed.
+      DCHECK_EQ(trail_->Index(), saved_index);
       continue;
     }
   }

@@ -904,7 +904,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // enough for us and we could store in common the inlined/not-inlined size.
   util_intops::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
       implications_;
-  int64_t num_implications_ = 0;
 
   // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
   util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;

@@ -894,8 +894,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
                              time_limit->GetElapsedDeterministicTime() > limit;
   LOG_IF(INFO, options.log_info)
       << "Probing. "
-      << " num_probed: " << num_probed << " num_fixed: +" << num_newly_fixed
-      << " (" << num_fixed << "/" << num_variables << ")"
+      << " num_probed: " << num_probed << "/" << probing_order.size()
+      << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
+      << num_variables << ")"
       << " explicit_fix:" << num_explicit_fix
       << " num_conflicts:" << num_conflicts
       << " new_binary_clauses: " << num_new_binary
