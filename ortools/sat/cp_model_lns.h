@@ -475,9 +475,9 @@ class NeighborhoodGenerator {
   }
 
   // Process all the recently added solve data and update this generator
-  // score and difficulty. This returns the sum of the deterministic time of
+  // score and difficulty. This returns list of the deterministic time of
   // each SolveData.
-  double Synchronize();
+  absl::Span<const double> Synchronize();
 
   // Returns a short description of the generator.
   std::string name() const { return name_; }
@@ -528,6 +528,7 @@ class NeighborhoodGenerator {
 
  private:
   std::vector<SolveData> solve_data_;
+  std::vector<double> tmp_dtimes_;
 
   // Current parameters to be used when generating/solving a neighborhood with
   // this generator. Only updated on Synchronize().

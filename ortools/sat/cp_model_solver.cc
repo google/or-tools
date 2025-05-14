@@ -1721,9 +1721,13 @@ class LnsSolver : public SubSolver {
   }
 
   void Synchronize() override {
-    const double dtime = generator_->Synchronize();
-    AddTaskDeterministicDuration(dtime);
-    shared_->time_limit->AdvanceDeterministicTime(dtime);
+    double sum = 0.0;
+    const absl::Span<const double> dtimes = generator_->Synchronize();
+    for (const double dtime : dtimes) {
+      sum += dtime;
+      AddTaskDeterministicDuration(dtime);
+    }
+    shared_->time_limit->AdvanceDeterministicTime(sum);
   }
 
  private:
