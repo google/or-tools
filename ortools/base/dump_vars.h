@@ -62,6 +62,7 @@
 #define DUMP_FOR_EACH_N9(F, a, ...) F(a) DUMP_FOR_EACH_N8(F, __VA_ARGS__)
 #define DUMP_FOR_EACH_N10(F, a, ...) F(a) DUMP_FOR_EACH_N9(F, __VA_ARGS__)
 #define DUMP_FOR_EACH_N11(F, a, ...) F(a) DUMP_FOR_EACH_N10(F, __VA_ARGS__)
+#define DUMP_FOR_EACH_N12(F, a, ...) F(a) DUMP_FOR_EACH_N11(F, __VA_ARGS__)
 
 #define DUMP_CONCATENATE(x, y) x##y
 #define DUMP_FOR_EACH_(N, F, ...) \
@@ -69,8 +70,8 @@
 
 #define DUMP_NARG(...) DUMP_NARG_(__VA_OPT__(__VA_ARGS__, ) DUMP_RSEQ_N())
 #define DUMP_NARG_(...) DUMP_ARG_N(__VA_ARGS__)
-#define DUMP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, N, ...) N
-#define DUMP_RSEQ_N() 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+#define DUMP_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, N, ...) N
+#define DUMP_RSEQ_N() 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 #define DUMP_FOR_EACH(F, ...) \
   DUMP_FOR_EACH_(DUMP_NARG(__VA_ARGS__), F __VA_OPT__(, __VA_ARGS__))
 
