@@ -16,7 +16,6 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"

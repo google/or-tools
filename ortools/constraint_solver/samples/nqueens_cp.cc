@@ -19,6 +19,9 @@
 #include <sstream>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 // [END import]
@@ -102,7 +105,9 @@ void NQueensCp(const int board_size) {
 
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   int board_size = 8;
   if (argc > 1) {
     board_size = std::atoi(argv[1]);

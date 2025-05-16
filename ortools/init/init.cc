@@ -17,18 +17,16 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/usage.h"
 #include "absl/log/globals.h"
-#include "absl/log/initialize.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/init_google.h"
 #include "ortools/gurobi/environment.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
 
 namespace operations_research {
 void CppBridge::InitLogging(absl::string_view usage) {
-  absl::SetProgramUsageMessage(usage);
-  absl::InitializeLog();
+  google::InitGoogleLogging(usage);
 }
 
 void CppBridge::SetFlags(const CppFlags& flags) {
