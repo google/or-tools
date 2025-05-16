@@ -18,7 +18,10 @@
 #include <sstream>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/log/log.h"
+#include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
@@ -129,7 +132,9 @@ void Tsp() {
 
 }  // namespace operations_research::routing
 
-int main(int /*argc*/, char* /*argv*/[]) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }
