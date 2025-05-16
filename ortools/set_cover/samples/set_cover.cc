@@ -15,7 +15,10 @@
 // [START import]
 #include <cstdlib>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/log/log.h"
+#include "ortools/base/init_google.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
 #include "ortools/set_cover/set_cover_model.h"
@@ -58,7 +61,9 @@ void SimpleSetCoverProgram() {
 
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::SimpleSetCoverProgram();
   return EXIT_SUCCESS;
 }

@@ -19,7 +19,10 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
@@ -129,6 +132,8 @@ void MultipleKnapsackMip() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::MultipleKnapsackMip();
   return EXIT_SUCCESS;
 }

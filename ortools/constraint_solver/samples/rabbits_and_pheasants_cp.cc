@@ -61,8 +61,8 @@ void RunConstraintProgrammingExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::RunConstraintProgrammingExample();
   return EXIT_SUCCESS;
 }

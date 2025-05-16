@@ -16,6 +16,9 @@
 #include <memory>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
@@ -115,7 +118,9 @@ void AssignmentMip() {
 }
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::AssignmentMip();
   return EXIT_SUCCESS;
 }

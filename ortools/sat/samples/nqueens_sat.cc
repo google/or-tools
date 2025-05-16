@@ -20,7 +20,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/strings/numbers.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -111,7 +114,9 @@ void NQueensSat(const int board_size) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   int board_size = 8;
   if (argc > 1) {
     if (!absl::SimpleAtoi(argv[1], &board_size)) {
