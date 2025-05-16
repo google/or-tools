@@ -87,9 +87,9 @@ TEST(LoadCpModelTest, PureSatProblem) {
 TEST(LoadCpModelTest, PureSatProblemWithLimit) {
   const CpModelProto model_proto = Random3SatProblem(500);
   LOG(INFO) << CpModelStats(model_proto);
-  Model model;
-  model.Add(NewSatParameters("max_deterministic_time:0.00001"));
-  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  SatParameters params;
+  params.set_max_deterministic_time(0.00001);
+  const CpSolverResponse response = SolveWithParameters(model_proto, params);
   EXPECT_EQ(response.status(), CpSolverStatus::UNKNOWN);
   LOG(INFO) << CpSolverResponseStats(response);
 }
@@ -193,7 +193,8 @@ TEST(LoadCpModelTest, SimpleCumulative) {
 }
 
 TEST(SolverCpModelTest, EmptyModel) {
-  const CpModelProto cp_model = ParseTestProto("solution_hint {}");
+  CpModelProto cp_model;
+  cp_model.mutable_solution_hint();
 
   SatParameters params;
   params.set_debug_crash_if_presolve_breaks_hint(true);
@@ -329,6 +330,7 @@ TEST(SolveCpModelTest, TrivialModelWithCore) {
                                         response.solution().end())));
 }
 
+#if !defined(__EMBEDDED_PLATFORM__)
 TEST(SolveCpModelTest, TrivialLinearTranslatedModel) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: -10 domain: 10 }
@@ -4803,6 +4805,7 @@ TEST(PresolveCpModelTest, CumulativeBug4) {
   response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
+#endif  // !defined(__EMBEDDED_PLATFORM__)
 
 }  // namespace
 }  // namespace sat

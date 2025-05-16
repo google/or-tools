@@ -43,6 +43,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -1053,15 +1054,16 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 }
 
 CompletionTimeEvent::CompletionTimeEvent(int t,
-                                         SchedulingConstraintHelper* x_helper,
+                                         SchedulingConstraintHelper* helper,
                                          SchedulingDemandHelper* demands_helper)
     : task_index(t),
-      start_min(x_helper->StartMin(t)),
-      start_max(x_helper->StartMax(t)),
-      end_min(x_helper->EndMin(t)),
-      end_max(x_helper->EndMax(t)),
-      size_min(x_helper->SizeMin(t)),
-      end(x_helper->Ends()[t]) {
+      start_min(helper->StartMin(t)),
+      start_max(helper->StartMax(t)),
+      end_min(helper->EndMin(t)),
+      end_max(helper->EndMax(t)),
+      size_min(helper->SizeMin(t)),
+      start(helper->Starts()[t]),
+      end(helper->Ends()[t]) {
   if (demands_helper == nullptr) {
     demand_min = 1;
     demand_is_fixed = true;
@@ -1099,20 +1101,68 @@ std::string CompletionTimeEvent::DebugString() const {
       "]");
 }
 
+void CtExhaustiveHelper::Init(
+    const absl::Span<const CompletionTimeEvent> events, Model* model) {
+  BinaryRelationsMaps* binary_relations =
+      model->GetOrCreate<BinaryRelationsMaps>();
+  max_task_index_ = 0;
+  for (const auto& event : events) {
+    max_task_index_ = std::max(max_task_index_, event.task_index);
+  }
+  predecessors_.reserve(max_task_index_ + 1);
+  for (const auto& e1 : events) {
+    CHECK_LE(predecessors_.size(), e1.task_index);
+    while (predecessors_.size() <= e1.task_index) {
+      predecessors_.Add({});
+    }
+
+    // Cap the number of precedences to avoid O(n^2) time complexity.
+    if (predecessors_.num_entries() > 20000) break;
+
+    for (const auto& e2 : events) {
+      if (e2.task_index == e1.task_index) continue;
+      if (binary_relations->GetPrecedenceStatus(e2.end, e1.start) ==
+          RelationStatus::IS_TRUE) {
+        predecessors_.AppendToLastVector(e2.task_index);
+      }
+    }
+  }
+  VLOG(2) << "num_tasks:" << max_task_index_ + 1
+          << " num_precedences:" << predecessors_.num_entries();
+}
+
+bool CtExhaustiveHelper::PermutationIsCompatibleWithPrecedences(
+    absl::Span<const CompletionTimeEvent> events,
+    absl::Span<const int> permutation) {
+  visited_.assign(max_task_index_ + 1, false);
+  for (int i = permutation.size() - 1; i >= 0; --i) {
+    const CompletionTimeEvent& event = events[permutation[i]];
+    for (const int predecessor : predecessors_[event.task_index]) {
+      if (visited_[predecessor]) return false;
+    }
+    visited_[event.task_index] = true;
+  }
+  return true;
+}
+
 namespace {
 
 bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
     absl::Span<const CompletionTimeEvent> events,
     absl::Span<const int> permutation, IntegerValue& sum_of_ends,
     IntegerValue& sum_of_weighted_ends) {
+  // Reset the two sums.
   sum_of_ends = 0;
   sum_of_weighted_ends = 0;
+
+  // Loop over the permutation.
   IntegerValue end_min_of_previous_task = kMinIntegerValue;
   for (const int index : permutation) {
     const CompletionTimeEvent& event = events[index];
     const IntegerValue threshold =
         std::max(event.start_min, end_min_of_previous_task);
     if (event.start_max < threshold) return false;  // Infeasible.
+
     end_min_of_previous_task = threshold + event.size_min;
     sum_of_ends += end_min_of_previous_task;
     sum_of_weighted_ends += event.energy_min * end_min_of_previous_task;
@@ -1131,9 +1181,8 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutationForNoOverlap(
 bool ComputeWeightedSumOfEndMinsOfOnePermutation(
     absl::Span<const CompletionTimeEvent> events,
     absl::Span<const int> permutation, IntegerValue capacity_max,
-    IntegerValue& sum_of_ends, IntegerValue& sum_of_weighted_ends,
-    std::vector<std::pair<IntegerValue, IntegerValue>>& profile,
-    std::vector<std::pair<IntegerValue, IntegerValue>>& new_profile) {
+    CtExhaustiveHelper& helper, IntegerValue& sum_of_ends,
+    IntegerValue& sum_of_weighted_ends, bool& cut_use_precedences) {
   DCHECK_EQ(permutation.size(), events.size());
 
   if (capacity_max == 1) {
@@ -1141,11 +1190,11 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
         events, permutation, sum_of_ends, sum_of_weighted_ends);
   }
 
-  // Set default values.
+  // Reset the two sums.
   sum_of_ends = 0;
   sum_of_weighted_ends = 0;
 
-  // Is the permutation feasible ?
+  // Quick check to see if the permutation feasible:
   // ei = events[permutation[i]], ej = events[permutation[j]], i < j
   // - start_max(ej) >= start_min(ei)
   IntegerValue demand_min_of_previous_task = 0;
@@ -1161,6 +1210,7 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
     if (event.start_max < threshold) {
       return false;
     }
+
     start_min_of_previous_task = threshold;
     end_min_of_previous_task = threshold + event.size_min;
     demand_min_of_previous_task = event.demand_min;
@@ -1168,9 +1218,12 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
 
   // The profile (and new profile) is a set of (time, capa_left) pairs,
   // ordered by increasing time and capa_left.
-  profile.clear();
-  profile.emplace_back(kMinIntegerValue, capacity_max);
-  profile.emplace_back(kMaxIntegerValue, capacity_max);
+  helper.profile_.clear();
+  helper.profile_.emplace_back(kMinIntegerValue, capacity_max);
+  helper.profile_.emplace_back(kMaxIntegerValue, capacity_max);
+
+  // Loop over the permutation.
+  helper.assigned_ends_.assign(helper.max_task_index() + 1, kMinIntegerValue);
   IntegerValue start_of_previous_task = kMinIntegerValue;
   for (const int index : permutation) {
     const CompletionTimeEvent& event = events[index];
@@ -1180,15 +1233,30 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
     // Iterate on the profile to find the step that contains start_min.
     // Then push until we find a step with enough capacity.
     int current = 0;
-    while (profile[current + 1].first <= start_min ||
-           profile[current].second < event.demand_min) {
+    while (helper.profile_[current + 1].first <= start_min ||
+           helper.profile_[current].second < event.demand_min) {
       ++current;
     }
 
-    const IntegerValue actual_start =
-        std::max(start_min, profile[current].first);
+    IntegerValue actual_start =
+        std::max(start_min, helper.profile_[current].first);
+    const IntegerValue initial_start_min = actual_start;
 
-    start_of_previous_task = actual_start;
+    // Propagate precedences.
+    //
+    // helper.predecessors() can be truncated. We need to be careful here.
+    if (event.task_index < helper.predecessors().size()) {
+      for (const int predecessor : helper.predecessors()[event.task_index]) {
+        if (helper.assigned_ends_[predecessor] == kMinIntegerValue) continue;
+        actual_start =
+            std::max(actual_start, helper.assigned_ends_[predecessor]);
+      }
+    }
+
+    if (actual_start > initial_start_min) {
+      cut_use_precedences = true;
+      VLOG(3) << "push from " << initial_start_min << " to " << actual_start;
+    }
 
     // Compatible with the event.start_max ?
     if (actual_start > event.start_max) {
@@ -1197,33 +1265,37 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
 
     const IntegerValue actual_end = actual_start + event.size_min;
 
+    // Bookkeeping.
+    helper.assigned_ends_[event.task_index] = actual_end;
     sum_of_ends += actual_end;
     sum_of_weighted_ends += event.energy_min * actual_end;
+    start_of_previous_task = actual_start;
 
     // No need to update the profile on the last loop.
     if (event.task_index == events[permutation.back()].task_index) break;
 
     // Update the profile.
-    new_profile.clear();
-    new_profile.push_back(
-        {actual_start, profile[current].second - event.demand_min});
+    helper.new_profile_.clear();
+    helper.new_profile_.push_back(
+        {actual_start, helper.profile_[current].second - event.demand_min});
     ++current;
 
-    while (profile[current].first < actual_end) {
-      new_profile.push_back(
-          {profile[current].first, profile[current].second - event.demand_min});
+    while (helper.profile_[current].first < actual_end) {
+      helper.new_profile_.push_back(
+          {helper.profile_[current].first,
+           helper.profile_[current].second - event.demand_min});
       ++current;
     }
 
-    if (profile[current].first > actual_end) {
-      new_profile.push_back(
-          {actual_end, new_profile.back().second + event.demand_min});
+    if (helper.profile_[current].first > actual_end) {
+      helper.new_profile_.push_back(
+          {actual_end, helper.new_profile_.back().second + event.demand_min});
     }
-    while (current < profile.size()) {
-      new_profile.push_back(profile[current]);
+    while (current < helper.profile_.size()) {
+      helper.new_profile_.push_back(helper.profile_[current]);
       ++current;
     }
-    profile.swap(new_profile);
+    helper.profile_.swap(helper.new_profile_);
   }
   return true;
 }
@@ -1232,36 +1304,37 @@ bool ComputeWeightedSumOfEndMinsOfOnePermutation(
 
 bool ComputeMinSumOfWeightedEndMins(
     absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
-    double sum_of_ends_lp, double sum_of_weighted_ends_lp,
-    IntegerValue& min_sum_of_end_mins,
-    IntegerValue& min_sum_of_weighted_end_mins) {
+    double unweighted_threshold, double weighted_threshold,
+    CtExhaustiveHelper& helper, double& min_sum_of_ends,
+    double& min_sum_of_weighted_ends, bool& cut_use_precedences) {
+  // Reset the events based sums.
+  min_sum_of_ends = std::numeric_limits<double>::max();
+  min_sum_of_weighted_ends = std::numeric_limits<double>::max();
+
+  // Local stats.
   int num_explored = 0;
   int num_pruned = 0;
-  min_sum_of_end_mins = kMaxIntegerValue;
-  min_sum_of_weighted_end_mins = kMaxIntegerValue;
   bool aborted = false;
-  const int64_t unweighted_threshold =
-      static_cast<int64_t>(std::floor(sum_of_ends_lp + kMinCutViolation));
-  const int64_t weighted_threshold = static_cast<int64_t>(
-      std::floor(sum_of_weighted_ends_lp + kMinCutViolation));
 
-  // Reusable storage for ComputeWeightedSumOfEndMinsOfOnePermutation().
-  std::vector<std::pair<IntegerValue, IntegerValue>> profile;
-  std::vector<std::pair<IntegerValue, IntegerValue>> new_profile;
   std::vector<int> permutation(events.size());
   std::iota(permutation.begin(), permutation.end(), 0);
   do {
-    IntegerValue sum_of_ends(0);
-    IntegerValue sum_of_weighted_ends(0);
+    IntegerValue sum_of_ends = 0;
+    IntegerValue sum_of_weighted_ends = 0;
+    if (!helper.PermutationIsCompatibleWithPrecedences(events, permutation)) {
+      cut_use_precedences = true;
+      continue;
+    }
+
     if (ComputeWeightedSumOfEndMinsOfOnePermutation(
-            events, permutation, capacity_max, sum_of_ends,
-            sum_of_weighted_ends, profile, new_profile)) {
-      min_sum_of_end_mins = std::min(sum_of_ends, min_sum_of_end_mins);
-      min_sum_of_weighted_end_mins =
-          std::min(sum_of_weighted_ends, min_sum_of_weighted_end_mins);
+            events, permutation, capacity_max, helper, sum_of_ends,
+            sum_of_weighted_ends, cut_use_precedences)) {
+      min_sum_of_ends = std::min(ToDouble(sum_of_ends), min_sum_of_ends);
+      min_sum_of_weighted_ends =
+          std::min(ToDouble(sum_of_weighted_ends), min_sum_of_weighted_ends);
       num_explored++;
-      if (min_sum_of_end_mins <= unweighted_threshold &&
-          min_sum_of_weighted_end_mins <= weighted_threshold) {
+      if (min_sum_of_ends <= unweighted_threshold &&
+          min_sum_of_weighted_ends <= weighted_threshold) {
         aborted = true;
         break;
       }
@@ -1271,8 +1344,8 @@ bool ComputeMinSumOfWeightedEndMins(
   } while (std::next_permutation(permutation.begin(), permutation.end()));
   VLOG(3) << "DP: size=" << events.size() << ", explored = " << num_explored
           << ", pruned = " << num_pruned << ", aborted = " << aborted
-          << ", min_sum_of_end_mins = " << min_sum_of_end_mins
-          << ", min_sum_of_weighted_end_mins = " << min_sum_of_weighted_end_mins
+          << ", min_sum_of_end_mins = " << min_sum_of_ends
+          << ", min_sum_of_weighted_end_mins = " << min_sum_of_weighted_ends
           << ", unweighted_threshold = " << unweighted_threshold
           << ", weighted_threshold = " << weighted_threshold;
   return num_explored > 0;
@@ -1283,7 +1356,8 @@ bool ComputeMinSumOfWeightedEndMins(
 //   - better caching of explored states
 ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
     const std::string& cut_name, std::vector<CompletionTimeEvent> events,
-    IntegerValue capacity_max, Model* model, LinearConstraintManager* manager) {
+    IntegerValue capacity_max, CtExhaustiveHelper& helper, Model* model,
+    LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
   // Sort by start min to bucketize by start_min.
   std::sort(
@@ -1298,6 +1372,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
       continue;
     }
 
+    bool cut_use_precedences = false;  // Used for naming the cut.
     const IntegerValue sequence_start_min = events[start].start_min;
     std::vector<CompletionTimeEvent> residual_tasks(events.begin() + start,
                                                     events.end());
@@ -1321,40 +1396,43 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
     double sum_of_ends_lp = 0.0;
     double sum_of_weighted_ends_lp = 0.0;
     IntegerValue sum_of_demands = 0;
-    IntegerValue sum_of_energies = 0;
+    double sum_of_square_energies = 0;
+    double min_sum_of_ends = std::numeric_limits<double>::max();
+    double min_sum_of_weighted_ends = std::numeric_limits<double>::max();
 
     for (int i = 0; i < std::min<int>(residual_tasks.size(), 7); ++i) {
       const CompletionTimeEvent& event = residual_tasks[i];
+      const double energy = ToDouble(event.energy_min);
       sum_of_ends_lp += event.lp_end;
-      sum_of_weighted_ends_lp += event.lp_end * ToDouble(event.energy_min);
+      sum_of_weighted_ends_lp += event.lp_end * energy;
       sum_of_demands += event.demand_min;
-      sum_of_energies += event.energy_min;
+      sum_of_square_energies += energy * energy;
 
       // Both cases with 1 or 2 tasks are trivial and independent of the order.
       // Also, if capacity is not exceeded, pushing all ends left is a valid LP
       // assignment.
       if (i <= 1 || sum_of_demands <= capacity_max) continue;
 
-      IntegerValue min_sum_of_end_mins = kMaxIntegerValue;
-      IntegerValue min_sum_of_weighted_end_mins = kMaxIntegerValue;
       if (!ComputeMinSumOfWeightedEndMins(
               absl::MakeSpan(residual_tasks).first(i + 1), capacity_max,
-              sum_of_ends_lp, sum_of_weighted_ends_lp, min_sum_of_end_mins,
-              min_sum_of_weighted_end_mins)) {
+              /* unweighted_threshold= */ sum_of_ends_lp + kMinCutViolation,
+              /* weighted_threshold= */ sum_of_weighted_ends_lp +
+                  kMinCutViolation,
+              helper, min_sum_of_ends, min_sum_of_weighted_ends,
+              cut_use_precedences)) {
         return false;
       }
 
       const double unweigthed_violation =
-          (ToDouble(min_sum_of_end_mins) - sum_of_ends_lp) / ToDouble(i + 1);
+          (min_sum_of_ends - sum_of_ends_lp) / std::sqrt(ToDouble(i + 1));
       const double weighted_violation =
-          (ToDouble(min_sum_of_weighted_end_mins) - sum_of_weighted_ends_lp) /
-          ToDouble(sum_of_energies);
+          (min_sum_of_weighted_ends - sum_of_weighted_ends_lp) /
+          std::sqrt(sum_of_square_energies);
 
       // Unweighted cuts.
       if (unweigthed_violation > weighted_violation &&
           unweigthed_violation > kMinCutViolation) {
-        LinearConstraintBuilder cut(model, min_sum_of_end_mins,
-                                    kMaxIntegerValue);
+        LinearConstraintBuilder cut(model, min_sum_of_ends, kMaxIntegerValue);
         bool is_lifted = false;
         for (int j = 0; j <= i; ++j) {
           const CompletionTimeEvent& event = residual_tasks[j];
@@ -1362,6 +1440,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
           cut.AddTerm(event.end, IntegerValue(1));
         }
         std::string full_name = cut_name;
+        if (cut_use_precedences) full_name.append("_prec");
         if (is_lifted) full_name.append("_lifted");
         top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
       }
@@ -1369,7 +1448,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
       // Weighted cuts.
       if (weighted_violation >= unweigthed_violation &&
           weighted_violation > kMinCutViolation) {
-        LinearConstraintBuilder cut(model, min_sum_of_weighted_end_mins,
+        LinearConstraintBuilder cut(model, min_sum_of_weighted_ends,
                                     kMaxIntegerValue);
         bool is_lifted = false;
         for (int j = 0; j <= i; ++j) {
@@ -1379,6 +1458,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
         }
         std::string full_name = cut_name;
         if (is_lifted) full_name.append("_lifted");
+        if (cut_use_precedences) full_name.append("_prec");
         full_name.append("_weighted");
         top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
       }
@@ -1686,11 +1766,14 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
         }
       }
 
+      CtExhaustiveHelper helper;
+      helper.Init(events, model);
+
       const std::string mirror_str = time_is_forward ? "" : "_mirror";
       if (!GenerateShortCompletionTimeCutsWithExactBound(
               absl::StrCat("NoOverlapCompletionTimeExhaustive", mirror_str),
               events,
-              /*capacity_max=*/IntegerValue(1), model, manager)) {
+              /*capacity_max=*/IntegerValue(1), helper, model, manager)) {
         return false;
       }
 
@@ -1748,11 +1831,14 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
         }
       }
 
+      CtExhaustiveHelper helper;
+      helper.Init(events, model);
+
       const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
       const std::string mirror_str = time_is_forward ? "" : "_mirror";
       if (!GenerateShortCompletionTimeCutsWithExactBound(
               absl::StrCat("CumulativeCompletionTimeExhaustive", mirror_str),
-              events, capacity_max, model, manager)) {
+              events, capacity_max, helper, model, manager)) {
         return false;
       }
 

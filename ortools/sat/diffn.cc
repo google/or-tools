@@ -32,7 +32,7 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
-#include "ortools/base/stl_util.h"
+// #include "ortools/base/stl_util.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/2d_try_edge_propagator.h"

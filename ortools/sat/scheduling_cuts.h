@@ -16,6 +16,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -24,6 +25,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -117,7 +119,8 @@ struct CompletionTimeEvent {
   IntegerValue end_max;
   IntegerValue size_min;
 
-  // The lp value of the end of the interval.
+  // Start and end affine expressions and lp value of the end of the interval.
+  AffineExpression start;
   AffineExpression end;
   double lp_end = 0.0;
 
@@ -147,6 +150,30 @@ struct CompletionTimeEvent {
   std::string DebugString() const;
 };
 
+class CtExhaustiveHelper {
+ public:
+  int max_task_index() const { return max_task_index_; }
+  const CompactVectorVector<int>& predecessors() const { return predecessors_; }
+
+  // Temporary data.
+  std::vector<std::pair<IntegerValue, IntegerValue>> profile_;
+  std::vector<std::pair<IntegerValue, IntegerValue>> new_profile_;
+  std::vector<IntegerValue> assigned_ends_;
+
+  // Collect precedences, set max_task_index.
+  // TODO(user): Do some transitive closure.
+  void Init(absl::Span<const CompletionTimeEvent> events, Model* model);
+
+  bool PermutationIsCompatibleWithPrecedences(
+      absl::Span<const CompletionTimeEvent> events,
+      absl::Span<const int> permutation);
+
+ private:
+  CompactVectorVector<int> predecessors_;
+  int max_task_index_ = 0;
+  std::vector<bool> visited_;
+};
+
 // Computes the minimum sum of the end min and the minimum sum of the end min
 // weighted by weight of all events. It returns false if no permutation is
 // valid w.r.t. the range of starts.
@@ -157,9 +184,9 @@ struct CompletionTimeEvent {
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
 bool ComputeMinSumOfWeightedEndMins(
     absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
-    double sum_of_ends_lp, double sum_of_weighted_ends_lp,
-    IntegerValue& min_sum_of_end_mins,
-    IntegerValue& min_sum_of_weighted_end_mins);
+    double unweighted_threshold, double weighted_threshold,
+    CtExhaustiveHelper& helper, double& min_sum_of_ends,
+    double& min_sum_of_weighted_ends, bool& cut_use_precedences);
 
 }  // namespace sat
 }  // namespace operations_research

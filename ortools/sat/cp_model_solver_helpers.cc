@@ -953,27 +953,31 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
   if (!model->GetOrCreate<SatParameters>()->share_glue_clauses()) {
     return;
   }
-  auto* clause_stream = shared_clauses_manager->GetClauseStream(id);
-  const int max_lbd =
-      model->GetOrCreate<SatParameters>()->clause_cleanup_lbd_bound();
-  // Note that this callback takes no global locks, everything operates on this
-  // worker's own clause stream, whose lock is only used by this worker, and
-  // briefly when generating a batch in SharedClausesManager::Synchronize().
-  auto share_clause = [mapping, clause_stream, max_lbd,
-                       clause = std::vector<int>()](
+  const double share_interval =
+      model->GetOrCreate<SatParameters>()->share_glue_clauses_dtime();
+  auto* clause_stream = model->GetOrCreate<UniqueClauseStream>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
+  auto share_clause = [mapping, clause_stream, time_limit, id,
+                       shared_clauses_manager, share_interval,
+                       next_batch_dtime = -1.0, clause = std::vector<int>()](
                           int lbd, absl::Span<const Literal> literals) mutable {
-    if (lbd <= 0 || lbd > max_lbd ||
-        !clause_stream->CanAccept(literals.size(), lbd)) {
-      return;
+    if (literals.size() >= UniqueClauseStream::kMinClauseSize &&
+        literals.size() <= UniqueClauseStream::kMaxClauseSize) {
+      clause.clear();
+      for (const Literal& lit : literals) {
+        const int var =
+            mapping->GetProtoVariableFromBooleanVariable(lit.Variable());
+        if (var == -1) return;
+        clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
+      }
+      clause_stream->Add(clause, lbd);
     }
-    clause.clear();
-    for (const Literal& lit : literals) {
-      const int var =
-          mapping->GetProtoVariableFromBooleanVariable(lit.Variable());
-      if (var == -1) return;
-      clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
+    const double elapsed_dtime = time_limit->GetElapsedDeterministicTime();
+    if (next_batch_dtime < 0) next_batch_dtime = elapsed_dtime + share_interval;
+    if (elapsed_dtime >= next_batch_dtime) {
+      shared_clauses_manager->AddBatch(id, clause_stream->NextBatch());
+      next_batch_dtime = elapsed_dtime + share_interval;
     }
-    clause_stream->Add(clause);
   };
   model->GetOrCreate<ClauseManager>()->SetAddClauseCallback(
       std::move(share_clause));
@@ -994,16 +998,16 @@ int RegisterClausesLevelZeroImport(int id,
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
   const bool share_glue_clauses =
       model->GetOrCreate<SatParameters>()->share_glue_clauses();
+  auto* clause_stream =
+      share_glue_clauses ? model->GetOrCreate<UniqueClauseStream>() : nullptr;
   const bool minimize_shared_clauses =
       model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
-  auto* clause_stream = share_glue_clauses
-                            ? shared_clauses_manager->GetClauseStream(id)
-                            : nullptr;
   auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
                                            sat_solver, implications,
-                                           clause_stream, clause_manager,
-                                           minimize_shared_clauses]() {
+                                           minimize_shared_clauses,
+                                           clause_stream,
+                                           clause_manager]() mutable {
     std::vector<std::pair<int, int>> new_binary_clauses;
     shared_clauses_manager->GetUnseenBinaryClauses(id, &new_binary_clauses);
     implications->EnableSharing(false);
@@ -1020,28 +1024,27 @@ int RegisterClausesLevelZeroImport(int id,
     int new_clauses = 0;
     std::array<Literal, UniqueClauseStream::kMaxClauseSize> local_clause;
     sat_solver->EnsureNewClauseIndexInitialized();
-    // Temporarily disable clause sharing so we don't immediately re-export the
-    // clauses we just imported.
+    // Temporarily disable clause sharing.
     auto callback = clause_manager->TakeAddClauseCallback();
-    for (const absl::Span<const int> shared_clause :
-         shared_clauses_manager->GetUnseenClauses(id)) {
-      // Check this clause was not already learned by this worker.
-      // We can delete the fingerprint because we should not learn an identical
-      // clause, and the global stream will not emit the same clause while any
-      // worker hasn't consumed this clause (and thus also shouldn't relearn the
-      // clause).
-      if (clause_stream->Delete(shared_clause)) continue;
-      for (int i = 0; i < shared_clause.size(); ++i) {
-        local_clause[i] = mapping->Literal(shared_clause[i]);
+    while (true) {
+      auto batch = shared_clauses_manager->GetUnseenClauses(id);
+      if (batch.empty()) break;
+      for (int clause_index = 0; clause_index < batch.size(); ++clause_index) {
+        const absl::Span<const int>& shared_clause = batch[clause_index];
+        // Check this clause was not already learned by this worker.
+        if (!clause_stream->BlockClause(shared_clause)) continue;
+        ++new_clauses;
+        for (int i = 0; i < shared_clause.size(); ++i) {
+          local_clause[i] = mapping->Literal(shared_clause[i]);
+        }
+        if (!sat_solver->AddProblemClause(
+                absl::MakeSpan(local_clause)
+                    .subspan(0, shared_clause.size()))) {
+          return false;
+        }
       }
-      if (!sat_solver->AddProblemClause(
-              absl::MakeSpan(local_clause).subspan(0, shared_clause.size()))) {
-        return false;
-      }
-      ++new_clauses;
     }
     clause_manager->SetAddClauseCallback(std::move(callback));
-    clause_stream->RemoveWorstClauses();
     if (minimize_shared_clauses && new_clauses > 0) {
       // The new clauses may be subsumed, so try to minimize them to reduce
       // overhead of sharing.
@@ -2110,8 +2113,7 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       !params.interleave_search() || params.num_workers() <= 1;
   response->SetSynchronizationMode(always_synchronize);
   if (params.share_binary_clauses() && params.num_workers() > 1) {
-    clauses = std::make_unique<SharedClausesManager>(always_synchronize,
-                                                     absl::Seconds(1));
+    clauses = std::make_unique<SharedClausesManager>(always_synchronize);
   }
 }
 

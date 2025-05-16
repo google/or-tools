@@ -833,10 +833,9 @@ TEST(SharedResponseManagerTest, Callback) {
 }
 
 TEST(SharedClausesManagerTest, SyncApi) {
-  SharedClausesManager manager(/*always_synchronize=*/true,
-                               /*share_frequency=*/absl::ZeroDuration());
-  EXPECT_EQ(0, manager.RegisterNewId());
-  EXPECT_EQ(1, manager.RegisterNewId());
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  EXPECT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
+  EXPECT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
 
   manager.AddBinaryClause(/*id=*/0, 1, 2);
   std::vector<std::pair<int, int>> new_clauses;
@@ -868,19 +867,6 @@ TEST(UniqueClauseStreamTest, AddIgnoresDuplicates) {
   EXPECT_EQ(stream.NumBufferedLiterals(), 3);
 }
 
-TEST(UniqueClauseStreamTest, Delete) {
-  UniqueClauseStream stream;
-
-  EXPECT_TRUE(stream.Add({3, 2, 1}));
-  EXPECT_TRUE(stream.Delete({1, 2, 3}));
-  EXPECT_FALSE(stream.Delete({1, 2, 3, 4}));
-  EXPECT_THAT(stream.NextBatch(), ::testing::IsEmpty());
-  EXPECT_TRUE(stream.Add({2, 3, 1}));
-  EXPECT_EQ(stream.NumBufferedLiterals(), 3);
-  stream.NextBatch();
-  EXPECT_TRUE(stream.Delete({1, 2, 3}));
-}
-
 TEST(UniqueClauseStreamTest, AddIgnoresInvalidSizeClauses) {
   UniqueClauseStream stream;
   std::vector<int> long_clause;
@@ -905,46 +891,20 @@ TEST(UniqueClauseStreamTest, ExportsShortestClauses) {
   }
 
   // Batch 1 should be filled with size 3 clauses.
-  EXPECT_EQ(stream.NextBatch().size(), 1024 / 3);
-  // Batch 2 should be filled with size 4 clauses.
-  EXPECT_EQ(stream.NextBatch().size(), 1024 / 4);
-  // Batch 3 should be filled with size 5 clauses.
-  EXPECT_EQ(stream.NextBatch().size(), 1024 / 5);
-}
-
-TEST(UniqueClauseStreamTest, RemoveWorstClauses) {
-  UniqueClauseStream stream;
-  // Fill the buffer
-  for (int i = 0; i < UniqueClauseStream::kMaxBufferedLiterals / 6; ++i) {
-    stream.Add({i + 1, i + 256, i + 512, -4, -3, -2});
-  }
-  for (int i = 0; i < UniqueClauseStream::kMaxLiteralsPerBatch / 2 / 3; ++i) {
-    stream.Add({i + 1, i + 256, i + 512});
-  }
-
-  stream.RemoveWorstClauses();
-
-  EXPECT_GE(stream.NumBufferedLiterals(),
-            UniqueClauseStream::kMaxBufferedLiterals);
-  EXPECT_LT(stream.NumBufferedLiterals(),
-            UniqueClauseStream::kMaxBufferedLiterals + 6);
-  EXPECT_TRUE(stream.CanAccept(3, /*lbd=*/2));
-  EXPECT_FALSE(stream.CanAccept(6, /*lbd=*/2));
-  // Make sure none of the size 3 clauses were removed.
   EXPECT_EQ(stream.NextBatch().size(),
-            UniqueClauseStream::kMaxLiteralsPerBatch / 2 / 3 +
-                UniqueClauseStream::kMaxBufferedLiterals / 2 / 6);
+            UniqueClauseStream::kMaxLiteralsPerBatch / 3);
+  // Batch 2 should be empty.
+  EXPECT_TRUE(stream.NextBatch().empty());
 }
 
 TEST(UniqueClauseStreamTest, DropsClauses) {
   UniqueClauseStream stream;
-  // We shouldn't drop any clause where Add returns true.
   int literals_successfully_added = 0;
   for (int i = 0; i < 256 / 4; ++i) {
     literals_successfully_added +=
         4 * stream.Add({i + 1, i + 256, i + 512, -4});
   }
-  for (int i = 0; i < 256 / 3; ++i) {
+  for (int i = 0; i < UniqueClauseStream::kMaxLiteralsPerBatch / 3; ++i) {
     literals_successfully_added += 3 * stream.Add({i + 1, i + 256, i + 512});
   }
   for (int i = 0; i < 1024 * 1024 / 5; ++i) {
@@ -952,26 +912,18 @@ TEST(UniqueClauseStreamTest, DropsClauses) {
         5 * stream.Add({i + 1, i + 256, i + 512, i + 1024, -2048});
   }
 
-  EXPECT_FALSE(stream.CanAccept(3, /*lbd=*/3));
-  EXPECT_TRUE(stream.CanAccept(3, /*lbd=*/2));
-  EXPECT_TRUE(stream.CanAccept(4, /*lbd=*/2));
-  EXPECT_FALSE(stream.CanAccept(5, /*lbd=*/2));
-  EXPECT_EQ(stream.NumBufferedLiterals(), literals_successfully_added);
-  EXPECT_EQ(
-      literals_successfully_added,
-      256 - 256 % 3 +      // size 3 clauses
-          256 - 256 % 4 +  // size 4 clauses
-          UniqueClauseStream::kMaxBufferedLiterals -
-          UniqueClauseStream::kMaxBufferedLiterals % 5);  // size 5 clauses
-  // Batch 1 should be filled with size 3 clauses.
-  EXPECT_EQ(stream.NextBatch().size(), 256 / 3 + 256 / 4 + 512 / 5);
+  EXPECT_GT(stream.NumBufferedLiterals(),
+            UniqueClauseStream::kMaxLiteralsPerBatch - 5);
+  // Batch should be filled with size 3 clauses.
+  EXPECT_EQ(stream.NextBatch().size(),
+            UniqueClauseStream::kMaxLiteralsPerBatch / 3);
+  EXPECT_TRUE(stream.NextBatch().empty());
 }
 
 TEST(SharedClausesManagerTest, NonSyncApi) {
-  SharedClausesManager manager(/*always_synchronize=*/false,
-                               /*share_frequency=*/absl::ZeroDuration());
-  EXPECT_EQ(0, manager.RegisterNewId());
-  EXPECT_EQ(1, manager.RegisterNewId());
+  SharedClausesManager manager(/*always_synchronize=*/false);
+  EXPECT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
+  EXPECT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
 
   manager.AddBinaryClause(/*id=*/0, 1, 2);
   std::vector<std::pair<int, int>> new_clauses;
@@ -1018,115 +970,92 @@ TEST(SharedClausesManagerTest, NonSyncApi) {
 }
 
 TEST(SharedClausesManagerTest, ShareGlueClauses) {
-  SharedClausesManager manager(/*always_synchronize=*/true,
-                               absl::ZeroDuration());
-  ASSERT_EQ(0, manager.RegisterNewId());
-  ASSERT_EQ(1, manager.RegisterNewId());
-  auto* stream0 = manager.GetClauseStream(0);
-  auto* stream1 = manager.GetClauseStream(1);
-  // Add a bunch of clauses that will be skipped in the first batch.
-  for (int i = 0; i < 1024 / 8; ++i) {
-    EXPECT_TRUE(stream0->Add({1, 2, 3, 4, 5, 6, 7, i + 8}));
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  UniqueClauseStream stream0;
+  UniqueClauseStream stream1;
+  // Add a bunch of clauses that will be skipped batch.
+  for (int i = 0; i < UniqueClauseStream::kMaxLiteralsPerBatch / 8; ++i) {
+    EXPECT_TRUE(stream0.Add({1, 2, 3, 4, 5, 6, 7, i + 8}));
   }
-  EXPECT_EQ(stream0->NumBufferedLiterals(), 1024);
+  EXPECT_EQ(stream0.NumBufferedLiterals(),
+            UniqueClauseStream::kMaxLiteralsPerBatch);
   // Fill 1 batch of shorter clauses.
-  for (int i = 0; i < 1024 / 4; ++i) {
-    stream1->Add({1, 2, 3, i + 4});
+  for (int i = 0; i < UniqueClauseStream::kMaxLiteralsPerBatch / 4; ++i) {
+    stream1.Add({1, 2, 3, i + 4});
   }
-  EXPECT_EQ(stream1->NumBufferedLiterals(), 1024);
+  manager.AddBatch(0, stream0.NextBatch());
+  manager.AddBatch(1, stream1.NextBatch());
+  manager.Synchronize();
 
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::SizeIs(1024 / 4));
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::SizeIs(1024 / 4));
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::SizeIs(1024 / 8));
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::SizeIs(1024 / 8));
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-}
-
-TEST(SharedClausesManagerTest, ShareFrequency) {
-  SharedClausesManager manager(/*always_synchronize=*/true,
-                               absl::InfiniteDuration());
-  ASSERT_EQ(0, manager.RegisterNewId());
-  ASSERT_EQ(1, manager.RegisterNewId());
-  auto* stream0 = manager.GetClauseStream(0);
-  auto* stream1 = manager.GetClauseStream(1);
-  for (int i = 0; i < 1024 / 5; ++i) {
-    stream0->Add({i + 1, i + 513, 2048, 2049, -10});
-    stream1->Add({i + 1, i + 513, 2048, 2049, -10});
-  }
-
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  manager.Synchronize();
+  EXPECT_THAT(manager.GetUnseenClauses(0),
+              ::testing::SizeIs(UniqueClauseStream::kMaxLiteralsPerBatch / 4));
+  EXPECT_THAT(manager.GetUnseenClauses(1),
+              ::testing::SizeIs(UniqueClauseStream::kMaxLiteralsPerBatch / 4));
   EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
   EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
 }
 
 TEST(SharedClausesManagerTest, LbdThresholdIncrease) {
-  SharedClausesManager manager(/*always_synchronize=*/true,
-                               absl::ZeroDuration());
-  ASSERT_EQ(0, manager.RegisterNewId());
-  ASSERT_EQ(1, manager.RegisterNewId());
-  auto* stream0 = manager.GetClauseStream(0);
-  auto* stream1 = manager.GetClauseStream(1);
-  for (int i = 0; i < 1024 / 5; ++i) {
-    stream0->Add({i + 1, i + 513, 2048, 2049, -10});
-    stream1->Add({i + 1, i + 513, 2048, 2049, -10});
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  UniqueClauseStream stream0;
+  UniqueClauseStream stream1;
+  const int kExpectedClauses = UniqueClauseStream::kMaxLiteralsPerBatch / 5;
+  for (int i = 0; i < kExpectedClauses; ++i) {
+    stream0.Add({i + 1, i + 513, 2048, 2049, -10});
+    stream1.Add({i + 1, i + 513, 2048, 2049, -10});
   }
+  manager.AddBatch(0, stream0.NextBatch());
+  manager.AddBatch(1, stream1.NextBatch());
+  manager.Synchronize();
 
+  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::SizeIs(kExpectedClauses));
+  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::SizeIs(kExpectedClauses));
+  EXPECT_EQ(stream0.lbd_threshold(), 2);
+  EXPECT_EQ(stream1.lbd_threshold(), 2);
+  manager.Synchronize();
+  manager.AddBatch(0, stream0.NextBatch());
+  manager.AddBatch(1, stream1.NextBatch());
   EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
   EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::SizeIs(1024 / 5));
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::SizeIs(1024 / 5));
-  EXPECT_EQ(stream0->lbd_threshold(), 2);
-  EXPECT_EQ(stream1->lbd_threshold(), 2);
-  manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  EXPECT_EQ(stream0->lbd_threshold(), 3);
-  EXPECT_EQ(stream1->lbd_threshold(), 3);
+  EXPECT_EQ(stream0.lbd_threshold(), 3);
+  EXPECT_EQ(stream1.lbd_threshold(), 3);
 }
 
 TEST(SharedClausesManagerTest, LbdThresholdDecrease) {
-  SharedClausesManager manager(/*always_synchronize=*/true,
-                               absl::ZeroDuration());
-  ASSERT_EQ(0, manager.RegisterNewId());
-  ASSERT_EQ(1, manager.RegisterNewId());
-  ASSERT_EQ(2, manager.RegisterNewId());
-  auto* stream0 = manager.GetClauseStream(0);
-  auto* stream1 = manager.GetClauseStream(1);
+  SharedClausesManager manager(/*always_synchronize=*/true);
+  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  UniqueClauseStream stream0;
+  UniqueClauseStream stream1;
 
-  // Should increase LBD Threshold.
-  manager.Synchronize();
-  // Then add 1/2 batch of clauses to each worker.
-  for (int i = 0; i < 1024 / 4 / 2; ++i) {
-    stream0->Add({i + 1, i + 512, 2048, 2049});
-    stream1->Add({i + 1, i + 513, 2048, 2049});
+  manager.AddBatch(0, stream0.NextBatch());
+  manager.AddBatch(1, stream1.NextBatch());
+  const int kSize4Clauses = UniqueClauseStream::kMaxLiteralsPerBatch / 4 / 2;
+  const int kSize5ClausesAdded = UniqueClauseStream::kMaxLiteralsPerBatch / 5;
+  // Then add 1/2 batch of size 4 clauses to each worker.
+  for (int i = 0; i < kSize4Clauses; ++i) {
+    stream0.Add({i + 1, i + 512, 2048, 2049});
+    stream1.Add({i + 1, i + 513, 2048, -123});
   }
   // Than add loads of longer clauses to just stream0.
-  for (int i = 1024 / 5 / 2; i < 3 * 1024 / 5; ++i) {
-    stream0->Add({i + 1, 2, 3, -10});
+  for (int i = 0; i < kSize5ClausesAdded; ++i) {
+    stream0.Add({i + 1, 2, 3, -10, 12});
   }
 
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::IsEmpty());
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::IsEmpty());
-  EXPECT_EQ(stream0->lbd_threshold(), 3);
-  EXPECT_EQ(stream1->lbd_threshold(), 3);
+  EXPECT_EQ(stream0.lbd_threshold(), 3);
+  EXPECT_EQ(stream1.lbd_threshold(), 3);
+  manager.AddBatch(0, stream0.NextBatch());
+  manager.AddBatch(1, stream1.NextBatch());
   manager.Synchronize();
-  EXPECT_THAT(manager.GetUnseenClauses(0), ::testing::SizeIs(1024 / 4));
-  EXPECT_THAT(manager.GetUnseenClauses(1), ::testing::SizeIs(1024 / 4));
-  EXPECT_EQ(stream0->lbd_threshold(), 2);
-  EXPECT_EQ(stream1->lbd_threshold(), 3);
+  EXPECT_THAT(manager.GetUnseenClauses(0),
+              ::testing::SizeIs(2 * kSize4Clauses));
+  EXPECT_THAT(manager.GetUnseenClauses(1),
+              ::testing::SizeIs(2 * kSize4Clauses));
+  EXPECT_EQ(stream0.lbd_threshold(), 2);
 }
 }  // namespace
 }  // namespace sat
