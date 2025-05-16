@@ -1127,7 +1127,9 @@ class FullProblemSolver : public SubSolver {
         // Note that this is done after the loading, so we will never export
         // problem clauses.
         if (shared_->clauses != nullptr) {
-          const int id = shared_->clauses->RegisterNewId();
+          const int id = shared_->clauses->RegisterNewId(
+              /*may_terminate_early=*/stop_at_first_solution_ &&
+              local_model_.GetOrCreate<CpModelProto>()->has_objective());
           shared_->clauses->SetWorkerNameForId(id, local_model_.Name());
 
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),

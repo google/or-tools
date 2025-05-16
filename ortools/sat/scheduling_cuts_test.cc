@@ -406,13 +406,17 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
   CompletionTimeEvent e3(2, helper, demands_helper);
   const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
 
-  IntegerValue min_sum_of_end_mins = 0;
-  IntegerValue min_sum_of_weighted_end_mins = 0;
-  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
-                                             min_sum_of_end_mins,
-                                             min_sum_of_weighted_end_mins));
+  double min_sum_of_end_mins = 0;
+  double min_sum_of_weighted_end_mins = 0;
+  CtExhaustiveHelper ct_helper;
+  ct_helper.Init(events, &model);
+  bool cut_use_precedences = false;
+  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(
+      events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
+      min_sum_of_weighted_end_mins, cut_use_precedences));
   EXPECT_EQ(min_sum_of_end_mins, 17);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
+  EXPECT_FALSE(cut_use_precedences);
 }
 
 TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
@@ -451,11 +455,14 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
   CompletionTimeEvent e3(2, helper, demands_helper);
   const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
 
-  IntegerValue min_sum_of_end_mins = 0;
-  IntegerValue min_sum_of_weighted_end_mins = 0;
-  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
-                                             min_sum_of_end_mins,
-                                             min_sum_of_weighted_end_mins));
+  double min_sum_of_end_mins = 0;
+  double min_sum_of_weighted_end_mins = 0;
+  CtExhaustiveHelper ct_helper;
+  ct_helper.Init(events, &model);
+  bool cut_use_precedences = false;
+  ASSERT_TRUE(ComputeMinSumOfWeightedEndMins(
+      events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
+      min_sum_of_weighted_end_mins, cut_use_precedences));
   EXPECT_EQ(min_sum_of_end_mins, 18);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
 }
@@ -496,15 +503,18 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
   CompletionTimeEvent e3(2, helper, demands_helper);
   const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
 
-  IntegerValue min_sum_of_end_mins = 0;
-  IntegerValue min_sum_of_weighted_end_mins = 0;
-  ASSERT_FALSE(ComputeMinSumOfWeightedEndMins(events, two, 0.01, 0.01,
-                                              min_sum_of_end_mins,
-                                              min_sum_of_weighted_end_mins));
+  double min_sum_of_end_mins = 0;
+  double min_sum_of_weighted_end_mins = 0;
+  CtExhaustiveHelper ct_helper;
+  ct_helper.Init(events, &model);
+  bool cut_use_precedences = false;
+  ASSERT_FALSE(ComputeMinSumOfWeightedEndMins(
+      events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
+      min_sum_of_weighted_end_mins, cut_use_precedences));
 }
 
-int64_t ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
-                      int capacity) {
+double ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
+                     int capacity) {
   const int64_t kHorizon = 1000;
   CpModelBuilder builder;
   LinearExpr obj;
@@ -519,11 +529,11 @@ int64_t ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
   const CpSolverResponse response =
       SolveWithParameters(builder.Build(), "num_search_workers:8");
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
-  return static_cast<int64_t>(response.objective_value());
+  return response.objective_value();
 }
 
-int64_t ExactMakespanBruteForce(absl::Span<const int> sizes,
-                                std::vector<int>& demands, int capacity) {
+double ExactMakespanBruteForce(absl::Span<const int> sizes,
+                               std::vector<int>& demands, int capacity) {
   const int64_t kHorizon = 1000;
   Model model;
   auto* intervals_repository = model.GetOrCreate<IntervalsRepository>();
@@ -555,12 +565,15 @@ int64_t ExactMakespanBruteForce(absl::Span<const int> sizes,
     events.push_back(e);
   }
 
-  IntegerValue min_sum_of_end_mins = 0;
-  IntegerValue min_sum_of_weighted_end_mins = 0;
-  EXPECT_TRUE(ComputeMinSumOfWeightedEndMins(events, capacity, 0.01, 0.01,
-                                             min_sum_of_end_mins,
-                                             min_sum_of_weighted_end_mins));
-  return min_sum_of_end_mins.value();
+  double min_sum_of_end_mins = 0;
+  double min_sum_of_weighted_end_mins = 0;
+  CtExhaustiveHelper ct_helper;
+  ct_helper.Init(events, &model);
+  bool cut_use_precedences = false;
+  EXPECT_TRUE(ComputeMinSumOfWeightedEndMins(
+      events, capacity, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
+      min_sum_of_weighted_end_mins, cut_use_precedences));
+  return min_sum_of_end_mins;
 }
 
 TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
@@ -576,8 +589,8 @@ TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
       demands.push_back(absl::Uniform<int>(random, 1, capacity));
     }
 
-    EXPECT_EQ(ExactMakespan(sizes, demands, capacity),
-              ExactMakespanBruteForce(sizes, demands, capacity));
+    EXPECT_NEAR(ExactMakespan(sizes, demands, capacity),
+                ExactMakespanBruteForce(sizes, demands, capacity), 1e-6);
   }
 }
 
