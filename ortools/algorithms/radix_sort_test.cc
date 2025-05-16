@@ -13,7 +13,6 @@
 
 #include "ortools/algorithms/radix_sort.h"
 
-#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -25,6 +24,8 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/log.h"
+#include "absl/numeric/bits.h"
+#include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -40,6 +41,28 @@ namespace {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+
+template <typename T>
+class NumBitsForZeroToTest : public ::testing::Test {};
+
+TYPED_TEST_SUITE_P(NumBitsForZeroToTest);
+
+TYPED_TEST_P(NumBitsForZeroToTest, CorrectnessStressTest) {
+  absl::BitGen rng;
+  constexpr int kNumTests = 1'000'000;
+  for (int test = 0; test < kNumTests; ++test) {
+    const TypeParam max_val = absl::LogUniform<TypeParam>(
+        rng, 0, std::numeric_limits<TypeParam>::max());
+    const int num_bits = NumBitsForZeroTo(max_val);
+    EXPECT_LE(absl::int128{max_val}, absl::int128{1} << num_bits);
+  }
+}
+
+REGISTER_TYPED_TEST_SUITE_P(NumBitsForZeroToTest, CorrectnessStressTest);
+using IntTypes = ::testing::Types<int, uint32_t, int64_t, uint64_t, int16_t,
+                                  uint16_t, int8_t, uint8_t>;
+
+INSTANTIATE_TYPED_TEST_SUITE_P(My, NumBitsForZeroToTest, IntTypes);
 
 // If T is a floating-point type, ignores min_val / max_val.
 template <typename T>
@@ -103,6 +126,9 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortSmallSizes) {
 
     // Will we use the standard RadixSort() or the RadixSortTpl<>() variant?
     const bool use_main_radix_sort = absl::Bernoulli(rng, 0.5);
+    const bool use_num_bits = std::is_integral_v<TypeParam> &&
+                              use_main_radix_sort && !allow_negative &&
+                              absl::Bernoulli(rng, 0.5);
 
     // We potentially test the "power usage" of calling RadixSortTpl<> with
     // radix_width * num_passes < num_bits(TypeParam), when the actual values
@@ -128,7 +154,12 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortSmallSizes) {
     int radix_width = -1;
     int num_passes = -1;
     if (use_main_radix_sort) {
-      RadixSort(absl::MakeSpan(sorted_values));
+      if (use_num_bits) {
+        RadixSort(absl::MakeSpan(sorted_values),
+                  NumBitsForZeroTo(max_abs_val.value()));
+      } else {
+        RadixSort(absl::MakeSpan(sorted_values));
+      }
     } else {
       // Draw random (radix_width, num_passes) pairs until we get a valid one.
       constexpr int kMaxNumPasses = 8;
@@ -147,8 +178,8 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortSmallSizes) {
     absl::c_sort(expected_values);
     ASSERT_TRUE(sorted_values == expected_values)
         << DUMP_VARS(test, use_main_radix_sort, radix_width, num_passes, size,
-                     allow_negative, val_bits, max_abs_val, unsorted_values,
-                     sorted_values, expected_values);
+                     allow_negative, use_num_bits, val_bits, max_abs_val,
+                     unsorted_values, sorted_values, expected_values);
   }
 }
 
@@ -205,10 +236,20 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortLargeSizes) {
     std::vector<TypeParam> values =
         RandomValues<TypeParam>(rng, size, allow_negative, /*max_abs_val=*/{});
     const bool use_main_radix_sort = absl::Bernoulli(rng, 0.5);
+    const bool use_num_bits = std::is_integral_v<TypeParam> &&
+                              use_main_radix_sort && !allow_negative &&
+                              absl::Bernoulli(rng, 0.5);
+
     int radix_width = -1;
     int num_passes = -1;
     if (use_main_radix_sort) {
-      RadixSort(absl::MakeSpan(values));
+      if (use_num_bits) {
+        RadixSort(
+            absl::MakeSpan(values),
+            NumBitsForZeroTo(size == 0 ? 1 : *absl::c_max_element(values)));
+      } else {
+        RadixSort(absl::MakeSpan(values));
+      }
     } else {
       radix_width = RandomRadixWidth(rng);
       num_passes =
@@ -218,7 +259,7 @@ TYPED_TEST_P(RadixSortTest, RandomizedCorrectnessTestAgainstStdSortLargeSizes) {
     // Contrary to the 'small' stress test, we don't log the data upon failure.
     ASSERT_TRUE(absl::c_is_sorted(values))
         << DUMP_VARS(test, use_main_radix_sort, radix_width, num_passes, size,
-                     allow_negative);
+                     allow_negative, use_num_bits);
   }
 }
 
@@ -237,13 +278,16 @@ template <typename T>
 std::vector<T> SortedValues(size_t size) {
   const T offset = std::is_signed_v<T> ? -static_cast<T>(size) / 2 : T{0};
   std::vector<T> values(size);
-  for (size_t i = 0; i < size; ++i) values[i] = i = offset;
+  for (size_t i = 0; i < size; ++i) values[i] = i + offset;
   return values;
 }
 
 enum Algo {
   kStdSort,
-  kRadixSort,
+  kRadixSortTpl,
+  kRadixSortKnownMax,
+  kRadixSortComputeMax,
+  kRadixSortWorst,
 };
 
 enum InputOrder {
@@ -280,9 +324,22 @@ void BM_Sort(benchmark::State& state) {
     to_sort = values;
     if constexpr (algo == kStdSort) {
       absl::c_sort(to_sort);
-    } else {
+    } else if constexpr (algo == kRadixSortTpl) {
       absl::Span<T> span{to_sort.data(), to_sort.size()};
       RadixSortTpl<T, radix_width, num_passes>(span);
+    } else if constexpr (algo == kRadixSortKnownMax) {
+      absl::Span<T> span = absl::MakeSpan(to_sort);
+      RadixSort(span, NumBitsForZeroTo(
+                          max_abs_val.value_or(std::numeric_limits<T>::max())));
+    } else if constexpr (algo == kRadixSortComputeMax) {
+      absl::Span<T> span{to_sort.data(), to_sort.size()};
+      RadixSort(span, NumBitsForZeroTo(
+                          size == 0 ? 1 : *absl::c_max_element(to_sort)));
+    } else if constexpr (algo == kRadixSortWorst) {
+      absl::Span<T> span{to_sort.data(), to_sort.size()};
+      RadixSort(span);
+    } else {
+      LOG(DFATAL) << "Unsupported algo: " << algo;
     }
     benchmark::DoNotOptimize(to_sort);
   }
@@ -317,114 +374,127 @@ BENCHMARK(BM_Sort<kStdSort, int, kAlmostSorted, 1, 1>)
     ->RangeMultiplier(2)
     ->Range(1, 128 << 10);
 
-BENCHMARK(BM_Sort<kRadixSort, uint32_t, kRandom, /*radix_width=*/8,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint32_t, kRandom, /*radix_width=*/8,
                   /*num_passes=*/4>)
     ->RangeMultiplier(2)
     ->Range(16, 2048);
-BENCHMARK(BM_Sort<kRadixSort, uint32_t, kRandom, /*radix_width=*/11,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint32_t, kRandom, /*radix_width=*/11,
                   /*num_passes=*/3>)
     ->RangeMultiplier(2)
     ->Range(256, 32 << 20);
-BENCHMARK(BM_Sort<kRadixSort, uint32_t, kRandom, /*radix_width=*/16,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint32_t, kRandom, /*radix_width=*/16,
                   /*num_passes=*/2>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 32 << 20);
 
-BENCHMARK(BM_Sort<kRadixSort, int, kRandom, /*radix_width=*/8,
+BENCHMARK(BM_Sort<kRadixSortTpl, int, kRandom, /*radix_width=*/8,
                   /*num_passes=*/4>)
     ->RangeMultiplier(2)
     ->Range(16, 2048);
-BENCHMARK(BM_Sort<kRadixSort, int, kRandom, /*radix_width=*/11,
+BENCHMARK(BM_Sort<kRadixSortTpl, int, kRandom, /*radix_width=*/11,
                   /*num_passes=*/3>)
     ->RangeMultiplier(2)
     ->Range(256, 32 << 20);
-BENCHMARK(BM_Sort<kRadixSort, int, kRandom, /*radix_width=*/16,
+BENCHMARK(BM_Sort<kRadixSortTpl, int, kRandom, /*radix_width=*/16,
                   /*num_passes=*/2>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 32 << 20);
 
-BENCHMARK(BM_Sort<kRadixSort, float, kRandom, /*radix_width=*/8,
-                  /*num_passes=*/4>)
+BENCHMARK(BM_Sort<kRadixSortKnownMax, int, kRandom, /*radix_width=*/16,
+                  /*num_passes=*/2>)
     ->RangeMultiplier(2)
-    ->Range(16, 2048);
-BENCHMARK(BM_Sort<kRadixSort, float, kRandom, /*radix_width=*/11,
-                  /*num_passes=*/3>)
+    ->Range(128 << 10, 32 << 20);
+BENCHMARK(BM_Sort<kRadixSortComputeMax, int, kRandom, /*radix_width=*/16,
+                  /*num_passes=*/2>)
     ->RangeMultiplier(2)
-    ->Range(256, 32 << 20);
-BENCHMARK(BM_Sort<kRadixSort, float, kRandom, /*radix_width=*/16,
+    ->Range(128 << 10, 32 << 20);
+BENCHMARK(BM_Sort<kRadixSortWorst, int, kRandom, /*radix_width=*/16,
                   /*num_passes=*/2>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 32 << 20);
 
-BENCHMARK(BM_Sort<kRadixSort, uint64_t, kRandom, /*radix_width=*/11,
+BENCHMARK(BM_Sort<kRadixSortTpl, float, kRandom, /*radix_width=*/8,
+                  /*num_passes=*/4>)
+    ->RangeMultiplier(2)
+    ->Range(16, 2048);
+BENCHMARK(BM_Sort<kRadixSortTpl, float, kRandom, /*radix_width=*/11,
+                  /*num_passes=*/3>)
+    ->RangeMultiplier(2)
+    ->Range(256, 32 << 20);
+BENCHMARK(BM_Sort<kRadixSortTpl, float, kRandom, /*radix_width=*/16,
+                  /*num_passes=*/2>)
+    ->RangeMultiplier(2)
+    ->Range(128 << 10, 32 << 20);
+
+BENCHMARK(BM_Sort<kRadixSortTpl, uint64_t, kRandom, /*radix_width=*/11,
                   /*num_passes=*/6>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, uint64_t, kRandom, /*radix_width=*/13,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint64_t, kRandom, /*radix_width=*/13,
                   /*num_passes=*/5>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, uint64_t, kRandom, /*radix_width=*/16,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint64_t, kRandom, /*radix_width=*/16,
                   /*num_passes=*/4>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, uint64_t, kRandom, /*radix_width=*/22,
+BENCHMARK(BM_Sort<kRadixSortTpl, uint64_t, kRandom, /*radix_width=*/22,
                   /*num_passes=*/3>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
 
-BENCHMARK(BM_Sort<kRadixSort, int64_t, kRandom, /*radix_width=*/11,
+BENCHMARK(BM_Sort<kRadixSortTpl, int64_t, kRandom, /*radix_width=*/11,
                   /*num_passes=*/6>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, int64_t, kRandom, /*radix_width=*/13,
+BENCHMARK(BM_Sort<kRadixSortTpl, int64_t, kRandom, /*radix_width=*/13,
                   /*num_passes=*/5>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, int64_t, kRandom, /*radix_width=*/16,
+BENCHMARK(BM_Sort<kRadixSortTpl, int64_t, kRandom, /*radix_width=*/16,
                   /*num_passes=*/4>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, int64_t, kRandom, /*radix_width=*/22,
+BENCHMARK(BM_Sort<kRadixSortTpl, int64_t, kRandom, /*radix_width=*/22,
                   /*num_passes=*/3>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
 
-BENCHMARK(BM_Sort<kRadixSort, double, kRandom, /*radix_width=*/11,
+BENCHMARK(BM_Sort<kRadixSortTpl, double, kRandom, /*radix_width=*/11,
                   /*num_passes=*/6>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, double, kRandom, /*radix_width=*/13,
+BENCHMARK(BM_Sort<kRadixSortTpl, double, kRandom, /*radix_width=*/13,
                   /*num_passes=*/5>)
     ->RangeMultiplier(2)
     ->Range(2048, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, double, kRandom, /*radix_width=*/16,
+BENCHMARK(BM_Sort<kRadixSortTpl, double, kRandom, /*radix_width=*/16,
                   /*num_passes=*/4>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
     ->Arg(32 << 20)
     ->Arg(128 << 20);
-BENCHMARK(BM_Sort<kRadixSort, double, kRandom, /*radix_width=*/22,
+BENCHMARK(BM_Sort<kRadixSortTpl, double, kRandom, /*radix_width=*/22,
                   /*num_passes=*/3>)
     ->RangeMultiplier(2)
     ->Range(128 << 10, 8 << 20)
