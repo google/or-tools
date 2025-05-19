@@ -96,7 +96,7 @@ namespace operations_research {
 // index and int64_t type.
 
 #define STRONG_ASSIGNMENT_OP(StrongClass, IntType, op) \
-  ThisType& operator op(const ThisType & arg_value) {  \
+  ThisType& operator op(const ThisType& arg_value) {   \
     value_ op arg_value.value();                       \
     return *this;                                      \
   }                                                    \
