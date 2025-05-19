@@ -137,7 +137,7 @@ absl::StatusOr<ModelSummary> ModelSummary::Create(const ModelProto& model,
       {}, model.auxiliary_objectives(), summary.auxiliary_objectives))
       << "ModelProto.auxiliary_objectives are invalid";
   {
-    const std::string& objective_name = model.objective().name();
+    absl::string_view objective_name = model.objective().name();
     if (summary.auxiliary_objectives.HasName(objective_name)) {
       return util::InvalidArgumentErrorBuilder()
              << "duplicate objective name: " << objective_name;

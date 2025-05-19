@@ -22,6 +22,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
@@ -465,7 +466,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
 template <class E, class P>
 void LoadElement(const absl::flat_hash_map<std::string, E*>& id_to_element_map,
                  const P& proto) {
-  const std::string& var_id = proto.var_id();
+  absl::string_view var_id = proto.var_id();
   CHECK(!var_id.empty());
   E* element = nullptr;
   if (gtl::FindCopy(id_to_element_map, var_id, &element)) {
@@ -539,7 +540,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
                               &AssignmentProto::sequence_var_assignment);
   for (int i = 0; i < assignment_proto.objective_size(); ++i) {
     const IntVarAssignment& objective = assignment_proto.objective(i);
-    const std::string& objective_id = objective.var_id();
+    absl::string_view objective_id = objective.var_id();
     DCHECK(!objective_id.empty());
     if (HasObjectiveFromIndex(i) &&
         objective_id == ObjectiveFromIndex(i)->name()) {
