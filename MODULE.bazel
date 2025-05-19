@@ -17,7 +17,7 @@ bazel_dep(name = "abseil-cpp", version = "20250127.1")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "bzip2", version = "1.0.8.bcr.2")
 bazel_dep(name = "contrib_rules_jvm", version = "0.28.0")
-bazel_dep(name = "eigen", version = "4.0.0-20241125.bcr.1")
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
 bazel_dep(name = "fuzztest", version = "20250214.0", repo_name = "com_google_fuzztest")
 bazel_dep(name = "riegeli", version = "0.0.0-20241218-3385e3c") # otherwise fuzztest use a borken version
 bazel_dep(name = "gazelle", version = "0.42.0", repo_name = "bazel_gazelle")
