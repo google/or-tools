@@ -15,6 +15,9 @@ Java and .Net. Each language have different requirements for the code samples.
 #include <ostream>
 #include <string>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -59,7 +62,9 @@ void SimpleCpProgram() {
 
 }  // namespace operations_research
 
-int main(int /*argc*/, char* /*argv*/[]) {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::SimpleCpProgram();
   return EXIT_SUCCESS;
 }
