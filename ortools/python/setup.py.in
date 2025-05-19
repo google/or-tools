@@ -47,7 +47,7 @@ setup(
         'numpy >= 1.13.3',
         'pandas >= 2.0.0',
         'protobuf >= 6.30.2,<6.31',
-        'typing-extensions >= 4.13.1',
+        'typing-extensions >= 4.12',
         'immutabledict >= 3.0.0',
     ],
     package_data={
