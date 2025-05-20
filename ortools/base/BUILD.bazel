@@ -162,8 +162,8 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_googletest//:gtest_main",
+        "@google_benchmark//:benchmark",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -200,7 +200,7 @@ cc_test(
     deps = [
         ":dump_vars",
         "@abseil-cpp//absl/strings",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -253,7 +253,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@bzip2//:bz2",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
         "@zlib",
     ],
 )
@@ -264,10 +264,10 @@ cc_library(
     hdrs = ["fuzztest.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
-        "@com_google_fuzztest//fuzztest",
-        "@com_google_fuzztest//fuzztest:googletest_fixture_adapter",
-        "@com_google_fuzztest//fuzztest:init_fuzztest",
-        "@com_google_protobuf//:protobuf",
+        "@fuzztest//fuzztest",
+        "@fuzztest//fuzztest:googletest_fixture_adapter",
+        "@fuzztest//fuzztest:init_fuzztest",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -277,7 +277,7 @@ cc_library(
     deps = [
         ":message_matchers",
         ":status_matchers",
-        "@com_google_googletest//:gtest",
+        "@googletest//:gtest",
     ],
 )
 
@@ -285,7 +285,7 @@ cc_library(
     name = "gmock_main",
     deps = [
         ":gmock",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -423,8 +423,8 @@ cc_library(
     hdrs = ["message_matchers.h"],
     deps = [
         "@abseil-cpp//absl/strings",
-        "@com_google_googletest//:gtest",
-        "@com_google_protobuf//:protobuf",
+        "@googletest//:gtest",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -459,7 +459,7 @@ cc_library(
     hdrs = ["parse_text_proto.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -469,7 +469,7 @@ cc_library(
     deps = [
         ":gmock",
         "@abseil-cpp//absl/log:check",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -495,7 +495,7 @@ cc_library(
         ":timer",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -504,7 +504,7 @@ cc_library(
     hdrs = ["proto_enum_utils.h"],
     deps = [
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -523,7 +523,7 @@ cc_library(
         ":logging",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
         "@zlib",
     ],
 )
@@ -558,7 +558,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@com_google_googletest//:gtest",
+        "@googletest//:gtest",
     ],
 )
 
@@ -605,7 +605,7 @@ cc_test(
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 

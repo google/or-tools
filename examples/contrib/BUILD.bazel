@@ -11,6 +11,6 @@ cc_binary(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )

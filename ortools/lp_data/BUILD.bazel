@@ -250,7 +250,7 @@ cc_library(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@com_google_re2//:re2",
+        "@re2//:re2",
     ],
 )
 

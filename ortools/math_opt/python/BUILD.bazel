@@ -560,7 +560,7 @@ py_library(
     name = "normalize",
     srcs = ["normalize.py"],
     visibility = ["//ortools/math_opt/python:__subpackages__"],
-    deps = ["@com_google_protobuf//:protobuf_python"],
+    deps = ["@protobuf//:protobuf_python"],
 )
 
 py_test(

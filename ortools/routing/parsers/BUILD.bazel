@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -43,7 +43,7 @@ cc_test(
     deps = [
         ":simple_graph",
         "@abseil-cpp//absl/hash:hash_testing",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -60,7 +60,7 @@ cc_library(
         "//ortools/base:zipfile",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
-        "@com_google_re2//:re2",
+        "@re2//:re2",
     ],
 )
 
@@ -77,7 +77,7 @@ cc_test(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gmock",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -108,7 +108,7 @@ cc_test(
         ":lilim_parser",
         "//ortools/base:path",
         "@abseil-cpp//absl/flags:flag",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -184,7 +184,7 @@ cc_test(
         "//ortools/base:path",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/hash:hash_testing",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -218,7 +218,7 @@ cc_test(
         ":pdtsp_parser",
         "//ortools/base",
         "//ortools/base:path",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -239,7 +239,7 @@ cc_library(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/strings",
-        "@com_google_re2//:re2",
+        "@re2//:re2",
     ],
 )
 
@@ -266,7 +266,7 @@ cc_test(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -300,7 +300,7 @@ cc_test(
     deps = [
         ":tsptw_parser",
         "//ortools/base",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 

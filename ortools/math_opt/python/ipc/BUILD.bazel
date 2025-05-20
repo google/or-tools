@@ -24,7 +24,7 @@ py_library(
         requirement("requests"),
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python:mathopt",
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
     ],
 )
 
@@ -35,6 +35,6 @@ py_library(
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python:normalize",
         "//ortools/service/v1:optimization_py_pb2",
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
     ],
 )

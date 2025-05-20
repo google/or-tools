@@ -24,7 +24,7 @@ ortools_java_wrap_cc(
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
         "//ortools/util/java:sorted_interval_list",
-        "@com_google_protobuf//java/core",
+        "@protobuf//java/core",
     ],
     package = "com.google.ortools.sat",
     swig_includes = [
