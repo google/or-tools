@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -22,7 +22,7 @@ proto_library(
     srcs = ["callback.proto"],
     deps = [
         ":sparse_containers_proto",
-        "@com_google_protobuf//:duration_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 
@@ -64,7 +64,7 @@ proto_library(
     deps = [
         ":solution_proto",
         ":sparse_containers_proto",
-        "@com_google_protobuf//:duration_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 
@@ -113,7 +113,7 @@ proto_library(
         "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/pdlp:solvers_proto",
         "//ortools/sat:sat_parameters_proto",
-        "@com_google_protobuf//:duration_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 
@@ -137,7 +137,7 @@ proto_library(
         "//ortools/gscip:gscip_proto",
         "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/pdlp:solve_log_proto",
-        "@com_google_protobuf//:duration_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 

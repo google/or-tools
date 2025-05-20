@@ -32,7 +32,7 @@ cc_library(
         "//ortools/util:parse_proto",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 

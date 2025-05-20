@@ -130,7 +130,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -170,7 +170,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 

@@ -11,9 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -119,7 +119,7 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/random",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -149,7 +149,7 @@ cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/cleanup",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -258,7 +258,7 @@ cc_library(
         "//ortools/base:threadpool",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
         "//ortools/util:stats",
     ],
 )
@@ -291,6 +291,6 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )

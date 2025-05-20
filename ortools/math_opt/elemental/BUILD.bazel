@@ -78,7 +78,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -98,7 +98,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -152,7 +152,7 @@ cc_test(
         ":element_storage",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -221,7 +221,7 @@ cc_test(
         ":attr_storage",
         ":symmetry",
         "//ortools/base:gmock_main",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -278,7 +278,7 @@ cc_test(
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 

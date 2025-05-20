@@ -1,8 +1,8 @@
 # OR-Tools code dependencies
-absl-py==2.1.0
-immutabledict==3.0.0
+absl-py==2.2.2
+immutabledict==4.2.1
 numpy==2.2.0
-protobuf==6.30.2
+protobuf==6.31.0
 requests==2.32.3
 scipy==1.14.1
 typing-extensions==4.13.1
@@ -15,4 +15,6 @@ black==24.8.0
 
 # Example dependencies
 pandas==2.2.3
+
+# Visualization dependencies
 svgwrite==1.4.3

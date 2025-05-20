@@ -86,7 +86,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -127,7 +127,7 @@ cc_test(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -141,7 +141,7 @@ cc_library(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -439,6 +439,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )

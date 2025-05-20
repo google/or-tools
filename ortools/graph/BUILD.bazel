@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -56,7 +56,7 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -111,7 +111,7 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -132,7 +132,7 @@ cc_test(
         ":minimum_vertex_cover",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/algorithm:container",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -229,7 +229,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -290,7 +290,7 @@ cc_test(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -310,7 +310,7 @@ cc_test(
         ":graph",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/base:core_headers",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -337,7 +337,7 @@ cc_test(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -430,7 +430,7 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -467,7 +467,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/util:file_util",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -498,7 +498,7 @@ cc_test(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -541,7 +541,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
         ":graph",
         # Using CLP because GLOP is too slow in non-opt mode.
         "//ortools/algorithms:binary_search",
@@ -598,7 +598,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -641,7 +641,7 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -754,7 +754,7 @@ cc_test(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -790,7 +790,7 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -810,7 +810,7 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 

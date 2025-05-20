@@ -13,26 +13,26 @@ module(
 )
 
 # see https://registry.bazel.build/
-bazel_dep(name = "abseil-cpp", version = "20250127.1")
+bazel_dep(name = "abseil-cpp", version = "20250512.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "bzip2", version = "1.0.8.bcr.2")
 bazel_dep(name = "contrib_rules_jvm", version = "0.28.0")
 bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
-bazel_dep(name = "fuzztest", version = "20250214.0", repo_name = "com_google_fuzztest")
+bazel_dep(name = "fuzztest", version = "20250214.0")
 bazel_dep(name = "riegeli", version = "0.0.0-20241218-3385e3c") # otherwise fuzztest use a borken version
-bazel_dep(name = "gazelle", version = "0.42.0", repo_name = "bazel_gazelle")
+bazel_dep(name = "gazelle", version = "0.43.0")
 bazel_dep(name = "glpk", version = "5.0.bcr.3")
-bazel_dep(name = "google_benchmark", version = "1.9.1", repo_name = "com_google_benchmark")
-bazel_dep(name = "googletest", version = "1.16.0", repo_name = "com_google_googletest")
+bazel_dep(name = "google_benchmark", version = "1.9.2")
+bazel_dep(name = "googletest", version = "1.17.0")
 bazel_dep(name = "highs", version = "1.10.0")
 bazel_dep(name = "platforms", version = "0.0.11")
-bazel_dep(name = "protobuf", version = "30.2", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "31.0")
 bazel_dep(name = "pybind11_abseil", version = "202402.0")
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
-bazel_dep(name = "re2", version = "2024-07-02.bcr.1", repo_name = "com_google_re2")
+bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "rules_cc", version = "0.1.1")
-bazel_dep(name = "rules_go", version = "0.53.0", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "rules_go", version = "0.53.0")
 bazel_dep(name = "rules_java", version = "8.11.0")
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 bazel_dep(name = "rules_license", version = "1.0.0")
@@ -131,10 +131,10 @@ maven.install(
 )
 use_repo(maven, "maven")
 
-go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.22.4")
 
-go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.module(
     path = "github.com/golang/glog",
     sum = "h1:1+mZ9upx1Dh6FmUTFR1naJ77miKiXgALjWOZ3NVFPmY=",

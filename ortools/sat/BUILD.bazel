@@ -13,11 +13,11 @@
 
 # Home of CP/SAT solver (which includes SAT, max-SAT and PB problems).
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@com_google_protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_go//proto:def.bzl", "go_proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -149,7 +149,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -236,7 +236,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -496,7 +496,7 @@ cc_test(
         ":parameters_validation",
         ":sat_parameters_cc_proto",
         "//ortools/base:gmock_main",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -632,7 +632,7 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -760,7 +760,7 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -1114,7 +1114,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -1230,7 +1230,7 @@ cc_library(
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -2099,7 +2099,7 @@ cc_test(
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -2554,7 +2554,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -3154,7 +3154,7 @@ cc_library(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -3180,7 +3180,7 @@ cc_test(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -3361,7 +3361,7 @@ cc_test(
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -3442,7 +3442,7 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -3514,8 +3514,8 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_benchmark//:benchmark",
-        "@com_google_fuzztest//fuzztest:fuzztest_gtest_main",
+        "@google_benchmark//:benchmark",
+        "@fuzztest//fuzztest:fuzztest_gtest_main",
     ],
 )
 
@@ -3996,7 +3996,7 @@ cc_binary(
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -4072,7 +4072,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 

@@ -73,7 +73,7 @@ py_library(
     deps = [
         ":cp_model_helper",
         requirement("numpy"),
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
     ],
 )
 

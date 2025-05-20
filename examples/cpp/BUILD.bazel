@@ -33,7 +33,7 @@ cc_binary(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -52,7 +52,7 @@ cc_test(
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
         "@abseil-cpp//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -200,7 +200,7 @@ cc_binary(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -216,7 +216,7 @@ cc_test(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -232,7 +232,7 @@ cc_binary(
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
         "@abseil-cpp//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -250,7 +250,7 @@ cc_test(
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
         "@abseil-cpp//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -405,7 +405,7 @@ cc_binary(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -433,7 +433,7 @@ cc_test(
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -607,7 +607,7 @@ cc_binary(
         "//ortools/constraint_solver:routing",
         "//ortools/util:random_engine",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -623,7 +623,7 @@ cc_binary(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -766,7 +766,7 @@ cc_binary(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -787,7 +787,7 @@ cc_test(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -943,7 +943,7 @@ cc_binary(
         "//ortools/util:qap_reader",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
@@ -977,7 +977,7 @@ cc_binary(
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/random",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf//:protobuf",
     ],
 )
 
