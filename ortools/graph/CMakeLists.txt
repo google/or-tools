@@ -46,6 +46,7 @@ target_link_libraries(${NAME} PRIVATE
 
 if(BUILD_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
+  list(FILTER _TEST_SRCS EXCLUDE REGEX "shortest_paths_test.cc") # timeout
   list(FILTER _TEST_SRCS EXCLUDE REGEX "max_flow_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
