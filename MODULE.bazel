@@ -152,8 +152,8 @@ go_deps.module(
 )
 go_deps.module(
     path = "google.golang.org/protobuf",
-    sum = "h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=",
-    version = "v1.34.2",
+    sum = "h1:tPhr+woSbjfYvY6/GPufUoYizxw1cF/yFoxJ2fmpwlM=",
+    version = "v1.36.5",
 )
 go_deps.module(
     path = "golang.org/x/xerrors",
