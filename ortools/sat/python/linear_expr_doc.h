@@ -644,7 +644,7 @@ model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
 ```)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_Add =
-    R"doc(Returns (this) + (expr).)doc";
+    R"doc(Returns (this) + (other).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_AddFloat =
     R"doc(Returns (this) + (cst).)doc";
@@ -728,6 +728,9 @@ static const char* __doc_operations_research_sat_python_LinearExpr_NeCst =
 static const char* __doc_operations_research_sat_python_LinearExpr_Neg =
     R"doc(Returns -(this).)doc";
 
+static const char* __doc_operations_research_sat_python_LinearExpr_RSub =
+    R"doc(Returns (other) - (this).)doc";
+
 static const char* __doc_operations_research_sat_python_LinearExpr_RSubFloat =
     R"doc(Returns (cst) - (this).)doc";
 
@@ -735,7 +738,7 @@ static const char* __doc_operations_research_sat_python_LinearExpr_RSubInt =
     R"doc(Returns (cst) - (this).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_Sub =
-    R"doc(Returns (this) - (expr).)doc";
+    R"doc(Returns (this) - (other).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_SubFloat =
     R"doc(Returns (this) - (cst).)doc";
