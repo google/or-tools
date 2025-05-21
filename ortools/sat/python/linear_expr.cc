@@ -69,10 +69,10 @@ std::shared_ptr<LinearExpr> LinearExpr::ConstantFloat(double value) {
   return std::make_shared<FloatConstant>(value);
 }
 
-std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> other) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(expr);
+  exprs.push_back(other);
   return std::make_shared<SumArray>(exprs);
 }
 
@@ -86,10 +86,10 @@ std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
   return std::make_shared<FloatAffine>(shared_from_this(), 1.0, cst);
 }
 
-std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> other) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(expr);
+  exprs.push_back(other);
   const std::vector<int64_t> coeffs = {1, -1};
   return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
 }
@@ -102,6 +102,15 @@ std::shared_ptr<LinearExpr> LinearExpr::SubInt(int64_t cst) {
 std::shared_ptr<LinearExpr> LinearExpr::SubFloat(double cst) {
   if (cst == 0.0) return shared_from_this();
   return std::make_shared<FloatAffine>(shared_from_this(), 1.0, -cst);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::RSub(
+    std::shared_ptr<LinearExpr> other) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(other);
+  const std::vector<int64_t> coeffs = {-1, 1};
+  return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
 }
 
 std::shared_ptr<LinearExpr> LinearExpr::RSubInt(int64_t cst) {

@@ -674,12 +674,14 @@ PYBIND11_MODULE(cp_model_helper, m) {
            DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
+      .def("__sub__", &LinearExpr::Sub, py::arg("h").none(false),
            DOC(operations_research, sat, python, LinearExpr, Sub))
       .def("__sub__", &LinearExpr::SubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def("__rsub__", &LinearExpr::RSub, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, RSub))
       .def("__rsub__", &LinearExpr::RSubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubInt))
       .def("__rsub__", &LinearExpr::RSubFloat, py::arg("cst"),
@@ -938,7 +940,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddInt(cst);
           },
-          py::arg("other").none(false),
+          py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__radd__",
@@ -952,6 +954,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->AddFloat(cst);
           },
+          py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__sub__",
@@ -980,6 +983,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->SubInt(cst);
           },
+          py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def(
           "__sub__",
@@ -993,6 +997,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             }
             return expr->SubFloat(cst);
           },
+          py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))
       .def_property_readonly("num_exprs", &SumArray::num_exprs)
       .def_property_readonly("int_offset", &SumArray::int_offset)
@@ -1028,6 +1033,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
            DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def("__rsub__", &LinearExpr::RSub, py::arg("other").none(false),
+           DOC(operations_research, sat, python, LinearExpr, RSub))
       .def("__rsub__", &IntAffine::RSubInt, py::arg("cst"),
            DOC(operations_research, sat, python, LinearExpr, RSubInt))
       .def("__rsub__", &LinearExpr::SubFloat, py::arg("cst"),

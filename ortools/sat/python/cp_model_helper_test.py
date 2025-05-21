@@ -319,6 +319,9 @@ class CpModelHelperTest(absltest.TestCase):
         e11 = cmh.LinearExpr.weighted_sum([x, y, z, 5], [1, 2, 3, -1])
         self.assertEqual(str(e11), "(x + 2 * y + 3 * z - 5)")
 
+        e12 = x - y - 2 * z
+        self.assertEqual(str(e12), "(-(2 * z) + (x - y))")
+
     def test_float_lin_expr(self):
         x = TestIntVar(0, "x")
         self.assertTrue(x.is_integer())

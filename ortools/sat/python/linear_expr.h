@@ -101,17 +101,19 @@ class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
   static std::shared_ptr<LinearExpr> ConstantFloat(double value);
 
   /// Returns (this) + (expr).
-  std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> other);
   /// Returns (this) + (cst).
   std::shared_ptr<LinearExpr> AddInt(int64_t cst);
   /// Returns (this) + (cst).
   std::shared_ptr<LinearExpr> AddFloat(double cst);
   /// Returns (this) - (expr).
-  std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> other);
   /// Returns (this) - (cst).
   std::shared_ptr<LinearExpr> SubInt(int64_t cst);
   /// Returns (this) - (cst).
   std::shared_ptr<LinearExpr> SubFloat(double cst);
+  /// Returns (expr) - (this).
+  std::shared_ptr<LinearExpr> RSub(std::shared_ptr<LinearExpr> other);
   /// Returns (cst) - (this).
   std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
   /// Returns (cst) - (this).

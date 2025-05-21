@@ -246,6 +246,14 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(nb.index, -b.index - 1)
         self.assertRaises(TypeError, x.negated)
 
+    def test_issue_4654(self) -> None:
+        model = cp_model.CpModel()
+        x = model.NewIntVar(0, 1, "x")
+        y = model.NewIntVar(0, 2, "y")
+        z = model.NewIntVar(0, 3, "z")
+        expr = x - y - 2 * z
+        self.assertEqual(str(expr), "(-(2 * z) + (x - y))")
+
     def test_equality_overload(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
