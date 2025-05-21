@@ -20,15 +20,15 @@ index 1f4f08d..cc4d0ba 100644
  
  set(absl_URL https://github.com/abseil/abseil-cpp.git)
 -set(absl_TAG 20240116.0)
-+set(absl_TAG 20250127.1)
++set(absl_TAG 20250512.0)
  
  set(re2_URL https://github.com/google/re2.git)
 -set(re2_TAG 2024-02-01)
-+set(re2_TAG 2024-04-01)
++set(re2_TAG 2024-07-02)
  
  set(gtest_URL https://github.com/google/googletest.git)
 -set(gtest_TAG v1.14.0)
-+set(gtest_TAG v1.16.0)
++set(gtest_TAG v1.17.0)
  
  # From https://www.antlr.org/download.html
  set(antlr_cpp_URL https://www.antlr.org/download/antlr4-cpp-runtime-4.12.0-source.zip)
@@ -36,7 +36,7 @@ index 1f4f08d..cc4d0ba 100644
  
  set(proto_URL https://github.com/protocolbuffers/protobuf.git)
 -set(proto_TAG v28.2)
-+set(proto_TAG v30.2)
++set(proto_TAG v31.0)
  
  set(nlohmann_json_URL https://github.com/nlohmann/json.git)
  set(nlohmann_json_TAG v3.11.2)
