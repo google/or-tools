@@ -264,7 +264,7 @@ if(BUILD_GLPK)
   FetchContent_Declare(
     glpk
     GIT_REPOSITORY "https://github.com/Mizux/GLPK.git"
-    GIT_TAG        "5.0"
+    GIT_TAG        "5.0.1"
     GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(glpk)
