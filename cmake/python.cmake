@@ -509,9 +509,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_optional_access>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_variant_access>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -547,7 +544,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
@@ -567,7 +563,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_platform>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
