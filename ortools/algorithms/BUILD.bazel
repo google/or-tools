@@ -141,7 +141,7 @@ cc_library(
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

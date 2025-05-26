@@ -122,7 +122,7 @@ cc_library(
         "//ortools/math_opt/core:model_summary",
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/status",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -184,7 +184,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -205,7 +205,7 @@ cc_library(
         "//ortools/util:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/time",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

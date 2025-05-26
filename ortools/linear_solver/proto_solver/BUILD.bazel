@@ -20,7 +20,7 @@ cc_library(
     deps = [
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/log:check",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
