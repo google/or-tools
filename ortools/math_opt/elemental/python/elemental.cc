@@ -177,7 +177,7 @@ class AttrKeyArrayView {
     }
   }
 
-  ssize_t size() const { return array_.shape(0); }
+  Py_ssize_t size() const { return array_.shape(0); }
 
   AttrKeyT operator[](const int64_t i) const {
     std::array<int64_t, AttrKeyT::size()> key_ids;
@@ -565,7 +565,7 @@ PYBIND11_MODULE(cpp_elemental, py_module) {
         const int64_t num_elements = static_cast<int64_t>(names.shape(0));
         const char* unicode_data =
             static_cast<const char*>(names.request().ptr);
-        const ssize_t itemsize_bytes = names.request().itemsize;
+        const Py_ssize_t itemsize_bytes = names.request().itemsize;
         py::array_t<int64_t> result(names.size());
         auto ids = result.mutable_unchecked<1>();
         for (int i = 0; i < num_elements; ++i) {
