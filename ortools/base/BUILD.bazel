@@ -253,7 +253,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@bzip2//:bz2",
-        "@protobuf//:protobuf",
+        "@protobuf",
         "@zlib",
     ],
 )
@@ -267,7 +267,7 @@ cc_library(
         "@fuzztest//fuzztest",
         "@fuzztest//fuzztest:googletest_fixture_adapter",
         "@fuzztest//fuzztest:init_fuzztest",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -424,7 +424,7 @@ cc_library(
     deps = [
         "@abseil-cpp//absl/strings",
         "@googletest//:gtest",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -459,7 +459,7 @@ cc_library(
     hdrs = ["parse_text_proto.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -469,7 +469,7 @@ cc_library(
     deps = [
         ":gmock",
         "@abseil-cpp//absl/log:check",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -495,7 +495,7 @@ cc_library(
         ":timer",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -504,7 +504,7 @@ cc_library(
     hdrs = ["proto_enum_utils.h"],
     deps = [
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -523,7 +523,7 @@ cc_library(
         ":logging",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@protobuf//:protobuf",
+        "@protobuf",
         "@zlib",
     ],
 )

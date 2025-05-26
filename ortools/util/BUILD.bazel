@@ -289,7 +289,7 @@ cc_library(
         #        "//net/proto2/io/public:io",
         #        "//net/proto2/public",
         #        "//net/proto2/util/public:json",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -398,7 +398,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -522,7 +522,7 @@ cc_library(
     hdrs = ["parse_proto.h"],
     deps = [
         "@abseil-cpp//absl/strings",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

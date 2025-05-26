@@ -149,7 +149,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -236,7 +236,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -496,7 +496,7 @@ cc_test(
         ":parameters_validation",
         ":sat_parameters_cc_proto",
         "//ortools/base:gmock_main",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -632,7 +632,7 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -760,7 +760,7 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
         "@abseil-cpp//absl/time",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -1114,7 +1114,7 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -1230,7 +1230,7 @@ cc_library(
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -2554,7 +2554,7 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -3154,7 +3154,7 @@ cc_library(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -3996,7 +3996,7 @@ cc_binary(
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -4072,7 +4072,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

@@ -467,7 +467,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/util:file_util",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 

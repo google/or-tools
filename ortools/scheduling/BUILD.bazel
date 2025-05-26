@@ -41,7 +41,7 @@ cc_library(
         "//ortools/base:path",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/strings",
-        "@protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
