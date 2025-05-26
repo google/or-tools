@@ -33,10 +33,10 @@ help:
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
 	@echo -e "${BOLD}PYTHON TARGETS${RESET}"
-	@echo -e "\t${BOLD}python${RESET}: Build musllinux and manylinux python 'ortools' wheel packages (3.8+)."
-	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.8+) for a specific platform."
-	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.8+) for a specific platform."
-	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.8+) for a specific target."
+	@echo -e "\t${BOLD}python${RESET}: Build musllinux and manylinux python 'ortools' wheel packages (3.9+)."
+	@echo -e "\t${BOLD}python_<platform>${RESET}: Build all python 'ortools' wheel packages (3.9+) for a specific platform."
+	@echo -e "\t${BOLD}python_<platform>_<step>${RESET}: Build all python 'ortools' wheel packages (3.9+) for a specific platform."
+	@echo -e "\t${BOLD}python_<target>_<step>${RESET}: Build python 'ortools' wheel packages (3.9+) for a specific target."
 	@echo -e "\t${BOLD}save_python_<target>${RESET}: Save python 'ortools' image."
 	@echo -e "\t${BOLD}clean_python_<target>${RESET}: Clean manylinux and musllinux python 'ortools' wheel packages."
 	@echo -e "\t${BOLD}sh_python_<target>${RESET}: Run a container using the python 'ortools' image."
@@ -54,7 +54,6 @@ help:
 	@echo -e "\t\t${BOLD}manylinux${RESET} (manylinux_2_28)"
 	@echo
 	@echo -e "\t${BOLD}<version>${RESET}:"
-	@echo -e "\t\t${BOLD}38${RESET} Python3.8"
 	@echo -e "\t\t${BOLD}39${RESET} Python3.9"
 	@echo -e "\t\t${BOLD}310${RESET} Python3.10"
 	@echo -e "\t\t${BOLD}311${RESET} Python3.11"
@@ -118,7 +117,7 @@ help:
 	@echo -e "\t\t${BOLD}cpp${RESET} C++"
 	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and/or .Net 6.0 wrappers"
 	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
-	@echo -e "\t\t${BOLD}python${RESET} Python 3.8+ wrappers"
+	@echo -e "\t\t${BOLD}python${RESET} Python 3.9+ wrappers"
 	@echo
 	@echo -e "\te.g. 'make sh_amd64_ubuntu-22.04_cpp_build'"
 	@echo -e "\te.g. 'make amd64_ubuntu-22.04_cpp_archive'"
@@ -204,7 +203,7 @@ cache/python: | cache
 	-mkdir $@
 
 ## MANYLINUX ##
-PYTHON_VERSIONS := 38 39 310 311 312 313
+PYTHON_VERSIONS := 39 310 311 312 313
 
 export/python/manylinux: | export/python
 	-mkdir -p $@

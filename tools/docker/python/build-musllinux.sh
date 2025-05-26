@@ -35,7 +35,7 @@ DESCRIPTION
 
 \tYou MUST define the following variables before running this script:
 \t* PLATFORM: x86_64 aarch64
-\t* PYTHON_VERSION: 3 38 39 310 311 312 313
+\t* PYTHON_VERSION: 3 39 310 311 312 313
 note: PYTHON_VERSION=3 will generate for all pythons which could take time...
 
 OPTIONS
@@ -118,7 +118,6 @@ function check_wheel() {
   # Check mypy files
   declare -a MYPY_FILES=(
     "ortools/algorithms/python/knapsack_solver.pyi"
-    "ortools/algorithms/python/set_cover.pyi"
     "ortools/constraint_solver/pywrapcp.pyi"
     "ortools/graph/python/linear_sum_assignment.pyi"
     "ortools/graph/python/max_flow.pyi"
@@ -129,6 +128,7 @@ function check_wheel() {
     "ortools/pdlp/python/pdlp.pyi"
     "ortools/sat/python/cp_model_helper.pyi"
     "ortools/scheduling/python/rcpsp.pyi"
+    "ortools/set_cover/python/set_cover.pyi"
     "ortools/util/python/sorted_interval_list.pyi"
   )
   for FILE in "${MYPY_FILES[@]}"; do
@@ -255,7 +255,7 @@ function main() {
   assert_defined PYTHON_VERSION
 
   # Setup
-  declare -a SKIPS=( "cp36-cp36m" "cp37-cp37m" )
+  declare -a SKIPS=( "cp38-cp38" )
 
   case ${1} in
     build)
