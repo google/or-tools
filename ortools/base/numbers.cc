@@ -18,16 +18,11 @@
 
 #include <errno.h>  // for errno
 
-#include <cfloat>
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <memory>
-#include <string>
 
-// #include "ortools/base/logging.h"
 #include "absl/strings/ascii.h"
-#include "ortools/base/strtoint.h"
 
 namespace strings {
 
