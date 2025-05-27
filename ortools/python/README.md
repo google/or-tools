@@ -1,6 +1,6 @@
 # Introduction
 
-This is the documentation page for the Python 3.8+ wrapper of OR-Tools.
+This is the documentation page for the Python 3.9+ wrapper of OR-Tools.
 
 This project aim to explain how you build a Python native wheel package using
 [`setup.py`](https://packaging.python.org/tutorials/packaging-projects/).
