@@ -163,7 +163,8 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
 template <typename FloatType>
 bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
   if (IsPositiveOrNegativeInfinity(y)) return x <= y;
-  return x <= y + tolerance * std::max(1.0, std::min(std::abs(x), std::abs(y)));
+  return x <= y + tolerance * std::max(FloatType(1.0),
+                                       std::min(std::abs(x), std::abs(y)));
 }
 
 // Returns true if x is within tolerance of any integer.  Always returns
