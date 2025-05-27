@@ -478,7 +478,7 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
       double min_distance = kInfinity;
       const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
       const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
-      double cost_delta = 0.0;
+      Fractional cost_delta = 0.0;
       for (ColIndex col(0); col < num_cols_; ++col) {
         cost_delta += solution_primal_ray_[col] * objective_[col];
         if (solution_primal_ray_[col] > 0 && upper_bounds[col] != kInfinity) {
@@ -586,10 +586,12 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
         // infeasibility lower than its corresponding residual error. Note that
         // we already adapt the tolerance like this during the simplex
         // execution.
-        const Fractional primal_tolerance = std::max(
-            primal_residual, parameters_.primal_feasibility_tolerance());
+        const Fractional primal_tolerance =
+            std::max(primal_residual,
+                     Fractional(parameters_.primal_feasibility_tolerance()));
         const Fractional dual_tolerance =
-            std::max(dual_residual, parameters_.dual_feasibility_tolerance());
+            std::max(dual_residual,
+                     Fractional(parameters_.dual_feasibility_tolerance()));
         const Fractional primal_infeasibility =
             variable_values_.ComputeMaximumPrimalInfeasibility();
         const Fractional dual_infeasibility =
@@ -2747,7 +2749,7 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
     const auto get_diff = [this](ColIndex col, Fractional old_value,
                                  Fractional new_value) {
       if (col >= integrality_scale_.size() || integrality_scale_[col] == 0.0) {
-        return 0.0;
+        return Fractional(0.0);
       }
       const Fractional s = integrality_scale_[col];
       return (std::abs(new_value * s - std::round(new_value * s)) -

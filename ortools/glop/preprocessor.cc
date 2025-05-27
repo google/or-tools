@@ -2430,7 +2430,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
     const Fractional coefficient_ratio = coefficient / matrix_entry.coeff;
     // Check if coefficient_ratio is integer.
     if (!IsIntegerWithinTolerance(
-            coefficient_ratio, parameters_.solution_feasibility_tolerance())) {
+            coefficient_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }
@@ -2439,7 +2440,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
   if (IsFinite(constraint_lb)) {
     const Fractional lower_bound_ratio = constraint_lb / matrix_entry.coeff;
     if (!IsIntegerWithinTolerance(
-            lower_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+            lower_bound_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }
@@ -2448,7 +2450,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
   if (IsFinite(constraint_ub)) {
     const Fractional upper_bound_ratio = constraint_ub / matrix_entry.coeff;
     if (!IsIntegerWithinTolerance(
-            upper_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+            upper_bound_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }

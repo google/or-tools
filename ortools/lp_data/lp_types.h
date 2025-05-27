@@ -81,13 +81,13 @@ static inline double ToDouble(double f) { return f; }
 typedef double Fractional;
 
 // Range max for type Fractional. DBL_MAX for double for example.
-constexpr double kRangeMax = std::numeric_limits<double>::max();
+constexpr Fractional kRangeMax = std::numeric_limits<Fractional>::max();
 
 // Infinity for type Fractional.
-constexpr double kInfinity = std::numeric_limits<double>::infinity();
+constexpr Fractional kInfinity = std::numeric_limits<Fractional>::infinity();
 
 // Epsilon for type Fractional, i.e. the smallest e such that 1.0 + e != 1.0 .
-constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+constexpr Fractional kEpsilon = std::numeric_limits<Fractional>::epsilon();
 
 // Returns true if the given value is finite, that means for a double:
 // not a NaN and not +/- infinity.
