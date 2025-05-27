@@ -244,10 +244,14 @@ class SatPresolver {
   // after this call.
   void AddClauseInternal(std::vector<Literal>* clause);
 
+  // Since we only cleanup the list lazily, literal_to_clauses_ memory usage
+  // can get out of hand, we clean it up periodically.
+  void RebuildLiteralToClauses();
+
   // Clause removal function.
   void Remove(ClauseIndex ci);
   void RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x);
-  void RemoveAndRegisterForPostsolveAllClauseContaining(Literal x);
+  void RemoveAllClauseContaining(Literal x, bool register_for_postsolve);
 
   // Call ProcessClauseToSimplifyOthers() on all the clauses in
   // clause_to_process_ and empty the list afterwards. Note that while some
@@ -355,6 +359,10 @@ class SatPresolver {
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
+  //
+  // This is cleaned up lazily, or when num_deleted_literals_since_last_cleanup_
+  // becomes big.
+  int64_t num_deleted_literals_since_last_cleanup_ = 0;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
 

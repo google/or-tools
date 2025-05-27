@@ -668,11 +668,11 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       if (!helper->SynchronizeAndSetDirection(false, false, false)) {
         return false;
       }
-      generate_cuts("NoOverlap2dXCompletionTime_mirror");
+      generate_cuts("NoOverlap2dXCompletionTime");
       if (!helper->SynchronizeAndSetDirection(false, false, true)) {
         return false;
       }
-      generate_cuts("NoOverlap2dYCompletionTime_mirror");
+      generate_cuts("NoOverlap2dYCompletionTime");
     }
     return true;
   };

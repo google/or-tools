@@ -2564,7 +2564,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   // also force the postsolve to take search decisions...
   if (absl::GetFlag(FLAGS_cp_model_debug_postsolve)) {
     auto* new_ct = context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
-    const std::string name = new_ct->name();
+    const std::string name(new_ct->name());
     *new_ct = *ct;
     new_ct->set_name(absl::StrCat(ct->name(), " copy ", name));
   } else {
@@ -8221,10 +8221,15 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // We also disable this if the user asked for tightened domain as this might
   // fix variable to a potentially infeasible value, and just correct them later
   // during postsolve of a particular solution.
-  SatParameters params = context_->params();
-  if (params.debug_postsolve_with_full_solver() ||
-      params.fill_tightened_domains_in_response()) {
-    params.set_presolve_blocked_clause(false);
+  SatParameters sat_params = context_->params();
+  if (sat_params.debug_postsolve_with_full_solver() ||
+      sat_params.fill_tightened_domains_in_response()) {
+    sat_params.set_presolve_blocked_clause(false);
+  }
+
+  // This option is only supported by the custom postsolve code.
+  if (!sat_params.debug_postsolve_with_full_solver()) {
+    sat_params.set_filter_sat_postsolve_clauses(true);
   }
 
   SatPostsolver sat_postsolver(num_variables);
@@ -8280,7 +8285,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
     // TODO(user): BVA takes time and does not seems to help on the minizinc
     // benchmarks. So we currently disable it, except if we are on a pure-SAT
     // problem, where we follow the default (true) or the user specified value.
-    params.set_presolve_use_bva(false);
+    sat_params.set_presolve_use_bva(false);
   }
 
   // Disable BVA if we want to keep the symmetries.
@@ -8289,7 +8294,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   // and also update the generators to take into account the new variables. This
   // do not seems that easy.
   if (context_->params().keep_symmetry_in_presolve()) {
-    params.set_presolve_use_bva(false);
+    sat_params.set_presolve_use_bva(false);
   }
 
   // Update the time limit of the initial propagation.
@@ -8304,7 +8309,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
     sat_presolver.SetEquivalentLiteralMapping(equiv_map);
   }
   sat_presolver.SetTimeLimit(time_limit_);
-  sat_presolver.SetParameters(params);
+  sat_presolver.SetParameters(sat_params);
 
   // Load in the presolver.
   // Register the fixed variables with the postsolver.
@@ -8354,12 +8359,6 @@ bool CpModelPresolver::PresolvePureSatPart() {
   for (int i = 0; i < num_variables; ++i) {
     const int var = new_to_old_index[i];
     if (context_->VarToConstraints(var).empty()) {
-      // Such variable needs to be fixed to some value for the SAT postsolve to
-      // work.
-      if (!context_->IsFixed(var)) {
-        CHECK(context_->IntersectDomainWith(
-            var, Domain(context_->DomainOf(var).SmallestValue())));
-      }
       context_->MarkVariableAsRemoved(var);
     }
   }

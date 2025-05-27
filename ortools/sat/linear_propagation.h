@@ -324,6 +324,10 @@ class LinearPropagator : public PropagatorInterface,
                std::vector<Literal>* literals_reason,
                std::vector<int>* trail_indices_reason) final;
 
+  void SetPushAffineUbForBinaryRelation() {
+    push_affine_ub_for_binary_relations_ = true;
+  }
+
  private:
   // We try to pack the struct as much as possible. Using a maximum size of
   // 1 << 29 should be okay since we split long constraint anyway. Technically
@@ -389,9 +393,12 @@ class LinearPropagator : public PropagatorInterface,
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
   PrecedenceRelations* precedences_;
+  BinaryRelationsMaps* binary_relations_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
+
+  bool push_affine_ub_for_binary_relations_ = false;
 
   // To know when we backtracked. See SetLevel().
   int previous_level_ = 0;

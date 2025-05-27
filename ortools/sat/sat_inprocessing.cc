@@ -1636,6 +1636,9 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   if (new_score_ > score_threshold_) return true;
 
   // Perform BVE.
+  //
+  // TODO(user): If filter_sat_postsolve_clauses is true, only one of the two
+  // sets need to be kept for postsolve.
   if (new_score_ > 0) {
     if (!ResolveAllClauseContaining</*score_only=*/false,
                                     /*with_binary_only=*/false>(lit)) {

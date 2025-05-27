@@ -152,6 +152,8 @@ struct CompletionTimeEvent {
 
 class CtExhaustiveHelper {
  public:
+  CtExhaustiveHelper() = default;
+
   int max_task_index() const { return max_task_index_; }
   const CompactVectorVector<int>& predecessors() const { return predecessors_; }
 
@@ -159,6 +161,9 @@ class CtExhaustiveHelper {
   std::vector<std::pair<IntegerValue, IntegerValue>> profile_;
   std::vector<std::pair<IntegerValue, IntegerValue>> new_profile_;
   std::vector<IntegerValue> assigned_ends_;
+  std::vector<int> task_to_index_;
+  DagTopologicalSortIterator valid_permutation_iterator_;
+  std::vector<CompletionTimeEvent> residual_events_;
 
   // Collect precedences, set max_task_index.
   // TODO(user): Do some transitive closure.
@@ -174,6 +179,27 @@ class CtExhaustiveHelper {
   std::vector<bool> visited_;
 };
 
+enum class CompletionTimeExplorationStatus {
+  FINISHED,
+  ABORTED,
+  NO_VALID_PERMUTATION,
+};
+
+template <typename Sink>
+void AbslStringify(Sink& sink, const CompletionTimeExplorationStatus& status) {
+  switch (status) {
+    case CompletionTimeExplorationStatus::FINISHED:
+      sink.Append("FINISHED");
+      break;
+    case CompletionTimeExplorationStatus::ABORTED:
+      sink.Append("ABORTED");
+      break;
+    case CompletionTimeExplorationStatus::NO_VALID_PERMUTATION:
+      sink.Append("NO_VALID_PERMUTATION");
+      break;
+  }
+}
+
 // Computes the minimum sum of the end min and the minimum sum of the end min
 // weighted by weight of all events. It returns false if no permutation is
 // valid w.r.t. the range of starts.
@@ -182,11 +208,12 @@ class CtExhaustiveHelper {
 // small, like <= 10. They should also starts in index order.
 //
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
-bool ComputeMinSumOfWeightedEndMins(
+CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
     double unweighted_threshold, double weighted_threshold,
     CtExhaustiveHelper& helper, double& min_sum_of_ends,
-    double& min_sum_of_weighted_ends, bool& cut_use_precedences);
+    double& min_sum_of_weighted_ends, bool& cut_use_precedences,
+    int& exploration_credit);
 
 }  // namespace sat
 }  // namespace operations_research

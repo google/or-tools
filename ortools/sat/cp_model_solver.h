@@ -18,6 +18,7 @@
 #include <string>
 
 #include "absl/flags/declare.h"
+#include "absl/strings/string_view.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -123,8 +124,7 @@ std::function<void(Model*)> NewBestBoundCallback(
    \endcode
  * before calling \c SolveCpModel().
  */
-std::function<SatParameters(Model*)> NewSatParameters(
-    const std::string& params);
+std::function<SatParameters(Model*)> NewSatParameters(absl::string_view params);
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 

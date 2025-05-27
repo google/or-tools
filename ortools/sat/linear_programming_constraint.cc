@@ -1851,7 +1851,8 @@ void LinearProgrammingConstraint::AddMirCuts() {
     // But there is some degenerate problem where these rows have a really low
     // weight (or even zero), and having only weight of exactly zero in
     // std::discrete_distribution will result in a crash.
-    row_weights[row] = std::max(1e-8, std::abs(simplex_.GetDualValue(row)));
+    row_weights[row] =
+        std::max(Fractional(1e-8), std::abs(simplex_.GetDualValue(row)));
   }
 
   // The code here can be really slow, so we put a limit on the number of

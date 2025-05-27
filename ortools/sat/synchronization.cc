@@ -164,7 +164,7 @@ void SharedResponseManager::LogMessage(absl::string_view prefix,
 }
 
 void SharedResponseManager::LogMessageWithThrottling(
-    const std::string& prefix, const std::string& message) {
+    absl::string_view prefix, absl::string_view message) {
   absl::MutexLock mutex_lock(&mutex_);
 
   int id;

@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
@@ -310,7 +311,7 @@ bool LinearInequalityCanBeReducedWithClosestMultiple(
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at
-// each invocation. This way, clients do not relly on the wrong assumption that
+// each invocation. This way, clients do not really on the wrong assumption that
 // a particular optimal solution will be returned if they are many equivalent
 // ones.
 class ModelRandomGenerator : public absl::BitGenRef {
@@ -978,6 +979,196 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
   }
   starts_[0] = 0;
 }
+
+// A class to generate all possible topological sorting of a dag.
+//
+// If the graph has no edges, it will generate all possible permutations.
+//
+// If the graph has edges, it will generate all possible permutations of the
+// dag that are a topological sorting of the graph.
+//
+// The class maintains 5 fields:
+//  - graph_: a vector of vectors, where graph_[i] contains the list of
+//    elements that are adjacent to element i.
+//  - size_: the size of the graph.
+//
+//  - missing_parent_numbers_: a vector of integers, where
+//    missing_parent_numbers_[i] is the number of parents of element i that are
+//    not yet in permutation_. Before Init() is called, no element is yet in
+//    permutation_ so that it is the number of parents of i. After Init(), and
+//    before Increase() returns true, it is always 0 (except during the
+//    execution of Increase(), see below).
+//
+//  - permutation_: a vector of integers, that after Init() is called, and
+//    before Increase() returns false, it is a topological sorting of the graph
+//    (except during the execution of Increase()).
+//  - element_original_position_: a vector of integers, where
+//    element_original_position_[i] is the original position of element i in the
+//    permutation_. See the algorithm below for more details.
+
+class DagTopologicalSortIterator {
+ public:
+  // Graph maps indices to their children. Any children must exist.
+  DagTopologicalSortIterator() : size_(0) {}
+  explicit DagTopologicalSortIterator(int size) : size_(size) { Reset(size); }
+
+  void Reset(int size) {
+    size_ = size;
+    graph_.assign(size, {});
+    missing_parent_numbers_.assign(size, 0);
+    permutation_.clear();
+    element_original_position_.assign(size, 0);
+  }
+
+  // Must be called before Init().
+  void AddArc(int from, int to) {
+    DCHECK_GE(from, 0);
+    DCHECK_LT(from, size_);
+    DCHECK_GE(to, 0);
+    DCHECK_LT(to, size_);
+    graph_[from].push_back(to);
+    missing_parent_numbers_[to]++;
+  }
+
+  // To describe the algorithm in Increase() and Init(), we consider the
+  // following invariant, called Invariant(pos) for a position pos in [0,
+  // size_):
+  //  1. permutations_[0], ..., permutations_[pos] form a prefix of a
+  //     topological ordering of the graph;
+  //  2. permutations_[pos + 1], ..., permutations_.back() are all other
+  //     elements that have all their parents in permutations_[0], ...,
+  //     permutations_[pos], ordered lexicographically by the index of their
+  //     last parent in permutations_[0], ... permutations_[pos] and then by
+  //     their index in the graph;
+  //  3. missing_parent_numbers_[i] is the number of parents of element i that
+  //     are not in {permutations_[0], ..., permutations_[pos]}.
+  //  4. element_original_position_[i] is the original position of element i of
+  //     the permutation following the order described in 2. In particular,
+  //     element_original_position_[i] = i for i > pos.
+  // Set and Unset maintain these invariants.
+
+  // Precondition: Invariant(size_ - 1) holds.
+  // Postcondition: Invariant(size_ - 1) holds if Increase() returns true.
+  // If Increase() returns false, all topological orderings of the graph have
+  // been generated and the state of permutation_ is not specified..
+  bool Increase() {
+    Unset(size_ - 1);
+    for (int pos = size_ - 2; pos >= 0; --pos) {
+      // Invariant(pos) holds.
+      // Increasing logic: once permutation_[pos] has been put back to its
+      // original position by Unset(pos), elements permutations_[pos], ...,
+      // permutations_.back() are in their original ordering, in particular in
+      // the same order as last time the iteration on permutation_[pos]
+      // occurred (according to Invariant(pos).2, these are exactly the elements
+      // that have to be tried at pos).
+      // All possibilities in permutations_[pos], ...,
+      // permutations_[element_original_position_[pos]] have been run through.
+      // The next to test is permutations_[element_original_position_[pos] + 1].
+      const int k = element_original_position_[pos] + 1;
+      Unset(pos);
+      // Invariant(pos - 1) holds.
+
+      // No more elements to iterate on at position pos. Go backwards one
+      // position to increase that one.
+      if (k == permutation_.size()) continue;
+      Set(pos, k);
+      // Invariant(pos) holds.
+      for (++pos; pos < size_; ++pos) {
+        // Invariant(pos - 1) holds.
+        // According to Invariant(pos - 1).2, if pos >= permutation_.size(),
+        // there are no more elements we can add to the permutation which means
+        // that we detected a cycle. It would be a bug as we would have detected
+        // it in Init().
+        CHECK_LT(pos, permutation_.size()) << "Cycle detected";
+        // According to Invariant(pos - 1).2, elements that can be used at pos
+        // are permutations_[pos], ..., permutations_.back(). Starts the
+        // iteration at permutations_[pos].
+        Set(pos, pos);
+        // Invariant(pos) holds.
+      }
+      // Invariant(size_ - 1) holds.
+      return true;
+    }
+    return false;
+  }
+
+  // Must be called before Increase().
+  ABSL_MUST_USE_RESULT bool Init() {
+    for (int i = 0; i < size_; ++i) {
+      if (missing_parent_numbers_[i] == 0) {
+        permutation_.push_back(i);
+      }
+    }
+    for (int pos = 0; pos < size_; ++pos) {
+      // Invariant(pos - 1) holds.
+      // According to Invariant(pos - 1).2, if pos >= permutation_.size(),
+      // there are no more elements we can add to the permutation.
+      if (pos >= permutation_.size()) return false;
+      // According to Invariant(pos - 1).2, elements that can be used at pos
+      // are permutations_[pos], ..., permutations_.back(). Starts the
+      // iteration at permutations_[pos].
+      Set(pos, pos);
+      // Invariant(pos) holds.
+    }
+    // Invariant(pos - 1) hold. We have a permutation.
+    return true;
+  }
+
+  const std::vector<int>& permutation() const { return permutation_; }
+
+ private:
+  // Graph maps indices to their children. Children must be in [0, size_).
+  std::vector<std::vector<int>> graph_;
+  // Number of elements in graph_.
+  int size_;
+  // For each element in graph_, the number of parents it has that are not yet
+  // in permutation_. In particular, it is always 0 when Init has been called
+  // and when Increase is not in progress (and has not yet returned false).
+  std::vector<int> missing_parent_numbers_;
+  // The current permutation. It is ensured to be a topological sorting of the
+  // graph once Init has been called and Increase has not yet returned false.
+  std::vector<int> permutation_;
+  // Keeps track of the original position of the element in permutation_[i]. See
+  // the comment above the class for the detailed algorithm.
+  std::vector<int> element_original_position_;
+
+  // Unset the element at pos.
+  //
+  //  - Precondition: Invariant(pos) holds.
+  //  - Postcondition: Invariant(pos - 1) holds.
+  void Unset(int pos) {
+    const int n = permutation_[pos];
+    // Before the loop: Invariant(pos).2 and Invariant(pos).3 hold.
+    // After the swap below: Invariant(pos - 1).2 and Invariant(pos - 1).3 hold.
+    for (const int c : graph_[n]) {
+      if (missing_parent_numbers_[c] == 0) permutation_.pop_back();
+      ++missing_parent_numbers_[c];
+    }
+    std::swap(permutation_[element_original_position_[pos]], permutation_[pos]);
+    // Invariant(pos).4 -> Invariant(pos - 1).4.
+    element_original_position_[pos] = pos;
+  }
+
+  // Set the element at pos to the element at k.
+  //
+  //  - Precondition: Invariant(pos - 1) holds and k in [pos,
+  //    permutation_.size()).
+  //  - Postcondition: Invariant(pos) holds and permutation_[pos] has been
+  //    swapped with permutation_[k].
+  void Set(int pos, int k) {
+    int n = permutation_[k];
+    // Before the loop: Invariant(pos - 1).2 and Invariant(pos - 1).3 hold.
+    // After the loop: Invariant(pos).2 and Invariant(pos).3 hold.
+    for (int c : graph_[n]) {
+      --missing_parent_numbers_[c];
+      if (missing_parent_numbers_[c] == 0) permutation_.push_back(c);
+    }
+    // Invariant(pos - 1).1 -> Invariant(pos).1.
+    std::swap(permutation_[k], permutation_[pos]);
+    // Invariant(pos - 1).4 -> Invariant(pos).4.
+    element_original_position_[pos] = k;
+  }
+};
 
 }  // namespace sat
 }  // namespace operations_research

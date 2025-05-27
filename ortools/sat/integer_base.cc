@@ -56,6 +56,29 @@ void LinearExpression2::SimpleCanonicalization() {
   }
 }
 
+IntegerValue LinearExpression2::DivideByGcd() {
+  const uint64_t gcd = std::gcd(coeffs[0].value(), coeffs[1].value());
+  if (gcd > 1) {
+    coeffs[0] /= gcd;
+    coeffs[1] /= gcd;
+    return IntegerValue(gcd);
+  }
+  return IntegerValue(1);
+}
+
+bool LinearExpression2::NegateForCanonicalization() {
+  bool negate = false;
+  if (coeffs[0] == 0) {
+    if (coeffs[1] != 0) {
+      negate = !VariableIsPositive(vars[1]);
+    }
+  } else {
+    negate = !VariableIsPositive(vars[0]);
+  }
+  if (negate) Negate();
+  return negate;
+}
+
 void LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
                                                     IntegerValue& ub,
                                                     bool allow_negation) {
@@ -63,17 +86,8 @@ void LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
   if (coeffs[0] == 0 || coeffs[1] == 0) return;  // abort.
 
   if (allow_negation) {
-    bool negate = false;
-    if (coeffs[0] == 0) {
-      if (coeffs[1] != 0) {
-        negate = !VariableIsPositive(vars[1]);
-      }
-    } else {
-      negate = !VariableIsPositive(vars[0]);
-    }
-    if (negate) {
-      Negate();
-
+    const bool negated = NegateForCanonicalization();
+    if (negated) {
       // We need to be able to negate without overflow.
       CHECK_GE(lb, kMinIntegerValue);
       CHECK_LE(ub, kMaxIntegerValue);
@@ -132,6 +146,23 @@ RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
     if (lb > known_ub || ub < known_lb) return RelationStatus::IS_FALSE;
   }
   return RelationStatus::IS_UNKNOWN;
+}
+
+IntegerValue BestBinaryRelationBounds::GetUpperBound(
+    LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  const bool negated = expr.NegateForCanonicalization();
+  const auto it = best_bounds_.find(expr);
+  if (it != best_bounds_.end()) {
+    const auto [known_lb, known_ub] = it->second;
+    if (negated) {
+      return CapProdI(gcd, -known_lb);
+    } else {
+      return CapProdI(gcd, known_ub);
+    }
+  }
+  return kMaxIntegerValue;
 }
 
 }  // namespace operations_research::sat

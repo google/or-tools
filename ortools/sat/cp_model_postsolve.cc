@@ -49,8 +49,12 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
         satisfied = true;
       }
     } else {
-      // We still need to assign free variable. Any value should work.
-      (*domains)[PositiveRef(ref)] = Domain(0);
+      // We still need to assign free variable.
+      //
+      // It is important to set its value so that the literal in the clause is
+      // false, so that we support the "filter_sat_postsolve_clauses" option and
+      // we use a bit less memory for postsolve clauses.
+      (*domains)[PositiveRef(ref)] = Domain(RefIsPositive(ref) ? 0 : 1);
     }
   }
   if (satisfied) return;

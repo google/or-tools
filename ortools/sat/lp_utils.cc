@@ -23,6 +23,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
@@ -1052,7 +1053,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       }
       case MPGeneralConstraintProto::kAndConstraint: {
         const auto& and_constraint = general_constraint.and_constraint();
-        const std::string& name = general_constraint.name();
+        absl::string_view name = general_constraint.name();
 
         ConstraintProto* ct_pos = cp_model->add_constraints();
         ct_pos->set_name(name.empty() ? "" : absl::StrCat(name, "_pos"));
@@ -1071,7 +1072,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       }
       case MPGeneralConstraintProto::kOrConstraint: {
         const auto& or_constraint = general_constraint.or_constraint();
-        const std::string& name = general_constraint.name();
+        absl::string_view name = general_constraint.name();
 
         ConstraintProto* ct_pos = cp_model->add_constraints();
         ct_pos->set_name(name.empty() ? "" : absl::StrCat(name, "_pos"));

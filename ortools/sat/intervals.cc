@@ -155,9 +155,9 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   }
 
   // Abort if the relation is already known.
-  if (relations_maps_->GetPrecedenceStatus(a.end, b.start) ==
+  if (relations_maps_->GetLevelZeroPrecedenceStatus(a.end, b.start) ==
           RelationStatus::IS_TRUE ||
-      relations_maps_->GetPrecedenceStatus(b.end, a.start) ==
+      relations_maps_->GetLevelZeroPrecedenceStatus(b.end, a.start) ==
           RelationStatus::IS_TRUE) {
     return kNoLiteralIndex;
   }
@@ -217,7 +217,7 @@ bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
 
   // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
   // Do not create l if the relation is always true or false.
-  if (relations_maps_->GetPrecedenceStatus(x, y) !=
+  if (relations_maps_->GetLevelZeroPrecedenceStatus(x, y) !=
       RelationStatus::IS_UNKNOWN) {
     return false;
   }
