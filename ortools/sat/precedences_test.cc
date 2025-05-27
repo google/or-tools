@@ -45,7 +45,7 @@ using ::testing::UnorderedElementsAre;
 // TODO(user): move that in a common place. test_utils?
 #define EXPECT_BOUNDS_EQ(var, lb, ub)            \
   EXPECT_EQ(integer_trail->LowerBound(var), lb); \
-  EXPECT_EQ(integer_trail->UpperBound(var), ub)
+  EXPECT_EQ(integer_trail->LevelZeroUpperBound(var), ub)
 
 // All the tests here uses 10 integer variables initially in [0, 100].
 std::vector<IntegerVariable> AddVariables(IntegerTrail* integer_trail) {
@@ -68,24 +68,42 @@ TEST(PrecedenceRelationsTest, BasicAPI) {
   IntegerVariable a(0), b(2), c(4), d(6);
 
   PrecedenceRelations precedences(&model);
-  precedences.Add(a, b, 10);
-  precedences.Add(d, c, 7);
-  precedences.Add(b, d, 5);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -10);
+  precedences.AddUpperBound(LinearExpression2::Difference(d, c), -7);
+  precedences.AddUpperBound(LinearExpression2::Difference(b, d), -5);
 
   precedences.Build();
-  EXPECT_EQ(precedences.GetOffset(a, b), 10);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), NegationOf(a)), 10);
-  EXPECT_EQ(precedences.GetOffset(a, c), 22);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(c), NegationOf(a)), 22);
-  EXPECT_EQ(precedences.GetOffset(a, d), 15);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(d), NegationOf(a)), 15);
-  EXPECT_EQ(precedences.GetOffset(d, a), kMinIntegerValue);
+  EXPECT_EQ(
+      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
+      -10);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
+            -10);
+  EXPECT_EQ(
+      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, c)),
+      -22);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(c), NegationOf(a))),
+            -22);
+  EXPECT_EQ(
+      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, d)),
+      -15);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(d), NegationOf(a))),
+            -15);
+  EXPECT_EQ(
+      precedences.LevelZeroUpperBound(LinearExpression2::Difference(d, a)),
+      kMaxIntegerValue);
 
   // Once built, we can update the offsets.
   // Note however that this would not propagate through the precedence graphs.
-  precedences.Add(a, b, 15);
-  EXPECT_EQ(precedences.GetOffset(a, b), 15);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), NegationOf(a)), 15);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -15);
+  EXPECT_EQ(
+      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
+      -15);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
+            -15);
 }
 
 TEST(PrecedenceRelationsTest, CornerCase1) {
@@ -97,16 +115,22 @@ TEST(PrecedenceRelationsTest, CornerCase1) {
   IntegerVariable a(0), b(2), c(4), d(6);
 
   PrecedenceRelations precedences(&model);
-  precedences.Add(a, b, 10);
-  precedences.Add(b, c, 7);
-  precedences.Add(b, d, 5);
-  precedences.Add(NegationOf(b), a, 5);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -10);
+  precedences.AddUpperBound(LinearExpression2::Difference(b, c), -7);
+  precedences.AddUpperBound(LinearExpression2::Difference(b, d), -5);
+  precedences.AddUpperBound(LinearExpression2::Difference(NegationOf(b), a),
+                            -5);
 
   precedences.Build();
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), a), 5);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), b), 15);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), c), 22);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(b), d), 20);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), a)),
+            -5);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), c)),
+            -22);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), d)),
+            -20);
 }
 
 TEST(PrecedenceRelationsTest, CornerCase2) {
@@ -118,16 +142,34 @@ TEST(PrecedenceRelationsTest, CornerCase2) {
   IntegerVariable a(0), b(2), c(4), d(6);
 
   PrecedenceRelations precedences(&model);
-  precedences.Add(NegationOf(a), a, 10);
-  precedences.Add(a, b, 7);
-  precedences.Add(a, c, 5);
-  precedences.Add(a, d, 2);
+  precedences.AddUpperBound(LinearExpression2::Difference(NegationOf(a), a),
+                            -10);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -7);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, c), -5);
+  precedences.AddUpperBound(LinearExpression2::Difference(a, d), -2);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(
+                LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
+            -7);
 
   precedences.Build();
-  EXPECT_EQ(precedences.GetOffset(NegationOf(a), a), 10);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(a), b), 17);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(a), c), 15);
-  EXPECT_EQ(precedences.GetOffset(NegationOf(a), d), 12);
+}
+
+TEST(PrecedenceRelationsTest, CoefficientGreaterThanOne) {
+  Model model;
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
+
+  // Note that odd indices are for the negation.
+  IntegerVariable a(0), b(2), c(4);
+
+  PrecedenceRelations precedences(&model);
+  precedences.AddUpperBound(LinearExpression2(a, b, 3, -4), 7);
+  precedences.AddUpperBound(LinearExpression2(a, c, 2, -3), -5);
+  precedences.AddUpperBound(LinearExpression2(a, b, 6, -8), 5);
+  EXPECT_EQ(precedences.LevelZeroUpperBound(LinearExpression2(a, b, 9, -12)),
+            6);
+
+  precedences.Build();
 }
 
 TEST(PrecedenceRelationsTest, ConditionalRelations) {
@@ -142,20 +184,31 @@ TEST(PrecedenceRelationsTest, ConditionalRelations) {
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2);
   PrecedenceRelations precedences(&model);
-  precedences.PushConditionalRelation({l}, a, b, 15);
-  precedences.PushConditionalRelation({l}, a, b, 20);
+  precedences.PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 15);
+  precedences.PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 20);
 
   // We only keep the best one.
-  EXPECT_EQ(precedences.GetConditionalOffset(a, NegationOf(b)), -15);
-  EXPECT_THAT(precedences.GetConditionalEnforcements(a, NegationOf(b)),
-              ElementsAre(l));
+  EXPECT_EQ(
+      precedences.UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
+      15);
+  std::vector<Literal> literal_reason;
+  std::vector<IntegerLiteral> integer_reason;
+  precedences.AddReasonForUpperBoundLowerThan(
+      LinearExpression2::Difference(a, NegationOf(b)), 15, &literal_reason,
+      &integer_reason);
+  EXPECT_THAT(literal_reason, ElementsAre(l.Negated()));
 
   // Backtrack works.
   EXPECT_TRUE(sat_solver->ResetToLevelZero());
-  EXPECT_EQ(precedences.GetConditionalOffset(a, NegationOf(b)),
-            kMinIntegerValue);
-  EXPECT_THAT(precedences.GetConditionalEnforcements(a, NegationOf(b)),
-              ElementsAre());
+  EXPECT_EQ(
+      precedences.UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
+      kMaxIntegerValue);
+  literal_reason.clear();
+  integer_reason.clear();
+  precedences.AddReasonForUpperBoundLowerThan(
+      LinearExpression2::Difference(a, NegationOf(b)), kMaxIntegerValue,
+      &literal_reason, &integer_reason);
+  EXPECT_THAT(literal_reason, IsEmpty());
 }
 
 TEST(PrecedencesPropagatorTest, Empty) {
@@ -425,12 +478,18 @@ TEST(PrecedenceRelationsTest, CollectPrecedences) {
   auto* relations = model.GetOrCreate<PrecedenceRelations>();
 
   std::vector<IntegerVariable> vars = AddVariables(integer_trail);
-  relations->Add(vars[0], vars[2], IntegerValue(1));
-  relations->Add(vars[0], vars[5], IntegerValue(1));
-  relations->Add(vars[1], vars[2], IntegerValue(1));
-  relations->Add(vars[2], vars[4], IntegerValue(1));
-  relations->Add(vars[3], vars[4], IntegerValue(1));
-  relations->Add(vars[4], vars[5], IntegerValue(1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[0], vars[2]),
+                           IntegerValue(-1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[0], vars[5]),
+                           IntegerValue(-1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]),
+                           IntegerValue(-1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[2], vars[4]),
+                           IntegerValue(-1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[3], vars[4]),
+                           IntegerValue(-1));
+  relations->AddUpperBound(LinearExpression2::Difference(vars[4], vars[5]),
+                           IntegerValue(-1));
 
   std::vector<PrecedenceRelations::PrecedenceData> p;
   relations->CollectPrecedences({vars[0], vars[2], vars[3]}, &p);
@@ -977,6 +1036,81 @@ TEST(PrecedencesPropagatorTest, BasicFiltering2) {
   EXPECT_EQ(precedences[1].var, vars[4]);
   EXPECT_THAT(precedences[1].offsets, ElementsAre(6, 4, 4, 7));
   EXPECT_THAT(precedences[1].indices, ElementsAre(0, 1, 2, 3));
+}
+
+TEST(BinaryRelationMapsTest, AffineUpperBound) {
+  Model model;
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable z = model.Add(NewIntegerVariable(0, 2));
+
+  // x - y;
+  LinearExpression2 expr;
+  expr.vars[0] = x;
+  expr.vars[1] = y;
+  expr.coeffs[0] = IntegerValue(1);
+  expr.coeffs[1] = IntegerValue(-1);
+
+  // Starts with trivial level zero bound.
+  auto* tested = model.GetOrCreate<BinaryRelationsMaps>();
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(10));
+
+  // Lets add a relation.
+  tested->AddRelationBounds(expr, IntegerValue(-5), IntegerValue(5));
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(5));
+
+  // Note that we canonicalize with gcd.
+  expr.coeffs[0] *= 3;
+  expr.coeffs[1] *= 3;
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(15));
+
+  // Lets add an affine upper bound to that expression <= 4 * z + 1.
+  EXPECT_TRUE(tested->AddAffineUpperBound(
+      expr, AffineExpression(z, IntegerValue(4), IntegerValue(1))));
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(9));
+
+  // Lets test the reason, first push a new bound.
+  auto* search = model.GetOrCreate<IntegerSearchHelper>();
+  search->TakeDecision(
+      Literal(search->GetDecisionLiteral(BooleanOrIntegerLiteral(
+          IntegerLiteral::LowerOrEqual(z, IntegerValue(1))))));
+
+  // Because of gcd, even though ub(affine) is now 5, we get 3,
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(3));
+  {
+    std::vector<Literal> literal_reason;
+    std::vector<IntegerLiteral> integer_reason;
+    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(4),
+                                            &literal_reason, &integer_reason);
+    EXPECT_THAT(literal_reason, ElementsAre());
+    EXPECT_THAT(integer_reason,
+                ElementsAre(IntegerLiteral::LowerOrEqual(z, IntegerValue(1))));
+  }
+
+  // If we use a bound not as strong, we get a different reason though.
+  {
+    std::vector<Literal> literal_reason;
+    std::vector<IntegerLiteral> integer_reason;
+    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(9),
+                                            &literal_reason, &integer_reason);
+    EXPECT_THAT(literal_reason, ElementsAre());
+    EXPECT_THAT(integer_reason,
+                ElementsAre(IntegerLiteral::LowerOrEqual(z, IntegerValue(2))));
+  }
+  {
+    // This is implied by the level zero relation x <= 5
+    std::vector<Literal> literal_reason;
+    std::vector<IntegerLiteral> integer_reason;
+    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(15),
+                                            &literal_reason, &integer_reason);
+    EXPECT_THAT(literal_reason, ElementsAre());
+    EXPECT_THAT(integer_reason, ElementsAre());
+  }
+
+  // Note that the bound works on the canonicalized expr.
+  expr.coeffs[0] /= 3;
+  expr.coeffs[1] /= 3;
+  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(1));
 }
 
 }  // namespace

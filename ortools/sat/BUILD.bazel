@@ -115,6 +115,29 @@ proto_library(
 )
 
 cc_library(
+    name = "2d_distances_propagator",
+    srcs = ["2d_distances_propagator.cc"],
+    hdrs = ["2d_distances_propagator.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":integer",
+        ":integer_base",
+        ":linear_propagation",
+        ":model",
+        ":no_overlap_2d_helper",
+        ":precedences",
+        ":sat_base",
+        ":scheduling_helpers",
+        ":synchronization",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "2d_mandatory_overlap_propagator",
     srcs = ["2d_mandatory_overlap_propagator.cc"],
     hdrs = ["2d_mandatory_overlap_propagator.h"],
@@ -809,6 +832,7 @@ cc_library(
     srcs = ["cp_model_loader.cc"],
     hdrs = ["cp_model_loader.h"],
     deps = [
+        ":2d_distances_propagator",
         ":all_different",
         ":circuit",
         ":clause",
@@ -3175,6 +3199,7 @@ cc_test(
         "//ortools/util:random_engine",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
@@ -3514,8 +3539,8 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@google_benchmark//:benchmark",
         "@fuzztest//fuzztest:fuzztest_gtest_main",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -3524,6 +3549,7 @@ cc_library(
     srcs = ["diffn.cc"],
     hdrs = ["diffn.h"],
     deps = [
+        ":2d_distances_propagator",
         ":2d_mandatory_overlap_propagator",
         ":2d_orthogonal_packing",
         ":2d_try_edge_propagator",

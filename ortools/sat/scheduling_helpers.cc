@@ -346,26 +346,20 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     int a, int b, bool add_reason_if_after) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  if (before.var == kNoIntegerVariable || before.coeff != 1 ||
-      after.var == kNoIntegerVariable || after.coeff != 1) {
-    return kMinIntegerValue;
-  }
+  LinearExpression2 expr(before.var, after.var, before.coeff, -after.coeff);
 
-  // We take the max of the level zero offset and the one coming from a
-  // conditional precedence at true.
-  const IntegerValue conditional_offset =
-      precedence_relations_->GetConditionalOffset(before.var, after.var);
-  const IntegerValue known = integer_trail_->LevelZeroLowerBound(after.var) -
-                             integer_trail_->LevelZeroUpperBound(before.var);
-  const IntegerValue offset = std::max(conditional_offset, known);
+  // We take the min of the level zero (end_a - start_b) and the one coming from
+  // a conditional precedence at true.
+  const IntegerValue conditional_ub = precedence_relations_->UpperBound(expr);
+  const IntegerValue level_zero_ub = integer_trail_->LevelZeroUpperBound(expr);
+  const IntegerValue expr_ub = std::min(conditional_ub, level_zero_ub);
 
   const IntegerValue needed_offset = before.constant - after.constant;
-  const IntegerValue distance = offset - needed_offset;
-  if (add_reason_if_after && distance >= 0 && known < conditional_offset) {
-    for (const Literal l : precedence_relations_->GetConditionalEnforcements(
-             before.var, after.var)) {
-      literal_reason_.push_back(l.Negated());
-    }
+  const IntegerValue ub_of_end_minus_start = expr_ub + needed_offset;
+  const IntegerValue distance = -ub_of_end_minus_start;
+  if (add_reason_if_after && distance >= 0 && level_zero_ub > conditional_ub) {
+    precedence_relations_->AddReasonForUpperBoundLowerThan(
+        expr, conditional_ub, MutableLiteralReason(), MutableIntegerReason());
   }
   return distance;
 }
@@ -394,7 +388,9 @@ bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
     }
   }
   const IntegerValue offset = before.constant - after.constant;
-  if (precedence_relations_->Add(before.var, after.var, offset)) {
+  const LinearExpression2 expr =
+      LinearExpression2::Difference(before.var, after.var);
+  if (precedence_relations_->AddUpperBound(expr, -offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
     if (before.var == NegationOf(after.var)) {

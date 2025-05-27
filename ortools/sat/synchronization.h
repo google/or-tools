@@ -399,8 +399,8 @@ class SharedResponseManager {
 
   // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(absl::string_view prefix, absl::string_view message);
-  void LogMessageWithThrottling(const std::string& prefix,
-                                const std::string& message);
+  void LogMessageWithThrottling(absl::string_view prefix,
+                                absl::string_view message);
   bool LoggingIsEnabled() const;
 
   void AppendResponseToBeMerged(const CpSolverResponse& response);

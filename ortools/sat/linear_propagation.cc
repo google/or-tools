@@ -385,6 +385,7 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
       precedences_(model->GetOrCreate<PrecedenceRelations>()),
+      binary_relations_(model->GetOrCreate<BinaryRelationsMaps>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)),
@@ -534,6 +535,7 @@ bool LinearPropagator::Propagate() {
   //  - Z + Y >= 6            ==>   Z >= 1
   //  - (1) again to push T <= 10  and reach the propagation fixed point.
   Bitset64<int>::View in_queue = in_queue_.view();
+  const bool push_affine_ub = push_affine_ub_for_binary_relations_;
   while (true) {
     // We always process the whole queue in FIFO order.
     // Note that the order really only matter for infeasible constraint so it
@@ -569,6 +571,58 @@ bool LinearPropagator::Propagate() {
           const IntegerValue div = slack / coeff;
           const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
           order_.Register(id, NegationOf(var), -new_ub);
+        }
+      }
+
+      // Look at linear3 and update our "linear2 affine upper bound". If we are
+      // here it means the constraint was in the queue, and its slack changed,
+      // so it might lead to stronger affine ub.
+      //
+      // TODO(user): This can be costly for no reason if we keep updating the
+      // bound for variable appearing in a single linear3. On another hand it is
+      // O(1) compared to what this class already do. Profile will tell if it is
+      // worth it. Maybe we can only share LinearExpression2 that we might look
+      // up.
+      //
+      // TODO(user): This only look at non-enforced linear3. We could look at
+      // constraint whose enforcement or other variables are fixed at level
+      // zero, but it is trickier. It could be done if we add a "batch clean up"
+      // to this class that runs at level zero, and reduce constraints
+      // accordingly.
+      const ConstraintInfo& info = infos_[id];
+      if (push_affine_ub && info.initial_size == 3 && info.enf_id == -1) {
+        // A constraint A + B + C <= rhs can lead to up to 3 relations...
+        const auto vars = GetVariables(info);
+        const auto coeffs = GetCoeffs(info);
+
+        // We don't "push" relation A + B <= ub if A or B is fixed, because
+        // the variable bound of the non-fixed A or B should just be as-strong
+        // as what can be inferred from the binary relation.
+        if (info.rev_size == 2) {
+          LinearExpression2 expr;
+          expr.vars[0] = vars[0];
+          expr.vars[1] = vars[1];
+          expr.coeffs[0] = coeffs[0];
+          expr.coeffs[1] = coeffs[1];
+
+          // The fixed variable is always at index 2.
+          // The rev_rhs was updated to: initial_rhs - lb(vars[2]) * coeffs[2].
+          const IntegerValue initial_rhs =
+              info.rev_rhs + coeffs[2] * integer_trail_->LowerBound(vars[2]);
+          binary_relations_->AddAffineUpperBound(
+              expr, AffineExpression(vars[2], -coeffs[2], initial_rhs));
+        } else if (info.rev_size == 3) {
+          for (int i = 0; i < 3; ++i) {
+            LinearExpression2 expr;
+            const int a = (i + 1) % 3;
+            const int b = (i + 2) % 3;
+            expr.vars[0] = vars[a];
+            expr.vars[1] = vars[b];
+            expr.coeffs[0] = coeffs[a];
+            expr.coeffs[1] = coeffs[b];
+            binary_relations_->AddAffineUpperBound(
+                expr, AffineExpression(vars[i], -coeffs[i], info.rev_rhs));
+          }
         }
       }
     }
@@ -645,7 +699,7 @@ bool LinearPropagator::AddConstraint(
   }
 
   // Initialize watchers.
-  // Initialy we want everything to be propagated at least once.
+  // Initially we want everything to be propagated at least once.
   in_queue_.resize(in_queue_.size() + 1);
 
   if (!enforcement_literals.empty()) {
@@ -670,11 +724,13 @@ bool LinearPropagator::AddConstraint(
           // variables.
           if (status == EnforcementStatus::IS_ENFORCED) {
             const auto info = infos_[id];
-            if (info.initial_size == 2 && info.all_coeffs_are_one) {
+            if (info.initial_size == 2) {
               const auto vars = GetVariables(info);
+              const auto coeffs = GetCoeffs(info);
               precedences_->PushConditionalRelation(
                   enforcement_propagator_->GetEnforcementLiterals(enf_id),
-                  vars[0], vars[1], initial_rhs_[id]);
+                  LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
+                  initial_rhs_[id]);
             }
           }
         });

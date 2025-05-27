@@ -47,10 +47,10 @@ BoolVar BoolVar::WithName(absl::string_view name) {
 
 std::string BoolVar::Name() const {
   if (builder_ == nullptr) return "null";
-  const std::string& name =
+  absl::string_view name =
       builder_->Proto().variables(PositiveRef(index_)).name();
   if (RefIsPositive(index_)) {
-    return name;
+    return std::string(name);
   } else {
     return absl::StrCat("Not(", name, ")");
   }

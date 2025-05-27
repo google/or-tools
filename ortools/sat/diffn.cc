@@ -33,6 +33,7 @@
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
 // #include "ortools/base/stl_util.h"
+#include "ortools/sat/2d_distances_propagator.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/2d_try_edge_propagator.h"
@@ -187,6 +188,13 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
       model->GetOrCreate<GenericLiteralWatcher>();
 
   CreateAndRegisterMandatoryOverlapPropagator(helper_2d, model, watcher, 3);
+  if (model->GetOrCreate<SatParameters>()
+          ->use_linear3_for_no_overlap_2d_precedences()) {
+    Precedences2DPropagator* propagator =
+        new Precedences2DPropagator(helper_2d, model);
+    watcher->SetPropagatorPriority(propagator->RegisterWith(watcher), 4);
+    model->TakeOwnership(propagator);
+  }
 
   NonOverlappingRectanglesDisjunctivePropagator* constraint =
       new NonOverlappingRectanglesDisjunctivePropagator(helper_2d, model);

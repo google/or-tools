@@ -249,7 +249,8 @@ TEST(DisjunctiveConstraintTest, Precedences) {
     CHECK_EQ(e2.coeff, 1);
     precedences->AddPrecedenceWithOffset(e1.var, e2.var,
                                          e1.constant - e2.constant);
-    relations->Add(e1.var, e2.var, e1.constant - e2.constant);
+    relations->AddUpperBound(LinearExpression2::Difference(e1.var, e2.var),
+                             e2.constant - e1.constant);
   };
 
   const int kStart(0);

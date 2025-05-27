@@ -2282,7 +2282,7 @@ void ParseFromStringOrDie(absl::string_view str, T* proto) {
 
 // TODO(user): Support it on android.
 std::function<SatParameters(Model*)> NewSatParameters(
-    const std::string& params) {
+    absl::string_view params) {
   sat::SatParameters parameters;
   if (!params.empty()) {
     ParseFromStringOrDie<SatParameters>(params, &parameters);

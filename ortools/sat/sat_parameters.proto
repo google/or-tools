@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 323
+// NEXT TAG: 325
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -410,6 +410,15 @@ message SatParameters {
   // of a variable x if the number of occurrences of x times the number of
   // occurrences of not(x) is not greater than this parameter.
   optional int32 presolve_bve_threshold = 54 [default = 500];
+
+  // Internal parameter. During BVE, if we eliminate a variable x, by default we
+  // will push all clauses containing x and all clauses containing not(x) to the
+  // postsolve. However, it is possible to write the postsolve code so that only
+  // one such set is needed. The idea is that, if we push the set containing a
+  // literal l, is to set l to false except if it is needed to satisfy one of
+  // the clause in the set. This is always beneficial, but for historical
+  // reason, not all our postsolve algorithm support this.
+  optional bool filter_sat_postsolve_clauses = 324 [default = false];
 
   // During presolve, we apply BVE only if this weight times the number of
   // clauses plus the number of clause literals is not increased.
@@ -936,6 +945,15 @@ message SatParameters {
   // is less than this parameter and <= 1 disables it.
   optional int32 maximum_regions_to_split_in_disconnected_no_overlap_2d = 315
       [default = 0];
+
+  // When set, this activates a propagator for the no_overlap_2d constraint that
+  // uses any eventual linear constraints of the model in the form
+  // `{start interval 1} - {end interval 2} + c*w <= ub` to detect that two
+  // intervals must overlap in one dimension for some values of `w`. This is
+  // particularly useful for problems where the distance between two boxes is
+  // part of the model.
+  optional bool use_linear3_for_no_overlap_2d_precedences = 323
+      [default = true];
 
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers

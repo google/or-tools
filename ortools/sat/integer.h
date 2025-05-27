@@ -531,6 +531,10 @@ class IntegerTrail final : public SatPropagator {
   IntegerValue LevelZeroLowerBound(AffineExpression exp) const;
   IntegerValue LevelZeroUpperBound(AffineExpression exp) const;
 
+  // Returns globally valid lower/upper bound on the given linear expression.
+  IntegerValue LevelZeroLowerBound(LinearExpression2 expr) const;
+  IntegerValue LevelZeroUpperBound(LinearExpression2 expr) const;
+
   // Returns true if the variable is fixed at level 0.
   bool IsFixedAtLevelZero(IntegerVariable var) const;
 
@@ -1430,6 +1434,30 @@ inline IntegerValue IntegerTrail::LevelZeroUpperBound(
     AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return expr.ValueAt(LevelZeroUpperBound(expr.var));
+}
+
+inline IntegerValue IntegerTrail::LevelZeroLowerBound(
+    LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  IntegerValue result = 0;
+  for (int i = 0; i < 2; ++i) {
+    if (expr.coeffs[i] != 0) {
+      result += expr.coeffs[i] * LevelZeroLowerBound(expr.vars[i]);
+    }
+  }
+  return result;
+}
+
+inline IntegerValue IntegerTrail::LevelZeroUpperBound(
+    LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  IntegerValue result = 0;
+  for (int i = 0; i < 2; ++i) {
+    if (expr.coeffs[i] != 0) {
+      result += expr.coeffs[i] * LevelZeroUpperBound(expr.vars[i]);
+    }
+  }
+  return result;
 }
 
 inline bool IntegerTrail::IsFixedAtLevelZero(AffineExpression expr) const {
