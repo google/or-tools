@@ -26,16 +26,11 @@
 #include "ortools/glop/update_row.h"
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
-
-#ifdef OMP
-#include <omp.h>
-#endif
-
-#include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -275,8 +270,8 @@ void ReducedCosts::PerturbCosts() {
       case VariableType::UPPER_AND_LOWER_BOUNDED:
         // Here we don't necessarily maintain the dual-feasibility of a dual
         // feasible solution, however we can always shift the variable to its
-        // other bound (because it is boxed) to restore dual-feasiblity. This is
-        // done by MakeBoxedVariableDualFeasible() at the end of the dual
+        // other bound (because it is boxed) to restore dual-feasibility. This
+        // is done by MakeBoxedVariableDualFeasible() at the end of the dual
         // phase-I algorithm.
         if (objective > 0.0) {
           cost_perturbations_[col] = magnitude;
@@ -370,52 +365,30 @@ void ReducedCosts::ComputeReducedCosts() {
   }
   Fractional dual_residual_error(0.0);
   const ColIndex num_cols = matrix_.num_cols();
+  const ColIndex first_slack = num_cols - RowToColIndex(matrix_.num_rows());
 
   reduced_costs_.resize(num_cols, 0.0);
   const DenseBitRow& is_basic = variables_info_.GetIsBasicBitRow();
-#ifdef OMP
-  const int num_omp_threads = parameters_.num_omp_threads();
-#else
-  const int num_omp_threads = 1;
-#endif
-  if (num_omp_threads == 1) {
-    for (ColIndex col(0); col < num_cols; ++col) {
-      reduced_costs_[col] = objective_[col] + cost_perturbations_[col] -
-                            matrix_.ColumnScalarProduct(
-                                col, basic_objective_left_inverse_.values);
+  for (ColIndex col(0); col < first_slack; ++col) {
+    reduced_costs_[col] =
+        objective_[col] + cost_perturbations_[col] -
+        matrix_.ColumnScalarProduct(col, basic_objective_left_inverse_.values);
 
-      // We also compute the dual residual error y.B - c_B.
-      if (is_basic.IsSet(col)) {
-        dual_residual_error =
-            std::max(dual_residual_error, std::abs(reduced_costs_[col]));
-      }
-    }
-  } else {
-#ifdef OMP
-    // In the multi-threaded case, perform the same computation as in the
-    // single-threaded case above.
-    std::vector<Fractional> thread_local_dual_residual_error(num_omp_threads,
-                                                             0.0);
-    const int parallel_loop_size = num_cols.value();
-#pragma omp parallel for num_threads(num_omp_threads)
-    for (int i = 0; i < parallel_loop_size; i++) {
-      const ColIndex col(i);
-      reduced_costs_[col] = objective_[col] + objective_perturbation_[col] -
-                            matrix_.ColumnScalarProduct(
-                                col, basic_objective_left_inverse_.values);
-
-      if (is_basic.IsSet(col)) {
-        thread_local_dual_residual_error[omp_get_thread_num()] =
-            std::max(thread_local_dual_residual_error[omp_get_thread_num()],
-                     std::abs(reduced_costs_[col]));
-      }
-    }
-    // end of omp parallel for
-    for (int i = 0; i < num_omp_threads; i++) {
+    // We also compute the dual residual error y.B - c_B.
+    if (is_basic.IsSet(col)) {
       dual_residual_error =
-          std::max(dual_residual_error, thread_local_dual_residual_error[i]);
+          std::max(dual_residual_error, std::abs(reduced_costs_[col]));
     }
-#endif  // OMP
+  }
+  for (ColIndex col(first_slack); col < num_cols; ++col) {
+    reduced_costs_[col] = objective_[col] + cost_perturbations_[col] -
+                          basic_objective_left_inverse_[col - first_slack];
+
+    // We also compute the dual residual error y.B - c_B.
+    if (is_basic.IsSet(col)) {
+      dual_residual_error =
+          std::max(dual_residual_error, std::abs(reduced_costs_[col]));
+    }
   }
 
   deterministic_time_ +=

@@ -170,7 +170,7 @@ Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional infeasibility =
         GetColInfeasibility(col, values, lower_bounds, upper_bounds);
-    sum += std::max(0.0, infeasibility);
+    sum += std::max(Fractional{0.0}, infeasibility);
   }
   return sum;
 }
