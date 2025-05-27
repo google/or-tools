@@ -237,6 +237,9 @@ bool LPParser::ParseConstraint(StringPiece constraint) {
 
 namespace {
 
+template<class>
+constexpr bool dependent_false = false; // workaround before CWG2518/P2593R1
+
 template <typename T>
 bool SimpleAtoFractional(absl::string_view str, T* value) {
   if constexpr (std::is_same_v<T, double>) {
@@ -244,7 +247,7 @@ bool SimpleAtoFractional(absl::string_view str, T* value) {
   } else if constexpr (std::is_same_v<T, float>) {
     return absl::SimpleAtof(str, value);
   } else {
-    static_assert(false, "Unsupported fractional type");
+    static_assert(dependent_false<T>, "Unsupported fractional type");
     return false;
   }
 }
