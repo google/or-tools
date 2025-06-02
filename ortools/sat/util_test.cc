@@ -1075,43 +1075,39 @@ TEST(DagTopologicalSortIteratorTest, GenerateValidPermutations) {
   dag_iterator.AddArc(4, 1);
   dag_iterator.AddArc(2, 3);
   dag_iterator.AddArc(3, 1);
-  EXPECT_TRUE(dag_iterator.Init());
   int count = 0;
-  do {
+  for ([[maybe_unused]] const auto& permutation : dag_iterator) {
     ++count;
-  } while (dag_iterator.Increase());
+  }
   EXPECT_EQ(count, 13);
 }
 
 TEST(DagTopologicalSortIteratorTest, GenerateAllPermutations) {
   DagTopologicalSortIterator dag_iterator(6);
-  EXPECT_TRUE(dag_iterator.Init());
   int count = 0;
-  do {
+  for ([[maybe_unused]] const auto& permutation : dag_iterator) {
     ++count;
-  } while (dag_iterator.Increase());
+  }
   EXPECT_EQ(count, 720);
 }
 
 TEST(DagTopologicalSortIteratorTest, OnePrecedence) {
   DagTopologicalSortIterator dag_iterator(6);
   dag_iterator.AddArc(5, 2);
-  EXPECT_TRUE(dag_iterator.Init());
   int count = 0;
-  do {
+  for ([[maybe_unused]] const auto& permutation : dag_iterator) {
     ++count;
-  } while (dag_iterator.Increase());
+  }
   EXPECT_EQ(count, 360);
 }
 
 TEST(DagTopologicalSortIteratorTest, ReversePrecedence) {
   DagTopologicalSortIterator dag_iterator(6);
   dag_iterator.AddArc(2, 5);
-  EXPECT_TRUE(dag_iterator.Init());
   int count = 0;
-  do {
+  for ([[maybe_unused]] const auto& permutation : dag_iterator) {
     ++count;
-  } while (dag_iterator.Increase());
+  }
   EXPECT_EQ(count, 360);
 }
 
@@ -1133,11 +1129,9 @@ TEST(DagTopologicalSortIteratorTest, RandomTest) {
 
     absl::flat_hash_set<std::vector<int>> iterator_solutions;
     int count_iterator = 0;
-    if (dag_iterator.Init()) {
-      do {
-        ++count_iterator;
-        iterator_solutions.insert(dag_iterator.permutation());
-      } while (dag_iterator.Increase());
+    for (const auto& permutation : dag_iterator) {
+      ++count_iterator;
+      iterator_solutions.insert(permutation);
     }
 
     std::vector<int> permutation = {0, 1, 2, 3, 4, 5};

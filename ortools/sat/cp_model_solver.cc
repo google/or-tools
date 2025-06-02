@@ -3009,7 +3009,7 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
 }
 
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const std::string& params) {
+                                     absl::string_view params) {
   Model model;
   model.Add(NewSatParameters(params));
   return SolveCpModel(model_proto, &model);

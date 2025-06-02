@@ -18,6 +18,7 @@
 import sys
 import time
 from ortools.sat.python import cp_model
+
 # [END import]
 
 
@@ -53,6 +54,7 @@ class NQueenSolutionPrinter(cp_model.CpSolverSolutionCallback):
                     print("_", end=" ")
             print()
         print()
+
 
 # [END solution_printer]
 

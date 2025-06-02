@@ -30,7 +30,6 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 
@@ -58,10 +57,10 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
   for (int dim = 0; dim < 2; ++dim) {
     const SchedulingConstraintHelper& dim_helper =
         dim == 0 ? helper_.x_helper() : helper_.y_helper();
-    for (int i = 0; i < helper_.NumBoxes(); ++i) {
+    for (int j = 0; j < 2; ++j) {
       const absl::Span<const AffineExpression> interval_points =
-          i == 0 ? dim_helper.Starts() : dim_helper.Ends();
-      for (int j = 0; j < 2; ++j) {
+          j == 0 ? dim_helper.Starts() : dim_helper.Ends();
+      for (int i = 0; i < helper_.NumBoxes(); ++i) {
         if (interval_points[i].var != kNoIntegerVariable) {
           var_to_box_and_coeffs[PositiveVariable(interval_points[i].var)]
               .boxes[dim][j]
@@ -89,13 +88,14 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
           dim == 0 ? helper_.x_helper() : helper_.y_helper();
       for (const int box1 : usage1.boxes[dim][0 /* start */]) {
         for (const int box2 : usage2.boxes[dim][1 /* end */]) {
+          if (box1 == box2) continue;
           const AffineExpression& start = dim_helper.Starts()[box1];
           const AffineExpression& end = dim_helper.Ends()[box2];
           LinearExpression2 expr2;
           expr2.vars[0] = start.var;
-          expr2.vars[1] = NegationOf(end.var);
+          expr2.vars[1] = end.var;
           expr2.coeffs[0] = start.coeff;
-          expr2.coeffs[1] = end.coeff;
+          expr2.coeffs[1] = -end.coeff;
           expr2.SimpleCanonicalization();
           expr2.DivideByGcd();
           if (expr == expr2) {
@@ -133,7 +133,8 @@ bool Precedences2DPropagator::Propagate() {
   for (const auto& [box1, box2] : non_trivial_pairs_) {
     DCHECK(box1 < helper_.NumBoxes());
     DCHECK(box2 < helper_.NumBoxes());
-    if (!helper_.IsPresent(box1) && !helper_.IsPresent(box2)) {
+    DCHECK_NE(box1, box2);
+    if (!helper_.IsPresent(box1) || !helper_.IsPresent(box2)) {
       continue;
     }
 
@@ -148,9 +149,9 @@ bool Precedences2DPropagator::Propagate() {
         }
         LinearExpression2 expr;
         expr.vars[0] = helper->Starts()[b1].var;
-        expr.vars[1] = NegationOf(helper->Ends()[b2].var);
+        expr.vars[1] = helper->Ends()[b2].var;
         expr.coeffs[0] = helper->Starts()[b1].coeff;
-        expr.coeffs[1] = helper->Ends()[b2].coeff;
+        expr.coeffs[1] = -helper->Ends()[b2].coeff;
         const IntegerValue ub_of_start_minus_end_value =
             binary_relations_maps_->UpperBound(expr) +
             helper->Starts()[b1].constant - helper->Ends()[b2].constant;
@@ -158,8 +159,8 @@ bool Precedences2DPropagator::Propagate() {
           is_unfeasible = false;
           break;
         }
-        if (!is_unfeasible) break;
       }
+      if (!is_unfeasible) break;
     }
     if (!is_unfeasible) continue;
 
@@ -167,8 +168,6 @@ bool Precedences2DPropagator::Propagate() {
 
     helper_.ClearReason();
     num_conflicts_++;
-    std::vector<IntegerLiteral> reason;
-    std::vector<Literal> lit_reason;
 
     for (int dim = 0; dim < 2; dim++) {
       SchedulingConstraintHelper* helper = helpers[dim];
@@ -180,23 +179,18 @@ bool Precedences2DPropagator::Propagate() {
         }
         LinearExpression2 expr;
         expr.vars[0] = helper->Starts()[b1].var;
-        expr.vars[1] = NegationOf(helper->Ends()[b2].var);
+        expr.vars[1] = helper->Ends()[b2].var;
         expr.coeffs[0] = helper->Starts()[b1].coeff;
-        expr.coeffs[1] = helper->Ends()[b2].coeff;
+        expr.coeffs[1] = -helper->Ends()[b2].coeff;
         binary_relations_maps_->AddReasonForUpperBoundLowerThan(
             expr,
-            -(helper->Starts()[b1].constant - helper->Ends()[b2].constant),
-            &lit_reason, &reason);
+            -(helper->Starts()[b1].constant - helper->Ends()[b2].constant) - 1,
+            helper_.x_helper().MutableLiteralReason(),
+            helper_.x_helper().MutableIntegerReason());
       }
     }
     helper_.AddPresenceReason(box1);
     helper_.AddPresenceReason(box2);
-    helper_.x_helper().MutableIntegerReason()->insert(
-        helper_.x_helper().MutableIntegerReason()->end(), reason.begin(),
-        reason.end());
-    helper_.x_helper().MutableLiteralReason()->insert(
-        helper_.x_helper().MutableLiteralReason()->end(), lit_reason.begin(),
-        lit_reason.end());
     return helper_.ReportConflict();
   }
   return true;
@@ -205,7 +199,7 @@ bool Precedences2DPropagator::Propagate() {
 int Precedences2DPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_.WatchAllBoxes(id);
-  // TODO(user): add an API to BinaryRelationsMaps to watch linear2
+  binary_relations_maps_->WatchAllLinearExpressions2(id);
   return id;
 }
 

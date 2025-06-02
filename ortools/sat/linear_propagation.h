@@ -149,16 +149,19 @@ class EnforcementPropagator : public SatPropagator {
 // Each constraint might push some variables which might in turn make other
 // constraint tighter. In general, it seems better to make sure we push first
 // constraints that are not affected by other variables and delay the
-// propagation of constraint that we know will become tigher.
+// propagation of constraint that we know will become tigher. This also likely
+// simplifies the reasons.
 //
 // Note that we can have cycle in this graph, and that this is not necessarily a
 // conflict.
 class ConstraintPropagationOrder {
  public:
   ConstraintPropagationOrder(
-      ModelRandomGenerator* random,
+      ModelRandomGenerator* random, TimeLimit* time_limit,
       std::function<absl::Span<const IntegerVariable>(int)> id_to_vars)
-      : random_(random), id_to_vars_func_(std::move(id_to_vars)) {}
+      : random_(random),
+        time_limit_(time_limit),
+        id_to_vars_func_(std::move(id_to_vars)) {}
 
   void Resize(int num_vars, int num_ids) {
     var_has_entry_.Resize(IntegerVariable(num_vars));
@@ -166,7 +169,7 @@ class ConstraintPropagationOrder {
     var_to_lb_.resize(num_vars);
     var_to_pos_.resize(num_vars);
 
-    in_ids_.Resize(num_ids);
+    in_ids_.resize(num_ids);
   }
 
   void Register(int id, IntegerVariable var, IntegerValue lb) {
@@ -203,15 +206,17 @@ class ConstraintPropagationOrder {
   // Return -1 if there is none.
   // This returns a constraint with min degree.
   //
-  // TODO(user): fix quadratic algo? We can use var_to_ids_func_() to maintain
-  // the degree. But note that with the start_ optim and because we expect
-  // mainly degree zero, this seems to be faster.
+  // TODO(user): fix quadratic or even linear algo? We can use
+  // var_to_ids_func_() to maintain the degree. But note that since we reorder
+  // constraints and because we expect mainly degree zero, this seems to be
+  // faster.
   int NextId() {
     if (ids_.empty()) return -1;
 
     int best_id = 0;
     int best_num_vars = 0;
     int best_degree = std::numeric_limits<int>::max();
+    int64_t work_done = 0;
     const int size = ids_.size();
     const auto var_has_entry = var_has_entry_.const_view();
     for (int i = 0; i < size; ++i) {
@@ -219,10 +224,28 @@ class ConstraintPropagationOrder {
       ids_.pop_front();
       DCHECK(in_ids_[id]);
 
+      // By degree, we mean the number of variables of the constraint that do
+      // not have yet their lower bounds up to date; they will be pushed by
+      // other constraints as we propagate them. If possible, we want to delay
+      // the propagation of a constraint with positive degree until all involved
+      // lower bounds are up to date (i.e. degree == 0).
       int degree = 0;
       absl::Span<const IntegerVariable> vars = id_to_vars_func_(id);
+      work_done += vars.size();
       for (const IntegerVariable var : vars) {
-        if (var_has_entry[var]) ++degree;
+        if (var_has_entry[var]) {
+          if (var_has_entry[NegationOf(var)] &&
+              var_to_id_[NegationOf(var)] == id) {
+            // We have two constraints, this one (id) push NegationOf(var), and
+            // var_to_id_[var] push var. So whichever order we choose, the first
+            // constraint will need to be scanned at least twice. Lets not count
+            // this situation in the degree.
+            continue;
+          }
+
+          DCHECK_NE(var_to_id_[var], id);
+          ++degree;
+        }
       }
 
       // We select the min-degree and prefer lower constraint size.
@@ -239,6 +262,11 @@ class ConstraintPropagationOrder {
       }
 
       ids_.push_back(id);
+    }
+
+    if (work_done > 100) {
+      time_limit_->AdvanceDeterministicTime(static_cast<double>(work_done) *
+                                            5e-9);
     }
 
     // We didn't find any degree zero, we scanned the whole queue.
@@ -277,6 +305,7 @@ class ConstraintPropagationOrder {
 
  public:
   ModelRandomGenerator* random_;
+  TimeLimit* time_limit_;
   std::function<absl::Span<const IntegerVariable>(int)> id_to_vars_func_;
 
   // For each variable we only keep the constraint id that pushes it further.
