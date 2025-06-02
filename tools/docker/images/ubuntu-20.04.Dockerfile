@@ -33,7 +33,7 @@ RUN apt-get update -qq \
 && wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-3.1 dotnet-sdk-8.0 \
+&& apt-get install -yq dotnet-sdk-8.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
@@ -93,7 +93,6 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
-ENV USE_DOTNET_CORE_31=ON
 RUN make detect_dotnet \
 && make dotnet JOBS=8
 ## archive

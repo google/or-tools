@@ -27,7 +27,6 @@ CMD ["/usr/bin/bash"]
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
 && ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 #RUN objdump -p /lib64/libstdc++.so.6

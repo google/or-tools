@@ -67,7 +67,6 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
-ENV USE_DOTNET_CORE_31=OFF
 RUN make detect_dotnet \
 && make dotnet JOBS=8
 ## archive
