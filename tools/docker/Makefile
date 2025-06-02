@@ -116,7 +116,7 @@ help:
 	@echo
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cpp${RESET} C++"
-	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and/or .Net 6.0 wrappers"
+	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Core 3.1 and/or .Net 8.0 wrappers"
 	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
 	@echo -e "\t\t${BOLD}python${RESET} Python 3.9+ wrappers"
 	@echo
