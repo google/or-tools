@@ -194,6 +194,7 @@ endif()
 if(BUILD_PYTHON)
   # Find Python 3
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+  message(STATUS "Python: ${Python3_EXECUTABLE}")
 
   if(BUILD_pybind11)
     message(CHECK_START "Fetching pybind11")
