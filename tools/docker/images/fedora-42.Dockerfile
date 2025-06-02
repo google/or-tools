@@ -1,44 +1,44 @@
-# ref: https://hub.docker.com/_/debian
-FROM debian:12 AS env
+# ref: https://hub.docker.com/_/fedora
+FROM fedora:42 AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN apt-get update -qq \
-&& apt-get install -qq \
- git pkg-config wget cmake make autoconf libtool zlib1g-dev gawk g++ curl subversion \
- swig lsb-release libicu-dev \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["/bin/bash"]
+RUN dnf -y update \
+&& dnf -y install git \
+ wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
+&& dnf -y install @development-tools \
+&& dnf -y install gcc-c++ cmake \
+&& dnf clean all
+ENTRYPOINT ["/usr/bin/bash", "-c"]
+CMD ["/usr/bin/bash"]
+
+# Install SWIG
+RUN dnf -y update \
+&& dnf -y install swig \
+&& dnf clean all
 
 # Install .Net
-# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
-RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
-&& chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
-&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
+RUN dnf -y update \
+&& dnf -y install dotnet-sdk-8.0 crypto-policies-scripts \
+&& dnf clean all
+# https://docs.redhat.com/en/documentation/net/6.0/html/release_notes_for_.net_6.0_rpm_packages/known-issues_release-notes-for-dotnet-rpms
+RUN update-crypto-policies --set DEFAULT:SHA1
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Java Install
-RUN apt-get update -qq \
-&& apt-get install -qq default-jdk maven \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/default-java
+# Install Java
+RUN dnf -y update \
+&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf clean all
+ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 # Install Python
-RUN apt-get update -qq \
-&& apt-get install -qq python3 python3-dev python3-pip python3-venv \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN python3 -m pip install --break-system-package \
- absl-py mypy mypy-protobuf
-
-ENV TZ=America/Los_Angeles
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN dnf -y update \
+&& dnf -y install python3 python3-devel python3-pip \
+&& dnf clean all
+RUN python3 -m pip install absl-py mypy mypy-protobuf
 
 ################
 ##  OR-TOOLS  ##
@@ -60,7 +60,6 @@ ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
 # i.e. avoid docker reusing the cache when new commit is pushed
-SHELL ["/bin/bash", "-c"]
 RUN git clone -b "${SRC_GIT_BRANCH}" --single-branch --depth=1 https://github.com/google/or-tools \
 && [[ $(cd or-tools && git rev-parse --verify HEAD) == ${SRC_GIT_SHA1} ]]
 WORKDIR /root/or-tools
