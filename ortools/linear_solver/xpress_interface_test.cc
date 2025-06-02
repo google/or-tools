@@ -155,6 +155,15 @@ class XPRSGetter {
     return value;
   }
 
+  std::string getStringAttribute(int attrib) {
+    std::string value(280, '\0');
+    int valueSize;
+    EXPECT_STATUS(XPRSgetstringattrib(prob(), attrib, &value[0], value.size(),
+                                       &valueSize));
+    value.resize(valueSize - 1);
+    return value;
+  }
+
  private:
   MPSolver* solver_;
 
@@ -400,12 +409,16 @@ TEST_F(XpressFixtureMIP, Reset) {
   solver.MakeBoolVar("x1");
   solver.MakeBoolVar("x2");
   solver.MakeRowConstraint(12., 100.0);
+  solver.MutableObjective()->SetMaximization();
   solver.Solve();
   EXPECT_EQ(getter.getNumConstraints(), 1);
   EXPECT_EQ(getter.getNumVariables(), 2);
+  auto oldProbUuid = getter.getStringAttribute(XPRS_UUID);
   solver.Reset();
+  EXPECT_EQ(getter.getStringAttribute(XPRS_UUID), oldProbUuid);
   EXPECT_EQ(getter.getNumConstraints(), 0);
   EXPECT_EQ(getter.getNumVariables(), 0);
+  EXPECT_EQ(getter.getObjectiveSense(), XPRS_OBJ_MAXIMIZE);
 }
 
 TEST_F(XpressFixtureMIP, MakeIntVar) {
@@ -737,7 +750,7 @@ TEST_F(XpressFixtureMIP, Write) {
   // disable formatting to keep the expected MPS readable
   // clang-format off
   std::string expectedMps = std::string("") +
-                            "NAME          newProb" + "\n" +
+                            "NAME          " + "\n" +
                             "OBJSENSE  MAXIMIZE" + "\n" +
                             "ROWS" + "\n" +
                             " N  __OBJ___        " + "\n" +
