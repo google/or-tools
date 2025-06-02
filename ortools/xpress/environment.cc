@@ -65,10 +65,9 @@ std::function<int(XPRSprob prob, int control, XPRSint64* p_value)> XPRSgetintcon
 std::function<int(XPRSprob prob, int control, double* p_value)> XPRSgetdblcontrol = nullptr;
 std::function<int(XPRSprob prob, int control, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringcontrol = nullptr;
 std::function<int(XPRSprob prob, int attrib, int* p_value)> XPRSgetintattrib = nullptr;
+std::function<int(XPRSprob prob, int attrib, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringattrib = nullptr;
 std::function<int(XPRSprob prob, int attrib, double* p_value)> XPRSgetdblattrib = nullptr;
 std::function<int(XPRSprob prob, const char* name, int* p_id, int* p_type)> XPRSgetcontrolinfo = nullptr;
-std::function<int(XPRSprob prob, const char* probname, int ncols, int nrows, const char rowtype[], const double rhs[], const double rng[], const double objcoef[], const int start[], const int collen[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSloadlp = nullptr;
-std::function<int(XPRSprob prob, const char* probname, int ncols, int nrows, const char rowtype[], const double rhs[], const double rng[], const double objcoef[], const XPRSint64 start[], const int collen[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSloadlp64 = nullptr;
 std::function<int(XPRSprob prob, double objcoef[], int first, int last)> XPRSgetobj = nullptr;
 std::function<int(XPRSprob prob, double rhs[], int first, int last)> XPRSgetrhs = nullptr;
 std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsrange = nullptr;
@@ -104,6 +103,7 @@ std::function<int(XPRSprob prob, int ncoefs, const int objqcol1[], const int obj
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rhs[])> XPRSchgrhs = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const double rng[])> XPRSchgrhsrange = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[], const char rowtype[])> XPRSchgrowtype = nullptr;
+std::function<int(XPRSprob prob, int objidx)> XPRSdelobj = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p, int priority)> XPRSaddcbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p)> XPRSremovecbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage = nullptr;
@@ -141,9 +141,8 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetdblcontrol, "XPRSgetdblcontrol");
   xpress_dynamic_library->GetFunction(&XPRSgetstringcontrol, "XPRSgetstringcontrol");
   xpress_dynamic_library->GetFunction(&XPRSgetintattrib, "XPRSgetintattrib");
+  xpress_dynamic_library->GetFunction(&XPRSgetstringattrib, "XPRSgetstringattrib");
   xpress_dynamic_library->GetFunction(&XPRSgetdblattrib, "XPRSgetdblattrib");
-  xpress_dynamic_library->GetFunction(&XPRSloadlp, "XPRSloadlp");
-  xpress_dynamic_library->GetFunction(&XPRSloadlp64, "XPRSloadlp64");
   xpress_dynamic_library->GetFunction(&XPRSgetobj, "XPRSgetobj");
   xpress_dynamic_library->GetFunction(&XPRSgetrhs, "XPRSgetrhs");
   xpress_dynamic_library->GetFunction(&XPRSgetrhsrange, "XPRSgetrhsrange");
@@ -179,6 +178,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSchgrhs, "XPRSchgrhs");
   xpress_dynamic_library->GetFunction(&XPRSchgrhsrange, "XPRSchgrhsrange");
   xpress_dynamic_library->GetFunction(&XPRSchgrowtype, "XPRSchgrowtype");
+  xpress_dynamic_library->GetFunction(&XPRSdelobj, "XPRSdelobj");
   xpress_dynamic_library->GetFunction(&XPRSaddcbintsol, "XPRSaddcbintsol");
   xpress_dynamic_library->GetFunction(&XPRSremovecbintsol, "XPRSremovecbintsol");
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
