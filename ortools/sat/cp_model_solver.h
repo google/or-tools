@@ -71,7 +71,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
  * format, and returns an instance of CpSolverResponse.
  */
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const std::string& params);
+                                     absl::string_view params);
 #endif  // !__PORTABLE_PLATFORM__
 
 /**

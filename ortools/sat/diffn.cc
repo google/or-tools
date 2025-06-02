@@ -32,7 +32,6 @@
 #include "absl/log/vlog_is_on.h"
 #include "absl/numeric/bits.h"
 #include "absl/types/span.h"
-// #include "ortools/base/stl_util.h"
 #include "ortools/sat/2d_distances_propagator.h"
 #include "ortools/sat/2d_mandatory_overlap_propagator.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
@@ -277,11 +276,11 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
     DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
 
     for (int i = 0; i < num_boxes; ++i) {
-      if (repository->IsAbsent(x[i])) continue;
-      if (repository->IsAbsent(y[i])) continue;
+      if (repository->IsOptional(x[i])) continue;
+      if (repository->IsOptional(y[i])) continue;
       for (int j = i + 1; j < num_boxes; ++j) {
-        if (repository->IsAbsent(x[j])) continue;
-        if (repository->IsAbsent(y[j])) continue;
+        if (repository->IsOptional(x[j])) continue;
+        if (repository->IsOptional(y[j])) continue;
 
         // At most one of these two x options is true.
         const Literal x_ij = repository->GetOrCreatePrecedenceLiteral(
@@ -308,21 +307,7 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
         }
 
         // At least one of the 4 options is true.
-        std::vector<Literal> clause = {x_ij, x_ji, y_ij, y_ji};
-        if (repository->IsOptional(x[i])) {
-          clause.push_back(repository->PresenceLiteral(x[i]).Negated());
-        }
-        if (repository->IsOptional(y[i])) {
-          clause.push_back(repository->PresenceLiteral(y[i]).Negated());
-        }
-        if (repository->IsOptional(x[j])) {
-          clause.push_back(repository->PresenceLiteral(x[j]).Negated());
-        }
-        if (repository->IsOptional(y[j])) {
-          clause.push_back(repository->PresenceLiteral(y[j]).Negated());
-        }
-        gtl::STLSortAndRemoveDuplicates(&clause);
-        if (!sat_solver->AddProblemClause(clause)) {
+        if (!sat_solver->AddProblemClause({x_ij, x_ji, y_ij, y_ji})) {
           return;
         }
       }

@@ -28,6 +28,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -274,7 +275,7 @@ class OpbReader {
     return true;
   }
 
-  static int ParseIndex(const std::string& word) {
+  static int ParseIndex(absl::string_view word) {
     int index;
     CHECK(absl::SimpleAtoi(word, &index));
     return index;

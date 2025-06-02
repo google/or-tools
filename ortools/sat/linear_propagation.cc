@@ -389,7 +389,8 @@ LinearPropagator::LinearPropagator(Model* model)
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)),
-      order_(random_, [this](int id) { return GetVariables(infos_[id]); }) {
+      order_(random_, time_limit_,
+             [this](int id) { return GetVariables(infos_[id]); }) {
   // Note that we need this class always in sync.
   integer_trail_->RegisterWatcher(&modified_vars_);
   integer_trail_->RegisterReversibleClass(this);
@@ -475,6 +476,8 @@ void LinearPropagator::SetPropagatedBy(IntegerVariable var, int id) {
 
 void LinearPropagator::OnVariableChange(IntegerVariable var, IntegerValue lb,
                                         int id) {
+  DCHECK_EQ(lb, integer_trail_->LowerBound(var));
+
   // If no constraint use this var, we just ignore it.
   const int size = var_to_constraint_ids_[var].size();
   if (size == 0) return;
@@ -1331,7 +1334,7 @@ bool LinearPropagator::DisassembleSubtree(int root_id, int num_tight) {
         if (next_increase > 0) {
           disassemble_queue_.push_back({id, next_var, next_increase});
 
-          // We know this will push later, so we register hit with a sentinel
+          // We know this will push later, so we register it with a sentinel
           // value so that it do not block any earlier propagation. Hopefully,
           // adding this "dependency" should help find a better propagation
           // order.

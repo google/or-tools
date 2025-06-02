@@ -16,6 +16,7 @@
 # [START program]
 # [START import]
 from ortools.sat.python import cp_model
+
 # [END import]
 
 

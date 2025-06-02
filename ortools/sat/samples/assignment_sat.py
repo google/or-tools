@@ -21,6 +21,7 @@ import io
 import pandas as pd
 
 from ortools.sat.python import cp_model
+
 # [END import]
 
 

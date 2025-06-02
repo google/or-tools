@@ -237,8 +237,8 @@ bool LPParser::ParseConstraint(StringPiece constraint) {
 
 namespace {
 
-template<class>
-constexpr bool dependent_false = false; // workaround before CWG2518/P2593R1
+template <class>
+constexpr bool dependent_false = false;  // workaround before CWG2518/P2593R1
 
 template <typename T>
 bool SimpleAtoFractional(absl::string_view str, T* value) {

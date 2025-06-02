@@ -1407,9 +1407,8 @@ void ProcessOneCompressedColumn(
 
 // Simpler encoding for table constraints with 2 variables.
 void AddSizeTwoTable(
-    const std::vector<int>& vars,
-    const std::vector<std::vector<int64_t>>& tuples,
-    const std::vector<absl::flat_hash_set<int64_t>>& values_per_var,
+    absl::Span<const int> vars, absl::Span<const std::vector<int64_t>> tuples,
+    absl::Span<const absl::flat_hash_set<int64_t>> values_per_var,
     PresolveContext* context) {
   CHECK_EQ(vars.size(), 2);
   const int left_var = vars[0];

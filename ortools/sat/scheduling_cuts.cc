@@ -1337,21 +1337,19 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
       }
     }
   }
-  if (!helper.valid_permutation_iterator_.Init()) {
-    return CompletionTimeExplorationStatus::NO_VALID_PERMUTATION;
-  }
 
+  bool is_dag = false;
   int num_valid_permutations = 0;
-  do {
+  for (const auto& permutation : helper.valid_permutation_iterator_) {
+    is_dag = true;
     if (--exploration_credit < 0) break;
 
     IntegerValue sum_of_ends = 0;
     IntegerValue sum_of_weighted_ends = 0;
 
     if (ComputeWeightedSumOfEndMinsOfOnePermutation(
-            events, helper.valid_permutation_iterator_.permutation(),
-            capacity_max, helper, sum_of_ends, sum_of_weighted_ends,
-            cut_use_precedences)) {
+            events, permutation, capacity_max, helper, sum_of_ends,
+            sum_of_weighted_ends, cut_use_precedences)) {
       min_sum_of_ends = std::min(ToDouble(sum_of_ends), min_sum_of_ends);
       min_sum_of_weighted_ends =
           std::min(ToDouble(sum_of_weighted_ends), min_sum_of_weighted_ends);
@@ -1362,7 +1360,10 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
         break;
       }
     }
-  } while (helper.valid_permutation_iterator_.Increase());
+  }
+  if (!is_dag) {
+    return CompletionTimeExplorationStatus::NO_VALID_PERMUTATION;
+  }
   const CompletionTimeExplorationStatus status =
       exploration_credit < 0 ? CompletionTimeExplorationStatus::ABORTED
       : num_valid_permutations > 0
@@ -1383,7 +1384,7 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
 //   - detect disjoint tasks (no need to crossover to the second part)
 //   - better caching of explored states
 ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
-    const std::string& cut_name, std::vector<CompletionTimeEvent> events,
+    absl::string_view cut_name, std::vector<CompletionTimeEvent> events,
     IntegerValue capacity_max, CtExhaustiveHelper& helper, Model* model,
     LinearConstraintManager* manager) {
   TopNCuts top_n_cuts(5);
@@ -1476,7 +1477,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
           is_lifted |= event.lifted;
           cut.AddTerm(event.end, IntegerValue(1));
         }
-        std::string full_name = cut_name;
+        std::string full_name(cut_name);
         if (cut_use_precedences) full_name.append("_prec");
         if (is_lifted) full_name.append("_lifted");
         top_n_cuts.AddCut(cut.Build(), full_name, manager->LpValues());
@@ -1493,7 +1494,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
           is_lifted |= event.lifted;
           cut.AddTerm(event.end, event.energy_min);
         }
-        std::string full_name = cut_name;
+        std::string full_name(cut_name);
         if (is_lifted) full_name.append("_lifted");
         if (cut_use_precedences) full_name.append("_prec");
         full_name.append("_weighted");
