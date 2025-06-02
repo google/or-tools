@@ -474,8 +474,8 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
       // it is hard to claim we are really unbounded. This is a quick
       // heuristic to error on the side of optimality rather than
       // unboundedness.
-      double max_magnitude = 0.0;
-      double min_distance = kInfinity;
+      Fractional max_magnitude = 0.0;
+      Fractional min_distance = kInfinity;
       const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
       const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
       Fractional cost_delta = 0.0;
