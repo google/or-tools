@@ -1,19 +1,7 @@
 FROM ortools/cmake:alpine_swig AS env
 
 # .NET install
-RUN apk add --no-cache wget icu-libs libintl \
-&& mkdir -p /usr/share/dotnet \
-&& ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-
-## .Net 8.0
-## see: https://dotnet.microsoft.com/download/dotnet-core/8.0
-RUN dotnet_sdk_version=8.0.408 \
-&& wget -qO dotnet.tar.gz \
-"https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
-&& dotnet_sha512='0ab0c0d52985bde69b594454b5e1d9e1a6e003159656ee2972058d2960cfb0968dbe4d470d8eb21dcea41ff594976520e189a8e13afc44a419ca08e456df36e1' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& rm dotnet.tar.gz
+RUN apk add --no-cache dotnet8-sdk
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
