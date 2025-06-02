@@ -96,6 +96,7 @@ help:
 #	@echo -e "\t\t${BOLD}debian-13${RESET} (Trixie)"
 	@echo -e "\t\t${BOLD}debian-12${RESET} (Bookworm)"
 	@echo -e "\t\t${BOLD}debian-11${RESET} (Bullseye)"
+	@echo -e "\t\t${BOLD}fedora-42${RESET}"
 	@echo -e "\t\t${BOLD}fedora-41${RESET}"
 	@echo -e "\t\t${BOLD}fedora-40${RESET}"
 	@echo -e "\t\t${BOLD}opensuse-leap${RESET} (latest)"
@@ -431,7 +432,7 @@ DISTROS := \
  alpine-edge \
  archlinux \
  debian-11 debian-12 debian-sid \
- fedora-40 fedora-41 \
+ fedora-40 fedora-41 fedora-42 \
  opensuse-leap \
  rockylinux-9 \
  ubuntu-20.04 ubuntu-22.04 ubuntu-24.04 ubuntu-24.10
