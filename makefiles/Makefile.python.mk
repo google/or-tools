@@ -81,7 +81,7 @@ rpy_%: \
 	"$(PYTHON_EXECUTABLE)" ortools$S$1$Ssamples$S$$*.py $(ARGS)
 endef
 
-PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver math_opt pdlp routing sat
+PYTHON_SAMPLES := algorithms graph constraint_solver linear_solver math_opt pdlp routing sat set_cover
 $(foreach sample,$(PYTHON_SAMPLES),$(eval $(call python-sample-target,$(sample))))
 
 # Examples
