@@ -1072,7 +1072,8 @@ TEST(SolveCpModelTest, SolutionHintMinimizeL1DistanceTest) {
   Model model;
   model.Add(
       NewSatParameters("repair_hint:true, stop_after_first_solution:true, "
-                       "keep_all_feasible_solutions_in_presolve:true"));
+                       "keep_all_feasible_solutions_in_presolve:true "
+		       "num_workers:1"));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_THAT(response.status(),
               AnyOf(Eq(CpSolverStatus::OPTIMAL), Eq(CpSolverStatus::FEASIBLE)));
