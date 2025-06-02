@@ -24,7 +24,7 @@ RUN apt-get update -qq \
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 # see: https://github.com/dotnet/core/pull/7423/files
 RUN apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-6.0 \
+&& apt-get install -yq dotnet-sdk-8.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
