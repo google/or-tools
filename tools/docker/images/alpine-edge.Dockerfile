@@ -17,8 +17,9 @@ RUN apk add --no-cache swig
 RUN apk add --no-cache wget icu-libs libintl \
 && mkdir -p /usr/share/dotnet \
 && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+
 ## .Net 3.1
-## see: https://dotnet.microsoft.com/download/dotnet-core/3.1
+## see: https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 RUN dotnet_sdk_version=3.1.415 \
 && wget -qO dotnet.tar.gz \
 "https://builds.dotnet.microsoft.com/dotnet/Sdk/${dotnet_sdk_version}/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
@@ -26,15 +27,17 @@ RUN dotnet_sdk_version=3.1.415 \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
-## .Net 6.0
-## see: https://dotnet.microsoft.com/download/dotnet-core/6.0
-RUN dotnet_sdk_version=6.0.405 \
+
+## .Net 8.0
+## see: https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+RUN dotnet_sdk_version=8.0.408 \
 && wget -qO dotnet.tar.gz \
-"https://builds.dotnet.microsoft.com/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
-&& dotnet_sha512='ca98ebc5858339c5ce4164f5f5932a5bf8aae9f13d54adf382a41f5e6d1302df278bd7e218ecc2f651dcf67e705c40c43347cd33956732c6bd88d3b3d2881b84' \
+"https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-${dotnet_sdk_version}-linux-musl-x64.tar.gz" \
+&& dotnet_sha512='0ab0c0d52985bde69b594454b5e1d9e1a6e003159656ee2972058d2960cfb0968dbe4d470d8eb21dcea41ff594976520e189a8e13afc44a419ca08e456df36e1' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
 && rm dotnet.tar.gz
+
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
