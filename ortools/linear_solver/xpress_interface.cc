@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <numeric>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
@@ -844,7 +845,6 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
   int nReturn = XPRSaddcbmessage(mLp, optimizermsg, (void*)this, 0);
-  CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
   CHECK_STATUS(
       XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
 }
@@ -875,20 +875,15 @@ std::string XpressInterface::SolverVersion() const {
 // ------ Model modifications and extraction -----
 
 void XpressInterface::Reset() {
-  // Instead of explicitly clearing all modeling objects we
-  // just delete the problem object and allocate a new one.
-  CHECK_STATUS(XPRSdestroyprob(mLp));
-
-  int status;
-  status = XPRScreateprob(&mLp);
-  CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
-  int nReturn = XPRSaddcbmessage(mLp, optimizermsg, (void*)this, 0);
-  CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-
-  CHECK_STATUS(
-      XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
-
+  int nRows = getnumrows(mLp);
+  std::vector<int> rows(nRows);
+  std::iota(rows.begin(), rows.end(), 0);
+  int nCols = getnumcols(mLp);
+  std::vector<int> cols(nCols);
+  std::iota(cols.begin(), cols.end(), 0);
+  XPRSdelrows(mLp, nRows, rows.data());
+  XPRSdelcols(mLp, nCols, cols.data());
+  XPRSdelobj(mLp, 0);
   ResetExtractionInformation();
   mCstat.clear();
   mRstat.clear();
@@ -985,8 +980,7 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                   << (ub - std::abs(ub - lb)) << "]";
     }
     rhs = ub;
-    range = std::abs(
-        ub - lb);  // This happens implicitly by XPRSaddrows() and XPRSloadlp()
+    range = std::abs(ub - lb);  // This happens implicitly by XPRSaddrows()
     sense = 'R';
   } else if (ub < XPRS_PLUSINFINITY || (std::abs(ub) == XPRS_PLUSINFINITY &&
                                         std::abs(lb) > XPRS_PLUSINFINITY)) {
