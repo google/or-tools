@@ -5,29 +5,19 @@ FROM debian:sid AS env
 ##  SETUP  ##
 #############
 RUN apt update -qq \
-&& apt install -yq git wget build-essential cmake lsb-release zlib1g-dev \
+&& apt install -yq \
+ git pkg-config wget cmake build-essential zlib1g-dev \
+ swig libicu-dev \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 
-# Install SWIG
-RUN apt update -qq \
-&& apt install -yq swig \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # Install .Net
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian#debian-13-
-RUN apt-get update -qq \
-&& apt-get install -qq gpg apt-transport-https \
-&& wget -q "https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
-&& dpkg -i packages-microsoft-prod.deb \
-&& rm packages-microsoft-prod.deb \
-&& apt-get update -qq \
-&& apt-get install -qq dotnet-sdk-8.0 \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
+RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
+&& chmod a+x dotnet-install.sh \
+&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
@@ -44,7 +34,8 @@ RUN apt-get update -qq \
  python3-venv python3-virtualenv \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN python3 -m pip install --break-system-package absl-py mypy mypy-protobuf
+RUN python3 -m pip install --break-system-package \
+ absl-py mypy mypy-protobuf
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

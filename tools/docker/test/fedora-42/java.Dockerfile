@@ -3,14 +3,14 @@ FROM fedora:42
 
 RUN dnf -y update \
 && dnf -y install git \
- wget which redhat-lsb-core pkgconfig autoconf libtool zlib-devel \
+ wget which lsb_release pkgconfig autoconf libtool zlib-devel \
 && dnf -y install @development-tools \
 && dnf -y install gcc-c++ cmake \
 && dnf clean all
 
 # Java Install
 RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all
 ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
