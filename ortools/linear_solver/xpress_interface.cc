@@ -21,8 +21,8 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <numeric>
 
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
@@ -2093,29 +2093,21 @@ void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
   }
 }
 
-const char* stringToCharPtr(std::string& var) { return var.c_str(); }
+bool stringToCharPtr(const std::string& var, const char** out) {
+  *out = var.c_str();
+  return true;
+}
 
-// Save the existing locale, use the "C" locale to ensure that
-// string -> double conversion is done ignoring the locale.
-struct ScopedLocale {
-  ScopedLocale() {
-    oldLocale = std::setlocale(LC_NUMERIC, nullptr);
-    auto newLocale = std::setlocale(LC_NUMERIC, "C");
-    CHECK_EQ(std::string(newLocale), "C");
-  }
-  ~ScopedLocale() { std::setlocale(LC_NUMERIC, oldLocale); }
-
- private:
-  const char* oldLocale;
-};
-
-#define setParamIfPossible_MACRO(target_map, setter, converter)          \
+#define setParamIfPossible_MACRO(target_map, setter, converter, type)    \
   {                                                                      \
     auto matchingParamIter = (target_map).find(paramAndValuePair.first); \
     if (matchingParamIter != (target_map).end()) {                       \
-      const auto convertedValue = converter(paramAndValuePair.second);   \
-      VLOG(1) << "Setting parameter " << paramAndValuePair.first         \
-              << " to value " << convertedValue << std::endl;            \
+      type convertedValue;                                               \
+      bool ret = converter(paramAndValuePair.second, &convertedValue);   \
+      if (ret) {                                                         \
+        VLOG(1) << "Setting parameter " << paramAndValuePair.first       \
+                << " to value " << convertedValue << std::endl;          \
+      }                                                                  \
       setter(mLp, matchingParamIter->second, convertedValue);            \
       continue;                                                          \
     }                                                                    \
@@ -2140,14 +2132,15 @@ bool XpressInterface::SetSolverSpecificParametersAsString(
     }
   }
 
-  ScopedLocale locale;
   for (auto& paramAndValuePair : paramAndValuePairList) {
-    setParamIfPossible_MACRO(mapIntegerControls_, XPRSsetintcontrol, std::stoi);
-    setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol, std::stod);
+    setParamIfPossible_MACRO(mapIntegerControls_, XPRSsetintcontrol,
+                             absl::SimpleAtoi<int>, int);
+    setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol,
+                             absl::SimpleAtod, double);
     setParamIfPossible_MACRO(mapStringControls_, XPRSsetstrcontrol,
-                             stringToCharPtr);
+                             stringToCharPtr, const char*);
     setParamIfPossible_MACRO(mapInteger64Controls_, XPRSsetintcontrol64,
-                             std::stoll);
+                             absl::SimpleAtoi<int64_t>, int64_t);
     LOG(ERROR) << "Unknown parameter " << paramName << " : function "
                << __FUNCTION__ << std::endl;
     return false;
