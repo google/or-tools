@@ -241,7 +241,9 @@ function(add_dotnet_test)
   add_custom_command(
     OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy ${TEST_FILE_NAME} ${DOTNET_TEST_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${TEST_FILE_NAME}
+      ${DOTNET_TEST_DIR}/
     MAIN_DEPENDENCY ${TEST_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
@@ -252,19 +254,19 @@ function(add_dotnet_test)
     ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
     COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
     DEPENDS
-    ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-    ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-    dotnet_package
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      dotnet_package
     BYPRODUCTS
-    ${DOTNET_TEST_DIR}/bin
-    ${DOTNET_TEST_DIR}/obj
+      ${DOTNET_TEST_DIR}/bin
+      ${DOTNET_TEST_DIR}/obj
     VERBATIM
     COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
-    ${DOTNET_TEST_DIR}/timestamp
+      ${DOTNET_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   if(BUILD_TESTING)
@@ -699,8 +701,10 @@ if(NOT EXAMPLE_FILE_NAME)
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_EXAMPLE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_FILE_NAME} ${DOTNET_EXAMPLE_DIR}/
-      MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${EXAMPLE_FILE_NAME}
+      ${DOTNET_EXAMPLE_DIR}/
+    MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 

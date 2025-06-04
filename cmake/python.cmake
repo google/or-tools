@@ -639,8 +639,8 @@ add_custom_command(
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-  $<IF:$<BOOL:${BUILD_SCIP}>,copy,true>
-  $<${need_unix_scip_lib}:$<TARGET_SONAME_FILE:SCIP::libscip>>
+    $<IF:$<BOOL:${BUILD_SCIP}>,copy,true>
+    $<${need_unix_scip_lib}:$<TARGET_SONAME_FILE:SCIP::libscip>>
     $<${need_windows_scip_lib}:$<TARGET_FILE:SCIP::libscip>>
     ${PYTHON_PROJECT}/.libs
 
