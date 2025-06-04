@@ -424,8 +424,11 @@ class XpressInterface : public MPSolverInterface {
   XPRSprob mLp;
   bool const mMip;
 
-  // Looping on MPConstraint::coefficients_ yields non-reproducible results since is uses pointer addresses as keys, the value of which is non-deterministic, especially their order.
-  std::map<int , std::vector<std::pair<int, double> > > fixedOrderCoefficientsPerConstraint;
+  // Looping on MPConstraint::coefficients_ yields non-reproducible results
+  // since is uses pointer addresses as keys, the value of which is
+  // non-deterministic, especially their order.
+  std::map<int, std::vector<std::pair<int, double> > >
+      fixedOrderCoefficientsPerConstraint;
 
   // Incremental extraction.
   // Without incremental extraction we have to re-extract the model every
@@ -1091,7 +1094,8 @@ void XpressInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
-  fixedOrderCoefficientsPerConstraint[constraint->index()].push_back(std::make_pair(variable->index(), new_value));
+  fixedOrderCoefficientsPerConstraint[constraint->index()].emplace_back(
+      variable->index(), new_value);
 
   // Changing a single coefficient in the matrix is potentially pretty
   // slow since that coefficient has to be found in the sparse matrix
