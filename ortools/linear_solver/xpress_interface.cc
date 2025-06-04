@@ -423,6 +423,10 @@ class XpressInterface : public MPSolverInterface {
  private:
   XPRSprob mLp;
   bool const mMip;
+
+  // Looping on MPConstraint::coefficients_ yields non-reproducible results since is uses pointer addresses as keys, the value of which is non-deterministic, especially their order.
+  std::map<int , std::vector<std::pair<int, double> > > fixedOrderCoefficientsPerConstraint;
+
   // Incremental extraction.
   // Without incremental extraction we have to re-extract the model every
   // time we perform a solve. Due to the way the Reset() function is
@@ -1087,6 +1091,8 @@ void XpressInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
+  fixedOrderCoefficientsPerConstraint[constraint->index()].push_back(std::make_pair(variable->index(), new_value));
+
   // Changing a single coefficient in the matrix is potentially pretty
   // slow since that coefficient has to be found in the sparse matrix
   // representation. So by default we don't perform this update immediately
@@ -1553,14 +1559,13 @@ void XpressInterface::ExtractNewConstraints() {
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
-          const auto& coeffs = ct->coefficients_;
-          for (auto coeff : coeffs) {
-            int const idx = coeff.first->index();
+          const auto& coeffs = fixedOrderCoefficientsPerConstraint[ct->index()];
+          for (auto [idx, coeff] : coeffs) {
             if (variable_is_extracted(idx)) {
               DCHECK_LT(nextNz, cols);
               DCHECK_LT(idx, cols);
               rmatind[nextNz] = idx;
-              rmatval[nextNz] = coeff.second;
+              rmatval[nextNz] = coeff;
               ++nextNz;
             }
           }
