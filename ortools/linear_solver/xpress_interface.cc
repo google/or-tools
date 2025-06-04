@@ -427,7 +427,7 @@ class XpressInterface : public MPSolverInterface {
   // Looping on MPConstraint::coefficients_ yields non-reproducible results
   // since is uses pointer addresses as keys, the value of which is
   // non-deterministic, especially their order.
-  std::map<int, std::vector<std::pair<int, double> > >
+  std::map<int, std::map<int, double> >
       fixedOrderCoefficientsPerConstraint;
 
   // Incremental extraction.
@@ -1094,8 +1094,7 @@ void XpressInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
-  fixedOrderCoefficientsPerConstraint[constraint->index()].emplace_back(
-      variable->index(), new_value);
+  fixedOrderCoefficientsPerConstraint[constraint->index()][variable->index()] = new_value;
 
   // Changing a single coefficient in the matrix is potentially pretty
   // slow since that coefficient has to be found in the sparse matrix
@@ -1128,6 +1127,8 @@ void XpressInterface::ClearConstraint(MPConstraint* const constraint) {
   if (!constraint_is_extracted(row))
     // There is nothing to do if the constraint was not even extracted.
     return;
+
+  fixedOrderCoefficientsPerConstraint.erase(constraint->index());
 
   // Clearing a constraint means setting all coefficients in the corresponding
   // row to 0 (we cannot just delete the row since that would renumber all
