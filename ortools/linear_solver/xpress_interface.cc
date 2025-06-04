@@ -1567,6 +1567,8 @@ void XpressInterface::ExtractNewConstraints() {
           const auto& coeffs = fixedOrderCoefficientsPerConstraint[ct->index()];
           for (auto [idx, coeff] : coeffs) {
             if (variable_is_extracted(idx)) {
+              DCHECK_LT(nextNz, cols);
+              DCHECK_LT(idx, cols);
               rmatind[nextNz] = idx;
               rmatval[nextNz] = coeff;
               ++nextNz;
