@@ -427,7 +427,7 @@ class XpressInterface : public MPSolverInterface {
   // Looping on MPConstraint::coefficients_ yields non-reproducible results
   // since is uses pointer addresses as keys, the value of which is
   // non-deterministic, especially their order.
-  std::map<int, std::map<int, double> >
+  absl::btree_map<int, std::map<int, double> >
       fixedOrderCoefficientsPerConstraint;
 
   // Incremental extraction.
