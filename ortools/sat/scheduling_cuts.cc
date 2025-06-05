@@ -1456,7 +1456,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
               helper, min_sum_of_ends, min_sum_of_weighted_ends,
               cut_use_precedences, exploration_limit);
       if (status == CompletionTimeExplorationStatus::NO_VALID_PERMUTATION) {
-        return false;
+        break;
       } else if (status == CompletionTimeExplorationStatus::ABORTED) {
         break;
       }
