@@ -132,7 +132,7 @@ jupyter-server==2.16.0
     #   notebook-shim
 jupyter-server-terminals==0.4.4
     # via jupyter-server
-jupyterlab==4.4.2
+jupyterlab==4.4.3
     # via
     #   -r bazel/notebook_requirements.in
     #   notebook
@@ -350,5 +350,7 @@ websocket-client==1.8.0
     # via jupyter-server
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==74.0.0
-    # via jupyterlab
+setuptools==78.1.1
+    # via
+    #   -r bazel/notebook_requirements.in
+    #   jupyterlab
