@@ -9,7 +9,7 @@ Clp=1.17.10
 Cgl=0.60.9
 Cbc=2.10.12
 GLPK=5.0
-HiGHS=v1.10.0
+HiGHS=v1.11.0
 Scip=v922
 # Python
 pybind11=v2.13.6
