@@ -1,4 +1,4 @@
-FROM minizinc/mznc2024:latest AS env
+FROM minizinc/mznc2025:latest AS env
 
 ENV SRC_GIT_BRANCH v99bugfix
 

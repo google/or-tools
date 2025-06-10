@@ -18,7 +18,7 @@ DOCKER_BUILD_CMD := docker build
 endif
 DOCKER_RUN_CMD := docker run --rm --init
 
-MZN_SUFFIX=2024v5
+MZN_SUFFIX=2025v1
 DOCKER_NAME=cp-sat-minizinc-challenge
 MZN_TAG=${DOCKER_NAME}:${MZN_SUFFIX}
 MZN_LS_TAG=${DOCKER_NAME}-ls:${MZN_SUFFIX}
