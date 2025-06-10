@@ -53,7 +53,9 @@ std::optional<std::vector<int64_t>> FindCombinedSolution(
   CHECK_EQ(new_solution.size(), base_solution.size());
   const std::vector<
       std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>>
-      solutions = response_manager->SolutionsRepository().GetBestNSolutions(10);
+      solutions =
+          response_manager->SolutionPool().BestSolutions().GetBestNSolutions(
+              10);
 
   for (int sol_idx = 0; sol_idx < solutions.size(); ++sol_idx) {
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> s =
@@ -79,18 +81,21 @@ std::optional<std::vector<int64_t>> FindCombinedSolution(
 PushedSolutionPointers PushAndMaybeCombineSolution(
     SharedResponseManager* response_manager, const CpModelProto& model_proto,
     absl::Span<const int64_t> new_solution, const std::string& solution_info,
-    absl::Span<const int64_t> base_solution, Model* model) {
+    std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+        base_solution) {
   PushedSolutionPointers result = {nullptr, nullptr};
-  result.pushed_solution =
-      response_manager->NewSolution(new_solution, solution_info, model);
-  if (!base_solution.empty()) {
+  result.pushed_solution = response_manager->NewSolution(
+      new_solution, solution_info, nullptr,
+      base_solution == nullptr ? -1 : base_solution->source_id);
+  if (base_solution != nullptr) {
     std::string combined_solution_info = solution_info;
     std::optional<std::vector<int64_t>> combined_solution =
-        FindCombinedSolution(model_proto, new_solution, base_solution,
-                             response_manager, &combined_solution_info);
+        FindCombinedSolution(model_proto, new_solution,
+                             base_solution->variable_values, response_manager,
+                             &combined_solution_info);
     if (combined_solution.has_value()) {
       result.improved_solution = response_manager->NewSolution(
-          combined_solution.value(), combined_solution_info, model);
+          combined_solution.value(), combined_solution_info);
     }
   }
   return result;

@@ -28,10 +28,10 @@ namespace operations_research {
 namespace sat {
 
 // This class implements a propagator for non_overlap_2d constraints that uses
-// the BinaryRelationsMaps to detect precedences between pairs of boxes and
+// the Linear2Bounds to detect precedences between pairs of boxes and
 // detect a conflict if the precedences implies an overlap between the two
 // boxes. For doing this efficiently, it keep track of pairs of boxes that have
-// non-fixed precedences in the BinaryRelationsMaps and only check those in the
+// non-fixed precedences in the Linear2Bounds and only check those in the
 // propagation.
 class Precedences2DPropagator : public PropagatorInterface {
  public:
@@ -48,7 +48,8 @@ class Precedences2DPropagator : public PropagatorInterface {
   std::vector<std::pair<int, int>> non_trivial_pairs_;
 
   NoOverlap2DConstraintHelper& helper_;
-  BinaryRelationsMaps* binary_relations_maps_;
+  Linear2BoundsFromLinear3* linear2_bounds_from_linear3_;
+  Linear2Bounds* linear2_bounds_;
   SharedStatistics* shared_stats_;
 
   int last_helper_inprocessing_count_ = -1;

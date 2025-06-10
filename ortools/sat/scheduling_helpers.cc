@@ -48,7 +48,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+      precedence_relations_(model->GetOrCreate<Linear2Bounds>()),
+      root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       starts_(std::move(starts)),
       ends_(std::move(ends)),
       sizes_(std::move(sizes)),
@@ -86,7 +87,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
       sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+      precedence_relations_(model->GetOrCreate<Linear2Bounds>()),
+      root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       capacity_(num_tasks),
       cached_size_min_(new IntegerValue[capacity_]),
       cached_start_min_(new IntegerValue[capacity_]),
@@ -390,7 +392,7 @@ bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
   const IntegerValue offset = before.constant - after.constant;
   const LinearExpression2 expr =
       LinearExpression2::Difference(before.var, after.var);
-  if (precedence_relations_->AddUpperBound(expr, -offset)) {
+  if (root_level_lin2_bounds_->AddUpperBound(expr, -offset)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
     if (before.var == NegationOf(after.var)) {

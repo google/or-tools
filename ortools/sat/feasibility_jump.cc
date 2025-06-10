@@ -364,8 +364,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // still finish each batch though). We will also reset the luby sequence.
     bool new_best_solution_was_found = false;
     if (type() == SubSolver::INCOMPLETE) {
-      const int64_t best =
-          shared_response_->SolutionsRepository().GetBestRank();
+      const int64_t best = shared_response_->GetBestSolutionObjective().value();
       if (best < state_->last_solution_rank) {
         states_->ResetLubyCounter();
         new_best_solution_was_found = true;
@@ -394,11 +393,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           new_best_solution_was_found) {
         if (type() == SubSolver::INCOMPLETE) {
           // Choose a base solution for this neighborhood.
-          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-              solution = shared_response_->SolutionsRepository()
-                             .GetRandomBiasedSolution(random_);
-          state_->solution = solution->variable_values;
-          state_->base_solution = solution;
+          state_->base_solution =
+              shared_response_->SolutionPool().GetSolutionToImprove(random_);
+          state_->solution = state_->base_solution->variable_values;
           ++state_->num_solutions_imported;
         } else {
           if (!first_time) {
@@ -427,6 +424,10 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     }
 
     // Between chunk, we synchronize bounds.
+    //
+    // TODO(user): This do not play well with optimizing solution whose
+    // objective lag behind... Basically, we can run LS on old solution but will
+    // only consider it feasible if it improve the best known solution.
     bool recompute_compound_weights = false;
     if (linear_model_->model_proto().has_objective()) {
       const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
@@ -500,15 +501,15 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     ++state_->counters.num_batches;
     if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
       // Checks for infeasibility induced by the non supported constraints.
+      //
+      // TODO(user): Checking the objective is faster and we could avoid to
+      // check feasibility if we are not going to keep the solution anyway.
       if (SolutionIsFeasible(linear_model_->model_proto(), state_->solution)) {
         auto pointers = PushAndMaybeCombineSolution(
             shared_response_, linear_model_->model_proto(), state_->solution,
             absl::StrCat(name(), "_", state_->options.name(), "(",
                          OneLineStats(), ")"),
-            state_->base_solution == nullptr
-                ? absl::Span<const int64_t>()
-                : state_->base_solution->variable_values,
-            /*model=*/nullptr);
+            state_->base_solution);
         // If we pushed a new solution, we use it as a new "base" so that we
         // will have a smaller delta on the next solution we find.
         state_->base_solution = pointers.pushed_solution;

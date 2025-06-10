@@ -13,6 +13,8 @@
 
 #include "ortools/sat/integer_base.h"
 
+#include <utility>
+
 #include "gtest/gtest.h"
 
 namespace operations_research::sat {
@@ -59,12 +61,17 @@ TEST(BestBinaryRelationBoundsTest, Basic) {
   expr.coeffs[0] = IntegerValue(1);
   expr.coeffs[1] = IntegerValue(-1);
 
+  using AddResult = BestBinaryRelationBounds::AddResult;
+
   BestBinaryRelationBounds best_bounds;
-  EXPECT_TRUE(best_bounds.Add(expr, IntegerValue(0), IntegerValue(5)));
-  EXPECT_TRUE(best_bounds.Add(expr, IntegerValue(3), IntegerValue(8)));
-  EXPECT_TRUE(best_bounds.Add(expr, IntegerValue(-1), IntegerValue(4)));
-  EXPECT_FALSE(
-      best_bounds.Add(expr, IntegerValue(3), IntegerValue(4)));  // best
+  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(0), IntegerValue(5)),
+            std::make_pair(AddResult::ADDED, AddResult::ADDED));
+  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(3), IntegerValue(8)),
+            std::make_pair(AddResult::UPDATED, AddResult::NOT_BETTER));
+  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(-1), IntegerValue(4)),
+            std::make_pair(AddResult::NOT_BETTER, AddResult::UPDATED));
+  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(3), IntegerValue(4)),  // best
+            std::make_pair(AddResult::NOT_BETTER, AddResult::NOT_BETTER));
 
   EXPECT_EQ(RelationStatus::IS_TRUE,
             best_bounds.GetStatus(expr, IntegerValue(-10), IntegerValue(4)));
@@ -85,8 +92,10 @@ TEST(BestBinaryRelationBoundsTest, UpperBound) {
   expr.coeffs[0] = IntegerValue(1);
   expr.coeffs[1] = IntegerValue(-1);
 
+  using AddResult = BestBinaryRelationBounds::AddResult;
   BestBinaryRelationBounds best_bounds;
-  EXPECT_TRUE(best_bounds.Add(expr, IntegerValue(0), IntegerValue(5)));
+  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(0), IntegerValue(5)),
+            std::make_pair(AddResult::ADDED, AddResult::ADDED));
 
   EXPECT_EQ(best_bounds.GetUpperBound(expr), IntegerValue(5));
 

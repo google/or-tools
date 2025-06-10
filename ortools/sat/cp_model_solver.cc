@@ -804,7 +804,7 @@ void LogFinalStatistics(SharedClasses* shared) {
 
   std::vector<std::vector<std::string>> table;
   table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
-  table.push_back(shared->response->SolutionsRepository().TableLineStats());
+  shared->response->SolutionPool().AddTableStats(&table);
   table.push_back(shared->ls_hints->TableLineStats());
   if (shared->lp_solutions != nullptr) {
     table.push_back(shared->lp_solutions->TableLineStats());
@@ -1348,36 +1348,29 @@ class LnsSolver : public SubSolver {
       data.task_id = task_id;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
+      data.initial_best_objective =
+          shared_->response->GetBestSolutionObjective();
 
       // Choose a base solution for this neighborhood.
+      const auto base_solution =
+          shared_->response->SolutionPool().GetSolutionToImprove(random);
       CpSolverResponse base_response;
-      {
-        const SharedSolutionRepository<int64_t>& repo =
-            shared_->response->SolutionsRepository();
-        if (repo.NumSolutions() > 0) {
-          base_response.set_status(CpSolverStatus::FEASIBLE);
-          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-              solution = repo.GetRandomBiasedSolution(random);
-          base_response.mutable_solution()->Assign(
-              solution->variable_values.begin(),
-              solution->variable_values.end());
+      if (base_solution != nullptr) {
+        base_response.set_status(CpSolverStatus::FEASIBLE);
+        base_response.mutable_solution()->Assign(
+            base_solution->variable_values.begin(),
+            base_solution->variable_values.end());
 
-          // Note: We assume that the solution rank is the solution internal
-          // objective.
-          data.initial_best_objective = repo.GetSolution(0)->rank;
-          data.base_objective = solution->rank;
-        } else {
-          base_response.set_status(CpSolverStatus::UNKNOWN);
+        // Note: We assume that the solution rank is the solution internal
+        // objective.
+        data.base_objective = base_solution->rank;
+      } else {
+        base_response.set_status(CpSolverStatus::UNKNOWN);
 
-          // If we do not have a solution, we use the current objective upper
-          // bound so that our code that compute an "objective" improvement
-          // works.
-          //
-          // TODO(user): this is non-deterministic. Fix.
-          data.initial_best_objective =
-              shared_->response->GetInnerObjectiveUpperBound();
-          data.base_objective = data.initial_best_objective;
-        }
+        // If we do not have a solution, we use the current objective upper
+        // bound so that our code that compute an "objective" improvement
+        // works.
+        data.base_objective = data.initial_best_objective;
       }
 
       Neighborhood neighborhood =
@@ -1667,9 +1660,9 @@ class LnsSolver : public SubSolver {
           if (absl::MakeSpan(solution_values) !=
               absl::MakeSpan(base_response.solution())) {
             new_solution = true;
-            PushAndMaybeCombineSolution(
-                shared_->response, shared_->model_proto, solution_values,
-                solution_info, base_response.solution(), /*model=*/nullptr);
+            PushAndMaybeCombineSolution(shared_->response, shared_->model_proto,
+                                        solution_values, solution_info,
+                                        base_solution);
           }
         }
         if (!neighborhood.is_reduced &&
@@ -1782,7 +1775,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   subsolvers.push_back(std::make_unique<SynchronizationPoint>(
       "synchronization_agent", [shared]() {
         shared->response->Synchronize();
-        shared->response->MutableSolutionsRepository()->Synchronize();
         shared->ls_hints->Synchronize();
         if (shared->bounds != nullptr) {
           shared->bounds->Synchronize();

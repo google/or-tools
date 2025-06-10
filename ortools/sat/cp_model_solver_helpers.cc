@@ -1073,7 +1073,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* repository = model->GetOrCreate<BinaryRelationRepository>();
-  auto* relations_maps = model->GetOrCreate<BinaryRelationsMaps>();
+  auto* root_level_lin2_bounds = model->GetOrCreate<RootLevelLinear2Bounds>();
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // Load conditional precedences and always true binary relations.
@@ -1145,7 +1145,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
         expr.vars[1] = vars[1];
         expr.coeffs[0] = coeffs[0];
         expr.coeffs[1] = coeffs[1];
-        relations_maps->AddRelationBounds(expr, rhs_min, rhs_max);
+        root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
       }
     } else {
       const Literal lit = mapping->Literal(ct.enforcement_literal(0));
@@ -1215,10 +1215,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
   if (sat_solver->ModelIsUnsat()) return unsat();
-
-  // Reserve space for the precedence relations.
-  model->GetOrCreate<PrecedenceRelations>()->Resize(
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
 
   FillBinaryRelationRepository(model_proto, model);
 
@@ -1292,7 +1288,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
       model->GetOrCreate<BinaryImplicationGraph>());
-  model->GetOrCreate<PrecedenceRelations>()->Build();
+  model->GetOrCreate<TransitivePrecedencesEvaluator>()->Build();
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
@@ -1794,7 +1790,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   // Tricky: We can only test that if we don't already have a feasible solution
   // like we do if the hint is complete.
   if (parameters->debug_crash_on_bad_hint() &&
-      shared_response_manager->SolutionsRepository().NumSolutions() == 0 &&
+      shared_response_manager->HasFeasibleSolution() &&
       !model->GetOrCreate<TimeLimit>()->LimitReached() &&
       status != SatSolver::Status::FEASIBLE) {
     LOG(FATAL) << "QuickSolveWithHint() didn't find a feasible solution."

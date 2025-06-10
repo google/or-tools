@@ -397,7 +397,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
-  PrecedenceRelations* precedence_relations_;
+  Linear2Bounds* precedence_relations_;
+  RootLevelLinear2Bounds* root_level_lin2_bounds_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;

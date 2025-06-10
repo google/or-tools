@@ -176,8 +176,8 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
   std::vector<IntervalVariable> intervals;
   std::vector<AffineExpression> consumptions;
   IntegerVariable one = model.Add(ConstantIntegerVariable(1));
-  IntervalsRepository* intervals_repository =
-      model.GetOrCreate<IntervalsRepository>();
+  auto* intervals_repository = model.GetOrCreate<IntervalsRepository>();
+  auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
 
   for (const auto& task : instance.tasks) {
     if (task.is_optional) {
@@ -207,7 +207,7 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
         CHECK_NE(start_expr.var, kNoIntegerVariable);
         const IntegerVariable start = start_expr.var;
         if (previous_start != kNoIntegerVariable) {
-          model.Add(LowerOrEqual(previous_start, start));
+          precedences->AddPrecedence(previous_start, start);
         } else {
           first_start = start;
         }
@@ -215,8 +215,8 @@ bool SolveUsingNaiveModel(const EnergyInstance& instance) {
       }
       // start[last] <= start[0] + duration_max - 1
       if (previous_start != kNoIntegerVariable) {
-        model.Add(LowerOrEqualWithOffset(previous_start, first_start,
-                                         -task.duration_max + 1));
+        precedences->AddPrecedenceWithOffset(previous_start, first_start,
+                                             -task.duration_max + 1);
       }
     }
   }

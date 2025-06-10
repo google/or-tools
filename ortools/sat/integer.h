@@ -505,6 +505,7 @@ class IntegerTrail final : public SatPropagator {
   // Same as above for an affine expression.
   IntegerValue LowerBound(AffineExpression expr) const;
   IntegerValue UpperBound(AffineExpression expr) const;
+  IntegerValue UpperBound(LinearExpression2 expr) const;
   bool IsFixed(AffineExpression expr) const;
   IntegerValue FixedValue(AffineExpression expr) const;
 
@@ -1373,6 +1374,17 @@ inline IntegerValue IntegerTrail::LowerBound(AffineExpression expr) const {
 inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return expr.constant;
   return UpperBound(expr.var) * expr.coeff + expr.constant;
+}
+
+inline IntegerValue IntegerTrail::UpperBound(LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  IntegerValue result = 0;
+  for (int i = 0; i < 2; ++i) {
+    if (expr.coeffs[i] != 0) {
+      result += expr.coeffs[i] * UpperBound(expr.vars[i]);
+    }
+  }
+  return result;
 }
 
 inline bool IntegerTrail::IsFixed(AffineExpression expr) const {

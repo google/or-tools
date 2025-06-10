@@ -758,7 +758,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
     lns_params.set_log_search_progress(false);
     lns_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
-    lns_params.set_solution_pool_size(1);  // Keep the best solution found.
+    lns_params.set_solution_pool_size(1);     // Keep the best solution found.
+    lns_params.set_alternative_pool_size(0);  // Disable.
     strategies["lns"] = lns_params;
 
     // Note that we only do this for the derived parameters. The strategy "lns"

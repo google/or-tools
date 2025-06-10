@@ -307,7 +307,7 @@ void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
           return;
         }
 
-        // At least one of the 4 options is true.
+        // At least one of the 4 options is true if all boxes are present.
         std::vector<Literal> clause = {x_ij, x_ji, y_ij, y_ji};
         if (repository->IsOptional(x[i])) {
           clause.push_back(repository->PresenceLiteral(x[i]).Negated());

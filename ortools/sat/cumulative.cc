@@ -212,8 +212,8 @@ std::function<void(Model*)> Cumulative(
       // having two independent constraint doing the same propagation.
       std::vector<FullIntegerPrecedence> full_precedences;
       if (parameters.exploit_all_precedences()) {
-        model->GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
-            index_to_end_vars, &full_precedences);
+        model->GetOrCreate<TransitivePrecedencesEvaluator>()
+            ->ComputeFullPrecedences(index_to_end_vars, &full_precedences);
       }
       for (const FullIntegerPrecedence& data : full_precedences) {
         const int size = data.indices.size();

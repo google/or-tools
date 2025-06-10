@@ -1210,13 +1210,13 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // TODO(user): we should probably change the api to return a Span.
     //
     // TODO(user): If more than one set of task push the same variable, we
-    // probabaly only want to keep the best push? Maybe we want to process them
+    // probably only want to keep the best push? Maybe we want to process them
     // in reverse order of what we do here?
     indices_before_.clear();
     IntegerValue local_start;
     IntegerValue local_end;
     for (; global_i < size; ++global_i) {
-      const PrecedenceRelations::PrecedenceData& data = before_[global_i];
+      const EnforcedLinear2Bounds::PrecedenceData& data = before_[global_i];
       if (data.var != var) break;
       const int index = data.index;
       const auto [t, start_of_t] = window_[index];
@@ -1259,7 +1259,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       // the offset as much as possible. Note that the alternative of storing it
       // in PrecedenceData is not necessarily better and harder to update as we
       // dive/backtrack.
-      const IntegerValue inner_offset = -precedence_relations_->UpperBound(
+      const IntegerValue inner_offset = -linear2_bounds_->UpperBound(
           LinearExpression2::Difference(end_exp.var, var));
       DCHECK_NE(inner_offset, kMinIntegerValue);
 
@@ -1275,7 +1275,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         // This is true if we skipped all task so far in this block.
         if (min_offset == kMaxIntegerValue) {
           // If only one task is left, we can abort.
-          // This avoid a GetConditionalOffset() lookup.
+          // This avoid a linear2_bounds_ lookup.
           if (i == 1) break;
 
           // Lower the end_min_when_all_present for better filtering later.
@@ -1314,8 +1314,8 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         const AffineExpression& end_exp = helper_->Ends()[ct];
         const LinearExpression2 expr =
             LinearExpression2::Difference(end_exp.var, var);
-        precedence_relations_->AddReasonForUpperBoundLowerThan(
-            expr, precedence_relations_->UpperBound(expr),
+        linear2_bounds_->AddReasonForUpperBoundLowerThan(
+            expr, linear2_bounds_->UpperBound(expr),
             helper_->MutableLiteralReason(), helper_->MutableIntegerReason());
       }
       ++stats_.num_propagations;

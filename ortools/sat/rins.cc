@@ -204,14 +204,11 @@ ReducedDomainNeighborhood GetRinsRensNeighborhood(
   if (relaxation_values.empty()) return reduced_domains;  // Not generated.
 
   std::bernoulli_distribution three_out_of_four(0.75);
-
-  if (response_manager != nullptr &&
-      response_manager->SolutionsRepository().NumSolutions() > 0 &&
+  if (response_manager != nullptr && response_manager->HasFeasibleSolution() &&
       three_out_of_four(random)) {  // Rins.
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
         solution =
-            response_manager->SolutionsRepository().GetRandomBiasedSolution(
-                random);
+            response_manager->SolutionPool().GetSolutionToImprove(random);
     FillRinsNeighborhood(solution->variable_values, relaxation_values,
                          difficulty, random, reduced_domains);
     reduced_domains.source_info = "rins_";

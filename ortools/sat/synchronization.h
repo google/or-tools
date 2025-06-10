@@ -61,8 +61,11 @@ template <typename ValueType>
 class SharedSolutionRepository {
  public:
   explicit SharedSolutionRepository(int num_solutions_to_keep,
-                                    absl::string_view name = "")
-      : name_(name), num_solutions_to_keep_(num_solutions_to_keep) {}
+                                    absl::string_view name = "",
+                                    int source_id = -1)
+      : name_(name),
+        num_solutions_to_keep_(num_solutions_to_keep),
+        source_id_(source_id) {}
 
   // The solution format used by this class.
   struct Solution {
@@ -84,6 +87,8 @@ class SharedSolutionRepository {
     // Should be private: only SharedSolutionRepository should modify this.
     mutable int num_selected = 0;
 
+    int source_id;  // Internal information.
+
     bool operator==(const Solution& other) const {
       return rank == other.rank && variable_values == other.variable_values;
     }
@@ -100,10 +105,11 @@ class SharedSolutionRepository {
   int NumSolutions() const;
 
   // Returns the solution #i where i must be smaller than NumSolutions().
+  // Returns nullptr if i is out of range.
   std::shared_ptr<const Solution> GetSolution(int index) const;
 
-  // Returns the rank of the best known solution.
-  // You shouldn't call this if NumSolutions() is zero.
+  // Returns the rank of the best known solution. If there is no solution, this
+  // will return std::numeric_limits<int64_t>::max().
   int64_t GetBestRank() const;
 
   std::vector<std::shared_ptr<const Solution>> GetBestNSolutions(int n) const;
@@ -131,7 +137,9 @@ class SharedSolutionRepository {
   // set of added solutions is the same.
   //
   // Works in O(num_solutions_to_keep_).
-  void Synchronize();
+  //
+  // If f() is provided, it will be called on all new solutions.
+  void Synchronize(std::function<void(const Solution& solution)> f = nullptr);
 
   std::vector<std::string> TableLineStats() const {
     absl::MutexLock mutex_lock(&mutex_);
@@ -139,20 +147,52 @@ class SharedSolutionRepository {
             FormatCounter(num_queried_), FormatCounter(num_synchronization_)};
   }
 
+  int64_t NumRecentlyNonImproving() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return num_non_improving_;
+  }
+
+  void ClearSolutionsAndIncreaseSourceId() {
+    absl::MutexLock mutex_lock(&mutex_);
+    new_solutions_.clear();
+    solutions_.clear();
+    ++source_id_;
+  }
+
+  int source_id() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return source_id_;
+  }
+
+  int num_queried() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return num_queried_;
+  }
+
+  int num_solutions_to_keep() const { return num_solutions_to_keep_; }
+
  protected:
   const std::string name_;
   const int num_solutions_to_keep_;
 
   mutable absl::Mutex mutex_;
+  int source_id_ ABSL_GUARDED_BY(mutex_);
   int64_t num_added_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t num_synchronization_ ABSL_GUARDED_BY(mutex_) = 0;
+
+  mutable int64_t num_queried_at_last_sync_ ABSL_GUARDED_BY(mutex_) = 0;
+  mutable int64_t num_non_improving_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
   mutable std::vector<int> tmp_indices_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> solutions_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> new_solutions_ ABSL_GUARDED_BY(mutex_);
+
+  // For computing orthogonality.
+  std::vector<int64_t> ABSL_GUARDED_BY(mutex_) distances_;
+  std::vector<int64_t> ABSL_GUARDED_BY(mutex_) buffer_;
 };
 
 // Solutions coming from the LP.
@@ -163,6 +203,74 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
                                          "lp solutions") {}
 
   void NewLPSolution(std::vector<double> lp_solution);
+};
+
+// This stores all the feasible solutions the solver know about.
+// Moreover, for meta-heuristics, we keep them in different buckets.
+class SharedSolutionPool {
+ public:
+  explicit SharedSolutionPool(const SatParameters& parameters_)
+      : best_solutions_(parameters_.solution_pool_size(), "best_solutions"),
+        alternative_path_(parameters_.alternative_pool_size(),
+                          "alternative_path", /*source_id=*/0) {}
+
+  const SharedSolutionRepository<int64_t>& BestSolutions() const {
+    return best_solutions_;
+  }
+
+  // Note that the given random generator is likely local to the thread calling
+  // this.
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+  GetSolutionToImprove(absl::BitGenRef random) const {
+    // If we seems to have trouble making progress, work on the alternative
+    // path too.
+    if (alternative_path_.num_solutions_to_keep() > 0 &&
+        best_solutions_.NumRecentlyNonImproving() > 100 &&
+        absl::Bernoulli(random, 0.5) && alternative_path_.NumSolutions() > 0) {
+      // Tricky: We might clear the alternative_path_ between NumSolutions()
+      // and this call.
+      auto result = alternative_path_.GetRandomBiasedSolution(random);
+      if (result != nullptr) return result;
+    }
+
+    if (best_solutions_.NumSolutions() > 0) {
+      return best_solutions_.GetRandomBiasedSolution(random);
+    }
+    return nullptr;
+  }
+
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> Add(
+      SharedSolutionRepository<int64_t>::Solution solution);
+
+  void Synchronize(absl::BitGenRef random);
+
+  void AddTableStats(std::vector<std::vector<std::string>>* table) const {
+    table->push_back(best_solutions_.TableLineStats());
+    table->push_back(alternative_path_.TableLineStats());
+  }
+
+ private:
+  // Currently we only have two "pools" of solutions.
+  SharedSolutionRepository<int64_t> best_solutions_;
+  SharedSolutionRepository<int64_t> alternative_path_;
+
+  // We also keep a list of possible "path seeds" in n buckets defined according
+  // to the objective value of the solution. These are updated on Synchronize().
+  // Bucket i will only contain the last seen solution in the internal objective
+  // range [ranks_[i], ranks_[i + 1]).
+  //
+  // ranks_[0] should always be min_rank_, and seeds_[0] should be one of the
+  // best known solution. We usually never select seeds_[0] but keep it around
+  // for later in case new best solutions are found.
+  absl::Mutex mutex_;
+  int64_t max_rank_ ABSL_GUARDED_BY(mutex_) =
+      std::numeric_limits<int64_t>::min();
+  int64_t min_rank_ ABSL_GUARDED_BY(mutex_) =
+      std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> ranks_;
+  std::vector<
+      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>>
+      ABSL_GUARDED_BY(mutex_) seeds_;
 };
 
 // Set of best solution from the feasibility jump workers.
@@ -316,6 +424,13 @@ class SharedResponseManager {
   void Synchronize();
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
+  IntegerValue GetBestSolutionObjective() {
+    if (solution_pool_.BestSolutions().NumSolutions() > 0) {
+      return solution_pool_.BestSolutions().GetBestRank();
+    } else {
+      return GetInnerObjectiveUpperBound();
+    }
+  }
 
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
@@ -361,7 +476,8 @@ class SharedResponseManager {
   // stored in the repository.
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
   NewSolution(absl::Span<const int64_t> solution_values,
-              const std::string& solution_info, Model* model = nullptr);
+              const std::string& solution_info, Model* model = nullptr,
+              int source_id = -1);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven
@@ -380,14 +496,13 @@ class SharedResponseManager {
   // OPTIMAL and consider the problem solved.
   bool ProblemIsSolved() const;
 
+  bool HasFeasibleSolution() const {
+    return solution_pool_.BestSolutions().NumSolutions() > 0;
+  }
+
   // Returns the underlying solution repository where we keep a set of best
   // solutions.
-  const SharedSolutionRepository<int64_t>& SolutionsRepository() const {
-    return solutions_;
-  }
-  SharedSolutionRepository<int64_t>* MutableSolutionsRepository() {
-    return &solutions_;
-  }
+  const SharedSolutionPool& SolutionPool() const { return solution_pool_; }
 
   // Debug only. Set dump prefix for solutions written to file.
   void set_dump_prefix(absl::string_view dump_prefix) {
@@ -433,11 +548,12 @@ class SharedResponseManager {
   // Generates a response for callbacks and GetResponse().
   CpSolverResponse GetResponseInternal(
       absl::Span<const int64_t> variable_values,
-      const std::string& solution_info) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      absl::string_view solution_info) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const SatParameters& parameters_;
   const WallTimer& wall_timer_;
   ModelSharedTimeLimit* shared_time_limit_;
+  ModelRandomGenerator* random_;
   CpObjectiveProto const* objective_or_null_ = nullptr;
 
   mutable absl::Mutex mutex_;
@@ -450,7 +566,7 @@ class SharedResponseManager {
   CpSolverStatus synchronized_best_status_ ABSL_GUARDED_BY(mutex_) =
       CpSolverStatus::UNKNOWN;
   std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
-  SharedSolutionRepository<int64_t> solutions_;  // Thread-safe.
+  SharedSolutionPool solution_pool_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) =
@@ -807,6 +923,7 @@ template <typename ValueType>
 std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetSolution(int i) const {
   absl::MutexLock mutex_lock(&mutex_);
+  if (i >= solutions_.size()) return nullptr;
   ++num_queried_;
   return solutions_[i];
 }
@@ -814,7 +931,7 @@ SharedSolutionRepository<ValueType>::GetSolution(int i) const {
 template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
   absl::MutexLock mutex_lock(&mutex_);
-  CHECK_GT(solutions_.size(), 0);
+  if (solutions_.empty()) return std::numeric_limits<int64_t>::max();
   return solutions_[0]->rank;
 }
 
@@ -823,11 +940,12 @@ std::vector<std::shared_ptr<
     const typename SharedSolutionRepository<ValueType>::Solution>>
 SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
   absl::MutexLock mutex_lock(&mutex_);
-  // Sorted and unique.
-  DCHECK(absl::c_is_sorted(
-      solutions_,
-      [](const std::shared_ptr<const Solution>& a,
-         const std::shared_ptr<const Solution>& b) { return *a < *b; }));
+  // Sorted by rank and unique.
+  DCHECK(absl::c_is_sorted(solutions_,
+                           [](const std::shared_ptr<const Solution>& a,
+                              const std::shared_ptr<const Solution>& b) {
+                             return a->rank < b->rank;
+                           }));
   DCHECK(absl::c_adjacent_find(solutions_,
                                [](const std::shared_ptr<const Solution>& a,
                                   const std::shared_ptr<const Solution>& b) {
@@ -855,34 +973,41 @@ std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     absl::BitGenRef random) const {
   absl::MutexLock mutex_lock(&mutex_);
+  if (solutions_.empty()) return nullptr;
   ++num_queried_;
-  const int64_t best_rank = solutions_[0]->rank;
+  int index = 0;
 
-  // As long as we have solution with the best objective that haven't been
-  // explored too much, we select one uniformly. Otherwise, we select a solution
-  // from the pool uniformly.
-  //
-  // Note(user): Because of the increase of num_selected, this is dependent on
-  // the order of call. It should be fine for "determinism" because we do
-  // generate the task of a batch always in the same order.
-  const int kExplorationThreshold = 100;
+  if (solutions_.size() > 1) {
+    const int64_t best_rank = solutions_[0]->rank;
 
-  // Select all the best solution with a low enough selection count.
-  tmp_indices_.clear();
-  for (int i = 0; i < solutions_.size(); ++i) {
-    std::shared_ptr<const Solution> solution = solutions_[i];
-    if (solution->rank == best_rank &&
-        solution->num_selected <= kExplorationThreshold) {
-      tmp_indices_.push_back(i);
+    // As long as we have solution with the best objective that haven't been
+    // explored too much, we select one uniformly. Otherwise, we select a
+    // solution from the pool uniformly.
+    //
+    // Note(user): Because of the increase of num_selected, this is dependent on
+    // the order of call. It should be fine for "determinism" because we do
+    // generate the task of a batch always in the same order.
+    const int kExplorationThreshold = 100;
+
+    // Select all the best solution with a low enough selection count.
+    tmp_indices_.clear();
+    for (int i = 0; i < solutions_.size(); ++i) {
+      std::shared_ptr<const Solution> solution = solutions_[i];
+      if (solution->rank == best_rank &&
+          solution->num_selected <= kExplorationThreshold) {
+        tmp_indices_.push_back(i);
+      }
+    }
+
+    if (tmp_indices_.empty()) {
+      index = absl::Uniform<int>(random, 0, solutions_.size());
+    } else {
+      index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
     }
   }
 
-  int index = 0;
-  if (tmp_indices_.empty()) {
-    index = absl::Uniform<int>(random, 0, solutions_.size());
-  } else {
-    index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
-  }
+  CHECK_GE(index, 0);
+  CHECK_LT(index, solutions_.size());
   solutions_[index]->num_selected++;
   return solutions_[index];
 }
@@ -896,38 +1021,147 @@ SharedSolutionRepository<ValueType>::Add(Solution solution) {
   {
     absl::MutexLock mutex_lock(&mutex_);
     ++num_added_;
+    solution_ptr->source_id = source_id_;
     new_solutions_.push_back(solution_ptr);
   }
   return solution_ptr;
 }
 
 template <typename ValueType>
-void SharedSolutionRepository<ValueType>::Synchronize() {
+void SharedSolutionRepository<ValueType>::Synchronize(
+    std::function<void(const Solution& solution)> f) {
   absl::MutexLock mutex_lock(&mutex_);
-  if (new_solutions_.empty()) return;
+  if (new_solutions_.empty()) {
+    const int64_t diff = num_queried_ - num_queried_at_last_sync_;
+    num_non_improving_ += diff;
+    num_queried_at_last_sync_ = num_queried_;
+    return;
+  }
+
+  if (f != nullptr) {
+    gtl::STLStableSortAndRemoveDuplicates(
+        &new_solutions_,
+        [](const std::shared_ptr<Solution>& a,
+           const std::shared_ptr<Solution>& b) { return *a < *b; });
+    for (const auto& ptr : new_solutions_) {
+      f(*ptr);
+    }
+  }
+
+  const int64_t old_best_rank = solutions_.empty()
+                                    ? std::numeric_limits<int64_t>::max()
+                                    : solutions_[0]->rank;
 
   solutions_.insert(solutions_.end(), new_solutions_.begin(),
                     new_solutions_.end());
   new_solutions_.clear();
 
   // We use a stable sort to keep the num_selected count for the already
-  // existing solutions.
-  //
-  // TODO(user): Introduce a notion of orthogonality to diversify the pool?
+  // existing solutions (in case of duplicates).
   gtl::STLStableSortAndRemoveDuplicates(
       &solutions_, [](const std::shared_ptr<Solution>& a,
                       const std::shared_ptr<Solution>& b) { return *a < *b; });
+  const int64_t new_best_rank = solutions_[0]->rank;
+
+  // If we have more than num_solutions_to_keep_ solutions with the best rank,
+  // select them via orthogonality.
+  if (solutions_.size() > num_solutions_to_keep_ &&
+      num_solutions_to_keep_ > 1) {
+    int num_best = 1;
+    while (num_best < solutions_.size() &&
+           solutions_[num_best]->rank == new_best_rank) {
+      ++num_best;
+    }
+
+    if (num_best > num_solutions_to_keep_ && num_solutions_to_keep_ < 10) {
+      // We should only be here if a new solution (not in our current set) was
+      // found. It could be one we saw before but forgot about. We put one
+      // first.
+      for (auto& solution : solutions_) {
+        if (solution->num_selected == 0) {
+          // TODO(user): randomize amongst new solution?
+          std::swap(solutions_[0], solution);
+          break;
+        }
+      }
+
+      // We are going to be in O(n^2 * solution_size), so keep n <= 10.
+      solutions_.resize(std::min(10, num_best));
+
+      // Fill the pairwise distances.
+      const int n = solutions_.size();
+      distances_.resize(n * n);
+      const int size = solutions_[0]->variable_values.size();
+      for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+          int64_t dist = 0;
+          for (int k = 0; k < size; ++k) {
+            if (solutions_[i]->variable_values[k] !=
+                solutions_[j]->variable_values[k]) {
+              ++dist;
+            }
+          }
+          distances_[i * n + j] = distances_[j * n + i] = dist;
+        }
+      }
+
+      // In order to not get stuck on a subset that always maximize the sum of
+      // orthogonality, we pick the first element (which should be a new one
+      // thanks to the swap above), and we maximize the sum of orthogonality
+      // with the rest.
+      //
+      // This way, as we find new solution, the set changes slowly.
+      const std::vector<int> selected =
+          FindMostDiverseSubset(num_solutions_to_keep_, n, distances_, buffer_,
+                                /*always_pick_mask = */ 1);
+
+      DCHECK(std::is_sorted(selected.begin(), selected.end()));
+      int new_size = 0;
+      for (const int s : selected) {
+        solutions_[new_size++] = std::move(solutions_[s]);
+      }
+      solutions_.resize(new_size);
+
+      if (VLOG_IS_ON(3)) {
+        int min_count = std::numeric_limits<int>::max();
+        int max_count = 0;
+        for (const auto& s : solutions_) {
+          CHECK(s != nullptr);
+          min_count = std::min(s->num_selected, min_count);
+          max_count = std::max(s->num_selected, max_count);
+        }
+        int64_t score = 0;
+        for (const int i : selected) {
+          for (const int j : selected) {
+            if (i > j) score += distances_[i * n + j];
+          }
+        }
+        LOG(INFO) << name_ << " rank=" << new_best_rank
+                  << " num=" << num_solutions_to_keep_ << "/" << num_best
+                  << " orthogonality=" << score << " count=[" << min_count
+                  << ", " << max_count << "]";
+      }
+    }
+  }
+
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
-
+  CHECK(!solutions_.empty());
   if (!solutions_.empty()) {
-    VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
+    VLOG(4) << "Solution pool update:" << " num_solutions=" << solutions_.size()
             << " min_rank=" << solutions_[0]->rank
             << " max_rank=" << solutions_.back()->rank;
   }
 
   num_synchronization_++;
+  if (new_best_rank < old_best_rank) {
+    num_non_improving_ = 0;
+  } else {
+    const int64_t diff = num_queried_ - num_queried_at_last_sync_;
+    num_non_improving_ += diff;
+  }
+  num_queried_at_last_sync_ = num_queried_;
 }
 
 }  // namespace sat

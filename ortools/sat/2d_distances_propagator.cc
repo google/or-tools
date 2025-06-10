@@ -39,7 +39,9 @@ namespace sat {
 Precedences2DPropagator::Precedences2DPropagator(
     NoOverlap2DConstraintHelper* helper, Model* model)
     : helper_(*helper),
-      binary_relations_maps_(model->GetOrCreate<BinaryRelationsMaps>()),
+      linear2_bounds_from_linear3_(
+          model->GetOrCreate<Linear2BoundsFromLinear3>()),
+      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()) {
   model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
 }
@@ -71,9 +73,10 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
   }
 
   VLOG(2) << "CollectPairsOfBoxesWithNonTrivialDistance called, num_exprs: "
-          << binary_relations_maps_->GetAllExpressionsWithAffineBounds().size();
+          << linear2_bounds_->GetAllExpressionsWithPotentialNonTrivialBounds()
+                 .size();
   for (const LinearExpression2& expr :
-       binary_relations_maps_->GetAllExpressionsWithAffineBounds()) {
+       linear2_bounds_->GetAllExpressionsWithPotentialNonTrivialBounds()) {
     auto it1 = var_to_box_and_coeffs.find(PositiveVariable(expr.vars[0]));
     auto it2 = var_to_box_and_coeffs.find(PositiveVariable(expr.vars[1]));
     if (it1 == var_to_box_and_coeffs.end() ||
@@ -118,10 +121,10 @@ bool Precedences2DPropagator::Propagate() {
   if (last_helper_inprocessing_count_ != helper_.InProcessingCount() ||
       helper_.x_helper().CurrentDecisionLevel() == 0 ||
       last_num_expressions_ !=
-          binary_relations_maps_->NumExpressionsWithAffineBounds()) {
+          linear2_bounds_from_linear3_->NumExpressionsWithAffineBounds()) {
     last_helper_inprocessing_count_ = helper_.InProcessingCount();
     last_num_expressions_ =
-        binary_relations_maps_->NumExpressionsWithAffineBounds();
+        linear2_bounds_from_linear3_->NumExpressionsWithAffineBounds();
     CollectPairsOfBoxesWithNonTrivialDistance();
   }
 
@@ -153,8 +156,8 @@ bool Precedences2DPropagator::Propagate() {
         expr.coeffs[0] = helper->Starts()[b1].coeff;
         expr.coeffs[1] = -helper->Ends()[b2].coeff;
         const IntegerValue ub_of_start_minus_end_value =
-            binary_relations_maps_->UpperBound(expr) +
-            helper->Starts()[b1].constant - helper->Ends()[b2].constant;
+            linear2_bounds_->UpperBound(expr) + helper->Starts()[b1].constant -
+            helper->Ends()[b2].constant;
         if (ub_of_start_minus_end_value >= 0) {
           is_unfeasible = false;
           break;
@@ -182,7 +185,7 @@ bool Precedences2DPropagator::Propagate() {
         expr.vars[1] = helper->Ends()[b2].var;
         expr.coeffs[0] = helper->Starts()[b1].coeff;
         expr.coeffs[1] = -helper->Ends()[b2].coeff;
-        binary_relations_maps_->AddReasonForUpperBoundLowerThan(
+        linear2_bounds_->AddReasonForUpperBoundLowerThan(
             expr,
             -(helper->Starts()[b1].constant - helper->Ends()[b2].constant) - 1,
             helper_.x_helper().MutableLiteralReason(),
@@ -199,7 +202,8 @@ bool Precedences2DPropagator::Propagate() {
 int Precedences2DPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_.WatchAllBoxes(id);
-  binary_relations_maps_->WatchAllLinearExpressions2(id);
+  linear2_bounds_from_linear3_->WatchAllLinearExpressions2(id);
+  // TODO(user): Implement a Linear2Bounds watcher.
   return id;
 }
 

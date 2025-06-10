@@ -369,20 +369,23 @@ struct LinearExpression2 {
   // This will not change any bounds on the LinearExpression2.
   // That is we will not potentially Negate() the expression like
   // CanonicalizeAndUpdateBounds() might do.
-  // Note that since kNoIntegerVariable=-1 and we sort the variables, if we any
+  // Note that since kNoIntegerVariable=-1 and we sort the variables, if we have
   // one zero and one non-zero we will always have the zero first.
   void SimpleCanonicalization();
 
   // Fully canonicalizes the expression and updates the given bounds
   // accordingly. This is the same as SimpleCanonicalization(), DivideByGcd()
   // and the NegateForCanonicalization() with a proper updates of the bounds.
-  void CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub,
+  // Returns whether the expression was negated.
+  bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub,
                                    bool allow_negation = false);
 
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are
   // zero.
   IntegerValue DivideByGcd();
+
+  bool IsCanonicalized() const;
 
   // Makes sure expr and -expr have the same canonical representation by
   // negating the expression of it is in the non-canonical form. Returns true if
@@ -437,9 +440,21 @@ class BestBinaryRelationBounds {
  public:
   // Register the fact that expr \in [lb, ub] is true.
   //
-  // Returns true if this fact is new, that is if the bounds are tighter than
-  // the current ones.
-  bool Add(LinearExpression2 expr, IntegerValue lb, IntegerValue ub);
+  // If lb==kMinIntegerValue it only register that expr <= ub (and symmetrically
+  // for ub==kMaxIntegerValue).
+  //
+  // Returns for each of the bound if it was restricted (added/updated), if it
+  // was ignored because a better or equal bound was already present, or if it
+  // was rejected because it was invalid (e.g. the expression was a degenerate
+  // linear2 or the bound was a min/max value).
+  enum class AddResult {
+    ADDED,
+    UPDATED,
+    NOT_BETTER,
+    INVALID,
+  };
+  std::pair<AddResult, AddResult> Add(LinearExpression2 expr, IntegerValue lb,
+                                      IntegerValue ub);
 
   // Returns the known status of expr <= bound.
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
@@ -449,6 +464,15 @@ class BestBinaryRelationBounds {
   // assume kMaxIntegerValue is always valid and returns it if we don't have an
   // entry in the hash-map.
   IntegerValue GetUpperBound(LinearExpression2 expr) const;
+
+  // Same as GetUpperBound() but assume the expression is already canonicalized.
+  // This is slighlty faster.
+  IntegerValue UpperBoundWhenCanonicalized(LinearExpression2 expr) const;
+
+  int64_t num_bounds() const { return best_bounds_.size(); }
+
+  std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialBounds() const;
 
  private:
   // The best bound on the given "canonicalized" expression.

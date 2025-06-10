@@ -1102,26 +1102,25 @@ std::string CompletionTimeEvent::DebugString() const {
 
 void CtExhaustiveHelper::Init(
     const absl::Span<const CompletionTimeEvent> events, Model* model) {
-  BinaryRelationsMaps* binary_relations =
-      model->GetOrCreate<BinaryRelationsMaps>();
   max_task_index_ = 0;
-  for (const auto& event : events) {
-    max_task_index_ = std::max(max_task_index_, event.task_index);
-  }
+  if (events.empty() || events.size() > 100) return;
+
+  ReifiedLinear2Bounds* binary_relations =
+      model->GetOrCreate<ReifiedLinear2Bounds>();
+
+  std::vector<CompletionTimeEvent> sorted_events(events.begin(), events.end());
+  std::sort(sorted_events.begin(), sorted_events.end(),
+            [](const CompletionTimeEvent& a, const CompletionTimeEvent& b) {
+              return a.task_index < b.task_index;
+            });
+  max_task_index_ = sorted_events.back().task_index;
   predecessors_.reserve(max_task_index_ + 1);
   for (const auto& e1 : events) {
-    CHECK_LE(predecessors_.size(), e1.task_index);
-    while (predecessors_.size() <= e1.task_index) {
-      predecessors_.Add({});
-    }
-
-    // Cap the number of precedences to avoid O(n^2) time complexity.
-    if (predecessors_.num_entries() > 20000) break;
-
     for (const auto& e2 : events) {
       if (e2.task_index == e1.task_index) continue;
       if (binary_relations->GetLevelZeroPrecedenceStatus(e2.end, e1.start) ==
           RelationStatus::IS_TRUE) {
+        while (predecessors_.size() <= e1.task_index) predecessors_.Add({});
         predecessors_.AppendToLastVector(e2.task_index);
       }
     }
@@ -1138,6 +1137,7 @@ bool CtExhaustiveHelper::PermutationIsCompatibleWithPrecedences(
   visited_.assign(max_task_index_ + 1, false);
   for (int i = permutation.size() - 1; i >= 0; --i) {
     const CompletionTimeEvent& event = events[permutation[i]];
+    if (event.task_index >= predecessors_.size()) continue;
     for (const int predecessor : predecessors_[event.task_index]) {
       if (visited_[predecessor]) return false;
     }
@@ -1328,9 +1328,11 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     helper.task_to_index_[events[i].task_index] = i;
   }
   helper.valid_permutation_iterator_.Reset(events.size());
+  const auto& predecessors = helper.predecessors();
   for (int i = 0; i < events.size(); ++i) {
     const int task_i = events[i].task_index;
-    for (const int task_j : helper.predecessors()[task_i]) {
+    if (task_i >= predecessors.size()) continue;
+    for (const int task_j : predecessors[task_i]) {
       const int j = helper.task_to_index_[task_j];
       if (j != -1) {
         helper.valid_permutation_iterator_.AddArc(j, i);
@@ -1456,6 +1458,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
               helper, min_sum_of_ends, min_sum_of_weighted_ends,
               cut_use_precedences, exploration_limit);
       if (status == CompletionTimeExplorationStatus::NO_VALID_PERMUTATION) {
+        // TODO(user): We should return false here but there is a bug.
         break;
       } else if (status == CompletionTimeExplorationStatus::ABORTED) {
         break;
@@ -1846,6 +1849,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
     auto generate_cuts = [integer_trail, sat_solver, model, manager, helper,
                           demands_helper,
                           capacity](bool time_is_forward) -> bool {
+      DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
       if (!helper->SynchronizeAndSetTimeDirection(time_is_forward)) {
         return false;
       }

@@ -30,9 +30,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/hash/hash.h"
-#include "absl/log/log.h"
-#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -40,11 +37,17 @@
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/algorithm/container.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/numeric/int128.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -73,6 +76,144 @@ ABSL_FLAG(bool, cp_model_dump_tightened_models, false,
 
 namespace operations_research {
 namespace sat {
+
+std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+SharedSolutionPool::Add(SharedSolutionRepository<int64_t>::Solution solution) {
+  // Only add to the alternative path if it has the correct source id.
+  if (alternative_path_.num_solutions_to_keep() > 0 &&
+      solution.source_id == alternative_path_.source_id()) {
+    alternative_path_.Add(solution);
+    if (solution.rank < best_solutions_.GetBestRank()) {
+      VLOG(2) << "ALTERNATIVE WIN !";
+    }
+  }
+
+  // For now we only return a solution if it was stored in best_solutions_.
+  return best_solutions_.Add(std::move(solution));
+}
+
+void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
+  // Update the "seeds" for the aternative path.
+  if (alternative_path_.num_solutions_to_keep() > 0) {
+    absl::MutexLock mutex_lock(&mutex_);
+
+    auto process_solution =
+        [this](const SharedSolutionRepository<int64_t>::Solution& solution)
+            ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+              if (solution.variable_values.empty()) return;
+              if (solution.rank < min_rank_ || solution.rank > max_rank_) {
+                // Recompute buckets.
+                min_rank_ = std::min(min_rank_, solution.rank);
+                max_rank_ = std::max(max_rank_, solution.rank);
+
+                // We want to store around 100 MB max.
+                int num_solutions = std::max<int>(
+                    10, 100'000'000 / solution.variable_values.size());
+                const int64_t range = max_rank_ - min_rank_ + 1;
+                if (num_solutions > range) {
+                  num_solutions = range;
+                }
+
+                // But if the number of variables is low, we do not want
+                // to use a lot of space/time just iterating over num_solutions.
+                //
+                // TODO(user): Rework the algo to be in
+                // O(num_different_solutions) rather than initializing the
+                // maximum amount right away.
+                num_solutions = std::min(num_solutions, 1'000);
+
+                // Resize and recompute rank_.
+                //
+                // seeds_[i] should contains solution in [ranks_[i],
+                // rank_[i+1]). rank_[0] is always min_rank_. As long as we have
+                // room, we should have exactly one bucket per rank.
+                ranks_.resize(num_solutions);
+                seeds_.resize(num_solutions);
+
+                int64_t offset = (max_rank_ - min_rank_ + 1) / num_solutions;
+                CHECK_GT(offset, 0);
+                for (int i = 0; i < num_solutions; ++i) {
+                  ranks_[i] = min_rank_ +
+                              static_cast<int64_t>(absl::int128(i) *
+                                                   absl::int128(range) /
+                                                   absl::int128(num_solutions));
+                }
+
+                // Move existing solutions to their new bucket.
+                int to_index = seeds_.size() - 1;
+                for (int i = seeds_.size(); --i >= 0;) {
+                  if (seeds_[i] == nullptr) continue;
+                  while (to_index >= 0 && ranks_[to_index] > seeds_[i]->rank) {
+                    --to_index;
+                  }
+                  seeds_[to_index] = std::move(seeds_[i]);
+                }
+              }
+
+              // rank[limit] is the first > solution.rank.
+              const int limit = std::upper_bound(ranks_.begin(), ranks_.end(),
+                                                 solution.rank) -
+                                ranks_.begin();
+              CHECK_GT(limit, 0);
+              seeds_[limit - 1] =
+                  std::make_shared<SharedSolutionRepository<int64_t>::Solution>(
+                      solution);
+            };
+
+    // All solution go through best_solutions_.Add(), so we only need
+    // to process these here.
+    best_solutions_.Synchronize(process_solution);
+  } else {
+    best_solutions_.Synchronize();
+  }
+  alternative_path_.Synchronize();
+
+  // If we try to improve the alternate path without success, reset it
+  // from a random path_seeds_.
+  //
+  // TODO(user): find a way to generate random solution and update the seeds
+  // with them. Shall we do that in a continuous way or only when needed?
+  if (alternative_path_.num_solutions_to_keep() > 0) {
+    // Restart the alternative path ?
+    const int threshold = std::max(
+        100, static_cast<int>(std::sqrt(best_solutions_.num_queried())));
+    if (alternative_path_.NumRecentlyNonImproving() > threshold) {
+      VLOG(2) << "Done. num_non_improving: "
+              << alternative_path_.NumRecentlyNonImproving()
+              << " achieved: " << alternative_path_.GetBestRank() << " / "
+              << best_solutions_.GetBestRank();
+      alternative_path_.ClearSolutionsAndIncreaseSourceId();
+    }
+
+    // If we restarted, or we are at the beginning, pick a seed for the path.
+    if (alternative_path_.NumSolutions() == 0) {
+      absl::MutexLock mutex_lock(&mutex_);
+
+      // Pick random bucket with bias. If the bucket is empty, we will scan
+      // "worse" bucket until we find a solution. We never pick bucket 0.
+      if (seeds_.size() > 1) {
+        // Note that LogUniform() is always inclusive.
+        // TODO(user): Shall we bias even more?
+        int index = 1 + absl::LogUniform<int>(random, 0, seeds_.size() - 2);
+        for (; index < seeds_.size(); ++index) {
+          if (seeds_[index] != nullptr) {
+            alternative_path_.Add(*seeds_[index]);
+            alternative_path_.Synchronize();
+            VLOG(2) << "RESTART bucket=" << index << "/" << seeds_.size()
+                    << " rank=" << alternative_path_.GetSolution(0)->rank
+                    << " from_optimal="
+                    << alternative_path_.GetSolution(0)->rank - min_rank_;
+            break;
+          }
+        }
+
+        // The last bucket should never be empty.
+        CHECK(seeds_.back() != nullptr);
+        CHECK_LT(index, seeds_.size());
+      }
+    }
+  }
+}
 
 void SharedLPSolutionRepository::NewLPSolution(
     std::vector<double> lp_solution) {
@@ -119,7 +260,8 @@ SharedResponseManager::SharedResponseManager(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-      solutions_(parameters_.solution_pool_size(), "feasible solutions"),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      solution_pool_(parameters_),
       logger_(model->GetOrCreate<SolverLogger>()) {
   bounds_logging_id_ = logger_->GetNewThrottledId();
 }
@@ -397,13 +539,15 @@ IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
 }
 
 void SharedResponseManager::Synchronize() {
+  solution_pool_.Synchronize(*random_);
+
   absl::MutexLock mutex_lock(&mutex_);
   synchronized_inner_objective_lower_bound_ =
       IntegerValue(inner_objective_lower_bound_);
   synchronized_inner_objective_upper_bound_ =
       IntegerValue(inner_objective_upper_bound_);
   synchronized_best_status_ = best_status_;
-  if (solutions_.NumSolutions() > 0) {
+  if (solution_pool_.BestSolutions().NumSolutions() > 0) {
     first_solution_solvers_should_stop_ = true;
   }
   logger_->FlushPendingThrottledLogs();
@@ -502,7 +646,7 @@ void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
 
 CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
-    const std::string& solution_info) {
+    absl::string_view solution_info) {
   CpSolverResponse result;
   result.set_status(best_status_);
   if (!unsat_cores_.empty()) {
@@ -551,19 +695,19 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
 CpSolverResponse SharedResponseManager::GetResponse() {
   absl::MutexLock mutex_lock(&mutex_);
   CpSolverResponse result;
-  if (solutions_.NumSolutions() == 0) {
+  if (solution_pool_.BestSolutions().NumSolutions() == 0) {
     result = GetResponseInternal({}, "");
   } else {
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-        solution = solutions_.GetSolution(0);
+        solution = solution_pool_.BestSolutions().GetSolution(0);
     result = GetResponseInternal(solution->variable_values, solution->info);
   }
   // If this is true, we postsolve and copy all of our solutions.
   if (parameters_.fill_additional_solutions_in_response()) {
     std::vector<int64_t> temp;
-    for (int i = 0; i < solutions_.NumSolutions(); ++i) {
-      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-          solution = solutions_.GetSolution(i);
+    const int size = solution_pool_.BestSolutions().NumSolutions();
+    for (int i = 0; i < size; ++i) {
+      const auto solution = solution_pool_.BestSolutions().GetSolution(i);
       temp = solution->variable_values;
       for (int i = solution_postprocessors_.size(); --i >= 0;) {
         solution_postprocessors_[i](&temp);
@@ -623,7 +767,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
 std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
 SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                    const std::string& solution_info,
-                                   Model* model) {
+                                   Model* model, int source_id) {
   absl::MutexLock mutex_lock(&mutex_);
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
@@ -634,7 +778,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-    ret = solutions_.Add(solution);
+    solution.source_id = source_id;
+    ret = solution_pool_.Add(solution);
   } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
@@ -645,7 +790,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                     solution_values.end());
     solution.rank = objective_value;
     solution.info = solution_info;
-    ret = solutions_.Add(solution);
+    solution.source_id = source_id;
+    ret = solution_pool_.Add(solution);
 
     // Ignore any non-strictly improving solution.
     if (objective_value > inner_objective_upper_bound_) return ret;
@@ -666,7 +812,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   // In single thread, no one is synchronizing the solution manager, so we
   // should do it from here.
   if (always_synchronize_) {
-    solutions_.Synchronize();
+    solution_pool_.Synchronize(*random_);
     first_solution_solvers_should_stop_ = true;
   }
 

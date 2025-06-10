@@ -394,7 +394,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
       value_selection_heuristics.push_back(
           [model, response_manager](IntegerVariable var) {
             return SplitUsingBestSolutionValueInRepository(
-                var, response_manager->SolutionsRepository(), model);
+                var, response_manager->SolutionPool().BestSolutions(), model);
           });
     }
   }
@@ -1026,7 +1026,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     value_selection_heuristics.push_back(
         [model, response_manager](IntegerVariable var) {
           return SplitUsingBestSolutionValueInRepository(
-              var, response_manager->SolutionsRepository(), model);
+              var, response_manager->SolutionPool().BestSolutions(), model);
         });
     value_selection_weight.push_back(5);
   }

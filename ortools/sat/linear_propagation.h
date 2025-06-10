@@ -421,8 +421,8 @@ class LinearPropagator : public PropagatorInterface,
   TimeLimit* time_limit_;
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
-  PrecedenceRelations* precedences_;
-  BinaryRelationsMaps* binary_relations_;
+  EnforcedLinear2Bounds* precedences_;
+  Linear2BoundsFromLinear3* linear3_bounds_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
