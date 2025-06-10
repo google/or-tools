@@ -11,6 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if (OR_TOOLS_PROTOC_EXECUTABLE)
+  set(PROTOC_PRG ${OR_TOOLS_PROTOC_EXECUTABLE})
+  return()
+endif()
+
 if(NOT CMAKE_CROSSCOMPILING)
   set(PROTOC_PRG protobuf::protoc)
   return()
