@@ -272,6 +272,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(10, solver.value(x))
         self.assertEqual(-5, solver.value(y))
 
+    def test_none_argument(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        y = model.new_int_var(-10, 10, "y")
+        model.add_linear_constraint(x + 2 * y, 0, 10)
+        model.minimize(y)
+        solver = cp_model.CpSolver()
+        self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
+        self.assertRaises(TypeError, solver.value, None)
+        self.assertRaises(TypeError, solver.float_value, None)
+        self.assertRaises(TypeError, solver.boolean_value, None)
+
     def test_linear_constraint(self) -> None:
         model = cp_model.CpModel()
         model.add_linear_constraint(5, 0, 10)
@@ -443,12 +455,19 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(-4, model.proto.constraints[2].enforcement_literal[0])
         self.assertEqual(2, model.proto.constraints[2].enforcement_literal[1])
 
-    def test_constraint_with_name(self) -> None:
+    def test_names(self) -> None:
         model = cp_model.CpModel()
+        model.name = "test_model"
         x = model.new_int_var(-10, 10, "x")
         y = model.new_int_var(-10, 10, "y")
         ct = model.add_linear_constraint(x + 2 * y, 0, 10).with_name("test_constraint")
+        self.assertEqual(model.name, "test_model")
+        self.assertEqual(x.name, "x")
         self.assertEqual("test_constraint", ct.name)
+        model.remove_all_names()
+        self.assertEmpty(model.name)
+        self.assertEmpty(x.name)
+        self.assertEmpty(ct.name)
 
     def test_natural_api_minimize(self) -> None:
         model = cp_model.CpModel()

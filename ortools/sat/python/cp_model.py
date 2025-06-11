@@ -2306,6 +2306,14 @@ class CpModel:
         """
         return cmh.CpSatHelper.write_model_to_file(self.__model, file)
 
+    def remove_all_names(self) -> None:
+        """Removes all names from the model."""
+        self.__model.ClearField("name")
+        for v in self.__model.variables:
+            v.ClearField("name")
+        for c in self.__model.constraints:
+            c.ClearField("name")
+
     @overload
     def add_hint(self, var: IntVar, value: int) -> None: ...
 

@@ -503,8 +503,10 @@ PYBIND11_MODULE(cp_model_helper, m) {
 
   py::class_<ResponseWrapper>(m, "ResponseWrapper")
       .def("best_objective_bound", &ResponseWrapper::BestObjectiveBound)
-      .def("boolean_value", &ResponseWrapper::BooleanValue, py::arg("lit"))
-      .def("boolean_value", &ResponseWrapper::FixedBooleanValue, py::arg("lit"))
+      .def("boolean_value", &ResponseWrapper::BooleanValue,
+           py::arg("lit").none(false))
+      .def("boolean_value", &ResponseWrapper::FixedBooleanValue,
+           py::arg("lit").none(false))
       .def("deterministic_time", &ResponseWrapper::DeterministicTime)
       .def("num_binary_propagations", &ResponseWrapper::NumBinaryPropagations)
       .def("num_booleans", &ResponseWrapper::NumBooleans)
@@ -520,10 +522,12 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("sufficient_assumptions_for_infeasibility",
            &ResponseWrapper::SufficientAssumptionsForInfeasibility)
       .def("user_time", &ResponseWrapper::UserTime)
-      .def("float_value", &ResponseWrapper::FloatValue, py::arg("expr"))
-      .def("float_value", &ResponseWrapper::FixedFloatValue, py::arg("value"))
-      .def("value", &ResponseWrapper::Value, py::arg("expr"))
-      .def("value", &ResponseWrapper::FixedValue, py::arg("value"))
+      .def("float_value", &ResponseWrapper::FloatValue,
+           py::arg("expr").none(false))
+      .def("float_value", &ResponseWrapper::FixedFloatValue,
+           py::arg("value").none(false))
+      .def("value", &ResponseWrapper::Value, py::arg("expr").none(false))
+      .def("value", &ResponseWrapper::FixedValue, py::arg("value").none(false))
       .def("wall_time", &ResponseWrapper::WallTime);
 
   py::class_<ExtSolveWrapper>(m, "SolveWrapper")
