@@ -27,6 +27,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/graph.h"
@@ -76,6 +77,12 @@ class RootLevelLinear2Bounds {
 
   // Return a list of (expr <= ub) sorted by expr.
   std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialUpperBounds() const {
+    return root_level_relations_.GetSortedNonTrivialUpperBounds();
+  }
+
+  // Return a list of (lb <= expr <= ub) sorted by expr.
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
   GetSortedNonTrivialBounds() const {
     return root_level_relations_.GetSortedNonTrivialBounds();
   }
@@ -296,40 +303,25 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   std::vector<PrecedenceData> tmp_precedences_;
 };
 
-// Similar to AffineExpression, but with a zero constant.
-// If coeff is zero, then this is always zero and var is ignored.
-struct LinearTerm {
-  LinearTerm() = default;
-  LinearTerm(IntegerVariable v, IntegerValue c) : var(v), coeff(c) {}
-
-  void MakeCoeffPositive() {
-    if (coeff < 0) {
-      coeff = -coeff;
-      var = NegationOf(var);
-    }
-  }
-
-  bool operator==(const LinearTerm& other) const {
-    return var == other.var && coeff == other.coeff;
-  }
-
-  IntegerVariable var = kNoIntegerVariable;
-  IntegerValue coeff = IntegerValue(0);
-};
-
-// A relation of the form enforcement => a + b \in [lhs, rhs].
+// A relation of the form enforcement => expr \in [lhs, rhs].
 // Note that the [lhs, rhs] interval should always be within [min_activity,
-// max_activity] where the activity is the value of a + b.
+// max_activity] where the activity is the value of expr.
 struct Relation {
   Literal enforcement;
-  LinearTerm a;
-  LinearTerm b;
+  LinearExpression2 expr;
   IntegerValue lhs;
   IntegerValue rhs;
 
   bool operator==(const Relation& other) const {
-    return enforcement == other.enforcement && a == other.a && b == other.b &&
+    return enforcement == other.enforcement && expr == other.expr &&
            lhs == other.lhs && rhs == other.rhs;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Relation& relation) {
+    absl::Format(&sink, "%s => %v in [%v, %v]",
+                 relation.enforcement.DebugString(), relation.expr,
+                 relation.lhs, relation.rhs);
   }
 };
 
@@ -371,10 +363,9 @@ class BinaryRelationRepository {
     return it->second;
   }
 
-  // Adds a conditional relation lit => a + b \in [lhs, rhs] (one of the terms
-  // can be zero), or an always true binary relation a + b \in [lhs, rhs] (both
-  // terms must be non-zero).
-  void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
+  // Adds a conditional relation lit => expr \in [lhs, rhs] (one of the coeffs
+  // can be zero).
+  void Add(Literal lit, LinearExpression2 expr, IntegerValue lhs,
            IntegerValue rhs);
 
   // Adds a partial conditional relation between two variables, with unspecified
@@ -383,7 +374,7 @@ class BinaryRelationRepository {
 
   // Builds the literal to relations mapping. This should be called once all the
   // relations have been added.
-  void Build();
+  void Build(const RootLevelLinear2Bounds* root_level_bounds);
 
   // Assuming level-zero bounds + any (var >= value) in the input map,
   // fills "output" with a "propagated" set of bounds assuming lit is true (by
@@ -532,6 +523,10 @@ class Linear2Bounds {
       LinearExpression2 expr, IntegerValue ub,
       std::vector<Literal>* literal_reason,
       std::vector<IntegerLiteral>* integer_reason) const;
+
+  // Like UpperBound(), but optimized for the case of gcd == 1 and when we
+  // don't want the trivial bounds.
+  IntegerValue NonTrivialUpperBoundForGcd1(LinearExpression2 expr) const;
 
   std::vector<LinearExpression2>
   GetAllExpressionsWithPotentialNonTrivialBounds() const;

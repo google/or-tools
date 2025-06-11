@@ -272,6 +272,18 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(10, solver.value(x))
         self.assertEqual(-5, solver.value(y))
 
+    def test_none_argument(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        y = model.new_int_var(-10, 10, "y")
+        model.add_linear_constraint(x + 2 * y, 0, 10)
+        model.minimize(y)
+        solver = cp_model.CpSolver()
+        self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
+        self.assertRaises(TypeError, solver.value, None)
+        self.assertRaises(TypeError, solver.float_value, None)
+        self.assertRaises(TypeError, solver.boolean_value, None)
+
     def test_linear_constraint(self) -> None:
         model = cp_model.CpModel()
         model.add_linear_constraint(5, 0, 10)

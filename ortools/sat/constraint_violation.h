@@ -434,7 +434,7 @@ class LsEvaluator {
  private:
   void CompileConstraintsAndObjective(
       const std::vector<bool>& ignored_constraints,
-      const std::vector<ConstraintProto>& additional_constraints);
+      absl::Span<const ConstraintProto> additional_constraints);
 
   void CompileOneConstraint(const ConstraintProto& ct_proto);
   void BuildVarConstraintGraph();

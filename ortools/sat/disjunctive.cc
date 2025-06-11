@@ -750,6 +750,7 @@ bool DisjunctiveSimplePrecedences::Propagate() {
 
 bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
   const int t_before = before.task_index;
+
   DCHECK_NE(t_before, t);
   helper_->ClearReason();
   helper_->AddPresenceReason(t_before);
@@ -757,6 +758,10 @@ bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
   helper_->AddEndMinReason(t_before, before.time);
   if (!helper_->IncreaseStartMin(t, before.time)) {
     return false;
+  }
+  if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t_before) &&
+      helper_->IsPresent(t)) {
+    if (!helper_->NotifyLevelZeroPrecedence(t_before, t)) return false;
   }
   ++stats_.num_propagations;
   return true;
@@ -969,7 +974,7 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
   // Process detected precedence.
   if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
     for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-      if (!helper_->PropagatePrecedence(sorted_tasks[i].task, t)) {
+      if (!helper_->NotifyLevelZeroPrecedence(sorted_tasks[i].task, t)) {
         return false;
       }
     }
@@ -1259,8 +1264,9 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       // the offset as much as possible. Note that the alternative of storing it
       // in PrecedenceData is not necessarily better and harder to update as we
       // dive/backtrack.
-      const IntegerValue inner_offset = -linear2_bounds_->UpperBound(
-          LinearExpression2::Difference(end_exp.var, var));
+      const IntegerValue inner_offset =
+          -linear2_bounds_->NonTrivialUpperBoundForGcd1(
+              LinearExpression2::Difference(end_exp.var, var));
       DCHECK_NE(inner_offset, kMinIntegerValue);
 
       // We have var >= end_exp.var + inner_offset, so
@@ -1788,7 +1794,7 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
           for (int i = first_event; i < window_size; ++i) {
             const int task = window_[i].task_index;
             if (!is_gray_[task]) {
-              if (!helper_->PropagatePrecedence(task, gray_task)) {
+              if (!helper_->NotifyLevelZeroPrecedence(task, gray_task)) {
                 return false;
               }
             }

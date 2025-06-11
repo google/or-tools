@@ -587,7 +587,7 @@ double ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
   }
   builder.Minimize(obj);
   const CpSolverResponse response =
-      SolveWithParameters(builder.Build(), "num_search_workers:8");
+      SolveWithParameters(builder.Build(), "num_workers:8");
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   return response.objective_value();
 }

@@ -7887,7 +7887,7 @@ void CpModelPresolver::Probe() {
       context_->params().probing_deterministic_time_limit());
 
   for (const auto& [expr, ub] : model.GetOrCreate<RootLevelLinear2Bounds>()
-                                    ->GetSortedNonTrivialBounds()) {
+                                    ->GetSortedNonTrivialUpperBounds()) {
     if (expr.vars[0] == kNoIntegerVariable ||
         expr.vars[1] == kNoIntegerVariable) {
       continue;

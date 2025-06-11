@@ -392,6 +392,8 @@ struct LinearExpression2 {
   // the expression was negated.
   bool NegateForCanonicalization();
 
+  void MakeVariablesPositive();
+
   absl::Span<const IntegerVariable> non_zero_vars() const {
     const int first = coeffs[0] == 0 ? 1 : 0;
     const int last = coeffs[1] == 0 ? 0 : 1;
@@ -416,14 +418,14 @@ struct LinearExpression2 {
 
   IntegerValue coeffs[2];
   IntegerVariable vars[2];
-};
 
-inline std::ostream& operator<<(std::ostream& os,
-                                const LinearExpression2& expr) {
-  os << absl::StrCat(expr.coeffs[0], " X", expr.vars[0], " + ", expr.coeffs[1],
-                     " X", expr.vars[1]);
-  return os;
-}
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const LinearExpression2& expr) {
+    absl::Format(&sink, "%d X%d + %d X%d", expr.coeffs[0].value(),
+                 expr.vars[0].value(), expr.coeffs[1].value(),
+                 expr.vars[1].value());
+  }
+};
 
 template <typename H>
 H AbslHashValue(H h, const LinearExpression2& e) {
@@ -472,6 +474,9 @@ class BestBinaryRelationBounds {
   int64_t num_bounds() const { return best_bounds_.size(); }
 
   std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialUpperBounds() const;
+
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
   GetSortedNonTrivialBounds() const;
 
  private:

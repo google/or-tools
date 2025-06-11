@@ -2081,6 +2081,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -2104,6 +2105,7 @@ cc_test(
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -3203,6 +3205,7 @@ cc_test(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",

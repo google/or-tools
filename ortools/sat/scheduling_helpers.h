@@ -210,13 +210,15 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   IntegerValue GetCurrentMinDistanceBetweenTasks(
       int a, int b, bool add_reason_if_after = false);
 
-  // We detected a precedence between two tasks.
-  // If we are at level zero, we might want to add the constraint.
-  // If we are at positive level, we might want to propagate the associated
-  // precedence literal if it exists.
-  bool PropagatePrecedence(int a, int b);
+  // We detected a precedence between two tasks at level zero.
+  // This register a new constraint and notify the linear2 root level bounds
+  // repository. Returns false on conflict.
+  //
+  // TODO(user): We could also call this at positive decision level, but it is a
+  // bit harder to exploit as we will also need to store the reasons.
+  bool NotifyLevelZeroPrecedence(int a, int b);
 
-  // Return the minimum overlap of interval i with the time window [start..end].
+  // Return the minimum overlap of task t with the time window [start..end].
   //
   // Note: this is different from the mandatory part of an interval.
   IntegerValue GetMinOverlap(int t, IntegerValue start, IntegerValue end) const;
@@ -397,7 +399,7 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
-  Linear2Bounds* precedence_relations_;
+  Linear2Bounds* linear2_bounds_;
   RootLevelLinear2Bounds* root_level_lin2_bounds_;
 
   // The current direction of time, true for forward, false for backward.

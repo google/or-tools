@@ -14,10 +14,12 @@
 #include "ortools/sat/precedences.h"
 
 #include <algorithm>
+#include <numeric>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -526,45 +528,90 @@ TEST(EnforcedLinear2BoundsTest, CollectPrecedences) {
 
 TEST(BinaryRelationRepositoryTest, Build) {
   Model model;
-  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable z = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {NegationOf(x), 1}, {y, 1}, 2, 8);
-  repository.Add(Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10);
-  repository.Add(lit_a, {x, -3}, {NegationOf(y), 2}, 1, 15);
-  repository.Add(lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5);
-  repository.Add(Literal(kNoLiteralIndex), {x, 3}, {y, -1}, 5, 15);
-  repository.Add(Literal(kNoLiteralIndex), {x, 1}, {z, -1}, 0, 10);
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2(NegationOf(x), y, 1, 1), 2, 8);
+  root_level_bounds->Add(LinearExpression2(x, y, 2, -2), 0, 10);
+  repository.Add(lit_a, LinearExpression2(x, NegationOf(y), -3, 2), 1, 15);
+  repository.Add(lit_b, LinearExpression2(x, kNoIntegerVariable, -3, 0), 3, 5);
+  root_level_bounds->Add(LinearExpression2(x, y, 3, -1), 5, 15);
+  root_level_bounds->Add(LinearExpression2::Difference(x, z), 0, 10);
   repository.AddPartialRelation(lit_b, x, z);
-  repository.Build();
+  repository.Build(root_level_bounds);
 
-  EXPECT_EQ(repository.size(), 7);
-  EXPECT_EQ(repository.relation(0), (Relation{lit_a, {x, -1}, {y, 1}, 2, 8}));
-  EXPECT_EQ(repository.relation(1),
-            (Relation{Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10}));
-  EXPECT_EQ(repository.relation(2), (Relation{lit_a, {x, -3}, {y, -2}, 1, 15}));
-  EXPECT_EQ(repository.relation(3),
-            (Relation{lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5}));
-  EXPECT_EQ(repository.relation(6), (Relation{lit_b, {x, 1}, {z, 1}, 0, 0}));
-  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_a),
-              UnorderedElementsAre(0, 2));
-  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_b),
-              UnorderedElementsAre(3, 6));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(x),
-              UnorderedElementsAre(1, 4, 5));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(y),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(z),
-              UnorderedElementsAre(5));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, y),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(y, x),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, z),
-              UnorderedElementsAre(5));
+  auto get_rel = [&](absl::Span<const int> indexes) {
+    std::vector<Relation> result;
+    for (int i : indexes) {
+      result.push_back(repository.relation(i));
+    }
+    return result;
+  };
+  std::vector<int> all(repository.size());
+  std::iota(all.begin(), all.end(), 0);
+  EXPECT_THAT(
+      get_rel(all),
+      UnorderedElementsAre(
+          Relation{lit_a, LinearExpression2(x, y, -1, 1), 2, 8},
+          Relation{Literal(kNoLiteralIndex), LinearExpression2(x, y, 1, -1), 0,
+                   5},
+          Relation{Literal(kNoLiteralIndex), LinearExpression2(x, y, 3, -1), 5,
+                   15},
+          Relation{Literal(kNoLiteralIndex), LinearExpression2(x, z, 1, -1), 0,
+                   10},
+          Relation{lit_a, LinearExpression2(x, y, -3, -2), 1, 15},
+          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
+                   5},
+          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
+              UnorderedElementsAre(
+                  Relation{lit_a, LinearExpression2(x, y, -1, 1), 2, 8},
+                  Relation{lit_a, LinearExpression2(x, y, -3, -2), 1, 15}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+      UnorderedElementsAre(
+          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
+                   5},
+          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsContaining(x)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 1, -1), 0, 5},
+                           Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 3, -1), 5, 15},
+                           Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, z, 1, -1), 0, 10}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsContaining(y)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 1, -1), 0, 5},
+                           Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 3, -1), 5, 15}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsContaining(z)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, z, 1, -1), 0, 10}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsBetween(x, y)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 1, -1), 0, 5},
+                           Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 3, -1), 5, 15}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsBetween(y, x)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 1, -1), 0, 5},
+                           Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, y, 3, -1), 5, 15}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsBetween(x, z)),
+      UnorderedElementsAre(Relation{Literal(kNoLiteralIndex),
+                                    LinearExpression2(x, z, 1, -1), 0, 10}));
   EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());
 }
 
@@ -574,12 +621,11 @@ std::vector<Relation> GetRelations(Model& model) {
   std::vector<Relation> relations;
   for (int i = 0; i < repository.size(); ++i) {
     Relation r = repository.relation(i);
-    if (r.a.coeff < 0) {
+    if (r.expr.coeffs[0] < 0) {
       r = Relation({r.enforcement,
-                    {r.a.var, -r.a.coeff},
-                    {r.b.var, -r.b.coeff},
-                    -r.rhs,
-                    -r.lhs});
+                    LinearExpression2(r.expr.vars[0], r.expr.vars[1],
+                                      -r.expr.coeffs[0], -r.expr.coeffs[1]),
+                    -r.rhs, -r.lhs});
     }
     relations.push_back(r);
   }
@@ -638,21 +684,19 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
 
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
   EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(Relation{mapping.Literal(0),
-                                            {mapping.Integer(2), 1},
-                                            {mapping.Integer(3), -1},
-                                            0,
-                                            10},
-                                   Relation{mapping.Literal(1),
-                                            {mapping.Integer(2), 1},
-                                            {kNoIntegerVariable, 0},
-                                            5,
-                                            10},
-                                   Relation{Literal(kNoLiteralIndex),
-                                            {mapping.Integer(2), 3},
-                                            {mapping.Integer(3), -2},
-                                            -10,
-                                            10}));
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0),
+                           LinearExpression2::Difference(mapping.Integer(2),
+                                                         mapping.Integer(3)),
+                           0, 10},
+                  Relation{mapping.Literal(1),
+                           LinearExpression2(kNoIntegerVariable,
+                                             mapping.Integer(2), 0, 1),
+                           5, 10},
+                  Relation{Literal(kNoLiteralIndex),
+                           LinearExpression2(mapping.Integer(2),
+                                             mapping.Integer(3), 3, -2),
+                           -10, 10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -687,8 +731,10 @@ TEST(BinaryRelationRepositoryTest,
   // - b => x - 10.a in [10, 90]
   EXPECT_THAT(GetRelations(model),
               UnorderedElementsAre(
-                  Relation{mapping.Literal(0), {x, 1}, {b, -10}, 10, 90},
-                  Relation{mapping.Literal(1), {x, 1}, {a, -10}, 10, 90}));
+                  Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1),
+                           -90, -10},
+                  Relation{mapping.Literal(1), LinearExpression2(a, x, 10, -1),
+                           -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -721,10 +767,12 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x + 10.b in [10, 90]
   // - b => x + 10.a in [10, 90]
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(
-                  Relation{mapping.Literal(0), {x, 1}, {b, 10}, 10, 90},
-                  Relation{mapping.Literal(1), {x, 1}, {a, 10}, 10, 90}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 10, 90},
+          Relation{mapping.Literal(1), LinearExpression2(a, x, 10, 1), 10,
+                   90}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -760,8 +808,9 @@ TEST(BinaryRelationRepositoryTest,
   EXPECT_THAT(
       GetRelations(model),
       UnorderedElementsAre(
-          Relation{mapping.Literal(0), {x, 1}, {b, 10}, 20, 100},
-          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, -10}, 10, 90}));
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 20, 100},
+          Relation{mapping.Literal(1).Negated(),
+                   LinearExpression2(a, x, 10, -1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -797,8 +846,9 @@ TEST(BinaryRelationRepositoryTest,
   EXPECT_THAT(
       GetRelations(model),
       UnorderedElementsAre(
-          Relation{mapping.Literal(0), {x, 1}, {b, -10}, 0, 80},
-          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, 10}, 10, 90}));
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1), -80, 0},
+          Relation{mapping.Literal(1).Negated(), LinearExpression2(a, x, 10, 1),
+                   10, 90}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
@@ -807,8 +857,11 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
-  repository.Build();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_a => y => x + 2
+  repository.Build(root_level_bounds);
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
@@ -823,14 +876,17 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
   Model model;
-  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  const Literal kNoLiteral = Literal(kNoLiteralIndex);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);      // lit_a => y => x - 5
-  repository.Add(kNoLiteral, {x, -1}, {y, 1}, 2, 10);  // y => x + 2
-  repository.Build();
+  repository.Add(lit_a, LinearExpression2(x, y, -1, 1), -5,
+                 10);  // lit_a => y => x - 5
+  root_level_bounds->Add(LinearExpression2(x, y, -1, 1), 2,
+                         10);  // y => x + 2
+  repository.Build(root_level_bounds);
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
@@ -839,21 +895,25 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
       repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
 
   EXPECT_TRUE(result);
-  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -98),
                                            std::make_pair(y, 5)));
 }
 
 TEST(BinaryRelationRepositoryTest,
      PropagateLocalBounds_EnforcedBoundSmallerThanLevelZeroBound) {
   Model model;
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);  // lit_a => y => x - 5
-  repository.Add(lit_b, {x, -1}, {y, 1}, 2, 10);   // lit_b => y => x + 2
-  repository.Build();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), -5,
+                 10);  // lit_a => y => x - 5
+  repository.Add(lit_b, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_b => y => x + 2
+  repository.Build(root_level_bounds);
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
@@ -872,8 +932,11 @@ TEST(BinaryRelationRepositoryTest,
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
-  repository.Build();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_a => y => x + 2
+  repository.Build(root_level_bounds);
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output = {{y, 8}};
@@ -892,8 +955,11 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 8, 10);  // lit_a => y => x + 8
-  repository.Build();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 8,
+                 10);  // lit_a => y => x + 8
+  repository.Build(root_level_bounds);
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
@@ -918,10 +984,15 @@ TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
-  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
-  repository->Build();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository->Add(lit_a, LinearExpression2::Difference(d, a), 2,
+                  1000);  // d >= a + 2
+  repository->Add(lit_b, LinearExpression2::Difference(d, b), -1,
+                  1000);  // d >= b -1
+  repository->Add(lit_c, LinearExpression2::Difference(d, c), 0,
+                  1000);  // d >= c
+  repository->Build(root_level_bounds);
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
 
   auto* solver = model.GetOrCreate<SatSolver>();
@@ -946,10 +1017,14 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
-  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
-  repository->Build();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository->Add(lit_a, LinearExpression2(a, d, -1, 1), 2,
+                  1000);  // d >= a + 2
+  repository->Add(lit_b, LinearExpression2(b, d, -1, 1), -1,
+                  1000);                                            // d >= b -1
+  repository->Add(lit_c, LinearExpression2(c, d, -1, 1), 0, 1000);  // d >= c
+  repository->Build(root_level_bounds);
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
 
   auto* solver = model.GetOrCreate<SatSolver>();

@@ -187,6 +187,9 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
         self.assertEqual(30.0, response_wrapper.best_objective_bound())
+        self.assertRaises(TypeError, response_wrapper.value, None)
+        self.assertRaises(TypeError, response_wrapper.float_value, None)
+        self.assertRaises(TypeError, response_wrapper.boolean_value, None)
 
     def test_solution_callback(self):
         model_string = """

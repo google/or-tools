@@ -174,6 +174,9 @@ class CtExhaustiveHelper {
       absl::Span<const int> permutation);
 
  private:
+  void BuildPredecessors(absl::Span<const CompletionTimeEvent> events,
+                         Model* model);
+
   CompactVectorVector<int> predecessors_;
   int max_task_index_ = 0;
   std::vector<bool> visited_;

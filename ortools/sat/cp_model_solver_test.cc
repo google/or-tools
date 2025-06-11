@@ -109,7 +109,7 @@ TEST(StopAfterFirstSolutionTest, BooleanLinearOptimizationProblem) {
 
   Model model;
   SatParameters params;
-  params.set_num_search_workers(8);
+  params.set_num_workers(8);
   params.set_stop_after_first_solution(true);
 
   int num_solutions = 0;

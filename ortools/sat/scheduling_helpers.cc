@@ -48,7 +48,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      precedence_relations_(model->GetOrCreate<Linear2Bounds>()),
+      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       starts_(std::move(starts)),
       ends_(std::move(ends)),
@@ -87,7 +87,7 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
       sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(sat_solver_->Assignment()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedence_relations_(model->GetOrCreate<Linear2Bounds>()),
+      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       capacity_(num_tasks),
       cached_size_min_(new IntegerValue[capacity_]),
@@ -342,26 +342,22 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   return true;
 }
 
-// TODO(user): be more precise when we know a and b are in disjunction.
-// we really just need start_b > start_a, or even >= if duration is non-zero.
 IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
     int a, int b, bool add_reason_if_after) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  LinearExpression2 expr(before.var, after.var, before.coeff, -after.coeff);
+  const LinearExpression2 expr(before.var, after.var, before.coeff,
+                               -after.coeff);
 
-  // We take the min of the level zero (end_a - start_b) and the one coming from
-  // a conditional precedence at true.
-  const IntegerValue conditional_ub = precedence_relations_->UpperBound(expr);
-  const IntegerValue level_zero_ub = integer_trail_->LevelZeroUpperBound(expr);
-  const IntegerValue expr_ub = std::min(conditional_ub, level_zero_ub);
-
+  const IntegerValue expr_ub = linear2_bounds_->UpperBound(expr);
   const IntegerValue needed_offset = before.constant - after.constant;
   const IntegerValue ub_of_end_minus_start = expr_ub + needed_offset;
   const IntegerValue distance = -ub_of_end_minus_start;
-  if (add_reason_if_after && distance >= 0 && level_zero_ub > conditional_ub) {
-    precedence_relations_->AddReasonForUpperBoundLowerThan(
-        expr, conditional_ub, MutableLiteralReason(), MutableIntegerReason());
+  if (add_reason_if_after && distance >= 0) {
+    // TODO(user): be more precise when we know a and b are in disjunction. we
+    // really just need end_b > start_a.
+    linear2_bounds_->AddReasonForUpperBoundLowerThan(
+        expr, expr_ub, MutableLiteralReason(), MutableIntegerReason());
   }
   return distance;
 }
@@ -370,41 +366,46 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
 // associated to task a before task b. However we only call this for task that
 // are in detectable precedence, which means the normal precedence or linear
 // propagator should have already propagated that Boolean too.
-bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
+bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
   CHECK(IsPresent(a));
   CHECK(IsPresent(b));
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
 
-  const AffineExpression before = ends_[a];
-  const AffineExpression after = starts_[b];
-  if (after.coeff != 1) return true;
-  if (before.coeff != 1) return true;
-  if (after.var == kNoIntegerVariable) return true;
-  if (before.var == kNoIntegerVariable) return true;
-  if (before.var == after.var) {
-    if (before.constant <= after.constant) {
-      return true;
-    } else {
+  // Convert before <= after to linear2 <= rhs.
+  LinearExpression2 expr;
+  IntegerValue rhs;
+  {
+    const AffineExpression before = ends_[a];
+    const AffineExpression after = starts_[b];
+    expr.vars[0] = before.var;
+    expr.coeffs[0] = before.coeff;
+    expr.vars[1] = after.var;
+    expr.coeffs[1] = -after.coeff;
+    rhs = after.constant - before.constant;
+  }
+
+  // Canonicalization.
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  rhs = FloorRatio(rhs, gcd);
+
+  // Trivial case.
+  if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) {
+    if (rhs < 0) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+    return true;
   }
-  const IntegerValue offset = before.constant - after.constant;
-  const LinearExpression2 expr =
-      LinearExpression2::Difference(before.var, after.var);
-  if (root_level_lin2_bounds_->AddUpperBound(expr, -offset)) {
+
+  if (root_level_lin2_bounds_->AddUpperBound(expr, rhs)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
-    if (before.var == NegationOf(after.var)) {
-      AddWeightedSumLowerOrEqual({}, {before.var}, {int64_t{2}},
-                                 -offset.value(), model_);
-    } else {
-      // TODO(user): Adding new constraint during propagation might not be the
-      // best idea as it can create some complication.
-      AddWeightedSumLowerOrEqual({}, {before.var, after.var},
-                                 {int64_t{1}, int64_t{-1}}, -offset.value(),
-                                 model_);
-    }
+    // TODO(user): Adding new constraint during propagation might not be the
+    // best idea as it can create some complication.
+    AddWeightedSumLowerOrEqual({}, {expr.vars[0], expr.vars[1]},
+                               {expr.coeffs[0].value(), expr.coeffs[1].value()},
+                               rhs.value(), model_);
     if (sat_solver_->ModelIsUnsat()) return false;
   }
   return true;

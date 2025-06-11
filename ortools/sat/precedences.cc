@@ -304,7 +304,8 @@ void TransitivePrecedencesEvaluator::Build() {
   is_built_ = true;
 
   const std::vector<std::pair<LinearExpression2, IntegerValue>>
-      root_relations_sorted = root_level_bounds_->GetSortedNonTrivialBounds();
+      root_relations_sorted =
+          root_level_bounds_->GetSortedNonTrivialUpperBounds();
   int max_node = 0;
   for (const auto [expr, _] : root_relations_sorted) {
     max_node = std::max(max_node, PositiveVariable(expr.vars[0]).value());
@@ -1219,37 +1220,16 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
   return true;
 }
 
-void BinaryRelationRepository::Add(Literal lit, LinearTerm a, LinearTerm b,
+void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
                                    IntegerValue lhs, IntegerValue rhs) {
-  if (lit.Index() != kNoLiteralIndex) {
-    num_enforced_relations_++;
-    DCHECK(a.coeff == 0 || a.var != kNoIntegerVariable);
-    DCHECK(b.coeff == 0 || b.var != kNoIntegerVariable);
-  } else {
-    DCHECK_NE(a.coeff, 0);
-    DCHECK_NE(b.coeff, 0);
-    DCHECK_NE(a.var, kNoIntegerVariable);
-    DCHECK_NE(b.var, kNoIntegerVariable);
-  }
+  expr.MakeVariablesPositive();
+  CHECK_NE(lit.Index(), kNoLiteralIndex);
+  num_enforced_relations_++;
+  DCHECK(expr.coeffs[0] == 0 || expr.vars[0] != kNoIntegerVariable);
+  DCHECK(expr.coeffs[1] == 0 || expr.vars[1] != kNoIntegerVariable);
 
-  Relation r;
-  r.enforcement = lit;
-  r.a = a;
-  r.b = b;
-  r.lhs = lhs;
-  r.rhs = rhs;
-
-  // We shall only consider positive variable here.
-  if (r.a.var != kNoIntegerVariable && !VariableIsPositive(r.a.var)) {
-    r.a.var = NegationOf(r.a.var);
-    r.a.coeff = -r.a.coeff;
-  }
-  if (r.b.var != kNoIntegerVariable && !VariableIsPositive(r.b.var)) {
-    r.b.var = NegationOf(r.b.var);
-    r.b.coeff = -r.b.coeff;
-  }
-
-  relations_.push_back(std::move(r));
+  relations_.push_back(
+      {.enforcement = lit, .expr = expr, .lhs = lhs, .rhs = rhs});
 }
 
 void BinaryRelationRepository::AddPartialRelation(Literal lit,
@@ -1258,10 +1238,23 @@ void BinaryRelationRepository::AddPartialRelation(Literal lit,
   DCHECK_NE(a, kNoIntegerVariable);
   DCHECK_NE(b, kNoIntegerVariable);
   DCHECK_NE(a, b);
-  Add(lit, LinearTerm(a, 1), LinearTerm(b, 1), 0, 0);
+  Add(lit, LinearExpression2(a, b, 1, 1), 0, 0);
 }
 
-void BinaryRelationRepository::Build() {
+void BinaryRelationRepository::Build(
+    const RootLevelLinear2Bounds* root_level_bounds) {
+  for (const auto& [expr, lb, ub] :
+       root_level_bounds->GetSortedNonTrivialBounds()) {
+    LinearExpression2 positive_expr = expr;
+    positive_expr.MakeVariablesPositive();
+    Relation r;
+    r.enforcement = Literal(kNoLiteralIndex);
+    r.expr = positive_expr;
+    r.rhs = root_level_bounds->LevelZeroUpperBound(positive_expr);
+    positive_expr.Negate();
+    r.lhs = -root_level_bounds->LevelZeroUpperBound(positive_expr);
+    relations_.push_back(r);
+  }
   DCHECK(!is_built_);
   is_built_ = true;
   std::vector<std::pair<LiteralIndex, int>> literal_key_values;
@@ -1272,10 +1265,11 @@ void BinaryRelationRepository::Build() {
   for (int i = 0; i < num_relations; ++i) {
     const Relation& r = relations_[i];
     if (r.enforcement.Index() == kNoLiteralIndex) {
-      var_key_values.emplace_back(r.a.var, i);
-      var_key_values.emplace_back(r.b.var, i);
-      std::pair<IntegerVariable, IntegerVariable> key(r.a.var, r.b.var);
-      if (relations_[i].a.var > relations_[i].b.var) {
+      var_key_values.emplace_back(r.expr.vars[0], i);
+      var_key_values.emplace_back(r.expr.vars[1], i);
+      std::pair<IntegerVariable, IntegerVariable> key(r.expr.vars[0],
+                                                      r.expr.vars[1]);
+      if (relations_[i].expr.vars[0] > relations_[i].expr.vars[1]) {
         std::swap(key.first, key.second);
       }
       var_pair_to_relations_[key].push_back(i);
@@ -1311,24 +1305,28 @@ bool BinaryRelationRepository::PropagateLocalBounds(
   auto update_upper_bound_by_var = [&](IntegerVariable var, IntegerValue ub) {
     update_lower_bound_by_var(NegationOf(var), -ub);
   };
-  auto update_var_bounds = [&](const LinearTerm& a, const LinearTerm& b,
-                               IntegerValue lhs, IntegerValue rhs) {
-    if (a.coeff == 0) return;
+  auto update_var_bounds = [&](const LinearExpression2& expr, IntegerValue lhs,
+                               IntegerValue rhs) {
+    if (expr.coeffs[0] == 0) return;
 
     // lb(b.y) <= b.y <= ub(b.y) and lhs <= a.x + b.y <= rhs imply
     //   ceil((lhs - ub(b.y)) / a) <= x <= floor((rhs - lb(b.y)) / a)
-    if (b.coeff != 0) {
-      lhs = lhs - b.coeff * get_upper_bound(b.var);
-      rhs = rhs - b.coeff * get_lower_bound(b.var);
+    if (expr.coeffs[1] != 0) {
+      lhs = lhs - expr.coeffs[1] * get_upper_bound(expr.vars[1]);
+      rhs = rhs - expr.coeffs[1] * get_lower_bound(expr.vars[1]);
     }
-    update_lower_bound_by_var(a.var, MathUtil::CeilOfRatio(lhs, a.coeff));
-    update_upper_bound_by_var(a.var, MathUtil::FloorOfRatio(rhs, a.coeff));
+    update_lower_bound_by_var(expr.vars[0],
+                              MathUtil::CeilOfRatio(lhs, expr.coeffs[0]));
+    update_upper_bound_by_var(expr.vars[0],
+                              MathUtil::FloorOfRatio(rhs, expr.coeffs[0]));
   };
   auto update_var_bounds_from_relation = [&](Relation r) {
-    r.a.MakeCoeffPositive();
-    r.b.MakeCoeffPositive();
-    update_var_bounds(r.a, r.b, r.lhs, r.rhs);
-    update_var_bounds(r.b, r.a, r.lhs, r.rhs);
+    r.expr.SimpleCanonicalization();
+
+    update_var_bounds(r.expr, r.lhs, r.rhs);
+    std::swap(r.expr.vars[0], r.expr.vars[1]);
+    std::swap(r.expr.coeffs[0], r.expr.coeffs[1]);
+    update_var_bounds(r.expr, r.lhs, r.rhs);
   };
   if (lit.Index() < lit_to_relations_.size()) {
     for (const int relation_index : lit_to_relations_[lit]) {
@@ -1361,17 +1359,22 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
   const IntegerValue var_lb = integer_trail->LevelZeroLowerBound(var);
   for (const int index : indices) {
     Relation r = repository_.relation(index);
-    if (r.a.var != PositiveVariable(var)) std::swap(r.a, r.b);
-    CHECK_EQ(r.a.var, PositiveVariable(var));
+    if (r.expr.vars[0] != PositiveVariable(var)) {
+      std::swap(r.expr.vars[0], r.expr.vars[1]);
+      std::swap(r.expr.coeffs[0], r.expr.coeffs[1]);
+    }
+    CHECK_EQ(r.expr.vars[0], PositiveVariable(var));
 
-    if ((r.a.coeff == 1) == VariableIsPositive(var)) {
+    if ((r.expr.coeffs[0] == 1) == VariableIsPositive(var)) {
       //  a + b >= lhs
       if (r.lhs <= kMinIntegerValue) continue;
-      exprs.push_back(AffineExpression(r.b.var, -r.b.coeff, r.lhs));
+      exprs.push_back(
+          AffineExpression(r.expr.vars[1], -r.expr.coeffs[1], r.lhs));
     } else {
       // -a + b <= rhs.
       if (r.rhs >= kMaxIntegerValue) continue;
-      exprs.push_back(AffineExpression(r.b.var, r.b.coeff, -r.rhs));
+      exprs.push_back(
+          AffineExpression(r.expr.vars[1], r.expr.coeffs[1], -r.rhs));
     }
 
     // Ignore this entry if it is always true.
@@ -1419,11 +1422,13 @@ int GreaterThanAtLeastOneOfDetector::
     for (const int index :
          repository_.IndicesOfRelationsEnforcedBy(l.Index())) {
       const Relation& r = repository_.relation(index);
-      if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
-        infos.push_back({r.a.var, index});
+      if (r.expr.vars[0] != kNoIntegerVariable &&
+          IntTypeAbs(r.expr.coeffs[0]) == 1) {
+        infos.push_back({r.expr.vars[0], index});
       }
-      if (r.b.var != kNoIntegerVariable && IntTypeAbs(r.b.coeff) == 1) {
-        infos.push_back({r.b.var, index});
+      if (r.expr.vars[1] != kNoIntegerVariable &&
+          IntTypeAbs(r.expr.coeffs[1]) == 1) {
+        infos.push_back({r.expr.vars[1], index});
       }
     }
   }
@@ -1473,17 +1478,19 @@ int GreaterThanAtLeastOneOfDetector::
   for (int index = 0; index < repository_.size(); ++index) {
     const Relation& r = repository_.relation(index);
     if (r.enforcement.Index() == kNoLiteralIndex) continue;
-    if (r.a.var != kNoIntegerVariable && IntTypeAbs(r.a.coeff) == 1) {
-      if (r.a.var >= var_to_relations.size()) {
-        var_to_relations.resize(r.a.var + 1);
+    if (r.expr.vars[0] != kNoIntegerVariable &&
+        IntTypeAbs(r.expr.coeffs[0]) == 1) {
+      if (r.expr.vars[0] >= var_to_relations.size()) {
+        var_to_relations.resize(r.expr.vars[0] + 1);
       }
-      var_to_relations[r.a.var].push_back(index);
+      var_to_relations[r.expr.vars[0]].push_back(index);
     }
-    if (r.b.var != kNoIntegerVariable && IntTypeAbs(r.b.coeff) == 1) {
-      if (r.b.var >= var_to_relations.size()) {
-        var_to_relations.resize(r.b.var + 1);
+    if (r.expr.vars[1] != kNoIntegerVariable &&
+        IntTypeAbs(r.expr.coeffs[1]) == 1) {
+      if (r.expr.vars[1] >= var_to_relations.size()) {
+        var_to_relations.resize(r.expr.vars[1] + 1);
       }
-      var_to_relations[r.b.var].push_back(index);
+      var_to_relations[r.expr.vars[1]].push_back(index);
     }
   }
 
@@ -1844,6 +1851,21 @@ IntegerValue Linear2Bounds::UpperBound(LinearExpression2 expr) const {
   ub = std::min(ub, enforced_bounds_->GetUpperBoundFromEnforced(expr));
   ub = std::min(ub, linear3_bounds_->GetUpperBoundFromLinear3(expr));
   return CapProdI(gcd, ub);
+}
+
+IntegerValue Linear2Bounds::NonTrivialUpperBoundForGcd1(
+    LinearExpression2 expr) const {
+  expr.SimpleCanonicalization();
+  if (expr.coeffs[0] == 0) {
+    return integer_trail_->UpperBound(expr);
+  }
+  DCHECK_NE(expr.coeffs[1], 0);
+  DCHECK_EQ(1, expr.DivideByGcd());
+  IntegerValue ub = kMaxIntegerValue;
+  ub = std::min(ub, root_level_bounds_->GetUpperBoundNoTrail(expr));
+  ub = std::min(ub, enforced_bounds_->GetUpperBoundFromEnforced(expr));
+  ub = std::min(ub, linear3_bounds_->GetUpperBoundFromLinear3(expr));
+  return ub;
 }
 
 void Linear2Bounds::AddReasonForUpperBoundLowerThan(

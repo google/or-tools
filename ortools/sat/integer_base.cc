@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <numeric>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -128,6 +129,16 @@ bool LinearExpression2::IsCanonicalized() const {
   return coeffs[0] > 0 && coeffs[1] > 0;
 }
 
+void LinearExpression2::MakeVariablesPositive() {
+  SimpleCanonicalization();
+  for (int i = 0; i < 2; ++i) {
+    if (vars[i] != kNoIntegerVariable && !VariableIsPositive(vars[i])) {
+      coeffs[i] = -coeffs[i];
+      vars[i] = NegationOf(vars[i]);
+    }
+  }
+}
+
 std::pair<BestBinaryRelationBounds::AddResult,
           BestBinaryRelationBounds::AddResult>
 BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
@@ -224,7 +235,7 @@ IntegerValue BestBinaryRelationBounds::UpperBoundWhenCanonicalized(
 }
 
 std::vector<std::pair<LinearExpression2, IntegerValue>>
-BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
+BestBinaryRelationBounds::GetSortedNonTrivialUpperBounds() const {
   std::vector<std::pair<LinearExpression2, IntegerValue>> root_relations_sorted;
   root_relations_sorted.reserve(2 * best_bounds_.size());
   for (const auto& [expr, bounds] : best_bounds_) {
@@ -236,6 +247,18 @@ BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
     if (bounds.second != kMaxIntegerValue) {
       root_relations_sorted.push_back({expr, bounds.second});
     }
+  }
+  std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
+  return root_relations_sorted;
+}
+
+std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+      root_relations_sorted;
+  root_relations_sorted.reserve(best_bounds_.size());
+  for (const auto& [expr, bounds] : best_bounds_) {
+    root_relations_sorted.push_back({expr, bounds.first, bounds.second});
   }
   std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
   return root_relations_sorted;

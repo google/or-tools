@@ -1095,13 +1095,15 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
           // var1_min <= var1 - delta.var2 <= var1_max, which is equivalent to
           // the default bounds if var2 = 0, and gives implied_lb <= var1 <=
           // var1_max + delta otherwise.
-          repository->Add(enforcement_literal, {var1, 1}, {var2, -delta},
+          repository->Add(enforcement_literal,
+                          LinearExpression2(var1, var2, 1, -delta),
                           var1_domain.Min(), var1_domain.Max());
         } else if (negated_var2 != kNoIntegerVariable) {
           // var1_min + delta <= var1 + delta.neg_var2 <= var1_max + delta,
           // which is equivalent to the default bounds if neg_var2 = 1, and
           // gives implied_lb <= var1 <= var1_max + delta otherwise.
-          repository->Add(enforcement_literal, {var1, 1}, {negated_var2, delta},
+          repository->Add(enforcement_literal,
+                          LinearExpression2(var1, negated_var2, 1, delta),
                           var1_domain.Min() + delta, var1_domain.Max() + delta);
         }
       };
@@ -1137,27 +1139,23 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
 
     if (ct.enforcement_literal().empty()) {
       if (vars.size() == 2) {
-        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
-                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
-
-        LinearExpression2 expr;
-        expr.vars[0] = vars[0];
-        expr.vars[1] = vars[1];
-        expr.coeffs[0] = coeffs[0];
-        expr.coeffs[1] = coeffs[1];
+        const LinearExpression2 expr(vars[0], vars[1], coeffs[0], coeffs[1]);
         root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
       }
     } else {
       const Literal lit = mapping->Literal(ct.enforcement_literal(0));
       if (vars.size() == 1) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+        repository->Add(
+            lit, LinearExpression2(vars[0], kNoIntegerVariable, coeffs[0], 0),
+            rhs_min, rhs_max);
       } else if (vars.size() == 2) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
-                        rhs_min, rhs_max);
+        repository->Add(
+            lit, LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
+            rhs_min, rhs_max);
       }
     }
   }
-  repository->Build();
+  repository->Build(root_level_lin2_bounds);
 }
 
 }  // namespace
