@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0b21f5a..ddf1536 100644
+index 0b21f5a..6f08341 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
@@ -34,7 +34,12 @@ index 0b21f5a..ddf1536 100644
  
  # for colorized output
  if(NOT WIN32)
-@@ -69,6 +79,8 @@ set(CMAKE_MACOSX_RPATH ON)
+@@ -65,10 +75,12 @@ if(NOT CMAKE_BUILD_TYPE)
+ endif()
+ 
+ # set the correct rpath for OS X
+-set(CMAKE_MACOSX_RPATH ON)
++set(CMAKE_MACOSX_RPATH TRUE)
  
  # use C++14 standard
  set(CMAKE_CXX_STANDARD 14)
@@ -131,9 +136,20 @@ index 0b21f5a..ddf1536 100644
 +  add_subdirectory(check)
 +endif()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 84ec5a5..6f5d4ef 100644
+index 84ec5a5..4552300 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
+@@ -3,8 +3,8 @@
+ #
+ function(setLibProperties targetname outputname)
+     set_target_properties(${targetname} PROPERTIES
+-        OUTPUT_NAME ${outputname}
+-	MACOSX_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
++      OUTPUT_NAME ${outputname}
++    )
+ endfunction(setLibProperties)
+ 
+ include(GNUInstallDirs)
 @@ -193,24 +193,28 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
  set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
  
@@ -143,11 +159,11 @@ index 84ec5a5..6f5d4ef 100644
 +if(SOPLEX_SOPLEX)
 +  add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
 +  target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
- 
--if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
++
 +  # set the install rpath to the installed destination
 +  set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-+
+ 
+-if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
 +  if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
      set_target_properties(soplex PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/soplex_webdemo_shell.html)
      set(CMAKE_EXECUTABLE_SUFFIX ".html")
