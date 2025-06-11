@@ -94,6 +94,9 @@ function build_dotnet() {
   echo -n "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
   cmake --build temp_dotnet -j8 -v
+  echo "  Check libortools.dylib..." | tee -a build.log
+  otool -L temp_dotnet/lib/libortools.dylib | grep -vqz "/Users"
+  echo "  DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -181,6 +184,9 @@ function build_java() {
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
+  echo "  Check libortools.dylib..." | tee -a build.log
+  otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
+  echo "  DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -272,6 +278,9 @@ function build_python() {
     echo -n "Build Python ${PY_VERSION}..." | tee -a build.log
     cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
     cmake --build "temp_python${PY_VERSION}" -j8 -v
+    echo "  Check libortools.dylib..." | tee -a build.log
+    otool -L "temp_python${PY_VERSION}/lib/libortools.dylib" | grep -vqz "/Users"
+    echo "  DONE" | tee -a build.log
     echo "DONE" | tee -a build.log
     #cmake --build temp_python${PY_VERSION} --target test
     #echo "cmake test_python${PY_VERSION}: DONE" | tee -a build.log
@@ -321,14 +330,23 @@ function build_archive() {
 
   echo -n "Make cpp archive..." | tee -a build.log
   make archive_cpp
+  echo "  Check libortools.dylib..." | tee -a build.log
+  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
+  echo "  DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
   echo -n "Make dotnet archive..." | tee -a build.log
   make archive_dotnet
+  echo "  Check libortools.dylib..." | tee -a build.log
+  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
+  echo "  DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
   echo -n "Make java archive..." | tee -a build.log
   make archive_java
+  echo "  Check libortools.dylib..." | tee -a build.log
+  otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
+  echo "  DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
   # move archive to export
@@ -372,6 +390,7 @@ function reset() {
   cd "${ROOT_DIR}" || exit 2
 
   make clean
+  rm -rf temp_cpp
   rm -rf temp_dotnet
   rm -rf temp_java
   rm -rf temp_python*
