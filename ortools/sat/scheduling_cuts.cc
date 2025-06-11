@@ -1100,10 +1100,17 @@ std::string CompletionTimeEvent::DebugString() const {
       "]");
 }
 
+
 void CtExhaustiveHelper::Init(
     const absl::Span<const CompletionTimeEvent> events, Model* model) {
   max_task_index_ = 0;
-  if (events.empty() || events.size() > 100) return;
+  if (events.empty()) return;
+  // We compute the max_task_index_ from the events early to avoid sorting
+  // the events if there are too many of them.
+  for (const auto& event : events) {
+    max_task_index_ = std::max(max_task_index_, event.task_index);
+  }
+  if (events.size() > 100) return;
 
   ReifiedLinear2Bounds* binary_relations =
       model->GetOrCreate<ReifiedLinear2Bounds>();
@@ -1113,10 +1120,9 @@ void CtExhaustiveHelper::Init(
             [](const CompletionTimeEvent& a, const CompletionTimeEvent& b) {
               return a.task_index < b.task_index;
             });
-  max_task_index_ = sorted_events.back().task_index;
   predecessors_.reserve(max_task_index_ + 1);
-  for (const auto& e1 : events) {
-    for (const auto& e2 : events) {
+  for (const auto& e1 : sorted_events) {
+    for (const auto& e2 : sorted_events) {
       if (e2.task_index == e1.task_index) continue;
       if (binary_relations->GetLevelZeroPrecedenceStatus(e2.end, e1.start) ==
           RelationStatus::IS_TRUE) {
