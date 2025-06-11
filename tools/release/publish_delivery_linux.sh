@@ -76,9 +76,9 @@ function publish_java() {
   if [[ -x "$(command -v openssl11)" ]]; then
     OPENSSL_PRG=openssl11
   fi
-  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a build.log
+  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a publish.log
   command -v gpg
-  command -v gpg | xargs echo "gpg: " | tee -a build.log
+  command -v gpg | xargs echo "gpg: " | tee -a publish.log
 
   echo -n "Publish native Java..." | tee -a publish.log
   cmake --build temp_java --target java_native_deploy -v
