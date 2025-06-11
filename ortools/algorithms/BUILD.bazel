@@ -240,6 +240,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
