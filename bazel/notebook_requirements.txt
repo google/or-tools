@@ -256,7 +256,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-specifications
     #   jupyter-events
-requests==2.32.3
+requests==2.32.4
     # via
     #   -r bazel/notebook_requirements.in
     #   jupyterlab-server
