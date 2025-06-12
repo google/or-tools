@@ -89,9 +89,8 @@ std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
 std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> other) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(other);
-  const std::vector<int64_t> coeffs = {1, -1};
-  return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
+  exprs.push_back(other->MulInt(-1));
+  return std::make_shared<SumArray>(exprs);
 }
 
 std::shared_ptr<LinearExpr> LinearExpr::SubInt(int64_t cst) {
