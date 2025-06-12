@@ -545,6 +545,7 @@ class MinOutgoingFlowHelper {
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
   const IntegerEncoder& integer_encoder_;
+  const RootLevelLinear2Bounds& root_level_bounds_;
   SharedStatistics* shared_stats_;
 
   // Temporary data used by ComputeMinOutgoingFlow(). Always contain default

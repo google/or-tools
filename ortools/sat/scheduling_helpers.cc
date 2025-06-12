@@ -371,23 +371,8 @@ bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
   CHECK(IsPresent(b));
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
 
-  // Convert before <= after to linear2 <= rhs.
-  LinearExpression2 expr;
-  IntegerValue rhs;
-  {
-    const AffineExpression before = ends_[a];
-    const AffineExpression after = starts_[b];
-    expr.vars[0] = before.var;
-    expr.coeffs[0] = before.coeff;
-    expr.vars[1] = after.var;
-    expr.coeffs[1] = -after.coeff;
-    rhs = after.constant - before.constant;
-  }
-
-  // Canonicalization.
-  expr.SimpleCanonicalization();
-  const IntegerValue gcd = expr.DivideByGcd();
-  rhs = FloorRatio(rhs, gcd);
+  // Convert ends_[a] <= starts[b] to linear2 <= rhs and canonicalize.
+  const auto [expr, rhs] = EncodeDifferenceLowerThan(ends_[a], starts_[b], 0);
 
   // Trivial case.
   if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) {

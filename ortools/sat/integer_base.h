@@ -427,6 +427,24 @@ struct LinearExpression2 {
   }
 };
 
+// Encodes (a - b <= ub) in (linear2 <= ub) format.
+// Note that the returned expression is canonicalized and divided by its GCD.
+inline std::pair<LinearExpression2, IntegerValue> EncodeDifferenceLowerThan(
+    AffineExpression a, AffineExpression b, IntegerValue ub) {
+  LinearExpression2 expr;
+  expr.vars[0] = a.var;
+  expr.coeffs[0] = a.coeff;
+  expr.vars[1] = b.var;
+  expr.coeffs[1] = -b.coeff;
+  IntegerValue rhs = ub + b.constant - a.constant;
+
+  // Canonicalize.
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  rhs = FloorRatio(rhs, gcd);
+  return {std::move(expr), rhs};
+}
+
 template <typename H>
 H AbslHashValue(H h, const LinearExpression2& e) {
   h = H::combine(std::move(h), e.vars[0]);

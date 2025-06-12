@@ -1155,7 +1155,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
       }
     }
   }
-  repository->Build(root_level_lin2_bounds);
+  repository->Build();
 }
 
 }  // namespace

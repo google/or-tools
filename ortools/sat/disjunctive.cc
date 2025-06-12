@@ -1254,6 +1254,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     int best_index = -1;
     const IntegerValue current_var_lb = integer_trail_->LowerBound(var);
     IntegerValue best_new_lb = current_var_lb;
+    IntegerValue min_offset_at_best = kMinIntegerValue;
     IntegerValue min_offset = kMaxIntegerValue;
     IntegerValue sum_of_duration = 0;
     for (int i = num_before; --i >= 0;) {
@@ -1298,6 +1299,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       const IntegerValue start = task_time.time;
       const IntegerValue new_lb = start + sum_of_duration + min_offset;
       if (new_lb > best_new_lb) {
+        min_offset_at_best = min_offset;
         best_new_lb = new_lb;
         best_index = i;
       }
@@ -1315,14 +1317,13 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         helper_->AddPresenceReason(ct);
         helper_->AddEnergyAfterReason(ct, helper_->SizeMin(ct), window_start);
 
-        // Fetch the explanation.
+        // Fetch the explanation of (var - end) >= min_offset
         // This is okay if a bit slow since we only do that when we push.
-        const AffineExpression& end_exp = helper_->Ends()[ct];
-        const LinearExpression2 expr =
-            LinearExpression2::Difference(end_exp.var, var);
+        const auto [expr, ub] = EncodeDifferenceLowerThan(
+            helper_->Ends()[ct], var, -min_offset_at_best);
         linear2_bounds_->AddReasonForUpperBoundLowerThan(
-            expr, linear2_bounds_->UpperBound(expr),
-            helper_->MutableLiteralReason(), helper_->MutableIntegerReason());
+            expr, ub, helper_->MutableLiteralReason(),
+            helper_->MutableIntegerReason());
       }
       ++stats_.num_propagations;
       if (!helper_->PushIntegerLiteral(

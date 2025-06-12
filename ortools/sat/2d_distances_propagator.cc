@@ -180,15 +180,10 @@ bool Precedences2DPropagator::Propagate() {
         if (j == 1) {
           std::swap(b1, b2);
         }
-        LinearExpression2 expr;
-        expr.vars[0] = helper->Starts()[b1].var;
-        expr.vars[1] = helper->Ends()[b2].var;
-        expr.coeffs[0] = helper->Starts()[b1].coeff;
-        expr.coeffs[1] = -helper->Ends()[b2].coeff;
+        const auto [expr, ub] = EncodeDifferenceLowerThan(
+            helper->Starts()[b1], helper->Ends()[b2], -1);
         linear2_bounds_->AddReasonForUpperBoundLowerThan(
-            expr,
-            -(helper->Starts()[b1].constant - helper->Ends()[b2].constant) - 1,
-            helper_.x_helper().MutableLiteralReason(),
+            expr, ub, helper_.x_helper().MutableLiteralReason(),
             helper_.x_helper().MutableIntegerReason());
       }
     }

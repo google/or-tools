@@ -45,12 +45,8 @@
 namespace operations_research {
 namespace sat {
 
-struct FullIntegerPrecedence {
-  IntegerVariable var;
-  std::vector<int> indices;
-  std::vector<IntegerValue> offsets;
-};
-
+// This holds all the relation lhs <= linear2 <= rhs that are true at level
+// zero. It is the source of truth across all the solver for such bounds.
 class RootLevelLinear2Bounds {
  public:
   explicit RootLevelLinear2Bounds(Model* model)
@@ -75,17 +71,27 @@ class RootLevelLinear2Bounds {
 
   int64_t num_bounds() const { return root_level_relations_.num_bounds(); }
 
-  // Return a list of (expr <= ub) sorted by expr.
+  // Return a list of (expr <= ub) sorted by expr. They are guaranteed to be
+  // better than the trivial upper bound.
   std::vector<std::pair<LinearExpression2, IntegerValue>>
-  GetSortedNonTrivialUpperBounds() const {
-    return root_level_relations_.GetSortedNonTrivialUpperBounds();
-  }
+  GetSortedNonTrivialUpperBounds() const;
 
-  // Return a list of (lb <= expr <= ub) sorted by expr.
+  // Return a list of (lb <= expr <= ub), with expr.vars[0] = var, where at
+  // least one of the bounds is non-trivial and the potential other non-trivial
+  // bound is tight.
+  //
+  // As the class name indicates, all bounds are level zero ones.
   std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
-  GetSortedNonTrivialBounds() const {
-    return root_level_relations_.GetSortedNonTrivialBounds();
-  }
+  GetAllBoundsContainingVariable(IntegerVariable var) const;
+
+  // Return a list of (lb <= expr <= ub), with expr.vars = {var1, var2}, where
+  // at least one of the bounds is non-trivial and the potential other
+  // non-trivial bound is tight.
+  //
+  // As the class name indicates, all bounds are level zero ones.
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+  GetAllBoundsContainingVariables(IntegerVariable var1,
+                                  IntegerVariable var2) const;
 
   // For a given variable `var`, return all variables `other` so that
   // LinearExpression2(var, other, 1, 1) has a non trivial upper bound.
@@ -115,10 +121,37 @@ class RootLevelLinear2Bounds {
   util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
       coeff_one_var_lookup_;
 
+  // TODO(user): use data structures that consume less memory. A single
+  // std::vector<LinearExpression2> and hash maps having the index as value
+  // could be enough.
+  absl::flat_hash_map<
+      IntegerVariable,
+      absl::InlinedVector<
+          std::tuple<LinearExpression2, IntegerValue, IntegerValue>, 2>>
+      var_to_bounds_;
+  // Map to implement GetAllBoundsContainingVariables().
+  absl::flat_hash_map<
+      std::pair<IntegerVariable, IntegerVariable>,
+      absl::InlinedVector<
+          std::tuple<LinearExpression2, IntegerValue, IntegerValue>, 1>>
+      var_pair_to_bounds_;
+  // Data structure to quickly update var_to_bounds_. Return the index where
+  // this linear expression appear in the vector for the first and second
+  // variable.
+  absl::flat_hash_map<LinearExpression2, std::pair<int, int>>
+      var_to_bounds_vector_index_;
+  absl::flat_hash_map<LinearExpression2, int> var_pair_to_bounds_vector_index_;
+
   // TODO(user): Also push them to a global shared repository after
   // remapping IntegerVariable to proto indices.
   BestBinaryRelationBounds root_level_relations_;
   int64_t num_updates_ = 0;
+};
+
+struct FullIntegerPrecedence {
+  IntegerVariable var;
+  std::vector<int> indices;
+  std::vector<IntegerValue> offsets;
 };
 
 // This class is used to compute the transitive closure of the level-zero
@@ -223,27 +256,15 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   //
   // This method currently ignores all linear2 expressions with any coefficient
   // different from 1.
+  //
+  // TODO(user): Ideally this should be moved to a new class and maybe augmented
+  // with other kind of precedences.
   struct PrecedenceData {
     IntegerVariable var;
     int index;
   };
   void CollectPrecedences(absl::Span<const IntegerVariable> vars,
                           std::vector<PrecedenceData>* output);
-
-  IntegerValue LevelZeroUpperBound(LinearExpression2 expr) const {
-    return root_level_bounds_->LevelZeroUpperBound(expr);
-  }
-
-  // Returns the maximum value for expr, and the reason for it (all
-  // true). Note that we always check LevelZeroUpperBound() so if it is better,
-  // the returned literal reason will be empty.
-  //
-  // We separate the two because usually the reason is only needed when we push,
-  // which happen less often, so we don't mind doing two hash lookups, and we
-  // really want to optimize the UpperBound() instead.
-  //
-  // NOTE: most users will want to call Linear2Bounds::UpperBound() instead.
-  IntegerValue UpperBound(LinearExpression2 expr) const;
 
   // Low-level function that returns the upper bound if there is some enforced
   // relations only. Otherwise always returns kMaxIntegerValue.
@@ -325,8 +346,7 @@ struct Relation {
   }
 };
 
-// A repository of all the enforced linear constraints of size 1 or 2, and of
-// all the non-enforced linear constraints of size 2.
+// A repository of all the enforced linear constraints of size 1 or 2.
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
@@ -344,25 +364,6 @@ class BinaryRelationRepository {
     return lit_to_relations_[lit];
   }
 
-  // Returns the indices of the non-enforced relations that contain the given
-  // (positive) variable.
-  absl::Span<const int> IndicesOfRelationsContaining(
-      IntegerVariable var) const {
-    if (var >= var_to_relations_.size()) return {};
-    return var_to_relations_[var];
-  }
-
-  // Returns the indices of the non-enforced relations that contain the given
-  // (positive) variables.
-  absl::Span<const int> IndicesOfRelationsBetween(IntegerVariable var1,
-                                                  IntegerVariable var2) const {
-    if (var1 > var2) std::swap(var1, var2);
-    const std::pair<IntegerVariable, IntegerVariable> key(var1, var2);
-    const auto it = var_pair_to_relations_.find(key);
-    if (it == var_pair_to_relations_.end()) return {};
-    return it->second;
-  }
-
   // Adds a conditional relation lit => expr \in [lhs, rhs] (one of the coeffs
   // can be zero).
   void Add(Literal lit, LinearExpression2 expr, IntegerValue lhs,
@@ -374,7 +375,7 @@ class BinaryRelationRepository {
 
   // Builds the literal to relations mapping. This should be called once all the
   // relations have been added.
-  void Build(const RootLevelLinear2Bounds* root_level_bounds);
+  void Build();
 
   // Assuming level-zero bounds + any (var >= value) in the input map,
   // fills "output" with a "propagated" set of bounds assuming lit is true (by
@@ -386,7 +387,8 @@ class BinaryRelationRepository {
   // Important: by default this does not call output->clear() so we can take
   // the max with already inferred bounds.
   bool PropagateLocalBounds(
-      const IntegerTrail& integer_trail, Literal lit,
+      const IntegerTrail& integer_trail,
+      const RootLevelLinear2Bounds& root_level_bounds, Literal lit,
       const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
       absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
 
@@ -395,10 +397,6 @@ class BinaryRelationRepository {
   int num_enforced_relations_ = 0;
   std::vector<Relation> relations_;
   CompactVectorVector<LiteralIndex, int> lit_to_relations_;
-  CompactVectorVector<IntegerVariable, int> var_to_relations_;
-  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
-                      std::vector<int>>
-      var_pair_to_relations_;
 };
 
 // Class that keeps the best upper bound for a*x + b*y by using all the linear3
@@ -485,10 +483,6 @@ class ReifiedLinear2Bounds {
   LiteralIndex GetReifiedPrecedence(AffineExpression a, AffineExpression b);
 
  private:
-  // Return the pair (a - b) <= rhs.
-  std::pair<LinearExpression2, IntegerValue> FromDifference(
-      const AffineExpression& a, const AffineExpression& b) const;
-
   IntegerEncoder* integer_encoder_;
   RootLevelLinear2Bounds* best_root_level_bounds_;
 

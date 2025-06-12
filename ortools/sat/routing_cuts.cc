@@ -124,6 +124,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       trail_(*model->GetOrCreate<Trail>()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
       integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
+      root_level_bounds_(*model->GetOrCreate<RootLevelLinear2Bounds>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       in_subset_(num_nodes, false),
       index_in_subset_(num_nodes, -1),
@@ -629,7 +630,8 @@ int MinOutgoingFlowHelper::ComputeMinOutgoingFlow(
         // If this arc cannot be taken skip.
         tmp_lbs.clear();
         if (!binary_relation_repository_.PropagateLocalBounds(
-                integer_trail_, lit, node_var_lower_bounds_[tail], &tmp_lbs)) {
+                integer_trail_, root_level_bounds_, lit,
+                node_var_lower_bounds_[tail], &tmp_lbs)) {
           continue;
         }
 
@@ -755,8 +757,8 @@ int MinOutgoingFlowHelper::ComputeTightMinOutgoingFlow(
         // If this arc cannot be taken skip.
         tmp_lbs.clear();
         if (!binary_relation_repository_.PropagateLocalBounds(
-                integer_trail_, literals_[outgoing_arc_index], path_bounds,
-                &tmp_lbs)) {
+                integer_trail_, root_level_bounds_,
+                literals_[outgoing_arc_index], path_bounds, &tmp_lbs)) {
           continue;
         }
 
@@ -916,7 +918,7 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
 
     absl::flat_hash_map<IntegerVariable, IntegerValue> copy = state.lbs;
     return binary_relation_repository_.PropagateLocalBounds(
-        integer_trail_, unique_lit, copy, &state.lbs);
+        integer_trail_, root_level_bounds_, unique_lit, copy, &state.lbs);
   };
 
   // We always start with the first node in this case.
@@ -1011,7 +1013,8 @@ bool MinOutgoingFlowHelper::SubsetMightBeServedWithKRoutes(
           }
         } else {
           if (!binary_relation_repository_.PropagateLocalBounds(
-                  integer_trail_, literal, from_state.lbs, &to_state.lbs)) {
+                  integer_trail_, root_level_bounds_, literal, from_state.lbs,
+                  &to_state.lbs)) {
             continue;
           }
         }
@@ -1409,6 +1412,8 @@ class RouteRelationsBuilder {
     const auto& integer_encoder = *model->GetOrCreate<IntegerEncoder>();
     const auto& trail = *model->GetOrCreate<Trail>();
     const auto& integer_trail = *model->GetOrCreate<IntegerTrail>();
+    const auto& root_level_bounds =
+        *model->GetOrCreate<RootLevelLinear2Bounds>();
     DCHECK_EQ(trail.CurrentDecisionLevel(), 0);
 
     flat_arc_dim_relations_ = std::vector<HeadMinusTailBounds>(
@@ -1532,13 +1537,12 @@ class RouteRelationsBuilder {
 
         // Check if we can use non-enforced relations to improve the relations.
         if (!tail_expr.IsEmpty() && !head_expr.IsEmpty()) {
-          for (const int relation_index :
-               binary_relation_repository_.IndicesOfRelationsBetween(
+          for (const auto& [expr, lb, ub] :
+               root_level_bounds.GetAllBoundsContainingVariables(
                    tail_expr.var, head_expr.var)) {
-            ComputeArcRelation(
-                i, dimension, tail_expr, head_expr,
-                binary_relation_repository_.relation(relation_index),
-                integer_trail);
+            ComputeArcRelation(i, dimension, tail_expr, head_expr,
+                               Relation{Literal(kNoLiteralIndex), expr, lb, ub},
+                               integer_trail);
           }
         }
 
@@ -1858,7 +1862,7 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
                                   ToPositiveIntegerVariable(vars[1]));
   }
   Model empty_model;
-  repository.Build(empty_model.GetOrCreate<RootLevelLinear2Bounds>());
+  repository.Build();
   return repository;
 }
 
@@ -1945,6 +1949,7 @@ class RoutingCutHelper {
             *model->GetOrCreate<BinaryRelationRepository>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
+        root_level_bounds_(*model->GetOrCreate<RootLevelLinear2Bounds>()),
         in_subset_(num_nodes, false),
         self_arc_literal_(num_nodes_),
         self_arc_lp_value_(num_nodes_),
@@ -2078,6 +2083,7 @@ class RoutingCutHelper {
   const BinaryRelationRepository& binary_relation_repository_;
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;
+  const RootLevelLinear2Bounds& root_level_bounds_;
 
   std::vector<bool> in_subset_;
 
@@ -2783,7 +2789,8 @@ void RoutingCutHelper::GenerateCutsForInfeasiblePaths(
       const Literal next_literal = literals_[arc_index];
       next_state.bounds = state.bounds;
       if (binary_relation_repository_.PropagateLocalBounds(
-              integer_trail_, next_literal, state.bounds, &next_state.bounds)) {
+              integer_trail_, root_level_bounds_, next_literal, state.bounds,
+              &next_state.bounds)) {
         // Do not explore "long" paths to keep the search time bounded.
         if (path_length < max_path_length) {
           path_nodes[next_state.last_node] = true;
