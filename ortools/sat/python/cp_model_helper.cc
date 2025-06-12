@@ -961,6 +961,36 @@ PYBIND11_MODULE(cp_model_helper, m) {
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
+          "__iadd__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddInPlace(other);
+            return expr;
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Add))
+      .def(
+          "__iadd__",
+          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddIntInPlace(cst);
+            return expr;
+          },
+          DOC(operations_research, sat, python, LinearExpr, AddInt))
+      .def(
+          "__iadd__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddFloatInPlace(cst);
+            return expr;
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, AddFloat))
+      .def(
           "__sub__",
           [](py::object self,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
@@ -1002,6 +1032,36 @@ PYBIND11_MODULE(cp_model_helper, m) {
             return expr->SubFloat(cst);
           },
           py::arg("cst"),
+          DOC(operations_research, sat, python, LinearExpr, SubFloat))
+      .def(
+          "__isub__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddInPlace(other->MulInt(-1));
+            return expr;
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Sub))
+      .def(
+          "__isub__",
+          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddIntInPlace(-cst);
+            return expr;
+          },
+          DOC(operations_research, sat, python, LinearExpr, SubInt))
+      .def(
+          "__isub__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddFloatInPlace(-cst);
+            return expr;
+          },
+          py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))
       .def_property_readonly("num_exprs", &SumArray::num_exprs)
       .def_property_readonly("int_offset", &SumArray::int_offset)

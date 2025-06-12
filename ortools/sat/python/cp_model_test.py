@@ -2447,6 +2447,20 @@ TRFM"""
         x = [model.new_int_var(0, 10, f"x{i}") for i in range(100000)]
         model.add(sum(x) == 10)
 
+    def test_large_iadd(self):
+        model = cp_model.CpModel()
+        s = 0
+        for _ in range(300000):
+            s += model.new_bool_var("")
+        model.add(s == 10)
+
+    def test_large_isub(self):
+        model = cp_model.CpModel()
+        s = 0
+        for _ in range(300000):
+            s -= model.new_bool_var("")
+        model.add(s == 10)
+
     def test_simplification1(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
