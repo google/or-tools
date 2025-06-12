@@ -364,6 +364,20 @@ ENDATA
         c5 = x - y == 3
         self.assertEqual(str(c5), "(x - y) == 3")
 
+    def test_large_iadd(self):
+        model = mb.Model()
+        s = 0
+        for _ in range(300000):
+            s += model.new_bool_var("")
+        model.add(s == 10)
+
+    def test_large_isub(self):
+        model = mb.Model()
+        s = 0
+        for _ in range(300000):
+            s -= model.new_bool_var("")
+        model.add(s == 10)
+
     def test_variables(self):
         model = mb.Model()
         x = model.new_int_var(0.0, 4.0, "x")

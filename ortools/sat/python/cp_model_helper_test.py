@@ -303,7 +303,7 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertEqual(str(e5), "(x - 1)")
         e6 = x - 2 * y
         self.assertTrue(e6.is_integer())
-        self.assertEqual(str(e6), "(x - (2 * y))")
+        self.assertEqual(str(e6), "(x + (-(2 * y)))")
         z = TestIntVar(2, "z", True)
         e7 = -z
         self.assertTrue(e7.is_integer())
@@ -323,7 +323,7 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertEqual(str(e11), "(x + 2 * y + 3 * z - 5)")
 
         e12 = x - y - 2 * z
-        self.assertEqual(str(e12), "(-(2 * z) + (x - y))")
+        self.assertEqual(str(e12), "(x + (-y) + (-(2 * z)))")
 
     def test_float_lin_expr(self):
         x = TestIntVar(0, "x")
@@ -351,7 +351,7 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertEqual(str(e6), "(x + (2.4 * y))")
         e7 = x - 2.4 * y
         self.assertFalse(e7.is_integer())
-        self.assertEqual(str(e7), "(x - (2.4 * y))")
+        self.assertEqual(str(e7), "(x + (-(2.4 * y)))")
 
         z = TestIntVar(2, "z")
         e8 = cmh.LinearExpr.sum([x, y, z, -2])

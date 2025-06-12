@@ -252,7 +252,7 @@ class CpModelTest(absltest.TestCase):
         y = model.NewIntVar(0, 2, "y")
         z = model.NewIntVar(0, 3, "z")
         expr = x - y - 2 * z
-        self.assertEqual(str(expr), '(x + (-y) + (-(2 * z)))')
+        self.assertEqual(str(expr), "(x + (-y) + (-(2 * z)))")
 
     def test_equality_overload(self) -> None:
         model = cp_model.CpModel()

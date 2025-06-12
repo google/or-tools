@@ -460,6 +460,26 @@ PYBIND11_MODULE(model_builder_helper, m) {
             return expr->AddFloat(cst);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
+      .def(
+          "__iadd__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddInPlace(other);
+            return expr;
+          },
+          py::arg("other").none(false),
+          "Returns the sum of `self` and `other`.")
+      .def(
+          "__iadd__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddFloatInPlace(cst);
+            return expr;
+          },
+          py::arg("cst"), "Returns `self` + `cst`.")
       .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
            "Returns `self` + `other`.")
       .def(
@@ -500,6 +520,25 @@ PYBIND11_MODULE(model_builder_helper, m) {
               return expr;
             }
             return expr->SubFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` - `cst`.")
+      .def(
+          "__isub__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddInPlace(other->Neg());
+            return expr;
+          },
+          py::arg("other").none(false), "Returns `self` - `other`.")
+      .def(
+          "__isub__",
+          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            expr->AddFloatInPlace(-cst);
+            return expr;
           },
           py::arg("cst"), "Returns `self` - `cst`.")
       .def_property_readonly(
