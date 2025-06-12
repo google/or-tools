@@ -1079,40 +1079,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
   py::class_<IntAffine, std::shared_ptr<IntAffine>, LinearExpr>(
       m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
       .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())
-      .def("__add__", &LinearExpr::Add, py::arg("other").none(false),
-           DOC(operations_research, sat, python, LinearExpr, Add))
-      .def("__add__", &IntAffine::AddInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__add__", &LinearExpr::AddFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
-           DOC(operations_research, sat, python, LinearExpr, Add))
-      .def("__radd__", &IntAffine::AddInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddInt))
-      .def("__radd__", &LinearExpr::AddFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, AddFloat))
-      .def("__sub__", &LinearExpr::Sub, py::arg("other").none(false),
-           DOC(operations_research, sat, python, LinearExpr, Sub))
-      .def("__sub__", &IntAffine::SubInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, SubInt))
-      .def("__sub__", &LinearExpr::SubFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, SubFloat))
-      .def("__rsub__", &LinearExpr::RSub, py::arg("other").none(false),
-           DOC(operations_research, sat, python, LinearExpr, RSub))
-      .def("__rsub__", &IntAffine::RSubInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, RSubInt))
-      .def("__rsub__", &LinearExpr::SubFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, RSubFloat))
-      .def("__mul__", &IntAffine::MulInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__mul__", &LinearExpr::MulFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def("__rmul__", &IntAffine::MulInt, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulInt))
-      .def("__rmul__", &LinearExpr::MulFloat, py::arg("cst"),
-           DOC(operations_research, sat, python, LinearExpr, MulFloat))
-      .def("__neg__", &IntAffine::Neg,
-           DOC(operations_research, sat, python, LinearExpr, Neg))
       .def_property_readonly("expression", &IntAffine::expression,
                              "Returns the linear expression.")
       .def_property_readonly("coefficient", &IntAffine::coefficient,

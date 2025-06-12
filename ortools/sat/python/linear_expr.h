@@ -103,27 +103,27 @@ class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
   /// Returns (this) + (expr).
   std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> other);
   /// Returns (this) + (cst).
-  std::shared_ptr<LinearExpr> AddInt(int64_t cst);
+  virtual std::shared_ptr<LinearExpr> AddInt(int64_t cst);
   /// Returns (this) + (cst).
   std::shared_ptr<LinearExpr> AddFloat(double cst);
   /// Returns (this) - (expr).
   std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> other);
   /// Returns (this) - (cst).
-  std::shared_ptr<LinearExpr> SubInt(int64_t cst);
+  virtual std::shared_ptr<LinearExpr> SubInt(int64_t cst);
   /// Returns (this) - (cst).
   std::shared_ptr<LinearExpr> SubFloat(double cst);
   /// Returns (expr) - (this).
   std::shared_ptr<LinearExpr> RSub(std::shared_ptr<LinearExpr> other);
   /// Returns (cst) - (this).
-  std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
+  virtual std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
   /// Returns (cst) - (this).
   std::shared_ptr<LinearExpr> RSubFloat(double cst);
   /// Returns (this) * (cst).
-  std::shared_ptr<LinearExpr> MulInt(int64_t cst);
+  virtual std::shared_ptr<LinearExpr> MulInt(int64_t cst);
   /// Returns (this) * (cst).
   std::shared_ptr<LinearExpr> MulFloat(double cst);
   /// Returns -(this).
-  std::shared_ptr<LinearExpr> Neg();
+  virtual std::shared_ptr<LinearExpr> Neg();
 
   /// Returns (this) == (rhs).
   std::shared_ptr<BoundedLinearExpression> Eq(std::shared_ptr<LinearExpr> rhs);
@@ -381,11 +381,11 @@ class IntAffine : public LinearExpr {
   /// Returns the offset.
   int64_t offset() const { return offset_; }
 
-  std::shared_ptr<LinearExpr> AddInt(int64_t cst);
-  std::shared_ptr<LinearExpr> SubInt(int64_t cst);
-  std::shared_ptr<LinearExpr> RSubInt(int64_t cst);
-  std::shared_ptr<LinearExpr> MulInt(int64_t cst);
-  std::shared_ptr<LinearExpr> Neg();
+  std::shared_ptr<LinearExpr> AddInt(int64_t cst) override;
+  std::shared_ptr<LinearExpr> SubInt(int64_t cst) override;
+  std::shared_ptr<LinearExpr> RSubInt(int64_t cst) override;
+  std::shared_ptr<LinearExpr> MulInt(int64_t cst) override;
+  std::shared_ptr<LinearExpr> Neg() override;
 
  private:
   std::shared_ptr<LinearExpr> expr_;

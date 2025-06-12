@@ -63,12 +63,12 @@ class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
   static std::shared_ptr<LinearExpr> Constant(double value);
 
   std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> expr);
-  std::shared_ptr<LinearExpr> AddFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> AddFloat(double cst);
   std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> expr);
-  std::shared_ptr<LinearExpr> SubFloat(double cst);
-  std::shared_ptr<LinearExpr> RSubFloat(double cst);
-  std::shared_ptr<LinearExpr> MulFloat(double cst);
-  std::shared_ptr<LinearExpr> Neg();
+  virtual std::shared_ptr<LinearExpr> SubFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> RSubFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> MulFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> Neg();
 
   std::shared_ptr<BoundedLinearExpression> Eq(std::shared_ptr<LinearExpr> rhs);
   std::shared_ptr<BoundedLinearExpression> EqCst(double rhs);
@@ -243,11 +243,11 @@ class AffineExpr : public LinearExpr {
   double coefficient() const { return coeff_; }
   double offset() const { return offset_; }
 
-  std::shared_ptr<LinearExpr> AddFloat(double cst);
-  std::shared_ptr<LinearExpr> SubFloat(double cst);
-  std::shared_ptr<LinearExpr> RSubFloat(double cst);
-  std::shared_ptr<LinearExpr> MulFloat(double cst);
-  std::shared_ptr<LinearExpr> Neg();
+  std::shared_ptr<LinearExpr> AddFloat(double cst) override;
+  std::shared_ptr<LinearExpr> SubFloat(double cst) override;
+  std::shared_ptr<LinearExpr> RSubFloat(double cst) override;
+  std::shared_ptr<LinearExpr> MulFloat(double cst) override;
+  std::shared_ptr<LinearExpr> Neg() override;
 
  private:
   std::shared_ptr<LinearExpr> expr_;
