@@ -550,25 +550,6 @@ PYBIND11_MODULE(model_builder_helper, m) {
   py::class_<AffineExpr, std::shared_ptr<AffineExpr>, LinearExpr>(m,
                                                                   "AffineExpr")
       .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
-      .def("__add__", &AffineExpr::Add, py::arg("other").none(false),
-           "Returns `self` + `other`.")
-      .def("__add__", &AffineExpr::AddFloat, py::arg("cst"),
-           "Returns `self` + `cst`.")
-      .def("__radd__", &AffineExpr::Add, py::arg("other").none(false),
-           "Returns `self` + `other`.")
-      .def("__radd__", &AffineExpr::AddFloat, py::arg("cst"),
-           "Returns `self` + `cst`.")
-      .def("__sub__", &AffineExpr::Sub, py::arg("other").none(false),
-           "Returns `self` - `other`.")
-      .def("__sub__", &AffineExpr::SubFloat, py::arg("cst"),
-           "Returns `self` - `cst`.")
-      .def("__rsub__", &AffineExpr::RSubFloat, py::arg("cst"),
-           "Returns `cst` - `self`.")
-      .def("__mul__", &AffineExpr::MulFloat, py::arg("cst"),
-           "Returns `self` * `cst`.")
-      .def("__rmul__", &AffineExpr::MulFloat, py::arg("cst"),
-           "Returns `self` * `cst`.")
-      .def("__neg__", &AffineExpr::Neg, "Returns -`self`.")
       .def_property_readonly("expression", &AffineExpr ::expression)
       .def_property_readonly("coefficient", &AffineExpr::coefficient)
       .def_property_readonly("offset", &AffineExpr::offset);
