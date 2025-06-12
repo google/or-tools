@@ -209,7 +209,7 @@ function build_python() {
   command -v python3 | xargs echo "python3: " | tee -a build.log
   python3 -c "import platform as p; print(p.platform())" | tee -a build.log
   python3 -m pip install --upgrade --user --break-system-package pip
-  python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf virtualenv
+  python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf virtualenv "typing-extensions>=4.12"
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log

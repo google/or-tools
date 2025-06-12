@@ -242,7 +242,7 @@ function build_python() {
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
     "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
-    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv
+    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
