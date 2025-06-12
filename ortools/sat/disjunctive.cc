@@ -276,8 +276,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     helper_->ClearReason();
     helper_->AddPresenceReason(task_before);
     helper_->AddPresenceReason(task_after);
-    helper_->AddReasonForBeingBefore(task_before, task_after);
-    helper_->AddReasonForBeingBefore(task_after, task_before);
+    helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before, task_after);
+    helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_after, task_before);
     return helper_->ReportConflict();
   }
 
@@ -295,7 +295,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     if (helper_->StartMin(task_after) < end_min_before) {
       // Reason for precedences if both present.
       helper_->ClearReason();
-      helper_->AddReasonForBeingBefore(task_before, task_after);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
+                                                        task_after);
 
       // Reason for the bound push.
       helper_->AddPresenceReason(task_before);
@@ -311,7 +312,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     if (helper_->EndMax(task_before) > start_max_after) {
       // Reason for precedences if both present.
       helper_->ClearReason();
-      helper_->AddReasonForBeingBefore(task_before, task_after);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
+                                                        task_after);
 
       // Reason for the bound push.
       helper_->AddPresenceReason(task_after);
@@ -527,7 +529,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       const int to_push = task_with_max_end_min.task_index;
       helper_->ClearReason();
       helper_->AddPresenceReason(task);
-      helper_->AddReasonForBeingBefore(task, to_push);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task, to_push);
       helper_->AddEndMinReason(task, end_min);
 
       if (!helper_->IncreaseStartMin(to_push, end_min)) {
@@ -754,7 +756,7 @@ bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
   DCHECK_NE(t_before, t);
   helper_->ClearReason();
   helper_->AddPresenceReason(t_before);
-  helper_->AddReasonForBeingBefore(t_before, t);
+  helper_->AddReasonForBeingBeforeAssumingNoOverlap(t_before, t);
   helper_->AddEndMinReason(t_before, before.time);
   if (!helper_->IncreaseStartMin(t, before.time)) {
     return false;
@@ -823,8 +825,8 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
         helper_->ClearReason();
         helper_->AddPresenceReason(blocking_task);
         helper_->AddPresenceReason(t);
-        helper_->AddReasonForBeingBefore(blocking_task, t);
-        helper_->AddReasonForBeingBefore(t, blocking_task);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(blocking_task, t);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(t, blocking_task);
         return helper_->ReportConflict();
       } else if (end_min > best_task_before.time) {
         best_task_before = {t, end_min};
@@ -932,9 +934,13 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
 
     // Heuristic, if some tasks are known to be after the first one,
     // we just add the min-size as a reason.
+    //
+    // TODO(user): ideally we don't want to do that if we don't have a level
+    // zero precedence...
     if (i > critical_index && helper_->GetCurrentMinDistanceBetweenTasks(
-                                  sorted_tasks[critical_index].task, ct,
-                                  /*add_reason_if_after=*/true) >= 0) {
+                                  sorted_tasks[critical_index].task, ct) >= 0) {
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(
+          sorted_tasks[critical_index].task, ct);
       helper_->AddSizeMinReason(ct);
     } else {
       helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min, window_start);
@@ -942,9 +948,9 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
 
     // We only need the reason for being before if we don't already have
     // a static precedence between the tasks.
-    const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
-        ct, t, /*add_reason_if_after=*/true);
+    const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(ct, t);
     if (dist >= 0) {
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(ct, t);
       energy_of_task_before += sorted_tasks[i].size_min;
       min_slack = std::min(min_slack, dist);
     } else {
@@ -1052,8 +1058,8 @@ bool DisjunctiveDetectablePrecedences::PropagateWithRanks() {
         helper_->ClearReason();
         helper_->AddPresenceReason(blocking_task);
         helper_->AddPresenceReason(t);
-        helper_->AddReasonForBeingBefore(blocking_task, t);
-        helper_->AddReasonForBeingBefore(t, blocking_task);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(blocking_task, t);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(t, blocking_task);
         return helper_->ReportConflict();
       } else {
         if (!some_propagation && rank > highest_rank) {
@@ -1523,8 +1529,9 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
         helper_->AddPresenceReason(ct);
         helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min,
                                       window_start);
-        if (helper_->GetCurrentMinDistanceBetweenTasks(
-                ct, t, /*add_reason_if_after=*/true) < 0) {
+        if (helper_->GetCurrentMinDistanceBetweenTasks(ct, t) >= 0) {
+          helper_->AddReasonForBeingBeforeAssumingNoOverlap(ct, t);
+        } else {
           helper_->AddStartMaxReason(ct, largest_ct_start_max);
         }
       }
@@ -1770,9 +1777,11 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
               task, event_size_[event],
               event >= second_event ? second_start : first_start);
 
-          const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
-              task, gray_task, /*add_reason_if_after=*/true);
-          if (dist < 0) {
+          const IntegerValue dist =
+              helper_->GetCurrentMinDistanceBetweenTasks(task, gray_task);
+          if (dist >= 0) {
+            helper_->AddReasonForBeingBeforeAssumingNoOverlap(task, gray_task);
+          } else {
             all_before = false;
             helper_->AddEndMaxReason(task, window_end);
           }

@@ -343,22 +343,15 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
 }
 
 IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
-    int a, int b, bool add_reason_if_after) {
+    int a, int b) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
   const LinearExpression2 expr(before.var, after.var, before.coeff,
                                -after.coeff);
-
   const IntegerValue expr_ub = linear2_bounds_->UpperBound(expr);
   const IntegerValue needed_offset = before.constant - after.constant;
   const IntegerValue ub_of_end_minus_start = expr_ub + needed_offset;
   const IntegerValue distance = -ub_of_end_minus_start;
-  if (add_reason_if_after && distance >= 0) {
-    // TODO(user): be more precise when we know a and b are in disjunction. we
-    // really just need end_b > start_a.
-    linear2_bounds_->AddReasonForUpperBoundLowerThan(
-        expr, expr_ub, MutableLiteralReason(), MutableIntegerReason());
-  }
   return distance;
 }
 
@@ -484,11 +477,26 @@ SchedulingConstraintHelper::GetEnergyProfile() {
   return energy_profile_;
 }
 
-// Produces a relaxed reason for StartMax(before) < EndMin(after).
-void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
-                                                         int after) {
+void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
+    int before, int after) {
   AddOtherReason(before);
   AddOtherReason(after);
+
+  // Prefer the linear2 explanation as it is more likely this comes from
+  // level zero or a single enforcement literal.
+  // We need Start(after) >= End(before) - SizeMin(before).
+  // we rewrite as "End(before) - Start(after) <= SizeMin(before).
+  const auto [expr, ub] =
+      EncodeDifferenceLowerThan(ends_[before], starts_[after], SizeMin(before));
+  if (linear2_bounds_->UpperBound(expr) <= ub) {
+    AddSizeMinReason(before);
+    linear2_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, &literal_reason_,
+                                                     &integer_reason_);
+    return;
+  }
+
+  // We will explain StartMax(before) < EndMin(after);
+  DCHECK_LT(StartMax(before), EndMin(after));
 
   // The reason will be a linear expression greater than a value. Note that all
   // coeff must be positive, and we will use the variable lower bound.
