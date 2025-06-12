@@ -93,7 +93,7 @@ echo   help: show this help text (default)
 echo   dotnet: Build dotnet packages
 echo   java: Build java packages
 echo   python: Build python packages
-echo   archive: Build archive
+echo   archive: Build all (C++, .Net, Java) archives
 echo   examples: Build examples archives
 echo   all: build everything
 echo   reset: delete all artifacts and suppress cache file

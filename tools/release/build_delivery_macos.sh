@@ -30,6 +30,7 @@ ${BOLD}DESCRIPTION${RESET}
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
+\tarchive: build all (C++, .Net, Java) archives
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
 \tpython: build all Pyhon packages
