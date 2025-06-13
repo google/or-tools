@@ -286,9 +286,9 @@ class SumArray : public LinearExpr {
   std::string ToString() const override;
   std::string DebugString() const override;
 
-  void AddInPlace(std::shared_ptr<LinearExpr> expr);
-  void AddIntInPlace(int64_t cst) { int_offset_ += cst; }
-  void AddFloatInPlace(double cst) { double_offset_ += cst; }
+  std::shared_ptr<LinearExpr> AddInPlace(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> AddIntInPlace(int64_t cst);
+  std::shared_ptr<LinearExpr> AddFloatInPlace(double cst);
   int num_exprs() const { return exprs_.size(); }
   int64_t int_offset() const { return int_offset_; }
   double double_offset() const { return double_offset_; }

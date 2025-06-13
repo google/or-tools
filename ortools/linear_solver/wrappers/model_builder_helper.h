@@ -26,8 +26,6 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/fixed_array.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/util/solve_interrupter.h"
@@ -150,61 +148,17 @@ class FlatExpr : public LinearExpr {
 class SumArray : public LinearExpr {
  public:
   explicit SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
-                    double offset)
-      : exprs_(std::move(exprs)), offset_(offset) {}
+                    double offset);
   ~SumArray() override = default;
 
-  void Visit(ExprVisitor& lin, double c) override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], c);
-    }
-    if (offset_ != 0.0) {
-      lin.AddConstant(offset_ * c);
-    }
-  }
+  void Visit(ExprVisitor& lin, double c) override;
 
-  std::string ToString() const override {
-    if (exprs_.empty()) {
-      if (offset_ != 0.0) {
-        return absl::StrCat(offset_);
-      }
-    }
-    std::string s = "(";
-    for (int i = 0; i < exprs_.size(); ++i) {
-      if (i > 0) {
-        absl::StrAppend(&s, " + ");
-      }
-      absl::StrAppend(&s, exprs_[i]->ToString());
-    }
-    if (offset_ != 0.0) {
-      if (offset_ > 0.0) {
-        absl::StrAppend(&s, " + ", offset_);
-      } else {
-        absl::StrAppend(&s, " - ", -offset_);
-      }
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  std::string DebugString() const override {
-    std::string s = absl::StrCat(
-        "SumArray(",
-        absl::StrJoin(exprs_, ", ",
-                      [](std::string* out, std::shared_ptr<LinearExpr> expr) {
-                        absl::StrAppend(out, expr->DebugString());
-                      }));
-    if (offset_ != 0.0) {
-      absl::StrAppend(&s, ", offset=", offset_);
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  void AddInPlace(std::shared_ptr<LinearExpr> expr) { exprs_.push_back(expr); }
-  void AddFloatInPlace(double cst) { offset_ += cst; }
-  int num_exprs() const { return exprs_.size(); }
-  double offset() const { return offset_; }
+  std::string ToString() const override;
+  std::string DebugString() const override;
+  std::shared_ptr<LinearExpr> AddInPlace(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> AddFloatInPlace(double cst);
+  int num_exprs() const;
+  double offset() const;
 
  private:
   std::vector<std::shared_ptr<LinearExpr>> exprs_;
