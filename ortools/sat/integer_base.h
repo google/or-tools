@@ -559,6 +559,28 @@ std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
+// This functions appears in hot spot, and so it is important to inline it.
+//
+// TODO(user): Maybe introduce a CanonicalizedLinear2 class so we automatically
+// get the better function, and it documents when we have canonicalized
+// expression.
+inline IntegerValue BestBinaryRelationBounds::UpperBoundWhenCanonicalized(
+    LinearExpression2 expr) const {
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  DCHECK(expr.IsCanonicalized());
+  const bool negated = expr.NegateForCanonicalization();
+  const auto it = best_bounds_.find(expr);
+  if (it != best_bounds_.end()) {
+    const auto [known_lb, known_ub] = it->second;
+    if (negated) {
+      return -known_lb;
+    } else {
+      return known_ub;
+    }
+  }
+  return kMaxIntegerValue;
+}
+
 // ============================================================================
 // Implementation.
 // ============================================================================
@@ -599,8 +621,8 @@ inline IntegerLiteral AffineExpression::GreaterOrEqual(
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::GreaterOrEqual(var,
-                                        CeilRatio(bound - constant, coeff));
+  return IntegerLiteral::GreaterOrEqual(
+      var, coeff == 1 ? bound - constant : CeilRatio(bound - constant, coeff));
 }
 
 // var * coeff + constant <= bound.
@@ -610,7 +632,8 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
+  return IntegerLiteral::LowerOrEqual(
+      var, coeff == 1 ? bound - constant : FloorRatio(bound - constant, coeff));
 }
 
 }  // namespace sat

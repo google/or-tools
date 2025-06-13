@@ -214,26 +214,6 @@ IntegerValue BestBinaryRelationBounds::GetUpperBound(
   return kMaxIntegerValue;
 }
 
-// TODO(user): Maybe introduce a CanonicalizedLinear2 class so we automatically
-// get the better function, and it documents when we have canonicalized
-// expression.
-IntegerValue BestBinaryRelationBounds::UpperBoundWhenCanonicalized(
-    LinearExpression2 expr) const {
-  DCHECK_EQ(expr.DivideByGcd(), 1);
-  DCHECK(expr.IsCanonicalized());
-  const bool negated = expr.NegateForCanonicalization();
-  const auto it = best_bounds_.find(expr);
-  if (it != best_bounds_.end()) {
-    const auto [known_lb, known_ub] = it->second;
-    if (negated) {
-      return -known_lb;
-    } else {
-      return known_ub;
-    }
-  }
-  return kMaxIntegerValue;
-}
-
 std::vector<std::pair<LinearExpression2, IntegerValue>>
 BestBinaryRelationBounds::GetSortedNonTrivialUpperBounds() const {
   std::vector<std::pair<LinearExpression2, IntegerValue>> root_relations_sorted;

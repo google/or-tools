@@ -523,6 +523,7 @@ class IntegerTrail final : public SatPropagator {
   // Returns the current value (if known) of an IntegerLiteral.
   bool IntegerLiteralIsTrue(IntegerLiteral l) const;
   bool IntegerLiteralIsFalse(IntegerLiteral l) const;
+  bool IsTrueAtLevelZero(IntegerLiteral l) const;
 
   // Returns globally valid lower/upper bound on the given integer variable.
   IntegerValue LevelZeroLowerBound(IntegerVariable var) const;
@@ -796,39 +797,38 @@ class IntegerTrail final : public SatPropagator {
   void AddAllGreaterThanConstantReason(absl::Span<AffineExpression> exprs,
                                        IntegerValue target_min,
                                        std::vector<int>* indices) const {
-    int64_t num_processed = 0;
+    constexpr int64_t check_period = 1e6;
+    int64_t limit_check = work_done_in_explain_lower_than_ + check_period;
     for (const AffineExpression& expr : exprs) {
       if (expr.IsConstant()) {
         DCHECK_GE(expr.constant, target_min);
         continue;
       }
       DCHECK_NE(expr.var, kNoIntegerVariable);
+      const IntegerLiteral to_explain = expr.GreaterOrEqual(target_min);
+      if (IsTrueAtLevelZero(to_explain)) continue;
 
       // On large routing problems, we can spend a lot of time in this loop.
-      // We check the time limit every 5 processed expressions.
-      if (++num_processed % 5 == 0 && time_limit_->LimitReached()) return;
+      if (work_done_in_explain_lower_than_ > limit_check) {
+        limit_check = work_done_in_explain_lower_than_ + check_period;
+        if (time_limit_->LimitReached()) return;
+      }
 
       // Skip if we already have an explanation for expr >= target_min. Note
       // that we already do that while processing the returned indices, so this
       // mainly save a FindLowestTrailIndexThatExplainBound() call per skipped
       // indices, which can still be costly.
       {
-        const int index = tmp_var_to_trail_index_in_queue_[expr.var];
+        const int index = tmp_var_to_trail_index_in_queue_[to_explain.var];
         if (index == std::numeric_limits<int>::max()) continue;
-        if (index > 0 &&
-            expr.ValueAt(integer_trail_[index].bound) >= target_min) {
+        if (index > 0 && integer_trail_[index].bound >= to_explain.bound) {
           has_dependency_ = true;
           continue;
         }
       }
 
       // We need to find the index that explain the bound.
-      // Note that this will skip if the condition is true at level zero.
-      const int index =
-          FindLowestTrailIndexThatExplainBound(expr.GreaterOrEqual(target_min));
-      if (index >= 0) {
-        indices->push_back(index);
-      }
+      indices->push_back(FindLowestTrailIndexThatExplainBound(to_explain));
     }
   }
 
@@ -885,8 +885,8 @@ class IntegerTrail final : public SatPropagator {
                                int64_t conflict_id) const;
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
-  // the given IntegerLiteral. The literal must be currently true (CHECKed).
-  // Returns -1 if the explanation is trivial.
+  // the given IntegerLiteral. The literal must be currently true but not true
+  // at level zero (DCHECKed).
   int FindLowestTrailIndexThatExplainBound(IntegerLiteral i_lit) const;
 
   // This must be called before Dependencies() or AppendLiteralsReason().
@@ -1032,6 +1032,8 @@ class IntegerTrail final : public SatPropagator {
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
+
+  mutable int64_t work_done_in_explain_lower_than_ = 0;
 
   mutable Domain temp_domain_;
   DelayedRootLevelDeduction* delayed_to_fix_;
@@ -1415,6 +1417,10 @@ inline bool IntegerTrail::IntegerLiteralIsTrue(IntegerLiteral l) const {
 
 inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
   return l.bound > UpperBound(l.var);
+}
+
+inline bool IntegerTrail::IsTrueAtLevelZero(IntegerLiteral l) const {
+  return l.bound <= LevelZeroLowerBound(l.var);
 }
 
 // The level zero bounds are stored at the beginning of the trail and they also

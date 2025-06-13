@@ -1943,8 +1943,7 @@ IntegerValue Linear2Bounds::NonTrivialUpperBoundForGcd1(
   }
   DCHECK_NE(expr.coeffs[1], 0);
   DCHECK_EQ(1, expr.DivideByGcd());
-  IntegerValue ub = kMaxIntegerValue;
-  ub = std::min(ub, root_level_bounds_->GetUpperBoundNoTrail(expr));
+  IntegerValue ub = root_level_bounds_->GetUpperBoundNoTrail(expr);
   ub = std::min(ub, enforced_bounds_->GetUpperBoundFromEnforced(expr));
   ub = std::min(ub, linear3_bounds_->GetUpperBoundFromLinear3(expr));
   return ub;

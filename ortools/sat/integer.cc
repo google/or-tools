@@ -983,7 +983,8 @@ int IntegerTrail::FindTrailIndexOfVarBefore(IntegerVariable var,
 int IntegerTrail::FindLowestTrailIndexThatExplainBound(
     IntegerLiteral i_lit) const {
   DCHECK_LE(i_lit.bound, var_lbs_[i_lit.var]);
-  if (i_lit.bound <= LevelZeroLowerBound(i_lit.var)) return -1;
+  DCHECK(!IsTrueAtLevelZero(i_lit));
+
   int trail_index = var_trail_index_[i_lit.var];
 
   // Check the validity of the cached index and use it if possible. This caching
@@ -1003,6 +1004,7 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
 
   int prev_trail_index = trail_index;
   while (true) {
+    ++work_done_in_explain_lower_than_;
     if (trail_index >= var_trail_index_cache_threshold_) {
       var_trail_index_cache_[i_lit.var] = trail_index;
     }
@@ -1171,10 +1173,9 @@ std::vector<Literal>* IntegerTrail::InitializeConflict(
     lazy_reasons_.back().Explain(conflict, &tmp_queue_);
   } else {
     conflict->assign(literals_reason.begin(), literals_reason.end());
-    const int num_vars = var_lbs_.size();
     for (const IntegerLiteral& literal : bounds_reason) {
-      const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
-      if (trail_index >= num_vars) tmp_queue_.push_back(trail_index);
+      if (IsTrueAtLevelZero(literal)) continue;
+      tmp_queue_.push_back(FindLowestTrailIndexThatExplainBound(literal));
     }
   }
   return conflict;
@@ -1553,9 +1554,8 @@ bool IntegerTrail::EnqueueInternal(
     // efficiency and a potential smaller reason.
     auto* conflict = InitializeConflict(i_lit, use_lazy_reason, literal_reason,
                                         integer_reason);
-    {
-      const int trail_index = FindLowestTrailIndexThatExplainBound(ub_reason);
-      if (trail_index >= 0) tmp_queue_.push_back(trail_index);
+    if (!IsTrueAtLevelZero(ub_reason)) {
+      tmp_queue_.push_back(FindLowestTrailIndexThatExplainBound(ub_reason));
     }
     MergeReasonIntoInternal(conflict, NextConflictId());
     return false;
@@ -1771,12 +1771,10 @@ absl::Span<const int> IntegerTrail::Dependencies(int reason_index) const {
 
   int new_size = 0;
   int* data = trail_index_reason_buffer_.data() + start;
-  const int num_vars = var_lbs_.size();
   for (int i = start; i < end; ++i) {
-    const int dep =
-        FindLowestTrailIndexThatExplainBound(bounds_reason_buffer_[i]);
-    if (dep >= num_vars) {
-      data[new_size++] = dep;
+    const IntegerLiteral to_explain = bounds_reason_buffer_[i];
+    if (!IsTrueAtLevelZero(to_explain)) {
+      data[new_size++] = FindLowestTrailIndexThatExplainBound(to_explain);
     }
   }
   cached_sizes_[reason_index] = new_size;
@@ -1818,14 +1816,10 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
 void IntegerTrail::MergeReasonInto(absl::Span<const IntegerLiteral> literals,
                                    std::vector<Literal>* output) const {
   DCHECK(tmp_queue_.empty());
-  const int num_vars = var_lbs_.size();
   for (const IntegerLiteral& literal : literals) {
     if (literal.IsAlwaysTrue()) continue;
-    const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
-
-    // Any indices lower than that means that there is no reason needed.
-    // Note that it is important for size to be signed because of -1 indices.
-    if (trail_index >= num_vars) tmp_queue_.push_back(trail_index);
+    if (IsTrueAtLevelZero(literal)) continue;
+    tmp_queue_.push_back(FindLowestTrailIndexThatExplainBound(literal));
   }
   return MergeReasonIntoInternal(output, -1);
 }
