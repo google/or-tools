@@ -988,6 +988,72 @@ std::string FlatExpr::DebugString() const {
   return s;
 }
 
+SumArray::SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
+                   double offset)
+    : exprs_(std::move(exprs)), offset_(offset) {}
+
+void SumArray::Visit(ExprVisitor& lin, double c) {
+  for (int i = 0; i < exprs_.size(); ++i) {
+    lin.AddToProcess(exprs_[i], c);
+  }
+  if (offset_ != 0.0) {
+    lin.AddConstant(offset_ * c);
+  }
+}
+
+std::string SumArray::ToString() const {
+  if (exprs_.empty()) {
+    if (offset_ != 0.0) {
+      return absl::StrCat(offset_);
+    }
+  }
+  std::string s = "(";
+  for (int i = 0; i < exprs_.size(); ++i) {
+    if (i > 0) {
+      absl::StrAppend(&s, " + ");
+    }
+    absl::StrAppend(&s, exprs_[i]->ToString());
+  }
+  if (offset_ != 0.0) {
+    if (offset_ > 0.0) {
+      absl::StrAppend(&s, " + ", offset_);
+    } else {
+      absl::StrAppend(&s, " - ", -offset_);
+    }
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::string SumArray::DebugString() const {
+  std::string s = absl::StrCat(
+      "SumArray(",
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> expr) {
+                      absl::StrAppend(out, expr->DebugString());
+                    }));
+  if (offset_ != 0.0) {
+    absl::StrAppend(&s, ", offset=", offset_);
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddInPlace(
+    std::shared_ptr<LinearExpr> expr) {
+  exprs_.push_back(std::move(expr));
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddFloatInPlace(double cst) {
+  offset_ += cst;
+  return shared_from_this();
+}
+
+int SumArray::num_exprs() const { return exprs_.size(); }
+
+double SumArray::offset() const { return offset_; }
+
 void FixedValue::Visit(ExprVisitor& lin, double c) {
   lin.AddConstant(value_ * c);
 }

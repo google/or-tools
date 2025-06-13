@@ -340,8 +340,20 @@ SumArray::SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
   DCHECK_GE(exprs_.size(), 2);
 }
 
-void SumArray::AddInPlace(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> SumArray::AddInPlace(
+    std::shared_ptr<LinearExpr> expr) {
   exprs_.push_back(std::move(expr));
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddIntInPlace(int64_t cst) {
+  int_offset_ += cst;
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddFloatInPlace(double cst) {
+  double_offset_ += cst;
+  return shared_from_this();
 }
 
 bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) {

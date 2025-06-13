@@ -897,11 +897,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddInPlace(other);
-              return expr;
-            }
-            return expr->Add(other);
+            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
@@ -911,11 +907,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddIntInPlace(cst);
-              return expr;
-            }
-            return expr->AddInt(cst);
+            return (num_uses == 4) ? expr->AddIntInPlace(cst)
+                                   : expr->AddInt(cst);
           },
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
@@ -924,11 +917,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(cst);
-              return expr;
-            }
-            return expr->AddFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
+                                   : expr->AddFloat(cst);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
@@ -938,11 +928,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddIntInPlace(cst);
-              return expr;
-            }
-            return expr->AddInt(cst);
+            return (num_uses == 4) ? expr->AddIntInPlace(cst)
+                                   : expr->AddInt(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddInt))
@@ -952,41 +939,31 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(cst);
-              return expr;
-            }
-            return expr->AddFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
+                                   : expr->AddFloat(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__iadd__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddInPlace(other);
-            return expr;
+            return expr->AddInPlace(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
       .def(
           "__iadd__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddIntInPlace(cst);
-            return expr;
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddIntInPlace(cst);
           },
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__iadd__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddFloatInPlace(cst);
-            return expr;
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddFloatInPlace(cst);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
@@ -997,11 +974,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddInPlace(other->Neg());
-              return expr;
-            }
-            return expr->Sub(other);
+            return (num_uses == 4) ? expr->AddInPlace(other->Neg())
+                                   : expr->Sub(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Sub))
@@ -1011,11 +985,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddIntInPlace(-cst);
-              return expr;
-            }
-            return expr->SubInt(cst);
+            return (num_uses == 4) ? expr->AddIntInPlace(-cst)
+                                   : expr->SubInt(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubInt))
@@ -1025,41 +996,31 @@ PYBIND11_MODULE(cp_model_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(-cst);
-              return expr;
-            }
-            return expr->SubFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
+                                   : expr->SubFloat(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))
       .def(
           "__isub__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddInPlace(other->MulInt(-1));
-            return expr;
+            return expr->AddInPlace(other->Neg());
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Sub))
       .def(
           "__isub__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddIntInPlace(-cst);
-            return expr;
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddIntInPlace(-cst);
           },
           DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def(
           "__isub__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            expr->AddFloatInPlace(-cst);
-            return expr;
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddFloatInPlace(-cst);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))
@@ -1074,8 +1035,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_property_readonly("coefficient", &FloatAffine::coefficient)
       .def_property_readonly("offset", &FloatAffine::offset);
 
-  // We adding an operator like __add__(int), we need to add all overloads,
-  // otherwise they are not found.
   py::class_<IntAffine, std::shared_ptr<IntAffine>, LinearExpr>(
       m, "IntAffine", DOC(operations_research, sat, python, IntAffine))
       .def(py::init<std::shared_ptr<LinearExpr>, int64_t, int64_t>())

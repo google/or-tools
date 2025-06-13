@@ -2461,6 +2461,14 @@ TRFM"""
             s -= model.new_bool_var("")
         model.add(s == 10)
 
+    def test_radd(self):
+        model = cp_model.CpModel()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(10)]
+        expr = 1 + sum(x)
+        self.assertEqual(
+            str(expr), "(x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + 1)"
+        )
+
     def test_simplification1(self):
         model = cp_model.CpModel()
         x = model.new_int_var(-10, 10, "x")
