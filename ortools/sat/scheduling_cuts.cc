@@ -124,6 +124,24 @@ bool DecomposedEnergyIsPropagated(const VariablesAssignment& assignment, int t,
   return true;
 }
 
+template <class E>
+std::vector<std::vector<E>> SplitEventsInIndendentSets(std::vector<E>& events) {
+  std::sort(events.begin(), events.end(), [](const E& a, const E& b) {
+    return std::tie(a.start_min, a.end_max) < std::tie(b.start_min, b.end_max);
+  });
+  std::vector<std::vector<E>> result;
+  IntegerValue max_end_max = kMinIntegerValue;
+  for (const E& event : events) {
+    if (event.start_min >= max_end_max) {
+      result.push_back({event});
+    } else {
+      result.back().push_back(event);
+    }
+    max_end_max = std::max(max_end_max, event.end_max);
+  }
+  return result;
+}
+
 }  // namespace
 
 struct EnergyEvent {
@@ -664,15 +682,20 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       events.push_back(e);
     }
 
-    if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
-      GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
-          "CumulativeEnergyM", lp_values, events,
-          integer_trail->FixedValue(capacity), makespan.value(), time_limit,
-          model, manager);
+    std::vector<std::vector<EnergyEvent>> disjoint_events =
+        SplitEventsInIndendentSets(events);
+    for (auto& cluster : disjoint_events) {
+      if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
+        GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
+            "CumulativeEnergyM", lp_values, std::move(cluster),
+            integer_trail->FixedValue(capacity), makespan.value(), time_limit,
+            model, manager);
 
-    } else {
-      GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values, events,
-                                      capacity, time_limit, model, manager);
+      } else {
+        GenerateCumulativeEnergeticCuts("CumulativeEnergy", lp_values,
+                                        std::move(cluster), capacity,
+                                        time_limit, model, manager);
+      }
     }
     return true;
   };
@@ -716,15 +739,19 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
       events.push_back(e);
     }
 
-    if (makespan.has_value()) {
-      GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
-          "NoOverlapEnergyM", lp_values, events,
-          /*capacity=*/IntegerValue(1), makespan.value(), time_limit, model,
-          manager);
-    } else {
-      GenerateCumulativeEnergeticCuts("NoOverlapEnergy", lp_values, events,
-                                      /*capacity=*/IntegerValue(1), time_limit,
-                                      model, manager);
+    std::vector<std::vector<EnergyEvent>> disjoint_events =
+        SplitEventsInIndendentSets(events);
+    for (auto& cluster : disjoint_events) {
+      if (makespan.has_value()) {
+        GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
+            "NoOverlapEnergyM", lp_values, std::move(cluster),
+            /*capacity=*/IntegerValue(1), makespan.value(), time_limit, model,
+            manager);
+      } else {
+        GenerateCumulativeEnergeticCuts(
+            "NoOverlapEnergy", lp_values, std::move(cluster),
+            /*capacity=*/IntegerValue(1), time_limit, model, manager);
+      }
     }
     return true;
   };
@@ -1014,9 +1041,15 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
     }
 
     const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-    GenerateCutsBetweenPairOfNonOverlappingTasks(
-        "Cumulative", /* ignore_zero_size_intervals= */ true,
-        manager->LpValues(), std::move(events), capacity_max, model, manager);
+
+    std::vector<std::vector<CachedIntervalData>> disjoint_events =
+        SplitEventsInIndendentSets(events);
+    for (auto& cluster : disjoint_events) {
+      GenerateCutsBetweenPairOfNonOverlappingTasks(
+          "Cumulative", /* ignore_zero_size_intervals= */ true,
+          manager->LpValues(), std::move(cluster), capacity_max, model,
+          manager);
+    }
     return true;
   };
   return result;
@@ -1042,10 +1075,14 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
       events.push_back(event);
     }
 
-    GenerateCutsBetweenPairOfNonOverlappingTasks(
-        "NoOverlap", /* ignore_zero_size_intervals= */ false,
-        manager->LpValues(), std::move(events), IntegerValue(1), model,
-        manager);
+    std::vector<std::vector<CachedIntervalData>> disjoint_events =
+        SplitEventsInIndendentSets(events);
+    for (auto& cluster : disjoint_events) {
+      GenerateCutsBetweenPairOfNonOverlappingTasks(
+          "NoOverlap", /* ignore_zero_size_intervals= */ false,
+          manager->LpValues(), std::move(cluster), IntegerValue(1), model,
+          manager);
+    }
     return true;
   };
 
@@ -1825,15 +1862,19 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
       CtExhaustiveHelper helper;
       helper.Init(events, model);
 
-      if (!GenerateShortCompletionTimeCutsWithExactBound(
-              "NoOverlapCompletionTimeExhaustive", events,
-              /*capacity_max=*/IntegerValue(1), helper, model, manager)) {
-        return false;
-      }
+      std::vector<std::vector<CompletionTimeEvent>> disjoint_events =
+          SplitEventsInIndendentSets(events);
+      for (auto& cluster : disjoint_events) {
+        if (!GenerateShortCompletionTimeCutsWithExactBound(
+                "NoOverlapCompletionTimeExhaustive", cluster,
+                /*capacity_max=*/IntegerValue(1), helper, model, manager)) {
+          return false;
+        }
 
-      GenerateCompletionTimeCutsWithEnergy(
-          "NoOverlapCompletionTimeQueyrane", std::move(events),
-          /*capacity_max=*/IntegerValue(1), model, manager);
+        GenerateCompletionTimeCutsWithEnergy(
+            "NoOverlapCompletionTimeQueyrane", std::move(cluster),
+            /*capacity_max=*/IntegerValue(1), model, manager);
+      }
       return true;
     };
     if (!generate_cuts(/*time_is_forward=*/true)) return false;
@@ -1889,15 +1930,19 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
       helper.Init(events, model);
 
       const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
-      if (!GenerateShortCompletionTimeCutsWithExactBound(
-              "CumulativeCompletionTimeExhaustive", events, capacity_max,
-              helper, model, manager)) {
-        return false;
-      }
+      std::vector<std::vector<CompletionTimeEvent>> disjoint_events =
+          SplitEventsInIndendentSets(events);
+      for (auto& cluster : disjoint_events) {
+        if (!GenerateShortCompletionTimeCutsWithExactBound(
+                "CumulativeCompletionTimeExhaustive", cluster, capacity_max,
+                helper, model, manager)) {
+          return false;
+        }
 
-      GenerateCompletionTimeCutsWithEnergy("CumulativeCompletionTimeQueyrane",
-                                           std::move(events), capacity_max,
-                                           model, manager);
+        GenerateCompletionTimeCutsWithEnergy("CumulativeCompletionTimeQueyrane",
+                                             std::move(cluster), capacity_max,
+                                             model, manager);
+      }
       return true;
     };
 
