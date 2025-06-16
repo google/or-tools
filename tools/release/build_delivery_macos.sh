@@ -276,23 +276,35 @@ function build_python() {
     echo -n "Cleaning Python ${PY_VERSION}..." | tee -a build.log
     rm -rf "temp_python${PY_VERSION}"
     echo "DONE" | tee -a build.log
-    echo -n "Build Python ${PY_VERSION}..." | tee -a build.log
+    
+    echo "Build Python ${PY_VERSION}..." | tee -a build.log
+    echo -n "  CMake configure..." | tee -a build.log
     cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
+    echo "DONE" | tee -a build.log
+
+    echo -n "  Build libortools..." | tee -a build.log
     cmake --build "temp_python${PY_VERSION}" --target ortools -j8 -v
+    echo "DONE" | tee -a build.log
 
     if [[ ${PLATFORM} == "x86_64" ]]; then
+      echo -n "  Build all..." | tee -a build.log
       # on macos X86_64 stubgen will timeout -> need to build 2 times
       cmake --build "temp_python${PY_VERSION}" -j8 -v || true
+      echo "DONE" | tee -a build.log
       sleep 5
+      echo -n "  ReBuild all..." | tee -a build.log
       cmake --build "temp_python${PY_VERSION}" -j8 -v
+      echo "DONE" | tee -a build.log
     else
+      echo -n "  Build all..." | tee -a build.log
       cmake --build "temp_python${PY_VERSION}" -j8 -v
+      echo "DONE" | tee -a build.log
     fi
 
-    echo "  Check libortools.dylib..." | tee -a build.log
+    echo -n "  Check libortools.dylib..." | tee -a build.log
     otool -L "temp_python${PY_VERSION}/lib/libortools.dylib" | grep -vqz "/Users"
-    echo "  DONE" | tee -a build.log
     echo "DONE" | tee -a build.log
+    echo "Build Python ${PY_VERSION}...DONE" | tee -a build.log
     #cmake --build temp_python${PY_VERSION} --target test
     #echo "cmake test_python${PY_VERSION}: DONE" | tee -a build.log
 
