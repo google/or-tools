@@ -48,6 +48,8 @@
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 
 /* need extra level to force extra eval */
 #define DUMP_FOR_EACH_N0(F)
@@ -135,6 +137,15 @@ std::ostream& operator<<(std::ostream& os, const ::std::optional<T>& opt) {
     os << ::std::to_string(opt.value());
   else
     os << "(none)";
+  return os;
+}
+
+// needed by graph tests
+template <typename T, typename U>
+std::ostream& operator<<(std::ostream& os, const ::util_intops::StrongVector<T, U>& vec) {
+  for (U it : vec) {
+    os << ::std::to_string(it) << ',';
+  }
   return os;
 }
 

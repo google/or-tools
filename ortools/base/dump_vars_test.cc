@@ -21,6 +21,12 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
+
+namespace util_intops {
+DEFINE_STRONG_INT_TYPE(CustomStrongInt, uint32_t);
+}  // namespace util_intops
 
 namespace operations_research::base {
 namespace {
@@ -122,6 +128,18 @@ TEST(DumpVars, Vector) {
   std::vector<float> vec = {49.3, 3.14};
   EXPECT_EQ("vec = 49.299999,3.140000,", ToString(DUMP_VARS(vec)));
   EXPECT_EQ("vec = 49.299999,3.140000,", DUMP_VARS(vec).str());
+}
+
+TEST(DumpVars, StrongInt) {
+  ::util_intops::CustomStrongInt val(42);
+  EXPECT_EQ(R"(val = 42)", ToString(DUMP_VARS(val)));
+  EXPECT_EQ(R"(val = 42)", DUMP_VARS(val).str());
+}
+
+TEST(DumpVars, StrongVector) {
+  ::util_intops::StrongVector<::util_intops::CustomStrongInt, float> vec = {49.3, 3.14};
+  EXPECT_EQ(R"(vec = 49.299999,3.140000,)", ToString(DUMP_VARS(vec)));
+  EXPECT_EQ(R"(vec = 49.299999,3.140000,)", DUMP_VARS(vec).str());
 }
 
 TEST(DumpVars, Optional) {

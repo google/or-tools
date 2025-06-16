@@ -97,12 +97,12 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
     } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        adj.push_back(graph.Head(arc));
+        adj.push_back(static_cast<uint64_t>(graph.Head(arc)));
       }
       if (format == PRINT_GRAPH_ADJACENCY_LISTS_SORTED) {
         std::sort(adj.begin(), adj.end());
       }
-      if (node != 0) out += '\n';
+      if (node != typename Graph::NodeIndex(0)) out += '\n';
       absl::StrAppend(&out, static_cast<uint64_t>(node), ": ",
                       absl::StrJoin(adj, " "));
     }

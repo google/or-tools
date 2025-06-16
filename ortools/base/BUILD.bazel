@@ -183,6 +183,8 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":strong_int",
+        ":strong_vector",
         "@abseil-cpp//absl/container:inlined_vector",
     ],
 )
@@ -199,6 +201,8 @@ cc_test(
     }),
     deps = [
         ":dump_vars",
+        ":strong_int",
+        ":strong_vector",
         "@abseil-cpp//absl/strings",
         "@googletest//:gtest_main",
     ],
