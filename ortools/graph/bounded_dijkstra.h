@@ -15,8 +15,10 @@
 #define OR_TOOLS_GRAPH_BOUNDED_DIJKSTRA_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <limits>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -25,6 +27,8 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/base/top_n.h"
 #include "ortools/graph/graph.h"
 
@@ -54,21 +58,39 @@ namespace operations_research {
 // is >= limit we will return {limit, {}}. As a consequence any arc length >=
 // limit is the same as no arc. The code is also overflow-safe and will behave
 // correctly if the limit is int64max or infinity.
-template <typename DistanceType>
-std::pair<DistanceType, std::vector<int>> SimpleOneToOneShortestPath(
-    int source, int destination, absl::Span<const int> tails,
-    absl::Span<const int> heads, absl::Span<const DistanceType> lengths,
+template <typename NodeIndex, typename DistanceType>
+std::pair<DistanceType, std::vector<NodeIndex>> SimpleOneToOneShortestPath(
+    NodeIndex source, NodeIndex destination, absl::Span<const NodeIndex> tails,
+    absl::Span<const NodeIndex> heads, absl::Span<const DistanceType> lengths,
     DistanceType limit = std::numeric_limits<DistanceType>::max());
 
-template <class T>
+namespace internal {
+
+// TODO(user): We should move `is_strong_int` to util/intops/strong_int.h.
+template <typename T>
+struct is_strong_int : std::false_type {};
+
+template <typename Tag, typename Native, typename Validator>
+struct is_strong_int<::util_intops::StrongInt<Tag, Native, Validator>>
+    : std::true_type {};
+
+template <typename IndexType, typename ValueType>
+using IndexedVector =
+    std::conditional_t<is_strong_int<IndexType>::value,
+                       ::util_intops::StrongVector<IndexType, ValueType>,
+                       std::vector<ValueType>>;
+
+template <class T, typename ArcIndex>
 class ElementGetter {
  public:
-  explicit ElementGetter(const std::vector<T>& c) : c_(c) {}
-  const T& operator()(int index) const { return c_[index]; }
+  explicit ElementGetter(const IndexedVector<ArcIndex, T>& c) : c_(c) {}
+  const T& operator()(ArcIndex index) const { return c_[index]; }
 
  private:
-  const std::vector<T>& c_;
+  const IndexedVector<ArcIndex, T>& c_;
 };
+
+}  // namespace internal
 
 // A wrapper that holds the memory needed to run many bounded shortest path
 // computations on the given graph. The graph must implement the
@@ -92,11 +114,19 @@ class ElementGetter {
 // negative source_offset, arc with a length greater than the distance_limit can
 // still be considered!
 template <class GraphType, class DistanceType,
-          class ArcLengthFunctor = ElementGetter<DistanceType>>
+          class ArcLengthFunctor = internal::ElementGetter<
+              DistanceType, typename GraphType::ArcIndex>>
 class BoundedDijkstraWrapper {
  public:
-  typedef typename GraphType::NodeIndex node_type;
+  typedef typename GraphType::NodeIndex NodeIndex;
+  typedef typename GraphType::ArcIndex ArcIndex;
   typedef DistanceType distance_type;
+
+  // A vector of T, indexed by NodeIndex/ArcIndex.
+  template <typename T>
+  using ByNode = internal::IndexedVector<NodeIndex, T>;
+  template <typename T>
+  using ByArc = internal::IndexedVector<ArcIndex, T>;
 
   // IMPORTANT: Both arguments must outlive the class. The arc lengths cannot be
   // negative and the vector must be of the correct size (both preconditions are
@@ -106,7 +136,7 @@ class BoundedDijkstraWrapper {
   // RunBoundedDijkstra(). That's fine. Doing so will obviously invalidate the
   // reader API of the last Dijkstra run, which could return junk, or crash.
   BoundedDijkstraWrapper(const GraphType* graph,
-                         const std::vector<DistanceType>* arc_lengths);
+                         const ByArc<DistanceType>* arc_lengths);
 
   // Variant that takes a custom arc length functor and copies it locally.
   BoundedDijkstraWrapper(const GraphType* graph,
@@ -116,8 +146,8 @@ class BoundedDijkstraWrapper {
   // of the graph within the distance limit (exclusive). The first element of
   // the returned vector will always be the source_node with a distance of zero.
   // See RunBoundedDijkstraFromMultipleSources() for more information.
-  const std::vector<int>& RunBoundedDijkstra(int source_node,
-                                             DistanceType distance_limit) {
+  const std::vector<NodeIndex>& RunBoundedDijkstra(
+      NodeIndex source_node, DistanceType distance_limit) {
     return RunBoundedDijkstraFromMultipleSources({{source_node, 0}},
                                                  distance_limit);
   }
@@ -127,7 +157,8 @@ class BoundedDijkstraWrapper {
   //
   // If this returns true, you can get the path distance with distances()[to]
   // and the path with ArcPathTo(to) or NodePathTo(to).
-  bool OneToOneShortestPath(int from, int to, DistanceType distance_limit);
+  bool OneToOneShortestPath(NodeIndex from, NodeIndex to,
+                            DistanceType distance_limit);
 
   // Returns the list of all the nodes which are under the given distance limit
   // (exclusive) from at least one of the given source nodes (which also have
@@ -136,8 +167,8 @@ class BoundedDijkstraWrapper {
   // By "distance", we mean the length of the shortest path from any source
   // plus the source's distance offset, where the length of a path is the
   // sum of the length of its arcs
-  const std::vector<int>& RunBoundedDijkstraFromMultipleSources(
-      const std::vector<std::pair<int, DistanceType>>&
+  const std::vector<NodeIndex>& RunBoundedDijkstraFromMultipleSources(
+      const std::vector<std::pair<NodeIndex, DistanceType>>&
           sources_with_distance_offsets,
       DistanceType distance_limit);
 
@@ -162,10 +193,11 @@ class BoundedDijkstraWrapper {
   //
   // Note that the distances() will take the source offsets into account,
   // but not the destination offsets.
-  std::vector<int> RunBoundedDijkstraFromMultipleSourcesToMultipleDestinations(
-      const std::vector<std::pair<int, DistanceType>>&
+  std::vector<NodeIndex>
+  RunBoundedDijkstraFromMultipleSourcesToMultipleDestinations(
+      const std::vector<std::pair<NodeIndex, DistanceType>>&
           sources_with_distance_offsets,
-      const std::vector<std::pair<int, DistanceType>>&
+      const std::vector<std::pair<NodeIndex, DistanceType>>&
           destinations_with_distance_offsets,
       int num_destinations_to_reach, DistanceType distance_limit);
 
@@ -174,19 +206,19 @@ class BoundedDijkstraWrapper {
   // happens at most once per node, when popping it from the Dijkstra queue,
   // meaning that the node has been fully 'processed'). This callback may modify
   // the distance limit dynamically, thus affecting the stopping criterion.
-  const std::vector<int>& RunBoundedDijkstraWithSettledNodeCallback(
-      const std::vector<std::pair<int, DistanceType>>&
+  const std::vector<NodeIndex>& RunBoundedDijkstraWithSettledNodeCallback(
+      const std::vector<std::pair<NodeIndex, DistanceType>>&
           sources_with_distance_offsets,
-      std::function<void(node_type settled_node, DistanceType settled_distance,
+      std::function<void(NodeIndex settled_node, DistanceType settled_distance,
                          DistanceType* distance_limit)>
           settled_node_callback,
       DistanceType distance_limit);
 
   // Returns true if `node` was reached by the last Run*() call.
-  bool IsReachable(int node) const { return is_reached_[node]; }
+  bool IsReachable(NodeIndex node) const { return is_reached_[node]; }
 
   // Returns all the reached nodes form the previous Run*() call.
-  const std::vector<int>& reached_nodes() const { return reached_nodes_; }
+  const ByNode<NodeIndex>& reached_nodes() const { return reached_nodes_; }
 
   // The following vectors are all indexed by graph node indices.
   //
@@ -194,7 +226,7 @@ class BoundedDijkstraWrapper {
   // reached nodes are updated, the others will contain junk.
 
   // The distance of the nodes from their source.
-  const std::vector<DistanceType>& distances() const { return distances_; }
+  const ByNode<DistanceType>& distances() const { return distances_; }
 
   // The parent of the nodes in the shortest path from their source.
   // When a node doesn't have any parent (it has to be a source), its parent
@@ -203,27 +235,29 @@ class BoundedDijkstraWrapper {
   // arcs have a length of zero.
   // Note also that some sources may have parents, because of the initial
   // distances.
-  const std::vector<int>& parents() const { return parents_; }
+  const ByNode<NodeIndex>& parents() const { return parents_; }
 
   // The arc reaching a given node in the path from their source.
   // arc_from_source()[x] is undefined (i.e. junk) when parents()[x] == x.
-  const std::vector<int>& arc_from_source() const { return arc_from_source_; }
+  const ByNode<ArcIndex>& arc_from_source() const { return arc_from_source_; }
 
   // Returns the list of all the arcs in the shortest path from the node's
   // source to the node.
-  std::vector<int> ArcPathTo(int node) const;
+  std::vector<ArcIndex> ArcPathTo(NodeIndex node) const;
 
   ABSL_DEPRECATED("Use ArcPathTo() instead.")
-  std::vector<int> ArcPathToNode(int node) const { return ArcPathTo(node); }
+  std::vector<ArcIndex> ArcPathToNode(NodeIndex node) const {
+    return ArcPathTo(node);
+  }
 
   // Returns the list of all the nodes in the shortest path from the node's
   // source to the node. This always start by the node's source, and end by
   // the given node. In the case that source == node, returns {node}.
-  std::vector<int> NodePathTo(int node) const;
+  std::vector<NodeIndex> NodePathTo(NodeIndex node) const;
 
   // Returns the node's source. This is especially useful when running
   // Dijkstras from multiple sources.
-  int SourceOfShortestPathToNode(int node) const;
+  NodeIndex SourceOfShortestPathToNode(NodeIndex node) const;
 
   // Original Source/Destination index extraction, after a call to the
   // multi-source and/or multi-destination variants:
@@ -239,16 +273,16 @@ class BoundedDijkstraWrapper {
   // rely on the value.
   //
   // These methods are invalidated by the next RunBoundedDijkstra*() call.
-  int GetSourceIndex(int node) const;
-  int GetDestinationIndex(int node) const;
+  int GetSourceIndex(NodeIndex node) const;
+  int GetDestinationIndex(NodeIndex node) const;
 
   // Trivial accessors to the underlying graph and arc lengths.
   const GraphType& graph() const { return *graph_; }
-  const std::vector<DistanceType>& arc_lengths() const {
+  const ByArc<DistanceType>& arc_lengths() const {
     CHECK(arc_lengths_);
     return *arc_lengths_;
   }
-  DistanceType GetArcLength(int arc) const {
+  DistanceType GetArcLength(ArcIndex arc) const {
     const DistanceType length = arc_length_functor_(arc);
     DCHECK_GE(length, 0);
     return length;
@@ -262,18 +296,18 @@ class BoundedDijkstraWrapper {
   // The Graph and length of each arc.
   const GraphType* const graph_;
   ArcLengthFunctor arc_length_functor_;
-  const std::vector<DistanceType>* const arc_lengths_;
+  const ByArc<DistanceType>* const arc_lengths_;
 
   // Data about the last Dijkstra run.
-  std::vector<DistanceType> distances_;
-  std::vector<int> parents_;
-  std::vector<int> arc_from_source_;
-  std::vector<bool> is_reached_;
-  std::vector<int> reached_nodes_;
+  ByNode<DistanceType> distances_;
+  ByNode<NodeIndex> parents_;
+  ByNode<ArcIndex> arc_from_source_;
+  ByNode<bool> is_reached_;
+  std::vector<NodeIndex> reached_nodes_;
 
   // Priority queue of nodes, ordered by their distance to the source.
   struct NodeDistance {
-    node_type node;         // The target node.
+    NodeIndex node;         // The target node.
     DistanceType distance;  // Its distance from the source.
 
     bool operator<(const NodeDistance& other) const {
@@ -287,7 +321,7 @@ class BoundedDijkstraWrapper {
       //     or ieee754 floating-point, when the machine is little endian, and
       //     when the total size of NodeDistance equals 16 bytes).
       // And here are the speeds of the BM_GridGraph benchmark (in which
-      // DistanceType=int64_t and node_type=int32_t), done with benchy
+      // DistanceType=int64_t and NodeIndex=int32_t), done with benchy
       // --runs=20: 0) BM_GridGraph<true> 9.22ms ± 5% BM_GridGraph<false> 3.19ms
       // ± 6% 1) BM_GridGraph<true> 8.89ms ± 4%   BM_GridGraph<false> 3.07ms ±
       // 3% 2) BM_GridGraph<true> 8.61ms ± 3%   BM_GridGraph<false> 3.13ms ± 6%
@@ -303,8 +337,8 @@ class BoundedDijkstraWrapper {
   // The vectors are only allocated after they are first used.
   // Between calls, is_destination_ is all false, and the rest is junk.
   std::vector<bool> is_destination_;
-  std::vector<int> node_to_source_index_;
-  std::vector<int> node_to_destination_index_;
+  ByNode<int> node_to_source_index_;
+  ByNode<int> node_to_destination_index_;
 };
 
 // -----------------------------------------------------------------------------
@@ -314,12 +348,12 @@ class BoundedDijkstraWrapper {
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     BoundedDijkstraWrapper(const GraphType* graph,
-                           const std::vector<DistanceType>* arc_lengths)
+                           const ByArc<DistanceType>* arc_lengths)
     : graph_(graph),
       arc_length_functor_(*arc_lengths),
       arc_lengths_(arc_lengths) {
   CHECK(arc_lengths_ != nullptr);
-  CHECK_EQ(arc_lengths_->size(), graph->num_arcs());
+  CHECK_EQ(ArcIndex(arc_lengths_->size()), graph->num_arcs());
   for (const DistanceType length : *arc_lengths) {
     CHECK_GE(length, 0);
   }
@@ -341,10 +375,10 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
       arc_lengths_(other.arc_lengths_) {}
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-const std::vector<int>&
+const std::vector<typename GraphType::NodeIndex>&
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     RunBoundedDijkstraFromMultipleSources(
-        const std::vector<std::pair<int, DistanceType>>&
+        const std::vector<std::pair<NodeIndex, DistanceType>>&
             sources_with_distance_offsets,
         DistanceType distance_limit) {
   return RunBoundedDijkstraWithSettledNodeCallback(
@@ -352,12 +386,12 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-std::vector<int>
+std::vector<typename GraphType::NodeIndex>
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     RunBoundedDijkstraFromMultipleSourcesToMultipleDestinations(
-        const std::vector<std::pair<int, DistanceType>>&
+        const std::vector<std::pair<NodeIndex, DistanceType>>&
             sources_with_distance_offsets,
-        const std::vector<std::pair<int, DistanceType>>&
+        const std::vector<std::pair<NodeIndex, DistanceType>>&
             destinations_with_distance_offsets,
         int num_destinations_to_reach, DistanceType distance_limit) {
   if (destinations_with_distance_offsets.empty()) return {};
@@ -368,22 +402,22 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
   // to reduce the search space.
   DCHECK_GE(num_destinations_to_reach, 0);
   int num_destinations = 0;
-  is_destination_.resize(graph_->num_nodes(), false);
+  is_destination_.resize(static_cast<size_t>(graph_->num_nodes()), false);
   node_to_destination_index_.resize(graph_->num_nodes(), -1);
   DistanceType min_destination_distance_offset =
       destinations_with_distance_offsets[0].second;
   for (int i = 0; i < destinations_with_distance_offsets.size(); ++i) {
-    const int node = destinations_with_distance_offsets[i].first;
+    const NodeIndex node = destinations_with_distance_offsets[i].first;
     const DistanceType distance = destinations_with_distance_offsets[i].second;
-    if (!is_destination_[node]) ++num_destinations;
+    if (!is_destination_[static_cast<size_t>(node)]) ++num_destinations;
     // Skip useless repetitions.
-    if (is_destination_[node] &&
+    if (is_destination_[static_cast<size_t>(node)] &&
         distance >=
             destinations_with_distance_offsets[node_to_destination_index_[node]]
                 .second) {
       continue;
     }
-    is_destination_[node] = true;
+    is_destination_[static_cast<size_t>(node)] = true;
     node_to_destination_index_[node] = i;
     min_destination_distance_offset =
         std::min(min_destination_distance_offset, distance);
@@ -395,13 +429,13 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
   gtl::TopN<NodeDistance, std::less<NodeDistance>> closest_destinations(
       /*limit=*/num_destinations_to_reach);
 
-  std::function<void(node_type, DistanceType, DistanceType*)>
+  std::function<void(NodeIndex, DistanceType, DistanceType*)>
       settled_node_callback =
           [this, num_destinations_to_reach, min_destination_distance_offset,
            &destinations_with_distance_offsets, &closest_destinations](
-              node_type settled_node, DistanceType settled_distance,
+              NodeIndex settled_node, DistanceType settled_distance,
               DistanceType* distance_limit) {
-            if (!is_destination_[settled_node]) return;
+            if (!is_destination_[static_cast<size_t>(settled_node)]) return;
             const DistanceType distance =
                 settled_distance +
                 destinations_with_distance_offsets
@@ -423,12 +457,12 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 
   // Clean up, sparsely, for the next call.
   for (const auto& [node, _] : destinations_with_distance_offsets) {
-    is_destination_[node] = false;
+    is_destination_[static_cast<size_t>(node)] = false;
   }
 
   // Return the closest "num_destinations_to_reach" reached destinations,
   // sorted by distance.
-  std::vector<int> sorted_destinations;
+  std::vector<NodeIndex> sorted_destinations;
   sorted_destinations.reserve(closest_destinations.size());
   for (const NodeDistance& d : closest_destinations.Take()) {
     sorted_destinations.push_back(d.node);
@@ -438,10 +472,11 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
 bool BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
-    OneToOneShortestPath(int from, int to, DistanceType distance_limit) {
+    OneToOneShortestPath(NodeIndex from, NodeIndex to,
+                         DistanceType distance_limit) {
   bool reached = false;
-  std::function<void(node_type, DistanceType, DistanceType*)>
-      settled_node_callback = [to, &reached](node_type node,
+  std::function<void(NodeIndex, DistanceType, DistanceType*)>
+      settled_node_callback = [to, &reached](NodeIndex node,
                                              DistanceType distance,
                                              DistanceType* distance_limit) {
         if (node != to) return;
@@ -456,18 +491,18 @@ bool BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-const std::vector<int>&
+const std::vector<typename GraphType::NodeIndex>&
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     RunBoundedDijkstraWithSettledNodeCallback(
-        const std::vector<std::pair<int, DistanceType>>&
+        const std::vector<std::pair<NodeIndex, DistanceType>>&
             sources_with_distance_offsets,
-        std::function<void(node_type settled_node,
+        std::function<void(NodeIndex settled_node,
                            DistanceType settled_distance,
                            DistanceType* distance_limit)>
             settled_node_callback,
         DistanceType distance_limit) {
   // Sparse clear is_reached_ from the last call.
-  for (const int node : reached_nodes_) {
+  for (const NodeIndex node : reached_nodes_) {
     is_reached_[node] = false;
   }
   reached_nodes_.clear();
@@ -475,15 +510,15 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 
   is_reached_.resize(graph_->num_nodes(), false);
   distances_.resize(graph_->num_nodes(), distance_limit);
-  parents_.resize(graph_->num_nodes(), std::numeric_limits<int>::min());
-  arc_from_source_.resize(graph_->num_nodes(), -1);
+  parents_.resize(graph_->num_nodes(), std::numeric_limits<NodeIndex>::min());
+  arc_from_source_.resize(graph_->num_nodes(), GraphType::kNilArc);
 
   // Initialize sources.
   CHECK(queue_.empty());
   node_to_source_index_.resize(graph_->num_nodes(), -1);
   for (int i = 0; i < sources_with_distance_offsets.size(); ++i) {
-    const int node = sources_with_distance_offsets[i].first;
-    DCHECK_GE(node, 0);
+    const NodeIndex node = sources_with_distance_offsets[i].first;
+    DCHECK_GE(node, NodeIndex(0));
     DCHECK_LT(node, graph_->num_nodes());
     const DistanceType distance = sources_with_distance_offsets[i].second;
     // Sources with an initial distance ≥ limit are *not* reached.
@@ -498,7 +533,7 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
     node_to_source_index_[node] = i;
     distances_[node] = distance;
   }
-  for (const int source : reached_nodes_) {
+  for (const NodeIndex source : reached_nodes_) {
     queue_.push_back({source, distances_[source]});
   }
   std::make_heap(queue_.begin(), queue_.end(), std::greater<NodeDistance>());
@@ -533,7 +568,8 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 
     // Visit the neighbors.
     const DistanceType limit = distance_limit - top.distance;
-    for (const int arc : graph_->OutgoingArcs(top.node)) {
+    for (const typename GraphType::ArcIndex arc :
+         graph_->OutgoingArcs(top.node)) {
       // Overflow-safe check of top.distance + arc_length >= distance_limit.
       // This works since we know top.distance < distance_limit, as long as we
       // don't have negative top.distance (which might happen with negative
@@ -543,7 +579,7 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
       if (arc_length >= limit) continue;
       const DistanceType candidate_distance = top.distance + arc_length;
 
-      const int head = graph_->Head(arc);
+      const NodeIndex head = graph_->Head(arc);
       if (is_reached_[head]) {
         if (candidate_distance >= distances_[head]) continue;
       } else {
@@ -563,14 +599,14 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-std::vector<int>
+std::vector<typename GraphType::ArcIndex>
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::ArcPathTo(
-    int node) const {
-  std::vector<int> output;
+    NodeIndex node) const {
+  std::vector<typename GraphType::ArcIndex> output;
   int loop_detector = 0;
   while (true) {
-    DCHECK_GE(node, 0);
-    DCHECK_LT(node, parents_.size());
+    DCHECK_GE(node, NodeIndex(0));
+    DCHECK_LT(node, NodeIndex(parents_.size()));
     CHECK_LT(loop_detector++, parents_.size());
     if (parents_[node] == node) break;
     output.push_back(arc_from_source_[node]);
@@ -581,14 +617,14 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::ArcPathTo(
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-std::vector<int>
+std::vector<typename GraphType::NodeIndex>
 BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::NodePathTo(
-    int node) const {
-  std::vector<int> output;
+    NodeIndex node) const {
+  std::vector<NodeIndex> output;
   int loop_detector = 0;
   while (true) {
-    DCHECK_GE(node, 0);
-    DCHECK_LT(node, parents_.size());
+    DCHECK_GE(node, NodeIndex(0));
+    DCHECK_LT(node, NodeIndex(parents_.size()));
     CHECK_LT(loop_detector++, parents_.size());
     output.push_back(node);
     if (parents_[node] == node) break;
@@ -599,27 +635,28 @@ BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::NodePathTo(
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-int BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
-    SourceOfShortestPathToNode(int node) const {
-  int parent = node;
+typename GraphType::NodeIndex BoundedDijkstraWrapper<
+    GraphType, DistanceType,
+    ArcLengthFunctor>::SourceOfShortestPathToNode(NodeIndex node) const {
+  NodeIndex parent = node;
   while (parents_[parent] != parent) parent = parents_[parent];
   return parent;
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
 int BoundedDijkstraWrapper<GraphType, DistanceType,
-                           ArcLengthFunctor>::GetSourceIndex(int node) const {
-  DCHECK_GE(node, 0);
-  DCHECK_LT(node, node_to_source_index_.size());
+                           ArcLengthFunctor>::GetSourceIndex(NodeIndex node)
+    const {
+  DCHECK_GE(node, NodeIndex(0));
+  DCHECK_LT(node, NodeIndex(node_to_source_index_.size()));
   return node_to_source_index_[node];
 }
 
 template <class GraphType, class DistanceType, class ArcLengthFunctor>
-int BoundedDijkstraWrapper<GraphType, DistanceType,
-                           ArcLengthFunctor>::GetDestinationIndex(int node)
-    const {
-  DCHECK_GE(node, 0);
-  DCHECK_LT(node, node_to_destination_index_.size());
+int BoundedDijkstraWrapper<GraphType, DistanceType, ArcLengthFunctor>::
+    GetDestinationIndex(NodeIndex node) const {
+  DCHECK_GE(node, NodeIndex(0));
+  DCHECK_LT(node, NodeIndex(node_to_destination_index_.size()));
   return node_to_destination_index_[node];
 }
 
@@ -627,37 +664,38 @@ int BoundedDijkstraWrapper<GraphType, DistanceType,
 // Example usage.
 // -----------------------------------------------------------------------------
 
-template <typename DistanceType>
-std::pair<DistanceType, std::vector<int>> SimpleOneToOneShortestPath(
-    int source, int destination, absl::Span<const int> tails,
-    absl::Span<const int> heads, absl::Span<const DistanceType> lengths,
+template <typename NodeIndex, typename DistanceType>
+std::pair<DistanceType, std::vector<NodeIndex>> SimpleOneToOneShortestPath(
+    NodeIndex source, NodeIndex destination, absl::Span<const NodeIndex> tails,
+    absl::Span<const NodeIndex> heads, absl::Span<const DistanceType> lengths,
     DistanceType limit) {
+  using ArcIndex = NodeIndex;
   // Compute the number of nodes.
   //
   // This is not necessary, but is a good practice to allocate the graph size in
   // one go. We also do some basic validation.
   CHECK_GE(source, 0);
   CHECK_GE(destination, 0);
-  int num_nodes = std::max(source + 1, destination + 1);
-  for (const int tail : tails) {
+  NodeIndex num_nodes = std::max(source + 1, destination + 1);
+  for (const NodeIndex tail : tails) {
     CHECK_GE(tail, 0);
     num_nodes = std::max(tail + 1, num_nodes);
   }
-  for (const int head : heads) {
+  for (const NodeIndex head : heads) {
     CHECK_GE(head, 0);
     num_nodes = std::max(head + 1, num_nodes);
   }
 
   // The number of arcs.
-  const int num_arcs = tails.size();
+  const ArcIndex num_arcs = tails.size();
   CHECK_EQ(num_arcs, heads.size());
   CHECK_EQ(num_arcs, lengths.size());
 
   // Build the graph. Note that this permutes arc indices for speed, but we
   // don't care here since we will return a node path.
-  util::StaticGraph<> graph(num_nodes, num_arcs);
+  util::StaticGraph<NodeIndex, ArcIndex> graph(num_nodes, num_arcs);
   std::vector<DistanceType> arc_lengths(lengths.begin(), lengths.end());
-  for (int a = 0; a < num_arcs; ++a) {
+  for (ArcIndex a = 0; a < num_arcs; ++a) {
     // Negative length can cause the algo to loop forever and/or use a lot of
     // memory. So it should be validated.
     CHECK_GE(lengths[a], 0);

@@ -52,6 +52,8 @@ cc_test(
         ":graph",
         "//ortools/base:gmock_main",
         "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
@@ -86,7 +88,9 @@ cc_library(
     hdrs = ["bounded_dijkstra.h"],
     deps = [
         ":graph",
+        "//ortools/base:intops",
         "//ortools/base:iterator_adaptors",
+        "//ortools/base:strong_vector",
         "//ortools/base:threadpool",
         "//ortools/base:top_n",
         "@abseil-cpp//absl/algorithm:container",
@@ -107,6 +111,7 @@ cc_test(
         ":test_util",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:intops",
         "//ortools/util:flat_matrix",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
@@ -858,7 +863,7 @@ cc_test(
     deps = [
         ":iterators",
         "//ortools/base:gmock_main",
-        "//ortools/base:strong_int",
+        "//ortools/base:intops",
     ],
 )
 

@@ -18,6 +18,7 @@
 import numpy as np
 
 from ortools.graph.python import linear_sum_assignment
+
 # [END import]
 
 

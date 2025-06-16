@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -32,9 +33,11 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 
 namespace util {
 
+using testing::ElementsAre;
 using testing::Pair;
 using testing::UnorderedElementsAre;
 
@@ -289,98 +292,144 @@ void ConstructAndCheckGraph(
 
 // Return the size of the memory block allocated by malloc when asking for x
 // bytes.
-inline int UpperBoundOfMallocBlockSizeOf(int x) {
+template <typename IndexType>
+inline IndexType UpperBoundOfMallocBlockSizeOf(IndexType x) {
   // Note(user): as of 2012-09, the rule seems to be: round x up to the
   // next multiple of 16.
   // WARNING: This may change, and may already be wrong for small values.
-  return 16 * ((x + 15) / 16);
+  return IndexType((16 * (static_cast<int64_t>(x) + 15)) / 16);
 }
 
-TEST(SVectorTest, DynamicGrowth) {
-  internal::SVector<int, int> v;
-  EXPECT_EQ(0, v.size());
-  EXPECT_EQ(0, v.capacity());
-  for (int i = 0; i < 100; i++) {
+template <typename IndexType>
+class SVectorTest : public ::testing::Test {};
+
+typedef ::testing::Types<std::pair<int, int>, std::pair<int, StrongArcId>,
+                         std::pair<StrongArcId, int>,
+                         std::pair<StrongArcId, StrongArcId>>
+    TestSVectorIndexTypes;
+
+TYPED_TEST_SUITE(SVectorTest, TestSVectorIndexTypes);
+
+TYPED_TEST(SVectorTest, CopyMoveIterate) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  using VectorT = internal::SVector<IndexT, ValueT>;
+  VectorT v;
+  v.resize(IndexT(2));
+  v[IndexT(0)] = ValueT(1);
+  v[IndexT(1)] = ValueT(2);
+
+  {
+    EXPECT_THAT(VectorT(v), ElementsAre(ValueT(1), ValueT(2)));
+    VectorT v2 = v;
+    EXPECT_THAT(v2, ElementsAre(ValueT(1), ValueT(2)));
+    EXPECT_THAT(v, ElementsAre(ValueT(1), ValueT(2)));
+  }
+
+  {
+    VectorT v2 = std::move(v);
+    EXPECT_THAT(v2, ElementsAre(ValueT(1), ValueT(2)));
+    EXPECT_THAT(VectorT(std::move(v2)), ElementsAre(ValueT(1), ValueT(2)));
+  }
+}
+
+TYPED_TEST(SVectorTest, DynamicGrowth) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> v;
+  EXPECT_EQ(IndexT(0), v.size());
+  EXPECT_EQ(IndexT(0), v.capacity());
+  for (ValueT i(0); i < ValueT(100); i++) {
     v.grow(-i, i);
   }
-  EXPECT_EQ(100, v.size());
-  EXPECT_GE(v.capacity(), 100);
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(100));
-  for (int i = 0; i < 100; i++) {
-    EXPECT_EQ(-i, v[~i]);
-    EXPECT_EQ(i, v[i]);
+  EXPECT_EQ(IndexT(100), v.size());
+  EXPECT_GE(v.capacity(), IndexT(100));
+  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
+  for (IndexT i(0); i < IndexT(100); ++i) {
+    EXPECT_EQ(ValueT(static_cast<int>(-i)), v[~i]);
+    EXPECT_EQ(ValueT(static_cast<int>(i)), v[i]);
   }
 }
 
-TEST(SVectorTest, Reserve) {
-  internal::SVector<int, int> v;
-  v.reserve(100);
-  EXPECT_EQ(0, v.size());
-  EXPECT_GE(v.capacity(), 100);
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(100));
-  for (int i = 0; i < 100; i++) {
+TYPED_TEST(SVectorTest, Reserve) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> v;
+  v.reserve(IndexT(100));
+  EXPECT_EQ(IndexT(0), v.size());
+  EXPECT_GE(v.capacity(), IndexT(100));
+  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
+  for (ValueT i(0); i < ValueT(100); i++) {
     v.grow(-i, i);
   }
-  EXPECT_EQ(100, v.size());
-  EXPECT_GE(v.capacity(), 100);
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(100));
-  for (int i = 0; i < 10; i++) {
-    EXPECT_EQ(-i, v[~i]);
-    EXPECT_EQ(i, v[i]);
+  EXPECT_EQ(IndexT(100), v.size());
+  EXPECT_GE(v.capacity(), IndexT(100));
+  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
+  for (IndexT i(0); i < IndexT(10); i++) {
+    EXPECT_EQ(ValueT(static_cast<int>(-i)), v[~i]);
+    EXPECT_EQ(ValueT(static_cast<int>(i)), v[i]);
   }
 }
 
-TEST(SVectorTest, Resize) {
-  internal::SVector<int, int> v;
-  v.resize(100);
-  EXPECT_EQ(100, v.size());
-  EXPECT_GE(v.capacity(), 100);
-  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(100));
-  for (int i = 0; i < 100; i++) {
-    EXPECT_EQ(0, v[-i - 1]);
-    EXPECT_EQ(0, v[i]);
+TYPED_TEST(SVectorTest, Resize) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> v;
+  v.resize(IndexT(100));
+  EXPECT_EQ(IndexT(100), v.size());
+  EXPECT_GE(v.capacity(), IndexT(100));
+  EXPECT_LE(v.capacity(), UpperBoundOfMallocBlockSizeOf(IndexT(100)));
+  for (IndexT i(0); i < IndexT(100); ++i) {
+    EXPECT_EQ(ValueT(0), v[-i - IndexT(1)]);
+    EXPECT_EQ(ValueT(0), v[i]);
   }
 }
 
-TEST(SVectorTest, ResizeToZero) {
-  internal::SVector<int, char> s;
-  s.resize(1);
-  s.resize(0);
-  EXPECT_EQ(0, s.size());
+TYPED_TEST(SVectorTest, ResizeToZero) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> v;
+  v.resize(IndexT(1));
+  v.resize(IndexT(0));
+  EXPECT_EQ(IndexT(0), v.size());
 }
 
-TEST(SVectorTest, Swap) {
-  internal::SVector<int, char> s;
-  internal::SVector<int, char> t;
-  s.resize(1);
-  s[0] = 's';
-  s[-1] = 's';
-  t.resize(2);
-  for (int i = -2; i <= 1; ++i) {
-    t[i] = 't';
+TYPED_TEST(SVectorTest, Swap) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> s;
+  internal::SVector<IndexT, ValueT> t;
+  s.resize(IndexT(1));
+  s[IndexT(0)] = ValueT('s');
+  s[IndexT(-1)] = ValueT('s');
+  t.resize(IndexT(2));
+  for (IndexT i(-2); i <= IndexT(1); ++i) {
+    t[i] = ValueT('t');
   }
   s.swap(t);
-  EXPECT_EQ(1, t.size());
-  EXPECT_EQ('s', t[-1]);
-  EXPECT_EQ('s', t[0]);
-  EXPECT_EQ(2, s.size());
-  EXPECT_EQ('t', s[-2]);
-  EXPECT_EQ('t', s[-1]);
-  EXPECT_EQ('t', s[0]);
-  EXPECT_EQ('t', s[1]);
+  EXPECT_EQ(IndexT(1), t.size());
+  EXPECT_EQ(ValueT('s'), t[IndexT(-1)]);
+  EXPECT_EQ(ValueT('s'), t[IndexT(0)]);
+  EXPECT_EQ(IndexT(2), s.size());
+  EXPECT_EQ(ValueT('t'), s[IndexT(-2)]);
+  EXPECT_EQ(ValueT('t'), s[IndexT(-1)]);
+  EXPECT_EQ(ValueT('t'), s[IndexT(0)]);
+  EXPECT_EQ(ValueT('t'), s[IndexT(1)]);
 }
 
-TEST(SVectorTest, SwapAndDestroy) {
-  internal::SVector<int, int> s;
+TYPED_TEST(SVectorTest, SwapAndDestroy) {
+  using IndexT = typename TypeParam::first_type;
+  using ValueT = typename TypeParam::second_type;
+  internal::SVector<IndexT, ValueT> s;
   {
-    internal::SVector<int, int> t;
-    t.resize(2);
-    t[-2] = 42;
+    internal::SVector<IndexT, ValueT> t;
+    t.resize(IndexT(2));
+    t[IndexT(-2)] = ValueT(42);
     t.swap(s);
   }
-  EXPECT_EQ(2, s.size());
-  EXPECT_EQ(42, s[-2]);
-  EXPECT_EQ(0, s[1]);
+  EXPECT_EQ(IndexT(2), s.size());
+  EXPECT_EQ(ValueT(42), s[IndexT(-2)]);
+  EXPECT_EQ(ValueT(0), s[IndexT(1)]);
 }
 
 // Use a more complex type to better check the invocations of
@@ -458,7 +507,7 @@ class MoveOnlyObject {
 int MoveOnlyObject::sequence_ = 1;
 int MoveOnlyObject::object_count_ = 0;
 
-TEST(SVectorTest, MoveWithMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, MoveWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   internal::SVector<int, MoveOnlyObject> a;
   a.resize(10);
@@ -472,7 +521,7 @@ TEST(SVectorTest, MoveWithMoveOnlyObject) {
   EXPECT_EQ(0, a.size());  // NOLINT
 }
 
-TEST(SVectorTest, ShrinkWithMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, ShrinkWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   {
     internal::SVector<int, MoveOnlyObject> a;
@@ -484,7 +533,7 @@ TEST(SVectorTest, ShrinkWithMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
 }
 
-TEST(SVectorTest, GrowMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, GrowMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   {
     internal::SVector<int, MoveOnlyObject> a;
@@ -501,7 +550,7 @@ TEST(SVectorTest, GrowMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
 }
 
-TEST(SVectorTest, ReserveMoveOnlyObject) {
+TEST(SVectorMoveOnlyTest, ReserveMoveOnlyObject) {
   EXPECT_EQ(0, MoveOnlyObject::GetObjectCount());
   {
     internal::SVector<int, MoveOnlyObject> a;
@@ -554,7 +603,7 @@ int TrackedObject::num_destructions = 0;
 int TrackedObject::num_moves = 0;
 int TrackedObject::num_copies = 0;
 
-TEST(SVectorTest, CopyConstructor) {
+TEST(SVectorTrackingTest, CopyConstructor) {
   TrackedObject::ResetCounters();
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 0, destructions: 0, moves: 0, copies: 0");
@@ -573,7 +622,7 @@ TEST(SVectorTest, CopyConstructor) {
   ASSERT_EQ(v_copy.size(), 5);
 }
 
-TEST(SVectorTest, AssignmentOperator) {
+TEST(SVectorTrackingTest, AssignmentOperator) {
   TrackedObject::ResetCounters();
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 0, destructions: 0, moves: 0, copies: 0");
@@ -595,7 +644,7 @@ TEST(SVectorTest, AssignmentOperator) {
   ASSERT_EQ(other.size(), 5);
 }
 
-TEST(SVectorTest, CopyConstructorIntegralType) {
+TEST(SVectorTrackingTest, CopyConstructorIntegralType) {
   auto v = internal::SVector<int, int32_t>();
   v.resize(3);
   v[-3] = 1;
@@ -613,7 +662,7 @@ TEST(SVectorTest, CopyConstructorIntegralType) {
   }
 }
 
-TEST(SVectorTest, AssignmentOperatorIntegralType) {
+TEST(SVectorTrackingTest, AssignmentOperatorIntegralType) {
   internal::SVector<int, int32_t> other;
   auto v = internal::SVector<int, int32_t>();
   v.resize(3);
@@ -632,7 +681,7 @@ TEST(SVectorTest, AssignmentOperatorIntegralType) {
   }
 }
 
-TEST(SVectorTest, MoveConstructor) {
+TEST(SVectorTrackingTest, MoveConstructor) {
   TrackedObject::ResetCounters();
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 0, destructions: 0, moves: 0, copies: 0");
@@ -650,7 +699,7 @@ TEST(SVectorTest, MoveConstructor) {
   ASSERT_EQ(b.size(), 5);
 }
 
-TEST(SVectorTest, MoveAssignmentOperator) {
+TEST(SVectorTrackingTest, MoveAssignmentOperator) {
   TrackedObject::ResetCounters();
   ASSERT_EQ(TrackedObject::Counters(),
             "constructions: 0, destructions: 0, moves: 0, copies: 0");
@@ -1011,6 +1060,28 @@ TEST(SVector, NoHeapCheckerFalsePositive) {
   EXPECT_EQ(kVector->size(), 5000);
 }
 
+TEST(Permute, IntArray) {
+  int array[] = {4, 5, 6};
+  std::vector<int> permutation = {0, 2, 1};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+}
+
+TEST(Permute, BoolVector) {
+  std::vector<bool> array = {true, false, true};
+  std::vector<int> permutation = {0, 2, 1};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(true, true, false));
+}
+
+TEST(Permute, StrongVector) {
+  util_intops::StrongVector<StrongArcId, int> array = {4, 5, 6};
+  std::vector<StrongArcId> permutation = {StrongArcId(0), StrongArcId(2),
+                                          StrongArcId(1)};
+  util::Permute(permutation, &array);
+  EXPECT_THAT(array, ElementsAre(4, 6, 5));
+}
+
 template <typename GraphType, bool reserve>
 static void BM_RandomArcs(benchmark::State& state) {
   const int kRandomSeed = 0;
@@ -1303,5 +1374,24 @@ static void BM_CompleteBipartiteGraphTailHead(benchmark::State& state) {
 }
 BENCHMARK_TEMPLATE(BM_CompleteBipartiteGraphTailHead, int32_t);
 BENCHMARK_TEMPLATE(BM_CompleteBipartiteGraphTailHead, int16_t);
+
+template <typename ArrayT, typename IndexT>
+void BM_Permute(benchmark::State& state) {
+  const int size = state.range(0);
+  ArrayT array(size);
+
+  std::vector<IndexT> permutation(size);
+  absl::c_iota(permutation, IndexT(0));
+
+  for (const auto s : state) {
+    util::Permute(permutation, &array);
+    benchmark::DoNotOptimize(array);
+    benchmark::DoNotOptimize(permutation);
+  }
+}
+BENCHMARK(BM_Permute<util_intops::StrongVector<StrongArcId, int>, StrongArcId>)
+    ->Arg(128);
+BENCHMARK(BM_Permute<std::vector<int>, int>)->Arg(128);
+BENCHMARK(BM_Permute<std::vector<bool>, int>)->Arg(128);
 
 }  // namespace util

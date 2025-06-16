@@ -420,6 +420,8 @@ class Vector : public std::vector<T> {
 template <typename IndexT, typename T>
 class SVector {
  public:
+  using value_type = T;
+
   SVector() : base_(nullptr), size_(0), capacity_(0) {}
 
   ~SVector() { clear_and_dealloc(); }
@@ -434,7 +436,7 @@ class SVector {
       capacity_ = other.size_;
       base_ = Allocate(capacity_);
       CHECK(base_ != nullptr);
-      base_ += capacity_;
+      base_ += static_cast<ptrdiff_t>(capacity_);
     } else {  // capacity_ >= other.size
       clear();
     }
@@ -487,6 +489,9 @@ class SVector {
   void clear() { resize(IndexT(0)); }
 
   T* data() const { return base_; }
+
+  const T* begin() const { return base_; }
+  const T* end() const { return base_ + static_cast<ptrdiff_t>(size_); }
 
   void swap(SVector<IndexT, T>& x) noexcept {
     std::swap(base_, x.base_);
@@ -564,8 +569,9 @@ class SVector {
   // Copies other.base_ to base_ in this SVector. Safe for all types as it uses
   // constructor for each entry.
   void CopyInternal(const SVector& other, std::false_type) {
-    for (int i = -size_; i < size_; ++i) {
-      new (base_ + i) T(other.base_[i]);
+    for (IndexT i = -size_; i < size_; ++i) {
+      new (base_ + static_cast<ptrdiff_t>(i))
+          T(other.base_[static_cast<ptrdiff_t>(i)]);
     }
   }
 
@@ -1091,41 +1097,21 @@ class ReverseArcStaticGraph
 // TODO(user): consider slower but more memory efficient implementations that
 // follow the cycles of the permutation and use a bitmap to indicate what has
 // been permuted or to mark the beginning of each cycle.
-
-// Some compiler do not know typeof(), so we have to use this extra function
-// internally.
-template <class IntVector, class Array, class ElementType>
-void PermuteWithExplicitElementType(const IntVector& permutation,
-                                    Array& array_to_permute,
-                                    ElementType unused) {
-  std::vector<ElementType> temp(permutation.size());
-  for (size_t i = 0; i < permutation.size(); ++i) {
-    temp[i] = array_to_permute[i];
-  }
-  for (size_t i = 0; i < permutation.size(); ++i) {
-    array_to_permute[static_cast<size_t>(permutation[i])] = temp[i];
-  }
-}
-
 template <class IntVector, class Array>
 void Permute(const IntVector& permutation, Array* array_to_permute) {
   if (permutation.empty()) {
     return;
   }
-  PermuteWithExplicitElementType(permutation, *array_to_permute,
-                                 (*array_to_permute)[0]);
-}
-
-// We need a specialization for vector<bool>, because the default code uses
-// (*array_to_permute)[0] as ElementType, which isn't 'bool' in that case.
-template <class IntVector>
-void Permute(const IntVector& permutation,
-             std::vector<bool>* array_to_permute) {
-  if (permutation.empty()) {
-    return;
+  const auto size = permutation.size();
+  auto& array = *array_to_permute;
+  using ElementType =
+      typename std::iterator_traits<decltype(std::begin(array))>::value_type;
+  std::vector<ElementType> temp(size);
+  auto array_begin = std::begin(array);
+  std::copy_n(array_begin, size, temp.begin());
+  for (size_t i = 0; i < permutation.size(); ++i) {
+    *(array_begin + static_cast<size_t>(permutation[i])) = temp[i];
   }
-  bool unused = false;
-  PermuteWithExplicitElementType(permutation, *array_to_permute, unused);
 }
 
 // BaseGraph implementation ----------------------------------------------------

@@ -16,6 +16,7 @@
 """Linear assignment example."""
 # [START import]
 from ortools.graph.python import min_cost_flow
+
 # [END import]
 
 
