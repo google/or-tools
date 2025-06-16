@@ -28,6 +28,7 @@ import weakref
 
 from ortools.routing import enums_pb2
 from ortools.routing import pywraprouting
+
 # [END import]
 
 
@@ -90,6 +91,7 @@ def print_solution(
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
 
+
 # [END solution_callback_printer]
 
 
@@ -122,6 +124,7 @@ class SolutionCallback:
             self._counter += 1
         if self._counter > self._counter_limit:
             self._routing_model_ref().solver().FinishCurrentSearch()  # pytype: disable=attribute-error
+
 
 # [END solution_callback]
 

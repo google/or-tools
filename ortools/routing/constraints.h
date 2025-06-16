@@ -49,6 +49,9 @@ Constraint* MakeRouteConstraint(
     std::function<std::optional<int64_t>(const std::vector<int64_t>&)>
         route_evaluator);
 
+Constraint* MakeGlobalVehicleBreaksConstraint(
+    Solver* solver, const RoutingDimension* dimension);
+
 }  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_CONSTRAINTS_H_

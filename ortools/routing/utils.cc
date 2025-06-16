@@ -14,6 +14,8 @@
 #include "ortools/routing/utils.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <queue>
 #include <tuple>

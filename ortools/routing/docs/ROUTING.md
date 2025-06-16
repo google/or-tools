@@ -19,15 +19,16 @@ and .Net. Each language have different requirements for the code samples.
 ### C++ code samples
 
 ```cpp
+// Snippet from ortools/routing/samples/simple_routing_program.cc
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <sstream>
 
+#include "ortools/base/init_google.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
-#include "ortools/base/init_google.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/index_manager.h"
@@ -98,6 +99,7 @@ int main(int argc, char* argv[]) {
 
 ```python
 #!/usr/bin/env python3
+# Snippet from ortools/routing/samples/simple_routing_program.py
 """Vehicle Routing example."""
 
 from ortools.routing import enums_pb2
@@ -105,72 +107,75 @@ from ortools.routing import pywraprouting
 
 
 def main():
-    """Entry point of the program."""
-    # Instantiate the data problem.
-    num_locations = 5
-    num_vehicles = 1
-    depot = 0
+  """Entry point of the program."""
+  # Instantiate the data problem.
+  num_locations = 5
+  num_vehicles = 1
+  depot = 0
 
-    # Create the routing index manager.
-    manager = pywraprouting.RoutingIndexManager(num_locations, num_vehicles, depot)
+  # Create the routing index manager.
+  manager = pywraprouting.RoutingIndexManager(
+      num_locations, num_vehicles, depot
+  )
 
-    # Create Routing Model.
-    routing = pywraprouting.RoutingModel(manager)
+  # Create Routing Model.
+  routing = pywraprouting.RoutingModel(manager)
 
-    # Create and register a transit callback.
-    def distance_callback(from_index, to_index):
-        """Returns the absolute difference between the two nodes."""
-        # Convert from routing variable Index to user NodeIndex.
-        from_node = int(manager.IndexToNode(from_index))
-        to_node = int(manager.IndexToNode(to_index))
-        return abs(to_node - from_node)
+  # Create and register a transit callback.
+  def distance_callback(from_index, to_index):
+    """Returns the absolute difference between the two nodes."""
+    # Convert from routing variable Index to user NodeIndex.
+    from_node = int(manager.IndexToNode(from_index))
+    to_node = int(manager.IndexToNode(to_index))
+    return abs(to_node - from_node)
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
-    # Define cost of each arc.
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+  # Define cost of each arc.
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
-    # Setting first solution heuristic.
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )  # pylint: disable=no-member
+  # Setting first solution heuristic.
+  search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+  search_parameters.first_solution_strategy = (
+      enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+  )  # pylint: disable=no-member
 
-    # Solve the problem.
-    assignment = routing.SolveWithParameters(search_parameters)
+  # Solve the problem.
+  assignment = routing.SolveWithParameters(search_parameters)
 
-    # Print solution on console.
-    print(f"Objective: {assignment.ObjectiveValue()}")
-    index = routing.Start(0)
-    plan_output = "Route for vehicle 0:\n"
-    route_distance = 0
-    while not routing.IsEnd(index):
-        plan_output += f"{manager.IndexToNode(index)} -> "
-        previous_index = index
-        index = assignment.Value(routing.NextVar(index))
-        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += f"{manager.IndexToNode(index)}\n"
-    plan_output += f"Distance of the route: {route_distance}m\n"
-    print(plan_output)
+  # Print solution on console.
+  print(f"Objective: {assignment.ObjectiveValue()}")
+  index = routing.Start(0)
+  plan_output = "Route for vehicle 0:\n"
+  route_distance = 0
+  while not routing.IsEnd(index):
+    plan_output += f"{manager.IndexToNode(index)} -> "
+    previous_index = index
+    index = assignment.Value(routing.NextVar(index))
+    route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+  plan_output += f"{manager.IndexToNode(index)}\n"
+  plan_output += f"Distance of the route: {route_distance}m\n"
+  print(plan_output)
 
 
 if __name__ == "__main__":
-    main()
+  main()
 ```
 
 ### Java code samples
 
 ```java
+// Snippet from ortools/routing/samples/SimpleRoutingProgram.java
 package com.google.ortools.routing.samples;
 import static java.lang.Math.abs;
 
 import com.google.ortools.Loader;
-import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.RoutingSearchParameters;
+import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.routing.Globals;
 import com.google.ortools.routing.RoutingIndexManager;
 import com.google.ortools.routing.RoutingModel;
-import com.google.ortools.routing.RoutingSearchParameters;
 import java.util.logging.Logger;
 
 /** Minimal Routing example to showcase calling the solver.*/
@@ -234,7 +239,8 @@ public class SimpleRoutingProgram {
 
 ### .Net code samples
 
-```cs
+```csharp
+// Snippet from ortools/routing/samples/SimpleRoutingProgram.cs
 using System;
 using Google.OrTools.ConstraintSolver;
 using Google.OrTools.Routing;

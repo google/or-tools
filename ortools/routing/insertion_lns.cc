@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/int_type.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/routing/routing.h"
