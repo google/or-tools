@@ -277,7 +277,17 @@ function build_python() {
     echo "DONE" | tee -a build.log
     echo -n "Build Python ${PY_VERSION}..." | tee -a build.log
     cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
-    cmake --build "temp_python${PY_VERSION}" -j8 -v
+    cmake --build "temp_python${PY_VERSION}" --target ortools -j8 -v
+
+    if [[ ${PLATFORM} == "x86_64" ]]; then
+      # on macos X86_64 stubgen will timeout -> need to build 2 times
+      cmake --build "temp_python${PY_VERSION}" -j8 -v || true
+      sleep 5
+      cmake --build "temp_python${PY_VERSION}" -j8 -v
+    else
+      cmake --build "temp_python${PY_VERSION}" -j8 -v
+    fi
+
     echo "  Check libortools.dylib..." | tee -a build.log
     otool -L "temp_python${PY_VERSION}/lib/libortools.dylib" | grep -vqz "/Users"
     echo "  DONE" | tee -a build.log
