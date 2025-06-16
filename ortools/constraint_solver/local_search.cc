@@ -4130,7 +4130,9 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         if (solutions_since_last_check_ >= check_period_) {
           solutions_since_last_check_ = 0;
         }
-        const bool accept = !check_solution || solver->SolveAndCommit(restore);
+        const bool accept = !check_solution ||
+                            (solver->SolveAndCommit(restore) &&
+                             solver->AcceptSolution(solver->TopLevelSearch()));
         solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
                                                            accept);
         if (accept) {

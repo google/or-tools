@@ -21,15 +21,15 @@
 //
 // USAGE EXAMPLES (most of which are also unit tests):
 // - ./pywrapcp_test.py
-// - ortools/python/appointments.py
-// - ortools/python/golomb8.py
-// - ortools/python/hidato_table.py
-// - ortools/python/jobshop_ft06.py
-// - ortools/python/magic_sequence_distribute.py
-// - ortools/python/rabbit_pheasant.py
-// - ortools/python/simple_meeting.py
-// - ortools/python/sudoku.py
-// - ortools/python/zebra.py
+// - examples/python/appointments.py
+// - examples/python/golomb8.py
+// - examples/python/hidato_table.py
+// - examples/python/jobshop_ft06.py
+// - examples/python/magic_sequence_distribute.py
+// - examples/python/rabbit_pheasant.py
+// - examples/python/simple_meeting.py
+// - examples/python/sudoku.py
+// - examples/python/zebra.py
 
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"

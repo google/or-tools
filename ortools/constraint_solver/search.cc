@@ -3388,9 +3388,17 @@ class TabuSearch : public Metaheuristic {
   void EnterSearch() override;
   void ApplyDecision(Decision* d) override;
   bool AtSolution() override;
+  bool AcceptSolution() override;
   bool AtLocalOptimum() override;
   bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void AcceptNeighbor() override;
+  void BeginNextDecision(DecisionBuilder* const) override {
+    if (stop_search_) solver()->Fail();
+  }
+  void RefuteDecision(Decision* const d) override {
+    Metaheuristic::RefuteDecision(d);
+    if (stop_search_) solver()->Fail();
+  }
   std::string DebugString() const override { return "Tabu Search"; }
 
  protected:
@@ -3425,6 +3433,11 @@ class TabuSearch : public Metaheuristic {
   int64_t forbid_tenure_;
   double tabu_factor_;
   int64_t stamp_;
+  int64_t solution_count_ = 0;
+  bool stop_search_ = false;
+  std::vector<int64_t> delta_values_;
+  SparseBitset<> delta_vars_;
+  std::vector<int> var_index_to_index_;
 };
 
 TabuSearch::TabuSearch(Solver* solver, const std::vector<bool>& maximize,
@@ -3438,10 +3451,17 @@ TabuSearch::TabuSearch(Solver* solver, const std::vector<bool>& maximize,
       keep_tenure_(keep_tenure),
       forbid_tenure_(forbid_tenure),
       tabu_factor_(tabu_factor),
-      stamp_(0) {
+      stamp_(0),
+      delta_values_(vars.size(), 0),
+      delta_vars_(vars.size()) {
   for (int index = 0; index < vars_.size(); ++index) {
     assignment_container_.FastAdd(vars_[index]);
     DCHECK_EQ(vars_[index], assignment_container_.Element(index).Var());
+    const int var_index = vars_[index]->index();
+    if (var_index >= var_index_to_index_.size()) {
+      var_index_to_index_.resize(var_index + 1, -1);
+    }
+    var_index_to_index_[var_index] = index;
   }
 }
 
@@ -3450,6 +3470,8 @@ void TabuSearch::EnterSearch() {
   solver()->SetUseFastLocalSearch(true);
   stamp_ = 0;
   has_stored_assignment_ = false;
+  solution_count_ = 0;
+  stop_search_ = false;
 }
 
 void TabuSearch::ApplyDecision(Decision* const d) {
@@ -3482,21 +3504,19 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     MakeMinimizationVarsLessOrEqualWithSteps(
         [this](int i) { return CurrentInternalValue(i); });
   }
-  // Avoid cost plateau's which lead to tabu cycles.
+}
+
+bool TabuSearch::AcceptSolution() {
+  // Avoid cost plateaus which lead to tabu cycles.
   if (found_initial_solution_) {
-    Constraint* plateau_ct = nullptr;
-    if (Size() == 1) {
-      plateau_ct = s->MakeNonEquality(MinimizationVar(0), last_values_[0]);
-    } else {
-      std::vector<IntVar*> plateau_vars(Size());
-      for (int i = 0; i < Size(); ++i) {
-        plateau_vars[i] =
-            s->MakeIsEqualCstVar(MinimizationVar(i), last_values_[i]);
+    for (int i = 0; i < Size(); ++i) {
+      if (last_values_[i] != MinimizationVar(i)->Min()) {
+        return true;
       }
-      plateau_ct = s->MakeSumLessOrEqual(plateau_vars, Size() - 1);
     }
-    s->AddConstraint(plateau_ct);
+    return false;
   }
+  return true;
 }
 
 std::vector<IntVar*> TabuSearch::CreateTabuVars() {
@@ -3519,6 +3539,7 @@ std::vector<IntVar*> TabuSearch::CreateTabuVars() {
 }
 
 bool TabuSearch::AtSolution() {
+  ++solution_count_;
   if (!ObjectiveMonitor::AtSolution()) {
     return false;
   }
@@ -3551,6 +3572,13 @@ bool TabuSearch::AtSolution() {
 
 bool TabuSearch::AtLocalOptimum() {
   solver()->SetUseFastLocalSearch(false);
+  // If no solution has been accepted since the last local optimum, and no tabu
+  // lists are active, stop the search.
+  if (stamp_ > 0 && solution_count_ == 0 && keep_tabu_list_.empty() &&
+      forbid_tabu_list_.empty()) {
+    stop_search_ = true;
+  }
+  solution_count_ = 0;
   AgeLists();
   for (int i = 0; i < Size(); ++i) {
     SetCurrentInternalValue(i, std::numeric_limits<int64_t>::max());
@@ -3569,26 +3597,32 @@ bool TabuSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   for (const IntVarElement& element : delta_container.elements()) {
     if (!element.Bound()) return true;
   }
+  delta_vars_.ResetAllToFalse();
+  for (const IntVarElement& element : delta_container.elements()) {
+    const int var_index = element.Var()->index();
+    if (var_index >= var_index_to_index_.size()) continue;
+    const int index = var_index_to_index_[var_index];
+    if (index == -1) continue;
+    delta_values_[index] = element.Value();
+    delta_vars_.Set(index);
+  }
   int num_respected = 0;
-  // TODO(user): Make this O(delta).
-  auto get_value = [this, &delta_container](int var_index) {
-    const IntVarElement* element =
-        delta_container.ElementPtrOrNull(vars(var_index));
-    return (element != nullptr)
-               ? element->Value()
+  auto get_value = [this](int var_index) {
+    return delta_vars_[var_index]
+               ? delta_values_[var_index]
                : assignment_container_.Element(var_index).Value();
   };
+  const int64_t tabu_limit = TabuLimit();
   for (const auto [var_index, value, unused_stamp] : synced_keep_tabu_list_) {
     if (get_value(var_index) == value) {
-      ++num_respected;
+      if (++num_respected >= tabu_limit) return true;
     }
   }
   for (const auto [var_index, value, unused_stamp] : synced_forbid_tabu_list_) {
     if (get_value(var_index) != value) {
-      ++num_respected;
+      if (++num_respected >= tabu_limit) return true;
     }
   }
-  const int64_t tabu_limit = TabuLimit();
   if (num_respected >= tabu_limit) return true;
   // Aspiration
   // TODO(user): Add proper support for lex-objectives with steps.

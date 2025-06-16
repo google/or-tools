@@ -3254,6 +3254,10 @@ std::string Solver::SearchContext(const Search* search) const {
   return search->search_context();
 }
 
+bool Solver::AcceptSolution(Search* search) const {
+  return search->AcceptSolution();
+}
+
 Assignment* Solver::GetOrCreateLocalSearchState() {
   if (local_search_state_ == nullptr) {
     local_search_state_ = std::make_unique<Assignment>(this);

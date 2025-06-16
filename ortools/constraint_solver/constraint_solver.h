@@ -3145,6 +3145,7 @@ class Solver {
   void SetSearchContext(Search* search, absl::string_view search_context);
   std::string SearchContext() const;
   std::string SearchContext(const Search* search) const;
+  bool AcceptSolution(Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
   // TODO(user): Investigate if this should be moved to Search.
   Assignment* GetOrCreateLocalSearchState();
