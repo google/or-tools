@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index c4b0b6e..30f7652 100644
+index c4b0b6e..ee39341 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,5 +1,10 @@
@@ -24,7 +24,7 @@ index c4b0b6e..30f7652 100644
  
  # Windows resource file
  set(BZ2_RES "")
-@@ -299,21 +304,30 @@ endif()
+@@ -299,21 +304,32 @@ endif()
  
  if(ENABLE_SHARED_LIB)
      # The libbz2 shared library.
@@ -59,13 +59,15 @@ index c4b0b6e..30f7652 100644
 +    )
 +    install(TARGETS BZip2
 +      EXPORT ${PROJECT_NAME}Targets
-+      DESTINATION ${CMAKE_INSTALL_LIBDIR})
++      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}   # For Windows DLLs and executables
++      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}   # For shared libraries on UNIX
++      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})  # For static libs or import libs
      install(FILES bzlib.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 +    add_library(BZip2::BZip2 ALIAS BZip2)
  
      if(USE_OLD_SONAME)
          # Hack to support the old libbz2.so.1.0 version by including an extra copy.
-@@ -323,16 +337,22 @@ if(ENABLE_SHARED_LIB)
+@@ -323,16 +339,22 @@ if(ENABLE_SHARED_LIB)
              add_library(bz2_old_soname SHARED ${BZ2_RES})
              target_sources(bz2_old_soname
                  PRIVATE   ${BZ2_SOURCES}
@@ -92,7 +94,7 @@ index c4b0b6e..30f7652 100644
          endif()
      endif()
  endif()
-@@ -341,9 +361,13 @@ if(ENABLE_STATIC_LIB)
+@@ -341,9 +363,13 @@ if(ENABLE_STATIC_LIB)
      # The libbz2 static library.
      add_library(bz2_static STATIC)
      target_sources(bz2_static
@@ -109,7 +111,7 @@ index c4b0b6e..30f7652 100644
  
      # Use '-fPIC'/'-fPIE' option for static libraries by default.
      # You may build with ENABLE_STATIC_LIB_IS_PIC=OFF to disable PIC for the static library.
-@@ -357,8 +381,13 @@ if(ENABLE_STATIC_LIB)
+@@ -357,8 +383,13 @@ if(ENABLE_STATIC_LIB)
          SOVERSION           ${LT_SOVERSION}
          ARCHIVE_OUTPUT_NAME bz2_static)
      target_compile_definitions(bz2_static PUBLIC BZ2_STATICLIB)
@@ -124,7 +126,7 @@ index c4b0b6e..30f7652 100644
  endif()
  
  if(ENABLE_APP)
-@@ -373,7 +402,9 @@ if(ENABLE_APP)
+@@ -373,7 +404,9 @@ if(ENABLE_APP)
      else()
          target_compile_definitions(bzip2 PUBLIC BZ_LCCWIN32=0 BZ_UNIX)
      endif()
@@ -135,7 +137,7 @@ index c4b0b6e..30f7652 100644
  
      # Create bzip2 copies bzcat and bunzip.
      # The default behavior is altered in bzip2.c code by checking the program name.
-@@ -391,7 +422,9 @@ if(ENABLE_APP)
+@@ -391,7 +424,9 @@ if(ENABLE_APP)
      else()
          target_compile_definitions(bzip2recover PUBLIC BZ_LCCWIN32=0 BZ_UNIX)
      endif()
@@ -146,7 +148,7 @@ index c4b0b6e..30f7652 100644
  
      if(ENABLE_EXAMPLES)
          if(ENABLE_SHARED_LIB)
-@@ -399,8 +432,10 @@ if(ENABLE_APP)
+@@ -399,8 +434,10 @@ if(ENABLE_APP)
              add_executable(dlltest)
              target_sources(dlltest
                  PRIVATE   dlltest.c)
@@ -159,7 +161,7 @@ index c4b0b6e..30f7652 100644
          endif()
      endif()
  
-@@ -419,6 +454,10 @@ if(ENABLE_APP)
+@@ -419,6 +456,10 @@ if(ENABLE_APP)
  
  endif()
  
