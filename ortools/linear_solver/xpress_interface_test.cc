@@ -159,7 +159,7 @@ class XPRSGetter {
     std::string value(280, '\0');
     int valueSize;
     EXPECT_STATUS(XPRSgetstringattrib(prob(), attrib, &value[0], value.size(),
-                                       &valueSize));
+                                      &valueSize));
     value.resize(valueSize - 1);
     return value;
   }

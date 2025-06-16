@@ -142,7 +142,8 @@ std::ostream& operator<<(std::ostream& os, const ::std::optional<T>& opt) {
 
 // needed by graph tests
 template <typename T, typename U>
-std::ostream& operator<<(std::ostream& os, const ::util_intops::StrongVector<T, U>& vec) {
+std::ostream& operator<<(std::ostream& os,
+                         const ::util_intops::StrongVector<T, U>& vec) {
   for (U it : vec) {
     os << ::std::to_string(it) << ',';
   }

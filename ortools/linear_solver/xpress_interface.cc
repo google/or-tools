@@ -20,8 +20,8 @@
 #include <limits>
 #include <memory>
 #include <mutex>
-#include <string>
 #include <numeric>
+#include <string>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
@@ -1094,7 +1094,8 @@ void XpressInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
-  fixedOrderCoefficientsPerConstraint[constraint->index()][variable->index()] = new_value;
+  fixedOrderCoefficientsPerConstraint[constraint->index()][variable->index()] =
+      new_value;
 
   // Changing a single coefficient in the matrix is potentially pretty
   // slow since that coefficient has to be found in the sparse matrix
