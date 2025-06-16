@@ -317,7 +317,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
 
   for (const MPGeneralConstraintProto& general_constraint :
        model.general_constraint()) {
-    const std::string& in_name = general_constraint.name();
+    absl::string_view in_name = general_constraint.name();
     switch (general_constraint.general_constraint_case()) {
       case MPGeneralConstraintProto::kQuadraticConstraint: {
         (*output.mutable_quadratic_constraints())

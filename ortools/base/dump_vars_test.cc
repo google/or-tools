@@ -137,7 +137,8 @@ TEST(DumpVars, StrongInt) {
 }
 
 TEST(DumpVars, StrongVector) {
-  ::util_intops::StrongVector<::util_intops::CustomStrongInt, float> vec = {49.3, 3.14};
+  ::util_intops::StrongVector<::util_intops::CustomStrongInt, float> vec = {
+      49.3, 3.14};
   EXPECT_EQ(R"(vec = 49.299999,3.140000,)", ToString(DUMP_VARS(vec)));
   EXPECT_EQ(R"(vec = 49.299999,3.140000,)", DUMP_VARS(vec).str());
 }

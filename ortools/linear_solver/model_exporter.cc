@@ -57,7 +57,7 @@ class LineBreaker {
 
   // Returns true if string s will fit on the current line without adding a
   // carriage return.
-  bool WillFit(const std::string& s) {
+  bool WillFit(absl::string_view s) {
     return line_size_ + static_cast<int>(s.size()) < max_line_size_;
   }
 
