@@ -1093,8 +1093,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
 
   ASSIGN_OR_RETURN(
       GScipResult gscip_result,
-      gscip_->Solve(gscip_parameters,
-                    /*legacy_params=*/"", std::move(gscip_msg_cb),
+      gscip_->Solve(gscip_parameters, std::move(gscip_msg_cb),
                     use_interrupter ? &gscip_interrupter : nullptr));
 
   // Flush the potential last unfinished line.

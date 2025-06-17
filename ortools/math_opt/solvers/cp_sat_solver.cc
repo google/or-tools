@@ -137,7 +137,7 @@ std::vector<std::string> SetSolveParameters(
     sat_parameters.set_random_seed(parameters.random_seed());
   }
   if (parameters.has_threads()) {
-    sat_parameters.set_num_search_workers(parameters.threads());
+    sat_parameters.set_num_workers(parameters.threads());
   }
   if (parameters.has_relative_gap_tolerance()) {
     sat_parameters.set_relative_gap_limit(parameters.relative_gap_tolerance());
