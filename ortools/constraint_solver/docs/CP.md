@@ -74,7 +74,6 @@ int main(int argc, char* argv[]) {
 ### Python code samples
 
 ```python
-#!/usr/bin/env python3
 # Snippet from ortools/constraint_solver/samples/simple_cp_program.py
 """Simple Constraint optimization example."""
 
