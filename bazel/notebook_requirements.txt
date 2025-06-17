@@ -215,7 +215,7 @@ prometheus-client==0.22.1
     # via jupyter-server
 prompt-toolkit==3.0.51
     # via ipython
-protobuf==6.31.0
+protobuf==6.31.1
     # via
     #   -r bazel/notebook_requirements.in
     #   mypy-protobuf
