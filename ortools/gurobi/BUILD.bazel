@@ -36,17 +36,6 @@ cc_library(
 )
 
 cc_library(
-    name = "gurobi_util",
-    srcs = ["gurobi_util.cc"],
-    hdrs = ["gurobi_util.h"],
-    deps = [
-        ":environment",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-cc_library(
     name = "gurobi_stdout_matchers",
     testonly = True,
     srcs = ["gurobi_stdout_matchers.cc"],

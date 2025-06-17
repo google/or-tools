@@ -46,10 +46,8 @@ cc_library(
         "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/linear_solver/proto_solver:scip_proto_solver",
-        "//ortools/linear_solver/proto_solver:xpress_proto_solver",
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:mps_reader",
         "//ortools/util:logging",
-        "//ortools/xpress:environment",
     ],
 )

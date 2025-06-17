@@ -12,7 +12,7 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+# load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
@@ -171,6 +171,7 @@ cc_library(
     name = "linear_solver",
     srcs = [
         "gurobi_interface.cc",
+        "gurobi_util.cc",
         "linear_expr.cc",
         "linear_solver.cc",
         "linear_solver_callback.cc",
@@ -211,6 +212,7 @@ cc_library(
         "//conditions:default": [],
     }),
     hdrs = [
+        "gurobi_util.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
@@ -266,7 +268,6 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:timer",
         "//ortools/gurobi:environment",
-        "//ortools/gurobi:gurobi_util",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/port:file",

@@ -37,7 +37,6 @@
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/xpress_proto_solver.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
@@ -50,7 +49,6 @@
 #endif  // defined(USE_PDLP)
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/mps_reader.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace mb {
@@ -557,11 +555,6 @@ bool ModelSolverHelper::SolverIsSupported() const {
       solver_type_.value() == MPModelRequest::GUROBI_LINEAR_PROGRAMMING) {
     return GurobiIsCorrectlyInstalled();
   }
-  if (solver_type_.value() ==
-          MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING ||
-      solver_type_.value() == MPModelRequest::XPRESS_LINEAR_PROGRAMMING) {
-    return XpressIsCorrectlyInstalled();
-  }
   return false;
 }
 
@@ -635,12 +628,6 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_HIGHS)
-    case MPModelRequest::
-        XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
-    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
-      response_ = XPressSolveProto(request);
-      break;
-    }
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gurobi/gurobi_util.h"
+#include "ortools/linear_solver/gurobi_util.h"
 
 #include <cstring>
 #include <string>

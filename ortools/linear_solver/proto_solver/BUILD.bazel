@@ -194,26 +194,3 @@ cc_library(
         "@highs",
     ],
 )
-
-cc_library(
-    name = "xpress_proto_solver",
-    srcs = ["xpress_proto_solver.cc"],
-    hdrs = ["xpress_proto_solver.h"],
-    deps = [
-        "//ortools/base:timer",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver:model_validator",
-        "//ortools/util:lazy_mutable_copy",
-        "//ortools/xpress:environment",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/cleanup",
-        "@abseil-cpp//absl/log",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/time",
-        "@abseil-cpp//absl/types:optional",
-    ],
-)
