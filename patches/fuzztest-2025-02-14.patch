@@ -36,7 +36,7 @@ index 1f4f08d..cc4d0ba 100644
  
  set(proto_URL https://github.com/protocolbuffers/protobuf.git)
 -set(proto_TAG v28.2)
-+set(proto_TAG v31.0)
++set(proto_TAG v31.1)
  
  set(nlohmann_json_URL https://github.com/nlohmann/json.git)
  set(nlohmann_json_TAG v3.11.2)
