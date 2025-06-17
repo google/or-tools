@@ -111,6 +111,19 @@ cc_library(
 )
 
 cc_library(
+    name = "scip_params",
+    srcs = ["scip_params.cc"],
+    hdrs = ["scip_params.h"],
+    deps = [
+        "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@scip",
+    ],
+)
+
+cc_library(
     name = "scip_proto_solver",
     srcs = ["scip_proto_solver.cc"],
     hdrs = ["scip_proto_solver.h"],
@@ -121,10 +134,10 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
-        "//ortools/gscip:legacy_scip_params",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver/proto_solver:scip_params",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",

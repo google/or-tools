@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gscip/legacy_scip_params.h"
+#include "ortools/linear_solver/proto_solver/scip_params.h"
 
 #include <cstdint>
 #include <string>

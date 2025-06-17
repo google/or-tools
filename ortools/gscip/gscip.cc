@@ -40,7 +40,6 @@
 #include "ortools/gscip/gscip.pb.h"
 #include "ortools/gscip/gscip_event_handler.h"
 #include "ortools/gscip/gscip_parameters.h"
-#include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
@@ -294,8 +293,7 @@ const GScipConstraintOptions& DefaultGScipConstraintOptions() {
   return constraint_options;
 }
 
-absl::Status GScip::SetParams(const GScipParameters& params,
-                              absl::string_view legacy_params) {
+absl::Status GScip::SetParams(const GScipParameters& params) {
   if (params.has_silence_output()) {
     SCIPsetMessagehdlrQuiet(scip_, params.silence_output());
   }
@@ -349,10 +347,6 @@ absl::Status GScip::SetParams(const GScipParameters& params,
   for (const auto& real_param : params.real_params()) {
     RETURN_IF_SCIP_ERROR(
         SCIPsetRealParam(scip_, real_param.first.c_str(), real_param.second));
-  }
-  if (!legacy_params.empty()) {
-    RETURN_IF_ERROR(
-        LegacyScipSetSolverSpecificParameters(legacy_params, scip_));
   }
   return absl::OkStatus();
 }
@@ -929,8 +923,7 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
 }
 
 absl::StatusOr<GScipResult> GScip::Solve(
-    const GScipParameters& params, absl::string_view legacy_params,
-    const GScipMessageHandler message_handler,
+    const GScipParameters& params, const GScipMessageHandler message_handler,
     const Interrupter* const interrupter) {
   if (InErrorState()) {
     return absl::InvalidArgumentError(
@@ -950,7 +943,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
   GScipResult result;
 
   // Step 1: apply parameters.
-  const absl::Status param_status = SetParams(params, legacy_params);
+  const absl::Status param_status = SetParams(params);
   if (!param_status.ok()) {
     result.gscip_output.set_status(GScipOutput::INVALID_SOLVER_PARAMETERS);
     // Conversion to std::string for open source build.

@@ -50,19 +50,6 @@ cc_library(
 )
 
 cc_library(
-    name = "legacy_scip_params",
-    srcs = ["legacy_scip_params.cc"],
-    hdrs = ["legacy_scip_params.h"],
-    deps = [
-        "//ortools/linear_solver:scip_helper_macros",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@scip",
-    ],
-)
-
-cc_library(
     name = "gscip",
     srcs = [
         "gscip.cc",
@@ -76,7 +63,6 @@ cc_library(
         ":gscip_cc_proto",
         ":gscip_message_handler",
         ":gscip_parameters",
-        ":legacy_scip_params",
         "//ortools/base",
         "//ortools/base:status_builder",
         "//ortools/base:status_macros",

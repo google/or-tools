@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -24,10 +23,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/glpk/glpk_env_deleter.h"

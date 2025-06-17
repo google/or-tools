@@ -178,8 +178,7 @@ class GScip {
   static std::string ScipVersion();
 
   // After Solve() the parameters are reset and SCIP stage is restored to
-  // PROBLEM. "legacy_params" are in the format of legacy_scip_params.h and are
-  // applied after "params". Use of "legacy_params" is discouraged.
+  // PROBLEM.
   //
   // The returned StatusOr will contain an error only if an:
   //   * An underlying function from SCIP fails.
@@ -192,7 +191,6 @@ class GScip {
   // returns.
   absl::StatusOr<GScipResult> Solve(
       const GScipParameters& params = GScipParameters(),
-      absl::string_view legacy_params = "",
       GScipMessageHandler message_handler = nullptr,
       const Interrupter* interrupter = nullptr);
 
@@ -480,8 +478,7 @@ class GScip {
   // Releases SCIP memory.
   absl::Status CleanUp();
 
-  absl::Status SetParams(const GScipParameters& params,
-                         absl::string_view legacy_params);
+  absl::Status SetParams(const GScipParameters& params);
   absl::Status FreeTransform();
 
   // Returns an error if |d| >= ScipInf().

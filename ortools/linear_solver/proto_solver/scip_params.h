@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_
-#define OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_
+#ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SCIP_PARAMS_H_
+#define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SCIP_PARAMS_H_
 
 #include <string>
 
@@ -27,4 +27,4 @@ absl::Status LegacyScipSetSolverSpecificParameters(absl::string_view parameters,
                                                    SCIP* scip);
 }
 
-#endif  // OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_SCIP_PARAMS_H_

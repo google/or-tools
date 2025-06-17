@@ -24,7 +24,7 @@
 //   solver.Maximize(10 * x1 + 6 * x2)
 //
 // USAGE EXAMPLES:
-// - ortools/python/linear_programming.py
+// - examples/python/linear_programming.py
 // - ./pywraplp_test.py
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
