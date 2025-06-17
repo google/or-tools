@@ -287,13 +287,14 @@ function build_python() {
     echo "DONE" | tee -a build.log
 
     if [[ ${PLATFORM} == "x86_64" ]]; then
-      echo -n "  Build all..." | tee -a build.log
-      # on macos X86_64 stubgen will timeout -> need to build 2 times
-      cmake --build "temp_python${PY_VERSION}" -j8 -v || true
+      echo -n "  Build all few times..." | tee -a build.log
+      # on macos X86_64 stubgen will timeout -> need to build few times
+      cmake --build "temp_python${PY_VERSION}" -j4 -v || true
+      sleep 10
+      cmake --build "temp_python${PY_VERSION}" -v || true
       echo "DONE" | tee -a build.log
-      sleep 5
       echo -n "  ReBuild all..." | tee -a build.log
-      cmake --build "temp_python${PY_VERSION}" -j8 -v
+      cmake --build "temp_python${PY_VERSION}" -j4 -v
       echo "DONE" | tee -a build.log
     else
       echo -n "  Build all..." | tee -a build.log
