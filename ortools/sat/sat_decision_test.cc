@@ -95,6 +95,47 @@ TEST(SatDecisionPolicyTest, ErwaHeuristic) {
   EXPECT_EQ(Literal(BooleanVariable(2), true), decision->NextBranch());
 }
 
+TEST(SatDecisionPolicyTest, SetTargetPolarityInStablePhase) {
+  Model model;
+  Trail* trail = model.GetOrCreate<Trail>();
+  SatDecisionPolicy* decision = model.GetOrCreate<SatDecisionPolicy>();
+  const int num_variables = 100;
+  trail->Resize(num_variables);
+  decision->IncreaseNumVariables(num_variables);
+
+  for (int i = 0; i < num_variables; ++i) {
+    decision->SetTargetPolarity(Literal(BooleanVariable(i), i % 2));
+  }
+
+  decision->SetStablePhase(true);
+  for (int i = 0; i < num_variables; ++i) {
+    const Literal literal = decision->NextBranch();
+    EXPECT_EQ(literal, Literal(BooleanVariable(literal.Variable()),
+                               literal.Variable().value() % 2));
+    trail->EnqueueSearchDecision(literal);
+  }
+}
+
+TEST(SatDecisionPolicyTest, SetTargetPolarity) {
+  Model model;
+  Trail* trail = model.GetOrCreate<Trail>();
+  SatDecisionPolicy* decision = model.GetOrCreate<SatDecisionPolicy>();
+  const int num_variables = 100;
+  trail->Resize(num_variables);
+  decision->IncreaseNumVariables(num_variables);
+
+  for (int i = 0; i < num_variables; ++i) {
+    decision->SetTargetPolarity(Literal(BooleanVariable(i), i % 2));
+  }
+
+  decision->SetStablePhase(false);
+  for (int i = 0; i < num_variables; ++i) {
+    const Literal literal = decision->NextBranch();
+    EXPECT_EQ(literal, Literal(BooleanVariable(literal.Variable()),
+                               literal.Variable().value() % 2));
+    trail->EnqueueSearchDecision(literal);
+  }
+}
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

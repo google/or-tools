@@ -95,6 +95,13 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   return result - adjust;
 }
 
+// When the case positive_divisor == 1 is frequent, this is faster.
+inline IntegerValue FloorRatioWithTest(IntegerValue dividend,
+                                       IntegerValue positive_divisor) {
+  if (positive_divisor == 1) return dividend;
+  return FloorRatio(dividend, positive_divisor);
+}
+
 // Overflows and saturated arithmetic.
 
 inline IntegerValue CapProdI(IntegerValue a, IntegerValue b) {
@@ -496,6 +503,11 @@ class BestBinaryRelationBounds {
 
   std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
   GetSortedNonTrivialBounds() const;
+
+  // Note that this is non-deterministic and in O(num_relations).
+  void AppendAllExpressionContaining(
+      Bitset64<IntegerVariable>::ConstView var_set,
+      std::vector<LinearExpression2>* result) const;
 
  private:
   // The best bound on the given "canonicalized" expression.

@@ -108,12 +108,20 @@ class SatDecisionPolicy {
 
   // Like SetAssignmentPreference() but it can be overridden by phase-saving.
   void SetTargetPolarity(Literal l) {
-    var_polarity_[l.Variable()] = l.IsPositive();
+    has_target_polarity_[l.Variable()] = true;
+    target_polarity_[l.Variable()] = var_polarity_[l.Variable()] =
+        l.IsPositive();
+    best_partial_assignment_.push_back(l);
+    target_length_++;
   }
   absl::Span<const Literal> GetBestPartialAssignment() const {
     return best_partial_assignment_;
   }
-  void ClearBestPartialAssignment() { best_partial_assignment_.clear(); }
+  void ClearBestPartialAssignment() {
+    target_length_ = 0;
+    has_target_polarity_.assign(has_target_polarity_.size(), false);
+    best_partial_assignment_.clear();
+  }
 
  private:
   // Computes an initial variable ordering.

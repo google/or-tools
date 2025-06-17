@@ -48,12 +48,12 @@ class Precedences2DPropagator : public PropagatorInterface {
   std::vector<std::pair<int, int>> non_trivial_pairs_;
 
   NoOverlap2DConstraintHelper& helper_;
-  Linear2BoundsFromLinear3* linear2_bounds_from_linear3_;
   Linear2Bounds* linear2_bounds_;
+  Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
 
   int last_helper_inprocessing_count_ = -1;
-  int last_num_expressions_ = -1;
+  int64_t last_linear2_timestamp_ = -1;
 
   int64_t num_conflicts_ = 0;
   int64_t num_calls_ = 0;

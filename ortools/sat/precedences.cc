@@ -54,6 +54,27 @@
 namespace operations_research {
 namespace sat {
 
+void Linear2Watcher::NotifyBoundChanged(LinearExpression2 expr) {
+  DCHECK(expr.IsCanonicalized());
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  ++timestamp_;
+  for (const int id : propagator_ids_) {
+    watcher_->CallOnNextPropagate(id);
+  }
+  for (IntegerVariable var : expr.non_zero_vars()) {
+    var = PositiveVariable(var);  // TODO(user): Be more precise?
+    if (var >= var_timestamp_.size()) {
+      var_timestamp_.resize(var + 1, 0);
+    }
+    var_timestamp_[var]++;
+  }
+}
+
+int64_t Linear2Watcher::VarTimestamp(IntegerVariable var) {
+  var = PositiveVariable(var);
+  return var < var_timestamp_.size() ? var_timestamp_[var] : 0;
+}
+
 std::pair<bool, bool> RootLevelLinear2Bounds::Add(LinearExpression2 expr,
                                                   IntegerValue lb,
                                                   IntegerValue ub) {
@@ -80,6 +101,7 @@ std::pair<bool, bool> RootLevelLinear2Bounds::Add(LinearExpression2 expr,
   if (!lb_restricted && !ub_restricted) return {false, false};
 
   ++num_updates_;
+  linear2_watcher_->NotifyBoundChanged(expr);
 
   // Update our special coeff=1 lookup table.
   if (expr.coeffs[0] == 1 && expr.coeffs[1] == 1) {
@@ -281,6 +303,12 @@ RootLevelLinear2Bounds::GetAllBoundsContainingVariables(
   return result;
 }
 
+void RootLevelLinear2Bounds::AppendAllExpressionContaining(
+    Bitset64<IntegerVariable>::ConstView var_set,
+    std::vector<LinearExpression2>* result) const {
+  root_level_relations_.AppendAllExpressionContaining(var_set, result);
+}
+
 EnforcedLinear2Bounds::~EnforcedLinear2Bounds() {
   if (!VLOG_IS_ON(1)) return;
   std::vector<std::pair<std::string, int64_t>> stats;
@@ -314,6 +342,7 @@ void EnforcedLinear2Bounds::PushConditionalRelation(
 
   if (rhs >= root_level_bounds_->LevelZeroUpperBound(expr)) return;
 
+  linear2_watcher_->NotifyBoundChanged(expr);
   ++num_conditional_relation_updates_;
 
   const int new_index = conditional_stack_.size();
@@ -707,14 +736,14 @@ void EnforcedLinear2Bounds::CollectPrecedences(
   }
 }
 
-std::vector<LinearExpression2>
-EnforcedLinear2Bounds::GetAllExpressionsWithConditionalBounds() const {
-  std::vector<LinearExpression2> result;
-  result.reserve(conditional_stack_.size());
+void EnforcedLinear2Bounds::AppendAllExpressionContaining(
+    Bitset64<IntegerVariable>::ConstView var_set,
+    std::vector<LinearExpression2>* result) const {
   for (const auto& entry : conditional_stack_) {
-    result.push_back(entry.key);
+    if (!var_set[PositiveVariable(entry.key.vars[0])]) continue;
+    if (!var_set[PositiveVariable(entry.key.vars[1])]) continue;
+    result->push_back(entry.key);
   }
-  return result;
 }
 
 namespace {
@@ -1783,80 +1812,57 @@ LiteralIndex ReifiedLinear2Bounds::GetReifiedPrecedence(AffineExpression a,
 Linear2BoundsFromLinear3::Linear2BoundsFromLinear3(Model* model)
     : integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
+      linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
-      best_root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {}
+      root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {}
 
+// Note that for speed we do not compare to the trivial or root level bounds.
+//
+// It is okay to still store it in the hash-map, since at worst we will have no
+// more entries than 3 * number_of_linear3_in_the_problem.
 bool Linear2BoundsFromLinear3::AddAffineUpperBound(LinearExpression2 expr,
                                                    AffineExpression affine_ub) {
-  const IntegerValue new_ub = integer_trail_->UpperBound(affine_ub);
   expr.SimpleCanonicalization();
 
-  // Not better than trivial upper bound.
-  if (integer_trail_->UpperBound(expr) <= new_ub) return false;
-
+  // At level zero, just add it to root_level_bounds_.
   if (trail_->CurrentDecisionLevel() == 0) {
-    best_root_level_bounds_->Add(
-        expr, kMinIntegerValue, integer_trail_->LevelZeroUpperBound(affine_ub));
-    NotifyWatchingPropagators();
-    return false;
+    root_level_bounds_->AddUpperBound(
+        expr, integer_trail_->LevelZeroUpperBound(affine_ub));
+    return false;  // Not important.
   }
 
-  // Not better than the root level upper bound.
-  if (best_root_level_bounds_->LevelZeroUpperBound(expr) <= new_ub) {
-    return false;
-  }
-
-  const IntegerValue gcd = expr.DivideByGcd();
-
-  const auto it = best_affine_ub_.find(expr);
+  // We have gcd * canonical_expr <= affine_ub,
+  // so we do need to store a "divisor".
+  const IntegerValue divisor = expr.DivideByGcd();
+  auto it = best_affine_ub_.find(expr);
   if (it != best_affine_ub_.end()) {
-    const auto [old_affine_ub, old_gcd] = it->second;
     // We have an affine bound for this expr in the map. Can be exactly the
     // same, a better one or a worse one.
-    if (old_affine_ub == affine_ub && old_gcd == gcd) {
-      // The affine bound is already in the map.
-      NotifyWatchingPropagators();  // The affine bound was updated.
+    //
+    // Note that we expect exactly the same most of the time as it should be
+    // rare to have many linear3 "competing" for the same linear2 bound.
+    const auto [old_affine_ub, old_divisor] = it->second;
+    if (old_affine_ub == affine_ub && old_divisor == divisor) {
+      linear2_watcher_->NotifyBoundChanged(expr);
       return false;
     }
-    const IntegerValue old_ub =
-        FloorRatio(integer_trail_->UpperBound(old_affine_ub), old_gcd);
+
+    const IntegerValue new_ub =
+        FloorRatioWithTest(integer_trail_->UpperBound(affine_ub), divisor);
+    const IntegerValue old_ub = FloorRatioWithTest(
+        integer_trail_->UpperBound(old_affine_ub), old_divisor);
     if (old_ub <= new_ub) return false;  // old bound is better.
-  }
 
-  // We have gcd * canonical_expr <= affine_ub, so we do need to store a
-  // "divisor".
-  ++num_affine_updates_;
-  best_affine_ub_[expr] = {affine_ub, gcd};
-  NotifyWatchingPropagators();
-  return true;
-}
-
-void Linear2BoundsFromLinear3::NotifyWatchingPropagators() const {
-  for (const int id : propagator_ids_) {
-    watcher_->CallOnNextPropagate(id);
-  }
-}
-
-IntegerValue Linear2BoundsFromLinear3::UpperBound(
-    LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
-
-  const IntegerValue trivial_ub = integer_trail_->UpperBound(expr);
-  const IntegerValue root_level_ub =
-      best_root_level_bounds_->LevelZeroUpperBound(expr);
-  const IntegerValue best_ub = std::min(root_level_ub, trivial_ub);
-
-  const IntegerValue gcd = expr.DivideByGcd();
-  const auto it = best_affine_ub_.find(expr);
-  if (it == best_affine_ub_.end()) {
-    return best_ub;
+    it->second = {affine_ub, divisor};  // Overwrite.
   } else {
-    const auto [affine, divisor] = it->second;
-    const IntegerValue canonical_ub =
-        FloorRatio(integer_trail_->UpperBound(affine), divisor);
-    return std::min(best_ub, CapProdI(gcd, canonical_ub));
+    // Note that this should almost never happen (only once per lin2).
+    best_affine_ub_[expr] = {affine_ub, divisor};
   }
+
+  ++num_affine_updates_;
+  linear2_watcher_->NotifyBoundChanged(expr);
+  return true;
 }
 
 IntegerValue Linear2BoundsFromLinear3::GetUpperBoundFromLinear3(
@@ -1872,53 +1878,31 @@ IntegerValue Linear2BoundsFromLinear3::GetUpperBoundFromLinear3(
   }
 }
 
-// TODO(user): If the trivial bound is better, its explanation is different...
 void Linear2BoundsFromLinear3::AddReasonForUpperBoundLowerThan(
     LinearExpression2 expr, IntegerValue ub,
     std::vector<Literal>* /*literal_reason*/,
     std::vector<IntegerLiteral>* integer_reason) const {
-  expr.SimpleCanonicalization();
+  DCHECK(expr.IsCanonicalized());
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  DCHECK_LE(GetUpperBoundFromLinear3(expr), ub);
 
-  if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) return;  // trivially zero
-
-  // Starts by simple bounds.
-  if (best_root_level_bounds_->LevelZeroUpperBound(expr) <= ub) return;
-
-  // Add explanation if it is a trivial bound.
-  const IntegerValue implied_ub = integer_trail_->UpperBound(expr);
-  if (implied_ub <= ub) {
-    const IntegerValue slack = ub - implied_ub;
-    expr.Negate();  // AppendRelaxedLinearReason() explains a lower bound.
-    absl::Span<const IntegerVariable> vars = expr.non_zero_vars();
-    absl::Span<const IntegerValue> coeffs = expr.non_zero_coeffs();
-    integer_trail_->AppendRelaxedLinearReason(slack, coeffs, vars,
-                                              integer_reason);
-    return;
-  }
-
-  // None of the bound above are enough, try the affine one. Note that gcd *
-  // expr <= ub, is the same as asking why expr <= FloorRatio(ub, gcd).
-  const IntegerValue gcd = expr.DivideByGcd();
   const auto it = best_affine_ub_.find(expr);
-  if (it == best_affine_ub_.end()) return;
+  DCHECK(it != best_affine_ub_.end());
 
-  // We want the reason for "expr <= ub", that is the reason for
-  // - "gcd * canonical_expr <= ub"
-  // - "canonical_expr <= FloorRatio(ub, gcd);
-  //
-  // knowing that canonical_expr <= affine_ub / divisor.
+  // We want the reason for "expr <= ub"
+  // knowing that expr <= affine / divisor.
   const auto [affine, divisor] = it->second;
-  integer_reason->push_back(
-      affine.LowerOrEqual(CapProdI(FloorRatio(ub, gcd) + 1, divisor) - 1));
+  integer_reason->push_back(affine.LowerOrEqual(CapProdI(ub + 1, divisor) - 1));
 }
 
-std::vector<LinearExpression2>
-Linear2BoundsFromLinear3::GetAllExpressionsWithAffineBounds() const {
-  std::vector<LinearExpression2> result;
-  for (const auto [expr, info] : best_affine_ub_) {
-    result.push_back(expr);
+void Linear2BoundsFromLinear3::AppendAllExpressionContaining(
+    Bitset64<IntegerVariable>::ConstView var_set,
+    std::vector<LinearExpression2>* result) const {
+  for (const auto& [expr, unused] : best_affine_ub_) {
+    if (!var_set[PositiveVariable(expr.vars[0])]) continue;
+    if (!var_set[PositiveVariable(expr.vars[1])]) continue;
+    result->push_back(expr);
   }
-  return result;
 }
 
 IntegerValue Linear2Bounds::UpperBound(LinearExpression2 expr) const {
@@ -1958,28 +1942,43 @@ void Linear2Bounds::AddReasonForUpperBoundLowerThan(
   ub = FloorRatio(ub, gcd);
   DCHECK_LE(UpperBound(expr), ub);
 
+  // Explanation are by order of preference, with no reason needed first.
   if (root_level_bounds_->LevelZeroUpperBound(expr) <= ub) {
     return;
   }
+
+  // This one is a single literal.
   if (enforced_bounds_->GetUpperBoundFromEnforced(expr) <= ub) {
-    enforced_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, literal_reason,
-                                                      integer_reason);
-  } else {
-    linear3_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, literal_reason,
-                                                     integer_reason);
+    return enforced_bounds_->AddReasonForUpperBoundLowerThan(
+        expr, ub, literal_reason, integer_reason);
   }
+
+  // This one is a single var upper bound.
+  if (linear3_bounds_->GetUpperBoundFromLinear3(expr) <= ub) {
+    return linear3_bounds_->AddReasonForUpperBoundLowerThan(
+        expr, ub, literal_reason, integer_reason);
+  }
+
+  // Trivial linear2 bounds from its variables.
+  const IntegerValue implied_ub = integer_trail_->UpperBound(expr);
+  const IntegerValue slack = ub - implied_ub;
+  DCHECK_GE(slack, 0);
+  expr.Negate();  // AppendRelaxedLinearReason() explains a lower bound.
+  absl::Span<const IntegerVariable> vars = expr.non_zero_vars();
+  absl::Span<const IntegerValue> coeffs = expr.non_zero_coeffs();
+  integer_trail_->AppendRelaxedLinearReason(slack, coeffs, vars,
+                                            integer_reason);
 }
 
-std::vector<LinearExpression2>
-Linear2Bounds::GetAllExpressionsWithPotentialNonTrivialBounds() const {
-  std::vector<LinearExpression2> result =
-      enforced_bounds_->GetAllExpressionsWithConditionalBounds();
-  std::vector<LinearExpression2> binary_relations_result =
-      linear3_bounds_->GetAllExpressionsWithAffineBounds();
-  result.insert(result.end(), binary_relations_result.begin(),
-                binary_relations_result.end());
-  gtl::STLSortAndRemoveDuplicates(&result);
-  return result;
+absl::Span<const LinearExpression2>
+Linear2Bounds::GetAllExpressionsWithPotentialNonTrivialBounds(
+    Bitset64<IntegerVariable>::ConstView var_set) const {
+  tmp_expressions_.clear();
+  root_level_bounds_->AppendAllExpressionContaining(var_set, &tmp_expressions_);
+  enforced_bounds_->AppendAllExpressionContaining(var_set, &tmp_expressions_);
+  linear3_bounds_->AppendAllExpressionContaining(var_set, &tmp_expressions_);
+  gtl::STLSortAndRemoveDuplicates(&tmp_expressions_);
+  return tmp_expressions_;
 }
 
 }  // namespace sat

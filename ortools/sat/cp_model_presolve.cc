@@ -8820,6 +8820,7 @@ void CpModelPresolver::ExpandObjective() {
 }
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
+  PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return;
   if (time_limit_->LimitReached()) return;
 

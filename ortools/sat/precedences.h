@@ -45,12 +45,40 @@
 namespace operations_research {
 namespace sat {
 
+// Simple "watcher" class that will be notified if a linear2 bound changed. It
+// can also be queried to see if LinearExpression2 involving a specific variable
+// changed since last time.
+class Linear2Watcher {
+ public:
+  explicit Linear2Watcher(Model* model)
+      : watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {}
+
+  // This assumes `expr` is canonicalized and divided by its gcd.
+  void NotifyBoundChanged(LinearExpression2 expr);
+
+  // Register a GenericLiteralWatcher() id so that propagation is called as
+  // soon as a bound on a linear2 changed.
+  void WatchAllLinearExpressions2(int id) { propagator_ids_.insert(id); }
+
+  // Allow to know if some bounds changed since last query.
+  int64_t Timestamp() const { return timestamp_; }
+  int64_t VarTimestamp(IntegerVariable var);
+
+ private:
+  GenericLiteralWatcher* watcher_;
+
+  int64_t timestamp_ = 0;
+  util_intops::StrongVector<IntegerVariable, int64_t> var_timestamp_;
+  absl::btree_set<int> propagator_ids_;
+};
+
 // This holds all the relation lhs <= linear2 <= rhs that are true at level
 // zero. It is the source of truth across all the solver for such bounds.
 class RootLevelLinear2Bounds {
  public:
   explicit RootLevelLinear2Bounds(Model* model)
       : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
 
   ~RootLevelLinear2Bounds();
@@ -112,8 +140,13 @@ class RootLevelLinear2Bounds {
   // canonicalized and gcd-reduced.
   IntegerValue GetUpperBoundNoTrail(LinearExpression2 expr) const;
 
+  void AppendAllExpressionContaining(
+      Bitset64<IntegerVariable>::ConstView var_set,
+      std::vector<LinearExpression2>* result) const;
+
  private:
   IntegerTrail* integer_trail_;
+  Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
 
   // Lookup table to find all the LinearExpression2 with a given variable and
@@ -223,6 +256,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
       : params_(*model->GetOrCreate<SatParameters>()),
         trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {
     integer_trail_->RegisterReversibleClass(this);
@@ -277,7 +311,9 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
       std::vector<IntegerLiteral>* integer_reason) const;
 
   // Note: might contain duplicate expressions.
-  std::vector<LinearExpression2> GetAllExpressionsWithConditionalBounds() const;
+  void AppendAllExpressionContaining(
+      Bitset64<IntegerVariable>::ConstView var_set,
+      std::vector<LinearExpression2>* result) const;
 
  private:
   void CreateLevelEntryIfNeeded();
@@ -285,6 +321,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   const SatParameters& params_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  Linear2Watcher* linear2_watcher_;
   RootLevelLinear2Bounds* root_level_bounds_;
   SharedStatistics* shared_stats_;
 
@@ -408,42 +445,37 @@ class Linear2BoundsFromLinear3 {
 
   // If the given upper bound evaluate better than the current one we have, this
   // will replace it and returns true, otherwise it returns false.
-  //
-  // Note that we never store trivial upper bound (using the current variable
-  // domain).
   bool AddAffineUpperBound(LinearExpression2 expr, AffineExpression affine_ub);
 
-  // Returns the best known upper-bound of the given LinearExpression2 at the
-  // current decision level. If its explanation is needed, it can be queried
-  // with the second function.
+  // Warning, the order will not be deterministic.
+  void AppendAllExpressionContaining(
+      Bitset64<IntegerVariable>::ConstView var_set,
+      std::vector<LinearExpression2>* result) const;
+
+  // Most users should just use Linear2Bounds::UpperBound() instead.
   //
-  // NOTE: most users will want to call Linear2Bounds::UpperBound() instead.
-  IntegerValue UpperBound(LinearExpression2 expr) const;
+  // Returns the upper bound only if there is some relations coming from a
+  // linear3. Otherwise always returns kMaxIntegerValue.
+  // `expr` must be canonicalized and gcd-reduced.
+  IntegerValue GetUpperBoundFromLinear3(LinearExpression2 expr) const;
+
+  // Most users should use Linear2Bounds::AddReasonForUpperBoundLowerThan()
+  // instead.
+  //
+  // Adds the reason for GetUpperBoundFromLinear3() to be <= ub.
+  // `expr` must be canonicalized and gcd-reduced.
   void AddReasonForUpperBoundLowerThan(
       LinearExpression2 expr, IntegerValue ub,
       std::vector<Literal>* literal_reason,
       std::vector<IntegerLiteral>* integer_reason) const;
 
-  // Warning, the order will not be deterministic.
-  std::vector<LinearExpression2> GetAllExpressionsWithAffineBounds() const;
-
-  int NumExpressionsWithAffineBounds() const { return best_affine_ub_.size(); }
-
-  void WatchAllLinearExpressions2(int id) { propagator_ids_.insert(id); }
-
-  // Low-level function that returns the upper bound only if there is some
-  // relations coming from a linear3. Otherwise always returns kMaxIntegerValue.
-  // `expr` must be canonicalized and gcd-reduced.
-  IntegerValue GetUpperBoundFromLinear3(LinearExpression2 expr) const;
-
  private:
-  void NotifyWatchingPropagators() const;
-
   IntegerTrail* integer_trail_;
   Trail* trail_;
+  Linear2Watcher* linear2_watcher_;
   GenericLiteralWatcher* watcher_;
   SharedStatistics* shared_stats_;
-  RootLevelLinear2Bounds* best_root_level_bounds_;
+  RootLevelLinear2Bounds* root_level_bounds_;
 
   int64_t num_affine_updates_ = 0;
 
@@ -456,8 +488,6 @@ class Linear2BoundsFromLinear3 {
   absl::flat_hash_map<LinearExpression2,
                       std::pair<AffineExpression, IntegerValue>>
       best_affine_ub_;
-
-  absl::btree_set<int> propagator_ids_;
 };
 
 // TODO(user): Merge with BinaryRelationRepository. Note that this one provides
@@ -504,8 +534,8 @@ class ReifiedLinear2Bounds {
 class Linear2Bounds {
  public:
   explicit Linear2Bounds(Model* model)
-      : root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
-        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
         enforced_bounds_(model->GetOrCreate<EnforcedLinear2Bounds>()),
         linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()) {}
 
@@ -522,14 +552,30 @@ class Linear2Bounds {
   // don't want the trivial bounds.
   IntegerValue NonTrivialUpperBoundForGcd1(LinearExpression2 expr) const;
 
-  std::vector<LinearExpression2>
-  GetAllExpressionsWithPotentialNonTrivialBounds() const;
+  // Returns all known expressions with potentially non-trivial bounds that
+  // involves two variable whose positive version is marked in 'vars'.
+  absl::Span<const LinearExpression2>
+  GetAllExpressionsWithPotentialNonTrivialBounds(
+      Bitset64<IntegerVariable>::ConstView var_set) const;
+
+  // Returns a temporay bitset, cleared, and resized for all existing variables.
+  //
+  // If we have many class calling
+  // GetAllExpressionsWithPotentialNonTrivialBounds() it is important that not
+  // all of them have a O(num_variables) vector when the same one can be used.
+  SparseBitset<IntegerVariable>* GetTemporyClearedAndResizedBitset() {
+    tmp_bitset_.ClearAndResize(integer_trail_->NumIntegerVariables());
+    return &tmp_bitset_;
+  }
 
  private:
-  RootLevelLinear2Bounds* root_level_bounds_;
   IntegerTrail* integer_trail_;
+  RootLevelLinear2Bounds* root_level_bounds_;
   EnforcedLinear2Bounds* enforced_bounds_;
   Linear2BoundsFromLinear3* linear3_bounds_;
+
+  mutable std::vector<LinearExpression2> tmp_expressions_;
+  SparseBitset<IntegerVariable> tmp_bitset_;
 };
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the

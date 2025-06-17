@@ -32,6 +32,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -39,9 +40,8 @@ namespace sat {
 Precedences2DPropagator::Precedences2DPropagator(
     NoOverlap2DConstraintHelper* helper, Model* model)
     : helper_(*helper),
-      linear2_bounds_from_linear3_(
-          model->GetOrCreate<Linear2BoundsFromLinear3>()),
       linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
+      linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()) {
   model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
 }
@@ -55,6 +55,8 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
     std::vector<int> boxes[2][2];
   };
   absl::flat_hash_map<IntegerVariable, VarUsage> var_to_box_and_coeffs;
+  SparseBitset<IntegerVariable>& var_set =
+      *linear2_bounds_->GetTemporyClearedAndResizedBitset();
 
   for (int dim = 0; dim < 2; ++dim) {
     const SchedulingConstraintHelper& dim_helper =
@@ -63,26 +65,26 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
       const absl::Span<const AffineExpression> interval_points =
           j == 0 ? dim_helper.Starts() : dim_helper.Ends();
       for (int i = 0; i < helper_.NumBoxes(); ++i) {
-        if (interval_points[i].var != kNoIntegerVariable) {
-          var_to_box_and_coeffs[PositiveVariable(interval_points[i].var)]
-              .boxes[dim][j]
-              .push_back(i);
+        const IntegerVariable var = interval_points[i].var;
+        if (var != kNoIntegerVariable) {
+          var_set.Set(PositiveVariable(var));
+          var_to_box_and_coeffs[PositiveVariable(var)].boxes[dim][j].push_back(
+              i);
         }
       }
     }
   }
 
+  const absl::Span<const LinearExpression2> exprs =
+      linear2_bounds_->GetAllExpressionsWithPotentialNonTrivialBounds(
+          var_set.BitsetConstView());
   VLOG(2) << "CollectPairsOfBoxesWithNonTrivialDistance called, num_exprs: "
-          << linear2_bounds_->GetAllExpressionsWithPotentialNonTrivialBounds()
-                 .size();
-  for (const LinearExpression2& expr :
-       linear2_bounds_->GetAllExpressionsWithPotentialNonTrivialBounds()) {
+          << exprs.size();
+  for (const LinearExpression2& expr : exprs) {
     auto it1 = var_to_box_and_coeffs.find(PositiveVariable(expr.vars[0]));
     auto it2 = var_to_box_and_coeffs.find(PositiveVariable(expr.vars[1]));
-    if (it1 == var_to_box_and_coeffs.end() ||
-        it2 == var_to_box_and_coeffs.end()) {
-      continue;
-    }
+    DCHECK(it1 != var_to_box_and_coeffs.end());
+    DCHECK(it2 != var_to_box_and_coeffs.end());
 
     const VarUsage& usage1 = it1->second;
     const VarUsage& usage2 = it2->second;
@@ -92,15 +94,9 @@ void Precedences2DPropagator::CollectPairsOfBoxesWithNonTrivialDistance() {
       for (const int box1 : usage1.boxes[dim][0 /* start */]) {
         for (const int box2 : usage2.boxes[dim][1 /* end */]) {
           if (box1 == box2) continue;
-          const AffineExpression& start = dim_helper.Starts()[box1];
-          const AffineExpression& end = dim_helper.Ends()[box2];
-          LinearExpression2 expr2;
-          expr2.vars[0] = start.var;
-          expr2.vars[1] = end.var;
-          expr2.coeffs[0] = start.coeff;
-          expr2.coeffs[1] = -end.coeff;
-          expr2.SimpleCanonicalization();
-          expr2.DivideByGcd();
+          const auto [expr2, unused] = EncodeDifferenceLowerThan(
+              dim_helper.Starts()[box1], dim_helper.Ends()[box2],
+              /*ub=unused*/ 0);
           if (expr == expr2) {
             if (box1 < box2) {
               non_trivial_pairs_.push_back({box1, box2});
@@ -120,11 +116,9 @@ bool Precedences2DPropagator::Propagate() {
   if (!helper_.SynchronizeAndSetDirection()) return false;
   if (last_helper_inprocessing_count_ != helper_.InProcessingCount() ||
       helper_.x_helper().CurrentDecisionLevel() == 0 ||
-      last_num_expressions_ !=
-          linear2_bounds_from_linear3_->NumExpressionsWithAffineBounds()) {
+      last_linear2_timestamp_ != linear2_watcher_->Timestamp()) {
     last_helper_inprocessing_count_ = helper_.InProcessingCount();
-    last_num_expressions_ =
-        linear2_bounds_from_linear3_->NumExpressionsWithAffineBounds();
+    last_linear2_timestamp_ = linear2_watcher_->Timestamp();
     CollectPairsOfBoxesWithNonTrivialDistance();
   }
 
@@ -150,15 +144,9 @@ bool Precedences2DPropagator::Propagate() {
         if (j == 1) {
           std::swap(b1, b2);
         }
-        LinearExpression2 expr;
-        expr.vars[0] = helper->Starts()[b1].var;
-        expr.vars[1] = helper->Ends()[b2].var;
-        expr.coeffs[0] = helper->Starts()[b1].coeff;
-        expr.coeffs[1] = -helper->Ends()[b2].coeff;
-        const IntegerValue ub_of_start_minus_end_value =
-            linear2_bounds_->UpperBound(expr) + helper->Starts()[b1].constant -
-            helper->Ends()[b2].constant;
-        if (ub_of_start_minus_end_value >= 0) {
+        const auto [expr, ub_for_no_overlap] = EncodeDifferenceLowerThan(
+            helper->Starts()[b1], helper->Ends()[b2], 0);
+        if (linear2_bounds_->UpperBound(expr) >= ub_for_no_overlap) {
           is_unfeasible = false;
           break;
         }
@@ -197,8 +185,7 @@ bool Precedences2DPropagator::Propagate() {
 int Precedences2DPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_.WatchAllBoxes(id);
-  linear2_bounds_from_linear3_->WatchAllLinearExpressions2(id);
-  // TODO(user): Implement a Linear2Bounds watcher.
+  linear2_watcher_->WatchAllLinearExpressions2(id);
   return id;
 }
 

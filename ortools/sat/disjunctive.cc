@@ -25,6 +25,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -143,6 +144,9 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
   // using the fact that they are in disjunction.
   if (params.use_precedences_in_disjunctive_constraint() &&
       !params.use_combined_no_overlap()) {
+    // Lets try to exploit linear3 too.
+    model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
+
     for (const bool time_direction : {true, false}) {
       DisjunctivePrecedences* precedences =
           new DisjunctivePrecedences(time_direction, helper, model);

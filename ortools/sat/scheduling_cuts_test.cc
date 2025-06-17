@@ -15,8 +15,8 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <optional>
-#include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
@@ -655,6 +655,35 @@ TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
     EXPECT_NEAR(ExactMakespan(sizes, demands, capacity),
                 ExactMakespanBruteForce(sizes, demands, capacity), 1e-6);
   }
+}
+
+struct SimpleEvent {
+  IntegerValue start_min;
+  IntegerValue end_max;
+  bool operator==(const SimpleEvent& other) const {
+    return start_min == other.start_min && end_max == other.end_max;
+  }
+};
+
+SimpleEvent ConvexHull(absl::Span<const SimpleEvent> events) {
+  SimpleEvent result = events[0];
+  for (int i = 1; i < events.size(); ++i) {
+    result.start_min = std::min(result.start_min, events[i].start_min);
+    result.end_max = std::max(result.end_max, events[i].end_max);
+  }
+  return result;
+}
+
+TEST(SplitEventsInIndendentSetsTest, BasicTest) {
+  std::vector<SimpleEvent> events = {{0, 10},  {2, 12},  {3, 5},
+                                     {15, 20}, {12, 21}, {30, 35}};
+  const std::vector<absl::Span<SimpleEvent>> sets =
+      SplitEventsInIndendentSets(absl::MakeSpan(events));
+  EXPECT_EQ(sets.size(), 2);
+  EXPECT_EQ(sets[0].size(), 3);
+  EXPECT_EQ(ConvexHull(sets[0]), SimpleEvent({0, 12}));
+  EXPECT_EQ(sets[1].size(), 2);
+  EXPECT_EQ(ConvexHull(sets[1]), SimpleEvent({12, 21}));
 }
 
 }  // namespace

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research::sat {
 
@@ -242,6 +243,16 @@ BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
   }
   std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
   return root_relations_sorted;
+}
+
+void BestBinaryRelationBounds::AppendAllExpressionContaining(
+    Bitset64<IntegerVariable>::ConstView var_set,
+    std::vector<LinearExpression2>* result) const {
+  for (const auto& [expr, unused] : best_bounds_) {
+    if (!var_set[PositiveVariable(expr.vars[0])]) continue;
+    if (!var_set[PositiveVariable(expr.vars[1])]) continue;
+    result->push_back(expr);
+  }
 }
 
 }  // namespace operations_research::sat

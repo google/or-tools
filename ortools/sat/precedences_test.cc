@@ -1122,9 +1122,10 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   expr.coeffs[1] = IntegerValue(-1);
 
   // Starts with trivial level zero bound.
-  auto* tested = model.GetOrCreate<Linear2BoundsFromLinear3>();
-  auto* root_level_lin2_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(10));
+  auto* bounds = model.GetOrCreate<Linear2Bounds>();
+  auto* lin3_bounds = model.GetOrCreate<Linear2BoundsFromLinear3>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(10));
 
   auto* search = model.GetOrCreate<IntegerSearchHelper>();
   search->TakeDecision(
@@ -1132,18 +1133,18 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
           IntegerLiteral::LowerOrEqual(w, IntegerValue(10))))));
 
   // Lets add a relation.
-  root_level_lin2_bounds->Add(expr, IntegerValue(-5), IntegerValue(5));
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(5));
+  root_bounds->Add(expr, IntegerValue(-5), IntegerValue(5));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(5));
 
   // Note that we canonicalize with gcd.
   expr.coeffs[0] *= 3;
   expr.coeffs[1] *= 3;
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(15));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(15));
 
   // Lets add an affine upper bound to that expression <= 4 * z + 1.
-  EXPECT_TRUE(tested->AddAffineUpperBound(
+  EXPECT_TRUE(lin3_bounds->AddAffineUpperBound(
       expr, AffineExpression(z, IntegerValue(4), IntegerValue(1))));
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(9));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(9));
 
   // Lets test the reason, first push a new bound.
   search->TakeDecision(
@@ -1151,11 +1152,11 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
           IntegerLiteral::LowerOrEqual(z, IntegerValue(1))))));
 
   // Because of gcd, even though ub(affine) is now 5, we get 3,
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(3));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(3));
   {
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(4),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(4),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason,
@@ -1166,7 +1167,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   {
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(9),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(9),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason,
@@ -1176,7 +1177,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
     // This is implied by the level zero relation x <= 5
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(15),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(15),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason, ElementsAre());
@@ -1185,7 +1186,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   // Note that the bound works on the canonicalized expr.
   expr.coeffs[0] /= 3;
   expr.coeffs[1] /= 3;
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(1));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(1));
 }
 
 }  // namespace
