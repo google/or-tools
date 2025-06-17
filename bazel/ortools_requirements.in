@@ -2,7 +2,7 @@
 absl-py==2.2.2
 immutabledict==4.2.1
 numpy==2.2.0
-protobuf==6.31.0
+protobuf==6.31.1
 requests==2.32.4
 scipy==1.14.1
 typing-extensions==4.13.1
