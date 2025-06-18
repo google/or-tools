@@ -19,9 +19,9 @@ cc_library(
     hdrs = ["init.h"],
     deps = [
         "//ortools/base",
-        "//ortools/gurobi:environment",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:cp_model_solver_helpers",
+        "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",

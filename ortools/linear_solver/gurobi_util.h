@@ -16,9 +16,18 @@
 
 #include <string>
 
-#include "ortools/gurobi/environment.h"
+#include "absl/flags/declare.h"
+#include "absl/status/statusor.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
+
+absl::StatusOr<GRBenv*> GetGurobiEnv();
+
+// This returns true if the Gurobi shared library is properly loaded (otherwise,
+// tries to find it and load it) and if a Gurobi license can be obtained (it
+// does that by trying to grab a license and then release it).
+bool GurobiIsCorrectlyInstalled();
 
 // Returns a human-readable listing of all gurobi parameters that are set to
 // non-default values, and their current value in the given environment. If all

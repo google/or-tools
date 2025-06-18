@@ -209,22 +209,6 @@ cc_test(
 )
 
 cc_library(
-    name = "dynamic_library",
-    hdrs = ["dynamic_library.h"],
-    linkopts = select({
-        "on_linux": ["-Wl,--no-as-needed -ldl"],
-        "on_macos": [],
-        "on_windows": [],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":base",
-        ":logging",
-        "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
     name = "encodingutils",
     hdrs = ["encodingutils.h"],
     deps = [":base"],

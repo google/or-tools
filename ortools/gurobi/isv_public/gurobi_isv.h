@@ -18,7 +18,7 @@
 #include <string>
 
 #include "absl/status/statusor.h"
-#include "ortools/gurobi/environment.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research::math_opt {
 

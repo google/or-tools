@@ -18,8 +18,8 @@ cc_library(
     srcs = ["gurobi_isv.cc"],
     hdrs = ["gurobi_isv.h"],
     deps = [
-        "//ortools/gurobi:environment",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
+        "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",

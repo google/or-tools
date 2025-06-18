@@ -30,7 +30,7 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/gurobi/environment.h"
+#include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"

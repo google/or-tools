@@ -2756,9 +2756,6 @@ absl::StatusOr<bool> GurobiSolver::Update(
 
 absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
-  if (!GurobiIsCorrectlyInstalled()) {
-    return absl::InvalidArgumentError("Gurobi is not correctly installed.");
-  }
   RETURN_IF_ERROR(
       ModelIsSupported(input_model, kGurobiSupportedStructures, "Gurobi"));
   if (!input_model.auxiliary_objectives().empty() &&

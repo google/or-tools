@@ -14,13 +14,11 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GUROBI_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_PROTO_SOLVER_GUROBI_PROTO_SOLVER_H_
 
-#include <string>
-
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {

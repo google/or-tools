@@ -17,12 +17,43 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "ortools/gurobi/environment.h"
+#include "ortools/base/status_macros.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
+
+bool GurobiIsCorrectlyInstalled() {
+  absl::StatusOr<GRBenv*> status = GetGurobiEnv();
+  if (!status.ok() || status.value() == nullptr) {
+    LOG(WARNING) << status.status();
+    return false;
+  }
+
+  GRBfreeenv(status.value());
+
+  return true;
+}
+
+absl::StatusOr<GRBenv*> GetGurobiEnv() {
+  GRBenv* env = nullptr;
+
+  RETURN_IF_ERROR(LoadGurobiDynamicLibrary({}));
+
+  if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("Found the Gurobi shared library, but could not create "
+                     "Gurobi environment: is Gurobi licensed on this machine?",
+                     GRBgeterrormsg(env)));
+  }
+
+  return env;
+}
 
 std::string GurobiParamInfoForLogging(GRBenv* grb, bool one_liner_output) {
   const absl::ParsedFormat<'s', 's', 's'> kExtendedFormat(

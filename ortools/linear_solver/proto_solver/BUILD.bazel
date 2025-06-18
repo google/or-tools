@@ -159,9 +159,10 @@ cc_library(
     hdrs = ["gurobi_proto_solver.h"],
     deps = [
         "//ortools/base:timer",
-        "//ortools/gurobi:environment",
+        "//ortools/linear_solver:gurobi_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
+        "//ortools/third_party_solvers:gurobi_environment",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/cleanup",

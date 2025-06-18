@@ -14,28 +14,6 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = "environment",
-    srcs = [
-        "environment.cc",
-    ],
-    hdrs = [
-        "environment.h",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:dynamic_library",
-        "//ortools/base:file",
-        "//ortools/base:status_macros",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/types:optional",
-    ],
-)
-
-cc_library(
     name = "gurobi_stdout_matchers",
     testonly = True,
     srcs = ["gurobi_stdout_matchers.cc"],

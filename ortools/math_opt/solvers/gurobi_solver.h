@@ -28,7 +28,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/invalid_indicators.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -44,7 +43,9 @@
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/solve_interrupter.h"
+
 
 namespace operations_research {
 namespace math_opt {
