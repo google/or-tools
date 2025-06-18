@@ -131,7 +131,7 @@ class IntegerRangeIterator
  public:
   using difference_type = ptrdiff_t;
   using value_type = IntegerType;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L && __cplusplus < 202002L
   using iterator_category = std::input_iterator_tag;
   using pointer = IntegerType*;
   using reference = IntegerType&;
@@ -255,7 +255,7 @@ class ChasingIterator
  public:
   using difference_type = ptrdiff_t;
   using value_type = IndexT;
-#if __cplusplus >= 201703L
+#if __cplusplus >= 201703L && __cplusplus < 202002L
   using iterator_category = std::input_iterator_tag;
   using pointer = IndexT*;
   using reference = IndexT&;
