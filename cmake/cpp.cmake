@@ -533,13 +533,13 @@ foreach(SUBPROJECT IN ITEMS
  ${GUROBI_DIR}
  ${PDLP_DIR}
  sat
- xpress
  lp_data
  packing
  routing
  scheduling
  set_cover
  port
+ third_party_solvers
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
