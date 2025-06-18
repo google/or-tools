@@ -124,13 +124,18 @@ class IntegerRangeIterator
 // TODO(b/385094969): In C++17, `std::iterator_traits<Iterator>` required
 // explicitly specifying the iterator category. Remove this when backwards
 // compatibility with C++17 is no longer needed.
-#if __cplusplus < 202002L
+#if __cplusplus < 201703L
     : public std::iterator<std::input_iterator_tag, IntegerType>
 #endif
 {
  public:
   using difference_type = ptrdiff_t;
   using value_type = IntegerType;
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = IntegerType*;
+  using reference = IntegerType&;
+#endif
 
   IntegerRangeIterator() : index_{} {}
 
@@ -243,13 +248,18 @@ class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
 // different iterators with the same index type and sentinel.
 template <typename IndexT, const IndexT& sentinel, typename Tag>
 class ChasingIterator
-#if __cplusplus < 202002L
+#if __cplusplus < 201703L
     : public std::iterator<std::input_iterator_tag, IndexT>
 #endif
 {
  public:
   using difference_type = ptrdiff_t;
   using value_type = IndexT;
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = IndexT*;
+  using reference = IndexT&;
+#endif
 
   ChasingIterator() : index_(sentinel), next_(nullptr) {}
 
