@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
