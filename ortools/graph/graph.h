@@ -315,7 +315,7 @@ class BaseGraph {
 template <typename Graph, typename ArcIterator, typename PropertyT,
           PropertyT (Graph::*property)(typename Graph::ArcIndex) const>
 class ArcPropertyIterator
-#if __cplusplus < 202002L
+#if __cplusplus < 201703L
     : public std::iterator<std::input_iterator_tag, PropertyT>
 #endif
 {
@@ -324,6 +324,11 @@ class ArcPropertyIterator
   // TODO(b/385094969): This should be `NodeIndex` for integers,
   // `NodeIndex::value_type` for strong signed integer types.
   using difference_type = std::ptrdiff_t;
+#if __cplusplus >= 201703L && __cplusplus < 202002L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = PropertyT*;
+  using reference = PropertyT&;
+#endif
 
   ArcPropertyIterator() = default;
 
@@ -346,6 +351,7 @@ class ArcPropertyIterator
                          const ArcPropertyIterator& r) {
     return l.arc_it_ == r.arc_it_;
   }
+
   friend bool operator!=(const ArcPropertyIterator& l,
                          const ArcPropertyIterator& r) {
     return !(l == r);
