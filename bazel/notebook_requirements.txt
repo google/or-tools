@@ -5,7 +5,7 @@
 #    bazel run //bazel:notebook_requirements.update
 #
 absl-py==2.2.2
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 anyio==4.9.0
     # via
     #   httpx
@@ -29,7 +29,7 @@ babel==2.17.0
 beautifulsoup4==4.13.4
     # via nbconvert
 black==24.8.0
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 bleach[css]==6.2.0
     # via nbconvert
 certifi==2025.4.26
@@ -74,7 +74,7 @@ idna==3.10
     #   jsonschema
     #   requests
 immutabledict==4.2.1
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 ipykernel==6.29.5
     # via jupyterlab
 ipython==9.3.0
@@ -87,7 +87,7 @@ jedi==0.19.2
     # via ipython
 jinja2==3.1.6
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-server
     #   jupyterlab
     #   jupyterlab-server
@@ -98,7 +98,7 @@ jsonpointer==3.0.0
     # via jsonschema
 jsonschema[format-nongpl]==4.23.0
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-events
     #   jupyterlab-server
     #   nbformat
@@ -124,7 +124,7 @@ jupyter-lsp==2.2.5
     # via jupyterlab
 jupyter-server==2.16.0
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyter-lsp
     #   jupyterlab
     #   jupyterlab-server
@@ -134,7 +134,7 @@ jupyter-server-terminals==0.5.3
     # via jupyter-server
 jupyterlab==4.4.3
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   notebook
 jupyterlab-pygments==0.3.0
     # via nbconvert
@@ -153,13 +153,13 @@ matplotlib-inline==0.1.7
 mistune==3.1.3
     # via nbconvert
 mypy==1.6.1
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 mypy-extensions==1.1.0
     # via
     #   black
     #   mypy
 mypy-protobuf==3.5.0
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 nbclient==0.10.2
     # via nbconvert
 nbconvert==7.16.6
@@ -172,14 +172,14 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
     # via ipykernel
 notebook==7.4.2
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 notebook-shim==0.2.4
     # via
     #   jupyterlab
     #   notebook
 numpy==2.2.0
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   pandas
     #   scipy
 overrides==7.7.0
@@ -195,7 +195,7 @@ packaging==25.0
     #   nbconvert
     #   plotly
 pandas==2.2.3
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 pandocfilters==1.5.1
     # via nbconvert
 parso==0.8.4
@@ -210,14 +210,14 @@ platformdirs==4.3.8
     #   jupyter-core
     #   virtualenv
 plotly==5.15.0
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 prometheus-client==0.22.1
     # via jupyter-server
 prompt-toolkit==3.0.51
     # via ipython
 protobuf==6.31.1
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   mypy-protobuf
 psutil==7.0.0
     # via ipykernel
@@ -231,7 +231,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   ipython
     #   ipython-pygments-lexers
     #   nbconvert
@@ -258,7 +258,7 @@ referencing==0.36.2
     #   jupyter-events
 requests==2.32.4
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   jupyterlab-server
 rfc3339-validator==0.1.4
     # via
@@ -273,7 +273,7 @@ rpds-py==0.25.1
     #   jsonschema
     #   referencing
 scipy==1.14.1
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 send2trash==1.8.3
     # via jupyter-server
 six==1.17.0
@@ -287,7 +287,7 @@ soupsieve==2.7
 stack-data==0.6.3
     # via ipython
 svgwrite==1.4.3
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 tenacity==9.1.2
     # via plotly
 terminado==0.18.1
@@ -298,7 +298,7 @@ tinycss2==1.4.0
     # via bleach
 tornado==6.5
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   ipykernel
     #   jupyter-client
     #   jupyter-server
@@ -325,7 +325,7 @@ types-python-dateutil==2.9.0.20250516
     # via arrow
 typing-extensions==4.13.1
     # via
-    #   -r bazel/notebook_requirements.in
+    #   -r notebook_requirements.in
     #   anyio
     #   beautifulsoup4
     #   mypy
@@ -334,10 +334,10 @@ tzdata==2025.2
     # via pandas
 uri-template==1.3.0
     # via jsonschema
-urllib3==2.4.0
+urllib3==2.5.0
     # via requests
 virtualenv==20.28.1
-    # via -r bazel/notebook_requirements.in
+    # via -r notebook_requirements.in
 wcwidth==0.2.13
     # via prompt-toolkit
 webcolors==24.11.1
