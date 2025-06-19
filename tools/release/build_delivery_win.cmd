@@ -93,7 +93,7 @@ echo   help: show this help text (default)
 echo   dotnet: Build dotnet packages
 echo   java: Build java packages
 echo   python: Build python packages
-echo   archive: Build archive
+echo   archive: Build all (C++, .Net, Java) archives
 echo   examples: Build examples archives
 echo   all: build everything
 echo   reset: delete all artifacts and suppress cache file
@@ -284,7 +284,7 @@ FOR %%v IN (9 10 11 12 13) DO (
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
   echo "C:\python3%%v-64\python.exe: FOUND" | tee.exe -a build.log
-  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf protobuf numpy pandas
+  C:\python3%%v-64\python.exe -m pip install --upgrade --user absl-py mypy mypy-protobuf protobuf numpy pandas "typing-extensions>=4.12"
 
   call :subroutine %%v
 
