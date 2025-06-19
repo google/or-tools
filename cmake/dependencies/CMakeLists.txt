@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# We are using FetchContent OVERRIDE_FIND_PACKAGE introduced in 3.24
+cmake_minimum_required(VERSION 3.24)
+
 # ##############################################################################
 # SWIG (WIN32)
 # ##############################################################################

@@ -913,29 +913,11 @@ void FinalizerVariables::AddWeightedVariableTarget(IntVar* var, int64_t target,
   }
 }
 
-void FinalizerVariables::AddWeightedVariableToMinimize(IntVar* var,
-                                                       int64_t cost) {
-  AddWeightedVariableTarget(var, std::numeric_limits<int64_t>::min(), cost);
-}
-
-void FinalizerVariables::AddWeightedVariableToMaximize(IntVar* var,
-                                                       int64_t cost) {
-  AddWeightedVariableTarget(var, std::numeric_limits<int64_t>::max(), cost);
-}
-
 void FinalizerVariables::AddVariableTarget(IntVar* var, int64_t target) {
   CHECK(var != nullptr);
   if (finalizer_variable_target_set_.contains(var)) return;
   finalizer_variable_target_set_.insert(var);
   finalizer_variable_targets_.push_back({var, target});
-}
-
-void FinalizerVariables::AddVariableToMaximize(IntVar* var) {
-  AddVariableTarget(var, std::numeric_limits<int64_t>::max());
-}
-
-void FinalizerVariables::AddVariableToMinimize(IntVar* var) {
-  AddVariableTarget(var, std::numeric_limits<int64_t>::min());
 }
 
 DecisionBuilder* FinalizerVariables::CreateFinalizer() {

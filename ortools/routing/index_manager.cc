@@ -14,7 +14,6 @@
 #include "ortools/routing/index_manager.h"
 
 #include <cstdint>
-#include <memory>
 #include <utility>
 #include <vector>
 

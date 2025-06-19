@@ -52,7 +52,10 @@ java_proto_library(
 proto_library(
     name = "ils_proto",
     srcs = ["ils.proto"],
-    deps = [":enums_proto"],
+    deps = [
+        ":enums_proto",
+        ":heuristic_parameters_proto",
+    ],
 )
 
 cc_proto_library(
@@ -75,6 +78,7 @@ proto_library(
     srcs = ["parameters.proto"],
     deps = [
         ":enums_proto",
+        ":heuristic_parameters_proto",
         ":ils_proto",
         "//ortools/constraint_solver:solver_parameters_proto",
         "//ortools/sat:sat_parameters_proto",
@@ -109,6 +113,7 @@ cc_library(
     hdrs = ["parameters.h"],
     deps = [
         ":enums_cc_proto",
+        ":heuristic_parameters_cc_proto",
         ":ils_cc_proto",
         ":parameters_cc_proto",
         "//ortools/base",
@@ -122,6 +127,7 @@ cc_library(
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
@@ -134,6 +140,7 @@ cc_library(
     srcs = ["parameters_utils.cc"],
     hdrs = ["parameters_utils.h"],
     deps = [
+        ":heuristic_parameters_cc_proto",
         ":parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "@abseil-cpp//absl/types:span",
@@ -144,8 +151,8 @@ cc_library(
     name = "types",
     hdrs = ["types.h"],
     deps = [
-        "//ortools/base:int_type",
         "//ortools/util:piecewise_linear_function",
+        "//ortools/util:strong_integers",
     ],
 )
 
@@ -192,9 +199,21 @@ cc_library(
 )
 
 cc_library(
+    name = "breaks",
+    srcs = ["breaks.cc"],
+    hdrs = ["breaks.h"],
+    deps = [
+        ":filter_committables",
+        "//ortools/algorithms:binary_search",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "routing",
     srcs = [
-        "breaks.cc",
         "constraints.cc",
         "decision_builders.cc",
         "filters.cc",
@@ -223,8 +242,10 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":breaks",
         ":enums_cc_proto",
         ":filter_committables",
+        ":heuristic_parameters_cc_proto",
         ":ils_cc_proto",
         ":index_manager",
         ":neighborhoods",
@@ -235,7 +256,6 @@ cc_library(
         ":utils",
         "//ortools/base",
         "//ortools/base:dump_vars",
-        "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
         "//ortools/base:protoutil",
@@ -256,7 +276,7 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:integer",
+        "//ortools/sat:integer_base",
         "//ortools/sat:lp_utils",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
@@ -267,7 +287,6 @@ cc_library(
         "//ortools/util:range_minimum_query",
         "//ortools/util:range_query_function",
         "//ortools/util:saturated_arithmetic",
-        "//ortools/util:scheduling",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
@@ -295,6 +314,7 @@ cc_library(
 
 cc_library(
     name = "filter_committables",
+    srcs = ["filter_committables.cc"],
     hdrs = ["filter_committables.h"],
     deps = [
         "//ortools/util:bitset",
@@ -302,4 +322,24 @@ cc_library(
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
+)
+
+proto_library(
+    name = "heuristic_parameters_proto",
+    srcs = ["heuristic_parameters.proto"],
+)
+
+java_proto_library(
+    name = "heuristic_parameters_java_proto",
+    deps = [":heuristic_parameters_proto"],
+)
+
+cc_proto_library(
+    name = "heuristic_parameters_cc_proto",
+    deps = [":heuristic_parameters_proto"],
+)
+
+py_proto_library(
+    name = "heuristic_parameters_py_pb2",
+    deps = [":heuristic_parameters_proto"],
 )

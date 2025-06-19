@@ -95,6 +95,7 @@ def print_solution(manager, routing, solution):
         total_distance += route_distance
     print(f"Total Distance of all routes: {total_distance}m")
 
+
 # [END solution_printer]
 
 

@@ -18,6 +18,7 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -52,8 +53,10 @@ bool FillDimensionValuesFromRoutingDimension(
 
 void FillPrePostVisitValues(
     int path, const DimensionValues& dimension_values,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        pre_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        post_travel_evaluator,
     PrePostVisitValues& visit_values);
 
 // Propagates vehicle break constraints in dimension_values.
@@ -84,6 +87,10 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
 
 /// Returns a filter computing vehicle amortized costs.
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
+    const RoutingModel& routing_model);
+
+/// Returns a filter computing same vehicle costs.
+IntVarLocalSearchFilter* MakeSameVehicleCostFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter ensuring type regulation constraints are enforced.

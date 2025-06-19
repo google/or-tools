@@ -83,9 +83,9 @@ which.exe mvn || exit 1
 which.exe mvn | tee.exe -a publish.log
 
 which.exe gpg || exit 1
-which.exe gpg | tee.exe -a build.log
+which.exe gpg | tee.exe -a publish.log
 which.exe openssl || exit 1
-which.exe openssl | tee.exe -a build.log
+which.exe openssl | tee.exe -a publish.log
 
 echo Publish native Java... | tee.exe -a publish.log
 cmake --build temp_java --config Release --target java_native_deploy -v

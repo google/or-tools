@@ -20,9 +20,9 @@ function help() {
   local -r RESET="\e[0m"
   local -r help=$(cat << EOF
 ${BOLD}NAME${RESET}
-\t$NAME - Publish delivery using an ${BOLD}Ubuntu 18.04 LTS docker image${RESET}.
+\t$NAME - Publish delivery using the ${BOLD}local host system${RESET}.
 ${BOLD}SYNOPSIS${RESET}
-\t$NAME [-h|--help] [java|python]
+\t$NAME [-h|--help] [java]
 ${BOLD}DESCRIPTION${RESET}
 \tPublish Google OR-Tools deliveries.
 \tYou ${BOLD}MUST${RESET} define the following variables before running this script:
@@ -31,7 +31,6 @@ ${BOLD}DESCRIPTION${RESET}
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
 \tjava: publish the Java runtime packages
-\tpython: publish all Pyhon packages
 \tall: publish everything (default)
 
 ${BOLD}EXAMPLES${RESET}
@@ -53,44 +52,38 @@ function assert_defined(){
   fi
 }
 
-function publish_delivery() {
-  assert_defined ORTOOLS_BRANCH
-  assert_defined ORTOOLS_SHA1
-  assert_defined ORTOOLS_TOKEN
-  assert_defined ORTOOLS_DELIVERY
-  assert_defined DOCKERFILE
-  assert_defined ORTOOLS_IMG
-
-  # Clean
-  echo -n "Remove previous docker images..." | tee -a "${ROOT_DIR}/publish.log"
-  docker image rm -f "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" 2>/dev/null
-  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
-
-  cd "${RELEASE_DIR}" || exit 2
-
-  # Publish delivery
-  echo -n "Build ${ORTOOLS_IMG}:publish_${ORTOOLS_DELIVERY}..." | tee -a "${ROOT_DIR}/publish.log"
-  docker buildx build --platform linux/amd64 \
-    --tag "${ORTOOLS_IMG}":"publish_${ORTOOLS_DELIVERY}" \
-    --build-arg ORTOOLS_GIT_BRANCH="${ORTOOLS_BRANCH}" \
-    --build-arg ORTOOLS_GIT_SHA1="${ORTOOLS_SHA1}" \
-    --build-arg ORTOOLS_TOKEN="${ORTOOLS_TOKEN}" \
-    --build-arg ORTOOLS_DELIVERY="${ORTOOLS_DELIVERY}" \
-    --target=publish \
-    -f "${DOCKERFILE}" .
-  echo "DONE" | tee -a "${ROOT_DIR}/publish.log"
-}
-
 # Java publish
 function publish_java() {
-  local -r ORTOOLS_DELIVERY=java
-  publish_delivery
-}
+  if echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" | cmp --silent "${ROOT_DIR}/export_meta/meta_java_publish" -; then
+    echo "publish Java up to date!"
+    return 0
+  fi
 
-# Python publish
-function publish_python() {
-  local -r ORTOOLS_DELIVERY=python
-  publish_delivery
+  # maven require JAVA_HOME
+  if [[ -z "${JAVA_HOME}" ]]; then
+    echo "JAVA_HOME: not found !" | tee publish.log
+    exit 1
+  else
+    echo "JAVA_HOME: ${JAVA_HOME}" | tee -a publish.log
+    command -v mvn
+    command -v mvn | xargs echo "mvn: " | tee -a publish.log
+    java -version 2>&1 | tee -a publish.log
+    java -version 2>&1 | head -n 1 | grep -q "1.8"
+  fi
+  # Maven central need gpg sign and we store the release key encoded using openssl
+  local OPENSSL_PRG=openssl
+  if [[ -x "$(command -v openssl11)" ]]; then
+    OPENSSL_PRG=openssl11
+  fi
+  command -v $OPENSSL_PRG | xargs echo "openssl: " | tee -a publish.log
+  command -v gpg
+  command -v gpg | xargs echo "gpg: " | tee -a publish.log
+
+  echo -n "Publish native Java..." | tee -a publish.log
+  cmake --build temp_meta_java --config Release --target java_deploy -v
+  echo "DONE" | tee -a publish.log
+
+  echo "${ORTOOLS_BRANCH} ${ORTOOLS_SHA1}" > "${ROOT_DIR}/export_meta/meta_java_publish"
 }
 
 # Main
@@ -102,31 +95,25 @@ function main() {
 
   assert_defined ORTOOLS_TOKEN
   echo "ORTOOLS_TOKEN: FOUND" | tee publish.log
+  make print-OR_TOOLS_VERSION | tee -a publish.log
 
   local -r ROOT_DIR="$(cd -P -- "$(dirname -- "$0")/../.." && pwd -P)"
-  echo "ROOT_DIR: '${ROOT_DIR}'" | tee -a publish.log
+  echo "ROOT_DIR: '${ROOT_DIR}'"
 
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
-  echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
-
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a publish.log)
+  echo "RELEASE_DIR: '${RELEASE_DIR}'"
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
-  local -r DOCKERFILE="amd64.Dockerfile"
-  local -r ORTOOLS_IMG="ortools/manylinux_delivery_amd64"
   local -r PLATFORM=$(uname -m)
 
-  mkdir -p "${ROOT_DIR}/export"
-
+  mkdir -p export
   case ${1} in
-    java|python)
+    java)
       "publish_$1"
       exit ;;
     all)
-      #publish_dotnet
       publish_java
-      #publish_python
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"

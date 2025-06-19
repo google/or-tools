@@ -59,7 +59,9 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/routing/enums.pb.h"
+#include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/parameters_utils.h"
 #include "ortools/routing/routing.h"
 #include "ortools/routing/types.h"
 #include "ortools/routing/utils.h"
@@ -1055,6 +1057,9 @@ bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   if (!InsertPairsAndNodesByRequirementTopologicalOrder()) {
     return unperform_unassigned_and_check();
   }
+  if (!InsertPairsAndNodesByPrecedenceTopologicalOrder()) {
+    return unperform_unassigned_and_check();
+  }
 
   // TODO(user): Adapt the pair insertions to also support seed and
   // sequential insertion.
@@ -1095,6 +1100,46 @@ bool GlobalCheapestInsertionFilteredHeuristic::
       if (!InsertPairs(pairs_to_insert_by_bucket)) return false;
       std::map<int64_t, std::vector<int>> nodes_by_bucket;
       for (int node : model()->GetSingleNodesOfType(type)) {
+        nodes_by_bucket[GetBucketOfNode(node)].push_back(node);
+      }
+      if (!InsertNodesOnRoutes(nodes_by_bucket, {})) return false;
+    }
+  }
+  return true;
+}
+
+bool GlobalCheapestInsertionFilteredHeuristic::
+    InsertPairsAndNodesByPrecedenceTopologicalOrder() {
+  const std::vector<PickupDeliveryPair>& pickup_delivery_pairs =
+      model()->GetPickupAndDeliveryPairs();
+  for (const std::vector<std::vector<int>>& ordered_nodes :
+       model()->GetTopologicallySortedNodePrecedences()) {
+    for (const std::vector<int>& nodes : ordered_nodes) {
+      std::map<int64_t, std::vector<int>> pairs_to_insert_by_bucket;
+      for (int node : nodes) {
+        if (Contains(node)) continue;
+        if (!model()->IsPickup(node) && !model()->IsDelivery(node)) continue;
+        const std::optional<RoutingModel::PickupDeliveryPosition>
+            pickup_position = model()->GetPickupPosition(node);
+        if (pickup_position.has_value()) {
+          const int index = pickup_position->pd_pair_index;
+          pairs_to_insert_by_bucket[GetBucketOfPair(
+                                        pickup_delivery_pairs[index])]
+              .push_back(index);
+        }
+        const std::optional<RoutingModel::PickupDeliveryPosition>
+            delivery_position = model()->GetDeliveryPosition(node);
+        if (delivery_position.has_value()) {
+          const int index = delivery_position->pd_pair_index;
+          pairs_to_insert_by_bucket[GetBucketOfPair(
+                                        pickup_delivery_pairs[index])]
+              .push_back(index);
+        }
+      }
+      if (!InsertPairs(pairs_to_insert_by_bucket)) return false;
+      std::map<int64_t, std::vector<int>> nodes_by_bucket;
+      for (int node : nodes) {
+        if (Contains(node)) continue;
         nodes_by_bucket[GetBucketOfNode(node)].push_back(node);
       }
       if (!InsertNodesOnRoutes(nodes_by_bucket, {})) return false;
@@ -2330,7 +2375,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::AddNodeEntriesAfter(
 
   const auto add_node_entries_for_neighbors =
       [this, &nodes, &queue, insert_after, vehicle, all_vehicles](
-          const std::vector<int>& neighbors,
+          absl::Span<const int> neighbors,
           const std::function<bool(int64_t)>& is_neighbor) {
         if (neighbors.size() < nodes.NumberOfSetCallsWithDifferentArguments()) {
           // Iterate on the neighbors of 'node'.
@@ -2524,10 +2569,7 @@ LocalCheapestInsertionFilteredHeuristic::
     LocalCheapestInsertionFilteredHeuristic(
         RoutingModel* model, std::function<bool()> stop_search,
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
-        LocalCheapestInsertionParameters::PairInsertionStrategy
-            pair_insertion_strategy,
-        std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
-            insertion_sorting_properties,
+        LocalCheapestInsertionParameters lci_params,
         LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
         BinCapacities* bin_capacities,
         std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
@@ -2536,8 +2578,9 @@ LocalCheapestInsertionFilteredHeuristic::
     : CheapestInsertionFilteredHeuristic(model, std::move(stop_search),
                                          std::move(evaluator), nullptr,
                                          filter_manager),
-      pair_insertion_strategy_(pair_insertion_strategy),
-      insertion_sorting_properties_(std::move(insertion_sorting_properties)),
+      pair_insertion_strategy_(lci_params.pickup_delivery_strategy()),
+      insertion_sorting_properties_(GetLocalCheapestInsertionSortingProperties(
+          lci_params.insertion_sorting_properties())),
       use_first_solution_hint_(use_first_solution_hint),
       bin_capacities_(bin_capacities),
       optimize_on_insertion_(std::move(optimize_on_insertion)),
@@ -4176,11 +4219,11 @@ SavingsFilteredHeuristic::SavingsFilteredHeuristic(
     SavingsParameters parameters, LocalSearchFilterManager* filter_manager)
     : RoutingFilteredHeuristic(model, std::move(stop_search), filter_manager),
       vehicle_type_curator_(nullptr),
-      savings_params_(parameters) {
-  DCHECK_GT(savings_params_.neighbors_ratio, 0);
-  DCHECK_LE(savings_params_.neighbors_ratio, 1);
-  DCHECK_GT(savings_params_.max_memory_usage_bytes, 0);
-  DCHECK_GT(savings_params_.arc_coefficient, 0);
+      savings_params_(std::move(parameters)) {
+  DCHECK_GT(savings_params_.neighbors_ratio(), 0);
+  DCHECK_LE(savings_params_.neighbors_ratio(), 1);
+  DCHECK_GT(savings_params_.max_memory_usage_bytes(), 0);
+  DCHECK_GT(savings_params_.arc_coefficient(), 0);
 }
 
 SavingsFilteredHeuristic::~SavingsFilteredHeuristic() = default;
@@ -4315,7 +4358,7 @@ bool SavingsFilteredHeuristic::ComputeSavings() {
                        return cost_and_node.second;
                      });
     }
-    if (savings_params_.add_reverse_arcs) {
+    if (savings_params_.add_reverse_arcs()) {
       AddSymmetricArcsToAdjacencyLists(&adjacency_lists);
     }
     if (StopSearch()) return false;
@@ -4342,7 +4385,7 @@ bool SavingsFilteredHeuristic::ComputeSavings() {
             model()->GetArcCostForClass(after_node, end, cost_class);
 
         const double weighted_arc_cost_fp =
-            savings_params_.arc_coefficient * arc_cost;
+            savings_params_.arc_coefficient() * arc_cost;
         const int64_t weighted_arc_cost =
             weighted_arc_cost_fp < std::numeric_limits<int64_t>::max()
                 ? static_cast<int64_t>(weighted_arc_cost_fp)
@@ -4370,14 +4413,14 @@ int64_t SavingsFilteredHeuristic::MaxNumNeighborsPerNode(
   const int64_t size = model()->Size();
 
   const int64_t num_neighbors_with_ratio =
-      std::max(1.0, size * savings_params_.neighbors_ratio);
+      std::max(1.0, size * savings_params_.neighbors_ratio());
 
   // A single Saving takes 2*8 bytes of memory.
   // max_memory_usage_in_savings_unit = num_savings * multiplicative_factor,
   // Where multiplicative_factor is the memory taken (in Savings unit) for each
   // computed Saving.
   const double max_memory_usage_in_savings_unit =
-      savings_params_.max_memory_usage_bytes / 16;
+      savings_params_.max_memory_usage_bytes() / 16;
 
   // In the SavingsContainer, for each Saving, the Savings are stored:
   // - Once in "sorted_savings_per_vehicle_type", and (at most) once in
@@ -5189,7 +5232,7 @@ class RouteConstructor {
     return true;
   }
 
-  bool FeasibleMerge(const std::vector<int>& route1,
+  bool FeasibleMerge(absl::Span<const int> route1,
                      const std::vector<int>& route2, int node1, int node2,
                      int route_index1, int route_index2, int vehicle_class,
                      int64_t start_depot, int64_t end_depot) {
