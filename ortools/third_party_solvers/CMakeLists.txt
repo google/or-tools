@@ -32,5 +32,5 @@ target_link_libraries(${NAME} PRIVATE
   absl::status
   absl::strings
   absl::str_format
-  absl::synchronization
-  )
+  absl::synchronization)
+

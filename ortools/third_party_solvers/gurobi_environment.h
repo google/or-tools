@@ -27,7 +27,6 @@
 #endif
 
 extern "C" {
-
 typedef struct _GRBmodel GRBmodel;
 typedef struct _GRBenv GRBenv;
 typedef struct _GRBsvec {

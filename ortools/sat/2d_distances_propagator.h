@@ -18,7 +18,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
@@ -30,7 +32,7 @@ namespace sat {
 // This class implements a propagator for non_overlap_2d constraints that uses
 // the Linear2Bounds to detect precedences between pairs of boxes and
 // detect a conflict if the precedences implies an overlap between the two
-// boxes. For doing this efficiently, it keep track of pairs of boxes that have
+// boxes. For doing this efficiently, it keeps track of pairs of boxes that have
 // non-fixed precedences in the Linear2Bounds and only check those in the
 // propagation.
 class Precedences2DPropagator : public PropagatorInterface {
@@ -43,16 +45,25 @@ class Precedences2DPropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  void CollectPairsOfBoxesWithNonTrivialDistance();
+  void CollectNewPairsOfBoxesWithNonTrivialDistance();
+  void UpdateVarLookups();
 
   std::vector<std::pair<int, int>> non_trivial_pairs_;
+  struct VarUsage {
+    // boxes[0=x, 1=y][0=start, 1=end]
+    std::vector<int> boxes[2][2];
+  };
+
+  absl::flat_hash_map<IntegerVariable, VarUsage> var_to_box_and_coeffs_;
 
   NoOverlap2DConstraintHelper& helper_;
   Linear2Bounds* linear2_bounds_;
   Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
+  Linear2WithPotentialNonTrivalBounds* non_trivial_bounds_;
 
   int last_helper_inprocessing_count_ = -1;
+  int num_known_linear2_ = 0;
   int64_t last_linear2_timestamp_ = -1;
 
   int64_t num_conflicts_ = 0;

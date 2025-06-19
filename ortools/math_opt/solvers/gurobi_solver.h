@@ -46,7 +46,6 @@
 #include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
-
 namespace operations_research {
 namespace math_opt {
 

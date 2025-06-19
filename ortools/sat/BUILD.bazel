@@ -129,7 +129,6 @@ cc_library(
         ":scheduling_helpers",
         ":synchronization",
         "//ortools/base:stl_util",
-        "//ortools/util:bitset",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

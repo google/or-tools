@@ -13,16 +13,16 @@
 
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
+#include <cstdlib>
 #include <functional>
-#include <mutex>
 #include <string>
 #include <vector>
 
+#include "absl/base/no_destructor.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
-#include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 
@@ -332,12 +332,14 @@ void LoadGurobiFunctions(DynamicLibrary* gurobi_dynamic_library) {
   gurobi_dynamic_library->GetFunction(&GRBplatform, "GRBplatform");
 }
 
+// clang-format on
+
 std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
   std::vector<std::string> potential_paths;
   const std::vector<absl::string_view> kGurobiVersions = {
-      "1202", "1201", "1200", "1103", "1102", "1101", "1100", "1003",
-      "1002", "1001", "1000", "952",  "951",  "950",  "911",
-      "910",  "903",  "902",  "811",  "801",  "752"};
+      "1202", "1201", "1200", "1103", "1102", "1101", "1100",
+      "1003", "1002", "1001", "1000", "952",  "951",  "950",
+      "911",  "910",  "903",  "902",  "811",  "801",  "752"};
   potential_paths.reserve(kGurobiVersions.size() * 3);
 
   // Look for libraries pointed by GUROBI_HOME first.
@@ -396,7 +398,7 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
 #if defined(__GNUC__)  // path in linux64 gurobi/optimizer docker image.
   for (const absl::string_view version :
-       {"12.0.2","12.0.1", "12.0.0", "11.0.3", "11.0.2", "11.0.1", "11.0.0",
+       {"12.0.2", "12.0.1", "12.0.0", "11.0.3", "11.0.2", "11.0.1", "11.0.0",
         "10.0.3", "10.0.2", "10.0.1", "10.0.0", "9.5.2", "9.5.1", "9.5.0"}) {
     potential_paths.push_back(
         absl::StrCat("/opt/gurobi/linux64/lib/libgurobi.so.", version));
@@ -407,37 +409,47 @@ std::vector<std::string> GurobiDynamicLibraryPotentialPaths() {
 
 absl::Status LoadGurobiDynamicLibrary(
     std::vector<absl::string_view> potential_paths) {
-  static std::once_flag gurobi_loading_done;
-  static absl::Status gurobi_load_status;
-  static DynamicLibrary gurobi_library;
-  static absl::Mutex mutex;
+  struct GurobiLibraryStruct {
+    absl::Status gurobi_load_status;
+    DynamicLibrary gurobi_library;
+  };
 
-  absl::MutexLock lock(&mutex);
-
-  std::call_once(gurobi_loading_done, [&potential_paths]() {
-    const std::vector<std::string> canonical_paths =
-        GurobiDynamicLibraryPotentialPaths();
-    potential_paths.insert(potential_paths.end(), canonical_paths.begin(),
-                           canonical_paths.end());
+  static absl::NoDestructor<GurobiLibraryStruct> loaded([&potential_paths]() {
+    GurobiLibraryStruct result;
+    // Try to load the library from the potential paths.
     for (const absl::string_view path : potential_paths) {
-      if (gurobi_library.TryToLoad(path)) {
-        LOG(INFO) << "Found the Gurobi library in '" << path << ".";
+      if (result.gurobi_library.TryToLoad(path)) {
+        VLOG(1) << "Found the Gurobi library in '" << path << ".";
         break;
       }
     }
 
-    if (gurobi_library.LibraryIsLoaded()) {
-      LoadGurobiFunctions(&gurobi_library);
-      gurobi_load_status = absl::OkStatus();
+    // Fallback to the canonical paths.
+    if (!result.gurobi_library.LibraryIsLoaded()) {
+      const std::vector<std::string> canonical_paths =
+          GurobiDynamicLibraryPotentialPaths();
+      for (const absl::string_view path : canonical_paths) {
+        if (result.gurobi_library.TryToLoad(path)) {
+          VLOG(1) << "Found the Gurobi library in '" << path << ".";
+          break;
+        }
+      }
+    }
+
+    if (result.gurobi_library.LibraryIsLoaded()) {
+      LoadGurobiFunctions(&result.gurobi_library);
+      result.gurobi_load_status = absl::OkStatus();
     } else {
-      gurobi_load_status = absl::NotFoundError(absl::StrCat(
+      result.gurobi_load_status = absl::NotFoundError(absl::StrCat(
           "Could not find the Gurobi shared library. Looked in: [",
           absl::StrJoin(potential_paths, "', '"),
           "]. If you know where it"
           " is, pass the full path to 'LoadGurobiDynamicLibrary()'."));
     }
-  });
-  return gurobi_load_status;
+    return result;
+  }());
+
+  return loaded->gurobi_load_status;
 }
 
 }  // namespace operations_research

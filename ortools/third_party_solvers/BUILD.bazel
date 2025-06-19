@@ -57,6 +57,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:status_macros",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",

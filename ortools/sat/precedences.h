@@ -14,10 +14,10 @@
 #ifndef OR_TOOLS_SAT_PRECEDENCES_H_
 #define OR_TOOLS_SAT_PRECEDENCES_H_
 
-#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -44,6 +44,63 @@
 
 namespace operations_research {
 namespace sat {
+
+DEFINE_STRONG_INDEX_TYPE(LinearExpression2Index);
+const LinearExpression2Index kNoLinearExpression2Index(-1);
+inline LinearExpression2Index NegationOf(LinearExpression2Index i) {
+  return LinearExpression2Index(i.value() ^ 1);
+}
+
+inline bool Linear2IsPositive(LinearExpression2Index i) {
+  return (i.value() & 1) == 0;
+}
+
+inline LinearExpression2Index PositiveLinear2(LinearExpression2Index i) {
+  return LinearExpression2Index(i.value() & (~1));
+}
+
+// Class to hold a list of LinearExpression2 that have (potentially) non-trivial
+// bounds. This class is overzealous, in the sense that if a linear2 is in the
+// list, it does not necessarily mean that it has a non-trivial bound, but the
+// converse is true: if a linear2 is not in the list,
+// Linear2Bounds::GetUpperBound() will return a trivial bound.
+class Linear2WithPotentialNonTrivalBounds {
+ public:
+  Linear2WithPotentialNonTrivalBounds() = default;
+
+  // Returns a never-changing index for the given linear expression.
+  // The expression must already be canonicalized and divided by its GCD.
+  LinearExpression2Index AddOrGet(LinearExpression2 expr) {
+    DCHECK(expr.IsCanonicalized());
+    DCHECK_EQ(expr.DivideByGcd(), 1);
+    const bool negated = expr.NegateForCanonicalization();
+    auto [it, inserted] = expr_to_index_.insert({expr, exprs_.size()});
+    if (inserted) {
+      CHECK_LT(2 * exprs_.size() + 1,
+               std::numeric_limits<LinearExpression2Index>::max());
+      exprs_.push_back(expr);
+    }
+    const LinearExpression2Index positive_index(2 * it->second);
+    if (negated) {
+      return NegationOf(positive_index);
+    } else {
+      return positive_index;
+    }
+  }
+
+  // Return all positive linear2 expressions that have a potentially non-trivial
+  // bound. When calling this code it is often a good idea to check both the
+  // expression on the span and its negation. The order is fixed forever and
+  // this span can only grow by appending new expressions.
+  absl::Span<const LinearExpression2> GetLinear2WithPotentialNonTrivalBounds()
+      const {
+    return exprs_;
+  }
+
+ private:
+  util_intops::StrongVector<LinearExpression2Index, LinearExpression2> exprs_;
+  absl::flat_hash_map<LinearExpression2, int> expr_to_index_;
+};
 
 // Simple "watcher" class that will be notified if a linear2 bound changed. It
 // can also be queried to see if LinearExpression2 involving a specific variable
@@ -79,7 +136,9 @@ class RootLevelLinear2Bounds {
   explicit RootLevelLinear2Bounds(Model* model)
       : integer_trail_(model->GetOrCreate<IntegerTrail>()),
         linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        non_trivial_bounds_(
+            model->GetOrCreate<Linear2WithPotentialNonTrivalBounds>()) {}
 
   ~RootLevelLinear2Bounds();
 
@@ -148,6 +207,7 @@ class RootLevelLinear2Bounds {
   IntegerTrail* integer_trail_;
   Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
+  Linear2WithPotentialNonTrivalBounds* non_trivial_bounds_;
 
   // Lookup table to find all the LinearExpression2 with a given variable and
   // having both coefficient 1.
@@ -258,7 +318,9 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
-        shared_stats_(model->GetOrCreate<SharedStatistics>()) {
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        non_trivial_bounds_(
+            model->GetOrCreate<Linear2WithPotentialNonTrivalBounds>()) {
     integer_trail_->RegisterReversibleClass(this);
   }
 
@@ -324,6 +386,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   Linear2Watcher* linear2_watcher_;
   RootLevelLinear2Bounds* root_level_bounds_;
   SharedStatistics* shared_stats_;
+  Linear2WithPotentialNonTrivalBounds* non_trivial_bounds_;
 
   int64_t num_conditional_relation_updates_ = 0;
 
@@ -476,6 +539,7 @@ class Linear2BoundsFromLinear3 {
   GenericLiteralWatcher* watcher_;
   SharedStatistics* shared_stats_;
   RootLevelLinear2Bounds* root_level_bounds_;
+  Linear2WithPotentialNonTrivalBounds* non_trivial_bounds_;
 
   int64_t num_affine_updates_ = 0;
 
@@ -558,7 +622,8 @@ class Linear2Bounds {
   GetAllExpressionsWithPotentialNonTrivialBounds(
       Bitset64<IntegerVariable>::ConstView var_set) const;
 
-  // Returns a temporay bitset, cleared, and resized for all existing variables.
+  // Returns a temporary bitset, cleared, and resized for all existing
+  // variables.
   //
   // If we have many class calling
   // GetAllExpressionsWithPotentialNonTrivialBounds() it is important that not

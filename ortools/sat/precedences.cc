@@ -100,6 +100,7 @@ std::pair<bool, bool> RootLevelLinear2Bounds::Add(LinearExpression2 expr,
       status_ub == AddResult::ADDED || status_ub == AddResult::UPDATED;
   if (!lb_restricted && !ub_restricted) return {false, false};
 
+  non_trivial_bounds_->AddOrGet(expr);
   ++num_updates_;
   linear2_watcher_->NotifyBoundChanged(expr);
 
@@ -348,6 +349,7 @@ void EnforcedLinear2Bounds::PushConditionalRelation(
   const int new_index = conditional_stack_.size();
   const auto [it, inserted] = conditional_relations_.insert({expr, new_index});
   if (inserted) {
+    non_trivial_bounds_->AddOrGet(expr);
     CreateLevelEntryIfNeeded();
     conditional_stack_.emplace_back(/*prev_entry=*/-1, rhs, expr, enforcements);
 
@@ -1815,7 +1817,9 @@ Linear2BoundsFromLinear3::Linear2BoundsFromLinear3(Model* model)
       linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
-      root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {}
+      root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+      non_trivial_bounds_(
+          model->GetOrCreate<Linear2WithPotentialNonTrivalBounds>()) {}
 
 // Note that for speed we do not compare to the trivial or root level bounds.
 //
@@ -1857,6 +1861,7 @@ bool Linear2BoundsFromLinear3::AddAffineUpperBound(LinearExpression2 expr,
     it->second = {affine_ub, divisor};  // Overwrite.
   } else {
     // Note that this should almost never happen (only once per lin2).
+    non_trivial_bounds_->AddOrGet(expr);
     best_affine_ub_[expr] = {affine_ub, divisor};
   }
 
