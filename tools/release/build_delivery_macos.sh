@@ -64,12 +64,15 @@ function build_dotnet() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
-  echo "check swig..."
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
-  echo "check dotnet..."
+  echo "DONE" | tee -a build.log
+
+  echo -n "check dotnet..."
   command -v dotnet
   command -v dotnet | xargs echo "dotnet: " | tee -a build.log
+  echo "DONE" | tee -a build.log
 
   # Install .Net SNK
   echo -n "Install .Net SNK..." | tee -a build.log
@@ -77,7 +80,8 @@ function build_dotnet() {
   if [[ -x $(command -v openssl11) ]]; then
     OPENSSL_PRG=openssl11
   fi
-  echo "check ${OPENSSL_PRG}..."
+  echo "DONE" | tee -a build.log
+  echo -n "check ${OPENSSL_PRG}..."
   command -v ${OPENSSL_PRG} | xargs echo "openssl: " | tee -a build.log
 
   $OPENSSL_PRG aes-256-cbc -iter 42 -pass pass:"$ORTOOLS_TOKEN" \
@@ -92,12 +96,12 @@ function build_dotnet() {
   rm -rf "${ROOT_DIR}/temp_dotnet"
   echo "DONE" | tee -a build.log
 
-  echo -n "Build .Net..." | tee -a build.log
+  echo "Build .Net..." | tee -a build.log
   cmake -S. -Btemp_dotnet -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOTNET=ON
   cmake --build temp_dotnet -j8 -v
-  echo "  Check libortools.dylib..." | tee -a build.log
+  echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L temp_dotnet/lib/libortools.dylib | grep -vqz "/Users"
-  echo "  DONE" | tee -a build.log
+  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
   #cmake --build temp_dotnet --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -115,9 +119,11 @@ function build_java() {
   fi
 
   cd "${ROOT_DIR}" || exit 2
-  echo "check swig..."
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
+
   # maven require JAVA_HOME
   if [[ -z "${JAVA_HOME}" ]]; then
     echo "JAVA_HOME: not found !" | tee -a build.log
@@ -173,21 +179,19 @@ function build_java() {
   rm -rf "${ROOT_DIR}/temp_java"
   echo "DONE" | tee -a build.log
 
-  echo -n "Build Java..." | tee -a build.log
-
+  echo "Build Java..." | tee -a build.log
   if [[ ! -v GPG_ARGS ]]; then
     GPG_EXTRA=""
   else
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
-
   # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
-  echo "  Check libortools.dylib..." | tee -a build.log
+  echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L temp_java/lib/libortools.dylib | grep -vqz "/Users"
-  echo "  DONE" | tee -a build.log
+  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
   #cmake --build temp_java --target test
   #echo "cmake test: DONE" | tee -a build.log
@@ -215,9 +219,10 @@ function build_python() {
   PATH_BCKP=${PATH}
 
   cd "${ROOT_DIR}" || exit 2
-  echo "check swig..."
+  echo -n "check swig..."
   command -v swig
   command -v swig | xargs echo "swig: " | tee -a build.log
+  echo "DONE" | tee -a build.log
 
   if [[ ${PLATFORM} == "arm64" ]]; then
     local -r PY=(3.9 3.10 3.11 3.12 3.13)
@@ -242,7 +247,7 @@ function build_python() {
     command -v "python${PY_VERSION}" | xargs echo "python${PY_VERSION}: " | tee -a build.log
     "python${PY_VERSION}" -c "import platform as p; print(p.platform())" | tee -a build.log
     "python${PY_VERSION}" -m pip install --upgrade --user pip
-    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv "typing-extensions>=4.12"
+    "python${PY_VERSION}" -m pip install --upgrade --user wheel absl-py mypy mypy-protobuf protobuf virtualenv
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
@@ -276,7 +281,7 @@ function build_python() {
     echo -n "Cleaning Python ${PY_VERSION}..." | tee -a build.log
     rm -rf "temp_python${PY_VERSION}"
     echo "DONE" | tee -a build.log
-    
+
     echo "Build Python ${PY_VERSION}..." | tee -a build.log
     echo -n "  CMake configure..." | tee -a build.log
     cmake -S. -B"temp_python${PY_VERSION}" -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF -DBUILD_PYTHON=ON -DPython3_ROOT_DIR="$PY_PATH"
@@ -351,26 +356,27 @@ function build_archive() {
 
   echo -n "Clean previous archive..." | tee -a build.log
   make clean_archive
+  echo "DONE" | tee -a build.log
 
-  echo -n "Make cpp archive..." | tee -a build.log
+  echo "Make cpp archive..." | tee -a build.log
   make archive_cpp
-  echo "  Check libortools.dylib..." | tee -a build.log
+  echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "  DONE" | tee -a build.log
+  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
-  echo -n "Make dotnet archive..." | tee -a build.log
+  echo "Make dotnet archive..." | tee -a build.log
   make archive_dotnet
-  echo "  Check libortools.dylib..." | tee -a build.log
+  echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "  DONE" | tee -a build.log
+  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
-  echo -n "Make java archive..." | tee -a build.log
+  echo "Make java archive..." | tee -a build.log
   make archive_java
-  echo "  Check libortools.dylib..." | tee -a build.log
+  echo -n "  Check libortools.dylib..." | tee -a build.log
   otool -L "build_make/lib/libortools.dylib" | grep -vqz "/Users"
-  echo "  DONE" | tee -a build.log
+  echo "DONE" | tee -a build.log
   echo "DONE" | tee -a build.log
 
   # move archive to export
@@ -392,14 +398,24 @@ function build_examples() {
   echo "Check Sed version..."
   sed --version 2>&1 | head -n 1 | grep "GNU sed.*\b4"
 
+  echo -n "Clean previous example archives..." | tee -a build.log
   rm -rf temp ./*.tar.gz
-  echo -n "Build examples archives..." | tee -a build.log
+  echo "DONE" | tee -a build.log
+
+  echo "Build examples archives..." | tee -a build.log
+
   echo -n "  Python examples archive..." | tee -a build.log
   make python_examples_archive UNIX_PYTHON_VER=3
+  echo "DONE" | tee -a build.log
+
   echo -n "  Java examples archive..." | tee -a build.log
   make java_examples_archive UNIX_PYTHON_VER=3
+  echo "DONE" | tee -a build.log
+
   echo -n "  .Net examples archive..." | tee -a build.log
   make dotnet_examples_archive UNIX_PYTHON_VER=3
+  echo "DONE" | tee -a build.log
+
   echo "DONE" | tee -a build.log
 
   # move example to export/
