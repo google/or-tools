@@ -1331,8 +1331,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
     const int64_t fixed_transit = CapSub(transit_target, variable_transit_ub);
     DCHECK_GT(transit_target, fixed_transit);
     DCHECK_GE(fixed_transit, 0);
-    const int64_t threshold =
-        std::max(CapSub(threshold_ratio * transit_target, fixed_transit), 0L);
+    const int64_t threshold = std::max<int64_t>(
+        CapSub(threshold_ratio * transit_target, fixed_transit), 0L);
 
     DCHECK_GT(variable_transit_ub, threshold);
     const int violation_above_threshold =
