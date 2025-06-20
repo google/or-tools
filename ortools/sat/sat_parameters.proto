@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 326
+// NEXT TAG: 327
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -702,6 +702,13 @@ message SatParameters {
 
   // Allows sharing of the bounds of modified variables at level 0.
   optional bool share_level_zero_bounds = 114 [default = true];
+
+  // Allows sharing of the bounds on linear2 discovered at level 0. This is
+  // mainly interesting on scheduling type of problems when we branch on
+  // precedences.
+  //
+  // Warning: This currently non-deterministic.
+  optional bool share_linear2_bounds = 326 [default = false];
 
   // Allows sharing of new learned binary clause between workers.
   optional bool share_binary_clauses = 203 [default = true];

@@ -847,6 +847,59 @@ void RegisterVariableBoundsLevelZeroImport(
       import_level_zero_bounds);
 }
 
+void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
+                                 Model* model) {
+  CHECK(shared_linear2_bounds != nullptr);
+  auto* cp_model_mapping = model->GetOrCreate<CpModelMapping>();
+  auto* root_linear2 = model->GetOrCreate<RootLevelLinear2Bounds>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  const int import_id =
+      shared_linear2_bounds->RegisterNewImportId(model->Name());
+  const auto& import_function = [import_id, shared_linear2_bounds, root_linear2,
+                                 cp_model_mapping, sat_solver, model]() {
+    const auto new_bounds =
+        shared_linear2_bounds->NewlyUpdatedBounds(import_id);
+    int num_imported = 0;
+    for (const auto& [proto_expr, bounds] : new_bounds) {
+      // Lets create the corresponding LinearExpression2.
+      LinearExpression2 expr;
+      for (const int i : {0, 1}) {
+        expr.vars[i] = cp_model_mapping->Integer(proto_expr.vars[i]);
+        expr.coeffs[i] = proto_expr.coeffs[i];
+      }
+      const auto [lb, ub] = bounds;
+      const auto [lb_added, ub_added] = root_linear2->Add(expr, lb, ub);
+      if (!lb_added && !ub_added) continue;
+      ++num_imported;
+
+      // TODO(user): Is it a good idea to add the linear constraint ?
+      // We might have many redundant linear2 relations that don't need
+      // propagation when we have chains of precedences. The root_linear2 should
+      // be up-to-date with transitive closure to avoid adding such relations
+      // (recompute it at level zero before this?).
+      //
+      // TODO(user): use IntegerValure directly in
+      // AddWeightedSumGreaterOrEqual() or use a lower-level API.
+      const std::vector<int64_t> coeffs = {expr.coeffs[0].value(),
+                                           expr.coeffs[1].value()};
+      if (lb_added) {
+        AddWeightedSumGreaterOrEqual({}, absl::MakeSpan(expr.vars, 2), coeffs,
+                                     lb.value(), model);
+        if (sat_solver->ModelIsUnsat()) return false;
+      }
+      if (ub_added) {
+        AddWeightedSumLowerOrEqual({}, absl::MakeSpan(expr.vars, 2), coeffs,
+                                   ub.value(), model);
+        if (sat_solver->ModelIsUnsat()) return false;
+      }
+    }
+    shared_linear2_bounds->NotifyNumImported(import_id, num_imported);
+    return true;
+  };
+  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+      import_function);
+}
+
 // Registers a callback that will report improving objective best bound.
 // It will be called each time new objective bound are propagated at level zero.
 void RegisterObjectiveBestBoundExport(
@@ -2086,6 +2139,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
     bounds->LoadDebugSolution(response->DebugSolution());
   }
 
+  if (params.share_linear2_bounds()) {
+    linear2_bounds = std::make_unique<SharedLinear2Bounds>();
+  }
+
   // Create extra shared classes if needed. Note that while these parameters
   // are true by default, we disable them if we don't have enough workers for
   // them in AdaptGlobalParameters().
@@ -2120,7 +2177,7 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   local_model->Register<SharedStatTables>(stat_tables);
 
   // TODO(user): Use parameters and not the presence/absence of these class
-  // to decide when to use them.
+  // to decide when to use them? this is not clear.
   if (lp_solutions != nullptr) {
     local_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
   }
@@ -2134,6 +2191,9 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   if (clauses != nullptr) {
     local_model->Register<SharedClausesManager>(clauses.get());
   }
+  if (linear2_bounds != nullptr) {
+    local_model->Register<SharedLinear2Bounds>(linear2_bounds.get());
+  }
 }
 
 bool SharedClasses::SearchIsDone() {
@@ -2144,6 +2204,38 @@ bool SharedClasses::SearchIsDone() {
   }
   if (time_limit->LimitReached()) return true;
   return false;
+}
+
+void SharedClasses::LogFinalStatistics() {
+  if (!logger->LoggingIsEnabled()) return;
+
+  logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
+  SOLVER_LOG(logger, "");
+
+  stat_tables->Display(logger);
+  response->DisplayImprovementStatistics();
+
+  std::vector<std::vector<std::string>> table;
+  table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
+  response->SolutionPool().AddTableStats(&table);
+  table.push_back(ls_hints->TableLineStats());
+  if (lp_solutions != nullptr) {
+    table.push_back(lp_solutions->TableLineStats());
+  }
+  if (incomplete_solutions != nullptr) {
+    table.push_back(incomplete_solutions->TableLineStats());
+  }
+  SOLVER_LOG(logger, FormatTable(table));
+
+  // TODO(user): we can combine the "bounds table" into one for shorter logs.
+  if (bounds != nullptr) bounds->LogStatistics(logger);
+  if (linear2_bounds != nullptr) linear2_bounds->LogStatistics(logger);
+
+  if (clauses != nullptr) clauses->LogStatistics(logger);
+
+  // Extra logging if needed. Note that these are mainly activated on
+  // --vmodule *some_file*=1 and are here for development.
+  stats->Log(logger);
 }
 
 }  // namespace sat

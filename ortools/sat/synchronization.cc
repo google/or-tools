@@ -1386,25 +1386,32 @@ int UniqueClauseStream::NumLiteralsOfSize(int size) const {
 SharedClausesManager::SharedClausesManager(bool always_synchronize)
     : always_synchronize_(always_synchronize) {}
 
-int SharedClausesManager::RegisterNewId(bool may_terminate_early) {
+int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
+                                        bool may_terminate_early) {
   absl::MutexLock mutex_lock(&mutex_);
   num_full_workers_ += may_terminate_early ? 0 : 1;
   const int id = id_to_last_processed_binary_clause_.size();
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
   id_to_last_returned_batch_.resize(id + 1, -1);
   id_to_last_finished_batch_.resize(id + 1, -1);
-  id_to_clauses_exported_.resize(id + 1, 0);
+  id_to_num_exported_.resize(id + 1, 0);
+  id_to_worker_name_.resize(id + 1);
+  id_to_worker_name_[id] = worker_name;
+  return id;
+}
+
+int SharedLinear2Bounds::RegisterNewId(std::string worker_name) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = id_to_worker_name_.size();
+
+  id_to_stats_.resize(id + 1);
+  id_to_worker_name_.resize(id + 1);
+  id_to_worker_name_[id] = worker_name;
   return id;
 }
 
 bool SharedClausesManager::ShouldReadBatch(int reader_id, int writer_id) {
   return reader_id != writer_id;
-}
-
-void SharedClausesManager::SetWorkerNameForId(int id,
-                                              absl::string_view worker_name) {
-  absl::MutexLock mutex_lock(&mutex_);
-  id_to_worker_name_[id] = worker_name;
 }
 
 void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
@@ -1416,7 +1423,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   if (inserted) {
     added_binary_clauses_.push_back(p);
     if (always_synchronize_) ++last_visible_binary_clause_;
-    id_to_clauses_exported_[id]++;
+    id_to_num_exported_[id]++;
 
     // Small optim. If the worker is already up to date with clauses to import,
     // we can mark this new clause as already seen.
@@ -1429,7 +1436,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
   absl::MutexLock mutex_lock(&mutex_);
-  id_to_clauses_exported_[id] += batch.size();
+  id_to_num_exported_[id] += batch.size();
   pending_batches_.push_back(std::move(batch));
 }
 
@@ -1463,16 +1470,44 @@ void SharedClausesManager::GetUnseenBinaryClauses(
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(&mutex_);
-  absl::btree_map<std::string, int64_t> name_to_clauses;
-  for (int id = 0; id < id_to_clauses_exported_.size(); ++id) {
-    if (id_to_clauses_exported_[id] == 0) continue;
-    name_to_clauses[id_to_worker_name_[id]] = id_to_clauses_exported_[id];
+  absl::btree_map<std::string, int64_t> name_to_table_line;
+  for (int id = 0; id < id_to_num_exported_.size(); ++id) {
+    if (id_to_num_exported_[id] == 0) continue;
+    name_to_table_line[id_to_worker_name_[id]] = id_to_num_exported_[id];
   }
-  if (!name_to_clauses.empty()) {
+  if (!name_to_table_line.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back({"Clauses shared", "Num"});
-    for (const auto& entry : name_to_clauses) {
-      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
+    for (const auto& [name, count] : name_to_table_line) {
+      table.push_back({FormatName(name), FormatCounter(count)});
+    }
+    SOLVER_LOG(logger, FormatTable(table));
+  }
+}
+
+// TODO(user): Add some library to simplify this "transposition". Ideally we
+// could merge small table with few columns. I am thinking list (row_name,
+// col_name, count) + function that create table?
+void SharedLinear2Bounds::LogStatistics(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(&mutex_);
+  absl::btree_map<std::string, Stats> name_to_table_line;
+  for (int id = 0; id < id_to_stats_.size(); ++id) {
+    const Stats stats = id_to_stats_[id];
+    if (!stats.empty()) {
+      name_to_table_line[id_to_worker_name_[id]] = stats;
+    }
+  }
+  for (int import_id = 0; import_id < import_id_to_index_.size(); ++import_id) {
+    name_to_table_line[import_id_to_name_[import_id]].num_imported =
+        import_id_to_num_imported_[import_id];
+  }
+  if (!name_to_table_line.empty()) {
+    std::vector<std::vector<std::string>> table;
+    table.push_back({"Linear2 shared", "New", "Updated", "Imported"});
+    for (const auto& [name, stats] : name_to_table_line) {
+      table.push_back({FormatName(name), FormatCounter(stats.num_new),
+                       FormatCounter(stats.num_update),
+                       FormatCounter(stats.num_imported)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }
@@ -1519,6 +1554,69 @@ void SharedClausesManager::Synchronize() {
     absl::MutexLock mutex_lock(&mutex_);
     VLOG(2) << "Merging batch";
     batches_.push_back(next_batch.NextBatch());
+  }
+}
+
+void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
+                              IntegerValue ub) {
+  DCHECK(expr.IsCanonicalized());
+
+  absl::MutexLock mutex_lock(&mutex_);
+  auto [it, inserted] = shared_bounds_.insert({expr, {lb, ub}});
+  if (inserted) {
+    // It is new.
+    id_to_stats_[id].num_new++;
+    newly_updated_keys_.push_back(expr);
+  } else {
+    // Update the individual bounds if the new ones are better.
+    auto& bounds = it->second;
+    const bool update_lb = lb > bounds.first;
+    if (update_lb) bounds.first = lb;
+    const bool update_ub = ub < bounds.second;
+    if (update_ub) bounds.second = ub;
+    if (update_lb || update_ub) {
+      id_to_stats_[id].num_update++;
+      newly_updated_keys_.push_back(expr);
+    }
+  }
+}
+
+int SharedLinear2Bounds::RegisterNewImportId(std::string name) {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int import_id = import_id_to_index_.size();
+  import_id_to_name_.push_back(name);
+  import_id_to_index_.push_back(0);
+  import_id_to_num_imported_.push_back(0);
+  return import_id;
+}
+
+std::vector<
+    std::pair<SharedLinear2Bounds::Key, std::pair<IntegerValue, IntegerValue>>>
+SharedLinear2Bounds::NewlyUpdatedBounds(int import_id) {
+  std::vector<std::pair<Key, std::pair<IntegerValue, IntegerValue>>> result;
+
+  absl::MutexLock mutex_lock(&mutex_);
+  MaybeCompressNewlyUpdateKeys();
+  const int size = newly_updated_keys_.size();
+  for (int i = import_id_to_index_[import_id]; i < size; ++i) {
+    const auto& key = newly_updated_keys_[i];
+    result.push_back({key, shared_bounds_[key]});
+  }
+  import_id_to_index_[import_id] = size;
+  return result;
+}
+
+void SharedLinear2Bounds::MaybeCompressNewlyUpdateKeys() {
+  int min_index = 0;
+  for (const int index : import_id_to_index_) {
+    min_index = std::min(index, min_index);
+  }
+  if (min_index == 0) return;
+
+  newly_updated_keys_.erase(newly_updated_keys_.begin(),
+                            newly_updated_keys_.begin() + min_index);
+  for (int& index_ref : import_id_to_index_) {
+    index_ref -= min_index;
   }
 }
 

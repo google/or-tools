@@ -13,6 +13,7 @@
 
 #include "ortools/sat/2d_distances_propagator.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -69,10 +70,12 @@ void Precedences2DPropagator::UpdateVarLookups() {
 void Precedences2DPropagator::CollectNewPairsOfBoxesWithNonTrivialDistance() {
   const absl::Span<const LinearExpression2> exprs =
       non_trivial_bounds_->GetLinear2WithPotentialNonTrivalBounds();
-  if (exprs.size() != num_known_linear2_) {
-    VLOG(2) << "CollectPairsOfBoxesWithNonTrivialDistance called, num_exprs: "
-            << exprs.size();
+  if (exprs.size() == num_known_linear2_) {
+    return;
   }
+  VLOG(2) << "CollectPairsOfBoxesWithNonTrivialDistance called, num_exprs: "
+          << exprs.size();
+  const int previous_num_pairs = non_trivial_pairs_.size();
   for (; num_known_linear2_ < exprs.size(); ++num_known_linear2_) {
     const LinearExpression2& positive_expr = exprs[num_known_linear2_];
     LinearExpression2 negated_expr = positive_expr;
@@ -111,7 +114,31 @@ void Precedences2DPropagator::CollectNewPairsOfBoxesWithNonTrivialDistance() {
     }
   }
 
-  gtl::STLSortAndRemoveDuplicates(&non_trivial_pairs_);
+  // Sort the new pairs.
+  std::sort(non_trivial_pairs_.begin() + previous_num_pairs,
+            non_trivial_pairs_.end());
+
+  // Remove duplicates from new pairs.
+  non_trivial_pairs_.erase(
+      std::unique(non_trivial_pairs_.begin() + previous_num_pairs,
+                  non_trivial_pairs_.end()),
+      non_trivial_pairs_.end());
+
+  // Merge with the old pairs keeping sorted.
+  std::inplace_merge(non_trivial_pairs_.begin(),
+                     non_trivial_pairs_.begin() + previous_num_pairs,
+                     non_trivial_pairs_.end());
+
+  // Remove newly-added duplicates.
+  non_trivial_pairs_.erase(
+      std::unique(non_trivial_pairs_.begin(), non_trivial_pairs_.end()),
+      non_trivial_pairs_.end());
+
+  // Result should be sorted and without duplicates.
+  DCHECK(std::is_sorted(non_trivial_pairs_.begin(), non_trivial_pairs_.end()));
+  DCHECK(std::adjacent_find(non_trivial_pairs_.begin(),
+                            non_trivial_pairs_.end()) ==
+         non_trivial_pairs_.end());
 }
 
 bool Precedences2DPropagator::Propagate() {

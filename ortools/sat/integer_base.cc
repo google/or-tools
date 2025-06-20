@@ -84,22 +84,18 @@ bool LinearExpression2::NegateForCanonicalization() {
 }
 
 bool LinearExpression2::CanonicalizeAndUpdateBounds(IntegerValue& lb,
-                                                    IntegerValue& ub,
-                                                    bool allow_negation) {
+                                                    IntegerValue& ub) {
   SimpleCanonicalization();
   if (coeffs[0] == 0 || coeffs[1] == 0) return false;  // abort.
 
-  bool negated = false;
-  if (allow_negation) {
-    negated = NegateForCanonicalization();
-    if (negated) {
-      // We need to be able to negate without overflow.
-      CHECK_GE(lb, kMinIntegerValue);
-      CHECK_LE(ub, kMaxIntegerValue);
-      std::swap(lb, ub);
-      lb = -lb;
-      ub = -ub;
-    }
+  const bool negated = NegateForCanonicalization();
+  if (negated) {
+    // We need to be able to negate without overflow.
+    CHECK_GE(lb, kMinIntegerValue);
+    CHECK_LE(ub, kMaxIntegerValue);
+    std::swap(lb, ub);
+    lb = -lb;
+    ub = -ub;
   }
 
   // Do gcd division.
@@ -144,8 +140,7 @@ std::pair<BestBinaryRelationBounds::AddResult,
           BestBinaryRelationBounds::AddResult>
 BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
                               IntegerValue ub) {
-  const bool negated =
-      expr.CanonicalizeAndUpdateBounds(lb, ub, /*allow_negation=*/true);
+  const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
 
   // We only store proper linear2.
   if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
@@ -184,7 +179,7 @@ BestBinaryRelationBounds::Add(LinearExpression2 expr, IntegerValue lb,
 RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
                                                    IntegerValue lb,
                                                    IntegerValue ub) const {
-  expr.CanonicalizeAndUpdateBounds(lb, ub, /*allow_negation=*/true);
+  expr.CanonicalizeAndUpdateBounds(lb, ub);
   if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
     return RelationStatus::IS_UNKNOWN;
   }
@@ -243,16 +238,6 @@ BestBinaryRelationBounds::GetSortedNonTrivialBounds() const {
   }
   std::sort(root_relations_sorted.begin(), root_relations_sorted.end());
   return root_relations_sorted;
-}
-
-void BestBinaryRelationBounds::AppendAllExpressionContaining(
-    Bitset64<IntegerVariable>::ConstView var_set,
-    std::vector<LinearExpression2>* result) const {
-  for (const auto& [expr, unused] : best_bounds_) {
-    if (!var_set[PositiveVariable(expr.vars[0])]) continue;
-    if (!var_set[PositiveVariable(expr.vars[1])]) continue;
-    result->push_back(expr);
-  }
 }
 
 }  // namespace operations_research::sat

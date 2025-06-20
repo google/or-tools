@@ -384,8 +384,7 @@ struct LinearExpression2 {
   // accordingly. This is the same as SimpleCanonicalization(), DivideByGcd()
   // and the NegateForCanonicalization() with a proper updates of the bounds.
   // Returns whether the expression was negated.
-  bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub,
-                                   bool allow_negation = false);
+  bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
 
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are
@@ -493,7 +492,7 @@ class BestBinaryRelationBounds {
   IntegerValue GetUpperBound(LinearExpression2 expr) const;
 
   // Same as GetUpperBound() but assume the expression is already canonicalized.
-  // This is slighlty faster.
+  // This is slightly faster.
   IntegerValue UpperBoundWhenCanonicalized(LinearExpression2 expr) const;
 
   int64_t num_bounds() const { return best_bounds_.size(); }
@@ -503,11 +502,6 @@ class BestBinaryRelationBounds {
 
   std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
   GetSortedNonTrivialBounds() const;
-
-  // Note that this is non-deterministic and in O(num_relations).
-  void AppendAllExpressionContaining(
-      Bitset64<IntegerVariable>::ConstView var_set,
-      std::vector<LinearExpression2>* result) const;
 
  private:
   // The best bound on the given "canonicalized" expression.

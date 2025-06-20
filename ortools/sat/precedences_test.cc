@@ -190,6 +190,8 @@ TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   auto* lin2_bounds = model.GetOrCreate<Linear2Bounds>();
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* precedences = model.GetOrCreate<EnforcedLinear2Bounds>();
+  auto* non_trivial_bounds =
+      model.GetOrCreate<Linear2WithPotentialNonTrivalBounds>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   const Literal l(model.Add(NewBooleanVariable()), true);
@@ -200,26 +202,25 @@ TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   precedences->PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 15);
   precedences->PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 20);
 
+  LinearExpression2 expr_a_plus_b =
+      LinearExpression2::Difference(a, NegationOf(b));
+  expr_a_plus_b.SimpleCanonicalization();
   // We only keep the best one.
-  EXPECT_EQ(
-      lin2_bounds->UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
-      15);
+  EXPECT_EQ(lin2_bounds->UpperBound(expr_a_plus_b), 15);
   std::vector<Literal> literal_reason;
   std::vector<IntegerLiteral> integer_reason;
   precedences->AddReasonForUpperBoundLowerThan(
-      LinearExpression2::Difference(a, NegationOf(b)), 15, &literal_reason,
+      non_trivial_bounds->AddOrGet(expr_a_plus_b), 15, &literal_reason,
       &integer_reason);
   EXPECT_THAT(literal_reason, ElementsAre(l.Negated()));
 
   // Backtrack works.
   EXPECT_TRUE(sat_solver->ResetToLevelZero());
-  EXPECT_EQ(
-      lin2_bounds->UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
-      200);
+  EXPECT_EQ(lin2_bounds->UpperBound(expr_a_plus_b), 200);
   literal_reason.clear();
   integer_reason.clear();
   precedences->AddReasonForUpperBoundLowerThan(
-      LinearExpression2::Difference(a, NegationOf(b)), kMaxIntegerValue,
+      non_trivial_bounds->AddOrGet(expr_a_plus_b), kMaxIntegerValue,
       &literal_reason, &integer_reason);
   EXPECT_THAT(literal_reason, IsEmpty());
 }

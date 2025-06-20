@@ -793,40 +793,6 @@ void LogSubsolverNames(absl::Span<const std::unique_ptr<SubSolver>> subsolvers,
   SOLVER_LOG(logger, "");
 }
 
-void LogFinalStatistics(SharedClasses* shared) {
-  if (!shared->logger->LoggingIsEnabled()) return;
-
-  shared->logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
-  SOLVER_LOG(shared->logger, "");
-
-  shared->stat_tables->Display(shared->logger);
-  shared->response->DisplayImprovementStatistics();
-
-  std::vector<std::vector<std::string>> table;
-  table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
-  shared->response->SolutionPool().AddTableStats(&table);
-  table.push_back(shared->ls_hints->TableLineStats());
-  if (shared->lp_solutions != nullptr) {
-    table.push_back(shared->lp_solutions->TableLineStats());
-  }
-  if (shared->incomplete_solutions != nullptr) {
-    table.push_back(shared->incomplete_solutions->TableLineStats());
-  }
-  SOLVER_LOG(shared->logger, FormatTable(table));
-
-  if (shared->bounds) {
-    shared->bounds->LogStatistics(shared->logger);
-  }
-
-  if (shared->clauses) {
-    shared->clauses->LogStatistics(shared->logger);
-  }
-
-  // Extra logging if needed. Note that these are mainly activated on
-  // --vmodule *some_file*=1 and are here for development.
-  shared->stats->Log(shared->logger);
-}
-
 void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
                       std::vector<std::unique_ptr<SubSolver>>& subsolvers,
                       absl::Span<const std::string> ignored) {
@@ -868,7 +834,7 @@ void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
   for (int i = 0; i < subsolvers.size(); ++i) {
     subsolvers[i].reset();
   }
-  LogFinalStatistics(shared);
+  shared->LogFinalStatistics();
 }
 
 bool VarIsFixed(const CpModelProto& model_proto, int i) {
@@ -1124,13 +1090,18 @@ class FullProblemSolver : public SubSolver {
               shared_->model_proto, shared_->bounds.get(), &local_model_);
         }
 
+        if (shared_->linear2_bounds != nullptr) {
+          RegisterLinear2BoundsImport(shared_->linear2_bounds.get(),
+                                      &local_model_);
+        }
+
         // Note that this is done after the loading, so we will never export
         // problem clauses.
         if (shared_->clauses != nullptr) {
           const int id = shared_->clauses->RegisterNewId(
+              local_model_.Name(),
               /*may_terminate_early=*/stop_at_first_solution_ &&
-              local_model_.GetOrCreate<CpModelProto>()->has_objective());
-          shared_->clauses->SetWorkerNameForId(id, local_model_.Name());
+                  local_model_.GetOrCreate<CpModelProto>()->has_objective());
 
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
                                          &local_model_);

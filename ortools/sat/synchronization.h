@@ -848,8 +848,7 @@ class SharedClausesManager {
                               std::vector<std::pair<int, int>>* new_clauses);
 
   // Ids are used to identify which worker is exporting/importing clauses.
-  int RegisterNewId(bool may_terminate_early);
-  void SetWorkerNameForId(int id, absl::string_view worker_name);
+  int RegisterNewId(absl::string_view worker_name, bool may_terminate_early);
 
   // Search statistics.
   void LogStatistics(SolverLogger* logger);
@@ -893,8 +892,100 @@ class SharedClausesManager {
   const bool always_synchronize_ = true;
 
   // Stats:
-  std::vector<int64_t> id_to_clauses_exported_;
-  absl::flat_hash_map<int, std::string> id_to_worker_name_;
+  std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_num_updated_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
+};
+
+// A class that allows to exchange root level bounds on linear2.
+//
+// TODO(user): Add Synchronize() support and only publish new bounds when this
+// is called.
+class SharedLinear2Bounds {
+ public:
+  int RegisterNewId(std::string worker_name);
+  void LogStatistics(SolverLogger* logger);
+
+  // This should only contain canonicalized expression.
+  // See the code for IsCanonicalized() for the definition.
+  struct Key {
+    int vars[2];
+    IntegerValue coeffs[2];
+
+    bool IsCanonicalized() {
+      return coeffs[0] > 0 && coeffs[1] != 0 && vars[0] < vars[1] &&
+             std::gcd(coeffs[0].value(), coeffs[1].value()) == 1;
+    }
+
+    bool operator==(const Key& o) const {
+      return vars[0] == o.vars[0] && vars[1] == o.vars[1] &&
+             coeffs[0] == o.coeffs[0] && coeffs[1] == o.coeffs[1];
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Key& k) {
+      return H::combine(std::move(h), k.vars[0], k.vars[1], k.coeffs[0],
+                        k.coeffs[1]);
+    }
+  };
+
+  // Exports new bounds on the given expr (should be canonicalized).
+  void Add(int id, Key expr, IntegerValue lb, IntegerValue ub);
+
+  // This is called less often, and maybe not every-worker that exports want to
+  // export, so we use a separate id space. Because we rely on hash map to
+  // check if a bound is new, it is not such a big deal that a worker re-read
+  // once the bounds it exported.
+  int RegisterNewImportId(std::string name);
+
+  // Returns the linear2 and their bounds.
+  // We only return changes since the last call with the same id.
+  std::vector<std::pair<Key, std::pair<IntegerValue, IntegerValue>>>
+  NewlyUpdatedBounds(int import_id);
+
+  // This is not filled by NewlyUpdatedBounds() because we want to track the
+  // bounds that were not already known by the worker at the time of the import,
+  // and we don't have this information here.
+  void NotifyNumImported(int import_id, int num) {
+    absl::MutexLock mutex_lock(&mutex_);
+    import_id_to_num_imported_[import_id] += num;
+  }
+
+ private:
+  void MaybeCompressNewlyUpdateKeys() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  absl::Mutex mutex_;
+
+  // The best known bounds for each key.
+  absl::flat_hash_map<Key, std::pair<IntegerValue, IntegerValue>> shared_bounds_
+      ABSL_GUARDED_BY(mutex_);
+
+  // Ever growing list of updated position in shared_bounds_.
+  // Note that we do reduce it in MaybeCompressNewlyUpdateKeys(), but that
+  // requires all registered workers to have at least imported some bounds.
+  //
+  // TODO(user): use indirect addressing so that newly_updated_keys_ can just
+  // deal with indices, and it is a bit tighter memory wise? We also avoid
+  // hash-lookups on NewlyUpdatedBounds(). But since this is only called at
+  // level zero on new bounds, I don't think we care.
+  std::vector<Key> newly_updated_keys_;
+
+  // For import.
+  std::vector<std::string> import_id_to_name_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> import_id_to_index_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> import_id_to_num_imported_ ABSL_GUARDED_BY(mutex_);
+
+  // Just for reporting at the end of the solve.
+  struct Stats {
+    int64_t num_new = 0;
+    int64_t num_update = 0;
+    int64_t num_imported = 0;  // Copy of import_id_to_num_imported_.
+    bool empty() const {
+      return num_new == 0 && num_update == 0 && num_imported == 0;
+    }
+  };
+  std::vector<Stats> id_to_stats_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
 };
 
 // Simple class to add statistics by name and print them at the end.

@@ -815,7 +815,6 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        ":integer",
         ":integer_base",
         ":linear_constraint",
         ":model",
@@ -2056,6 +2055,7 @@ cc_library(
     deps = [
         ":clause",
         ":cp_constraints",
+        ":cp_model_mapping",
         ":integer",
         ":integer_base",
         ":model",
@@ -4023,13 +4023,17 @@ cc_binary(
         "//ortools/base:path",
         "//ortools/util:file_util",
         "//ortools/util:logging",
+        "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
         "@protobuf",
     ],
 )
