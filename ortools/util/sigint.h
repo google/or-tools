@@ -21,7 +21,7 @@ namespace operations_research {
 
 class SigintHandler {
  public:
-  SigintHandler() {}
+  SigintHandler() = default;
   ~SigintHandler();
 
   // Catches ^C and call f() the first time this happen. If ^C is pressed 3
@@ -29,9 +29,23 @@ class SigintHandler {
   void Register(const std::function<void()>& f);
 
  private:
-  static void ControlCHandler(int s);
+  std::atomic<int> num_calls_ = 0;
 
-  std::atomic<int> num_sigint_calls_ = 0;
+  static void SigHandler(int s);
+  thread_local static std::function<void()> handler_;
+};
+
+class SigtermHandler {
+ public:
+  SigtermHandler() = default;
+  ~SigtermHandler();
+
+  // Catches SIGTERM and call f(). It is recommended that f() calls exit() to
+  // terminate the program.
+  void Register(const std::function<void()>& f);
+
+ private:
+  static void SigHandler(int s);
   thread_local static std::function<void()> handler_;
 };
 
