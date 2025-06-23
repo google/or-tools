@@ -13,19 +13,19 @@
 # limitations under the License.
 """
 
-  Max flow problem in Google CP Solver.
+Max flow problem in Google CP Solver.
 
-  From Winston 'Operations Research', page 420f, 423f
-  Sunco Oil example.
+From Winston 'Operations Research', page 420f, 423f
+Sunco Oil example.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/max_flow_winston1.mzn
-  * Comet: http://hakank.org/comet/max_flow_winston1.co
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/max_flow_winston1.mzn
+* Comet: http://hakank.org/comet/max_flow_winston1.co
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -50,7 +50,7 @@ def main():
 
   # convert arcs to 0-based
   arcs = []
-  for (a_from, a_to) in arcs1:
+  for a_from, a_to in arcs1:
     a_from -= 1
     a_to -= 1
     arcs.append([a_from, a_to])

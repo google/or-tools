@@ -8,29 +8,41 @@ def log_error_and_exit(error_message):
   raise SystemExit
 
 
-#try to import setuptools
+# try to import setuptools
 try:
   from setuptools import setup, Extension
   from setuptools.command import easy_install
 except ImportError:
-  log_error_and_exit("""setuptools is not installed for \"""" + sys.executable +
-                     """\"
+  log_error_and_exit(
+      """setuptools is not installed for \"""" + sys.executable + """\"
 Follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
-make sure you use \"""" + sys.executable + """\" during the installation""")
+make sure you use \"""" + sys.executable + """\" during the installation"""
+  )
 
 from pkg_resources import parse_version
 
 
 def notinstalled(modulename):
-  return modulename + """ could not be imported for \"""" + sys.executable + """\"
+  return (
+      modulename
+      + """ could not be imported for \""""
+      + sys.executable
+      + """\"
 Set PYTHONPATH to the output of this command \"make print-OR_TOOLS_PYTHONPATH\" before running the examples"""
+  )
 
 
 def wrong_module(module_file, modulename):
-  return """
-The python examples are not importing the """ + modulename + """ module from the sources.
-Remove the site-package that contains \"""" + module_file + """\", either manually or by using pip, and rerun this script again."""
+  return (
+      """
+The python examples are not importing the """
+      + modulename
+      + """ module from the sources.
+Remove the site-package that contains \""""
+      + module_file
+      + """\", either manually or by using pip, and rerun this script again."""
+  )
 
 
 # Returns the n_th parent of file
@@ -47,9 +59,12 @@ if __name__ == "__main__":
       "-l",
       "--log",
       type="string",
-      help=
-      "Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)",
-      default="INFO")
+      help=(
+          "Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0),"
+          " DEBUG (-1)"
+      ),
+      default="INFO",
+  )
   options, args = parser.parse_args()
 
   try:
@@ -64,25 +79,27 @@ if __name__ == "__main__":
     }[int(options.log)]
 
   logging.basicConfig(
-      format="[%(levelname)s] %(message)s", stream=sys.stdout, level=loglevel)
+      format="[%(levelname)s] %(message)s", stream=sys.stdout, level=loglevel
+  )
 
   logging.info("Python path : " + sys.executable)
   logging.info("Python version : " + sys.version)
   logging.info("sys.path : " + str(sys.path))
   ortools_project_path = n_dirname(
-      3, abspath(inspect.getfile(inspect.currentframe())))
+      3, abspath(inspect.getfile(inspect.currentframe()))
+  )
 
-  #try to import ortools
+  # try to import ortools
   try:
     import ortools
   except ImportError:
     logging.error(notinstalled("ortools"))
     raise SystemExit
 
-  #check if we're using ortools from the sources or it's binded by pypi's module
+  # check if we're using ortools from the sources or it's binded by pypi's module
   ortools_module_file = inspect.getfile(ortools)
   ortools_module_path = n_dirname(3, ortools_module_file)
-  if (ortools_module_path == ortools_project_path):
+  if ortools_module_path == ortools_project_path:
     logging.info("Or-tools is imported from : " + ortools_module_file)
   else:
     log_error_and_exit(wrong_module(ortools_module_file, "ortools"))
@@ -95,20 +112,20 @@ if __name__ == "__main__":
   from ortools.algorithms import _pywrapknapsack_solver
   from ortools.graph import _pywrapgraph
 
-  #try to import protobuf
+  # try to import protobuf
   try:
     import google.protobuf
   except ImportError:
     log_error_and_exit(notinstalled("protobuf"))
 
-  #check if we're using protobuf from the sources or it's binded by pypi's module
+  # check if we're using protobuf from the sources or it's binded by pypi's module
   protobuf_module_file = inspect.getfile(google.protobuf)
   protobuf_module_path = n_dirname(7, protobuf_module_file)
-  if (protobuf_module_path == ortools_project_path):
+  if protobuf_module_path == ortools_project_path:
     logging.info("Protobuf is imported from : " + protobuf_module_file)
   else:
     log_error_and_exit(wrong_module(protobuf_module_file, "protobuf"))
 
-  #Check if the protobuf modules were successfully generated
+  # Check if the protobuf modules were successfully generated
   from google.protobuf import descriptor as _descriptor
   from google.protobuf import descriptor_pb2

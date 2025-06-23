@@ -13,22 +13,22 @@
 # limitations under the License.
 """
 
-  Assignment problem in Google CP Solver.
+Assignment problem in Google CP Solver.
 
-  Winston 'Operations Research', Assignment Problems, page 393f
-  (generalized version with added test column)
+Winston 'Operations Research', Assignment Problems, page 393f
+(generalized version with added test column)
 
-  Compare with the following models:
-  * Comet   : http://www.hakank.org/comet/assignment.co
-  * ECLiPSE : http://www.hakank.org/eclipse/assignment.ecl
-  * Gecode  : http://www.hakank.org/gecode/assignment.cpp
-  * MiniZinc: http://www.hakank.org/minizinc/assignment.mzn
-  * Tailor/Essence': http://www.hakank.org/tailor/assignment.eprime
-  * SICStus: http://hakank.org/sicstus/assignment.pl
+Compare with the following models:
+* Comet   : http://www.hakank.org/comet/assignment.co
+* ECLiPSE : http://www.hakank.org/eclipse/assignment.ecl
+* Gecode  : http://www.hakank.org/gecode/assignment.cpp
+* MiniZinc: http://www.hakank.org/minizinc/assignment.mzn
+* Tailor/Essence': http://www.hakank.org/tailor/assignment.eprime
+* SICStus: http://hakank.org/sicstus/assignment.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -56,20 +56,22 @@ def main(cost, rows, cols):
   #
 
   # total_cost
-  solver.Add(total_cost == solver.Sum(
-      [solver.ScalProd(x_row, cost_row) for (x_row, cost_row) in zip(x, cost)]))
+  solver.Add(
+      total_cost
+      == solver.Sum([
+          solver.ScalProd(x_row, cost_row) for (x_row, cost_row) in zip(x, cost)
+      ])
+  )
 
   # exacly one assignment per row, all rows must be assigned
   [
-      solver.Add(solver.Sum([x[row][j]
-                             for j in range(cols)]) == 1)
+      solver.Add(solver.Sum([x[row][j] for j in range(cols)]) == 1)
       for row in range(rows)
   ]
 
   # zero or one assignments per column
   [
-      solver.Add(solver.Sum([x[i][col]
-                             for i in range(rows)]) <= 1)
+      solver.Add(solver.Sum([x[i][col] for i in range(rows)]) <= 1)
       for col in range(cols)
   ]
 

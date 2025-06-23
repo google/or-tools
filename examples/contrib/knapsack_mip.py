@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Knapsack problem using MIP in Google or-tools.
+Knapsack problem using MIP in Google or-tools.
 
-  From the OPL model knapsack.mod
+From the OPL model knapsack.mod
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -43,13 +43,15 @@ def main(sol='CBC'):
 
   capacity = [18209, 7692, 1333, 924, 26638, 61188, 13360]
   value = [96, 76, 56, 11, 86, 10, 66, 86, 83, 12, 9, 81]
-  use = [[19, 1, 10, 1, 1, 14, 152, 11, 1, 1, 1, 1],
-         [0, 4, 53, 0, 0, 80, 0, 4, 5, 0, 0, 0],
-         [4, 660, 3, 0, 30, 0, 3, 0, 4, 90, 0, 0],
-         [7, 0, 18, 6, 770, 330, 7, 0, 0, 6, 0, 0],
-         [0, 20, 0, 4, 52, 3, 0, 0, 0, 5, 4, 0],
-         [0, 0, 40, 70, 4, 63, 0, 0, 60, 0, 4, 0],
-         [0, 32, 0, 0, 0, 5, 0, 3, 0, 660, 0, 9]]
+  use = [
+      [19, 1, 10, 1, 1, 14, 152, 11, 1, 1, 1, 1],
+      [0, 4, 53, 0, 0, 80, 0, 4, 5, 0, 0, 0],
+      [4, 660, 3, 0, 30, 0, 3, 0, 4, 90, 0, 0],
+      [7, 0, 18, 6, 770, 330, 7, 0, 0, 6, 0, 0],
+      [0, 20, 0, 4, 52, 3, 0, 0, 0, 5, 4, 0],
+      [0, 0, 40, 70, 4, 63, 0, 0, 60, 0, 4, 0],
+      [0, 32, 0, 0, 0, 5, 0, 3, 0, 660, 0, 9],
+  ]
 
   max_value = max(capacity)
 

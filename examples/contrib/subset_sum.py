@@ -13,30 +13,30 @@
 # limitations under the License.
 """
 
-  Subset sum problem in Google CP Solver.
+Subset sum problem in Google CP Solver.
 
-  From Katta G. Murty: 'Optimization Models for Decision Making', page 340
-  http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
-  '''
-  Example 7.8.1
+From Katta G. Murty: 'Optimization Models for Decision Making', page 340
+http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
+'''
+Example 7.8.1
 
-  A bank van had several bags of coins, each containing either
-  16, 17, 23, 24, 39, or 40 coins. While the van was parked on the
-  street, thieves stole some bags. A total of 100 coins were lost.
-  It is required to find how many bags were stolen.
-  '''
+A bank van had several bags of coins, each containing either
+16, 17, 23, 24, 39, or 40 coins. While the van was parked on the
+street, thieves stole some bags. A total of 100 coins were lost.
+It is required to find how many bags were stolen.
+'''
 
-  Compare with the following models:
-  * Comet: http://www.hakank.org/comet/subset_sum.co
-  * ECLiPSE: http://www.hakank.org/eclipse/subset_sum.ecl
-  * Gecode: http://www.hakank.org/gecode/subset_sum.cpp
-  * MiniZinc: http://www.hakank.org/minizinc/subset_sum.mzn
-  * Tailor/Essence': http://www.hakank.org/tailor/subset_sum.py
-  * SICStus: http://hakank.org/sicstus/subset_sum.pl
+Compare with the following models:
+* Comet: http://www.hakank.org/comet/subset_sum.co
+* ECLiPSE: http://www.hakank.org/eclipse/subset_sum.ecl
+* Gecode: http://www.hakank.org/gecode/subset_sum.cpp
+* MiniZinc: http://www.hakank.org/minizinc/subset_sum.mzn
+* Tailor/Essence': http://www.hakank.org/tailor/subset_sum.py
+* SICStus: http://hakank.org/sicstus/subset_sum.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp

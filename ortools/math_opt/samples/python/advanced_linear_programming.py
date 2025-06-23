@@ -31,56 +31,62 @@ from ortools.math_opt.python import mathopt
 #            x2 in [0, infinity)
 #
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
+  del argv  # Unused.
 
-    model = mathopt.Model(name="Advanced linear programming example")
+  model = mathopt.Model(name="Advanced linear programming example")
 
-    # Variables
-    x = [model.add_variable(lb=0.0, name=f"x{j}") for j in range(3)]
+  # Variables
+  x = [model.add_variable(lb=0.0, name=f"x{j}") for j in range(3)]
 
-    # Constraints
-    constraints = [
-        model.add_linear_constraint(10 * x[0] + 4 * x[1] + 5 * x[2] <= 600, name="c1"),
-        model.add_linear_constraint(2 * x[0] + 2 * x[1] + 6 * x[2] <= 300, name="c2"),
-        model.add_linear_constraint(sum(x) <= 100, name="c3"),
-    ]
+  # Constraints
+  constraints = [
+      model.add_linear_constraint(
+          10 * x[0] + 4 * x[1] + 5 * x[2] <= 600, name="c1"
+      ),
+      model.add_linear_constraint(
+          2 * x[0] + 2 * x[1] + 6 * x[2] <= 300, name="c2"
+      ),
+      model.add_linear_constraint(sum(x) <= 100, name="c3"),
+  ]
 
-    # Objective
-    model.maximize(10 * x[0] + 6 * x[1] + 4 * x[2])
+  # Objective
+  model.maximize(10 * x[0] + 6 * x[1] + 4 * x[2])
 
-    # May raise a RuntimeError on invalid input or internal solver errors.
-    result = mathopt.solve(model, mathopt.SolverType.GLOP)
+  # May raise a RuntimeError on invalid input or internal solver errors.
+  result = mathopt.solve(model, mathopt.SolverType.GLOP)
 
-    if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise RuntimeError(f"model failed to solve to optimality: {result.termination}")
+  if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise RuntimeError(
+        f"model failed to solve to optimality: {result.termination}"
+    )
 
-    print(f"Problem solved in  {result.solve_time()}")
-    print(f"Objective value: {result.objective_value()}")
-    variable_values = [result.variable_values()[v] for v in x]
-    print(f"Variable values: {variable_values}")
+  print(f"Problem solved in  {result.solve_time()}")
+  print(f"Objective value: {result.objective_value()}")
+  variable_values = [result.variable_values()[v] for v in x]
+  print(f"Variable values: {variable_values}")
 
-    if not result.has_dual_feasible_solution():
-        # MathOpt does not require solvers to return a dual solution on optimal,
-        # but most LP solvers always will, see go/mathopt-solver-contracts for
-        # details.
-        raise RuntimeError("no dual solution was returned on optimal")
+  if not result.has_dual_feasible_solution():
+    # MathOpt does not require solvers to return a dual solution on optimal,
+    # but most LP solvers always will, see go/mathopt-solver-contracts for
+    # details.
+    raise RuntimeError("no dual solution was returned on optimal")
 
-    dual_values = [result.dual_values()[c] for c in constraints]
-    print(f"Constraint duals: {dual_values}")
-    reduced_costs = [result.reduced_costs()[v] for v in x]
-    print(f"Reduced costs: {reduced_costs}")
+  dual_values = [result.dual_values()[c] for c in constraints]
+  print(f"Constraint duals: {dual_values}")
+  reduced_costs = [result.reduced_costs()[v] for v in x]
+  print(f"Reduced costs: {reduced_costs}")
 
-    if not result.has_basis():
-        # MathOpt does not require solvers to return a basis on optimal, but most
-        # Simplex LP solvers (like Glop) always will, see
-        # go/mathopt-solver-contracts for detail
-        raise RuntimeError("no basis was returned on optimal")
+  if not result.has_basis():
+    # MathOpt does not require solvers to return a basis on optimal, but most
+    # Simplex LP solvers (like Glop) always will, see
+    # go/mathopt-solver-contracts for detail
+    raise RuntimeError("no basis was returned on optimal")
 
-    constraint_status = [result.constraint_status()[c] for c in constraints]
-    print(f"Constraint basis status: {constraint_status}")
-    variable_status = [result.variable_status()[v] for v in x]
-    print(f"Variable basis status: {variable_status}")
+  constraint_status = [result.constraint_status()[c] for c in constraints]
+  print(f"Constraint basis status: {constraint_status}")
+  variable_status = [result.variable_status()[v] for v in x]
+  print(f"Variable basis status: {variable_status}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

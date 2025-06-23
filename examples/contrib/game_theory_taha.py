@@ -13,15 +13,15 @@
 # limitations under the License.
 """
 
-  Game theory in Google or-tools.
+Game theory in Google or-tools.
 
-  2 player zero sum game.
+2 player zero sum game.
 
-  From Taha, Operations Research (8'th edition), page 528.
+From Taha, Operations Research (8'th edition), page 528.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp

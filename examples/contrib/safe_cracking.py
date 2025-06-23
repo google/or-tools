@@ -13,36 +13,36 @@
 # limitations under the License.
 """
 
-  Safe cracking puzzle in Google CP Solver.
+Safe cracking puzzle in Google CP Solver.
 
-  From the Oz Primer:
-  http://www.comp.nus.edu.sg/~henz/projects/puzzles/digits/index.html
-  '''
-  The code of Professor Smart's safe is a sequence of 9 distinct
-  nonzero digits C1 .. C9 such that the following equations and
-  inequations are satisfied:
+From the Oz Primer:
+http://www.comp.nus.edu.sg/~henz/projects/puzzles/digits/index.html
+'''
+The code of Professor Smart's safe is a sequence of 9 distinct
+nonzero digits C1 .. C9 such that the following equations and
+inequations are satisfied:
 
-        C4 - C6   =   C7
-   C1 * C2 * C3   =   C8 + C9
-   C2 + C3 + C6   <   C8
-             C9   <   C8
+      C4 - C6   =   C7
+ C1 * C2 * C3   =   C8 + C9
+ C2 + C3 + C6   <   C8
+           C9   <   C8
 
-   and
+ and
 
-   C1 <> 1, C2 <> 2, ..., C9 <> 9
+ C1 <> 1, C2 <> 2, ..., C9 <> 9
 
-  can you find the correct combination?
-  '''
+can you find the correct combination?
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/safe_cracking.mzn
-  * ECLiPSe : http://www.hakank.org/eclipse/safe_cracking.ecl
-  * SICStus : http://www.hakank.org/sicstus/safe_cracking.pl
-  * Gecode: http://hakank.org/gecode/safe_cracking.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/safe_cracking.mzn
+* ECLiPSe : http://www.hakank.org/eclipse/safe_cracking.ecl
+* SICStus : http://www.hakank.org/sicstus/safe_cracking.pl
+* Gecode: http://hakank.org/gecode/safe_cracking.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 

@@ -21,36 +21,36 @@ from ortools.set_cover.python import set_cover
 
 
 def main():
-    # [START data]
-    model = set_cover.SetCoverModel()
-    model.add_empty_subset(2.0)
-    model.add_element_to_last_subset(0)
-    model.add_empty_subset(2.0)
-    model.add_element_to_last_subset(1)
-    model.add_empty_subset(1.0)
-    model.add_element_to_last_subset(0)
-    model.add_element_to_last_subset(1)
-    # [END data]
+  # [START data]
+  model = set_cover.SetCoverModel()
+  model.add_empty_subset(2.0)
+  model.add_element_to_last_subset(0)
+  model.add_empty_subset(2.0)
+  model.add_element_to_last_subset(1)
+  model.add_empty_subset(1.0)
+  model.add_element_to_last_subset(0)
+  model.add_element_to_last_subset(1)
+  # [END data]
 
-    # [START solve]
-    inv = set_cover.SetCoverInvariant(model)
-    greedy = set_cover.GreedySolutionGenerator(inv)
-    has_found = greedy.next_solution()
-    if not has_found:
-        print("No solution found by the greedy heuristic.")
-        return
-    solution = inv.export_solution_as_proto()
-    # [END solve]
+  # [START solve]
+  inv = set_cover.SetCoverInvariant(model)
+  greedy = set_cover.GreedySolutionGenerator(inv)
+  has_found = greedy.next_solution()
+  if not has_found:
+    print("No solution found by the greedy heuristic.")
+    return
+  solution = inv.export_solution_as_proto()
+  # [END solve]
 
-    # [START print_solution]
-    print(f"Total cost: {solution.cost}")  # == inv.cost()
-    print(f"Total number of selected subsets: {solution.num_subsets}")
-    print("Chosen subsets:")
-    for subset in solution.subset:
-        print(f"  {subset}")
-    # [END print_solution]
+  # [START print_solution]
+  print(f"Total cost: {solution.cost}")  # == inv.cost()
+  print(f"Total number of selected subsets: {solution.num_subsets}")
+  print("Chosen subsets:")
+  for subset in solution.subset:
+    print(f"  {subset}")
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

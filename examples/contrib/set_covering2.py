@@ -13,23 +13,23 @@
 # limitations under the License.
 """
 
-  Set covering in Google CP Solver.
+Set covering in Google CP Solver.
 
-  Example 9.1-2, page 354ff, from
-  Taha 'Operations Research - An Introduction'
-  Minimize the number of security telephones in street
-  corners on a campus.
+Example 9.1-2, page 354ff, from
+Taha 'Operations Research - An Introduction'
+Minimize the number of security telephones in street
+corners on a campus.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/set_covering2.mzn
-  * Comet   : http://www.hakank.org/comet/set_covering2.co
-  * ECLiPSe : http://www.hakank.org/eclipse/set_covering2.ecl
-  * SICStus: http://hakank.org/sicstus/set_covering2.pl
-  * Gecode: http://hakank.org/gecode/set_covering2.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/set_covering2.mzn
+* Comet   : http://www.hakank.org/comet/set_covering2.co
+* ECLiPSe : http://www.hakank.org/eclipse/set_covering2.ecl
+* SICStus: http://hakank.org/sicstus/set_covering2.pl
+* Gecode: http://hakank.org/gecode/set_covering2.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -48,8 +48,19 @@ def main(unused_argv):
 
   # corners of each street
   # Note: 1-based (handled below)
-  corner = [[1, 2], [2, 3], [4, 5], [7, 8], [6, 7], [2, 6], [1, 6], [4, 7],
-            [2, 4], [5, 8], [3, 5]]
+  corner = [
+      [1, 2],
+      [2, 3],
+      [4, 5],
+      [7, 8],
+      [6, 7],
+      [2, 6],
+      [1, 6],
+      [4, 7],
+      [2, 4],
+      [5, 8],
+      [3, 5],
+  ]
 
   #
   # declare variables
@@ -80,7 +91,8 @@ def main(unused_argv):
   collector = solver.LastSolutionCollector(solution)
   solver.Solve(
       solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
-      [collector, objective])
+      [collector, objective],
+  )
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(n)])

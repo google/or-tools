@@ -13,38 +13,38 @@
 # limitations under the License.
 """
 
-  Marathon puzzle in Google CP Solver.
+Marathon puzzle in Google CP Solver.
 
-  From Xpress example
-  http://www.dashoptimization.com/home/cgi-bin/example.pl?id=mosel_puzzle_5_3
-  '''
-  Dominique, Ignace, Naren, Olivier, Philippe, and Pascal
-  have arrived as the first six at the Paris marathon.
-  Reconstruct their arrival order from the following
-  information:
-  a) Olivier has not arrived last
-  b) Dominique, Pascal and Ignace have arrived before Naren
-     and Olivier
-  c) Dominique who was third last year has improved this year.
-  d) Philippe is among the first four.
-  e) Ignace has arrived neither in second nor third position.
-  f) Pascal has beaten Naren by three positions.
-  g) Neither Ignace nor Dominique are on the fourth position.
+From Xpress example
+http://www.dashoptimization.com/home/cgi-bin/example.pl?id=mosel_puzzle_5_3
+'''
+Dominique, Ignace, Naren, Olivier, Philippe, and Pascal
+have arrived as the first six at the Paris marathon.
+Reconstruct their arrival order from the following
+information:
+a) Olivier has not arrived last
+b) Dominique, Pascal and Ignace have arrived before Naren
+   and Olivier
+c) Dominique who was third last year has improved this year.
+d) Philippe is among the first four.
+e) Ignace has arrived neither in second nor third position.
+f) Pascal has beaten Naren by three positions.
+g) Neither Ignace nor Dominique are on the fourth position.
 
-     (c) 2002 Dash Associates
-    author: S. Heipcke, Mar. 2002
-  '''
+   (c) 2002 Dash Associates
+  author: S. Heipcke, Mar. 2002
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/marathon2.mzn
-  * SICStus Prolog: http://www.hakank.org/sicstus/marathon2.pl
-  * ECLiPSe: http://hakank.org/eclipse/marathon2.ecl
-  * Gecode: http://hakank.org/gecode/marathon2.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/marathon2.mzn
+* SICStus Prolog: http://www.hakank.org/sicstus/marathon2.pl
+* ECLiPSe: http://hakank.org/eclipse/marathon2.ecl
+* Gecode: http://hakank.org/gecode/marathon2.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -61,7 +61,12 @@ def main():
   n = 6
 
   runners_str = [
-      'Dominique', 'Ignace', 'Naren', 'Olivier', 'Philippe', 'Pascal'
+      'Dominique',
+      'Ignace',
+      'Naren',
+      'Olivier',
+      'Philippe',
+      'Pascal',
   ]
 
   #
@@ -106,8 +111,9 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(runners, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.Phase(
+      runners, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.ASSIGN_CENTER_VALUE
+  )
 
   solver.NewSearch(db)
 

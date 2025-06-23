@@ -40,43 +40,43 @@ _MODE = flags.DEFINE_enum_class(
 
 
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
+  del argv  # Unused.
 
-    model = mathopt.Model(name="my_model")
-    x = model.add_variable(lb=0.0, ub=1.0, is_integer=_INTEGER.value, name="x")
-    y = model.add_variable(lb=0.0, ub=1.0, is_integer=_INTEGER.value, name="y")
-    model.add_linear_constraint(x + y <= 1.0, name="c")
-    model.maximize(2 * x + 3 * y)
+  model = mathopt.Model(name="my_model")
+  x = model.add_variable(lb=0.0, ub=1.0, is_integer=_INTEGER.value, name="x")
+  y = model.add_variable(lb=0.0, ub=1.0, is_integer=_INTEGER.value, name="y")
+  model.add_linear_constraint(x + y <= 1.0, name="c")
+  model.maximize(2 * x + 3 * y)
 
-    stub = None
-    if _MODE.value in (
-        remote_solve.RemoteSolveMode.DEFAULT,
-        remote_solve.RemoteSolveMode.STREAMING,
-    ):
-        stub = solve_service_stubby_client.solve_server_stub()
+  stub = None
+  if _MODE.value in (
+      remote_solve.RemoteSolveMode.DEFAULT,
+      remote_solve.RemoteSolveMode.STREAMING,
+  ):
+    stub = solve_service_stubby_client.solve_server_stub()
 
-    msg_cb = None
-    if _LOGS.value:
-        msg_cb = mathopt.printer_message_callback(prefix="Solver log: ")
-    # Raises exceptions on invalid input, internal solver error, rpc timeout etc.
-    result = remote_solve.remote_solve(
-        stub,
-        model,
-        _SOLVER.value,
-        deadline=datetime.timedelta(minutes=1),
-        mode=_MODE.value,
-        msg_cb=msg_cb,
-    )
+  msg_cb = None
+  if _LOGS.value:
+    msg_cb = mathopt.printer_message_callback(prefix="Solver log: ")
+  # Raises exceptions on invalid input, internal solver error, rpc timeout etc.
+  result = remote_solve.remote_solve(
+      stub,
+      model,
+      _SOLVER.value,
+      deadline=datetime.timedelta(minutes=1),
+      mode=_MODE.value,
+      msg_cb=msg_cb,
+  )
 
-    if result.termination.reason not in (
-        mathopt.TerminationReason.OPTIMAL,
-        mathopt.TerminationReason.FEASIBLE,
-    ):
-        raise RuntimeError(f"model failed to solve: {result.termination}")
+  if result.termination.reason not in (
+      mathopt.TerminationReason.OPTIMAL,
+      mathopt.TerminationReason.FEASIBLE,
+  ):
+    raise RuntimeError(f"model failed to solve: {result.termination}")
 
-    print(f"Objective value: {result.objective_value()}")
-    print(f"Value for variable x: {result.variable_values()[x]}")
+  print(f"Objective value: {result.objective_value()}")
+  print(f"Value for variable x: {result.variable_values()[x]}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

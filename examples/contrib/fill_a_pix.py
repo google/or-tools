@@ -13,42 +13,42 @@
 # limitations under the License.
 """
 
-  Fill-a-Pix problem in Google CP Solver.
+Fill-a-Pix problem in Google CP Solver.
 
-  From
-  http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/basiclogic
-  '''
-  Each puzzle consists of a grid containing clues in various places. The
-  object is to reveal a hidden picture by painting the squares around each
-  clue so that the number of painted squares, including the square with
-  the clue, matches the value of the clue.
-  '''
+From
+http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/basiclogic
+'''
+Each puzzle consists of a grid containing clues in various places. The
+object is to reveal a hidden picture by painting the squares around each
+clue so that the number of painted squares, including the square with
+the clue, matches the value of the clue.
+'''
 
-  http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
-  '''
-  Fill-a-Pix is a Minesweeper-like puzzle based on a grid with a pixilated
-  picture hidden inside. Using logic alone, the solver determines which
-  squares are painted and which should remain empty until the hidden picture
-  is completely exposed.
-  '''
+http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/rules
+'''
+Fill-a-Pix is a Minesweeper-like puzzle based on a grid with a pixilated
+picture hidden inside. Using logic alone, the solver determines which
+squares are painted and which should remain empty until the hidden picture
+is completely exposed.
+'''
 
-  Fill-a-pix History:
-  http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/history
-
-
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/fill_a_pix.mzn
-  * SICStus Prolog: http://www.hakank.org/sicstus/fill_a_pix.pl
-  * ECLiPSe: http://hakank.org/eclipse/fill_a_pix.ecl
-  * Gecode: http://hakank.org/gecode/fill_a_pix.cpp
-
-  And see the Minesweeper model:
-  * http://www.hakank.org/google_or_tools/minesweeper.py
+Fill-a-pix History:
+http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/history
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/fill_a_pix.mzn
+* SICStus Prolog: http://www.hakank.org/sicstus/fill_a_pix.pl
+* ECLiPSe: http://hakank.org/eclipse/fill_a_pix.ecl
+* Gecode: http://hakank.org/gecode/fill_a_pix.cpp
+
+And see the Minesweeper model:
+* http://www.hakank.org/google_or_tools/minesweeper.py
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -58,11 +58,16 @@ from ortools.constraint_solver import pywrapcp
 default_n = 10
 X = -1
 default_puzzle = [
-    [X, X, X, X, X, X, X, X, 0, X], [X, 8, 8, X, 2, X, 0, X, X, X],
-    [5, X, 8, X, X, X, X, X, X, X], [X, X, X, X, X, 2, X, X, X, 2],
-    [1, X, X, X, 4, 5, 6, X, X, X], [X, 0, X, X, X, 7, 9, X, X, 6],
-    [X, X, X, 6, X, X, 9, X, X, 6], [X, X, 6, 6, 8, 7, 8, 7, X, 5],
-    [X, 4, X, 6, 6, 6, X, 6, X, 4], [X, X, X, X, X, X, 3, X, X, X]
+    [X, X, X, X, X, X, X, X, 0, X],
+    [X, 8, 8, X, 2, X, 0, X, X, X],
+    [5, X, 8, X, X, X, X, X, X, X],
+    [X, X, X, X, X, 2, X, X, X, 2],
+    [1, X, X, X, 4, 5, 6, X, X, X],
+    [X, 0, X, X, X, 7, 9, X, X, 6],
+    [X, X, X, 6, X, X, 9, X, X, 6],
+    [X, X, 6, 6, 8, 7, 8, 7, X, 5],
+    [X, 4, X, 6, 6, 6, X, 6, X, 4],
+    [X, X, X, X, X, X, 3, X, X, X],
 ]
 
 
@@ -113,12 +118,15 @@ def main(puzzle='', n=''):
     for j in range(n):
       if puzzle[i][j] > X:
         # this cell is the sum of all the surrounding cells
-        solver.Add(puzzle[i][j] == solver.Sum([
-            pict[i + a, j + b]
-            for a in S
-            for b in S
-            if i + a >= 0 and j + b >= 0 and i + a < n and j + b < n
-        ]))
+        solver.Add(
+            puzzle[i][j]
+            == solver.Sum([
+                pict[i + a, j + b]
+                for a in S
+                for b in S
+                if i + a >= 0 and j + b >= 0 and i + a < n and j + b < n
+            ])
+        )
 
   #
   # solution and search

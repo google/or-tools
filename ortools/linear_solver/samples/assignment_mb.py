@@ -25,9 +25,9 @@ from ortools.linear_solver.python import model_builder
 
 
 def main():
-    # Data
-    # [START data_model]
-    data_str = """
+  # Data
+  # [START data_model]
+  data_str = """
   worker  task  cost
       w1    t1    90
       w1    t2    80
@@ -51,60 +51,60 @@ def main():
       w5    t4   100
   """
 
-    data = pd.read_table(io.StringIO(data_str), sep=r"\s+")
-    # [END data_model]
+  data = pd.read_table(io.StringIO(data_str), sep=r"\s+")
+  # [END data_model]
 
-    # Create the model.
-    # [START model]
-    model = model_builder.Model()
-    # [END model]
+  # Create the model.
+  # [START model]
+  model = model_builder.Model()
+  # [END model]
 
-    # Variables
-    # [START variables]
-    # x[i, j] is an array of 0-1 variables, which will be 1
-    # if worker i is assigned to task j.
-    x = model.new_bool_var_series(name="x", index=data.index)
-    # [END variables]
+  # Variables
+  # [START variables]
+  # x[i, j] is an array of 0-1 variables, which will be 1
+  # if worker i is assigned to task j.
+  x = model.new_bool_var_series(name="x", index=data.index)
+  # [END variables]
 
-    # Constraints
-    # [START constraints]
-    # Each worker is assigned to at most 1 task.
-    for unused_name, tasks in data.groupby("worker"):
-        model.add(x[tasks.index].sum() <= 1)
+  # Constraints
+  # [START constraints]
+  # Each worker is assigned to at most 1 task.
+  for unused_name, tasks in data.groupby("worker"):
+    model.add(x[tasks.index].sum() <= 1)
 
-    # Each task is assigned to exactly one worker.
-    for unused_name, workers in data.groupby("task"):
-        model.add(x[workers.index].sum() == 1)
-    # [END constraints]
+  # Each task is assigned to exactly one worker.
+  for unused_name, workers in data.groupby("task"):
+    model.add(x[workers.index].sum() == 1)
+  # [END constraints]
 
-    # Objective
-    # [START objective]
-    model.minimize(data.cost.dot(x))
-    # [END objective]
+  # Objective
+  # [START objective]
+  model.minimize(data.cost.dot(x))
+  # [END objective]
 
-    # [START solve]
-    # Create the solver with the CP-SAT backend, and solve the model.
-    solver = model_builder.Solver("sat")
-    if not solver.solver_is_supported():
-        return
-    status = solver.solve(model)
-    # [END solve]
+  # [START solve]
+  # Create the solver with the CP-SAT backend, and solve the model.
+  solver = model_builder.Solver("sat")
+  if not solver.solver_is_supported():
+    return
+  status = solver.solve(model)
+  # [END solve]
 
-    # Print solution.
-    # [START print_solution]
-    if (
-        status == model_builder.SolveStatus.OPTIMAL
-        or status == model_builder.SolveStatus.FEASIBLE
-    ):
-        print(f"Total cost = {solver.objective_value}\n")
-        selected = data.loc[solver.values(x).loc[lambda x: x == 1].index]
-        for unused_index, row in selected.iterrows():
-            print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
-    else:
-        print("No solution found.")
-    # [END print_solution]
+  # Print solution.
+  # [START print_solution]
+  if (
+      status == model_builder.SolveStatus.OPTIMAL
+      or status == model_builder.SolveStatus.FEASIBLE
+  ):
+    print(f"Total cost = {solver.objective_value}\n")
+    selected = data.loc[solver.values(x).loc[lambda x: x == 1].index]
+    for unused_index, row in selected.iterrows():
+      print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
+  else:
+    print("No solution found.")
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

@@ -12,32 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-  Hidato puzzle in Google CP Solver.
+Hidato puzzle in Google CP Solver.
 
-  http://www.shockwave.com/gamelanding/hidato.jsp
-  http://www.hidato.com/
-  '''
-  Puzzles start semi-filled with numbered tiles.
-  The first and last numbers are circled.
-  Connect the numbers together to win. Consecutive
-  number must touch horizontally, vertically, or
-  diagonally.
-  '''
+http://www.shockwave.com/gamelanding/hidato.jsp
+http://www.hidato.com/
+'''
+Puzzles start semi-filled with numbered tiles.
+The first and last numbers are circled.
+Connect the numbers together to win. Consecutive
+number must touch horizontally, vertically, or
+diagonally.
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/hidato.mzn
-  * Gecode  : http://www.hakank.org/gecode/hidato.cpp
-  * Comet   : http://www.hakank.org/comet/hidato.co
-  * Tailopr/Essence': http://hakank.org/tailor/hidato.eprime
-  * ECLiPSe: http://hakank.org/eclipse/hidato.ecl
-  * SICStus: http://hakank.org/sicstus/hidato.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/hidato.mzn
+* Gecode  : http://www.hakank.org/gecode/hidato.cpp
+* Comet   : http://www.hakank.org/comet/hidato.co
+* Tailopr/Essence': http://hakank.org/tailor/hidato.eprime
+* ECLiPSe: http://hakank.org/eclipse/hidato.ecl
+* SICStus: http://hakank.org/sicstus/hidato.pl
 
-  Note: This model is very slow. Please see Laurent Perron's much faster
-        (and more elegant) model: hidato_table.py .
+Note: This model is very slow. Please see Laurent Perron's much faster
+      (and more elegant) model: hidato_table.py .
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -53,10 +53,15 @@ def main(r, c):
     puzzle = [[6, 0, 9], [0, 2, 8], [1, 0, 0]]
 
   if r == 7 and c == 7:
-    puzzle = [[0, 44, 41, 0, 0, 0, 0], [0, 43, 0, 28, 29, 0, 0],
-              [0, 1, 0, 0, 0, 33, 0], [0, 2, 25, 4, 34, 0, 36],
-              [49, 16, 0, 23, 0, 0, 0], [0, 19, 0, 0, 12, 7, 0],
-              [0, 0, 0, 14, 0, 0, 0]]
+    puzzle = [
+        [0, 44, 41, 0, 0, 0, 0],
+        [0, 43, 0, 28, 29, 0, 0],
+        [0, 1, 0, 0, 0, 33, 0],
+        [0, 2, 25, 4, 34, 0, 36],
+        [49, 16, 0, 23, 0, 0, 0],
+        [0, 19, 0, 0, 12, 7, 0],
+        [0, 0, 0, 14, 0, 0, 0],
+    ]
 
   # Problems from the book:
   # Gyora Bededek: "Hidato: 2000 Pure Logic Puzzles"
@@ -84,16 +89,28 @@ def main(r, c):
 
   # Problem 3 (Beginner)
   if r == 6 and c == 6:
-    puzzle = [[0, 26, 0, 0, 0, 18], [0, 0, 27, 0, 0, 19], [31, 23, 0, 0, 14, 0],
-              [0, 33, 8, 0, 15, 1], [0, 0, 0, 5, 0, 0], [35, 36, 0, 10, 0, 0]]
+    puzzle = [
+        [0, 26, 0, 0, 0, 18],
+        [0, 0, 27, 0, 0, 19],
+        [31, 23, 0, 0, 14, 0],
+        [0, 33, 8, 0, 15, 1],
+        [0, 0, 0, 5, 0, 0],
+        [35, 36, 0, 10, 0, 0],
+    ]
 
   # Problem 15 (Intermediate)
   # Note: This takes very long time to solve...
   if r == 8 and c == 8:
-    puzzle = [[64, 0, 0, 0, 0, 0, 0, 0], [1, 63, 0, 59, 15, 57, 53, 0],
-              [0, 4, 0, 14, 0, 0, 0, 0], [3, 0, 11, 0, 20, 19, 0, 50],
-              [0, 0, 0, 0, 22, 0, 48, 40], [9, 0, 0, 32, 23, 0, 0, 41],
-              [27, 0, 0, 0, 36, 0, 46, 0], [28, 30, 0, 35, 0, 0, 0, 0]]
+    puzzle = [
+        [64, 0, 0, 0, 0, 0, 0, 0],
+        [1, 63, 0, 59, 15, 57, 53, 0],
+        [0, 4, 0, 14, 0, 0, 0, 0],
+        [3, 0, 11, 0, 20, 19, 0, 50],
+        [0, 0, 0, 0, 22, 0, 48, 40],
+        [9, 0, 0, 32, 23, 0, 0, 41],
+        [27, 0, 0, 0, 36, 0, 46, 0],
+        [28, 30, 0, 35, 0, 0, 0, 0],
+    ]
 
   print_game(puzzle, r, c)
 
@@ -169,7 +186,8 @@ def main(r, c):
       # solver.ASSIGN_MAX_VALUE
       # solver.ASSIGN_RANDOM_VALUE
       # solver.ASSIGN_CENTER_VALUE
-      solver.ASSIGN_MIN_VALUE)
+      solver.ASSIGN_MIN_VALUE,
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  xkcd problem (Knapsack)  in Google CP Solver.
+xkcd problem (Knapsack)  in Google CP Solver.
 
-  http://xkcd.com/287/
+http://xkcd.com/287/
 
-  Some amount (or none) of each dish should be ordered to give a total
-  of exact 15.05
-
-
-  Compare with the following models:
-  * Comet: http://www.hakank.org/comet/xkcd.co
-  * ECLiPSE: http://www.hakank.org/eclipse/xkcd.ecl
-  * Gecode: http://www.hakank.org/gecode/xkcd.cpp
-  * Gecode/R: http://www.hakank.org/gecode_r/xkcd.rb
-  * MiniZinc: http://www.hakank.org/minizinc/xkcd.mzn
-  * Tailor: http://www.hakank.org/minizinc/xkcd.mzn
-  * SICtus: http://www.hakank.org/sicstus/xkcd.pl
-  * Zinc: http://www.hakank.org/minizinc/xkcd.zinc
+Some amount (or none) of each dish should be ordered to give a total
+of exact 15.05
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_cp_solver/
+Compare with the following models:
+* Comet: http://www.hakank.org/comet/xkcd.co
+* ECLiPSE: http://www.hakank.org/eclipse/xkcd.ecl
+* Gecode: http://www.hakank.org/gecode/xkcd.cpp
+* Gecode/R: http://www.hakank.org/gecode_r/xkcd.rb
+* MiniZinc: http://www.hakank.org/minizinc/xkcd.mzn
+* Tailor: http://www.hakank.org/minizinc/xkcd.mzn
+* SICtus: http://www.hakank.org/sicstus/xkcd.pl
+* Zinc: http://www.hakank.org/minizinc/xkcd.zinc
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_cp_solver/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -53,8 +53,12 @@ def main():
   total = 1505
 
   products = [
-      "mixed fruit", "french fries", "side salad", "host wings",
-      "mozzarella sticks", "samples place"
+      "mixed fruit",
+      "french fries",
+      "side salad",
+      "host wings",
+      "mozzarella sticks",
+      "samples place",
   ]
 
   # declare variables
@@ -80,8 +84,13 @@ def main():
   # collector = solver.FirstSolutionCollector(solution)
   # search_log = solver.SearchLog(100, x[0])
   solver.Solve(
-      solver.Phase([x[i] for i in range(num_prices)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [x[i] for i in range(num_prices)],
+          solver.INT_VAR_SIMPLE,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)

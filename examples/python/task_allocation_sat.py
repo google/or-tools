@@ -24,10 +24,10 @@ from ortools.sat.python import cp_model
 
 
 def task_allocation_sat() -> None:
-    """Solves the task allocation problem."""
-    # Availability matrix.
-    available = [
-        # fmt:off
+  """Solves the task allocation problem."""
+  # Availability matrix.
+  available = [
+      # fmt:off
       [
           0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -228,71 +228,75 @@ def task_allocation_sat() -> None:
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
       ],
-        # fmt:on
-    ]
+      # fmt:on
+  ]
 
-    ntasks = len(available)
-    nslots = len(available[0])
+  ntasks = len(available)
+  nslots = len(available[0])
 
-    # sets
-    all_tasks = range(ntasks)
-    all_slots = range(nslots)
+  # sets
+  all_tasks = range(ntasks)
+  all_slots = range(nslots)
 
-    # max tasks per time slot
-    capacity = 3
+  # max tasks per time slot
+  capacity = 3
 
-    # Model
-    model = cp_model.CpModel()
-    assign = {}
-    for task in all_tasks:
-        for slot in all_slots:
-            assign[(task, slot)] = model.new_bool_var(f"x[{task}][{slot}]")
-    count = model.new_int_var(0, nslots, "count")
-    slot_used = [model.new_bool_var(f"slot_used[{s}]") for s in all_slots]
-
-    for task in all_tasks:
-        model.add(
-            sum(
-                assign[(task, slot)] for slot in all_slots if available[task][slot] == 1
-            )
-            == 1
-        )
-
+  # Model
+  model = cp_model.CpModel()
+  assign = {}
+  for task in all_tasks:
     for slot in all_slots:
-        model.add(
-            sum(
-                assign[(task, slot)] for task in all_tasks if available[task][slot] == 1
-            )
-            <= capacity
+      assign[(task, slot)] = model.new_bool_var(f"x[{task}][{slot}]")
+  count = model.new_int_var(0, nslots, "count")
+  slot_used = [model.new_bool_var(f"slot_used[{s}]") for s in all_slots]
+
+  for task in all_tasks:
+    model.add(
+        sum(
+            assign[(task, slot)]
+            for slot in all_slots
+            if available[task][slot] == 1
         )
-        model.add_bool_or(
-            [assign[(task, slot)] for task in all_tasks if available[task][slot] == 1]
-        ).only_enforce_if(slot_used[slot])
-        for task in all_tasks:
-            if available[task][slot] == 1:
-                model.add_implication(~slot_used[slot], ~assign[(task, slot)])
-            else:
-                model.add(assign[(task, slot)] == 0)
+        == 1
+    )
 
-    model.add(count == sum(slot_used))
-    # Redundant constraint. This instance is easier if we add this constraint.
-    # model.add(count >= (nslots + capacity - 1) // capacity)
+  for slot in all_slots:
+    model.add(
+        sum(
+            assign[(task, slot)]
+            for task in all_tasks
+            if available[task][slot] == 1
+        )
+        <= capacity
+    )
+    model.add_bool_or([
+        assign[(task, slot)] for task in all_tasks if available[task][slot] == 1
+    ]).only_enforce_if(slot_used[slot])
+    for task in all_tasks:
+      if available[task][slot] == 1:
+        model.add_implication(~slot_used[slot], ~assign[(task, slot)])
+      else:
+        model.add(assign[(task, slot)] == 0)
 
-    model.minimize(count)
+  model.add(count == sum(slot_used))
+  # Redundant constraint. This instance is easier if we add this constraint.
+  # model.add(count >= (nslots + capacity - 1) // capacity)
 
-    # Create a solver and solve the problem.
-    solver = cp_model.CpSolver()
-    # Uses the portfolion of heuristics.
-    solver.parameters.log_search_progress = True
-    solver.parameters.num_search_workers = 16
-    solver.solve(model)
+  model.minimize(count)
+
+  # Create a solver and solve the problem.
+  solver = cp_model.CpSolver()
+  # Uses the portfolion of heuristics.
+  solver.parameters.log_search_progress = True
+  solver.parameters.num_search_workers = 16
+  solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    task_allocation_sat()
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  task_allocation_sat()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

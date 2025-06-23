@@ -21,61 +21,65 @@ from ortools.sat.python import cp_model
 
 
 def clone_model_sample_sat():
-    """Showcases cloning a model."""
-    # Creates the model.
-    # [START model]
-    model = cp_model.CpModel()
-    # [END model]
+  """Showcases cloning a model."""
+  # Creates the model.
+  # [START model]
+  model = cp_model.CpModel()
+  # [END model]
 
-    # Creates the variables.
-    # [START variables]
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
-    # [END variables]
+  # Creates the variables.
+  # [START variables]
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, "x")
+  y = model.new_int_var(0, num_vals - 1, "y")
+  z = model.new_int_var(0, num_vals - 1, "z")
+  # [END variables]
 
-    # Creates the constraints.
-    # [START constraints]
-    model.add(x != y)
-    # [END constraints]
+  # Creates the constraints.
+  # [START constraints]
+  model.add(x != y)
+  # [END constraints]
 
-    # [START objective]
-    model.maximize(x + 2 * y + 3 * z)
-    # [END objective]
+  # [START objective]
+  model.maximize(x + 2 * y + 3 * z)
+  # [END objective]
 
-    # Creates a solver and solves.
-    # [START solve]
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-    # [END solve]
+  # Creates a solver and solves.
+  # [START solve]
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  # [END solve]
 
-    if status == cp_model.OPTIMAL:
-        print("Optimal value of the original model: {}".format(solver.objective_value))
+  if status == cp_model.OPTIMAL:
+    print(
+        "Optimal value of the original model: {}".format(solver.objective_value)
+    )
 
-    # [START clone]
-    # Creates a dictionary holding the model and the variables you want to use.
-    to_clone = {
-        "model": model,
-        "x": x,
-        "y": y,
-        "z": z,
-    }
+  # [START clone]
+  # Creates a dictionary holding the model and the variables you want to use.
+  to_clone = {
+      "model": model,
+      "x": x,
+      "y": y,
+      "z": z,
+  }
 
-    # Deep copy the dictionary.
-    clone = copy.deepcopy(to_clone)
+  # Deep copy the dictionary.
+  clone = copy.deepcopy(to_clone)
 
-    # Retrieve the cloned model and variables.
-    cloned_model: cp_model.CpModel = clone["model"]
-    cloned_x = clone["x"]
-    cloned_y = clone["y"]
-    cloned_model.add(cloned_x + cloned_y <= 1)
-    # [END clone]
+  # Retrieve the cloned model and variables.
+  cloned_model: cp_model.CpModel = clone["model"]
+  cloned_x = clone["x"]
+  cloned_y = clone["y"]
+  cloned_model.add(cloned_x + cloned_y <= 1)
+  # [END clone]
 
-    status = solver.solve(cloned_model)
+  status = solver.solve(cloned_model)
 
-    if status == cp_model.OPTIMAL:
-        print("Optimal value of the modified model: {}".format(solver.objective_value))
+  if status == cp_model.OPTIMAL:
+    print(
+        "Optimal value of the modified model: {}".format(solver.objective_value)
+    )
 
 
 clone_model_sample_sat()

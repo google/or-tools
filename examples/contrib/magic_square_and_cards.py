@@ -13,19 +13,19 @@
 # limitations under the License.
 """
 
-  Magic squares and cards problem in Google CP Solver.
+Magic squares and cards problem in Google CP Solver.
 
-  Martin Gardner (July 1971)
-  '''
-  Allowing duplicates values, what is the largest constant sum for an order-3
-  magic square that can be formed with nine cards from the deck.
-  '''
+Martin Gardner (July 1971)
+'''
+Allowing duplicates values, what is the largest constant sum for an order-3
+magic square that can be formed with nine cards from the deck.
+'''
 
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -79,8 +79,9 @@ def main(n=3):
   solution.Add(counts)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.Phase(
+      x_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE
+  )
 
   solver.NewSearch(db, [objective])
   num_solutions = 0

@@ -72,33 +72,33 @@ _NUM_POINTS = flags.DEFINE_integer(
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    n = _NUM_POINTS.value
-    rng = np.random.default_rng()
-    points = rng.random(size=(n, 2))
-    print(f"points:\n{points}")
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  n = _NUM_POINTS.value
+  rng = np.random.default_rng()
+  points = rng.random(size=(n, 2))
+  print(f"points:\n{points}")
 
-    model = mathopt.Model()
-    x = model.add_variable(name="x")
-    y = model.add_variable(name="y")
-    z = model.add_variable(name="z")
-    h = [model.add_variable(name=f"h_{i}") for i in range(n)]
-    v = [model.add_variable(name=f"v_{i}") for i in range(n)]
-    for i in range(n):
-        model.add_linear_constraint(h[i] == x - points[i, 0])
-        model.add_linear_constraint(v[i] == y - points[i, 1])
-        model.add_quadratic_constraint(h[i] * h[i] + v[i] * v[i] <= z)
-    model.minimize(z)
-    params = mathopt.SolveParameters(enable_output=True)
-    result = mathopt.solve(model, _SOLVER_TYPE.value, params=params)
-    if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise ValueError("Expected Optimal Solution")
-    print(f"circle center x: {result.variable_values(x)}")
-    print(f"circle center y: {result.variable_values(y)}")
-    radius = math.sqrt(result.variable_values(z))
-    print(f"circle radius: {radius}")
+  model = mathopt.Model()
+  x = model.add_variable(name="x")
+  y = model.add_variable(name="y")
+  z = model.add_variable(name="z")
+  h = [model.add_variable(name=f"h_{i}") for i in range(n)]
+  v = [model.add_variable(name=f"v_{i}") for i in range(n)]
+  for i in range(n):
+    model.add_linear_constraint(h[i] == x - points[i, 0])
+    model.add_linear_constraint(v[i] == y - points[i, 1])
+    model.add_quadratic_constraint(h[i] * h[i] + v[i] * v[i] <= z)
+  model.minimize(z)
+  params = mathopt.SolveParameters(enable_output=True)
+  result = mathopt.solve(model, _SOLVER_TYPE.value, params=params)
+  if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise ValueError("Expected Optimal Solution")
+  print(f"circle center x: {result.variable_values(x)}")
+  print(f"circle center y: {result.variable_values(y)}")
+  radius = math.sqrt(result.variable_values(z))
+  print(f"circle radius: {radius}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

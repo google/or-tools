@@ -13,19 +13,19 @@
 # limitations under the License.
 """
 
-  Max flow problem in Google CP Solver.
+Max flow problem in Google CP Solver.
 
-  From Taha 'Introduction to Operations Research', Example 6.4-2
+From Taha 'Introduction to Operations Research', Example 6.4-2
 
-  Translated from the AMPL code at
-  http://taha.ineg.uark.edu/maxflo.txt
+Translated from the AMPL code at
+http://taha.ineg.uark.edu/maxflo.txt
 
-  Compare with the following model:
-  * MiniZinc: http://www.hakank.org/minizinc/max_flow_taha.mzn
+Compare with the following model:
+* MiniZinc: http://www.hakank.org/minizinc/max_flow_taha.mzn
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -45,8 +45,13 @@ def main():
   nodes = list(range(n))
 
   # cost matrix
-  c = [[0, 20, 30, 10, 0], [0, 0, 40, 0, 30], [0, 0, 0, 10, 20],
-       [0, 0, 5, 0, 20], [0, 0, 0, 0, 0]]
+  c = [
+      [0, 20, 30, 10, 0],
+      [0, 0, 40, 0, 30],
+      [0, 0, 0, 10, 20],
+      [0, 0, 5, 0, 20],
+      [0, 0, 0, 0, 0],
+  ]
 
   #
   # declare variables

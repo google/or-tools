@@ -13,26 +13,26 @@
 # limitations under the License.
 """
 
-  Simple diet problem using MIP in Google CP Solver.
+Simple diet problem using MIP in Google CP Solver.
 
-  Standard Operations Research example.
-
-
-  Minimize the cost for the products:
-  Type of                        Calories   Chocolate    Sugar    Fat
-  Food                                      (ounces)     (ounces) (ounces)
-  Chocolate Cake (1 slice)       400           3            2      2
-  Chocolate ice cream (1 scoop)  200           2            2      4
-  Cola (1 bottle)                150           0            4      1
-  Pineapple cheesecake (1 piece) 500           0            4      5
-
-  Compare with the CP model:
-    http://www.hakank.org/google_or_tools/diet1.py
+Standard Operations Research example.
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+Minimize the cost for the products:
+Type of                        Calories   Chocolate    Sugar    Fat
+Food                                      (ounces)     (ounces) (ounces)
+Chocolate Cake (1 slice)       400           3            2      2
+Chocolate ice cream (1 scoop)  200           2            2      4
+Cola (1 bottle)                150           0            4      1
+Pineapple cheesecake (1 piece) 500           0            4      5
+
+Compare with the CP model:
+  http://www.hakank.org/google_or_tools/diet1.py
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp

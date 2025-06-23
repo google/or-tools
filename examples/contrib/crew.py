@@ -13,29 +13,29 @@
 # limitations under the License.
 """
 
-  Crew allocation problem  in Google CP Solver.
+Crew allocation problem  in Google CP Solver.
 
-  From Gecode example crew
-  examples/crew.cc
-  '''
-  * Example: Airline crew allocation
-  *
-  * Assign 20 flight attendants to 10 flights. Each flight needs a certain
-  * number of cabin crew, and they have to speak certain languages.
-  * Every cabin crew member has two flights off after an attended flight.
-  *
-  '''
+From Gecode example crew
+examples/crew.cc
+'''
+* Example: Airline crew allocation
+*
+* Assign 20 flight attendants to 10 flights. Each flight needs a certain
+* number of cabin crew, and they have to speak certain languages.
+* Every cabin crew member has two flights off after an attended flight.
+*
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/crew.mzn
-  * Comet   : http://www.hakank.org/comet/crew.co
-  * ECLiPSe : http://hakank.org/eclipse/crew.ecl
-  * SICStus : http://hakank.org/sicstus/crew.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/crew.mzn
+* Comet   : http://www.hakank.org/comet/crew.co
+* ECLiPSe : http://hakank.org/eclipse/crew.ecl
+* SICStus : http://hakank.org/sicstus/crew.pl
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -50,9 +50,26 @@ def main(sols=1):
   # data
   #
   names = [
-      "Tom", "David", "Jeremy", "Ron", "Joe", "Bill", "Fred", "Bob", "Mario",
-      "Ed", "Carol", "Janet", "Tracy", "Marilyn", "Carolyn", "Cathy", "Inez",
-      "Jean", "Heather", "Juliet"
+      "Tom",
+      "David",
+      "Jeremy",
+      "Ron",
+      "Joe",
+      "Bill",
+      "Fred",
+      "Bob",
+      "Mario",
+      "Ed",
+      "Carol",
+      "Janet",
+      "Tracy",
+      "Marilyn",
+      "Carolyn",
+      "Cathy",
+      "Inez",
+      "Jean",
+      "Heather",
+      "Juliet",
   ]
 
   num_persons = len(names)  # number of persons
@@ -78,7 +95,7 @@ def main(sols=1):
       [0, 1, 1, 1, 1],  # Inez    = 17
       [0, 1, 1, 0, 0],  # Jean    = 18
       [0, 1, 0, 1, 1],  # Heather = 19
-      [0, 1, 1, 0, 0]  # Juliet  = 20
+      [0, 1, 1, 0, 0],  # Juliet  = 20
   ]
 
   # The columns are in the following order:
@@ -98,7 +115,7 @@ def main(sols=1):
       [5, 1, 1, 1, 1, 1],
       [6, 1, 1, 1, 1, 1],
       [6, 2, 2, 1, 1, 1],  # ...
-      [7, 3, 3, 1, 1, 1]  # Flight 10
+      [7, 3, 3, 1, 1, 1],  # Flight 10
   ]
 
   num_flights = len(required_crew)  # number of flights
@@ -122,12 +139,15 @@ def main(sols=1):
   #
 
   # number of working persons
-  solver.Add(num_working == solver.Sum([
-      solver.IsGreaterOrEqualCstVar(
-          solver.Sum([crew[(f, p)]
-                      for f in range(num_flights)]), 1)
-      for p in range(num_persons)
-  ]))
+  solver.Add(
+      num_working
+      == solver.Sum([
+          solver.IsGreaterOrEqualCstVar(
+              solver.Sum([crew[(f, p)] for f in range(num_flights)]), 1
+          )
+          for p in range(num_persons)
+      ])
+  )
 
   for f in range(num_flights):
     # size of crew
@@ -155,8 +175,9 @@ def main(sols=1):
   solution.Add(crew_flat)
   solution.Add(num_working)
 
-  db = solver.Phase(crew_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      crew_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   #
   # result
@@ -204,7 +225,7 @@ def main(sols=1):
 
 num_solutions_to_show = 1
 if __name__ == "__main__":
-  if (len(sys.argv) > 1):
+  if len(sys.argv) > 1:
     num_solutions_to_show = int(sys.argv[1])
 
   main(num_solutions_to_show)

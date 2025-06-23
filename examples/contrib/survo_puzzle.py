@@ -13,51 +13,51 @@
 # limitations under the License.
 """
 
-  Survo puzzle Google CP Solver.
+Survo puzzle Google CP Solver.
 
-  http://en.wikipedia.org/wiki/Survo_Puzzle
-  '''
-  Survo puzzle is a kind of logic puzzle presented (in April 2006) and studied
-  by Seppo Mustonen. The name of the puzzle is associated to Mustonen's
-  Survo system which is a general environment for statistical computing and
-  related areas.
+http://en.wikipedia.org/wiki/Survo_Puzzle
+'''
+Survo puzzle is a kind of logic puzzle presented (in April 2006) and studied
+by Seppo Mustonen. The name of the puzzle is associated to Mustonen's
+Survo system which is a general environment for statistical computing and
+related areas.
 
-  In a Survo puzzle the task is to fill an m * n table by integers 1,2,...,m*n
-  so
-  that each of these numbers appears only once and their row and column sums are
-  equal to integers given on the bottom and the right side of the table.
-  Often some of the integers are given readily in the table in order to
-  guarantee uniqueness of the solution and/or for making the task easier.
-  '''
+In a Survo puzzle the task is to fill an m * n table by integers 1,2,...,m*n
+so
+that each of these numbers appears only once and their row and column sums are
+equal to integers given on the bottom and the right side of the table.
+Often some of the integers are given readily in the table in order to
+guarantee uniqueness of the solution and/or for making the task easier.
+'''
 
-  See also
-  http://www.survo.fi/english/index.html
-  http://www.survo.fi/puzzles/index.html
+See also
+http://www.survo.fi/english/index.html
+http://www.survo.fi/puzzles/index.html
 
-  References:
-  Mustonen, S. (2006b). "On certain cross sum puzzles"
-  http://www.survo.fi/papers/puzzles.pdf
-  Mustonen, S. (2007b). "Enumeration of uniquely solvable open Survo puzzles."
-  http://www.survo.fi/papers/enum_survo_puzzles.pdf
-  Kimmo Vehkalahti: "Some comments on magic squares and Survo puzzles"
-  http://www.helsinki.fi/~kvehkala/Kimmo_Vehkalahti_Windsor.pdf
-  R code: http://koti.mbnet.fi/tuimala/tiedostot/survo.R
+References:
+Mustonen, S. (2006b). "On certain cross sum puzzles"
+http://www.survo.fi/papers/puzzles.pdf
+Mustonen, S. (2007b). "Enumeration of uniquely solvable open Survo puzzles."
+http://www.survo.fi/papers/enum_survo_puzzles.pdf
+Kimmo Vehkalahti: "Some comments on magic squares and Survo puzzles"
+http://www.helsinki.fi/~kvehkala/Kimmo_Vehkalahti_Windsor.pdf
+R code: http://koti.mbnet.fi/tuimala/tiedostot/survo.R
 
-  Compare with the following models:
-  * Choco   : http://www.hakank.org/choco/SurvoPuzzle.java
-  * Comet   : http://www.hakank.org/comet/survo_puzzle.co
-  * ECLiPSE : http://www.hakank.org/eclipse/survo_puzzle.ecl
-  * Gecode  : http://www.hakank.org/gecode/survo_puzzle.cpp
-  * Gecode/R: http://www.hakank.org/gecode_r/survo_puzzle.rb
-  * JaCoP   : http://www.hakank.org/JaCoP/SurvoPuzzle.java
-  * MiniZinc: http://www.hakank.org/minizinc/survo_puzzle.mzn
-  * Tailor/Essence': http://www.hakank.org/tailor/survo_puzzle.eprime
-  * Zinc: http://www.hakank.org/minizinc/survo_puzzle.zinc
+Compare with the following models:
+* Choco   : http://www.hakank.org/choco/SurvoPuzzle.java
+* Comet   : http://www.hakank.org/comet/survo_puzzle.co
+* ECLiPSE : http://www.hakank.org/eclipse/survo_puzzle.ecl
+* Gecode  : http://www.hakank.org/gecode/survo_puzzle.cpp
+* Gecode/R: http://www.hakank.org/gecode_r/survo_puzzle.rb
+* JaCoP   : http://www.hakank.org/JaCoP/SurvoPuzzle.java
+* MiniZinc: http://www.hakank.org/minizinc/survo_puzzle.mzn
+* Tailor/Essence': http://www.hakank.org/tailor/survo_puzzle.eprime
+* Zinc: http://www.hakank.org/minizinc/survo_puzzle.zinc
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -118,7 +118,8 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
   collector = solver.AllSolutionCollector(solution)
   solver.Solve(
       solver.Phase(xflat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
-      [collector])
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   print("\nnum_solutions: ", num_solutions)

@@ -22,22 +22,22 @@ FLAGS = flags.FLAGS
 
 class RcpspTest(absltest.TestCase):
 
-    def testParseAndAccess(self):
-        parser = rcpsp.RcpspParser()
-        data = "ortools/scheduling/testdata/j301_1.sm"
-        try:
-            filename = f"{FLAGS.test_srcdir}/_main/{data}"
-        except flags._exceptions.UnparsedFlagAccessError:
-            filename = f"../../../{data}"
-        self.assertTrue(parser.parse_file(filename))
-        problem = parser.problem()
-        self.assertLen(problem.resources, 4)
-        self.assertLen(problem.tasks, 32)
+  def testParseAndAccess(self):
+    parser = rcpsp.RcpspParser()
+    data = "ortools/scheduling/testdata/j301_1.sm"
+    try:
+      filename = f"{FLAGS.test_srcdir}/_main/{data}"
+    except flags._exceptions.UnparsedFlagAccessError:
+      filename = f"../../../{data}"
+    self.assertTrue(parser.parse_file(filename))
+    problem = parser.problem()
+    self.assertLen(problem.resources, 4)
+    self.assertLen(problem.tasks, 32)
 
 
 def main(unused_argv):
-    absltest.main()
+  absltest.main()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

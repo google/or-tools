@@ -27,9 +27,9 @@ from ortools.linear_solver.python import model_builder
 # [START program_part1]
 # [START data_model]
 def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Create the data for the example."""
+  """Create the data for the example."""
 
-    items_str = """
+  items_str = """
   item  weight
     i1      48
     i2      30
@@ -44,7 +44,7 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
    i11      30
   """
 
-    bins_str = """
+  bins_str = """
   bin  capacity
    b1       100
    b2       100
@@ -55,89 +55,91 @@ def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame]:
    b7       100
   """
 
-    items = pd.read_table(io.StringIO(items_str), index_col=0, sep=r"\s+")
-    bins = pd.read_table(io.StringIO(bins_str), index_col=0, sep=r"\s+")
-    return items, bins
-    # [END data_model]
+  items = pd.read_table(io.StringIO(items_str), index_col=0, sep=r"\s+")
+  bins = pd.read_table(io.StringIO(bins_str), index_col=0, sep=r"\s+")
+  return items, bins
+  # [END data_model]
 
 
 def main():
-    # [START data]
-    items, bins = create_data_model()
-    # [END data]
-    # [END program_part1]
+  # [START data]
+  items, bins = create_data_model()
+  # [END data]
+  # [END program_part1]
 
-    # [START model]
-    # Create the model.
-    model = model_builder.Model()
-    # [END model]
+  # [START model]
+  # Create the model.
+  model = model_builder.Model()
+  # [END model]
 
-    # [START program_part2]
-    # [START variables]
-    # Variables
-    # x[i, j] = 1 if item i is packed in bin j.
-    items_x_bins = pd.MultiIndex.from_product(
-        [items.index, bins.index], names=["item", "bin"]
+  # [START program_part2]
+  # [START variables]
+  # Variables
+  # x[i, j] = 1 if item i is packed in bin j.
+  items_x_bins = pd.MultiIndex.from_product(
+      [items.index, bins.index], names=["item", "bin"]
+  )
+  x = model.new_bool_var_series(name="x", index=items_x_bins)
+
+  # y[j] = 1 if bin j is used.
+  y = model.new_bool_var_series(name="y", index=bins.index)
+  # [END variables]
+
+  # [START constraints]
+  # Constraints
+  # Each item must be in exactly one bin.
+  for unused_name, all_copies in x.groupby("item"):
+    model.add(x[all_copies.index].sum() == 1)
+
+  # The amount packed in each bin cannot exceed its capacity.
+  for selected_bin in bins.index:
+    items_in_bin = x.xs(selected_bin, level="bin")
+    model.add(
+        items_in_bin.dot(items.weight)
+        <= bins.loc[selected_bin].capacity * y[selected_bin]
     )
-    x = model.new_bool_var_series(name="x", index=items_x_bins)
+  # [END constraints]
 
-    # y[j] = 1 if bin j is used.
-    y = model.new_bool_var_series(name="y", index=bins.index)
-    # [END variables]
+  # [START objective]
+  # Objective: minimize the number of bins used.
+  model.minimize(y.sum())
+  # [END objective]
 
-    # [START constraints]
-    # Constraints
-    # Each item must be in exactly one bin.
-    for unused_name, all_copies in x.groupby("item"):
-        model.add(x[all_copies.index].sum() == 1)
+  # [START solve]
+  # Create the solver with the CP-SAT backend, and solve the model.
+  solver = model_builder.Solver("sat")
+  if not solver.solver_is_supported():
+    return
+  status = solver.solve(model)
+  # [END solve]
 
-    # The amount packed in each bin cannot exceed its capacity.
-    for selected_bin in bins.index:
-        items_in_bin = x.xs(selected_bin, level="bin")
-        model.add(
-            items_in_bin.dot(items.weight)
-            <= bins.loc[selected_bin].capacity * y[selected_bin]
-        )
-    # [END constraints]
+  # [START print_solution]
+  if status == model_builder.SolveStatus.OPTIMAL:
+    print(f"Number of bins used = {solver.objective_value}")
 
-    # [START objective]
-    # Objective: minimize the number of bins used.
-    model.minimize(y.sum())
-    # [END objective]
+    x_values = solver.values(x)
+    y_values = solver.values(y)
+    active_bins = y_values.loc[lambda x: x == 1].index
 
-    # [START solve]
-    # Create the solver with the CP-SAT backend, and solve the model.
-    solver = model_builder.Solver("sat")
-    if not solver.solver_is_supported():
-        return
-    status = solver.solve(model)
-    # [END solve]
+    for b in active_bins:
+      print(f"Bin {b}")
+      items_in_bin = x_values.xs(b, level="bin").loc[lambda x: x == 1].index
+      for item in items_in_bin:
+        print(f"  Item {item} - weight {items.loc[item].weight}")
+      print(
+          f"  Packed items weight: {items.loc[items_in_bin].sum().to_string()}"
+      )
+      print()
 
-    # [START print_solution]
-    if status == model_builder.SolveStatus.OPTIMAL:
-        print(f"Number of bins used = {solver.objective_value}")
-
-        x_values = solver.values(x)
-        y_values = solver.values(y)
-        active_bins = y_values.loc[lambda x: x == 1].index
-
-        for b in active_bins:
-            print(f"Bin {b}")
-            items_in_bin = x_values.xs(b, level="bin").loc[lambda x: x == 1].index
-            for item in items_in_bin:
-                print(f"  Item {item} - weight {items.loc[item].weight}")
-            print(f"  Packed items weight: {items.loc[items_in_bin].sum().to_string()}")
-            print()
-
-        print(f"Total packed weight: {items.weight.sum()}")
-        print()
-        print(f"Time = {solver.wall_time} seconds")
-    else:
-        print("The problem does not have an optimal solution.")
-    # [END print_solution]
+    print(f"Total packed weight: {items.weight.sum()}")
+    print()
+    print(f"Time = {solver.wall_time} seconds")
+  else:
+    print("The problem does not have an optimal solution.")
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program_part2]
 # [END program]

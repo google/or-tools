@@ -128,8 +128,9 @@ def main(n=5):
   solution.Add(p)
 
   # db: DecisionBuilder
-  db = solver.Phase(x_flat + p, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      x_flat + p, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

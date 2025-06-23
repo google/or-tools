@@ -52,7 +52,7 @@ def main(ranks, pair_num):
   for w in range(n):
     model.AddElement(husband[w], wife, w)
 
-  #mrank[w][m] < mrank[w][husband[w]] => wrank[m][wife[m]] < wrank[m][w]
+  # mrank[w][m] < mrank[w][husband[w]] => wrank[m][wife[m]] < wrank[m][w]
   for w in range(n):
     for m in range(n):
       husband_rank = model.NewIntVar(1, n, "")
@@ -64,7 +64,8 @@ def main(ranks, pair_num):
       husband_dominated = model.NewBoolVar("")
       model.Add(mrank[w][m] < husband_rank).OnlyEnforceIf(husband_dominated)
       model.Add(mrank[w][m] >= husband_rank).OnlyEnforceIf(
-          husband_dominated.Not())
+          husband_dominated.Not()
+      )
 
       wife_dominates = model.NewBoolVar("")
       model.Add(wife_rank < wrank[m][w]).OnlyEnforceIf(wife_dominates)
@@ -72,7 +73,7 @@ def main(ranks, pair_num):
 
       model.AddImplication(husband_dominated, wife_dominates)
 
-  #wrank[m][w] < wrank[m][wife[m]] => mrank[w][husband[w]] < mrank[w][m]
+  # wrank[m][w] < wrank[m][wife[m]] => mrank[w][husband[w]] < mrank[w][m]
   for m in range(n):
     for w in range(n):
       wife_rank = model.NewIntVar(1, n, "")
@@ -88,7 +89,8 @@ def main(ranks, pair_num):
       husband_dominates = model.NewBoolVar("")
       model.Add(husband_rank < mrank[w][m]).OnlyEnforceIf(husband_dominates)
       model.Add(husband_rank >= mrank[w][m]).OnlyEnforceIf(
-          husband_dominates.Not())
+          husband_dominates.Not()
+      )
 
       model.AddImplication(wife_dominated, husband_dominates)
 
@@ -101,14 +103,26 @@ def main(ranks, pair_num):
 if __name__ == "__main__":
   rankings1 = {
       "rankMen": [[1, 2, 3, 4], [4, 3, 2, 1], [1, 2, 3, 4], [3, 4, 1, 2]],
-      "rankWomen": [[1, 2, 3, 4], [2, 1, 3, 4], [1, 4, 3, 2], [4, 3, 1, 2]]
+      "rankWomen": [[1, 2, 3, 4], [2, 1, 3, 4], [1, 4, 3, 2], [4, 3, 1, 2]],
   }
 
   rankings2 = {
-      "rankMen": [[1, 5, 4, 6, 2, 3], [4, 1, 5, 2, 6, 3], [6, 4, 2, 1, 5, 3],
-                  [1, 5, 2, 4, 3, 6], [4, 2, 1, 5, 6, 3], [2, 6, 3, 5, 1, 4]],
-      "rankWomen": [[1, 4, 2, 5, 6, 3], [3, 4, 6, 1, 5, 2], [1, 6, 4, 2, 3, 5],
-                    [6, 5, 3, 4, 2, 1], [3, 1, 2, 4, 5, 6], [2, 3, 1, 6, 5, 4]]
+      "rankMen": [
+          [1, 5, 4, 6, 2, 3],
+          [4, 1, 5, 2, 6, 3],
+          [6, 4, 2, 1, 5, 3],
+          [1, 5, 2, 4, 3, 6],
+          [4, 2, 1, 5, 6, 3],
+          [2, 6, 3, 5, 1, 4],
+      ],
+      "rankWomen": [
+          [1, 4, 2, 5, 6, 3],
+          [3, 4, 6, 1, 5, 2],
+          [1, 6, 4, 2, 3, 5],
+          [6, 5, 3, 4, 2, 1],
+          [3, 1, 2, 4, 5, 6],
+          [2, 3, 1, 6, 5, 4],
+      ],
   }
 
   problem = rankings2

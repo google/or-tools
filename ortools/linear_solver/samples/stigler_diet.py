@@ -25,27 +25,27 @@ from ortools.linear_solver import pywraplp
 
 
 def main():
-    """Entry point of the program."""
-    # Instantiate the data problem.
-    # [START data_model]
-    # Nutrient minimums.
-    nutrients = [
-        ["Calories (kcal)", 3],
-        ["Protein (g)", 70],
-        ["Calcium (g)", 0.8],
-        ["Iron (mg)", 12],
-        ["Vitamin A (KIU)", 5],
-        ["Vitamin B1 (mg)", 1.8],
-        ["Vitamin B2 (mg)", 2.7],
-        ["Niacin (mg)", 18],
-        ["Vitamin C (mg)", 75],
-    ]
+  """Entry point of the program."""
+  # Instantiate the data problem.
+  # [START data_model]
+  # Nutrient minimums.
+  nutrients = [
+      ['Calories (kcal)', 3],
+      ['Protein (g)', 70],
+      ['Calcium (g)', 0.8],
+      ['Iron (mg)', 12],
+      ['Vitamin A (KIU)', 5],
+      ['Vitamin B1 (mg)', 1.8],
+      ['Vitamin B2 (mg)', 2.7],
+      ['Niacin (mg)', 18],
+      ['Vitamin C (mg)', 75],
+  ]
 
-    # Commodity, Unit, 1939 price (cents), Calories (kcal), Protein (g),
-    # Calcium (g), Iron (mg), Vitamin A (KIU), Vitamin B1 (mg), Vitamin B2 (mg),
-    # Niacin (mg), Vitamin C (mg)
-    data = [
-        # fmt: off
+  # Commodity, Unit, 1939 price (cents), Calories (kcal), Protein (g),
+  # Calcium (g), Iron (mg), Vitamin A (KIU), Vitamin B1 (mg), Vitamin B2 (mg),
+  # Niacin (mg), Vitamin C (mg)
+  data = [
+      # fmt: off
       ['Wheat Flour (Enriched)', '10 lb.', 36, 44.7, 1411, 2, 365, 0, 55.4, 33.3, 441, 0],
       ['Macaroni', '1 lb.', 14.1, 11.6, 418, 0.7, 54, 0, 3.2, 1.9, 68, 0],
       ['Wheat Cereal (Enriched)', '28 oz.', 24.2, 11.8, 377, 14.4, 175, 0, 14.4, 8.8, 114, 0],
@@ -123,82 +123,84 @@ def main():
       ['Corn Syrup', '24 oz.', 13.7, 14.7, 0, 0.5, 74, 0, 0, 0, 5, 0],
       ['Molasses', '18 oz.', 13.6, 9.0, 0, 10.3, 244, 0, 1.9, 7.5, 146, 0],
       ['Strawberry Preserves', '1 lb.', 20.5, 6.4, 11, 0.4, 7, 0.2, 0.2, 0.4, 3, 0],
-        # fmt: on
-    ]
-    # [END data_model]
+      # fmt: on
+  ]
+  # [END data_model]
 
-    # [START solver]
-    # Instantiate a Glop solver and naming it.
-    solver = pywraplp.Solver.CreateSolver("GLOP")
-    if not solver:
-        return
-    # [END solver]
+  # [START solver]
+  # Instantiate a Glop solver and naming it.
+  solver = pywraplp.Solver.CreateSolver('GLOP')
+  if not solver:
+    return
+  # [END solver]
 
-    # [START variables]
-    # Declare an array to hold our variables.
-    foods = [solver.NumVar(0.0, solver.infinity(), item[0]) for item in data]
+  # [START variables]
+  # Declare an array to hold our variables.
+  foods = [solver.NumVar(0.0, solver.infinity(), item[0]) for item in data]
 
-    print("Number of variables =", solver.NumVariables())
-    # [END variables]
+  print('Number of variables =', solver.NumVariables())
+  # [END variables]
 
-    # [START constraints]
-    # Create the constraints, one per nutrient.
-    constraints = []
-    for i, nutrient in enumerate(nutrients):
-        constraints.append(solver.Constraint(nutrient[1], solver.infinity()))
-        for j, item in enumerate(data):
-            constraints[i].SetCoefficient(foods[j], item[i + 3])
+  # [START constraints]
+  # Create the constraints, one per nutrient.
+  constraints = []
+  for i, nutrient in enumerate(nutrients):
+    constraints.append(solver.Constraint(nutrient[1], solver.infinity()))
+    for j, item in enumerate(data):
+      constraints[i].SetCoefficient(foods[j], item[i + 3])
 
-    print("Number of constraints =", solver.NumConstraints())
-    # [END constraints]
+  print('Number of constraints =', solver.NumConstraints())
+  # [END constraints]
 
-    # [START objective]
-    # Objective function: Minimize the sum of (price-normalized) foods.
-    objective = solver.Objective()
-    for food in foods:
-        objective.SetCoefficient(food, 1)
-    objective.SetMinimization()
-    # [END objective]
+  # [START objective]
+  # Objective function: Minimize the sum of (price-normalized) foods.
+  objective = solver.Objective()
+  for food in foods:
+    objective.SetCoefficient(food, 1)
+  objective.SetMinimization()
+  # [END objective]
 
-    # [START solve]
-    print(f"Solving with {solver.SolverVersion()}")
-    status = solver.Solve()
-    # [END solve]
+  # [START solve]
+  print(f'Solving with {solver.SolverVersion()}')
+  status = solver.Solve()
+  # [END solve]
 
-    # [START print_solution]
-    # Check that the problem has an optimal solution.
-    if status != solver.OPTIMAL:
-        print("The problem does not have an optimal solution!")
-        if status == solver.FEASIBLE:
-            print("A potentially suboptimal solution was found.")
-        else:
-            print("The solver could not solve the problem.")
-            exit(1)
+  # [START print_solution]
+  # Check that the problem has an optimal solution.
+  if status != solver.OPTIMAL:
+    print('The problem does not have an optimal solution!')
+    if status == solver.FEASIBLE:
+      print('A potentially suboptimal solution was found.')
+    else:
+      print('The solver could not solve the problem.')
+      exit(1)
 
-    # Display the amounts (in dollars) to purchase of each food.
-    nutrients_result = [0] * len(nutrients)
-    print("\nAnnual Foods:")
-    for i, food in enumerate(foods):
-        if food.solution_value() > 0.0:
-            print("{}: ${}".format(data[i][0], 365.0 * food.solution_value()))
-            for j, _ in enumerate(nutrients):
-                nutrients_result[j] += data[i][j + 3] * food.solution_value()
-    print("\nOptimal annual price: ${:.4f}".format(365.0 * objective.Value()))
+  # Display the amounts (in dollars) to purchase of each food.
+  nutrients_result = [0] * len(nutrients)
+  print('\nAnnual Foods:')
+  for i, food in enumerate(foods):
+    if food.solution_value() > 0.0:
+      print('{}: ${}'.format(data[i][0], 365.0 * food.solution_value()))
+      for j, _ in enumerate(nutrients):
+        nutrients_result[j] += data[i][j + 3] * food.solution_value()
+  print('\nOptimal annual price: ${:.4f}'.format(365.0 * objective.Value()))
 
-    print("\nNutrients per day:")
-    for i, nutrient in enumerate(nutrients):
-        print(
-            "{}: {:.2f} (min {})".format(nutrient[0], nutrients_result[i], nutrient[1])
+  print('\nNutrients per day:')
+  for i, nutrient in enumerate(nutrients):
+    print(
+        '{}: {:.2f} (min {})'.format(
+            nutrient[0], nutrients_result[i], nutrient[1]
         )
-    # [END print_solution]
+    )
+  # [END print_solution]
 
-    # [START advanced]
-    print("\nAdvanced usage:")
-    print(f"Problem solved in {solver.wall_time():d} milliseconds")
-    print(f"Problem solved in {solver.iterations():d} iterations")
-    # [END advanced]
+  # [START advanced]
+  print('\nAdvanced usage:')
+  print(f'Problem solved in {solver.wall_time():d} milliseconds')
+  print(f'Problem solved in {solver.iterations():d} iterations')
+  # [END advanced]
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+  main()
 # [END program]

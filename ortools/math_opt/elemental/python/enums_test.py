@@ -18,13 +18,13 @@ from ortools.math_opt.elemental.python import enums
 
 class EnumsTest(absltest.TestCase):
 
-    def test_element_type_enums(self):
-        self.assertEqual(enums.ElementType.VARIABLE.value, 0)
+  def test_element_type_enums(self):
+    self.assertEqual(enums.ElementType.VARIABLE.value, 0)
 
-    def test_attr_enums(self):
-        self.assertEqual(enums.BoolAttr0.MAXIMIZE.value, 0)
-        self.assertEqual(enums.DoubleAttr1.VARIABLE_UPPER_BOUND.value, 1)
+  def test_attr_enums(self):
+    self.assertEqual(enums.BoolAttr0.MAXIMIZE.value, 0)
+    self.assertEqual(enums.DoubleAttr1.VARIABLE_UPPER_BOUND.value, 1)
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

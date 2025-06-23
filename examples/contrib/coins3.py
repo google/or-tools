@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  Coin application in Google CP Solver.
+Coin application in Google CP Solver.
 
-  From 'Constraint Logic Programming using ECLiPSe'
-  pages 99f and 234 ff.
-  The solution in ECLiPSe is at page 236.
+From 'Constraint Logic Programming using ECLiPSe'
+pages 99f and 234 ff.
+The solution in ECLiPSe is at page 236.
 
-  '''
-  What is the minimum number of coins that allows one to pay _exactly_
-  any amount smaller than one Euro? Recall that there are six different
-  euro cents, of denomination 1, 2, 5, 10, 20, 50
-  '''
+'''
+What is the minimum number of coins that allows one to pay _exactly_
+any amount smaller than one Euro? Recall that there are six different
+euro cents, of denomination 1, 2, 5, 10, 20, 50
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/coins3.mzn
-  * Comet   : http://www.hakank.org/comet/coins3.co
-  * Gecode  : http://hakank.org/gecode/coins3.cpp
-  * SICStus : http://hakank.org/sicstus/coins3.pl
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/coins3.mzn
+* Comet   : http://www.hakank.org/comet/coins3.co
+* Gecode  : http://hakank.org/gecode/coins3.cpp
+* SICStus : http://hakank.org/sicstus/coins3.pl
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 
 
@@ -80,8 +80,9 @@ def main():
   solution.Add(num_coins)
   solution.AddObjective(num_coins)
 
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      x, solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db, [objective])
   num_solutions = 0

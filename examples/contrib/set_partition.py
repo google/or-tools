@@ -13,36 +13,36 @@
 # limitations under the License.
 """
 
-  Set partition problem in Google CP Solver.
+Set partition problem in Google CP Solver.
 
-  Problem formulation from
-  http://www.koalog.com/resources/samples/PartitionProblem.java.html
-  '''
-   This is a partition problem.
-   Given the set S = {1, 2, ..., n},
-   it consists in finding two sets A and B such that:
+Problem formulation from
+http://www.koalog.com/resources/samples/PartitionProblem.java.html
+'''
+ This is a partition problem.
+ Given the set S = {1, 2, ..., n},
+ it consists in finding two sets A and B such that:
 
-     A U B = S,
-     |A| = |B|,
-     sum(A) = sum(B),
-     sum_squares(A) = sum_squares(B)
+   A U B = S,
+   |A| = |B|,
+   sum(A) = sum(B),
+   sum_squares(A) = sum_squares(B)
 
-  '''
+'''
 
-  This model uses a binary matrix to represent the sets.
+This model uses a binary matrix to represent the sets.
 
 
-  Also, compare with other models which uses var sets:
-  * MiniZinc: http://www.hakank.org/minizinc/set_partition.mzn
-  * Gecode/R: http://www.hakank.org/gecode_r/set_partition.rb
-  * Comet: http://hakank.org/comet/set_partition.co
-  * Gecode: http://hakank.org/gecode/set_partition.cpp
-  * ECLiPSe: http://hakank.org/eclipse/set_partition.ecl
-  * SICStus: http://hakank.org/sicstus/set_partition.pl
+Also, compare with other models which uses var sets:
+* MiniZinc: http://www.hakank.org/minizinc/set_partition.mzn
+* Gecode/R: http://www.hakank.org/gecode_r/set_partition.rb
+* Comet: http://hakank.org/comet/set_partition.co
+* Gecode: http://hakank.org/gecode/set_partition.cpp
+* ECLiPSe: http://hakank.org/eclipse/set_partition.ecl
+* SICStus: http://hakank.org/sicstus/set_partition.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -106,18 +106,21 @@ def main(n=16, num_sets=2):
 
       # same cardinality
       solver.Add(
-          solver.Sum([a[i, k] for k in range(n)]) == solver.Sum(
-              [a[j, k] for k in range(n)]))
+          solver.Sum([a[i, k] for k in range(n)])
+          == solver.Sum([a[j, k] for k in range(n)])
+      )
 
       # same sum
       solver.Add(
-          solver.Sum([k * a[i, k] for k in range(n)]) == solver.Sum(
-              [k * a[j, k] for k in range(n)]))
+          solver.Sum([k * a[i, k] for k in range(n)])
+          == solver.Sum([k * a[j, k] for k in range(n)])
+      )
 
       # same sum squared
       solver.Add(
-          solver.Sum([(k * a[i, k]) * (k * a[i, k]) for k in range(n)]) ==
-          solver.Sum([(k * a[j, k]) * (k * a[j, k]) for k in range(n)]))
+          solver.Sum([(k * a[i, k]) * (k * a[i, k]) for k in range(n)])
+          == solver.Sum([(k * a[j, k]) * (k * a[j, k]) for k in range(n)])
+      )
 
   # symmetry breaking for num_sets == 2
   if num_sets == 2:
@@ -139,7 +142,7 @@ def main(n=16, num_sets=2):
 
     sq = sum([(j + 1) * a_val[0, j] for j in range(n)])
     print("sums:", sq)
-    sq2 = sum([((j + 1) * a_val[0, j])**2 for j in range(n)])
+    sq2 = sum([((j + 1) * a_val[0, j]) ** 2 for j in range(n)])
     print("sums squared:", sq2)
 
     for i in range(num_sets):

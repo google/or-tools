@@ -21,46 +21,50 @@ from ortools.math_opt.python.testing import proto_matcher
 
 class _ConsumesUpdate:
 
-    def __init__(self):
-        pass
+  def __init__(self):
+    pass
 
-    def on_update(self, update: model_update_pb2.ModelUpdateProto):
-        pass
+  def on_update(self, update: model_update_pb2.ModelUpdateProto):
+    pass
 
 
 class MathOptProtoAssertionsTest(absltest.TestCase):
 
-    def test_mock_eq(self):
-        update1 = model_update_pb2.ObjectiveUpdatesProto(
-            direction_update=True, offset_update=0.0
-        )
-        update2 = model_update_pb2.ObjectiveUpdatesProto(direction_update=True)
-        update3 = model_update_pb2.ObjectiveUpdatesProto(
-            direction_update=True,
-            linear_coefficients=sparse_containers_pb2.SparseDoubleVectorProto(),
-        )
-        self.assertFalse(
-            proto_matcher.MathOptProtoEquivMatcher(update1).__eq__(update2)
-        )
-        self.assertTrue(proto_matcher.MathOptProtoEquivMatcher(update1).__ne__(update2))
-        self.assertTrue(proto_matcher.MathOptProtoEquivMatcher(update2).__eq__(update3))
-        self.assertFalse(
-            proto_matcher.MathOptProtoEquivMatcher(update2).__ne__(update3)
-        )
+  def test_mock_eq(self):
+    update1 = model_update_pb2.ObjectiveUpdatesProto(
+        direction_update=True, offset_update=0.0
+    )
+    update2 = model_update_pb2.ObjectiveUpdatesProto(direction_update=True)
+    update3 = model_update_pb2.ObjectiveUpdatesProto(
+        direction_update=True,
+        linear_coefficients=sparse_containers_pb2.SparseDoubleVectorProto(),
+    )
+    self.assertFalse(
+        proto_matcher.MathOptProtoEquivMatcher(update1).__eq__(update2)
+    )
+    self.assertTrue(
+        proto_matcher.MathOptProtoEquivMatcher(update1).__ne__(update2)
+    )
+    self.assertTrue(
+        proto_matcher.MathOptProtoEquivMatcher(update2).__eq__(update3)
+    )
+    self.assertFalse(
+        proto_matcher.MathOptProtoEquivMatcher(update2).__ne__(update3)
+    )
 
-    def test_mock_function_when_equal(self):
-        consumer = _ConsumesUpdate()
-        consumer.on_update = mock.MagicMock()
+  def test_mock_function_when_equal(self):
+    consumer = _ConsumesUpdate()
+    consumer.on_update = mock.MagicMock()
 
-        update = model_update_pb2.ModelUpdateProto(deleted_variable_ids=[0, 4, 5])
+    update = model_update_pb2.ModelUpdateProto(deleted_variable_ids=[0, 4, 5])
 
-        consumer.on_update(update)
+    consumer.on_update(update)
 
-        expected = model_update_pb2.ModelUpdateProto(deleted_variable_ids=[0, 4, 5])
-        consumer.on_update.assert_called_with(
-            proto_matcher.MathOptProtoEquivMatcher(expected)
-        )
+    expected = model_update_pb2.ModelUpdateProto(deleted_variable_ids=[0, 4, 5])
+    consumer.on_update.assert_called_with(
+        proto_matcher.MathOptProtoEquivMatcher(expected)
+    )
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

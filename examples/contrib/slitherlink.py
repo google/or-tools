@@ -3,17 +3,29 @@ from collections import deque
 
 small = [[3, 2, -1, 3], [-1, -1, -1, 2], [3, -1, -1, -1], [3, -1, 3, 1]]
 
-medium = [[-1, 0, -1, 1, -1, -1, 1, -1], [-1, 3, -1, -1, 2, 3, -1, 2],
-          [-1, -1, 0, -1, -1, -1, -1, 0], [-1, 3, -1, -1, 0, -1, -1, -1],
-          [-1, -1, -1, 3, -1, -1, 0, -1], [1, -1, -1, -1, -1, 3, -1, -1],
-          [3, -1, 1, 3, -1, -1, 3, -1], [-1, 0, -1, -1, 3, -1, 3, -1]]
+medium = [
+    [-1, 0, -1, 1, -1, -1, 1, -1],
+    [-1, 3, -1, -1, 2, 3, -1, 2],
+    [-1, -1, 0, -1, -1, -1, -1, 0],
+    [-1, 3, -1, -1, 0, -1, -1, -1],
+    [-1, -1, -1, 3, -1, -1, 0, -1],
+    [1, -1, -1, -1, -1, 3, -1, -1],
+    [3, -1, 1, 3, -1, -1, 3, -1],
+    [-1, 0, -1, -1, 3, -1, 3, -1],
+]
 
-big = [[3, -1, -1, -1, 2, -1, 1, -1, 1, 2], [1, -1, 0, -1, 3, -1, 2, 0, -1, -1],
-       [-1, 3, -1, -1, -1, -1, -1, -1, 3, -1],
-       [2, 0, -1, 3, -1, 2, 3, -1, -1, -1], [-1, -1, -1, 1, 1, 1, -1, -1, 3, 3],
-       [2, 3, -1, -1, 2, 2, 3, -1, -1, -1], [-1, -1, -1, 1, 2, -1, 2, -1, 3, 3],
-       [-1, 2, -1, -1, -1, -1, -1, -1, 2, -1],
-       [-1, -1, 1, 1, -1, 2, -1, 1, -1, 3], [3, 3, -1, 1, -1, 2, -1, -1, -1, 2]]
+big = [
+    [3, -1, -1, -1, 2, -1, 1, -1, 1, 2],
+    [1, -1, 0, -1, 3, -1, 2, 0, -1, -1],
+    [-1, 3, -1, -1, -1, -1, -1, -1, 3, -1],
+    [2, 0, -1, 3, -1, 2, 3, -1, -1, -1],
+    [-1, -1, -1, 1, 1, 1, -1, -1, 3, 3],
+    [2, 3, -1, -1, 2, 2, 3, -1, -1, -1],
+    [-1, -1, -1, 1, 2, -1, 2, -1, 3, 3],
+    [-1, 2, -1, -1, -1, -1, -1, -1, 2, -1],
+    [-1, -1, 1, 1, -1, 2, -1, 1, -1, 3],
+    [3, 3, -1, 1, -1, 2, -1, -1, -1, 2],
+]
 
 
 def NeighboringArcs(i, j, h_arcs, v_arcs):
@@ -216,13 +228,15 @@ def SlitherLink(data):
   num_columns = len(data[0])
 
   solver = pywrapcp.Solver('slitherlink')
-  h_arcs = [[
-      solver.BoolVar('h_arcs[%i][%i]' % (i, j)) for j in range(num_columns)
-  ] for i in range(num_rows + 1)]
+  h_arcs = [
+      [solver.BoolVar('h_arcs[%i][%i]' % (i, j)) for j in range(num_columns)]
+      for i in range(num_rows + 1)
+  ]
 
-  v_arcs = [[
-      solver.BoolVar('v_arcs[%i][%i]' % (i, j)) for j in range(num_rows)
-  ] for i in range(num_columns + 1)]
+  v_arcs = [
+      [solver.BoolVar('v_arcs[%i][%i]' % (i, j)) for j in range(num_rows)]
+      for i in range(num_columns + 1)
+  ]
 
   # Constraint on the sum or arcs
   for i in range(num_rows):
@@ -271,8 +285,9 @@ def SlitherLink(data):
   for column in v_arcs:
     all_vars.extend(column)
 
-  db = solver.Phase(all_vars, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.Phase(
+      all_vars, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE
+  )
 
   log = solver.SearchLog(1000000)
 

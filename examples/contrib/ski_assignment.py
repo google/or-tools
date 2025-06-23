@@ -13,39 +13,39 @@
 # limitations under the License.
 """
 
-  Ski assignment in Google CP Solver.
+Ski assignment in Google CP Solver.
 
-  From   Jeffrey Lee Hellrung, Jr.:
-  PIC 60, Fall 2008 Final Review, December 12, 2008
-  http://www.math.ucla.edu/~jhellrun/course_files/Fall%25202008/PIC%252060%2520-%2520Data%2520Structures%2520and%2520Algorithms/final_review.pdf
-  '''
-  5. Ski Optimization! Your job at Snapple is pleasant but in the winter
-  you've decided to become a ski bum. You've hooked up with the Mount
-  Baldy Ski Resort. They'll let you ski all winter for free in exchange
-  for helping their ski rental shop with an algorithm to assign skis to
-  skiers. Ideally, each skier should obtain a pair of skis whose height
-  matches his or her own height exactly. Unfortunately, this is generally
-  not possible. We define the disparity between a skier and his or her
-  skis to be the absolute value of the difference between the height of
-  the skier and the pair of skis. Our objective is to find an assignment
-  of skis to skiers that minimizes the sum of the disparities.
-  ...
-  Illustrate your algorithm by explicitly filling out the A[i, j] table
-  for the following sample data:
-    * Ski heights: 1, 2, 5, 7, 13, 21.
-    * Skier heights: 3, 4, 7, 11, 18.
-  '''
+From   Jeffrey Lee Hellrung, Jr.:
+PIC 60, Fall 2008 Final Review, December 12, 2008
+http://www.math.ucla.edu/~jhellrun/course_files/Fall%25202008/PIC%252060%2520-%2520Data%2520Structures%2520and%2520Algorithms/final_review.pdf
+'''
+5. Ski Optimization! Your job at Snapple is pleasant but in the winter
+you've decided to become a ski bum. You've hooked up with the Mount
+Baldy Ski Resort. They'll let you ski all winter for free in exchange
+for helping their ski rental shop with an algorithm to assign skis to
+skiers. Ideally, each skier should obtain a pair of skis whose height
+matches his or her own height exactly. Unfortunately, this is generally
+not possible. We define the disparity between a skier and his or her
+skis to be the absolute value of the difference between the height of
+the skier and the pair of skis. Our objective is to find an assignment
+of skis to skiers that minimizes the sum of the disparities.
+...
+Illustrate your algorithm by explicitly filling out the A[i, j] table
+for the following sample data:
+  * Ski heights: 1, 2, 5, 7, 13, 21.
+  * Skier heights: 3, 4, 7, 11, 18.
+'''
 
-  Compare with the following models:
-  * Comet   : http://www.hakank.org/comet/ski_assignment.co
-  * MiniZinc: http://hakank.org/minizinc/ski_assignment.mzn
-  * ECLiPSe : http://www.hakank.org/eclipse/ski_assignment.ecl
-  * SICStus: http://hakank.org/sicstus/ski_assignment.pl
-  * Gecode: http://hakank.org/gecode/ski_assignment.cpp
+Compare with the following models:
+* Comet   : http://www.hakank.org/comet/ski_assignment.co
+* MiniZinc: http://hakank.org/minizinc/ski_assignment.mzn
+* ECLiPSe : http://www.hakank.org/eclipse/ski_assignment.ecl
+* SICStus: http://hakank.org/sicstus/ski_assignment.pl
+* Gecode: http://hakank.org/gecode/ski_assignment.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -102,8 +102,10 @@ def main():
       x_val = x[i].Value()
       ski_height = ski_heights[x[i].Value()]
       diff = ski_height - skier_heights[i]
-      print('Skier %i: Ski %i with length %2i (diff: %2i)' %\
-            (i, x_val, ski_height, diff))
+      print(
+          'Skier %i: Ski %i with length %2i (diff: %2i)'
+          % (i, x_val, ski_height, diff)
+      )
     print()
 
   solver.EndSearch()

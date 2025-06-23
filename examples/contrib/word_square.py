@@ -13,27 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-  Word square in Google CP Solver.
-  From http://en.wikipedia.org/wiki/Word_square
-  '''
-  A word square is a special case of acrostic. It consists of a set of words,
-  all having the same number of letters as the total number of words (the
-  'order' of the square); when the words are written out in a square grid
-  horizontally, the same set of words can be read vertically.
-  '''
+Word square in Google CP Solver.
+From http://en.wikipedia.org/wiki/Word_square
+'''
+A word square is a special case of acrostic. It consists of a set of words,
+all having the same number of letters as the total number of words (the
+'order' of the square); when the words are written out in a square grid
+horizontally, the same set of words can be read vertically.
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/word_square.mzn
-  * Comet   : http://www.hakank.org/comet/word_square.co
-  * Choco   : http://www.hakank.org/choco/WordSquare.java
-  * Gecode  : http://www.hakank.org/gecode/word_square.cpp
-  * Gecode  : http://www.hakank.org/gecode/word_square2.cpp
-  * JaCoP   : http://www.hakank.org/JaCoP/WordSquare.java
-  * Zinc: http://hakank.org/minizinc/word_square.zinc
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/word_square.mzn
+* Comet   : http://www.hakank.org/comet/word_square.co
+* Choco   : http://www.hakank.org/choco/WordSquare.java
+* Gecode  : http://www.hakank.org/gecode/word_square.cpp
+* Gecode  : http://www.hakank.org/gecode/word_square2.cpp
+* JaCoP   : http://www.hakank.org/JaCoP/WordSquare.java
+* Zinc: http://hakank.org/minizinc/word_square.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 import re
@@ -80,8 +80,9 @@ def main(words, word_len, num_answers=20):
 
       # We must use Element explicitly
       solver.Add(
-          solver.Element(A_flat, E[i] * word_len +
-                         j) == solver.Element(A_flat, E[j] * word_len + i))
+          solver.Element(A_flat, E[i] * word_len + j)
+          == solver.Element(A_flat, E[j] * word_len + i)
+      )
 
   #
   # solution and search
@@ -90,8 +91,9 @@ def main(words, word_len, num_answers=20):
   solution.Add(E)
 
   # db: DecisionBuilder
-  db = solver.Phase(E + A_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      E + A_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

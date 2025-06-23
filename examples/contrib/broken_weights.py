@@ -13,38 +13,38 @@
 # limitations under the License.
 """
 
-  Broken weights problem in Google CP Solver.
+Broken weights problem in Google CP Solver.
 
-  From http://www.mathlesstraveled.com/?p=701
-  '''
-  Here's a fantastic problem I recently heard. Apparently it was first
-  posed by Claude Gaspard Bachet de Meziriac in a book of arithmetic problems
-  published in 1612, and can also be found in Heinrich Dorrie's 100
-  Great Problems of Elementary Mathematics.
+From http://www.mathlesstraveled.com/?p=701
+'''
+Here's a fantastic problem I recently heard. Apparently it was first
+posed by Claude Gaspard Bachet de Meziriac in a book of arithmetic problems
+published in 1612, and can also be found in Heinrich Dorrie's 100
+Great Problems of Elementary Mathematics.
 
-      A merchant had a forty pound measuring weight that broke
-      into four pieces as the result of a fall. When the pieces were
-      subsequently weighed, it was found that the weight of each piece
-      was a whole number of pounds and that the four pieces could be
-      used to weigh every integral weight between 1 and 40 pounds. What
-      were the weights of the pieces?
+    A merchant had a forty pound measuring weight that broke
+    into four pieces as the result of a fall. When the pieces were
+    subsequently weighed, it was found that the weight of each piece
+    was a whole number of pounds and that the four pieces could be
+    used to weigh every integral weight between 1 and 40 pounds. What
+    were the weights of the pieces?
 
-  Note that since this was a 17th-century merchant, he of course used a
-  balance scale to weigh things. So, for example, he could use a 1-pound
-  weight and a 4-pound weight to weigh a 3-pound object, by placing the
-  3-pound object and 1-pound weight on one side of the scale, and
-  the 4-pound weight on the other side.
-  '''
+Note that since this was a 17th-century merchant, he of course used a
+balance scale to weigh things. So, for example, he could use a 1-pound
+weight and a 4-pound weight to weigh a 3-pound object, by placing the
+3-pound object and 1-pound weight on one side of the scale, and
+the 4-pound weight on the other side.
+'''
 
-  Compare with the following problems:
-  * MiniZinc: http://www.hakank.org/minizinc/broken_weights.mzn
-  * ECLiPSE: http://www.hakank.org/eclipse/broken_weights.ecl
-  * Gecode: http://www.hakank.org/gecode/broken_weights.cpp
-  * Comet: http://hakank.org/comet/broken_weights.co
+Compare with the following problems:
+* MiniZinc: http://www.hakank.org/minizinc/broken_weights.mzn
+* ECLiPSE: http://www.hakank.org/eclipse/broken_weights.ecl
+* Gecode: http://www.hakank.org/gecode/broken_weights.cpp
+* Comet: http://hakank.org/comet/broken_weights.co
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -99,8 +99,9 @@ def main(m=40, n=4):
   #
   # search and result
   #
-  db = solver.Phase(weights + x_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      weights + x_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   search_log = solver.SearchLog(1)
 

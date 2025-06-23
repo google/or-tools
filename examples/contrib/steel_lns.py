@@ -18,26 +18,29 @@ import random
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    '--data',
-    default='examples/contrib/steel.txt',
-    help='path to data file')
+    '--data', default='examples/contrib/steel.txt', help='path to data file'
+)
 parser.add_argument(
-    '--time_limit', default=20000, type=int, help='global time limit')
+    '--time_limit', default=20000, type=int, help='global time limit'
+)
 parser.add_argument(
     '--lns_fragment_size',
     default=10,
     type=int,
-    help='size of the random lns fragment')
+    help='size of the random lns fragment',
+)
 parser.add_argument(
     '--lns_random_seed',
     default=0,
     type=int,
-    help='seed for the lns random generator')
+    help='seed for the lns random generator',
+)
 parser.add_argument(
     '--lns_fail_limit',
     default=30,
     type=int,
-    help='fail limit when exploring fragments')
+    help='fail limit when exploring fragments',
+)
 
 # ---------- helper for binpacking posting ----------
 
@@ -71,10 +74,10 @@ def ReadData(filename):
   loss = [
       min([x for x in capacity if x >= c]) - c for c in range(max_capacity + 1)
   ]
-  color_orders = [[o
-                   for o in range(nb_slabs)
-                   if colors[o] == c]
-                  for c in range(1, nb_colors + 1)]
+  color_orders = [
+      [o for o in range(nb_slabs) if colors[o] == c]
+      for c in range(1, nb_colors + 1)
+  ]
   print('Solving steel mill with', nb_slabs, 'slabs')
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
@@ -120,9 +123,9 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
         loads = self.getLoads()
         l, v = min(
             (self.__loss_array[loads[i] + weight], i)
-            for i in range(var.Min(),
-                           var.Max() + 1)
-            if var.Contains(i) and loads[i] + weight <= self.__max_capacity)
+            for i in range(var.Min(), var.Max() + 1)
+            if var.Contains(i) and loads[i] + weight <= self.__max_capacity
+        )
         decision = solver.AssignVariableValue(var, v)
         return decision
     else:
@@ -130,24 +133,29 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 
   def getLoads(self):
     load = [0] * len(self.__loads)
-    for (w, x) in zip(self.__weights, self.__x):
+    for w, x in zip(self.__weights, self.__x):
       if x.Bound():
         load[x.Min()] += w
     return load
 
   def MaxBound(self):
-    """ returns the max value bound to a variable, -1 if no variables bound"""
-    return max([-1] + [
-        self.__x[o].Min()
-        for o in range(self.__nb_slabs)
-        if self.__x[o].Bound()
-    ])
+    """returns the max value bound to a variable, -1 if no variables bound"""
+    return max(
+        [-1]
+        + [
+            self.__x[o].Min()
+            for o in range(self.__nb_slabs)
+            if self.__x[o].Bound()
+        ]
+    )
 
   def NextVar(self):
-    """ mindom size heuristic with tie break on the weights of orders """
-    res = [(self.__x[o].Size(), -self.__weights[o], self.__x[o])
-           for o in range(self.__nb_slabs)
-           if self.__x[o].Size() > 1]
+    """mindom size heuristic with tie break on the weights of orders"""
+    res = [
+        (self.__x[o].Size(), -self.__weights[o], self.__x[o])
+        for o in range(self.__nb_slabs)
+        if self.__x[o].Size() > 1
+    ]
     if res:
       res.sort()
       return (res[0][2], -res[0][1])  # returns the order var and its weight
@@ -184,8 +192,9 @@ class SteelRandomLns(pywrapcp.BaseLns):
 
 def main(args):
   # ----- solver and variable declaration -----
-  (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) =\
+  (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) = (
       ReadData(args.data)
+  )
   nb_colors = len(color_orders)
   solver = pywrapcp.Solver('Steel Mill Slab')
   x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i)) for i in range(nb_slabs)]
@@ -201,16 +210,20 @@ def main(args):
   # At most two colors per slab.
   for s in range(nb_slabs):
     solver.Add(
-        solver.SumLessOrEqual([
-            solver.Max([solver.IsEqualCstVar(x[c], s)
-                        for c in o])
-            for o in color_orders
-        ], 2))
+        solver.SumLessOrEqual(
+            [
+                solver.Max([solver.IsEqualCstVar(x[c], s) for c in o])
+                for o in color_orders
+            ],
+            2,
+        )
+    )
 
   # ----- Objective -----
 
-  objective_var = \
-      solver.Sum([load_vars[s].IndexOf(loss) for s in range(nb_slabs)]).Var()
+  objective_var = solver.Sum(
+      [load_vars[s].IndexOf(loss) for s in range(nb_slabs)]
+  ).Var()
   objective = solver.Minimize(objective_var, 1)
 
   # ----- start the search and optimization -----
@@ -241,9 +254,11 @@ def main(args):
   #                                                  args.lns_fragment_size,
   #                                                  args.lns_random_seed)
   local_search_parameters = solver.LocalSearchPhaseParameters(
-      objective_var, local_search_operator, continuation_db)
-  local_search_db = solver.LocalSearchPhase(first_solution,
-                                            local_search_parameters)
+      objective_var, local_search_operator, continuation_db
+  )
+  local_search_db = solver.LocalSearchPhase(
+      first_solution, local_search_parameters
+  )
   global_limit = solver.TimeLimit(args.time_limit)
 
   print('using LNS to improve the initial solution')
@@ -251,8 +266,12 @@ def main(args):
   search_log = solver.SearchLog(100000, objective_var)
   solver.NewSearch(local_search_db, [objective, search_log, global_limit])
   while solver.NextSolution():
-    print('Objective:', objective_var.Value(),\
-        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)))
+    print(
+        'Objective:',
+        objective_var.Value(),
+        'check:',
+        sum(loss[load_vars[s].Min()] for s in range(nb_slabs)),
+    )
   solver.EndSearch()
 
 

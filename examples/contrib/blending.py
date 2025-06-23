@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Blending problem in Google or-tools.
+Blending problem in Google or-tools.
 
-  From the OPL model blending.mod.
+From the OPL model blending.mod.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -79,16 +79,22 @@ def main(sol='CBC'):
   # constraints
   #
 
-  solver.Add(z == solver.Sum([CostMetal[i] * p[i] for i in Metals]) +
-             solver.Sum([CostRaw[i] * r[i] for i in Raws]) +
-             solver.Sum([CostScrap[i] * s[i] for i in Scraps]) +
-             solver.Sum([CostIngo[i] * ii[i] for i in Ingos]))
+  solver.Add(
+      z
+      == solver.Sum([CostMetal[i] * p[i] for i in Metals])
+      + solver.Sum([CostRaw[i] * r[i] for i in Raws])
+      + solver.Sum([CostScrap[i] * s[i] for i in Scraps])
+      + solver.Sum([CostIngo[i] * ii[i] for i in Ingos])
+  )
 
   for j in Metals:
     solver.Add(
-        metal[j] == p[j] + solver.Sum([PercRaw[j][k] * r[k] for k in Raws]) +
-        solver.Sum([PercScrap[j][k] * s[k] for k in Scraps]) +
-        solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos]))
+        metal[j]
+        == p[j]
+        + solver.Sum([PercRaw[j][k] * r[k] for k in Raws])
+        + solver.Sum([PercScrap[j][k] * s[k] for k in Scraps])
+        + solver.Sum([PercIngo[j][k] * ii[k] for k in Ingos])
+    )
 
   solver.Add(solver.Sum(metal) == Alloy)
 

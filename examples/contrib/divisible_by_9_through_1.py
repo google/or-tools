@@ -13,42 +13,42 @@
 # limitations under the License.
 """
 
-  Divisible by 9 through 1 puzzle in Google CP Solver.
+Divisible by 9 through 1 puzzle in Google CP Solver.
 
-  From http://msdn.microsoft.com/en-us/vcsharp/ee957404.aspx
-  ' Solving Combinatory Problems with LINQ'
-  '''
-  Find a number consisting of 9 digits in which each of the digits
-  from 1 to 9 appears only once. This number must also satisfy these
-  divisibility requirements:
+From http://msdn.microsoft.com/en-us/vcsharp/ee957404.aspx
+' Solving Combinatory Problems with LINQ'
+'''
+Find a number consisting of 9 digits in which each of the digits
+from 1 to 9 appears only once. This number must also satisfy these
+divisibility requirements:
 
-   1. The number should be divisible by 9.
-   2. If the rightmost digit is removed, the remaining number should
-      be divisible by 8.
-   3. If the rightmost digit of the new number is removed, the remaining
-      number should be divisible by 7.
-   4. And so on, until there's only one digit (which will necessarily
-      be divisible by 1).
-  '''
+ 1. The number should be divisible by 9.
+ 2. If the rightmost digit is removed, the remaining number should
+    be divisible by 8.
+ 3. If the rightmost digit of the new number is removed, the remaining
+    number should be divisible by 7.
+ 4. And so on, until there's only one digit (which will necessarily
+    be divisible by 1).
+'''
 
-  Also, see
-  'Intel Parallel Studio: Great for Serial Code Too (Episode 1)'
-  http://software.intel.com/en-us/blogs/2009/12/07/intel-parallel-studio-great-for-serial-code-too-episode-1/
-
-
-  This model is however generalized to handle any base, for reasonable limits.
-  The 'reasonable limit' for this model is that base must be between 2..16.
-
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/divisible_by_9_through_1.mzn
-  * Comet   : http://www.hakank.org/comet/divisible_by_9_through_1.co
-  * ECLiPSe : http://www.hakank.org/eclipse/divisible_by_9_through_1.ecl
-  * Gecode  : http://www.hakank.org/gecode/divisible_by_9_through_1.cpp
+Also, see
+'Intel Parallel Studio: Great for Serial Code Too (Episode 1)'
+http://software.intel.com/en-us/blogs/2009/12/07/intel-parallel-studio-great-for-serial-code-too-episode-1/
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model is however generalized to handle any base, for reasonable limits.
+The 'reasonable limit' for this model is that base must be between 2..16.
+
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/divisible_by_9_through_1.mzn
+* Comet   : http://www.hakank.org/comet/divisible_by_9_through_1.co
+* ECLiPSe : http://www.hakank.org/eclipse/divisible_by_9_through_1.ecl
+* Gecode  : http://www.hakank.org/gecode/divisible_by_9_through_1.cpp
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -100,7 +100,8 @@ def my_mod(solver, x, y, r):
 def toNum(solver, t, s, base):
   tlen = len(t)
   solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)])
+  )
 
 
 def main(base=10):
@@ -109,7 +110,7 @@ def main(base=10):
   solver = pywrapcp.Solver("Divisible by 9 through 1")
 
   # data
-  m = base**(base - 1) - 1
+  m = base ** (base - 1) - 1
   n = base - 1
 
   digits_str = "_0123456789ABCDEFGH"
@@ -148,8 +149,14 @@ def main(base=10):
   while solver.NextSolution():
     print("x: ", [x[i].Value() for i in range(n)])
     print("t: ", [t[i].Value() for i in range(n)])
-    print("number base 10: %i base %i: %s" % (t[0].Value(), base, "".join(
-        [digits_str[x[i].Value() + 1] for i in range(n)])))
+    print(
+        "number base 10: %i base %i: %s"
+        % (
+            t[0].Value(),
+            base,
+            "".join([digits_str[x[i].Value() + 1] for i in range(n)]),
+        )
+    )
     print()
     num_solutions += 1
   solver.EndSearch()
@@ -167,8 +174,10 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     base = int(sys.argv[1])
     if base > max_base:
-      print("Sorry, max allowed base is %i. Setting base to %i..." %
-            (max_base, default_base))
+      print(
+          "Sorry, max allowed base is %i. Setting base to %i..."
+          % (max_base, default_base)
+      )
       base = default_base
   main(base)
 

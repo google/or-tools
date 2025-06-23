@@ -19,62 +19,62 @@ from ortools.sat.python import cp_model
 
 
 def binpacking_problem_sat():
-    """Solves a bin-packing problem using the CP-SAT solver."""
-    # Data.
-    bin_capacity = 100
-    slack_capacity = 20
-    num_bins = 5
-    all_bins = range(num_bins)
+  """Solves a bin-packing problem using the CP-SAT solver."""
+  # Data.
+  bin_capacity = 100
+  slack_capacity = 20
+  num_bins = 5
+  all_bins = range(num_bins)
 
-    items = [(20, 6), (15, 6), (30, 4), (45, 3)]
-    num_items = len(items)
-    all_items = range(num_items)
+  items = [(20, 6), (15, 6), (30, 4), (45, 3)]
+  num_items = len(items)
+  all_items = range(num_items)
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Main variables.
-    x = {}
-    for i in all_items:
-        num_copies = items[i][1]
-        for b in all_bins:
-            x[(i, b)] = model.new_int_var(0, num_copies, f"x[{i},{b}]")
-
-    # Load variables.
-    load = [model.new_int_var(0, bin_capacity, f"load[{b}]") for b in all_bins]
-
-    # Slack variables.
-    slacks = [model.new_bool_var(f"slack[{b}]") for b in all_bins]
-
-    # Links load and x.
+  # Main variables.
+  x = {}
+  for i in all_items:
+    num_copies = items[i][1]
     for b in all_bins:
-        model.add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
+      x[(i, b)] = model.new_int_var(0, num_copies, f"x[{i},{b}]")
 
-    # Place all items.
-    for i in all_items:
-        model.add(sum(x[(i, b)] for b in all_bins) == items[i][1])
+  # Load variables.
+  load = [model.new_int_var(0, bin_capacity, f"load[{b}]") for b in all_bins]
 
-    # Links load and slack through an equivalence relation.
-    safe_capacity = bin_capacity - slack_capacity
-    for b in all_bins:
-        # slack[b] => load[b] <= safe_capacity.
-        model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
-        # not(slack[b]) => load[b] > safe_capacity.
-        model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
+  # Slack variables.
+  slacks = [model.new_bool_var(f"slack[{b}]") for b in all_bins]
 
-    # Maximize sum of slacks.
-    model.maximize(sum(slacks))
+  # Links load and x.
+  for b in all_bins:
+    model.add(load[b] == sum(x[(i, b)] * items[i][0] for i in all_items))
 
-    # Solves and prints out the solution.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-    print(f"solve status: {solver.status_name(status)}")
-    if status == cp_model.OPTIMAL:
-        print(f"Optimal objective value: {solver.objective_value}")
-    print("Statistics")
-    print(f"  - conflicts : {solver.num_conflicts}")
-    print(f"  - branches  : {solver.num_branches}")
-    print(f"  - wall time : {solver.wall_time}s")
+  # Place all items.
+  for i in all_items:
+    model.add(sum(x[(i, b)] for b in all_bins) == items[i][1])
+
+  # Links load and slack through an equivalence relation.
+  safe_capacity = bin_capacity - slack_capacity
+  for b in all_bins:
+    # slack[b] => load[b] <= safe_capacity.
+    model.add(load[b] <= safe_capacity).only_enforce_if(slacks[b])
+    # not(slack[b]) => load[b] > safe_capacity.
+    model.add(load[b] > safe_capacity).only_enforce_if(~slacks[b])
+
+  # Maximize sum of slacks.
+  model.maximize(sum(slacks))
+
+  # Solves and prints out the solution.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  print(f"solve status: {solver.status_name(status)}")
+  if status == cp_model.OPTIMAL:
+    print(f"Optimal objective value: {solver.objective_value}")
+  print("Statistics")
+  print(f"  - conflicts : {solver.num_conflicts}")
+  print(f"  - branches  : {solver.num_branches}")
+  print(f"  - wall time : {solver.wall_time}s")
 
 
 binpacking_problem_sat()

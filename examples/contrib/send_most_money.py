@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  SEND+MOST=MONEY in Google CP Solver.
+SEND+MOST=MONEY in Google CP Solver.
 
 
-  Alphametic problem were we maximize MONEY.
+Alphametic problem were we maximize MONEY.
 
-  Problem from the lecture notes:
-  http://www.ict.kth.se/courses/ID2204/notes/L01.pdf
+Problem from the lecture notes:
+http://www.ict.kth.se/courses/ID2204/notes/L01.pdf
 
-  Compare with the following models:
-  * Comet   : http://www.hakank.org/comet/send_most_money.co
-  * Comet   : http://www.hakank.org/comet/send_most_money2.co
-  * ECLiPSE : http://www.hakank.org/eclipse/send_most_money.ecl
-  * SICStus: http://hakank.org/sicstus/send_most_money.pl
-  * MiniZinc: http://www.hakank.org/minizinc/send_most_money.mzn
-  * Gecode/R: http://www.hakank.org/gecode_r/send_most_money2.rb
-  * Tailor/Essence': http://www.hakank.org/tailor/send_most_money.eprime
-  * Zinc: http://www.hakank.org/minizinc/send_most_money.zinc
+Compare with the following models:
+* Comet   : http://www.hakank.org/comet/send_most_money.co
+* Comet   : http://www.hakank.org/comet/send_most_money2.co
+* ECLiPSE : http://www.hakank.org/eclipse/send_most_money.ecl
+* SICStus: http://hakank.org/sicstus/send_most_money.pl
+* MiniZinc: http://www.hakank.org/minizinc/send_most_money.mzn
+* Gecode/R: http://www.hakank.org/gecode_r/send_most_money2.rb
+* Tailor/Essence': http://www.hakank.org/tailor/send_most_money.eprime
+* Zinc: http://www.hakank.org/minizinc/send_most_money.zinc
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 
@@ -70,8 +70,9 @@ def main(MONEY=0):
   solver.Add(solver.AllDifferent(x))
   solver.Add(money == m * 10000 + o * 1000 + n * 100 + e * 10 + y)
   solver.Add(money > 0)
-  solver.Add(1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * s +
-             t == money)
+  solver.Add(
+      1000 * s + 100 * e + 10 * n + d + 1000 * m + 100 * o + 10 * s + t == money
+  )
   solver.Add(s > 0)
   solver.Add(m > 0)
 
@@ -91,7 +92,8 @@ def main(MONEY=0):
 
   solver.Solve(
       solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE),
-      cargs)
+      cargs,
+  )
 
   num_solutions = collector.SolutionCount()
   money_val = 0

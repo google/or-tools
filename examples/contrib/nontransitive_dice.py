@@ -13,58 +13,58 @@
 # limitations under the License.
 """
 
-  Nontransitive dice in Google CP Solver.
+ Nontransitive dice in Google CP Solver.
 
-  From
-  http://en.wikipedia.org/wiki/Nontransitive_dice
-  '''
-  A set of nontransitive dice is a set of dice for which the relation
-  'is more likely to roll a higher number' is not transitive. See also
-  intransitivity.
+ From
+ http://en.wikipedia.org/wiki/Nontransitive_dice
+ '''
+ A set of nontransitive dice is a set of dice for which the relation
+ 'is more likely to roll a higher number' is not transitive. See also
+ intransitivity.
 
-  This situation is similar to that in the game Rock, Paper, Scissors,
-  in which each element has an advantage over one choice and a
-  disadvantage to the other.
-  '''
+ This situation is similar to that in the game Rock, Paper, Scissors,
+ in which each element has an advantage over one choice and a
+ disadvantage to the other.
+ '''
 
-  I start with the 3 dice version
-  '''
-     * die A has sides {2,2,4,4,9,9},
-     * die B has sides {1,1,6,6,8,8}, and
-     * die C has sides {3,3,5,5,7,7}.
-  '''
+ I start with the 3 dice version
+ '''
+    * die A has sides {2,2,4,4,9,9},
+    * die B has sides {1,1,6,6,8,8}, and
+    * die C has sides {3,3,5,5,7,7}.
+ '''
 
-  3 dice:
-  Maximum winning: 27
-  comp: [19, 27, 19]
+ 3 dice:
+ Maximum winning: 27
+ comp: [19, 27, 19]
+ dice:
+ [[0, 0, 3, 6, 6, 6],
+ [2, 5, 5, 5, 5, 5],
+ [1, 1, 4, 4, 4, 7]]
+ max_win: 27
+
+ Number of solutions:  1
+ Nodes: 1649873  Time: 25.94
+ getFailures: 1649853
+ getBacktracks: 1649873
+ getPropags: 98105090
+
+Max winnings where they are the same: 21
+  comp: [21, 21, 21]
   dice:
-  [[0, 0, 3, 6, 6, 6],
-  [2, 5, 5, 5, 5, 5],
-  [1, 1, 4, 4, 4, 7]]
-  max_win: 27
+  [[0, 0, 3, 3, 3, 6],
+  [2, 2, 2, 2, 2, 5],
+  [1, 1, 1, 4, 4, 4]]
+  max_win: 21
 
-  Number of solutions:  1
-  Nodes: 1649873  Time: 25.94
-  getFailures: 1649853
-  getBacktracks: 1649873
-  getPropags: 98105090
-
- Max winnings where they are the same: 21
-   comp: [21, 21, 21]
-   dice:
-   [[0, 0, 3, 3, 3, 6],
-   [2, 2, 2, 2, 2, 5],
-   [1, 1, 1, 4, 4, 4]]
-   max_win: 21
-
-   Compare with these models:
-   * MiniZinc: http://hakank.org/minizinc/nontransitive_dice.mzn
-   * Comet: http://hakank.org/comet/nontransitive_dice.co
+  Compare with these models:
+  * MiniZinc: http://hakank.org/minizinc/nontransitive_dice.mzn
+  * Comet: http://hakank.org/comet/nontransitive_dice.co
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+ This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+ Also see my other Google CP Solver models:
+ http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -160,8 +160,9 @@ def main(m=3, n=6, minimize_val=0):
   #
   # solution and search
   #
-  db = solver.Phase(dice_flat + comp_flat, solver.INT_VAR_DEFAULT,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      dice_flat + comp_flat, solver.INT_VAR_DEFAULT, solver.ASSIGN_MIN_VALUE
+  )
 
   if minimize_val:
     solver.NewSearch(db, [objective])

@@ -13,31 +13,31 @@
 # limitations under the License.
 """
 
-  Decomposition of the circuit constraint in Google CP Solver.
+Decomposition of the circuit constraint in Google CP Solver.
 
 
-  Cf Global constraint catalog:
-  http://www.emn.fr/x-info/sdemasse/gccat/Ccircuit.html
+Cf Global constraint catalog:
+http://www.emn.fr/x-info/sdemasse/gccat/Ccircuit.html
 
-  Solution of n=4:
-  x: [2, 0, 3, 1]
-  x: [3, 0, 1, 2]
-  x: [1, 3, 0, 2]
-  x: [3, 2, 0, 1]
-  x: [1, 2, 3, 0]
-  x: [2, 3, 1, 0]
+Solution of n=4:
+x: [2, 0, 3, 1]
+x: [3, 0, 1, 2]
+x: [1, 3, 0, 2]
+x: [3, 2, 0, 1]
+x: [1, 2, 3, 0]
+x: [2, 3, 1, 0]
 
-  The 'orbit' method that is used here is based on some
-  observations on permutation orbits.
+The 'orbit' method that is used here is based on some
+observations on permutation orbits.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/circuit_test.mzn
-  * Gecode: http://www.hakank.org/gecode/circuit_orbit.mzn
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/circuit_test.mzn
+* Gecode: http://www.hakank.org/gecode/circuit_orbit.mzn
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 
@@ -109,7 +109,8 @@ def main(n=5):
 
   solver.Solve(
       solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
-      [collector])
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

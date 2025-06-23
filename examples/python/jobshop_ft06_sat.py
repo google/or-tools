@@ -30,90 +30,90 @@ from ortools.sat.python import cp_model
 
 
 def jobshop_ft06() -> None:
-    """Solves the ft06 jobshop."""
-    # Creates the solver.
-    model = cp_model.CpModel()
+  """Solves the ft06 jobshop."""
+  # Creates the solver.
+  model = cp_model.CpModel()
 
-    machines_count = 6
-    jobs_count = 6
-    all_machines = range(0, machines_count)
-    all_jobs = range(0, jobs_count)
+  machines_count = 6
+  jobs_count = 6
+  all_machines = range(0, machines_count)
+  all_jobs = range(0, jobs_count)
 
-    durations = [
-        [1, 3, 6, 7, 3, 6],
-        [8, 5, 10, 10, 10, 4],
-        [5, 4, 8, 9, 1, 7],
-        [5, 5, 5, 3, 8, 9],
-        [9, 3, 5, 4, 3, 1],
-        [3, 3, 9, 10, 4, 1],
-    ]
+  durations = [
+      [1, 3, 6, 7, 3, 6],
+      [8, 5, 10, 10, 10, 4],
+      [5, 4, 8, 9, 1, 7],
+      [5, 5, 5, 3, 8, 9],
+      [9, 3, 5, 4, 3, 1],
+      [3, 3, 9, 10, 4, 1],
+  ]
 
-    machines = [
-        [2, 0, 1, 3, 5, 4],
-        [1, 2, 4, 5, 0, 3],
-        [2, 3, 5, 0, 1, 4],
-        [1, 0, 2, 3, 4, 5],
-        [2, 1, 4, 5, 0, 3],
-        [1, 3, 5, 0, 4, 2],
-    ]
+  machines = [
+      [2, 0, 1, 3, 5, 4],
+      [1, 2, 4, 5, 0, 3],
+      [2, 3, 5, 0, 1, 4],
+      [1, 0, 2, 3, 4, 5],
+      [2, 1, 4, 5, 0, 3],
+      [1, 3, 5, 0, 4, 2],
+  ]
 
-    # Computes horizon dynamically.
-    horizon = sum([sum(durations[i]) for i in all_jobs])
+  # Computes horizon dynamically.
+  horizon = sum([sum(durations[i]) for i in all_jobs])
 
-    task_type = collections.namedtuple("task_type", "start end interval")
+  task_type = collections.namedtuple("task_type", "start end interval")
 
-    # Creates jobs.
-    all_tasks = {}
-    for i in all_jobs:
-        for j in all_machines:
-            start_var = model.new_int_var(0, horizon, f"start_{i}_{j}")
-            duration = durations[i][j]
-            end_var = model.new_int_var(0, horizon, f"end_{i}_{j}")
-            interval_var = model.new_interval_var(
-                start_var, duration, end_var, f"interval_{i}_{j}"
-            )
-            all_tasks[(i, j)] = task_type(
-                start=start_var, end=end_var, interval=interval_var
-            )
+  # Creates jobs.
+  all_tasks = {}
+  for i in all_jobs:
+    for j in all_machines:
+      start_var = model.new_int_var(0, horizon, f"start_{i}_{j}")
+      duration = durations[i][j]
+      end_var = model.new_int_var(0, horizon, f"end_{i}_{j}")
+      interval_var = model.new_interval_var(
+          start_var, duration, end_var, f"interval_{i}_{j}"
+      )
+      all_tasks[(i, j)] = task_type(
+          start=start_var, end=end_var, interval=interval_var
+      )
 
-    # Create disjuctive constraints.
-    machine_to_jobs = {}
-    for i in all_machines:
-        machines_jobs = []
-        for j in all_jobs:
-            for k in all_machines:
-                if machines[j][k] == i:
-                    machines_jobs.append(all_tasks[(j, k)].interval)
-        machine_to_jobs[i] = machines_jobs
-        model.add_no_overlap(machines_jobs)
+  # Create disjuctive constraints.
+  machine_to_jobs = {}
+  for i in all_machines:
+    machines_jobs = []
+    for j in all_jobs:
+      for k in all_machines:
+        if machines[j][k] == i:
+          machines_jobs.append(all_tasks[(j, k)].interval)
+    machine_to_jobs[i] = machines_jobs
+    model.add_no_overlap(machines_jobs)
 
-    # Precedences inside a job.
-    for i in all_jobs:
-        for j in range(0, machines_count - 1):
-            model.add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
+  # Precedences inside a job.
+  for i in all_jobs:
+    for j in range(0, machines_count - 1):
+      model.add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
 
-    # Makespan objective.
-    obj_var = model.new_int_var(0, horizon, "makespan")
-    model.add_max_equality(
-        obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs]
-    )
-    model.minimize(obj_var)
+  # Makespan objective.
+  obj_var = model.new_int_var(0, horizon, "makespan")
+  model.add_max_equality(
+      obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs]
+  )
+  model.minimize(obj_var)
 
-    # Solve the model.
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    status = solver.solve(model)
+  # Solve the model.
+  solver = cp_model.CpSolver()
+  solver.parameters.log_search_progress = True
+  status = solver.solve(model)
 
-    # Output the solution.
-    if status == cp_model.OPTIMAL:
-        if visualization.RunFromIPython():
-            starts = [
-                [solver.value(all_tasks[(i, j)][0]) for j in all_machines]
-                for i in all_jobs
-            ]
-            visualization.DisplayJobshop(starts, durations, machines, "FT06")
-        else:
-            print(f"Optimal makespan: {solver.objective_value}")
+  # Output the solution.
+  if status == cp_model.OPTIMAL:
+    if visualization.RunFromIPython():
+      starts = [
+          [solver.value(all_tasks[(i, j)][0]) for j in all_machines]
+          for i in all_jobs
+      ]
+      visualization.DisplayJobshop(starts, durations, machines, "FT06")
+    else:
+      print(f"Optimal makespan: {solver.objective_value}")
 
 
 jobshop_ft06()

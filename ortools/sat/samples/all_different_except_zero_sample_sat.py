@@ -20,65 +20,65 @@ from ortools.sat.python import cp_model
 
 
 def all_different_except_0():
-    """Encode the AllDifferentExcept0 constraint."""
+  """Encode the AllDifferentExcept0 constraint."""
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Declare our primary variable.
-    x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+  # Declare our primary variable.
+  x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
 
-    # Expand the AllDifferentExcept0 constraint.
-    variables_per_value = collections.defaultdict(list)
-    all_values = set()
+  # Expand the AllDifferentExcept0 constraint.
+  variables_per_value = collections.defaultdict(list)
+  all_values = set()
 
-    for var in x:
-        all_encoding_literals = []
-        # Domains of variables are represented by flat intervals.
-        for i in range(0, len(var.proto.domain), 2):
-            start = var.proto.domain[i]
-            end = var.proto.domain[i + 1]
-            for value in range(start, end + 1):  # Intervals are inclusive.
-                # Create the literal attached to var == value.
-                bool_var = model.new_bool_var(f"{var} == {value}")
-                model.add(var == value).only_enforce_if(bool_var)
+  for var in x:
+    all_encoding_literals = []
+    # Domains of variables are represented by flat intervals.
+    for i in range(0, len(var.proto.domain), 2):
+      start = var.proto.domain[i]
+      end = var.proto.domain[i + 1]
+      for value in range(start, end + 1):  # Intervals are inclusive.
+        # Create the literal attached to var == value.
+        bool_var = model.new_bool_var(f"{var} == {value}")
+        model.add(var == value).only_enforce_if(bool_var)
 
-                # Collect all encoding literals for a given variable.
-                all_encoding_literals.append(bool_var)
+        # Collect all encoding literals for a given variable.
+        all_encoding_literals.append(bool_var)
 
-                # Collect all encoding literals for a given value.
-                variables_per_value[value].append(bool_var)
+        # Collect all encoding literals for a given value.
+        variables_per_value[value].append(bool_var)
 
-                # Collect all different values.
-                all_values.add(value)
+        # Collect all different values.
+        all_values.add(value)
 
-        # One variable must have exactly one value.
-        model.add_exactly_one(all_encoding_literals)
+    # One variable must have exactly one value.
+    model.add_exactly_one(all_encoding_literals)
 
-    # Add the all_different constraints.
-    for value, literals in variables_per_value.items():
-        if value == 0:
-            continue
-        model.add_at_most_one(literals)
+  # Add the all_different constraints.
+  for value, literals in variables_per_value.items():
+    if value == 0:
+      continue
+    model.add_at_most_one(literals)
 
-    model.add(x[0] == 0)
-    model.add(x[1] == 0)
+  model.add(x[0] == 0)
+  model.add(x[1] == 0)
 
-    model.maximize(sum(x))
+  model.maximize(sum(x))
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    # Checks and prints the output.
-    if status == cp_model.OPTIMAL:
-        print(f"Optimal solution: {solver.objective_value}, expected: 27.0")
-    elif status == cp_model.FEASIBLE:
-        print(f"Feasible solution: {solver.objective_value}, optimal 27.0")
-    elif status == cp_model.INFEASIBLE:
-        print("The model is infeasible")
-    else:
-        print("Something went wrong. Please check the status and the log")
+  # Checks and prints the output.
+  if status == cp_model.OPTIMAL:
+    print(f"Optimal solution: {solver.objective_value}, expected: 27.0")
+  elif status == cp_model.FEASIBLE:
+    print(f"Feasible solution: {solver.objective_value}, optimal 27.0")
+  elif status == cp_model.INFEASIBLE:
+    print("The model is infeasible")
+  else:
+    print("Something went wrong. Please check the status and the log")
 
 
 all_different_except_0()

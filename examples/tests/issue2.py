@@ -3,6 +3,7 @@ from ortools.constraint_solver import pywrapcp
 
 # Control-C test. Hit Control-C during execution of this program.
 
+
 def main():
   solver = pywrapcp.Solver("time limit test")
   n = 10
@@ -12,17 +13,15 @@ def main():
   solution = solver.Assignment()
   solution.Add(x)
 
-  db = solver.Phase(x,
-                    solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
 
   time_limit = 2000
   branch_limit = 100000000
   failures_limit = 100000000
   solutions_limit = 10000000
-  limits = (
-      solver.Limit(
-          time_limit, branch_limit, failures_limit, solutions_limit, True))
+  limits = solver.Limit(
+      time_limit, branch_limit, failures_limit, solutions_limit, True
+  )
 
   search_log = solver.SearchLog(1000)
   assignment = solver.Assignment()

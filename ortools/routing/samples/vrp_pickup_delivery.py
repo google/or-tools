@@ -24,10 +24,10 @@ from ortools.routing import pywraprouting
 
 # [START data_model]
 def create_data_model():
-    """Stores the data for the problem."""
-    data = {}
-    data["distance_matrix"] = [
-        # fmt: off
+  """Stores the data for the problem."""
+  data = {}
+  data["distance_matrix"] = [
+      # fmt: off
       [0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468, 776, 662],
       [548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674, 1016, 868, 1210],
       [776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164, 1130, 788, 1552, 754],
@@ -45,134 +45,134 @@ def create_data_model():
       [468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194],
       [776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798],
       [662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0],
-        # fmt: on
-    ]
-    # [START pickups_deliveries]
-    data["pickups_deliveries"] = [
-        [1, 6],
-        [2, 10],
-        [4, 3],
-        [5, 9],
-        [7, 8],
-        [15, 11],
-        [13, 12],
-        [16, 14],
-    ]
-    # [END pickups_deliveries]
-    data["num_vehicles"] = 4
-    data["depot"] = 0
-    return data
-    # [END data_model]
+      # fmt: on
+  ]
+  # [START pickups_deliveries]
+  data["pickups_deliveries"] = [
+      [1, 6],
+      [2, 10],
+      [4, 3],
+      [5, 9],
+      [7, 8],
+      [15, 11],
+      [13, 12],
+      [16, 14],
+  ]
+  # [END pickups_deliveries]
+  data["num_vehicles"] = 4
+  data["depot"] = 0
+  return data
+  # [END data_model]
 
 
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
-    """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
-    total_distance = 0
-    for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
-            continue
-        index = routing.Start(vehicle_id)
-        plan_output = f"Route for vehicle {vehicle_id}:\n"
-        route_distance = 0
-        while not routing.IsEnd(index):
-            plan_output += f" {manager.IndexToNode(index)} -> "
-            previous_index = index
-            index = solution.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id
-            )
-        plan_output += f"{manager.IndexToNode(index)}\n"
-        plan_output += f"Distance of the route: {route_distance}m\n"
-        print(plan_output)
-        total_distance += route_distance
-    print(f"Total Distance of all routes: {total_distance}m")
-    # [END solution_printer]
+  """Prints solution on console."""
+  print(f"Objective: {solution.ObjectiveValue()}")
+  total_distance = 0
+  for vehicle_id in range(data["num_vehicles"]):
+    if not routing.IsVehicleUsed(solution, vehicle_id):
+      continue
+    index = routing.Start(vehicle_id)
+    plan_output = f"Route for vehicle {vehicle_id}:\n"
+    route_distance = 0
+    while not routing.IsEnd(index):
+      plan_output += f" {manager.IndexToNode(index)} -> "
+      previous_index = index
+      index = solution.Value(routing.NextVar(index))
+      route_distance += routing.GetArcCostForVehicle(
+          previous_index, index, vehicle_id
+      )
+    plan_output += f"{manager.IndexToNode(index)}\n"
+    plan_output += f"Distance of the route: {route_distance}m\n"
+    print(plan_output)
+    total_distance += route_distance
+  print(f"Total Distance of all routes: {total_distance}m")
+  # [END solution_printer]
 
 
 def main():
-    """Entry point of the program."""
-    # Instantiate the data problem.
-    # [START data]
-    data = create_data_model()
-    # [END data]
+  """Entry point of the program."""
+  # Instantiate the data problem.
+  # [START data]
+  data = create_data_model()
+  # [END data]
 
-    # Create the routing index manager.
-    # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+  # Create the routing index manager.
+  # [START index_manager]
+  manager = pywraprouting.RoutingIndexManager(
+      len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+  )
+  # [END index_manager]
+
+  # Create Routing Model.
+  # [START routing_model]
+  routing = pywraprouting.RoutingModel(manager)
+
+  # [END routing_model]
+
+  # Define cost of each arc.
+  # [START arc_cost]
+  def distance_callback(from_index, to_index):
+    """Returns the manhattan distance between the two nodes."""
+    # Convert from routing variable Index to distance matrix NodeIndex.
+    from_node = manager.IndexToNode(from_index)
+    to_node = manager.IndexToNode(to_index)
+    return data["distance_matrix"][from_node][to_node]
+
+  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+  # [END arc_cost]
+
+  # Add Distance constraint.
+  # [START distance_constraint]
+  dimension_name = "Distance"
+  routing.AddDimension(
+      transit_callback_index,
+      0,  # no slack
+      3000,  # vehicle maximum travel distance
+      True,  # start cumul to zero
+      dimension_name,
+  )
+  distance_dimension = routing.GetDimensionOrDie(dimension_name)
+  distance_dimension.SetGlobalSpanCostCoefficient(100)
+  # [END distance_constraint]
+
+  # Define Transportation Requests.
+  # [START pickup_delivery_constraint]
+  for request in data["pickups_deliveries"]:
+    pickup_index = manager.NodeToIndex(request[0])
+    delivery_index = manager.NodeToIndex(request[1])
+    routing.AddPickupAndDelivery(pickup_index, delivery_index)
+    routing.solver().Add(
+        routing.VehicleVar(pickup_index) == routing.VehicleVar(delivery_index)
     )
-    # [END index_manager]
-
-    # Create Routing Model.
-    # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
-
-    # [END routing_model]
-
-    # Define cost of each arc.
-    # [START arc_cost]
-    def distance_callback(from_index, to_index):
-        """Returns the manhattan distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return data["distance_matrix"][from_node][to_node]
-
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-    # [END arc_cost]
-
-    # Add Distance constraint.
-    # [START distance_constraint]
-    dimension_name = "Distance"
-    routing.AddDimension(
-        transit_callback_index,
-        0,  # no slack
-        3000,  # vehicle maximum travel distance
-        True,  # start cumul to zero
-        dimension_name,
+    routing.solver().Add(
+        distance_dimension.CumulVar(pickup_index)
+        <= distance_dimension.CumulVar(delivery_index)
     )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
-    # [END distance_constraint]
+  # [END pickup_delivery_constraint]
 
-    # Define Transportation Requests.
-    # [START pickup_delivery_constraint]
-    for request in data["pickups_deliveries"]:
-        pickup_index = manager.NodeToIndex(request[0])
-        delivery_index = manager.NodeToIndex(request[1])
-        routing.AddPickupAndDelivery(pickup_index, delivery_index)
-        routing.solver().Add(
-            routing.VehicleVar(pickup_index) == routing.VehicleVar(delivery_index)
-        )
-        routing.solver().Add(
-            distance_dimension.CumulVar(pickup_index)
-            <= distance_dimension.CumulVar(delivery_index)
-        )
-    # [END pickup_delivery_constraint]
+  # Setting first solution heuristic.
+  # [START parameters]
+  search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+  search_parameters.first_solution_strategy = (
+      enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
+  )
+  # [END parameters]
 
-    # Setting first solution heuristic.
-    # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
-    )
-    # [END parameters]
+  # Solve the problem.
+  # [START solve]
+  solution = routing.SolveWithParameters(search_parameters)
+  # [END solve]
 
-    # Solve the problem.
-    # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
-    # [END solve]
-
-    # Print solution on console.
-    # [START print_solution]
-    if solution:
-        print_solution(data, manager, routing, solution)
-    # [END print_solution]
+  # Print solution on console.
+  # [START print_solution]
+  if solution:
+    print_solution(data, manager, routing, solution)
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

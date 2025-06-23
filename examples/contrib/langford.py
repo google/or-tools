@@ -13,35 +13,35 @@
 # limitations under the License.
 """
 
-  Langford's number problem in Google CP Solver.
+Langford's number problem in Google CP Solver.
 
-  Langford's number problem (CSP lib problem 24)
-  http://www.csplib.org/prob/prob024/
-  '''
-  Arrange 2 sets of positive integers 1..k to a sequence,
-  such that, following the first occurence of an integer i,
-  each subsequent occurrence of i, appears i+1 indices later
-  than the last.
-  For example, for k=4, a solution would be 41312432
-  '''
+Langford's number problem (CSP lib problem 24)
+http://www.csplib.org/prob/prob024/
+'''
+Arrange 2 sets of positive integers 1..k to a sequence,
+such that, following the first occurence of an integer i,
+each subsequent occurrence of i, appears i+1 indices later
+than the last.
+For example, for k=4, a solution would be 41312432
+'''
 
-  * John E. Miller: Langford's Problem
-    http://www.lclark.edu/~miller/langford.html
+* John E. Miller: Langford's Problem
+  http://www.lclark.edu/~miller/langford.html
 
-  * Encyclopedia of Integer Sequences for the number of solutions for each k
-    http://www.research.att.com/cgi-bin/access.cgi/as/njas/sequences/eisA.cgi?Anum=014552
-
-
-  Also, see the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/langford2.mzn
-  * Gecode/R: http://www.hakank.org/gecode_r/langford.rb
-  * ECLiPSe: http://hakank.org/eclipse/langford.ecl
-  * SICStus: http://hakank.org/sicstus/langford.pl
+* Encyclopedia of Integer Sequences for the number of solutions for each k
+  http://www.research.att.com/cgi-bin/access.cgi/as/njas/sequences/eisA.cgi?Anum=014552
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+Also, see the following models:
+* MiniZinc: http://www.hakank.org/minizinc/langford2.mzn
+* Gecode/R: http://www.hakank.org/gecode_r/langford.rb
+* ECLiPSe: http://hakank.org/eclipse/langford.ecl
+* SICStus: http://hakank.org/sicstus/langford.pl
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -81,8 +81,9 @@ def main(k=8, num_sol=0):
   #
   # search and result
   #
-  db = solver.Phase(position, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      position, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

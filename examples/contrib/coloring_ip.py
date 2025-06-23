@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  Simple coloring problem using MIP in Google CP Solver.
+Simple coloring problem using MIP in Google CP Solver.
 
-  Inspired by the GLPK:s model color.mod
-  '''
-  COLOR, Graph Coloring Problem
+Inspired by the GLPK:s model color.mod
+'''
+COLOR, Graph Coloring Problem
 
-  Written in GNU MathProg by Andrew Makhorin <mao@mai2.rcnet.ru>
+Written in GNU MathProg by Andrew Makhorin <mao@mai2.rcnet.ru>
 
-  Given an undirected loopless graph G = (V, E), where V is a set of
-  nodes, E <= V x V is a set of arcs, the Graph Coloring Problem is to
-  find a mapping (coloring) F: V -> C, where C = {1, 2, ... } is a set
-  of colors whose cardinality is as small as possible, such that
-  F(i) != F(j) for every arc (i,j) in E, that is adjacent nodes must
-  be assigned different colors.
-  '''
+Given an undirected loopless graph G = (V, E), where V is a set of
+nodes, E <= V x V is a set of arcs, the Graph Coloring Problem is to
+find a mapping (coloring) F: V -> C, where C = {1, 2, ... } is a set
+of colors whose cardinality is as small as possible, such that
+F(i) != F(j) for every arc (i,j) in E, that is adjacent nodes must
+be assigned different colors.
+'''
 
-  Compare with the MiniZinc model:
-    http://www.hakank.org/minizinc/coloring_ip.mzn
+Compare with the MiniZinc model:
+  http://www.hakank.org/minizinc/coloring_ip.mzn
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -70,9 +70,28 @@ def main(sol='CBC'):
   # http://mat.gsia.cmu.edu/COLOR/instances.html
   #
   # Note: 1-based (adjusted below)
-  E = [[1, 2], [1, 4], [1, 7], [1, 9], [2, 3], [2, 6], [2, 8], [3, 5], [3, 7],
-       [3, 10], [4, 5], [4, 6], [4, 10], [5, 8], [5, 9], [6, 11], [7, 11],
-       [8, 11], [9, 11], [10, 11]]
+  E = [
+      [1, 2],
+      [1, 4],
+      [1, 7],
+      [1, 9],
+      [2, 3],
+      [2, 6],
+      [2, 8],
+      [3, 5],
+      [3, 7],
+      [3, 10],
+      [4, 5],
+      [4, 6],
+      [4, 10],
+      [5, 8],
+      [5, 9],
+      [6, 11],
+      [7, 11],
+      [8, 11],
+      [9, 11],
+      [10, 11],
+  ]
 
   #
   # declare variables

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from ortools.constraint_solver import pywrapcp
 
+
 class OneVarLns(pywrapcp.BaseLns):
   """One Var LNS."""
 
@@ -55,8 +56,13 @@ class SumFilter(pywrapcp.IntVarLocalSearchFilter):
   def OnSynchronize(self, delta):
     self.__sum = sum(self.Value(index) for index in range(self.Size()))
 
-  def Accept(self, delta, unused_delta_delta, unused_objective_min,
-             unused_objective_max):
+  def Accept(
+      self,
+      delta,
+      unused_delta_delta,
+      unused_objective_min,
+      unused_objective_max,
+  ):
     solution_delta = delta.IntVarContainer()
     solution_delta_size = solution_delta.Size()
     for i in range(solution_delta_size):
@@ -101,8 +107,9 @@ def Solve(type):
     move_one_var = MoveOneVar(vars)
     sum_filter = SumFilter(vars)
     filter_manager = pywrapcp.LocalSearchFilterManager([sum_filter])
-    ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db, None,
-                                                  filter_manager)
+    ls_params = solver.LocalSearchPhaseParameters(
+        sum_var, move_one_var, db, None, filter_manager
+    )
     ls = solver.LocalSearchPhase(vars, db, ls_params)
 
   collector = solver.LastSolutionCollector()

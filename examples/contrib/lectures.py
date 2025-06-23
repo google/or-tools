@@ -13,35 +13,35 @@
 # limitations under the License.
 """
 
-  Lectures problem in Google CP Solver.
+ Lectures problem in Google CP Solver.
 
-  Biggs: Discrete Mathematics (2nd ed), page 187.
-  '''
-  Suppose we wish to schedule six one-hour lectures, v1, v2, v3, v4, v5, v6.
-  Among the potential audience there are people who wish to hear both
+ Biggs: Discrete Mathematics (2nd ed), page 187.
+ '''
+ Suppose we wish to schedule six one-hour lectures, v1, v2, v3, v4, v5, v6.
+ Among the potential audience there are people who wish to hear both
 
-   - v1 and v2
-   - v1 and v4
-   - v3 and v5
-   - v2 and v6
-   - v4 and v5
-   - v5 and v6
-   - v1 and v6
+  - v1 and v2
+  - v1 and v4
+  - v3 and v5
+  - v2 and v6
+  - v4 and v5
+  - v5 and v6
+  - v1 and v6
 
-  How many hours are necessary in order that the lectures can be given
-  without clashes?
-  '''
+ How many hours are necessary in order that the lectures can be given
+ without clashes?
+ '''
 
-  Compare with the following models:
- * MiniZinc: http://www.hakank.org/minizinc/lectures.mzn
- * SICstus: http://hakank.org/sicstus/lectures.pl
- * ECLiPSe: http://hakank.org/eclipse/lectures.ecl
- * Gecode: http://hakank.org/gecode/lectures.cpp
+ Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/lectures.mzn
+* SICstus: http://hakank.org/sicstus/lectures.pl
+* ECLiPSe: http://hakank.org/eclipse/lectures.ecl
+* Gecode: http://hakank.org/gecode/lectures.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+ This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+ Also see my other Google CP Solver models:
+ http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -100,8 +100,9 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(v, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.Phase(
+      v, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.ASSIGN_CENTER_VALUE
+  )
 
   solver.NewSearch(db, [objective])
 

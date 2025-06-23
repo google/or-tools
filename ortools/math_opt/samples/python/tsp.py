@@ -63,8 +63,12 @@ import svgwrite
 
 from ortools.math_opt.python import mathopt
 
-_NUM_CITIES = flags.DEFINE_integer("num_cities", 100, "The size of the TSP instance.")
-_OUTPUT = flags.DEFINE_string("output", "", "Where to write an output SVG, if nonempty")
+_NUM_CITIES = flags.DEFINE_integer(
+    "num_cities", 100, "The size of the TSP instance."
+)
+_OUTPUT = flags.DEFINE_string(
+    "output", "", "Where to write an output SVG, if nonempty"
+)
 _TEST_INSTANCE = flags.DEFINE_boolean(
     "test_instance",
     False,
@@ -78,178 +82,182 @@ Cities = List[Tuple[float, float]]
 
 
 def _random_cities(num_cities: int) -> Cities:
-    """Returns a list random entries distributed U[0,1]^2 i.i.d."""
-    return [(random.random(), random.random()) for _ in range(num_cities)]
+  """Returns a list random entries distributed U[0,1]^2 i.i.d."""
+  return [(random.random(), random.random()) for _ in range(num_cities)]
 
 
 def _test_instance() -> Cities:
-    return [
-        (0.0, 0.0),
-        (0.1, 0.0),
-        (0.0, 0.1),
-        (0.1, 0.1),
-        (0.0, 0.9),
-        (0.1, 0.9),
-        (0.0, 1.0),
-        (0.1, 1.0),
-    ]
+  return [
+      (0.0, 0.0),
+      (0.1, 0.0),
+      (0.0, 0.1),
+      (0.1, 0.1),
+      (0.0, 0.9),
+      (0.1, 0.9),
+      (0.0, 1.0),
+      (0.1, 1.0),
+  ]
 
 
 def _distance_matrix(cities: Cities) -> List[List[float]]:
-    """Converts a list of (x,y) pairs into a a matrix of Eucledian distances."""
-    n = len(cities)
-    res = [[0.0] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
-            xi, yi = cities[i]
-            xj, yj = cities[j]
-            dx = xi - xj
-            dy = yi - yj
-            dist = math.sqrt(dx * dx + dy * dy)
-            res[i][j] = dist
-            res[j][i] = dist
-    return res
+  """Converts a list of (x,y) pairs into a a matrix of Eucledian distances."""
+  n = len(cities)
+  res = [[0.0] * n for _ in range(n)]
+  for i in range(n):
+    for j in range(i + 1, n):
+      xi, yi = cities[i]
+      xj, yj = cities[j]
+      dx = xi - xj
+      dy = yi - yj
+      dist = math.sqrt(dx * dx + dy * dy)
+      res[i][j] = dist
+      res[j][i] = dist
+  return res
 
 
 def _edge_values(
     edge_vars: List[List[Optional[mathopt.Variable]]],
     var_values: Dict[mathopt.Variable, float],
 ) -> List[List[bool]]:
-    """Converts edge decision variables into an adjacency matrix."""
-    n = len(edge_vars)
-    res = [[False] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                res[i][j] = var_values[edge_vars[i][j]] > 0.5
-    return res
+  """Converts edge decision variables into an adjacency matrix."""
+  n = len(edge_vars)
+  res = [[False] * n for _ in range(n)]
+  for i in range(n):
+    for j in range(n):
+      if i != j:
+        res[i][j] = var_values[edge_vars[i][j]] > 0.5
+  return res
 
 
 def _find_cycles(edges: List[List[bool]]) -> List[List[int]]:
-    """Finds the cycle decomposition for a degree two graph as adjacenty matrix."""
-    n = len(edges)
-    cycles = []
-    visited = [False] * n
-    # Algorithm: maintain a "visited" bit for each city indicating if we have
-    # formed a cycle containing this city. Consider the cities in order. When you
-    # find an unvisited city, start a new cycle beginning at this city. Then,
-    # build the cycle by finding an unvisited neighbor until no such neighbor
-    # exists (every city will have two neighbors, but eventually both will be
-    # visited). To find the "unvisited neighbor", we simply do a linear scan
-    # over the cities, checking both the adjacency matrix and the visited bit.
-    #
-    # Note that for this algorithm, in each cycle, the city with lowest index
-    # will be first, and the cycles will be sorted by their city of lowest index.
-    # This is an implementation detail and should not be relied upon.
-    for i in range(n):
-        if visited[i]:
-            continue
-        cycle = []
-        next_city = i
-        while next_city is not None:
-            cycle.append(next_city)
-            visited[next_city] = True
-            current = next_city
-            next_city = None
-            # Scan for an unvisited neighbor. We can start at i+1 since we know that
-            # everything from i back is visited.
-            for j in range(i + 1, n):
-                if (not visited[j]) and edges[current][j]:
-                    next_city = j
-                    break
-        cycles.append(cycle)
-    return cycles
+  """Finds the cycle decomposition for a degree two graph as adjacenty matrix."""
+  n = len(edges)
+  cycles = []
+  visited = [False] * n
+  # Algorithm: maintain a "visited" bit for each city indicating if we have
+  # formed a cycle containing this city. Consider the cities in order. When you
+  # find an unvisited city, start a new cycle beginning at this city. Then,
+  # build the cycle by finding an unvisited neighbor until no such neighbor
+  # exists (every city will have two neighbors, but eventually both will be
+  # visited). To find the "unvisited neighbor", we simply do a linear scan
+  # over the cities, checking both the adjacency matrix and the visited bit.
+  #
+  # Note that for this algorithm, in each cycle, the city with lowest index
+  # will be first, and the cycles will be sorted by their city of lowest index.
+  # This is an implementation detail and should not be relied upon.
+  for i in range(n):
+    if visited[i]:
+      continue
+    cycle = []
+    next_city = i
+    while next_city is not None:
+      cycle.append(next_city)
+      visited[next_city] = True
+      current = next_city
+      next_city = None
+      # Scan for an unvisited neighbor. We can start at i+1 since we know that
+      # everything from i back is visited.
+      for j in range(i + 1, n):
+        if (not visited[j]) and edges[current][j]:
+          next_city = j
+          break
+    cycles.append(cycle)
+  return cycles
 
 
 def solve_tsp(cities: Cities) -> List[int]:
-    """Solves the traveling salesperson problem and returns the best route."""
-    n = len(cities)
-    dist = _distance_matrix(cities)
-    model = mathopt.Model(name="tsp")
-    edges = [[None] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
-            v = model.add_binary_variable(name=f"x_{i}_{j}")
-            edges[i][j] = v
-            edges[j][i] = v
-    obj = 0
-    for i in range(n):
-        obj += sum(dist[i][j] * edges[i][j] for j in range(i + 1, n))
-    model.minimize(obj)
-    for i in range(n):
-        model.add_linear_constraint(sum(edges[i][j] for j in range(n) if j != i) == 2.0)
-
-    def cb(cb_data: mathopt.CallbackData) -> mathopt.CallbackResult:
-        assert cb_data.solution is not None
-        cycles = _find_cycles(_edge_values(edges, cb_data.solution))
-        result = mathopt.CallbackResult()
-        if len(cycles) > 1:
-            for cycle in cycles:
-                cycle_as_set = set(cycle)
-                not_in_cycle = [i for i in range(n) if i not in cycle_as_set]
-                result.add_lazy_constraint(
-                    sum(
-                        edges[i][j] for (i, j) in itertools.product(cycle, not_in_cycle)
-                    )
-                    >= 2.0
-                )
-        return result
-
-    result = mathopt.solve(
-        model,
-        mathopt.SolverType.GUROBI,
-        params=mathopt.SolveParameters(enable_output=_SOLVE_LOGS.value),
-        callback_reg=mathopt.CallbackRegistration(
-            events={mathopt.Event.MIP_SOLUTION}, add_lazy_constraints=True
-        ),
-        cb=cb,
+  """Solves the traveling salesperson problem and returns the best route."""
+  n = len(cities)
+  dist = _distance_matrix(cities)
+  model = mathopt.Model(name="tsp")
+  edges = [[None] * n for _ in range(n)]
+  for i in range(n):
+    for j in range(i + 1, n):
+      v = model.add_binary_variable(name=f"x_{i}_{j}")
+      edges[i][j] = v
+      edges[j][i] = v
+  obj = 0
+  for i in range(n):
+    obj += sum(dist[i][j] * edges[i][j] for j in range(i + 1, n))
+  model.minimize(obj)
+  for i in range(n):
+    model.add_linear_constraint(
+        sum(edges[i][j] for j in range(n) if j != i) == 2.0
     )
-    assert (
-        result.termination.reason == mathopt.TerminationReason.OPTIMAL
-    ), result.termination
-    assert result.solutions[0].primal_solution is not None
-    print(f"Route length: {result.solutions[0].primal_solution.objective_value}")
-    cycles = _find_cycles(
-        _edge_values(edges, result.solutions[0].primal_solution.variable_values)
-    )
-    assert len(cycles) == 1, len(cycles)
-    route = cycles[0]
-    assert len(route) == n, (len(route), n)
-    return route
+
+  def cb(cb_data: mathopt.CallbackData) -> mathopt.CallbackResult:
+    assert cb_data.solution is not None
+    cycles = _find_cycles(_edge_values(edges, cb_data.solution))
+    result = mathopt.CallbackResult()
+    if len(cycles) > 1:
+      for cycle in cycles:
+        cycle_as_set = set(cycle)
+        not_in_cycle = [i for i in range(n) if i not in cycle_as_set]
+        result.add_lazy_constraint(
+            sum(
+                edges[i][j] for (i, j) in itertools.product(cycle, not_in_cycle)
+            )
+            >= 2.0
+        )
+    return result
+
+  result = mathopt.solve(
+      model,
+      mathopt.SolverType.GUROBI,
+      params=mathopt.SolveParameters(enable_output=_SOLVE_LOGS.value),
+      callback_reg=mathopt.CallbackRegistration(
+          events={mathopt.Event.MIP_SOLUTION}, add_lazy_constraints=True
+      ),
+      cb=cb,
+  )
+  assert (
+      result.termination.reason == mathopt.TerminationReason.OPTIMAL
+  ), result.termination
+  assert result.solutions[0].primal_solution is not None
+  print(f"Route length: {result.solutions[0].primal_solution.objective_value}")
+  cycles = _find_cycles(
+      _edge_values(edges, result.solutions[0].primal_solution.variable_values)
+  )
+  assert len(cycles) == 1, len(cycles)
+  route = cycles[0]
+  assert len(route) == n, (len(route), n)
+  return route
 
 
 def route_svg(filename: str, cities: Cities, route: List[int]):
-    """Draws the route as an SVG and writes to disk (or prints if no filename)."""
-    resolution = 1000
-    r = 5
-    drawing = svgwrite.Drawing(
-        filename=filename,
-        size=(resolution + 2 * r, resolution + 2 * r),
-        profile="tiny",
-    )
-    polygon_points = []
-    scale = lambda x: int(round(x * resolution)) + r
-    for city in route:
-        raw_x, raw_y = cities[city]
-        c = (scale(raw_x), scale(raw_y))
-        polygon_points.append(c)
-        drawing.add(drawing.circle(center=c, r=r, fill="blue"))
-    drawing.add(drawing.polygon(points=polygon_points, stroke="blue", fill="none"))
-    if not filename:
-        print(drawing.tostring())
-    else:
-        drawing.save()
+  """Draws the route as an SVG and writes to disk (or prints if no filename)."""
+  resolution = 1000
+  r = 5
+  drawing = svgwrite.Drawing(
+      filename=filename,
+      size=(resolution + 2 * r, resolution + 2 * r),
+      profile="tiny",
+  )
+  polygon_points = []
+  scale = lambda x: int(round(x * resolution)) + r
+  for city in route:
+    raw_x, raw_y = cities[city]
+    c = (scale(raw_x), scale(raw_y))
+    polygon_points.append(c)
+    drawing.add(drawing.circle(center=c, r=r, fill="blue"))
+  drawing.add(
+      drawing.polygon(points=polygon_points, stroke="blue", fill="none")
+  )
+  if not filename:
+    print(drawing.tostring())
+  else:
+    drawing.save()
 
 
 def main(args):
-    del args  # Unused.
-    if _TEST_INSTANCE.value:
-        cities = _test_instance()
-    else:
-        cities = _random_cities(_NUM_CITIES.value)
-    route = solve_tsp(cities)
-    route_svg(_OUTPUT.value, cities, route)
+  del args  # Unused.
+  if _TEST_INSTANCE.value:
+    cities = _test_instance()
+  else:
+    cities = _random_cities(_NUM_CITIES.value)
+  route = solve_tsp(cities)
+  route_svg(_OUTPUT.value, cities, route)
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

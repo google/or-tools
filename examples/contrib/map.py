@@ -13,24 +13,24 @@
 # limitations under the License.
 """
 
-  Map coloring problem in Google CP Solver.
+Map coloring problem in Google CP Solver.
 
 
-  From Pascal Van Hentenryck 'The OPL Optimization Programming Language',
-  page 7, 42.
+From Pascal Van Hentenryck 'The OPL Optimization Programming Language',
+page 7, 42.
 
-  Compare with the following models:
-  * Comet: http://www.hakank.org/comet/map.co
-  * Tailor/Essence': http://hakank.org/tailor/map_coloring.eprime
-  * SICStus: http://hakank.org/sicstus/map_coloring.pl
-  * ECLiPSe: http://hakank.org/eclipse/map.ecl
-  * Gecode: http://hakank.org/gecode/map.cpp
-  * MiniZinc: http://hakank.org/minizinc/map.mzn
-  * Zinc: http://hakank.org/minizinc/map.zinc
+Compare with the following models:
+* Comet: http://www.hakank.org/comet/map.co
+* Tailor/Essence': http://hakank.org/tailor/map_coloring.eprime
+* SICStus: http://hakank.org/sicstus/map_coloring.pl
+* ECLiPSe: http://hakank.org/eclipse/map.ecl
+* Gecode: http://hakank.org/gecode/map.cpp
+* MiniZinc: http://hakank.org/minizinc/map.mzn
+* Zinc: http://hakank.org/minizinc/map.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -79,8 +79,13 @@ def main():
   # collector = solver.FirstSolutionCollector(solution)
   # search_log = solver.SearchLog(100, x[0])
   solver.Solve(
-      solver.Phase([color[i] for i in range(n)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [color[i] for i in range(n)],
+          solver.INT_VAR_SIMPLE,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)

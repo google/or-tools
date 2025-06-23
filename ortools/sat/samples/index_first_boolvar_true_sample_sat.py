@@ -18,56 +18,56 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, index: cp_model.IntVar, boolvars: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__index = index
-        self.__boolvars = boolvars
+  def __init__(self, index: cp_model.IntVar, boolvars: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__index = index
+    self.__boolvars = boolvars
 
-    def on_solution_callback(self) -> None:
-        line = ""
-        for v in self.__boolvars:
-            line += f"{self.value(v)}"
-        line += f" -> {self.value(self.__index)}"
-        print(line)
+  def on_solution_callback(self) -> None:
+    line = ""
+    for v in self.__boolvars:
+      line += f"{self.value(v)}"
+    line += f" -> {self.value(self.__index)}"
+    print(line)
 
 
 def index_of_first_bool_at_true_sample_sat():
-    """Compute the index of the first Boolean variable set to true."""
+  """Compute the index of the first Boolean variable set to true."""
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Variables
-    num_bool_vars = 5
-    bool_vars = [model.new_bool_var(f"{i}") for i in range(num_bool_vars)]
-    index = model.new_int_var(0, num_bool_vars, "index")
+  # Variables
+  num_bool_vars = 5
+  bool_vars = [model.new_bool_var(f"{i}") for i in range(num_bool_vars)]
+  index = model.new_int_var(0, num_bool_vars, "index")
 
-    # Channeling between the index and the Boolean variables.
-    model.add_min_equality(
-        index,
-        [
-            num_bool_vars - bool_vars[i] * (num_bool_vars - i)
-            for i in range(num_bool_vars)
-        ],
-    )
+  # Channeling between the index and the Boolean variables.
+  model.add_min_equality(
+      index,
+      [
+          num_bool_vars - bool_vars[i] * (num_bool_vars - i)
+          for i in range(num_bool_vars)
+      ],
+  )
 
-    # Flip bool_vars in increasing order.
-    model.add_decision_strategy(
-        bool_vars, cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
-    )
+  # Flip bool_vars in increasing order.
+  model.add_decision_strategy(
+      bool_vars, cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
 
-    # Search and print out all solutions.
-    solver.parameters.enumerate_all_solutions = True
-    solution_printer = VarArraySolutionPrinter(index, bool_vars)
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solver.parameters.enumerate_all_solutions = True
+  solution_printer = VarArraySolutionPrinter(index, bool_vars)
+  solver.solve(model, solution_printer)
 
 
 index_of_first_bool_at_true_sample_sat()

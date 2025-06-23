@@ -13,54 +13,54 @@
 # limitations under the License.
 """
 
-  Minesweeper in Google CP Solver.
+Minesweeper in Google CP Solver.
 
-  From gecode/examples/minesweeper.cc:
-  '''
-  A specification is a square matrix of characters. Alphanumeric
-  characters represent the number of mines adjacent to that field.
-  Dots represent fields with an unknown number of mines adjacent to
-  it (or an actual mine).
-  '''
+From gecode/examples/minesweeper.cc:
+'''
+A specification is a square matrix of characters. Alphanumeric
+characters represent the number of mines adjacent to that field.
+Dots represent fields with an unknown number of mines adjacent to
+it (or an actual mine).
+'''
 
-  E.g.
-       '..2.3.'
-       '2.....'
-       '..24.3'
-       '1.34..'
-       '.....3'
-       '.3.3..'
-
-
-  Also see:
-  * http://www.janko.at/Raetsel/Minesweeper/index.htm
-
-  * http://en.wikipedia.org/wiki/Minesweeper_(computer_game)
-
-  * Ian Stewart on Minesweeper:
-    http://www.claymath.org/Popular_Lectures/Minesweeper/
-
-  * Richard Kaye's Minesweeper Pages
-    http://web.mat.bham.ac.uk/R.W.Kaye/minesw/minesw.htm
-
-  * Some Minesweeper Configurations
-    http://web.mat.bham.ac.uk/R.W.Kaye/minesw/minesw.pdf
+E.g.
+     '..2.3.'
+     '2.....'
+     '..24.3'
+     '1.34..'
+     '.....3'
+     '.3.3..'
 
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/minesweeper.mzn
-  * Choco   : http://www.hakank.org/choco/MineSweeper.java
-  * JaCoP   : http://www.hakank.org/JaCoP/MineSweeper.java
-  * Gecode/R: http://www.hakank.org/gecode_r/minesweeper.rb
-  * Comet   : http://www.hakank.org/comet/minesweeper.co
-  * ECLiPSe : http://www.hakank.org/eclipse/minesweeper.ecl
-  * SICStus : http://www.hakank.org/sicstus/minesweeper.pl
-  * Tailor/Essence': http://www.hakank.org/tailor/minesweeper.eprime
-  * Zinc: http://www.hakank.org/minizinc/minesweeper.zinc
+Also see:
+* http://www.janko.at/Raetsel/Minesweeper/index.htm
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+* http://en.wikipedia.org/wiki/Minesweeper_(computer_game)
+
+* Ian Stewart on Minesweeper:
+  http://www.claymath.org/Popular_Lectures/Minesweeper/
+
+* Richard Kaye's Minesweeper Pages
+  http://web.mat.bham.ac.uk/R.W.Kaye/minesw/minesw.htm
+
+* Some Minesweeper Configurations
+  http://web.mat.bham.ac.uk/R.W.Kaye/minesw/minesw.pdf
+
+
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/minesweeper.mzn
+* Choco   : http://www.hakank.org/choco/MineSweeper.java
+* JaCoP   : http://www.hakank.org/JaCoP/MineSweeper.java
+* Gecode/R: http://www.hakank.org/gecode_r/minesweeper.rb
+* Comet   : http://www.hakank.org/comet/minesweeper.co
+* ECLiPSe : http://www.hakank.org/eclipse/minesweeper.ecl
+* SICStus : http://www.hakank.org/sicstus/minesweeper.pl
+* Tailor/Essence': http://www.hakank.org/tailor/minesweeper.eprime
+* Zinc: http://www.hakank.org/minizinc/minesweeper.zinc
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -68,10 +68,16 @@ from ortools.constraint_solver import pywrapcp
 default_r = 8
 default_c = 8
 X = -1
-default_game = [[2, 3, X, 2, 2, X, 2, 1], [X, X, 4, X, X, 4, X, 2],
-                [X, X, X, X, X, X, 4, X], [X, 5, X, 6, X, X, X, 2],
-                [2, X, X, X, 5, 5, X, 2], [1, 3, 4, X, X, X, 4, X],
-                [0, 1, X, 4, X, X, X, 3], [0, 1, 2, X, 2, 3, X, 2]]
+default_game = [
+    [2, 3, X, 2, 2, X, 2, 1],
+    [X, X, 4, X, X, 4, X, 2],
+    [X, X, X, X, X, X, 4, X],
+    [X, 5, X, 6, X, X, X, 2],
+    [2, X, X, X, 5, 5, X, 2],
+    [1, 3, 4, X, X, X, 4, X],
+    [0, 1, X, 4, X, X, X, 3],
+    [0, 1, 2, X, 2, 3, X, 2],
+]
 
 
 def main(game="", r="", c=""):
@@ -137,12 +143,15 @@ def main(game="", r="", c=""):
       if game[i][j] >= 0:
         solver.Add(mines[i, j] == 0)
         # this cell is the sum of all the surrounding cells
-        solver.Add(game[i][j] == solver.Sum([
-            mines[i + a, j + b]
-            for a in S
-            for b in S
-            if i + a >= 0 and j + b >= 0 and i + a < r and j + b < c
-        ]))
+        solver.Add(
+            game[i][j]
+            == solver.Sum([
+                mines[i + a, j + b]
+                for a in S
+                for b in S
+                if i + a >= 0 and j + b >= 0 and i + a < r and j + b < c
+            ])
+        )
       if game[i][j] > X:
         # This cell cannot be a mine
         solver.Add(mines[i, j] == 0)
@@ -155,8 +164,13 @@ def main(game="", r="", c=""):
 
   collector = solver.AllSolutionCollector(solution)
   solver.Solve(
-      solver.Phase([mines[(i, j)] for i in range(r) for j in range(c)],
-                   solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [mines[(i, j)] for i in range(r) for j in range(c)],
+          solver.INT_VAR_SIMPLE,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)

@@ -22,62 +22,62 @@ _BAD_BOOL_ERROR = "two-sided or ranged"
 
 class BoundedExpressionTest(absltest.TestCase):
 
-    def test_bounded_expression_read(self) -> None:
-        b = bounded_expressions.BoundedExpression(
-            lower_bound=-3.0, expression="e123", upper_bound=4.5
-        )
-        self.assertEqual(b.lower_bound, -3.0)
-        self.assertEqual(b.upper_bound, 4.5)
-        self.assertEqual(b.expression, "e123")
-        self.assertEqual(str(b), "-3.0 <= e123 <= 4.5")
-        self.assertEqual(repr(b), "-3.0 <= 'e123' <= 4.5")
-        with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
-            bool(b)
+  def test_bounded_expression_read(self) -> None:
+    b = bounded_expressions.BoundedExpression(
+        lower_bound=-3.0, expression="e123", upper_bound=4.5
+    )
+    self.assertEqual(b.lower_bound, -3.0)
+    self.assertEqual(b.upper_bound, 4.5)
+    self.assertEqual(b.expression, "e123")
+    self.assertEqual(str(b), "-3.0 <= e123 <= 4.5")
+    self.assertEqual(repr(b), "-3.0 <= 'e123' <= 4.5")
+    with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
+      bool(b)
 
-    def test_lower_bounded_expression_read(self) -> None:
-        b = bounded_expressions.LowerBoundedExpression(
-            lower_bound=-3.0, expression="e123"
-        )
-        self.assertEqual(b.lower_bound, -3.0)
-        self.assertEqual(b.upper_bound, math.inf)
-        self.assertEqual(b.expression, "e123")
-        self.assertEqual(str(b), "e123 >= -3.0")
-        self.assertEqual(repr(b), "'e123' >= -3.0")
-        with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
-            bool(b)
+  def test_lower_bounded_expression_read(self) -> None:
+    b = bounded_expressions.LowerBoundedExpression(
+        lower_bound=-3.0, expression="e123"
+    )
+    self.assertEqual(b.lower_bound, -3.0)
+    self.assertEqual(b.upper_bound, math.inf)
+    self.assertEqual(b.expression, "e123")
+    self.assertEqual(str(b), "e123 >= -3.0")
+    self.assertEqual(repr(b), "'e123' >= -3.0")
+    with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
+      bool(b)
 
-    def test_upper_bounded_expression_read(self) -> None:
-        b = bounded_expressions.UpperBoundedExpression(
-            expression="e123", upper_bound=4.5
-        )
-        self.assertEqual(b.lower_bound, -math.inf)
-        self.assertEqual(b.upper_bound, 4.5)
-        self.assertEqual(b.expression, "e123")
-        self.assertEqual(str(b), "e123 <= 4.5")
-        self.assertEqual(repr(b), "'e123' <= 4.5")
-        with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
-            bool(b)
+  def test_upper_bounded_expression_read(self) -> None:
+    b = bounded_expressions.UpperBoundedExpression(
+        expression="e123", upper_bound=4.5
+    )
+    self.assertEqual(b.lower_bound, -math.inf)
+    self.assertEqual(b.upper_bound, 4.5)
+    self.assertEqual(b.expression, "e123")
+    self.assertEqual(str(b), "e123 <= 4.5")
+    self.assertEqual(repr(b), "'e123' <= 4.5")
+    with self.assertRaisesRegex(TypeError, _BAD_BOOL_ERROR):
+      bool(b)
 
-    def test_lower_bounded_to_bounded(self) -> None:
-        lb = bounded_expressions.LowerBoundedExpression(
-            lower_bound=-3.0, expression="e123"
-        )
-        bounded = lb <= 4.5
-        self.assertIsInstance(bounded, bounded_expressions.BoundedExpression)
-        self.assertEqual(bounded.lower_bound, -3.0)
-        self.assertEqual(bounded.upper_bound, 4.5)
-        self.assertEqual(bounded.expression, "e123")
+  def test_lower_bounded_to_bounded(self) -> None:
+    lb = bounded_expressions.LowerBoundedExpression(
+        lower_bound=-3.0, expression="e123"
+    )
+    bounded = lb <= 4.5
+    self.assertIsInstance(bounded, bounded_expressions.BoundedExpression)
+    self.assertEqual(bounded.lower_bound, -3.0)
+    self.assertEqual(bounded.upper_bound, 4.5)
+    self.assertEqual(bounded.expression, "e123")
 
-    def test_upper_bounded_to_bounded(self) -> None:
-        ub = bounded_expressions.UpperBoundedExpression(
-            expression="e123", upper_bound=4.5
-        )
-        bounded = -3.0 <= ub
-        self.assertIsInstance(bounded, bounded_expressions.BoundedExpression)
-        self.assertEqual(bounded.lower_bound, -3.0)
-        self.assertEqual(bounded.upper_bound, 4.5)
-        self.assertEqual(bounded.expression, "e123")
+  def test_upper_bounded_to_bounded(self) -> None:
+    ub = bounded_expressions.UpperBoundedExpression(
+        expression="e123", upper_bound=4.5
+    )
+    bounded = -3.0 <= ub
+    self.assertIsInstance(bounded, bounded_expressions.BoundedExpression)
+    self.assertEqual(bounded.lower_bound, -3.0)
+    self.assertEqual(bounded.upper_bound, 4.5)
+    self.assertEqual(bounded.expression, "e123")
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

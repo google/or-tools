@@ -13,52 +13,52 @@
 # limitations under the License.
 """
 
-  Secret Santa problem II in Google CP Solver.
+Secret Santa problem II in Google CP Solver.
 
-  From Maple Primes: 'Secret Santa Graph Theory'
-  http://www.mapleprimes.com/blog/jpmay/secretsantagraphtheory
-  '''
-  Every year my extended family does a 'secret santa' gift exchange.
-  Each person draws another person at random and then gets a gift for
-  them. At first, none of my siblings were married, and so the draw was
-  completely random. Then, as people got married, we added the restriction
-  that spouses should not draw each others names. This restriction meant
-  that we moved from using slips of paper on a hat to using a simple
-  computer program to choose names. Then people began to complain when
-  they would get the same person two years in a row, so the program was
-  modified to keep some history and avoid giving anyone a name in their
-  recent history. This year, not everyone was participating, and so after
-  removing names, and limiting the number of exclusions to four per person,
-  I had data something like this:
+From Maple Primes: 'Secret Santa Graph Theory'
+http://www.mapleprimes.com/blog/jpmay/secretsantagraphtheory
+'''
+Every year my extended family does a 'secret santa' gift exchange.
+Each person draws another person at random and then gets a gift for
+them. At first, none of my siblings were married, and so the draw was
+completely random. Then, as people got married, we added the restriction
+that spouses should not draw each others names. This restriction meant
+that we moved from using slips of paper on a hat to using a simple
+computer program to choose names. Then people began to complain when
+they would get the same person two years in a row, so the program was
+modified to keep some history and avoid giving anyone a name in their
+recent history. This year, not everyone was participating, and so after
+removing names, and limiting the number of exclusions to four per person,
+I had data something like this:
 
-  Name: Spouse, Recent Picks
+Name: Spouse, Recent Picks
 
-  Noah: Ava. Ella, Evan, Ryan, John
-  Ava: Noah, Evan, Mia, John, Ryan
-  Ryan: Mia, Ella, Ava, Lily, Evan
-  Mia: Ryan, Ava, Ella, Lily, Evan
-  Ella: John, Lily, Evan, Mia, Ava
-  John: Ella, Noah, Lily, Ryan, Ava
-  Lily: Evan, John, Mia, Ava, Ella
-  Evan: Lily, Mia, John, Ryan, Noah
-  '''
+Noah: Ava. Ella, Evan, Ryan, John
+Ava: Noah, Evan, Mia, John, Ryan
+Ryan: Mia, Ella, Ava, Lily, Evan
+Mia: Ryan, Ava, Ella, Lily, Evan
+Ella: John, Lily, Evan, Mia, Ava
+John: Ella, Noah, Lily, Ryan, Ava
+Lily: Evan, John, Mia, Ava, Ella
+Evan: Lily, Mia, John, Ryan, Noah
+'''
 
-  Note: I interpret this as the following three constraints:
-    1) One cannot be a Secret Santa of one's spouse
-    2) One cannot be a Secret Santa for somebody two years in a row
-    3) Optimization: maximize the time since the last time
+Note: I interpret this as the following three constraints:
+  1) One cannot be a Secret Santa of one's spouse
+  2) One cannot be a Secret Santa for somebody two years in a row
+  3) Optimization: maximize the time since the last time
 
-  This model also handle single persons, something the original
-  problem don't mention.
+This model also handle single persons, something the original
+problem don't mention.
 
-  Compare with the following models:
-  * Google CP Solver: http://www.hakank.org/google_or_tools/secret_santa.py
-  * MiniZinc: http://www.hakank.org/minizinc/secret_santa2.mzn
+Compare with the following models:
+* Google CP Solver: http://www.hakank.org/google_or_tools/secret_santa.py
+* MiniZinc: http://www.hakank.org/minizinc/secret_santa2.mzn
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -92,7 +92,7 @@ def main(singe=0):
       [M, 4, M, 3, 0, M, 1, 2],  # Ella
       [1, 4, 3, M, M, 0, 2, M],  # John
       [M, 3, M, 2, 4, 1, 0, M],  # Lily
-      [4, M, 3, 1, M, 2, M, 0]  # Evan
+      [4, M, 3, 1, M, 2, M, 0],  # Evan
   ]
 
   #
@@ -110,7 +110,7 @@ def main(singe=0):
       [1, 4, 3, M, M, 0, 2, M, M],  # John
       [M, 3, M, 2, 4, 1, 0, M, M],  # Lily
       [4, M, 3, 1, M, 2, M, 0, M],  # Evan
-      [1, 2, 3, 4, M, 2, M, M, 0]  # Single
+      [1, 2, 3, 4, M, 2, M, M, 0],  # Single
   ]
 
   if single == 1:
@@ -125,7 +125,15 @@ def main(singe=0):
   M = n + 1
 
   persons = [
-      'Noah', 'Ava', 'Ryan', 'Mia', 'Ella', 'John', 'Lily', 'Evan', 'Single'
+      'Noah',
+      'Ava',
+      'Ryan',
+      'Mia',
+      'Ella',
+      'John',
+      'Lily',
+      'Evan',
+      'Single',
   ]
 
   spouses = [
@@ -137,7 +145,7 @@ def main(singe=0):
       Ella,  # John
       Evan,  # Lily
       Lily,  # Evan
-      -1  # Single has no spouse
+      -1,  # Single has no spouse
   ]
 
   #
@@ -185,8 +193,9 @@ def main(singe=0):
   #
   # solution and search
   #
-  db = solver.Phase(santas, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.Phase(
+      santas, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.ASSIGN_CENTER_VALUE
+  )
 
   solver.NewSearch(db, [objective])
 
@@ -196,10 +205,10 @@ def main(singe=0):
     print('total distances:', z.Value())
     print('santas:', [santas[i].Value() for i in range(n)])
     for i in range(n):
-      print('%s\tis a Santa to %s (distance %i)' % \
-            (persons[i],
-             persons[santas[i].Value()],
-             santa_distance[i].Value()))
+      print(
+          '%s\tis a Santa to %s (distance %i)'
+          % (persons[i], persons[santas[i].Value()], santa_distance[i].Value())
+      )
     # print 'distance:', [santa_distance[i].Value()
     #                     for i in range(n)]
     print()

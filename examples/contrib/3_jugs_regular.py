@@ -13,37 +13,37 @@
 # limitations under the License.
 """
 
-  3 jugs problem using regular constraint in Google CP Solver.
+3 jugs problem using regular constraint in Google CP Solver.
 
-  A.k.a. water jugs problem.
+A.k.a. water jugs problem.
 
-  Problem from Taha 'Introduction to Operations Research',
-  page 245f .
+Problem from Taha 'Introduction to Operations Research',
+page 245f .
 
-  For more info about the problem, see:
-  http://mathworld.wolfram.com/ThreeJugProblem.html
+For more info about the problem, see:
+http://mathworld.wolfram.com/ThreeJugProblem.html
 
-  This model use a regular constraint for handling the
-  transitions between the states. Instead of minimizing
-  the cost in a cost matrix (as shortest path problem),
-  we here call the model with increasing length of the
-  sequence array (x).
+This model use a regular constraint for handling the
+transitions between the states. Instead of minimizing
+the cost in a cost matrix (as shortest path problem),
+we here call the model with increasing length of the
+sequence array (x).
 
-  Compare with other models that use MIP/CP approach,
-  as a shortest path problem:
-  * Comet: http://www.hakank.org/comet/3_jugs.co
-  * Comet: http://www.hakank.org/comet/water_buckets1.co
-  * MiniZinc: http://www.hakank.org/minizinc/3_jugs.mzn
-  * MiniZinc: http://www.hakank.org/minizinc/3_jugs2.mzn
-  * SICStus: http://www.hakank.org/sicstus/3_jugs.pl
-  * ECLiPSe: http://www.hakank.org/eclipse/3_jugs.ecl
-  * ECLiPSe: http://www.hakank.org/eclipse/3_jugs2.ecl
-  * Gecode: http://www.hakank.org/gecode/3_jugs2.cpp
+Compare with other models that use MIP/CP approach,
+as a shortest path problem:
+* Comet: http://www.hakank.org/comet/3_jugs.co
+* Comet: http://www.hakank.org/comet/water_buckets1.co
+* MiniZinc: http://www.hakank.org/minizinc/3_jugs.mzn
+* MiniZinc: http://www.hakank.org/minizinc/3_jugs2.mzn
+* SICStus: http://www.hakank.org/sicstus/3_jugs.pl
+* ECLiPSe: http://www.hakank.org/eclipse/3_jugs.ecl
+* ECLiPSe: http://www.hakank.org/eclipse/3_jugs2.ecl
+* Gecode: http://www.hakank.org/gecode/3_jugs2.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 
@@ -117,7 +117,8 @@ def regular(x, Q, S, d, q0, F):
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
     solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1))
+    )
 
 
 def main(n):
@@ -175,7 +176,7 @@ def main(n):
       [12],  # state 11
       [13],  # state 12
       [14],  # state 13
-      [15]  # state 14
+      [15],  # state 14
   ]
 
   transition_fn = []
@@ -207,7 +208,7 @@ def main(n):
       '6,0,2',  # 12
       '1,5,2',  # 13
       '1,4,3',  # 14
-      '4,4,0'  # 15 goal
+      '4,4,0',  # 15 goal
   ]
 
   #
@@ -218,8 +219,9 @@ def main(n):
   #
   # constraints
   #
-  regular(x, n_states, input_max, transition_fn, initial_state,
-          accepting_states)
+  regular(
+      x, n_states, input_max, transition_fn, initial_state, accepting_states
+  )
 
   #
   # solution and search

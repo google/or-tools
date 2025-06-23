@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Knapsack problem in Google CP Solver.
+Knapsack problem in Google CP Solver.
 
-  Simple knapsack problem.
+Simple knapsack problem.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 

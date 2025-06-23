@@ -18,12 +18,14 @@ def main():
   # Last columns are :
   #   index_of_the_schedule, sum of worked hours (per work type).
   # The index is useful for branching.
-  possible_schedules = [[1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
-                        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
-                        [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
-                        [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
-                        [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
-                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]]
+  possible_schedules = [
+      [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 8],
+      [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 4],
+      [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 2, 5],
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 4],
+      [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 4, 3],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0],
+  ]
 
   num_possible_schedules = len(possible_schedules)
   selected_schedules = []
@@ -40,8 +42,9 @@ def main():
     for j in range(num_hours):
       x[i, j] = solver.IntVar(0, num_work_types, 'x[%i,%i]' % (i, j))
       tmp.append(x[i, j])
-    selected_schedule = solver.IntVar(0, num_possible_schedules - 1,
-                                      's[%i]' % i)
+    selected_schedule = solver.IntVar(
+        0, num_possible_schedules - 1, 's[%i]' % i
+    )
     hours = solver.IntVar(0, num_hours, 'h[%i]' % i)
     selected_schedules.append(selected_schedule)
     vendors_stat.append(hours)
@@ -67,8 +70,9 @@ def main():
   #
   # Search
   #
-  db = solver.Phase(selected_schedules, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      selected_schedules, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
 
@@ -77,8 +81,9 @@ def main():
     num_solutions += 1
 
     for i in range(num_vendors):
-      print('Vendor %i: ' % i,
-            possible_schedules[selected_schedules[i].Value()])
+      print(
+          'Vendor %i: ' % i, possible_schedules[selected_schedules[i].Value()]
+      )
     print()
 
     print('Statistics per day:')

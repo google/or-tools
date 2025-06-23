@@ -13,21 +13,21 @@
 # limitations under the License.
 """
 
-  Set covering in Google CP Solver.
+Set covering in Google CP Solver.
 
-  Placing of firestations, from Winston 'Operations Research', page 486.
+Placing of firestations, from Winston 'Operations Research', page 486.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/set_covering.mzn
-  * ECLiPSe : http://www.hakank.org/eclipse/set_covering.ecl
-  * Comet   : http://www.hakank.org/comet/set_covering.co
-  * Gecode  : http://www.hakank.org/gecode/set_covering.cpp
-  * SICStus : http://www.hakank.org/sicstus/set_covering.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/set_covering.mzn
+* ECLiPSe : http://www.hakank.org/eclipse/set_covering.ecl
+* Comet   : http://www.hakank.org/comet/set_covering.co
+* Gecode  : http://www.hakank.org/gecode/set_covering.cpp
+* SICStus : http://www.hakank.org/sicstus/set_covering.pl
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -44,9 +44,14 @@ def main(unused_argv):
   min_distance = 15
   num_cities = 6
 
-  distance = [[0, 10, 20, 30, 30, 20], [10, 0, 25, 35, 20, 10],
-              [20, 25, 0, 15, 30, 20], [30, 35, 15, 0, 15, 25],
-              [30, 20, 30, 15, 0, 14], [20, 10, 20, 25, 14, 0]]
+  distance = [
+      [0, 10, 20, 30, 30, 20],
+      [10, 0, 25, 35, 20, 10],
+      [20, 25, 0, 15, 30, 20],
+      [30, 35, 15, 0, 15, 25],
+      [30, 20, 30, 15, 0, 14],
+      [20, 10, 20, 25, 14, 0],
+  ]
 
   #
   # declare variables
@@ -77,7 +82,8 @@ def main(unused_argv):
   collector = solver.LastSolutionCollector(solution)
   solver.Solve(
       solver.Phase(x + [z], solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
-      [collector, objective])
+      [collector, objective],
+  )
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(num_cities)])

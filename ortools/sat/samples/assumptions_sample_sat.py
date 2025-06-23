@@ -21,49 +21,49 @@ from ortools.sat.python import cp_model
 
 
 def main() -> None:
-    """Showcases assumptions."""
-    # Creates the model.
-    # [START model]
-    model = cp_model.CpModel()
-    # [END model]
+  """Showcases assumptions."""
+  # Creates the model.
+  # [START model]
+  model = cp_model.CpModel()
+  # [END model]
 
-    # Creates the variables.
-    # [START variables]
-    x = model.new_int_var(0, 10, "x")
-    y = model.new_int_var(0, 10, "y")
-    z = model.new_int_var(0, 10, "z")
-    a = model.new_bool_var("a")
-    b = model.new_bool_var("b")
-    c = model.new_bool_var("c")
-    # [END variables]
+  # Creates the variables.
+  # [START variables]
+  x = model.new_int_var(0, 10, "x")
+  y = model.new_int_var(0, 10, "y")
+  z = model.new_int_var(0, 10, "z")
+  a = model.new_bool_var("a")
+  b = model.new_bool_var("b")
+  c = model.new_bool_var("c")
+  # [END variables]
 
-    # Creates the constraints.
-    # [START constraints]
-    model.add(x > y).only_enforce_if(a)
-    model.add(y > z).only_enforce_if(b)
-    model.add(z > x).only_enforce_if(c)
-    # [END constraints]
+  # Creates the constraints.
+  # [START constraints]
+  model.add(x > y).only_enforce_if(a)
+  model.add(y > z).only_enforce_if(b)
+  model.add(z > x).only_enforce_if(c)
+  # [END constraints]
 
-    # Add assumptions
-    model.add_assumptions([a, b, c])
+  # Add assumptions
+  model.add_assumptions([a, b, c])
 
-    # Creates a solver and solves.
-    # [START solve]
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-    # [END solve]
+  # Creates a solver and solves.
+  # [START solve]
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  # [END solve]
 
-    # Print solution.
-    # [START print_solution]
-    print(f"Status = {solver.status_name(status)}")
-    if status == cp_model.INFEASIBLE:
-        print(
-            "sufficient_assumptions_for_infeasibility = "
-            f"{solver.sufficient_assumptions_for_infeasibility()}"
-        )
-    # [END print_solution]
+  # Print solution.
+  # [START print_solution]
+  print(f"Status = {solver.status_name(status)}")
+  if status == cp_model.INFEASIBLE:
+    print(
+        "sufficient_assumptions_for_infeasibility = "
+        f"{solver.sufficient_assumptions_for_infeasibility()}"
+    )
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

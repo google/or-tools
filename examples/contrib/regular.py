@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  Global constraint regular in Google CP Solver.
+Global constraint regular in Google CP Solver.
 
-  This is a translation of MiniZinc's regular constraint (defined in
-  lib/zinc/globals.mzn). All comments are from the MiniZinc code.
-  '''
-  The sequence of values in array 'x' (which must all be in the range 1..S)
-  is accepted by the DFA of 'Q' states with input 1..S and transition
-  function 'd' (which maps (1..Q, 1..S) -> 0..Q)) and initial state 'q0'
-  (which must be in 1..Q) and accepting states 'F' (which all must be in
-  1..Q).  We reserve state 0 to be an always failing state.
-  '''
+This is a translation of MiniZinc's regular constraint (defined in
+lib/zinc/globals.mzn). All comments are from the MiniZinc code.
+'''
+The sequence of values in array 'x' (which must all be in the range 1..S)
+is accepted by the DFA of 'Q' states with input 1..S and transition
+function 'd' (which maps (1..Q, 1..S) -> 0..Q)) and initial state 'q0'
+(which must be in 1..Q) and accepting states 'F' (which all must be in
+1..Q).  We reserve state 0 to be an always failing state.
+'''
 
-  It is, however, translated from the Comet model:
-  * Comet: http://www.hakank.org/comet/regular.co
+It is, however, translated from the Comet model:
+* Comet: http://www.hakank.org/comet/regular.co
 
-  Here we test with the following regular expression:
-    0*1{3}0+1{2}0+1{1}0*
-  using an array of size 10.
+Here we test with the following regular expression:
+  0*1{3}0+1{2}0+1{1}0*
+using an array of size 10.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -105,7 +105,8 @@ def regular(x, Q, S, d, q0, F):
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
     solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1))
+    )
 
 
 #
@@ -195,14 +196,21 @@ def main():
   #
   # constraints
   #
-  regular(reg_input, n_states, input_max, transition_fn, initial_state,
-          accepting_states)
+  regular(
+      reg_input,
+      n_states,
+      input_max,
+      transition_fn,
+      initial_state,
+      accepting_states,
+  )
 
   #
   # solution and search
   #
-  db = solver.Phase(reg_input, solver.CHOOSE_MIN_SIZE_HIGHEST_MAX,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      reg_input, solver.CHOOSE_MIN_SIZE_HIGHEST_MAX, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
 

@@ -13,27 +13,27 @@
 # limitations under the License.
 """
 
-  Moving furnitures (scheduling) problem in Google CP Solver.
+Moving furnitures (scheduling) problem in Google CP Solver.
 
-  Marriott & Stukey: 'Programming with constraints', page  112f
+Marriott & Stukey: 'Programming with constraints', page  112f
 
-  The model implements an experimental decomposition of the
-  global constraint cumulative.
+The model implements an experimental decomposition of the
+global constraint cumulative.
 
-  Compare with the following models:
-  * ECLiPSE: http://www.hakank.org/eclipse/furniture_moving.ecl
-  * MiniZinc: http://www.hakank.org/minizinc/furniture_moving.mzn
-  * Comet: http://www.hakank.org/comet/furniture_moving.co
-  * Choco: http://www.hakank.org/choco/FurnitureMoving.java
-  * Gecode: http://www.hakank.org/gecode/furniture_moving.cpp
-  * JaCoP: http://www.hakank.org/JaCoP/FurnitureMoving.java
-  * SICStus: http://hakank.org/sicstus/furniture_moving.pl
-  * Zinc: http://hakank.org/minizinc/furniture_moving.zinc
+Compare with the following models:
+* ECLiPSE: http://www.hakank.org/eclipse/furniture_moving.ecl
+* MiniZinc: http://www.hakank.org/minizinc/furniture_moving.mzn
+* Comet: http://www.hakank.org/comet/furniture_moving.co
+* Choco: http://www.hakank.org/choco/FurnitureMoving.java
+* Gecode: http://www.hakank.org/gecode/furniture_moving.cpp
+* JaCoP: http://www.hakank.org/JaCoP/FurnitureMoving.java
+* SICStus: http://hakank.org/sicstus/furniture_moving.pl
+* Zinc: http://hakank.org/minizinc/furniture_moving.zinc
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -145,8 +145,9 @@ def main():
   solution.Add(end_time)
   solution.Add(num_resources)
 
-  db = solver.Phase(start_times, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      start_times, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   #
   # result

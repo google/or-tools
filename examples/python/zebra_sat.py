@@ -39,84 +39,90 @@ from ortools.sat.python import cp_model
 
 # pylint: disable=too-many-statements
 def solve_zebra():
-    """Solves the zebra problem."""
+  """Solves the zebra problem."""
 
-    # Create the model.
-    model = cp_model.CpModel()
+  # Create the model.
+  model = cp_model.CpModel()
 
-    red = model.new_int_var(1, 5, "red")
-    green = model.new_int_var(1, 5, "green")
-    yellow = model.new_int_var(1, 5, "yellow")
-    blue = model.new_int_var(1, 5, "blue")
-    ivory = model.new_int_var(1, 5, "ivory")
+  red = model.new_int_var(1, 5, "red")
+  green = model.new_int_var(1, 5, "green")
+  yellow = model.new_int_var(1, 5, "yellow")
+  blue = model.new_int_var(1, 5, "blue")
+  ivory = model.new_int_var(1, 5, "ivory")
 
-    englishman = model.new_int_var(1, 5, "englishman")
-    spaniard = model.new_int_var(1, 5, "spaniard")
-    japanese = model.new_int_var(1, 5, "japanese")
-    ukrainian = model.new_int_var(1, 5, "ukrainian")
-    norwegian = model.new_int_var(1, 5, "norwegian")
+  englishman = model.new_int_var(1, 5, "englishman")
+  spaniard = model.new_int_var(1, 5, "spaniard")
+  japanese = model.new_int_var(1, 5, "japanese")
+  ukrainian = model.new_int_var(1, 5, "ukrainian")
+  norwegian = model.new_int_var(1, 5, "norwegian")
 
-    dog = model.new_int_var(1, 5, "dog")
-    snails = model.new_int_var(1, 5, "snails")
-    fox = model.new_int_var(1, 5, "fox")
-    zebra = model.new_int_var(1, 5, "zebra")
-    horse = model.new_int_var(1, 5, "horse")
+  dog = model.new_int_var(1, 5, "dog")
+  snails = model.new_int_var(1, 5, "snails")
+  fox = model.new_int_var(1, 5, "fox")
+  zebra = model.new_int_var(1, 5, "zebra")
+  horse = model.new_int_var(1, 5, "horse")
 
-    tea = model.new_int_var(1, 5, "tea")
-    coffee = model.new_int_var(1, 5, "coffee")
-    water = model.new_int_var(1, 5, "water")
-    milk = model.new_int_var(1, 5, "milk")
-    fruit_juice = model.new_int_var(1, 5, "fruit juice")
+  tea = model.new_int_var(1, 5, "tea")
+  coffee = model.new_int_var(1, 5, "coffee")
+  water = model.new_int_var(1, 5, "water")
+  milk = model.new_int_var(1, 5, "milk")
+  fruit_juice = model.new_int_var(1, 5, "fruit juice")
 
-    old_gold = model.new_int_var(1, 5, "old gold")
-    kools = model.new_int_var(1, 5, "kools")
-    chesterfields = model.new_int_var(1, 5, "chesterfields")
-    lucky_strike = model.new_int_var(1, 5, "lucky strike")
-    parliaments = model.new_int_var(1, 5, "parliaments")
+  old_gold = model.new_int_var(1, 5, "old gold")
+  kools = model.new_int_var(1, 5, "kools")
+  chesterfields = model.new_int_var(1, 5, "chesterfields")
+  lucky_strike = model.new_int_var(1, 5, "lucky strike")
+  parliaments = model.new_int_var(1, 5, "parliaments")
 
-    model.add_all_different(red, green, yellow, blue, ivory)
-    model.add_all_different(englishman, spaniard, japanese, ukrainian, norwegian)
-    model.add_all_different(dog, snails, fox, zebra, horse)
-    model.add_all_different(tea, coffee, water, milk, fruit_juice)
-    model.add_all_different(parliaments, kools, chesterfields, lucky_strike, old_gold)
+  model.add_all_different(red, green, yellow, blue, ivory)
+  model.add_all_different(englishman, spaniard, japanese, ukrainian, norwegian)
+  model.add_all_different(dog, snails, fox, zebra, horse)
+  model.add_all_different(tea, coffee, water, milk, fruit_juice)
+  model.add_all_different(
+      parliaments, kools, chesterfields, lucky_strike, old_gold
+  )
 
-    model.add(englishman == red)
-    model.add(spaniard == dog)
-    model.add(coffee == green)
-    model.add(ukrainian == tea)
-    model.add(green == ivory + 1)
-    model.add(old_gold == snails)
-    model.add(kools == yellow)
-    model.add(milk == 3)
-    model.add(norwegian == 1)
+  model.add(englishman == red)
+  model.add(spaniard == dog)
+  model.add(coffee == green)
+  model.add(ukrainian == tea)
+  model.add(green == ivory + 1)
+  model.add(old_gold == snails)
+  model.add(kools == yellow)
+  model.add(milk == 3)
+  model.add(norwegian == 1)
 
-    diff_fox_chesterfields = model.new_int_var(-4, 4, "diff_fox_chesterfields")
-    model.add(diff_fox_chesterfields == fox - chesterfields)
-    model.add_abs_equality(1, diff_fox_chesterfields)
+  diff_fox_chesterfields = model.new_int_var(-4, 4, "diff_fox_chesterfields")
+  model.add(diff_fox_chesterfields == fox - chesterfields)
+  model.add_abs_equality(1, diff_fox_chesterfields)
 
-    diff_horse_kools = model.new_int_var(-4, 4, "diff_horse_kools")
-    model.add(diff_horse_kools == horse - kools)
-    model.add_abs_equality(1, diff_horse_kools)
+  diff_horse_kools = model.new_int_var(-4, 4, "diff_horse_kools")
+  model.add(diff_horse_kools == horse - kools)
+  model.add_abs_equality(1, diff_horse_kools)
 
-    model.add(lucky_strike == fruit_juice)
-    model.add(japanese == parliaments)
+  model.add(lucky_strike == fruit_juice)
+  model.add(japanese == parliaments)
 
-    diff_norwegian_blue = model.new_int_var(-4, 4, "diff_norwegian_blue")
-    model.add(diff_norwegian_blue == norwegian - blue)
-    model.add_abs_equality(1, diff_norwegian_blue)
+  diff_norwegian_blue = model.new_int_var(-4, 4, "diff_norwegian_blue")
+  model.add(diff_norwegian_blue == norwegian - blue)
+  model.add_abs_equality(1, diff_norwegian_blue)
 
-    # Solve and print out the solution.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Solve and print out the solution.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    if status == cp_model.OPTIMAL:
-        people = [englishman, spaniard, japanese, ukrainian, norwegian]
-        water_drinker = [p for p in people if solver.value(p) == solver.value(water)][0]
-        zebra_owner = [p for p in people if solver.value(p) == solver.value(zebra)][0]
-        print("The", water_drinker.name, "drinks water.")
-        print("The", zebra_owner.name, "owns the zebra.")
-    else:
-        print("No solutions to the zebra problem, this is unusual!")
+  if status == cp_model.OPTIMAL:
+    people = [englishman, spaniard, japanese, ukrainian, norwegian]
+    water_drinker = [
+        p for p in people if solver.value(p) == solver.value(water)
+    ][0]
+    zebra_owner = [p for p in people if solver.value(p) == solver.value(zebra)][
+        0
+    ]
+    print("The", water_drinker.name, "drinks water.")
+    print("The", zebra_owner.name, "owns the zebra.")
+  else:
+    print("No solutions to the zebra problem, this is unusual!")
 
 
 solve_zebra()

@@ -13,33 +13,33 @@
 # limitations under the License.
 """
 
-  de Bruijn sequences in Google CP Solver.
+de Bruijn sequences in Google CP Solver.
 
-  Implementation of de Bruijn sequences in Minizinc, both 'classical' and
-  'arbitrary'.
-  The 'arbitrary' version is when the length of the sequence (m here) is <
-  base**n.
+Implementation of de Bruijn sequences in Minizinc, both 'classical' and
+'arbitrary'.
+The 'arbitrary' version is when the length of the sequence (m here) is <
+base**n.
 
 
-  Compare with the web based programs:
-    http://www.hakank.org/comb/debruijn.cgi
-    http://www.hakank.org/comb/debruijn_arb.cgi
+Compare with the web based programs:
+  http://www.hakank.org/comb/debruijn.cgi
+  http://www.hakank.org/comb/debruijn_arb.cgi
 
-  Compare with the following models:
-  * Tailor/Essence': http://hakank.org/tailor/debruijn.eprime
-  * MiniZinc: http://hakank.org/minizinc/debruijn_binary.mzn
-  * SICStus: http://hakank.org/sicstus/debruijn.pl
-  * Zinc: http://hakank.org/minizinc/debruijn_binary.zinc
-  * Choco: http://hakank.org/choco/DeBruijn.java
-  * Comet: http://hakank.org/comet/debruijn.co
-  * ECLiPSe: http://hakank.org/eclipse/debruijn.ecl
-  * Gecode: http://hakank.org/gecode/debruijn.cpp
-  * Gecode/R: http://hakank.org/gecode_r/debruijn_binary.rb
-  * JaCoP: http://hakank.org/JaCoP/DeBruijn.java
+Compare with the following models:
+* Tailor/Essence': http://hakank.org/tailor/debruijn.eprime
+* MiniZinc: http://hakank.org/minizinc/debruijn_binary.mzn
+* SICStus: http://hakank.org/sicstus/debruijn.pl
+* Zinc: http://hakank.org/minizinc/debruijn_binary.zinc
+* Choco: http://hakank.org/choco/DeBruijn.java
+* Comet: http://hakank.org/comet/debruijn.co
+* ECLiPSe: http://hakank.org/eclipse/debruijn.ecl
+* Gecode: http://hakank.org/gecode/debruijn.cpp
+* Gecode/R: http://hakank.org/gecode_r/debruijn_binary.rb
+* JaCoP: http://hakank.org/JaCoP/DeBruijn.java
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -50,7 +50,8 @@ from ortools.constraint_solver import pywrapcp
 def toNum(solver, t, s, base):
   tlen = len(t)
   solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)])
+  )
 
 
 def main(base=2, n=3, m=8):
@@ -70,9 +71,9 @@ def main(base=2, n=3, m=8):
   # m    = base**n
 
   # harder problem
-  #base = 13
-  #n = 4
-  #m = 52
+  # base = 13
+  # n = 4
+  # m = 52
 
   # for n = 4 with different value of base
   # base = 2  0.030 seconds  16 failures
@@ -108,7 +109,7 @@ def main(base=2, n=3, m=8):
   #
   # constraints
   #
-  #solver.Add(solver.AllDifferent([x[i] for i in range(m)]))
+  # solver.Add(solver.AllDifferent([x[i] for i in range(m)]))
   solver.Add(solver.AllDifferent(x))
 
   # converts x <-> binary
@@ -151,8 +152,11 @@ def main(base=2, n=3, m=8):
   # solution.Add([binary[(i,j)] for i in range(m) for j in range(n)])
   solution.Add([gcc[i] for i in range(base)])
 
-  db = solver.Phase([x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
-                    solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      [x[i] for i in range(m)] + [bin_code[i] for i in range(m)],
+      solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+      solver.ASSIGN_MIN_VALUE,
+  )
 
   num_solutions = 0
   solver.NewSearch(db)

@@ -20,7 +20,7 @@ def dudeney(n):
   s = solver.IntVar(list(range(1, 9 * n + 1)), 's')
 
   solver.Add(nb == s * s * s)
-  solver.Add(sum([10**(n - i - 1) * x[i] for i in range(n)]) == nb)
+  solver.Add(sum([10 ** (n - i - 1) * x[i] for i in range(n)]) == nb)
   solver.Add(sum([x[i] for i in range(n)]) == s)
 
   solution = solver.Assignment()
@@ -29,7 +29,8 @@ def dudeney(n):
 
   solver.Solve(
       solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
-      [collector])
+      [collector],
+  )
 
   for i in range(collector.SolutionCount()):
     nbsol = collector.Value(i, nb)

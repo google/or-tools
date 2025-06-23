@@ -13,47 +13,47 @@
 # limitations under the License.
 """
 
-  Olympic puzzle in Google CP Solver.
+Olympic puzzle in Google CP Solver.
 
-  Benchmark for Prolog (BProlog)
-  '''
-  File   : olympic.pl
-  Author : Neng-Fa ZHOU
-  Date   : 1993
+Benchmark for Prolog (BProlog)
+'''
+File   : olympic.pl
+Author : Neng-Fa ZHOU
+Date   : 1993
 
-  Purpose: solve a puzzle taken from Olympic Arithmetic Contest
+Purpose: solve a puzzle taken from Olympic Arithmetic Contest
 
-  Given ten variables with the following configuration:
+Given ten variables with the following configuration:
 
-                 X7   X8   X9   X10
+               X7   X8   X9   X10
 
-                    X4   X5   X6
+                  X4   X5   X6
 
-                       X2   X3
+                     X2   X3
 
-                          X1
+                        X1
 
-  We already know that X1 is equal to 3 and want to assign each variable
-  with a different integer from {1,2,...,10} such that for any three
-  variables
-                        Xi   Xj
+We already know that X1 is equal to 3 and want to assign each variable
+with a different integer from {1,2,...,10} such that for any three
+variables
+                      Xi   Xj
 
-                           Xk
-  the following constraint is satisfied:
+                         Xk
+the following constraint is satisfied:
 
-                      |Xi-Xj| = Xk
-  '''
+                    |Xi-Xj| = Xk
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/olympic.mzn
-  * SICStus Prolog: http://www.hakank.org/sicstus/olympic.pl
-  * ECLiPSe: http://hakank.org/eclipse/olympic.ecl
-  * Gecode: http://hakank.org/gecode/olympic.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/olympic.mzn
+* SICStus Prolog: http://www.hakank.org/sicstus/olympic.pl
+* ECLiPSe: http://hakank.org/eclipse/olympic.ecl
+* Gecode: http://hakank.org/gecode/olympic.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp

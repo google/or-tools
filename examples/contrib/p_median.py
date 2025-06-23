@@ -13,25 +13,25 @@
 # limitations under the License.
 """
 
-  P-median problem in Google CP Solver.
+P-median problem in Google CP Solver.
 
-  Model and data from the OPL Manual, which describes the problem:
-  '''
-  The P-Median problem is a well known problem in Operations Research.
-  The problem can be stated very simply, like this: given a set of customers
-  with known amounts of demand, a set of candidate locations for warehouses,
-  and the distance between each pair of customer-warehouse, choose P
-  warehouses to open that minimize the demand-weighted distance of serving
-  all customers from those P warehouses.
-  '''
+Model and data from the OPL Manual, which describes the problem:
+'''
+The P-Median problem is a well known problem in Operations Research.
+The problem can be stated very simply, like this: given a set of customers
+with known amounts of demand, a set of candidate locations for warehouses,
+and the distance between each pair of customer-warehouse, choose P
+warehouses to open that minimize the demand-weighted distance of serving
+all customers from those P warehouses.
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/p_median.mzn
-  * Comet: http://hakank.org/comet/p_median.co
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/p_median.mzn
+* Comet: http://hakank.org/comet/p_median.co
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -95,8 +95,9 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(open + ship_flat, solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(
+      open + ship_flat, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT
+  )
 
   solver.NewSearch(db, [objective])
 

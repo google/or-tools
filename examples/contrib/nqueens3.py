@@ -13,18 +13,18 @@
 # limitations under the License.
 """
 
-  n-queens problem in Google CP Solver.
+n-queens problem in Google CP Solver.
 
-  N queens problem.
+N queens problem.
 
-  Faster than the previous versions:
-  - http://www.hakank.org/gogle_cp_solver/nqueens.py
-  - http://www.hakank.org/gogle_cp_solver/nqueens2.py
+Faster than the previous versions:
+- http://www.hakank.org/gogle_cp_solver/nqueens.py
+- http://www.hakank.org/gogle_cp_solver/nqueens2.py
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -58,8 +58,9 @@ def main(n=8, num_sol=0, print_sol=1):
   # search
   #
 
-  db = solver.Phase(q, solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.Phase(
+      q, solver.CHOOSE_MIN_SIZE_LOWEST_MAX, solver.ASSIGN_CENTER_VALUE
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

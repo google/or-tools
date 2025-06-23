@@ -30,42 +30,42 @@ _API_KEY = flags.DEFINE_string("api_key", None, "API key for the OR API")
 
 
 def request_example() -> None:
-    """Run example using MathOpt `remote_http_solve` function."""
-    # Set up the API key.
-    api_key = _API_KEY.value
-    if not api_key:
-        print(
-            "API key is required. See"
-            " https://developers.google.com/optimization/service/setup for"
-            " instructions."
-        )
-        return
+  """Run example using MathOpt `remote_http_solve` function."""
+  # Set up the API key.
+  api_key = _API_KEY.value
+  if not api_key:
+    print(
+        "API key is required. See"
+        " https://developers.google.com/optimization/service/setup for"
+        " instructions."
+    )
+    return
 
-    # Build a MathOpt model
-    model = mathopt.Model(name="my_model")
-    x = model.add_binary_variable(name="x")
-    y = model.add_variable(lb=0.0, ub=2.5, name="y")
-    model.add_linear_constraint(x + y <= 1.5, name="c")
-    model.maximize(2 * x + y)
-    try:
-        result, logs = remote_http_solve.remote_http_solve(
-            model,
-            mathopt.SolverType.GSCIP,
-            mathopt.SolveParameters(enable_output=True),
-            api_key=api_key,
-        )
-        print("Objective value: ", result.objective_value())
-        print("x: ", result.variable_values(x))
-        print("y: ", result.variable_values(y))
-        print("\n".join(logs))
-    except remote_http_solve.OptimizationServiceError as err:
-        print(err)
+  # Build a MathOpt model
+  model = mathopt.Model(name="my_model")
+  x = model.add_binary_variable(name="x")
+  y = model.add_variable(lb=0.0, ub=2.5, name="y")
+  model.add_linear_constraint(x + y <= 1.5, name="c")
+  model.maximize(2 * x + y)
+  try:
+    result, logs = remote_http_solve.remote_http_solve(
+        model,
+        mathopt.SolverType.GSCIP,
+        mathopt.SolveParameters(enable_output=True),
+        api_key=api_key,
+    )
+    print("Objective value: ", result.objective_value())
+    print("x: ", result.variable_values(x))
+    print("y: ", result.variable_values(y))
+    print("\n".join(logs))
+  except remote_http_solve.OptimizationServiceError as err:
+    print(err)
 
 
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
-    request_example()
+  del argv  # Unused.
+  request_example()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

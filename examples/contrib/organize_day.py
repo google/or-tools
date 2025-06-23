@@ -13,23 +13,23 @@
 # limitations under the License.
 """
 
-  Organizing a day in Google CP Solver.
+Organizing a day in Google CP Solver.
 
-  Simple scheduling problem.
+Simple scheduling problem.
 
-  Problem formulation from ECLiPSe:
-  Slides on (Finite Domain) Constraint Logic Programming, page 38f
-  http://eclipse-clp.org/reports/eclipse.ppt
+Problem formulation from ECLiPSe:
+Slides on (Finite Domain) Constraint Logic Programming, page 38f
+http://eclipse-clp.org/reports/eclipse.ppt
 
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/organize_day.mzn
-  * Comet: http://www.hakank.org/comet/organize_day.co
-  * Gecode: http://hakank.org/gecode/organize_day.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/organize_day.mzn
+* Comet: http://www.hakank.org/comet/organize_day.co
+* Gecode: http://hakank.org/gecode/organize_day.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -84,7 +84,7 @@ def main():
         no_overlap(solver, begins[i], durations[i], begins[j], durations[j])
 
   # specific constraints
-  for (before, after) in before_tasks:
+  for before, after in before_tasks:
     solver.Add(ends[before] <= begins[after])
 
   solver.Add(begins[work] >= 11)
@@ -92,8 +92,9 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(begins + ends, solver.INT_VAR_DEFAULT,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(
+      begins + ends, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT
+  )
 
   solver.NewSearch(db)
 

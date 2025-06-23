@@ -25,11 +25,11 @@ from ortools.routing import pywraprouting
 
 # [START data_model]
 def create_data_model():
-    """Stores the data for the problem."""
-    data = {}
-    # Locations in block units
-    data["locations"] = [
-        # fmt: off
+  """Stores the data for the problem."""
+  data = {}
+  # Locations in block units
+  data["locations"] = [
+      # fmt: off
       (288, 149), (288, 129), (270, 133), (256, 141), (256, 157), (246, 157),
       (236, 169), (228, 169), (228, 161), (220, 169), (212, 169), (204, 169),
       (196, 169), (188, 169), (196, 161), (188, 145), (172, 145), (164, 145),
@@ -77,107 +77,107 @@ def create_data_model():
       (188, 93), (180, 93), (180, 101), (180, 109), (180, 117), (180, 125),
       (196, 145), (204, 145), (212, 145), (220, 145), (228, 145), (236, 145),
       (246, 141), (252, 125), (260, 129), (280, 133)
-        # fmt: on
-    ]
-    data["num_vehicles"] = 1
-    data["depot"] = 0
-    return data
-    # [END data_model]
+      # fmt: on
+  ]
+  data["num_vehicles"] = 1
+  data["depot"] = 0
+  return data
+  # [END data_model]
 
 
 # [START distance_callback]
 def compute_euclidean_distance_matrix(locations):
-    """Creates callback to return distance between points."""
-    distances = {}
-    for from_counter, from_node in enumerate(locations):
-        distances[from_counter] = {}
-        for to_counter, to_node in enumerate(locations):
-            if from_counter == to_counter:
-                distances[from_counter][to_counter] = 0
-            else:
-                # Euclidean distance
-                distances[from_counter][to_counter] = int(
-                    math.hypot((from_node[0] - to_node[0]), (from_node[1] - to_node[1]))
-                )
-    return distances
-    # [END distance_callback]
+  """Creates callback to return distance between points."""
+  distances = {}
+  for from_counter, from_node in enumerate(locations):
+    distances[from_counter] = {}
+    for to_counter, to_node in enumerate(locations):
+      if from_counter == to_counter:
+        distances[from_counter][to_counter] = 0
+      else:
+        # Euclidean distance
+        distances[from_counter][to_counter] = int(
+            math.hypot((from_node[0] - to_node[0]), (from_node[1] - to_node[1]))
+        )
+  return distances
+  # [END distance_callback]
 
 
 # [START solution_printer]
 def print_solution(manager, routing, solution):
-    """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
-    index = routing.Start(0)
-    plan_output = "Route:\n"
-    route_distance = 0
-    while not routing.IsEnd(index):
-        plan_output += f" {manager.IndexToNode(index)} ->"
-        previous_index = index
-        index = solution.Value(routing.NextVar(index))
-        route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
-    plan_output += f" {manager.IndexToNode(index)}\n"
-    plan_output += f"Route distance: {route_distance}mm\n"
-    print(plan_output)
-    # [END solution_printer]
+  """Prints solution on console."""
+  print(f"Objective: {solution.ObjectiveValue()}")
+  index = routing.Start(0)
+  plan_output = "Route:\n"
+  route_distance = 0
+  while not routing.IsEnd(index):
+    plan_output += f" {manager.IndexToNode(index)} ->"
+    previous_index = index
+    index = solution.Value(routing.NextVar(index))
+    route_distance += routing.GetArcCostForVehicle(previous_index, index, 0)
+  plan_output += f" {manager.IndexToNode(index)}\n"
+  plan_output += f"Route distance: {route_distance}mm\n"
+  print(plan_output)
+  # [END solution_printer]
 
 
 def main():
-    """Entry point of the program."""
-    # Instantiate the data problem.
-    # [START data]
-    data = create_data_model()
-    # [END data]
+  """Entry point of the program."""
+  # Instantiate the data problem.
+  # [START data]
+  data = create_data_model()
+  # [END data]
 
-    # Create the routing index manager.
-    # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
-        len(data["locations"]), data["num_vehicles"], data["depot"]
-    )
-    # [END index_manager]
+  # Create the routing index manager.
+  # [START index_manager]
+  manager = pywraprouting.RoutingIndexManager(
+      len(data["locations"]), data["num_vehicles"], data["depot"]
+  )
+  # [END index_manager]
 
-    # Create Routing Model.
-    # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
-    # [END routing_model]
+  # Create Routing Model.
+  # [START routing_model]
+  routing = pywraprouting.RoutingModel(manager)
+  # [END routing_model]
 
-    # [START transit_callback]
-    distance_matrix = compute_euclidean_distance_matrix(data["locations"])
+  # [START transit_callback]
+  distance_matrix = compute_euclidean_distance_matrix(data["locations"])
 
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return distance_matrix[from_node][to_node]
+  def distance_callback(from_index, to_index):
+    """Returns the distance between the two nodes."""
+    # Convert from routing variable Index to distance matrix NodeIndex.
+    from_node = manager.IndexToNode(from_index)
+    to_node = manager.IndexToNode(to_index)
+    return distance_matrix[from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    # [END transit_callback]
+  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+  # [END transit_callback]
 
-    # Define cost of each arc.
-    # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-    # [END arc_cost]
+  # Define cost of each arc.
+  # [START arc_cost]
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+  # [END arc_cost]
 
-    # Setting first solution heuristic.
-    # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
-    # [END parameters]
+  # Setting first solution heuristic.
+  # [START parameters]
+  search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+  search_parameters.first_solution_strategy = (
+      enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+  )
+  # [END parameters]
 
-    # Solve the problem.
-    # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
-    # [END solve]
+  # Solve the problem.
+  # [START solve]
+  solution = routing.SolveWithParameters(search_parameters)
+  # [END solve]
 
-    # Print solution on console.
-    # [START print_solution]
-    if solution:
-        print_solution(manager, routing, solution)
-    # [END print_solution]
+  # Print solution on console.
+  # [START print_solution]
+  if solution:
+    print_solution(manager, routing, solution)
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

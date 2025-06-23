@@ -14,9 +14,9 @@
 
 """Test linear sum assignment on a 4x4 matrix.
 
-   Example taken from:
-   http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
-   modified so the optimum solution is unique.
+Example taken from:
+http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
+modified so the optimum solution is unique.
 """
 
 from typing import Sequence
@@ -25,37 +25,42 @@ from ortools.graph.python import linear_sum_assignment
 
 
 def run_assignment_on_4x4_matrix():
-    """Test linear sum assignment on a 4x4 matrix."""
-    num_sources = 4
-    num_targets = 4
-    cost = [[90, 76, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105], [45, 110, 95, 115]]
-    expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
+  """Test linear sum assignment on a 4x4 matrix."""
+  num_sources = 4
+  num_targets = 4
+  cost = [
+      [90, 76, 75, 80],
+      [35, 85, 55, 65],
+      [125, 95, 90, 105],
+      [45, 110, 95, 115],
+  ]
+  expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
-    assignment = linear_sum_assignment.SimpleLinearSumAssignment()
-    for source in range(0, num_sources):
-        for target in range(0, num_targets):
-            assignment.add_arc_with_cost(source, target, cost[source][target])
+  assignment = linear_sum_assignment.SimpleLinearSumAssignment()
+  for source in range(0, num_sources):
+    for target in range(0, num_targets):
+      assignment.add_arc_with_cost(source, target, cost[source][target])
 
-    solve_status = assignment.solve()
-    if solve_status == assignment.OPTIMAL:
-        print("Successful solve.")
-        print("Total cost", assignment.optimal_cost(), "/", expected_cost)
-        for i in range(0, assignment.num_nodes()):
-            print(
-                "Left node %d assigned to right node %d with cost %d."
-                % (i, assignment.right_mate(i), assignment.assignment_cost(i))
-            )
-    elif solve_status == assignment.INFEASIBLE:
-        print("No perfect matching exists.")
-    elif solve_status == assignment.POSSIBLE_OVERFLOW:
-        print("Some input costs are too large and may cause an integer overflow.")
+  solve_status = assignment.solve()
+  if solve_status == assignment.OPTIMAL:
+    print("Successful solve.")
+    print("Total cost", assignment.optimal_cost(), "/", expected_cost)
+    for i in range(0, assignment.num_nodes()):
+      print(
+          "Left node %d assigned to right node %d with cost %d."
+          % (i, assignment.right_mate(i), assignment.assignment_cost(i))
+      )
+  elif solve_status == assignment.INFEASIBLE:
+    print("No perfect matching exists.")
+  elif solve_status == assignment.POSSIBLE_OVERFLOW:
+    print("Some input costs are too large and may cause an integer overflow.")
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    run_assignment_on_4x4_matrix()
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  run_assignment_on_4x4_matrix()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

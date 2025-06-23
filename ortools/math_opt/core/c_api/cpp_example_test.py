@@ -28,17 +28,19 @@ class CppExampleTest(
     absltest.TestCase,
 ):
 
-    def test_regression(self):
-        result = self.assert_binary_succeeds("ortools/math_opt/core/c_api/cpp_example")
-        is_optimal = self.assert_has_line_with_prefixed_number(
-            "Termination is optimal: ", result.stdout
-        )
-        self.assertEqual(is_optimal, 1)
-        objective_value = self.assert_has_line_with_prefixed_number(
-            "Objective value: ", result.stdout
-        )
-        self.assertAlmostEqual(objective_value, 1.0)
+  def test_regression(self):
+    result = self.assert_binary_succeeds(
+        "ortools/math_opt/core/c_api/cpp_example"
+    )
+    is_optimal = self.assert_has_line_with_prefixed_number(
+        "Termination is optimal: ", result.stdout
+    )
+    self.assertEqual(is_optimal, 1)
+    objective_value = self.assert_has_line_with_prefixed_number(
+        "Objective value: ", result.stdout
+    )
+    self.assertAlmostEqual(objective_value, 1.0)
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

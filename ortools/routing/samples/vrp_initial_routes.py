@@ -24,10 +24,10 @@ from ortools.routing import pywraprouting
 
 # [START data_model]
 def create_data_model():
-    """Stores the data for the problem."""
-    data = {}
-    data["distance_matrix"] = [
-        # fmt: off
+  """Stores the data for the problem."""
+  data = {}
+  data["distance_matrix"] = [
+      # fmt: off
       [0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468, 776, 662],
       [548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674, 1016, 868, 1210],
       [776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164, 1130, 788, 1552, 754],
@@ -45,140 +45,142 @@ def create_data_model():
       [468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194],
       [776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798],
       [662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0],
-        # fmt: on
-    ]
-    # [START initial_routes]
-    data["initial_routes"] = [
-        # fmt: off
+      # fmt: on
+  ]
+  # [START initial_routes]
+  data["initial_routes"] = [
+      # fmt: off
       [8, 16, 14, 13, 12, 11],
       [3, 4, 9, 10],
       [15, 1],
       [7, 5, 2, 6],
-        # fmt: on
-    ]
-    # [END initial_routes]
-    data["num_vehicles"] = 4
-    data["depot"] = 0
-    return data
-    # [END data_model]
+      # fmt: on
+  ]
+  # [END initial_routes]
+  data["num_vehicles"] = 4
+  data["depot"] = 0
+  return data
+  # [END data_model]
 
 
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
-    """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
-    max_route_distance = 0
-    for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
-            continue
-        index = routing.Start(vehicle_id)
-        plan_output = f"Route for vehicle {vehicle_id}:\n"
-        route_distance = 0
-        while not routing.IsEnd(index):
-            plan_output += f" {manager.IndexToNode(index)} -> "
-            previous_index = index
-            index = solution.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id
-            )
-        plan_output += f"{manager.IndexToNode(index)}\n"
-        plan_output += f"Distance of the route: {route_distance}m\n"
-        print(plan_output)
-        max_route_distance = max(route_distance, max_route_distance)
-    print(f"Maximum of the route distances: {max_route_distance}m")
+  """Prints solution on console."""
+  print(f"Objective: {solution.ObjectiveValue()}")
+  max_route_distance = 0
+  for vehicle_id in range(data["num_vehicles"]):
+    if not routing.IsVehicleUsed(solution, vehicle_id):
+      continue
+    index = routing.Start(vehicle_id)
+    plan_output = f"Route for vehicle {vehicle_id}:\n"
+    route_distance = 0
+    while not routing.IsEnd(index):
+      plan_output += f" {manager.IndexToNode(index)} -> "
+      previous_index = index
+      index = solution.Value(routing.NextVar(index))
+      route_distance += routing.GetArcCostForVehicle(
+          previous_index, index, vehicle_id
+      )
+    plan_output += f"{manager.IndexToNode(index)}\n"
+    plan_output += f"Distance of the route: {route_distance}m\n"
+    print(plan_output)
+    max_route_distance = max(route_distance, max_route_distance)
+  print(f"Maximum of the route distances: {max_route_distance}m")
 
 
 # [END solution_printer]
 
 
 def main():
-    """Solve the CVRP problem."""
-    # Instantiate the data problem.
-    # [START data]
-    data = create_data_model()
-    # [END data]
+  """Solve the CVRP problem."""
+  # Instantiate the data problem.
+  # [START data]
+  data = create_data_model()
+  # [END data]
 
-    # Create the routing index manager.
-    # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
-    )
-    # [END index_manager]
+  # Create the routing index manager.
+  # [START index_manager]
+  manager = pywraprouting.RoutingIndexManager(
+      len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+  )
+  # [END index_manager]
 
-    # Create Routing Model.
-    # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
-    # [END routing_model]
+  # Create Routing Model.
+  # [START routing_model]
+  routing = pywraprouting.RoutingModel(manager)
+  # [END routing_model]
 
-    # Create and register a transit callback.
-    # [START transit_callback]
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return data["distance_matrix"][from_node][to_node]
+  # Create and register a transit callback.
+  # [START transit_callback]
+  def distance_callback(from_index, to_index):
+    """Returns the distance between the two nodes."""
+    # Convert from routing variable Index to distance matrix NodeIndex.
+    from_node = manager.IndexToNode(from_index)
+    to_node = manager.IndexToNode(to_index)
+    return data["distance_matrix"][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    # [END transit_callback]
+  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+  # [END transit_callback]
 
-    # Define cost of each arc.
-    # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-    # [END arc_cost]
+  # Define cost of each arc.
+  # [START arc_cost]
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+  # [END arc_cost]
 
-    # Add Distance constraint.
-    # [START distance_constraint]
-    dimension_name = "Distance"
-    routing.AddDimension(
-        transit_callback_index,
-        0,  # no slack
-        3000,  # vehicle maximum travel distance
-        True,  # start cumul to zero
-        dimension_name,
-    )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(100)
-    # [END distance_constraint]
+  # Add Distance constraint.
+  # [START distance_constraint]
+  dimension_name = "Distance"
+  routing.AddDimension(
+      transit_callback_index,
+      0,  # no slack
+      3000,  # vehicle maximum travel distance
+      True,  # start cumul to zero
+      dimension_name,
+  )
+  distance_dimension = routing.GetDimensionOrDie(dimension_name)
+  distance_dimension.SetGlobalSpanCostCoefficient(100)
+  # [END distance_constraint]
 
-    # Close model with the custom search parameters.
-    # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
-    search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
-    )
-    search_parameters.time_limit.FromSeconds(5)
-    # When an initial solution is given for search, the model will be closed with
-    # the default search parameters unless it is explicitly closed with the custom
-    # search parameters.
-    routing.CloseModelWithParameters(search_parameters)
-    # [END parameters]
+  # Close model with the custom search parameters.
+  # [START parameters]
+  search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+  search_parameters.first_solution_strategy = (
+      enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+  )
+  search_parameters.local_search_metaheuristic = (
+      enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+  )
+  search_parameters.time_limit.FromSeconds(5)
+  # When an initial solution is given for search, the model will be closed with
+  # the default search parameters unless it is explicitly closed with the custom
+  # search parameters.
+  routing.CloseModelWithParameters(search_parameters)
+  # [END parameters]
 
-    # Get initial solution from routes after closing the model.
-    # [START print_initial_solution]
-    initial_solution = routing.ReadAssignmentFromRoutes(data["initial_routes"], True)
-    print("Initial solution:")
-    print_solution(data, manager, routing, initial_solution)
-    # [END print_initial_solution]
+  # Get initial solution from routes after closing the model.
+  # [START print_initial_solution]
+  initial_solution = routing.ReadAssignmentFromRoutes(
+      data["initial_routes"], True
+  )
+  print("Initial solution:")
+  print_solution(data, manager, routing, initial_solution)
+  # [END print_initial_solution]
 
-    # Solve the problem.
-    # [START solve]
-    solution = routing.SolveFromAssignmentWithParameters(
-        initial_solution, search_parameters
-    )
-    # [END solve]
+  # Solve the problem.
+  # [START solve]
+  solution = routing.SolveFromAssignmentWithParameters(
+      initial_solution, search_parameters
+  )
+  # [END solve]
 
-    # Print solution on console.
-    # [START print_solution]
-    if solution:
-        print("Solution after search:")
-        print_solution(data, manager, routing, solution)
-    # [END print_solution]
+  # Print solution on console.
+  # [START print_solution]
+  if solution:
+    print("Solution after search:")
+    print_solution(data, manager, routing, solution)
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

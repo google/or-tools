@@ -66,78 +66,78 @@ distance_matrix = [
 
 
 def clustering_sat() -> None:
-    """Entry point of the program."""
-    num_nodes = len(distance_matrix)
-    print("Num nodes =", num_nodes)
+  """Entry point of the program."""
+  num_nodes = len(distance_matrix)
+  print("Num nodes =", num_nodes)
 
-    # Number of groups to split the nodes, must divide num_nodes.
-    num_groups = 4
-    group_size = num_nodes // num_groups
+  # Number of groups to split the nodes, must divide num_nodes.
+  num_groups = 4
+  group_size = num_nodes // num_groups
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Variables.
-    neighbors = {}
-    obj_vars = []
-    obj_coeffs = []
-    for n1 in range(num_nodes - 1):
-        for n2 in range(n1 + 1, num_nodes):
-            same = model.new_bool_var("neighbors_%i_%i" % (n1, n2))
-            neighbors[n1, n2] = same
-            obj_vars.append(same)
-            obj_coeffs.append(distance_matrix[n1][n2] + distance_matrix[n2][n1])
+  # Variables.
+  neighbors = {}
+  obj_vars = []
+  obj_coeffs = []
+  for n1 in range(num_nodes - 1):
+    for n2 in range(n1 + 1, num_nodes):
+      same = model.new_bool_var("neighbors_%i_%i" % (n1, n2))
+      neighbors[n1, n2] = same
+      obj_vars.append(same)
+      obj_coeffs.append(distance_matrix[n1][n2] + distance_matrix[n2][n1])
 
-    # Number of neighborss:
-    for n in range(num_nodes):
+  # Number of neighborss:
+  for n in range(num_nodes):
+    model.add(
+        sum(neighbors[m, n] for m in range(n))
+        + sum(neighbors[n, m] for m in range(n + 1, num_nodes))
+        == group_size - 1
+    )
+
+  # Enforce transivity on all triplets.
+  for n1 in range(num_nodes - 2):
+    for n2 in range(n1 + 1, num_nodes - 1):
+      for n3 in range(n2 + 1, num_nodes):
         model.add(
-            sum(neighbors[m, n] for m in range(n))
-            + sum(neighbors[n, m] for m in range(n + 1, num_nodes))
-            == group_size - 1
+            neighbors[n1, n3] + neighbors[n2, n3] + neighbors[n1, n2] != 2
         )
 
-    # Enforce transivity on all triplets.
-    for n1 in range(num_nodes - 2):
-        for n2 in range(n1 + 1, num_nodes - 1):
-            for n3 in range(n2 + 1, num_nodes):
-                model.add(
-                    neighbors[n1, n3] + neighbors[n2, n3] + neighbors[n1, n2] != 2
-                )
+  # Redundant constraints on total sum of neighborss.
+  model.add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
 
-    # Redundant constraints on total sum of neighborss.
-    model.add(sum(obj_vars) == num_groups * group_size * (group_size - 1) // 2)
+  # Minimize weighted sum of arcs.
+  model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
-    # Minimize weighted sum of arcs.
-    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+  # Solve and print out the solution.
+  solver = cp_model.CpSolver()
+  solver.parameters.log_search_progress = True
+  solver.parameters.num_search_workers = 8
 
-    # Solve and print out the solution.
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    solver.parameters.num_search_workers = 8
+  status = solver.solve(model)
+  print(solver.response_stats())
 
-    status = solver.solve(model)
-    print(solver.response_stats())
-
-    if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
-        visited = set()
-        for g in range(num_groups):
-            for n in range(num_nodes):
-                if n not in visited:
-                    visited.add(n)
-                    output = str(n)
-                    for o in range(n + 1, num_nodes):
-                        if solver.boolean_value(neighbors[n, o]):
-                            visited.add(o)
-                            output += " " + str(o)
-                    print("Group", g, ":", output)
-                    break
+  if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
+    visited = set()
+    for g in range(num_groups):
+      for n in range(num_nodes):
+        if n not in visited:
+          visited.add(n)
+          output = str(n)
+          for o in range(n + 1, num_nodes):
+            if solver.boolean_value(neighbors[n, o]):
+              visited.add(o)
+              output += " " + str(o)
+          print("Group", g, ":", output)
+          break
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    clustering_sat()
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  clustering_sat()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

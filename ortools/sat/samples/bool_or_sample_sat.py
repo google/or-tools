@@ -19,15 +19,15 @@ from ortools.sat.python import cp_model
 
 
 def bool_or_sample_sat():
-    model = cp_model.CpModel()
+  model = cp_model.CpModel()
 
-    x = model.new_bool_var("x")
-    y = model.new_bool_var("y")
+  x = model.new_bool_var("x")
+  y = model.new_bool_var("y")
 
-    model.add_bool_or([x, y.negated()])
-    # The [] is not mandatory.
-    # ~y is equivalent to y.negated()
-    model.add_bool_or(x, ~y)
+  model.add_bool_or([x, y.negated()])
+  # The [] is not mandatory.
+  # ~y is equivalent to y.negated()
+  model.add_bool_or(x, ~y)
 
 
 bool_or_sample_sat()

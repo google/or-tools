@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Volsay problem in Google or-tools.
+Volsay problem in Google or-tools.
 
-  From the OPL model volsay.mod
+From the OPL model volsay.mod
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.linear_solver import pywraplp
 
@@ -29,7 +29,7 @@ def main(unused_argv):
   # Create the solver.
 
   # using GLPK
-  #solver = pywraplp.Solver('CoinsGridGLPK',
+  # solver = pywraplp.Solver('CoinsGridGLPK',
   #                         pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
   # Using CLP
@@ -62,8 +62,12 @@ def main(unused_argv):
   print()
   print('objective = ', solver.Objective().Value())
   print('Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost())
-  print('Chloride:', Chloride.SolutionValue(), 'ReducedCost =',
-        Chloride.ReducedCost())
+  print(
+      'Chloride:',
+      Chloride.SolutionValue(),
+      'ReducedCost =',
+      Chloride.ReducedCost(),
+  )
 
 
 if __name__ == '__main__':

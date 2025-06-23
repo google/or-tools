@@ -18,9 +18,10 @@ from ortools.constraint_solver import pywrapcp
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    '--data', default='examples/contrib/bacp.txt', help='path to data file')
+    '--data', default='examples/contrib/bacp.txt', help='path to data file'
+)
 
-#----------------helper for binpacking posting----------------
+# ----------------helper for binpacking posting----------------
 
 
 def BinPacking(solver, binvars, weights, loadvars):
@@ -34,14 +35,15 @@ def BinPacking(solver, binvars, weights, loadvars):
   solver.Add(solver.SumEquality(loadvars, sum(weights)))
 
 
-#------------------------------data reading-------------------
+# ------------------------------data reading-------------------
 
 
 def ReadData(filename):
   """Read data from <filename>."""
   f = open(filename)
-  nb_courses, nb_periods, min_credit, max_credit, nb_prereqs =\
-      [int(nb) for nb in f.readline().split()]
+  nb_courses, nb_periods, min_credit, max_credit, nb_prereqs = [
+      int(nb) for nb in f.readline().split()
+  ]
   credits = [int(nb) for nb in f.readline().split()]
   prereq = [int(nb) for nb in f.readline().split()]
   prereq = [(prereq[i * 2], prereq[i * 2 + 1]) for i in range(nb_prereqs)]
@@ -49,7 +51,7 @@ def ReadData(filename):
 
 
 def main(args):
-  #------------------solver and variable declaration-------------
+  # ------------------solver and variable declaration-------------
 
   credits, nb_periods, prereq = ReadData(args.data)
   nb_courses = len(credits)
@@ -64,7 +66,7 @@ def main(args):
       for i in range(nb_periods)
   ]
 
-  #-------------------post of the constraints--------------
+  # -------------------post of the constraints--------------
 
   # Bin Packing.
   BinPacking(solver, x, credits, load_vars)
@@ -72,15 +74,16 @@ def main(args):
   for i, j in prereq:
     solver.Add(x[i] < x[j])
 
-  #----------------Objective-------------------------------
+  # ----------------Objective-------------------------------
 
   objective_var = solver.Max(load_vars)
   objective = solver.Minimize(objective_var, 1)
 
-  #------------start the search and optimization-----------
+  # ------------start the search and optimization-----------
 
-  db = solver.Phase(x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.INT_VALUE_DEFAULT)
+  db = solver.Phase(
+      x, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.INT_VALUE_DEFAULT
+  )
 
   search_log = solver.SearchLog(100000, objective_var)
   solver.Solve(db, [objective, search_log])

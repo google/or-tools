@@ -20,12 +20,12 @@ from ortools.math_opt.python import hash_model_storage
 
 class HashModelStorageTest(absltest.TestCase):
 
-    def test_quadratic_term_storage(self):
-        storage = hash_model_storage._QuadraticTermStorage()
-        storage.set_coefficient(0, 1, 1.0)
-        storage.delete_variable(0)
-        self.assertEmpty(list(storage.get_adjacent_variables(0)))
+  def test_quadratic_term_storage(self):
+    storage = hash_model_storage._QuadraticTermStorage()
+    storage.set_coefficient(0, 1, 1.0)
+    storage.delete_variable(0)
+    self.assertEmpty(list(storage.get_adjacent_variables(0)))
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

@@ -13,47 +13,47 @@
 # limitations under the License.
 """
 
-  Seseman Convent problem in Google CP Solver.
+Seseman Convent problem in Google CP Solver.
 
 
-  n is the length of a border
-  There are (n-2)^2 "holes", i.e.
-  there are n^2 - (n-2)^2 variables to find out.
+n is the length of a border
+There are (n-2)^2 "holes", i.e.
+there are n^2 - (n-2)^2 variables to find out.
 
-  The simplest problem, n = 3 (n x n matrix)
-  which is represented by the following matrix:
+The simplest problem, n = 3 (n x n matrix)
+which is represented by the following matrix:
 
-   a b c
-   d   e
-   f g h
+ a b c
+ d   e
+ f g h
 
-  Where the following constraints must hold:
+Where the following constraints must hold:
 
-    a + b + c = border_sum
-    a + d + f = border_sum
-    c + e + h = border_sum
-    f + g + h = border_sum
-    a + b + c + d + e + f = total_sum
-
-
-  Compare with the following models:
-  * Tailor/Essence': http://hakank.org/tailor/seseman.eprime
-  * MiniZinc: http://hakank.org/minizinc/seseman.mzn
-  * SICStus: http://hakank.org/sicstus/seseman.pl
-  * Zinc: http://hakank.org/minizinc/seseman.zinc
-  * Choco: http://hakank.org/choco/Seseman.java
-  * Comet: http://hakank.org/comet/seseman.co
-  * ECLiPSe: http://hakank.org/eclipse/seseman.ecl
-  * Gecode: http://hakank.org/gecode/seseman.cpp
-  * Gecode/R: http://hakank.org/gecode_r/seseman.rb
-  * JaCoP: http://hakank.org/JaCoP/Seseman.java
-
-  This version use a better way of looping through all solutions.
+  a + b + c = border_sum
+  a + d + f = border_sum
+  c + e + h = border_sum
+  f + g + h = border_sum
+  a + b + c + d + e + f = total_sum
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+Compare with the following models:
+* Tailor/Essence': http://hakank.org/tailor/seseman.eprime
+* MiniZinc: http://hakank.org/minizinc/seseman.mzn
+* SICStus: http://hakank.org/sicstus/seseman.pl
+* Zinc: http://hakank.org/minizinc/seseman.zinc
+* Choco: http://hakank.org/choco/Seseman.java
+* Comet: http://hakank.org/comet/seseman.co
+* ECLiPSe: http://hakank.org/eclipse/seseman.ecl
+* Gecode: http://hakank.org/gecode/seseman.cpp
+* Gecode/R: http://hakank.org/gecode_r/seseman.rb
+* JaCoP: http://hakank.org/JaCoP/Seseman.java
+
+This version use a better way of looping through all solutions.
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -96,7 +96,8 @@ def main(unused_argv):
 
   # total
   solver.Add(
-      solver.Sum([x[(i, j)] for i in range(n) for j in range(n)]) == total_sum)
+      solver.Sum([x[(i, j)] for i in range(n) for j in range(n)]) == total_sum
+  )
 
   #
   # solution and search
@@ -105,8 +106,11 @@ def main(unused_argv):
   solution.Add([x[(i, j)] for i in range(n) for j in range(n)])
   solution.Add(total_sum)
 
-  db = solver.Phase([x[(i, j)] for i in range(n) for j in range(n)],
-                    solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      [x[(i, j)] for i in range(n) for j in range(n)],
+      solver.CHOOSE_PATH,
+      solver.ASSIGN_MIN_VALUE,
+  )
 
   solver.NewSearch(db)
 

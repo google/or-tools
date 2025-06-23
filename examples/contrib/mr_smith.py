@@ -13,38 +13,38 @@
 # limitations under the License.
 """
 
-  Mr Smith in Google CP Solver.
+Mr Smith in Google CP Solver.
 
-  From an IF Prolog example (http://www.ifcomputer.de/)
-  '''
-  The Smith family and their three children want to pay a visit but they
-  do not all have the time to do so. Following are few hints who will go
-  and who will not:
-      o If Mr Smith comes, his wife will come too.
-      o At least one of their two sons Matt and John will come.
-      o Either Mrs Smith or Tim will come, but not both.
-      o Either Tim and John will come, or neither will come.
-      o If Matt comes, then John and his father will
-        also come.
-  '''
+From an IF Prolog example (http://www.ifcomputer.de/)
+'''
+The Smith family and their three children want to pay a visit but they
+do not all have the time to do so. Following are few hints who will go
+and who will not:
+    o If Mr Smith comes, his wife will come too.
+    o At least one of their two sons Matt and John will come.
+    o Either Mrs Smith or Tim will come, but not both.
+    o Either Tim and John will come, or neither will come.
+    o If Matt comes, then John and his father will
+      also come.
+'''
 
-  The answer should be:
-   Mr_Smith_comes      =  0
-   Mrs_Smith_comes     =  0
-   Matt_comes          =  0
-   John_comes          =  1
-   Tim_comes           =  1
+The answer should be:
+ Mr_Smith_comes      =  0
+ Mrs_Smith_comes     =  0
+ Matt_comes          =  0
+ John_comes          =  1
+ Tim_comes           =  1
 
-  Compare with the following models:
-  * ECLiPSe: http://www.hakank.org/eclipse/mr_smith.ecl
-  * SICStus Prolog: http://www.hakank.org/sicstus/mr_smith.pl
-  * Gecode: http://www.hakank.org/gecode/mr_smith.cpp
-  * MiniZinc: http://www.hakank.org/minizinc/mr_smith.mzn
+Compare with the following models:
+* ECLiPSe: http://www.hakank.org/eclipse/mr_smith.ecl
+* SICStus Prolog: http://www.hakank.org/sicstus/mr_smith.pl
+* Gecode: http://www.hakank.org/gecode/mr_smith.cpp
+* MiniZinc: http://www.hakank.org/minizinc/mr_smith.mzn
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp

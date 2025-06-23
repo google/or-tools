@@ -13,51 +13,51 @@
 # limitations under the License.
 """
 
-  Who killed agatha? (The Dreadsbury Mansion Murder Mystery) in Google CP
-  Solver.
+Who killed agatha? (The Dreadsbury Mansion Murder Mystery) in Google CP
+Solver.
 
-  This is a standard benchmark for theorem proving.
+This is a standard benchmark for theorem proving.
 
-  http://www.lsv.ens-cachan.fr/~goubault/H1.dist/H1.1/Doc/h1003.html
-  '''
-  Someone in Dreadsbury Mansion killed Aunt Agatha.
-  Agatha, the butler, and Charles live in Dreadsbury Mansion, and
-  are the only ones to live there. A killer always hates, and is no
-  richer than his victim. Charles hates noone that Agatha hates. Agatha
-  hates everybody except the butler. The butler hates everyone not richer
-  than Aunt Agatha. The butler hates everyone whom Agatha hates.
-  Noone hates everyone. Who killed Agatha?
-  '''
+http://www.lsv.ens-cachan.fr/~goubault/H1.dist/H1.1/Doc/h1003.html
+'''
+Someone in Dreadsbury Mansion killed Aunt Agatha.
+Agatha, the butler, and Charles live in Dreadsbury Mansion, and
+are the only ones to live there. A killer always hates, and is no
+richer than his victim. Charles hates noone that Agatha hates. Agatha
+hates everybody except the butler. The butler hates everyone not richer
+than Aunt Agatha. The butler hates everyone whom Agatha hates.
+Noone hates everyone. Who killed Agatha?
+'''
 
-  Originally from F. J. Pelletier:
-  Seventy-five problems for testing automatic theorem provers.
-  Journal of Automated Reasoning, 2: 216, 1986.
+Originally from F. J. Pelletier:
+Seventy-five problems for testing automatic theorem provers.
+Journal of Automated Reasoning, 2: 216, 1986.
 
-  Note1: Since Google CP Solver/Pythons (currently) don't have
-         special support for logical operations on decision
-         variables (i.e. ->, <->, and, or, etc), this model
-         use some IP modeling tricks.
+Note1: Since Google CP Solver/Pythons (currently) don't have
+       special support for logical operations on decision
+       variables (i.e. ->, <->, and, or, etc), this model
+       use some IP modeling tricks.
 
-  Note2: There are 8 different solutions, all stating that Agatha
-         killed herself
+Note2: There are 8 different solutions, all stating that Agatha
+       killed herself
 
-  Compare with the following models:
-  * Choco   : http://www.hakank.org/choco/WhoKilledAgatha.java
-  * Choco   : http://www.hakank.org/choco/WhoKilledAgatha_element.java
-  * Comet   : http://www.hakank.org/comet/who_killed_agatha.co
-  * ECLiPSE : http://www.hakank.org/eclipse/who_killed_agatha.ecl
-  * Gecode  : http://www.hakank.org/gecode/who_killed_agatha.cpp
-  * JaCoP   : http://www.hakank.org/JaCoP/WhoKilledAgatha.java
-  * JaCoP   : http://www.hakank.org/JaCoP/WhoKilledAgatha_element.java
-  * MiniZinc: http://www.hakank.org/minizinc/who_killed_agatha.mzn
-  * Tailor/Essence': http://www.hakank.org/tailor/who_killed_agatha.eprime
-  * SICStus : http://hakank.org/sicstus/who_killed_agatha.pl
-  * Zinc    :http://hakank.org/minizinc/who_killed_agatha.zinc
+Compare with the following models:
+* Choco   : http://www.hakank.org/choco/WhoKilledAgatha.java
+* Choco   : http://www.hakank.org/choco/WhoKilledAgatha_element.java
+* Comet   : http://www.hakank.org/comet/who_killed_agatha.co
+* ECLiPSE : http://www.hakank.org/eclipse/who_killed_agatha.ecl
+* Gecode  : http://www.hakank.org/gecode/who_killed_agatha.cpp
+* JaCoP   : http://www.hakank.org/JaCoP/WhoKilledAgatha.java
+* JaCoP   : http://www.hakank.org/JaCoP/WhoKilledAgatha_element.java
+* MiniZinc: http://www.hakank.org/minizinc/who_killed_agatha.mzn
+* Tailor/Essence': http://www.hakank.org/tailor/who_killed_agatha.eprime
+* SICStus : http://hakank.org/sicstus/who_killed_agatha.pl
+* Zinc    :http://hakank.org/minizinc/who_killed_agatha.zinc
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from collections import defaultdict
 
@@ -178,8 +178,11 @@ def main(the_killers):
   solution.Add(richer_flat)
 
   # db: DecisionBuilder
-  db = solver.Phase(hates_flat + richer_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      hates_flat + richer_flat,
+      solver.CHOOSE_FIRST_UNBOUND,
+      solver.ASSIGN_MIN_VALUE,
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

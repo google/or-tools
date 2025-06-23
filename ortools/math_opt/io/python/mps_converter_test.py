@@ -45,32 +45,32 @@ ENDATA
 
 
 def simple_model_proto() -> model_pb2.ModelProto:
-    model = mathopt.Model(name="unbounded_integers")
-    x = model.add_variable(name="x", lb=1, ub=float("inf"), is_integer=True)
-    y = model.add_variable(name="y", lb=4, ub=float("inf"), is_integer=True)
-    model.add_linear_constraint(x + y >= 2, name="c")
-    model.minimize(x + y)
-    return model.export_model()
+  model = mathopt.Model(name="unbounded_integers")
+  x = model.add_variable(name="x", lb=1, ub=float("inf"), is_integer=True)
+  y = model.add_variable(name="y", lb=4, ub=float("inf"), is_integer=True)
+  model.add_linear_constraint(x + y >= 2, name="c")
+  model.minimize(x + y)
+  return model.export_model()
 
 
 class MPSConverterTest(absltest.TestCase, compare_proto.MathOptProtoAssertions):
 
-    def test_convert_empty_mps_to_model_proto(self) -> None:
-        simple_mps = "NAME MIN_SIZE_MAX_FEATURES"
-        model_proto = mps_converter.mps_to_model_proto(simple_mps)
-        self.assertEqual(model_proto.name, "MIN_SIZE_MAX_FEATURES")
+  def test_convert_empty_mps_to_model_proto(self) -> None:
+    simple_mps = "NAME MIN_SIZE_MAX_FEATURES"
+    model_proto = mps_converter.mps_to_model_proto(simple_mps)
+    self.assertEqual(model_proto.name, "MIN_SIZE_MAX_FEATURES")
 
-    def test_convert_simple_mps_to_model(self) -> None:
-        model_proto = mps_converter.mps_to_model_proto(_MODEL_MPS)
-        expected_model_proto = simple_model_proto()
+  def test_convert_simple_mps_to_model(self) -> None:
+    model_proto = mps_converter.mps_to_model_proto(_MODEL_MPS)
+    expected_model_proto = simple_model_proto()
 
-        self.assert_protos_equiv(model_proto, expected_model_proto)
+    self.assert_protos_equiv(model_proto, expected_model_proto)
 
-    def test_convert_model_proto_to_mps(self) -> None:
-        model_proto = simple_model_proto()
-        mps = mps_converter.model_proto_to_mps(model_proto)
-        self.assertEqual(mps, _MODEL_MPS)
+  def test_convert_model_proto_to_mps(self) -> None:
+    model_proto = simple_model_proto()
+    mps = mps_converter.model_proto_to_mps(model_proto)
+    self.assertEqual(mps, _MODEL_MPS)
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

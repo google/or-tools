@@ -13,36 +13,36 @@
 # limitations under the License.
 """
 
-  Set covering in Google CP Solver.
+Set covering in Google CP Solver.
 
-  Problem from
-  Katta G. Murty: 'Optimization Models for Decision Making', page 302f
-  http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
+Problem from
+Katta G. Murty: 'Optimization Models for Decision Making', page 302f
+http://ioe.engin.umich.edu/people/fac/books/murty/opti_model/junior-7.pdf
 
-  10 senators making a committee, where there must at least be one
-  representative from each group:
-  group:        senators:
-  southern      1 2 3 4 5
-  northern      6 7 8 9 10
-  liberals      2 3 8 9 10
-  conservative  1 5 6 7
-  democrats     3 4 5 6 7 9
-  republicans   1 2 8 10
+10 senators making a committee, where there must at least be one
+representative from each group:
+group:        senators:
+southern      1 2 3 4 5
+northern      6 7 8 9 10
+liberals      2 3 8 9 10
+conservative  1 5 6 7
+democrats     3 4 5 6 7 9
+republicans   1 2 8 10
 
-  The objective is to minimize the number of senators.
+The objective is to minimize the number of senators.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/set_covering3_model.mzn (model)
-              http://www.hakank.org/minizinc/set_covering3.mzn (data)
-  * Comet   : http://www.hakank.org/comet/set_covering3.co
-  * ECLiPSe : http://www.hakank.org/eclipse/set_covering3.ecl
-  * SICStus : http://hakank.org/sicstus/set_covering3.pl
-  * Gecode  : http://hakank.org/gecode/set_covering3.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/set_covering3_model.mzn (model)
+            http://www.hakank.org/minizinc/set_covering3.mzn (data)
+* Comet   : http://www.hakank.org/comet/set_covering3.co
+* ECLiPSe : http://www.hakank.org/eclipse/set_covering3.ecl
+* SICStus : http://hakank.org/sicstus/set_covering3.pl
+* Gecode  : http://hakank.org/gecode/set_covering3.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -66,7 +66,7 @@ def main(unused_argv):
       [0, 1, 1, 0, 0, 0, 0, 1, 1, 1],  # 3 liberals
       [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],  # 4 conservative
       [0, 0, 1, 1, 1, 1, 1, 0, 1, 0],  # 5 democrats
-      [1, 1, 0, 0, 0, 0, 0, 1, 0, 1]  # 6 republicans
+      [1, 1, 0, 0, 0, 0, 0, 1, 0, 1],  # 6 republicans
   ]
 
   #
@@ -86,7 +86,9 @@ def main(unused_argv):
   for i in range(num_groups):
     solver.Add(
         solver.SumGreaterOrEqual(
-            [x[j] * belongs[i][j] for j in range(num_senators)], 1))
+            [x[j] * belongs[i][j] for j in range(num_senators)], 1
+        )
+    )
 
   objective = solver.Minimize(z, 1)
 
@@ -100,7 +102,8 @@ def main(unused_argv):
   collector = solver.LastSolutionCollector(solution)
   solver.Solve(
       solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
-      [collector, objective])
+      [collector, objective],
+  )
 
   print("z:", collector.ObjectiveValue(0))
   print("x:", [collector.Value(0, x[i]) for i in range(num_senators)])

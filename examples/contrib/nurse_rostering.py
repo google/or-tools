@@ -13,19 +13,19 @@
 # limitations under the License.
 """
 
-  Nurse rostering in Google CP Solver.
+Nurse rostering in Google CP Solver.
 
-  This is a simple nurse rostering model using a DFA and
-  my decomposition of regular constraint.
+This is a simple nurse rostering model using a DFA and
+my decomposition of regular constraint.
 
-  The DFA is from MiniZinc Tutorial, Nurse Rostering example:
-  - one day off every 4 days
-  - no 3 nights in a row.
+The DFA is from MiniZinc Tutorial, Nurse Rostering example:
+- one day off every 4 days
+- no 3 nights in a row.
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -98,7 +98,8 @@ def regular(x, Q, S, d, q0, F):
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
     solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1))
+    )
 
 
 def main():
@@ -134,7 +135,7 @@ def main():
       [4, 5, 1],  # state 3
       [6, 6, 1],  # state 4
       [6, 0, 1],  # state 5
-      [0, 0, 1]  # state 6
+      [0, 0, 1],  # state 6
   ]
 
   days = ['d', 'n', 'o']  # for presentation
@@ -168,8 +169,14 @@ def main():
   #
   for i in range(num_nurses):
     reg_input = [x[i, j] for j in range(num_days)]
-    regular(reg_input, n_states, input_max, transition_fn, initial_state,
-            accepting_states)
+    regular(
+        reg_input,
+        n_states,
+        input_max,
+        transition_fn,
+        initial_state,
+        accepting_states,
+    )
 
   #
   # Statistics and constraints for each nurse
@@ -177,8 +184,9 @@ def main():
   for i in range(num_nurses):
     # number of worked days (day or night shift)
     b = [
-        solver.IsEqualCstVar(x[i, j], day_shift) + solver.IsEqualCstVar(
-            x[i, j], night_shift) for j in range(num_days)
+        solver.IsEqualCstVar(x[i, j], day_shift)
+        + solver.IsEqualCstVar(x[i, j], night_shift)
+        for j in range(num_days)
     ]
     solver.Add(nurse_stat[i] == solver.Sum(b))
 
@@ -221,8 +229,11 @@ def main():
   #
   # solution and search
   #
-  db = solver.Phase(day_stat_flat + x_flat + nurse_stat,
-                    solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      day_stat_flat + x_flat + nurse_stat,
+      solver.CHOOSE_FIRST_UNBOUND,
+      solver.ASSIGN_MIN_VALUE,
+  )
 
   solver.NewSearch(db)
 
@@ -238,7 +249,8 @@ def main():
         this_day_stat[d] += 1
         print(d, end=' ')
       print(
-          ' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' ')
+          ' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' '
+      )
       print('total:', nurse_stat[i].Value(), 'workdays')
     print()
 

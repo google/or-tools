@@ -28,10 +28,10 @@ from ortools.routing import pywraprouting
 
 # [START data_model]
 def create_data_model():
-    """Stores the data for the problem."""
-    data = {}
-    data["distance_matrix"] = [
-        # fmt: off
+  """Stores the data for the problem."""
+  data = {}
+  data["distance_matrix"] = [
+      # fmt: off
       [0, 548, 776, 696, 582, 274, 502, 194, 308, 194, 536, 502, 388, 354, 468, 776, 662],
       [548, 0, 684, 308, 194, 502, 730, 354, 696, 742, 1084, 594, 480, 674, 1016, 868, 1210],
       [776, 684, 0, 992, 878, 502, 274, 810, 468, 742, 400, 1278, 1164, 1130, 788, 1552, 754],
@@ -49,31 +49,31 @@ def create_data_model():
       [468, 1016, 788, 1164, 1050, 514, 514, 662, 320, 274, 388, 650, 536, 342, 0, 764, 194],
       [776, 868, 1552, 560, 674, 1050, 1278, 742, 1084, 810, 1152, 274, 388, 422, 764, 0, 798],
       [662, 1210, 754, 1358, 1244, 708, 480, 856, 514, 468, 354, 844, 730, 536, 194, 798, 0],
-        # fmt: on
-    ]
-    data["value"] = [
-        0,  # depot
-        42,  # 1
-        42,  # 2
-        8,  # 3
-        8,  # 4
-        8,  # 5
-        8,  # 6
-        8,  # 7
-        8,  # 8
-        8,  # 9
-        8,  # 10
-        8,  # 11
-        8,  # 12
-        8,  # 13
-        8,  # 14
-        42,  # 15
-        42,  # 16
-    ]
-    assert len(data["distance_matrix"]) == len(data["value"])
-    data["num_vehicles"] = 4
-    data["depot"] = 0
-    return data
+      # fmt: on
+  ]
+  data["value"] = [
+      0,  # depot
+      42,  # 1
+      42,  # 2
+      8,  # 3
+      8,  # 4
+      8,  # 5
+      8,  # 6
+      8,  # 7
+      8,  # 8
+      8,  # 9
+      8,  # 10
+      8,  # 11
+      8,  # 12
+      8,  # 13
+      8,  # 14
+      42,  # 15
+      42,  # 16
+  ]
+  assert len(data["distance_matrix"]) == len(data["value"])
+  data["num_vehicles"] = 4
+  data["depot"] = 0
+  return data
 
 
 # [END data_model]
@@ -81,195 +81,195 @@ def create_data_model():
 
 # [START solution_printer]
 def print_solution(data, manager, routing, solution):
-    """Prints solution on console."""
-    print(f"Objective: {solution.ObjectiveValue()}")
-    max_route_distance = 0
-    dim_one = routing.GetDimensionOrDie("One")
-    dim_two = routing.GetDimensionOrDie("Two")
+  """Prints solution on console."""
+  print(f"Objective: {solution.ObjectiveValue()}")
+  max_route_distance = 0
+  dim_one = routing.GetDimensionOrDie("One")
+  dim_two = routing.GetDimensionOrDie("Two")
 
-    for vehicle_id in range(data["num_vehicles"]):
-        if not routing.IsVehicleUsed(solution, vehicle_id):
-            continue
-        index = routing.Start(vehicle_id)
-        plan_output = f"Route for vehicle {vehicle_id}:\n"
-        route_distance = 0
-        while not routing.IsEnd(index):
-            one_var = dim_one.CumulVar(index)
-            one_slack_var = dim_one.SlackVar(index)
-            two_var = dim_two.CumulVar(index)
-            two_slack_var = dim_two.SlackVar(index)
-            plan_output += (
-                f" N:{manager.IndexToNode(index)}"
-                f" one:({solution.Value(one_var)}, {solution.Value(one_slack_var)})"
-                f" two:({solution.Value(two_var)}, {solution.Value(two_slack_var)})"
-                " -> "
-            )
-            previous_index = index
-            index = solution.Value(routing.NextVar(index))
-            route_distance += routing.GetArcCostForVehicle(
-                previous_index, index, vehicle_id
-            )
-        one_var = dim_one.CumulVar(index)
-        two_var = dim_two.CumulVar(index)
-        plan_output += (
-            f"N:{manager.IndexToNode(index)}"
-            f" one:{solution.Value(one_var)}"
-            f" two:{solution.Value(two_var)}\n"
-        )
-        plan_output += f"Distance of the route: {route_distance}m\n"
-        print(plan_output)
-        max_route_distance = max(route_distance, max_route_distance)
-    print(f"Maximum of the route distances: {max_route_distance}m")
+  for vehicle_id in range(data["num_vehicles"]):
+    if not routing.IsVehicleUsed(solution, vehicle_id):
+      continue
+    index = routing.Start(vehicle_id)
+    plan_output = f"Route for vehicle {vehicle_id}:\n"
+    route_distance = 0
+    while not routing.IsEnd(index):
+      one_var = dim_one.CumulVar(index)
+      one_slack_var = dim_one.SlackVar(index)
+      two_var = dim_two.CumulVar(index)
+      two_slack_var = dim_two.SlackVar(index)
+      plan_output += (
+          f" N:{manager.IndexToNode(index)}"
+          f" one:({solution.Value(one_var)}, {solution.Value(one_slack_var)})"
+          f" two:({solution.Value(two_var)}, {solution.Value(two_slack_var)})"
+          " -> "
+      )
+      previous_index = index
+      index = solution.Value(routing.NextVar(index))
+      route_distance += routing.GetArcCostForVehicle(
+          previous_index, index, vehicle_id
+      )
+    one_var = dim_one.CumulVar(index)
+    two_var = dim_two.CumulVar(index)
+    plan_output += (
+        f"N:{manager.IndexToNode(index)}"
+        f" one:{solution.Value(one_var)}"
+        f" two:{solution.Value(two_var)}\n"
+    )
+    plan_output += f"Distance of the route: {route_distance}m\n"
+    print(plan_output)
+    max_route_distance = max(route_distance, max_route_distance)
+  print(f"Maximum of the route distances: {max_route_distance}m")
 
 
 # [END solution_printer]
 
 
 def main():
-    """Solve the CVRP problem."""
-    # Instantiate the data problem.
-    # [START data]
-    data = create_data_model()
-    # [END data]
+  """Solve the CVRP problem."""
+  # Instantiate the data problem.
+  # [START data]
+  data = create_data_model()
+  # [END data]
 
-    # Create the routing index manager.
-    # [START index_manager]
-    manager = pywraprouting.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
-    )
-    # [END index_manager]
+  # Create the routing index manager.
+  # [START index_manager]
+  manager = pywraprouting.RoutingIndexManager(
+      len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
+  )
+  # [END index_manager]
 
-    # Create Routing Model.
-    # [START routing_model]
-    routing = pywraprouting.RoutingModel(manager)
-    # [END routing_model]
+  # Create Routing Model.
+  # [START routing_model]
+  routing = pywraprouting.RoutingModel(manager)
+  # [END routing_model]
 
-    # Create and register a transit callback.
-    # [START transit_callback]
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return data["distance_matrix"][from_node][to_node]
+  # Create and register a transit callback.
+  # [START transit_callback]
+  def distance_callback(from_index, to_index):
+    """Returns the distance between the two nodes."""
+    # Convert from routing variable Index to distance matrix NodeIndex.
+    from_node = manager.IndexToNode(from_index)
+    to_node = manager.IndexToNode(to_index)
+    return data["distance_matrix"][from_node][to_node]
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
-    # [END transit_callback]
+  transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+  # [END transit_callback]
 
-    # Define cost of each arc.
-    # [START arc_cost]
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
-    # [END arc_cost]
+  # Define cost of each arc.
+  # [START arc_cost]
+  routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+  # [END arc_cost]
 
-    # Add Distance constraint.
-    # [START distance_constraint]
-    dimension_name = "Distance"
-    routing.AddDimension(
-        transit_callback_index,
-        0,  # no slack
-        3_000,  # vehicle maximum travel distance
-        True,  # start cumul to zero
-        dimension_name,
-    )
-    distance_dimension = routing.GetDimensionOrDie(dimension_name)
-    distance_dimension.SetGlobalSpanCostCoefficient(10)
-    # [END distance_constraint]
+  # Add Distance constraint.
+  # [START distance_constraint]
+  dimension_name = "Distance"
+  routing.AddDimension(
+      transit_callback_index,
+      0,  # no slack
+      3_000,  # vehicle maximum travel distance
+      True,  # start cumul to zero
+      dimension_name,
+  )
+  distance_dimension = routing.GetDimensionOrDie(dimension_name)
+  distance_dimension.SetGlobalSpanCostCoefficient(10)
+  # [END distance_constraint]
 
-    # Max Node value Constraint.
-    # Dimension One will be used to compute the max node value up to the node in
-    # the route and store the result in the SlackVar of the node.
-    routing.AddConstantDimensionWithSlack(
-        0,  # transit 0
-        42 * 16,  # capacity: be able to store PEAK*ROUTE_LENGTH in worst case
-        42,  # slack_max: to be able to store peak in slack
-        True,  #  Fix StartCumulToZero not really matter here
-        "One",
-    )
-    dim_one = routing.GetDimensionOrDie("One")
+  # Max Node value Constraint.
+  # Dimension One will be used to compute the max node value up to the node in
+  # the route and store the result in the SlackVar of the node.
+  routing.AddConstantDimensionWithSlack(
+      0,  # transit 0
+      42 * 16,  # capacity: be able to store PEAK*ROUTE_LENGTH in worst case
+      42,  # slack_max: to be able to store peak in slack
+      True,  #  Fix StartCumulToZero not really matter here
+      "One",
+  )
+  dim_one = routing.GetDimensionOrDie("One")
 
-    # Dimension Two will be used to store the max node value in the route end node
-    # CumulVar so we can use it as an objective cost.
-    routing.AddConstantDimensionWithSlack(
-        0,  # transit 0
-        42 * 16,  # capacity: be able to have PEAK value in CumulVar(End)
-        42,  # slack_max: to be able to store peak in slack
-        True,  #  Fix StartCumulToZero YES here
-        "Two",
-    )
-    dim_two = routing.GetDimensionOrDie("Two")
+  # Dimension Two will be used to store the max node value in the route end node
+  # CumulVar so we can use it as an objective cost.
+  routing.AddConstantDimensionWithSlack(
+      0,  # transit 0
+      42 * 16,  # capacity: be able to have PEAK value in CumulVar(End)
+      42,  # slack_max: to be able to store peak in slack
+      True,  #  Fix StartCumulToZero YES here
+      "Two",
+  )
+  dim_two = routing.GetDimensionOrDie("Two")
 
-    # force depot Slack to be value since we don't have any predecessor...
+  # force depot Slack to be value since we don't have any predecessor...
+  for v in range(manager.GetNumberOfVehicles()):
+    start = routing.Start(v)
+    dim_one.SlackVar(start).SetValue(data["value"][0])
+    routing.AddToAssignment(dim_one.SlackVar(start))
+
+    dim_two.SlackVar(start).SetValue(data["value"][0])
+    routing.AddToAssignment(dim_two.SlackVar(start))
+
+  # Step by step relation
+  # Slack(N) = max( Slack(N-1) , value(N) )
+  solver = routing.solver()
+  for node in range(1, 17):
+    index = manager.NodeToIndex(node)
+    routing.AddToAssignment(dim_one.SlackVar(index))
+    routing.AddToAssignment(dim_two.SlackVar(index))
+    test = []
     for v in range(manager.GetNumberOfVehicles()):
-        start = routing.Start(v)
-        dim_one.SlackVar(start).SetValue(data["value"][0])
-        routing.AddToAssignment(dim_one.SlackVar(start))
+      previous_index = routing.Start(v)
+      cond = routing.NextVar(previous_index) == index
+      value = solver.Max(dim_one.SlackVar(previous_index), data["value"][node])
+      test.append((cond * value).Var())
+    for previous in range(1, 17):
+      previous_index = manager.NodeToIndex(previous)
+      cond = routing.NextVar(previous_index) == index
+      value = solver.Max(dim_one.SlackVar(previous_index), data["value"][node])
+      test.append((cond * value).Var())
+    solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
 
-        dim_two.SlackVar(start).SetValue(data["value"][0])
-        routing.AddToAssignment(dim_two.SlackVar(start))
-
-    # Step by step relation
-    # Slack(N) = max( Slack(N-1) , value(N) )
-    solver = routing.solver()
-    for node in range(1, 17):
-        index = manager.NodeToIndex(node)
-        routing.AddToAssignment(dim_one.SlackVar(index))
-        routing.AddToAssignment(dim_two.SlackVar(index))
-        test = []
-        for v in range(manager.GetNumberOfVehicles()):
-            previous_index = routing.Start(v)
-            cond = routing.NextVar(previous_index) == index
-            value = solver.Max(dim_one.SlackVar(previous_index), data["value"][node])
-            test.append((cond * value).Var())
-        for previous in range(1, 17):
-            previous_index = manager.NodeToIndex(previous)
-            cond = routing.NextVar(previous_index) == index
-            value = solver.Max(dim_one.SlackVar(previous_index), data["value"][node])
-            test.append((cond * value).Var())
-        solver.Add(solver.Sum(test) == dim_one.SlackVar(index))
-
-    # relation between dimensions, copy last node Slack from dim ONE to dim TWO
-    for node in range(1, 17):
-        index = manager.NodeToIndex(node)
-        values = []
-        for v in range(manager.GetNumberOfVehicles()):
-            next_index = routing.End(v)
-            cond = routing.NextVar(index) == next_index
-            value = dim_one.SlackVar(index)
-            values.append((cond * value).Var())
-        solver.Add(solver.Sum(values) == dim_two.SlackVar(index))
-
-    # Should force all others dim_two slack var to zero...
+  # relation between dimensions, copy last node Slack from dim ONE to dim TWO
+  for node in range(1, 17):
+    index = manager.NodeToIndex(node)
+    values = []
     for v in range(manager.GetNumberOfVehicles()):
-        end = routing.End(v)
-        dim_two.SetCumulVarSoftUpperBound(end, 0, 4200)
+      next_index = routing.End(v)
+      cond = routing.NextVar(index) == next_index
+      value = dim_one.SlackVar(index)
+      values.append((cond * value).Var())
+    solver.Add(solver.Sum(values) == dim_two.SlackVar(index))
 
-    # Setting first solution heuristic.
-    # [START parameters]
-    search_parameters = pywraprouting.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
-    search_parameters.local_search_metaheuristic = (
-        enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
-    )
-    # search_parameters.log_search = True
-    search_parameters.time_limit.FromSeconds(5)
-    # [END parameters]
+  # Should force all others dim_two slack var to zero...
+  for v in range(manager.GetNumberOfVehicles()):
+    end = routing.End(v)
+    dim_two.SetCumulVarSoftUpperBound(end, 0, 4200)
 
-    # Solve the problem.
-    # [START solve]
-    solution = routing.SolveWithParameters(search_parameters)
-    # [END solve]
+  # Setting first solution heuristic.
+  # [START parameters]
+  search_parameters = pywraprouting.DefaultRoutingSearchParameters()
+  search_parameters.first_solution_strategy = (
+      enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+  )
+  search_parameters.local_search_metaheuristic = (
+      enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
+  )
+  # search_parameters.log_search = True
+  search_parameters.time_limit.FromSeconds(5)
+  # [END parameters]
 
-    # Print solution on console.
-    # [START print_solution]
-    if solution:
-        print_solution(data, manager, routing, solution)
-    else:
-        print("No solution found !")
-    # [END print_solution]
+  # Solve the problem.
+  # [START solve]
+  solution = routing.SolveWithParameters(search_parameters)
+  # [END solve]
+
+  # Print solution on console.
+  # [START print_solution]
+  if solution:
+    print_solution(data, manager, routing, solution)
+  else:
+    print("No solution found !")
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
-    # [END program]
+  main()
+  # [END program]

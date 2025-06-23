@@ -13,29 +13,29 @@
 # limitations under the License.
 """
 
-  Set covering deployment in Google CP Solver
+Set covering deployment in Google CP Solver
 
-  From http://mathworld.wolfram.com/SetCoveringDeployment.html
-  '''
-  Set covering deployment (sometimes written 'set-covering deployment'
-  and abbreviated SCDP for 'set covering deployment problem') seeks
-  an optimal stationing of troops in a set of regions so that a
-  relatively small number of troop units can control a large
-  geographic region. ReVelle and Rosing (2000) first described
-  this in a study of Emperor Constantine the Great's mobile field
-  army placements to secure the Roman Empire.
-  '''
+From http://mathworld.wolfram.com/SetCoveringDeployment.html
+'''
+Set covering deployment (sometimes written 'set-covering deployment'
+and abbreviated SCDP for 'set covering deployment problem') seeks
+an optimal stationing of troops in a set of regions so that a
+relatively small number of troop units can control a large
+geographic region. ReVelle and Rosing (2000) first described
+this in a study of Emperor Constantine the Great's mobile field
+army placements to secure the Roman Empire.
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/set_covering_deployment.mzn
-  * Comet   : http://www.hakank.org/comet/set_covering_deployment.co
-  * Gecode  : http://www.hakank.org/gecode/set_covering_deployment.cpp
-  * ECLiPSe : http://www.hakank.org/eclipse/set_covering_deployment.ecl
-  * SICStus : http://hakank.org/sicstus/set_covering_deployment.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/set_covering_deployment.mzn
+* Comet   : http://www.hakank.org/comet/set_covering_deployment.co
+* Gecode  : http://www.hakank.org/gecode/set_covering_deployment.cpp
+* ECLiPSe : http://www.hakank.org/eclipse/set_covering_deployment.ecl
+* SICStus : http://hakank.org/sicstus/set_covering_deployment.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -51,16 +51,28 @@ def main():
   #
 
   countries = [
-      "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia",
-      "Rome", "Tunis"
+      "Alexandria",
+      "Asia Minor",
+      "Britain",
+      "Byzantium",
+      "Gaul",
+      "Iberia",
+      "Rome",
+      "Tunis",
   ]
   n = len(countries)
 
   # the incidence matrix (neighbours)
-  mat = [[0, 1, 0, 1, 0, 0, 1, 1], [1, 0, 0, 1, 0, 0, 0, 0],
-         [0, 0, 0, 0, 1, 1, 0, 0], [1, 1, 0, 0, 0, 0, 1, 0],
-         [0, 0, 1, 0, 0, 1, 1, 0], [0, 0, 1, 0, 1, 0, 1, 1],
-         [1, 0, 0, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 1, 1, 0]]
+  mat = [
+      [0, 1, 0, 1, 0, 0, 1, 1],
+      [1, 0, 0, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 1, 0, 0],
+      [1, 1, 0, 0, 0, 0, 1, 0],
+      [0, 0, 1, 0, 0, 1, 1, 0],
+      [0, 0, 1, 0, 1, 0, 1, 1],
+      [1, 0, 0, 1, 1, 1, 0, 1],
+      [1, 0, 0, 0, 0, 1, 1, 0],
+  ]
 
   #
   # declare variables
@@ -108,7 +120,8 @@ def main():
   collector = solver.LastSolutionCollector(solution)
   solver.Solve(
       solver.Phase(X + Y, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT),
-      [collector, objective])
+      [collector, objective],
+  )
 
   print("num_armies:", collector.ObjectiveValue(0))
   print("X:", [collector.Value(0, X[i]) for i in range(n)])

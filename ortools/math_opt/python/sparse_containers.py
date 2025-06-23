@@ -35,29 +35,29 @@ VarOrConstraintType = TypeVar(
 def to_sparse_double_vector_proto(
     terms: Mapping[VarOrConstraintType, float],
 ) -> sparse_containers_pb2.SparseDoubleVectorProto:
-    """Converts a sparse vector from proto to dict representation."""
-    result = sparse_containers_pb2.SparseDoubleVectorProto()
-    if terms:
-        id_and_values = [(key.id, value) for (key, value) in terms.items()]
-        id_and_values.sort()
-        ids, values = zip(*id_and_values)
-        result.ids[:] = ids
-        result.values[:] = values
-    return result
+  """Converts a sparse vector from proto to dict representation."""
+  result = sparse_containers_pb2.SparseDoubleVectorProto()
+  if terms:
+    id_and_values = [(key.id, value) for (key, value) in terms.items()]
+    id_and_values.sort()
+    ids, values = zip(*id_and_values)
+    result.ids[:] = ids
+    result.values[:] = values
+  return result
 
 
 def to_sparse_int32_vector_proto(
     terms: Mapping[VarOrConstraintType, int],
 ) -> sparse_containers_pb2.SparseInt32VectorProto:
-    """Converts a sparse vector from proto to dict representation."""
-    result = sparse_containers_pb2.SparseInt32VectorProto()
-    if terms:
-        id_and_values = [(key.id, value) for (key, value) in terms.items()]
-        id_and_values.sort()
-        ids, values = zip(*id_and_values)
-        result.ids[:] = ids
-        result.values[:] = values
-    return result
+  """Converts a sparse vector from proto to dict representation."""
+  result = sparse_containers_pb2.SparseInt32VectorProto()
+  if terms:
+    id_and_values = [(key.id, value) for (key, value) in terms.items()]
+    id_and_values.sort()
+    ids, values = zip(*id_and_values)
+    result.ids[:] = ids
+    result.values[:] = values
+  return result
 
 
 def parse_variable_map(
@@ -65,11 +65,11 @@ def parse_variable_map(
     mod: model.Model,
     validate: bool = True,
 ) -> Dict[variables.Variable, float]:
-    """Converts a sparse vector of variables from proto to dict representation."""
-    result = {}
-    for index, var_id in enumerate(proto.ids):
-        result[mod.get_variable(var_id, validate=validate)] = proto.values[index]
-    return result
+  """Converts a sparse vector of variables from proto to dict representation."""
+  result = {}
+  for index, var_id in enumerate(proto.ids):
+    result[mod.get_variable(var_id, validate=validate)] = proto.values[index]
+  return result
 
 
 def parse_linear_constraint_map(
@@ -77,13 +77,13 @@ def parse_linear_constraint_map(
     mod: model.Model,
     validate: bool = True,
 ) -> Dict[linear_constraints.LinearConstraint, float]:
-    """Converts a sparse vector of linear constraints from proto to dict representation."""
-    result = {}
-    for index, lin_con_id in enumerate(proto.ids):
-        result[mod.get_linear_constraint(lin_con_id, validate=validate)] = proto.values[
-            index
-        ]
-    return result
+  """Converts a sparse vector of linear constraints from proto to dict representation."""
+  result = {}
+  for index, lin_con_id in enumerate(proto.ids):
+    result[mod.get_linear_constraint(lin_con_id, validate=validate)] = (
+        proto.values[index]
+    )
+  return result
 
 
 def parse_quadratic_constraint_map(
@@ -91,59 +91,59 @@ def parse_quadratic_constraint_map(
     mod: model.Model,
     validate: bool = True,
 ) -> Dict[quadratic_constraints.QuadraticConstraint, float]:
-    """Converts a sparse vector of quadratic constraints from proto to dict representation."""
-    result = {}
-    for index, quad_con_id in enumerate(proto.ids):
-        result[mod.get_quadratic_constraint(quad_con_id, validate=validate)] = (
-            proto.values[index]
-        )
-    return result
+  """Converts a sparse vector of quadratic constraints from proto to dict representation."""
+  result = {}
+  for index, quad_con_id in enumerate(proto.ids):
+    result[mod.get_quadratic_constraint(quad_con_id, validate=validate)] = (
+        proto.values[index]
+    )
+  return result
 
 
 class SparseVectorFilter(Generic[VarOrConstraintType]):
-    """Restricts the variables or constraints returned in a sparse vector.
+  """Restricts the variables or constraints returned in a sparse vector.
 
-    The default behavior is to return entries for all variables/constraints.
+  The default behavior is to return entries for all variables/constraints.
 
-    E.g. when requesting the solution to an optimization problem, use this class
-    to restrict the variables that values are returned for.
+  E.g. when requesting the solution to an optimization problem, use this class
+  to restrict the variables that values are returned for.
 
-    Attributes:
-      skip_zero_values: Do not include key value pairs with value zero.
-      filtered_items: If not None, include only key value pairs these keys. Note
-        that the empty set is different (don't return any keys) from None (return
-        all keys).
-    """
+  Attributes:
+    skip_zero_values: Do not include key value pairs with value zero.
+    filtered_items: If not None, include only key value pairs these keys. Note
+      that the empty set is different (don't return any keys) from None (return
+      all keys).
+  """
 
-    def __init__(
-        self,
-        *,
-        skip_zero_values: bool = False,
-        filtered_items: Optional[Iterable[VarOrConstraintType]] = None,
-    ):
-        self._skip_zero_values: bool = skip_zero_values
-        self._filtered_items: Optional[Set[VarOrConstraintType]] = (
-            None if filtered_items is None else frozenset(filtered_items)
-        )  # pytype: disable=annotation-type-mismatch  # attribute-variable-annotations
+  def __init__(
+      self,
+      *,
+      skip_zero_values: bool = False,
+      filtered_items: Optional[Iterable[VarOrConstraintType]] = None,
+  ):
+    self._skip_zero_values: bool = skip_zero_values
+    self._filtered_items: Optional[Set[VarOrConstraintType]] = (
+        None if filtered_items is None else frozenset(filtered_items)
+    )  # pytype: disable=annotation-type-mismatch  # attribute-variable-annotations
 
-    @property
-    def skip_zero_values(self) -> bool:
-        return self._skip_zero_values
+  @property
+  def skip_zero_values(self) -> bool:
+    return self._skip_zero_values
 
-    @property
-    def filtered_items(self) -> Optional[FrozenSet[VarOrConstraintType]]:
-        return (
-            self._filtered_items
-        )  # pytype: disable=bad-return-type  # attribute-variable-annotations
+  @property
+  def filtered_items(self) -> Optional[FrozenSet[VarOrConstraintType]]:
+    return (
+        self._filtered_items
+    )  # pytype: disable=bad-return-type  # attribute-variable-annotations
 
-    def to_proto(self) -> sparse_containers_pb2.SparseVectorFilterProto:
-        """Returns an equivalent proto representation."""
-        result = sparse_containers_pb2.SparseVectorFilterProto()
-        result.skip_zero_values = self._skip_zero_values
-        if self._filtered_items is not None:
-            result.filter_by_ids = True
-            result.filtered_ids[:] = sorted(t.id for t in self._filtered_items)
-        return result
+  def to_proto(self) -> sparse_containers_pb2.SparseVectorFilterProto:
+    """Returns an equivalent proto representation."""
+    result = sparse_containers_pb2.SparseVectorFilterProto()
+    result.skip_zero_values = self._skip_zero_values
+    if self._filtered_items is not None:
+      result.filter_by_ids = True
+      result.filtered_ids[:] = sorted(t.id for t in self._filtered_items)
+    return result
 
 
 VariableFilter = SparseVectorFilter[variables.Variable]

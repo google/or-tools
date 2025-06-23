@@ -27,31 +27,31 @@ from ortools.math_opt.python import mathopt
 #            y in [0.0, 2.5]
 #
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
+  del argv  # Unused.
 
-    model = mathopt.Model(name="my_model")
-    x = model.add_binary_variable(name="x")
-    y = model.add_variable(lb=0.0, ub=2.5, name="y")
-    # We can directly use linear combinations of variables ...
-    model.add_linear_constraint(x + y <= 1.5, name="c")
-    # ... or build them incrementally.
-    objective_expression = 0
-    objective_expression += 2 * x
-    objective_expression += y
-    model.maximize(objective_expression)
+  model = mathopt.Model(name="my_model")
+  x = model.add_binary_variable(name="x")
+  y = model.add_variable(lb=0.0, ub=2.5, name="y")
+  # We can directly use linear combinations of variables ...
+  model.add_linear_constraint(x + y <= 1.5, name="c")
+  # ... or build them incrementally.
+  objective_expression = 0
+  objective_expression += 2 * x
+  objective_expression += y
+  model.maximize(objective_expression)
 
-    # May raise a RuntimeError on invalid input or internal solver errors.
-    result = mathopt.solve(model, mathopt.SolverType.GSCIP)
+  # May raise a RuntimeError on invalid input or internal solver errors.
+  result = mathopt.solve(model, mathopt.SolverType.GSCIP)
 
-    if result.termination.reason not in (
-        mathopt.TerminationReason.OPTIMAL,
-        mathopt.TerminationReason.FEASIBLE,
-    ):
-        raise RuntimeError(f"model failed to solve: {result.termination}")
+  if result.termination.reason not in (
+      mathopt.TerminationReason.OPTIMAL,
+      mathopt.TerminationReason.FEASIBLE,
+  ):
+    raise RuntimeError(f"model failed to solve: {result.termination}")
 
-    print(f"Objective value: {result.objective_value()}")
-    print(f"Value for variable x: {result.variable_values()[x]}")
+  print(f"Objective value: {result.objective_value()}")
+  print(f"Value for variable x: {result.variable_values()[x]}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

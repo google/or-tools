@@ -29,154 +29,156 @@ def _raise_binary_operator_type_error(
     rhs: Type[Any],
     extra_message: Optional[str] = None,
 ) -> NoReturn:
-    """Raises TypeError on unsupported operators."""
-    message = (
-        f"unsupported operand type(s) for {operator}: {lhs.__name__!r} and"
-        f" {rhs.__name__!r}"
-    )
-    if extra_message is not None:
-        message += "\n" + extra_message
-    raise TypeError(message)
+  """Raises TypeError on unsupported operators."""
+  message = (
+      f"unsupported operand type(s) for {operator}: {lhs.__name__!r} and"
+      f" {rhs.__name__!r}"
+  )
+  if extra_message is not None:
+    message += "\n" + extra_message
+  raise TypeError(message)
 
 
 T = TypeVar("T")
 
 
 class BoundedExpression(Generic[T]):
-    """An inequality of the form lower_bound <= expression <= upper_bound.
+  """An inequality of the form lower_bound <= expression <= upper_bound.
 
-    Where:
-     * expression is a T, typically LinearBase or QuadraticBase.
-     * lower_bound is a float.
-     * upper_bound is a float.
+  Where:
+   * expression is a T, typically LinearBase or QuadraticBase.
+   * lower_bound is a float.
+   * upper_bound is a float.
 
-    Note: Because of limitations related to Python's handling of chained
-    comparisons, bounded expressions cannot be directly created usign
-    overloaded comparisons as in `lower_bound <= expression <= upper_bound`.
-    One solution is to wrap one of the inequalities in parenthesis as in
-    `(lower_bound <= expression) <= upper_bound`.
-    """
+  Note: Because of limitations related to Python's handling of chained
+  comparisons, bounded expressions cannot be directly created usign
+  overloaded comparisons as in `lower_bound <= expression <= upper_bound`.
+  One solution is to wrap one of the inequalities in parenthesis as in
+  `(lower_bound <= expression) <= upper_bound`.
+  """
 
-    __slots__ = "_expression", "_lower_bound", "_upper_bound"
+  __slots__ = "_expression", "_lower_bound", "_upper_bound"
 
-    def __init__(self, lower_bound: float, expression: T, upper_bound: float) -> None:
-        self._expression: T = expression
-        self._lower_bound: float = lower_bound
-        self._upper_bound: float = upper_bound
+  def __init__(
+      self, lower_bound: float, expression: T, upper_bound: float
+  ) -> None:
+    self._expression: T = expression
+    self._lower_bound: float = lower_bound
+    self._upper_bound: float = upper_bound
 
-    @property
-    def expression(self) -> T:
-        return self._expression
+  @property
+  def expression(self) -> T:
+    return self._expression
 
-    @property
-    def lower_bound(self) -> float:
-        return self._lower_bound
+  @property
+  def lower_bound(self) -> float:
+    return self._lower_bound
 
-    @property
-    def upper_bound(self) -> float:
-        return self._upper_bound
+  @property
+  def upper_bound(self) -> float:
+    return self._upper_bound
 
-    def __bool__(self) -> bool:
-        raise TypeError(
-            "__bool__ is unsupported for BoundedExpression"
-            + "\n"
-            + _CHAINED_COMPARISON_MESSAGE
-        )
+  def __bool__(self) -> bool:
+    raise TypeError(
+        "__bool__ is unsupported for BoundedExpression"
+        + "\n"
+        + _CHAINED_COMPARISON_MESSAGE
+    )
 
-    def __str__(self):
-        return f"{self._lower_bound} <= {self._expression!s} <= {self._upper_bound}"
+  def __str__(self):
+    return f"{self._lower_bound} <= {self._expression!s} <= {self._upper_bound}"
 
-    def __repr__(self):
-        return f"{self._lower_bound} <= {self._expression!r} <= {self._upper_bound}"
+  def __repr__(self):
+    return f"{self._lower_bound} <= {self._expression!r} <= {self._upper_bound}"
 
 
 class UpperBoundedExpression(Generic[T]):
-    """An inequality of the form expression <= upper_bound.
+  """An inequality of the form expression <= upper_bound.
 
-    Where:
-     * expression is a T, and
-     * upper_bound is a float
-    """
+  Where:
+   * expression is a T, and
+   * upper_bound is a float
+  """
 
-    __slots__ = "_expression", "_upper_bound"
+  __slots__ = "_expression", "_upper_bound"
 
-    def __init__(self, expression: T, upper_bound: float) -> None:
-        """Operator overloading can be used instead: e.g. `x + y <= 2.0`."""
-        self._expression: T = expression
-        self._upper_bound: float = upper_bound
+  def __init__(self, expression: T, upper_bound: float) -> None:
+    """Operator overloading can be used instead: e.g. `x + y <= 2.0`."""
+    self._expression: T = expression
+    self._upper_bound: float = upper_bound
 
-    @property
-    def expression(self) -> T:
-        return self._expression
+  @property
+  def expression(self) -> T:
+    return self._expression
 
-    @property
-    def lower_bound(self) -> float:
-        return -math.inf
+  @property
+  def lower_bound(self) -> float:
+    return -math.inf
 
-    @property
-    def upper_bound(self) -> float:
-        return self._upper_bound
+  @property
+  def upper_bound(self) -> float:
+    return self._upper_bound
 
-    def __ge__(self, lhs: float) -> BoundedExpression[T]:
-        if isinstance(lhs, (int, float)):
-            return BoundedExpression[T](lhs, self.expression, self.upper_bound)
-        _raise_binary_operator_type_error(">=", type(self), type(lhs))
+  def __ge__(self, lhs: float) -> BoundedExpression[T]:
+    if isinstance(lhs, (int, float)):
+      return BoundedExpression[T](lhs, self.expression, self.upper_bound)
+    _raise_binary_operator_type_error(">=", type(self), type(lhs))
 
-    def __bool__(self) -> bool:
-        raise TypeError(
-            "__bool__ is unsupported for UpperBoundedExpression"
-            + "\n"
-            + _CHAINED_COMPARISON_MESSAGE
-        )
+  def __bool__(self) -> bool:
+    raise TypeError(
+        "__bool__ is unsupported for UpperBoundedExpression"
+        + "\n"
+        + _CHAINED_COMPARISON_MESSAGE
+    )
 
-    def __str__(self):
-        return f"{self._expression!s} <= {self._upper_bound}"
+  def __str__(self):
+    return f"{self._expression!s} <= {self._upper_bound}"
 
-    def __repr__(self):
-        return f"{self._expression!r} <= {self._upper_bound}"
+  def __repr__(self):
+    return f"{self._expression!r} <= {self._upper_bound}"
 
 
 class LowerBoundedExpression(Generic[T]):
-    """An inequality of the form expression >= lower_bound.
+  """An inequality of the form expression >= lower_bound.
 
-    Where:
-     * expression is a linear expression, and
-     * lower_bound is a float
-    """
+  Where:
+   * expression is a linear expression, and
+   * lower_bound is a float
+  """
 
-    __slots__ = "_expression", "_lower_bound"
+  __slots__ = "_expression", "_lower_bound"
 
-    def __init__(self, expression: T, lower_bound: float) -> None:
-        """Operator overloading can be used instead: e.g. `x + y >= 2.0`."""
-        self._expression: T = expression
-        self._lower_bound: float = lower_bound
+  def __init__(self, expression: T, lower_bound: float) -> None:
+    """Operator overloading can be used instead: e.g. `x + y >= 2.0`."""
+    self._expression: T = expression
+    self._lower_bound: float = lower_bound
 
-    @property
-    def expression(self) -> T:
-        return self._expression
+  @property
+  def expression(self) -> T:
+    return self._expression
 
-    @property
-    def lower_bound(self) -> float:
-        return self._lower_bound
+  @property
+  def lower_bound(self) -> float:
+    return self._lower_bound
 
-    @property
-    def upper_bound(self) -> float:
-        return math.inf
+  @property
+  def upper_bound(self) -> float:
+    return math.inf
 
-    def __le__(self, rhs: float) -> BoundedExpression[T]:
-        if isinstance(rhs, (int, float)):
-            return BoundedExpression[T](self.lower_bound, self.expression, rhs)
-        _raise_binary_operator_type_error("<=", type(self), type(rhs))
+  def __le__(self, rhs: float) -> BoundedExpression[T]:
+    if isinstance(rhs, (int, float)):
+      return BoundedExpression[T](self.lower_bound, self.expression, rhs)
+    _raise_binary_operator_type_error("<=", type(self), type(rhs))
 
-    def __bool__(self) -> bool:
-        raise TypeError(
-            "__bool__ is unsupported for LowerBoundedExpression"
-            + "\n"
-            + _CHAINED_COMPARISON_MESSAGE
-        )
+  def __bool__(self) -> bool:
+    raise TypeError(
+        "__bool__ is unsupported for LowerBoundedExpression"
+        + "\n"
+        + _CHAINED_COMPARISON_MESSAGE
+    )
 
-    def __str__(self):
-        return f"{self._expression!s} >= {self._lower_bound}"
+  def __str__(self):
+    return f"{self._expression!s} >= {self._lower_bound}"
 
-    def __repr__(self):
-        return f"{self._expression!r} >= {self._lower_bound}"
+  def __repr__(self):
+    return f"{self._expression!r} >= {self._lower_bound}"

@@ -52,10 +52,40 @@ def main():
   m = 32
   n = 8
   # Note: this is 1-based for compatibility (and lazyness)
-  graph = [[1, 2], [1, 3], [1, 4], [2, 1], [2, 3], [2, 5], [2, 6], [3, 2],
-           [3, 4], [3, 6], [3, 7], [4, 1], [4, 3], [4, 6], [4, 7], [5, 2],
-           [5, 3], [5, 6], [5, 8], [6, 2], [6, 3], [6, 4], [6, 5], [6, 7],
-           [6, 8], [7, 3], [7, 4], [7, 6], [7, 8], [8, 5], [8, 6], [8, 7]]
+  graph = [
+      [1, 2],
+      [1, 3],
+      [1, 4],
+      [2, 1],
+      [2, 3],
+      [2, 5],
+      [2, 6],
+      [3, 2],
+      [3, 4],
+      [3, 6],
+      [3, 7],
+      [4, 1],
+      [4, 3],
+      [4, 6],
+      [4, 7],
+      [5, 2],
+      [5, 3],
+      [5, 6],
+      [5, 8],
+      [6, 2],
+      [6, 3],
+      [6, 4],
+      [6, 5],
+      [6, 7],
+      [6, 8],
+      [7, 3],
+      [7, 4],
+      [7, 6],
+      [7, 8],
+      [8, 5],
+      [8, 6],
+      [8, 7],
+  ]
 
   # declare variables
   x = [solver.IntVar(1, n, "x%i" % i) for i in range(n)]
@@ -81,7 +111,8 @@ def main():
 
   solver.Solve(
       solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
-      [collector])
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

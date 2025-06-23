@@ -71,33 +71,33 @@ _USE_TEST_DATA = flags.DEFINE_boolean(
 
 @dataclasses.dataclass(frozen=True)
 class Jobs:
-    """Data for jobs in a time-indexed scheduling problem.
+  """Data for jobs in a time-indexed scheduling problem.
 
-    Attributes:
-      processing_times: The duration of each job.
-      release_times: The earliest time at which each job can begin.
-    """
+  Attributes:
+    processing_times: The duration of each job.
+    release_times: The earliest time at which each job can begin.
+  """
 
-    processing_times: Tuple[int, ...]
-    release_times: Tuple[int, ...]
+  processing_times: Tuple[int, ...]
+  release_times: Tuple[int, ...]
 
 
 def random_jobs(num_jobs: int) -> Jobs:
-    """Generates a random set of jobs to be scheduled."""
-    # Processing times are uniform in [1, processing_time_ub].
-    processing_time_ub = 20
+  """Generates a random set of jobs to be scheduled."""
+  # Processing times are uniform in [1, processing_time_ub].
+  processing_time_ub = 20
 
-    # Release times are uniform in [0, release_time_ub].
-    release_time_ub = num_jobs * processing_time_ub // 2
+  # Release times are uniform in [0, release_time_ub].
+  release_time_ub = num_jobs * processing_time_ub // 2
 
-    processing_times: Tuple[int, ...] = tuple(
-        random.randrange(1, processing_time_ub) for _ in range(num_jobs)
-    )
-    release_times: Tuple[int, ...] = tuple(
-        random.randrange(1, release_time_ub) for _ in range(num_jobs)
-    )
+  processing_times: Tuple[int, ...] = tuple(
+      random.randrange(1, processing_time_ub) for _ in range(num_jobs)
+  )
+  release_times: Tuple[int, ...] = tuple(
+      random.randrange(1, release_time_ub) for _ in range(num_jobs)
+  )
 
-    return Jobs(processing_times=processing_times, release_times=release_times)
+  return Jobs(processing_times=processing_times, release_times=release_times)
 
 
 # A small instance for testing. The optimal solution is to run:
@@ -112,131 +112,131 @@ def random_jobs(num_jobs: int) -> Jobs:
 #   Job 0 at time 6
 # This gives a sum of completion times of 5 + 6 + 16 = 27.
 def _test_instance() -> Jobs:
-    return Jobs(processing_times=(10, 1, 5), release_times=(0, 1, 0))
+  return Jobs(processing_times=(10, 1, 5), release_times=(0, 1, 0))
 
 
 def time_horizon(jobs: Jobs) -> int:
-    """Computes the time horizon of the problem."""
-    max_release = max(jobs.release_times, default=0)
-    sum_processing = sum(jobs.processing_times)
-    return max_release + sum_processing
+  """Computes the time horizon of the problem."""
+  max_release = max(jobs.release_times, default=0)
+  sum_processing = sum(jobs.processing_times)
+  return max_release + sum_processing
 
 
 @dataclasses.dataclass(frozen=True)
 class Schedule:
-    """The solution to a time-indexed scheduling problem.
+  """The solution to a time-indexed scheduling problem.
 
-    Attributes:
-      start_times: The time at which each job begins.
-      sum_of_completion_times: The sum of times at which jobs complete.
-    """
+  Attributes:
+    start_times: The time at which each job begins.
+    sum_of_completion_times: The sum of times at which jobs complete.
+  """
 
-    start_times: Tuple[int, ...] = ()
-    sum_of_completion_times: int = 0
+  start_times: Tuple[int, ...] = ()
+  sum_of_completion_times: int = 0
 
 
 def solve(jobs: Jobs, solver_type: mathopt.SolverType) -> Schedule:
-    """Solves a time indexed scheduling problem, returning the best schedule.
+  """Solves a time indexed scheduling problem, returning the best schedule.
 
-    Args:
-      jobs: The jobs to be scheduled, each with processing and release times.
-      solver_type: The IP solver used to solve the problem.
+  Args:
+    jobs: The jobs to be scheduled, each with processing and release times.
+    solver_type: The IP solver used to solve the problem.
 
-    Returns:
-      The schedule of jobs that minimizes the sum of completion times.
+  Returns:
+    The schedule of jobs that minimizes the sum of completion times.
 
-    Raises:
-      RuntimeError: On solve errors.
-    """
-    processing_times = jobs.processing_times
-    release_times = jobs.release_times
-    assert len(processing_times) == len(release_times)
-    num_jobs = len(processing_times)
+  Raises:
+    RuntimeError: On solve errors.
+  """
+  processing_times = jobs.processing_times
+  release_times = jobs.release_times
+  assert len(processing_times) == len(release_times)
+  num_jobs = len(processing_times)
 
-    horizon = time_horizon(jobs)
-    model = mathopt.Model(name="time_indexed_scheduling")
+  horizon = time_horizon(jobs)
+  model = mathopt.Model(name="time_indexed_scheduling")
 
-    sum_completion_times = 0
+  sum_completion_times = 0
 
-    # x[i][t] == 1 indicates that we start job i at time t.
-    x = [[] for i in range(num_jobs)]
+  # x[i][t] == 1 indicates that we start job i at time t.
+  x = [[] for i in range(num_jobs)]
 
-    for i in range(num_jobs):
-        for t in range(horizon):
-            v = model.add_binary_variable(name=f"x_{i}_{t}")
-            completion_time = t + processing_times[i]
-            sum_completion_times += completion_time * v
-            if t < release_times[i]:
-                v.upper_bound = 0
-            x[i].append(v)
-
-        # Pick one time to run job i.
-        model.add_linear_constraint(sum(x[i]) == 1)
-
-    model.minimize(sum_completion_times)
-
-    # Run at most one job at a time.
+  for i in range(num_jobs):
     for t in range(horizon):
-        conflicts = 0
-        for i in range(num_jobs):
-            for s in range(max(0, t - processing_times[i] + 1), t + 1):
-                conflicts += x[i][s]
-        model.add_linear_constraint(conflicts <= 1)
+      v = model.add_binary_variable(name=f"x_{i}_{t}")
+      completion_time = t + processing_times[i]
+      sum_completion_times += completion_time * v
+      if t < release_times[i]:
+        v.upper_bound = 0
+      x[i].append(v)
 
-    result = mathopt.solve(model, solver_type)
+    # Pick one time to run job i.
+    model.add_linear_constraint(sum(x[i]) == 1)
 
-    if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise RuntimeError(
-            "Failed to solve time-indexed scheduling problem to "
-            f" optimality: {result.termination}"
-        )
+  model.minimize(sum_completion_times)
 
-    start_times = []
-
-    # Add the start times for the jobs.
+  # Run at most one job at a time.
+  for t in range(horizon):
+    conflicts = 0
     for i in range(num_jobs):
-        for t in range(horizon):
-            var_value = result.variable_values(x[i][t])
-            if var_value > 0.5:
-                start_times.append(t)
-                break
+      for s in range(max(0, t - processing_times[i] + 1), t + 1):
+        conflicts += x[i][s]
+    model.add_linear_constraint(conflicts <= 1)
 
-    return Schedule(tuple(start_times), int(round(result.objective_value())))
+  result = mathopt.solve(model, solver_type)
+
+  if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise RuntimeError(
+        "Failed to solve time-indexed scheduling problem to "
+        f" optimality: {result.termination}"
+    )
+
+  start_times = []
+
+  # Add the start times for the jobs.
+  for i in range(num_jobs):
+    for t in range(horizon):
+      var_value = result.variable_values(x[i][t])
+      if var_value > 0.5:
+        start_times.append(t)
+        break
+
+  return Schedule(tuple(start_times), int(round(result.objective_value())))
 
 
 def print_schedule(jobs: Jobs, schedule: Schedule) -> None:
-    """Displays the schedule, one job per line."""
-    processing_times = jobs.processing_times
-    release_times = jobs.release_times
-    num_jobs = len(processing_times)
-    start_times = schedule.start_times
+  """Displays the schedule, one job per line."""
+  processing_times = jobs.processing_times
+  release_times = jobs.release_times
+  num_jobs = len(processing_times)
+  start_times = schedule.start_times
 
-    print("Sum of completion times:", schedule.sum_of_completion_times)
-    jobs_by_start_time = []
+  print("Sum of completion times:", schedule.sum_of_completion_times)
+  jobs_by_start_time = []
 
-    for i in range(num_jobs):
-        jobs_by_start_time.append(
-            (start_times[i], processing_times[i], release_times[i])
-        )
+  for i in range(num_jobs):
+    jobs_by_start_time.append(
+        (start_times[i], processing_times[i], release_times[i])
+    )
 
-    jobs_by_start_time.sort(key=lambda job: job[0])
+  jobs_by_start_time.sort(key=lambda job: job[0])
 
-    print("Start time, processing time, release time:")
-    for job in jobs_by_start_time:
-        print(job[0], job[1], job[2])
+  print("Start time, processing time, release time:")
+  for job in jobs_by_start_time:
+    print(job[0], job[1], job[2])
 
 
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
-    if _USE_TEST_DATA.value:
-        jobs = _test_instance()
-        schedule = solve(jobs, _SOLVER_TYPE.value)
-    else:
-        jobs = random_jobs(_NUM_JOBS.value)
-        schedule = solve(jobs, _SOLVER_TYPE.value)
+  del argv  # Unused.
+  if _USE_TEST_DATA.value:
+    jobs = _test_instance()
+    schedule = solve(jobs, _SOLVER_TYPE.value)
+  else:
+    jobs = random_jobs(_NUM_JOBS.value)
+    schedule = solve(jobs, _SOLVER_TYPE.value)
 
-    print_schedule(jobs, schedule)
+  print_schedule(jobs, schedule)
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

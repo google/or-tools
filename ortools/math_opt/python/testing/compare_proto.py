@@ -53,8 +53,8 @@ def assert_protos_equal(
     actual: message.Message,
     expected: message.Message,
 ) -> None:
-    """Asserts the input protos are equal, see module doc for details."""
-    test.assertEqual(str(actual), str(expected))
+  """Asserts the input protos are equal, see module doc for details."""
+  test.assertEqual(str(actual), str(expected))
 
 
 def assert_protos_equiv(
@@ -62,29 +62,29 @@ def assert_protos_equiv(
     actual: message.Message,
     expected: message.Message,
 ) -> None:
-    """Asserts the input protos are equivalent, see module doc for details."""
-    normalized_actual = copy.deepcopy(actual)
-    normalize.math_opt_normalize_proto(normalized_actual)
-    normalized_expected = copy.deepcopy(expected)
-    normalize.math_opt_normalize_proto(normalized_expected)
-    test.assertEqual(str(normalized_actual), str(normalized_expected))
+  """Asserts the input protos are equivalent, see module doc for details."""
+  normalized_actual = copy.deepcopy(actual)
+  normalize.math_opt_normalize_proto(normalized_actual)
+  normalized_expected = copy.deepcopy(expected)
+  normalize.math_opt_normalize_proto(normalized_expected)
+  test.assertEqual(str(normalized_actual), str(normalized_expected))
 
 
 class MathOptProtoAssertions(unittest.TestCase):
-    """Provides a custom MathOpt proto equivalence assertion for tests."""
+  """Provides a custom MathOpt proto equivalence assertion for tests."""
 
-    def assert_protos_equal(
-        self,
-        actual: message.Message,
-        expected: message.Message,
-    ) -> None:
-        """Asserts the input protos are equal, see module doc for details."""
-        return assert_protos_equal(self, actual, expected)
+  def assert_protos_equal(
+      self,
+      actual: message.Message,
+      expected: message.Message,
+  ) -> None:
+    """Asserts the input protos are equal, see module doc for details."""
+    return assert_protos_equal(self, actual, expected)
 
-    def assert_protos_equiv(
-        self,
-        actual: message.Message,
-        expected: message.Message,
-    ) -> None:
-        """Asserts the input protos are equivalent, see module doc for details."""
-        return assert_protos_equiv(self, actual, expected)
+  def assert_protos_equiv(
+      self,
+      actual: message.Message,
+      expected: message.Message,
+  ) -> None:
+    """Asserts the input protos are equivalent, see module doc for details."""
+    return assert_protos_equiv(self, actual, expected)

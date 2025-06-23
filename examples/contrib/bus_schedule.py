@@ -13,24 +13,24 @@
 # limitations under the License.
 """
 
-  Bus scheduling in Google CP Solver.
+Bus scheduling in Google CP Solver.
 
 
-  Problem from Taha "Introduction to Operations Research", page 58.
+Problem from Taha "Introduction to Operations Research", page 58.
 
-  This is a slightly more general model than Taha's.
+This is a slightly more general model than Taha's.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/bus_scheduling.mzn
-  * Comet   : http://www.hakank.org/comet/bus_schedule.co
-  * ECLiPSe : http://www.hakank.org/eclipse/bus_schedule.ecl
-  * Gecode  : http://www.hakank.org/gecode/bus_schedule.cpp
-  * Tailor/Essence'  : http://www.hakank.org/tailor/bus_schedule.eprime
-  * SICStus: http://hakank.org/sicstus/bus_schedule.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/bus_scheduling.mzn
+* Comet   : http://www.hakank.org/comet/bus_schedule.co
+* ECLiPSe : http://www.hakank.org/eclipse/bus_schedule.ecl
+* Gecode  : http://www.hakank.org/gecode/bus_schedule.cpp
+* Tailor/Essence'  : http://www.hakank.org/tailor/bus_schedule.eprime
+* SICStus: http://hakank.org/sicstus/bus_schedule.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -83,7 +83,8 @@ def main(num_buses_check=0):
 
   solver.Solve(
       solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE),
-      cargs)
+      cargs,
+  )
 
   num_solutions = collector.SolutionCount()
   num_buses_check_value = 0

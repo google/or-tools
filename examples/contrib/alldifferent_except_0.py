@@ -13,38 +13,38 @@
 # limitations under the License.
 """
 
-  All different except 0 Google CP Solver.
+All different except 0 Google CP Solver.
 
-  Decomposition of global constraint alldifferent_except_0.
+Decomposition of global constraint alldifferent_except_0.
 
-  From Global constraint catalogue:
-  http://www.emn.fr/x-info/sdemasse/gccat/Calldifferent_except_0.html
-  '''
-  Enforce all variables of the collection VARIABLES to take distinct
-  values, except those variables that are assigned to 0.
+From Global constraint catalogue:
+http://www.emn.fr/x-info/sdemasse/gccat/Calldifferent_except_0.html
+'''
+Enforce all variables of the collection VARIABLES to take distinct
+values, except those variables that are assigned to 0.
 
-  Example
-     (<5, 0, 1, 9, 0, 3>)
+Example
+   (<5, 0, 1, 9, 0, 3>)
 
-  The alldifferent_except_0 constraint holds since all the values
-  (that are different from 0) 5, 1, 9 and 3 are distinct.
-  '''
+The alldifferent_except_0 constraint holds since all the values
+(that are different from 0) 5, 1, 9 and 3 are distinct.
+'''
 
-  Compare with the following models:
-  * Comet: http://hakank.org/comet/alldifferent_except_0.co
-  * ECLiPSe: http://hakank.org/eclipse/alldifferent_except_0.ecl
-  * Tailor/Essence': http://hakank.org/tailor/alldifferent_except_0.eprime
-  * Gecode: http://hakank.org/gecode/alldifferent_except_0.cpp
-  * Gecode/R: http://hakank.org/gecode_r/all_different_except_0.rb
-  * MiniZinc: http://hakank.org/minizinc/alldifferent_except_0.mzn
-  * SICStus_ http://hakank.org/sicstus/alldifferent_except_0.pl
-  * Choco: http://hakank.org/choco/AllDifferentExcept0_test.java
-  * JaCoP: http://hakank.org/JaCoP/AllDifferentExcept0_test.java
-  * Zinc: http://hakank.org/minizinc/alldifferent_except_0.zinc
+Compare with the following models:
+* Comet: http://hakank.org/comet/alldifferent_except_0.co
+* ECLiPSe: http://hakank.org/eclipse/alldifferent_except_0.ecl
+* Tailor/Essence': http://hakank.org/tailor/alldifferent_except_0.eprime
+* Gecode: http://hakank.org/gecode/alldifferent_except_0.cpp
+* Gecode/R: http://hakank.org/gecode_r/all_different_except_0.rb
+* MiniZinc: http://hakank.org/minizinc/alldifferent_except_0.mzn
+* SICStus_ http://hakank.org/sicstus/alldifferent_except_0.pl
+* Choco: http://hakank.org/choco/AllDifferentExcept0_test.java
+* JaCoP: http://hakank.org/JaCoP/AllDifferentExcept0_test.java
+* Zinc: http://hakank.org/minizinc/alldifferent_except_0.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 
@@ -106,8 +106,13 @@ def main(unused_argv):
 
   collector = solver.AllSolutionCollector(solution)
   solver.Solve(
-      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [x[i] for i in range(n)],
+          solver.CHOOSE_FIRST_UNBOUND,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

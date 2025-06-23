@@ -13,32 +13,32 @@
 # limitations under the License.
 """
 
-  SEND+MORE=MONEY in 'any' base in Google CP Solver.
+SEND+MORE=MONEY in 'any' base in Google CP Solver.
 
-  Alphametic problem SEND+MORE=MONEY in any base.
+Alphametic problem SEND+MORE=MONEY in any base.
 
-  Examples:
-  Base 10 has one solution:
-     {9, 5, 6, 7, 1, 0, 8, 2}
-  Base 11 has three soltutions:
-     {10, 5, 6, 8, 1, 0, 9, 2}
-     {10, 6, 7, 8, 1, 0, 9, 3}
-     {10, 7, 8, 6, 1, 0, 9, 2}
+Examples:
+Base 10 has one solution:
+   {9, 5, 6, 7, 1, 0, 8, 2}
+Base 11 has three soltutions:
+   {10, 5, 6, 8, 1, 0, 9, 2}
+   {10, 6, 7, 8, 1, 0, 9, 3}
+   {10, 7, 8, 6, 1, 0, 9, 2}
 
-  Also, compare with the following models:
-  * Comet   : http://www.hakank.org/comet/send_more_money_any_base.co
-  * ECLiPSE : http://www.hakank.org/eclipse/send_more_money_any_base.ecl
-  * Essence : http://www.hakank.org/tailor/send_more_money_any_base.eprime
-  * Gecode  : http://www.hakank.org/gecode/send_more_money_any_base.cpp
-  * Gecode/R: http://www.hakank.org/gecode_r/send_more_money_any_base.rb
-  * MiniZinc: http://www.hakank.org/minizinc/send_more_money_any_base.mzn
-  * Zinc: http://www.hakank.org/minizinc/send_more_money_any_base.zinc
-  * SICStus: http://www.hakank.org/sicstus/send_more_money_any_base.pl
+Also, compare with the following models:
+* Comet   : http://www.hakank.org/comet/send_more_money_any_base.co
+* ECLiPSE : http://www.hakank.org/eclipse/send_more_money_any_base.ecl
+* Essence : http://www.hakank.org/tailor/send_more_money_any_base.eprime
+* Gecode  : http://www.hakank.org/gecode/send_more_money_any_base.cpp
+* Gecode/R: http://www.hakank.org/gecode_r/send_more_money_any_base.rb
+* MiniZinc: http://www.hakank.org/minizinc/send_more_money_any_base.mzn
+* Zinc: http://www.hakank.org/minizinc/send_more_money_any_base.zinc
+* SICStus: http://www.hakank.org/sicstus/send_more_money_any_base.pl
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -70,8 +70,16 @@ def main(base=10):
   #
   solver.Add(solver.AllDifferent(x))
   solver.Add(
-      s * base**3 + e * base**2 + n * base + d + m * base**3 + o * base**2 +
-      r * base + e == m * base**4 + o * base**3 + n * base**2 + e * base + y,)
+      s * base**3
+      + e * base**2
+      + n * base
+      + d
+      + m * base**3
+      + o * base**2
+      + r * base
+      + e
+      == m * base**4 + o * base**3 + n * base**2 + e * base + y,
+  )
   solver.Add(s > 0)
   solver.Add(m > 0)
 
@@ -85,7 +93,8 @@ def main(base=10):
 
   solver.Solve(
       solver.Phase(x, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE),
-      [collector])
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   money_val = 0

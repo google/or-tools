@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Magic squares in Google CP Solver.
+Magic squares in Google CP Solver.
 
-  Magic square problem.
+Magic square problem.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -77,9 +77,9 @@ def main(n, limit):
       # solver.INT_VAR_DEFAULT,
       solver.CHOOSE_FIRST_UNBOUND,
       # solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-
       # solver.ASSIGN_MIN_VALUE
-      solver.ASSIGN_CENTER_VALUE)
+      solver.ASSIGN_CENTER_VALUE,
+  )
 
   solver.NewSearch(db)
   num_solutions = 0
@@ -104,7 +104,7 @@ def main(n, limit):
 
 
 n = 4
-limit=100
+limit = 100
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     n = int(sys.argv[1])

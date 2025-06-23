@@ -46,74 +46,76 @@ from ortools.routing import pywraprouting
 
 
 def main():
-    """Entry point of the program."""
-    locations = 17
-    starts = [5, 5, 7, 8]
-    ends = [1, 2, 4, 4]
-    vehicles = len(starts)
-    assert len(starts) == len(ends)
+  """Entry point of the program."""
+  locations = 17
+  starts = [5, 5, 7, 8]
+  ends = [1, 2, 4, 4]
+  vehicles = len(starts)
+  assert len(starts) == len(ends)
 
-    manager = pywraprouting.RoutingIndexManager(locations, vehicles, starts, ends)
-    routing = pywraprouting.RoutingModel(manager)
+  manager = pywraprouting.RoutingIndexManager(locations, vehicles, starts, ends)
+  routing = pywraprouting.RoutingModel(manager)
 
-    print("Starts/Ends:")
-    header = "| |"
-    separator = "|---|"
-    v_starts = "| start |"
-    v_ends = "| end |"
-    for v in range(manager.GetNumberOfVehicles()):
-        header += f" vehicle {v} |"
-        separator += "---|"
-        v_starts += f" {starts[v]} |"
-        v_ends += f" {ends[v]} |"
-    print(header)
-    print(separator)
-    print(v_starts)
-    print(v_ends)
+  print("Starts/Ends:")
+  header = "| |"
+  separator = "|---|"
+  v_starts = "| start |"
+  v_ends = "| end |"
+  for v in range(manager.GetNumberOfVehicles()):
+    header += f" vehicle {v} |"
+    separator += "---|"
+    v_starts += f" {starts[v]} |"
+    v_ends += f" {ends[v]} |"
+  print(header)
+  print(separator)
+  print(v_starts)
+  print(v_ends)
 
-    print("\nNodes:")
+  print("\nNodes:")
+  print(
+      "| locations | manager.GetNumberOfNodes | manager.GetNumberOfIndices |"
+      " routing.nodes | routing.Size |"
+  )
+  print("|---|---|---|---|---|")
+  print(
+      f"| {locations} | {manager.GetNumberOfNodes()} |"
+      f" {manager.GetNumberOfIndices()} | {routing.nodes()} |"
+      f" {routing.Size()} |"
+  )
+
+  print("\nLocations:")
+  print("| node | index | routing.IsStart | routing.IsEnd |")
+  print("|---|---|---|---|")
+  for node in range(manager.GetNumberOfNodes()):
+    if node in starts or node in ends:
+      continue
+    index = manager.NodeToIndex(node)
     print(
-        "| locations | manager.GetNumberOfNodes | manager.GetNumberOfIndices |"
-        " routing.nodes | routing.Size |"
+        f"| {node} | {index} | {routing.IsStart(index)} |"
+        f" {routing.IsEnd(index)} |"
     )
-    print("|---|---|---|---|---|")
+
+  print("\nStart/End:")
+  print(
+      "| vehicle | Start/end | node | index | routing.IsStart | routing.IsEnd |"
+  )
+  print("|---|---|---|---|---|---|")
+  for v in range(manager.GetNumberOfVehicles()):
+    start_index = routing.Start(v)
+    start_node = manager.IndexToNode(start_index)
     print(
-        f"| {locations} | {manager.GetNumberOfNodes()} |"
-        f" {manager.GetNumberOfIndices()} | {routing.nodes()} |"
-        f" {routing.Size()} |"
+        f"| {v} | start | {start_node} | {start_index} |"
+        f" {routing.IsStart(start_index)} | {routing.IsEnd(start_index)} |"
     )
-
-    print("\nLocations:")
-    print("| node | index | routing.IsStart | routing.IsEnd |")
-    print("|---|---|---|---|")
-    for node in range(manager.GetNumberOfNodes()):
-        if node in starts or node in ends:
-            continue
-        index = manager.NodeToIndex(node)
-        print(
-            f"| {node} | {index} | {routing.IsStart(index)} |"
-            f" {routing.IsEnd(index)} |"
-        )
-
-    print("\nStart/End:")
-    print("| vehicle | Start/end | node | index | routing.IsStart | routing.IsEnd |")
-    print("|---|---|---|---|---|---|")
-    for v in range(manager.GetNumberOfVehicles()):
-        start_index = routing.Start(v)
-        start_node = manager.IndexToNode(start_index)
-        print(
-            f"| {v} | start | {start_node} | {start_index} |"
-            f" {routing.IsStart(start_index)} | {routing.IsEnd(start_index)} |"
-        )
-    for v in range(manager.GetNumberOfVehicles()):
-        end_index = routing.End(v)
-        end_node = manager.IndexToNode(end_index)
-        print(
-            f"| {v} | end  | {end_node} | {end_index} |"
-            f" {routing.IsStart(end_index)} | {routing.IsEnd(end_index)} |"
-        )
+  for v in range(manager.GetNumberOfVehicles()):
+    end_index = routing.End(v)
+    end_node = manager.IndexToNode(end_index)
+    print(
+        f"| {v} | end  | {end_node} | {end_index} |"
+        f" {routing.IsStart(end_index)} | {routing.IsEnd(end_index)} |"
+    )
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

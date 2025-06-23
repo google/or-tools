@@ -13,30 +13,30 @@
 # limitations under the License.
 """
 
-  Set covering in Google CP Solver.
+Set covering in Google CP Solver.
 
-  Example from Steven Skiena, The Stony Brook Algorithm Repository
-  http://www.cs.sunysb.edu/~algorith/files/set-cover.shtml
-  '''
-  Input Description: A set of subsets S_1, ..., S_m of the
-  universal set U = {1,...,n}.
+Example from Steven Skiena, The Stony Brook Algorithm Repository
+http://www.cs.sunysb.edu/~algorith/files/set-cover.shtml
+'''
+Input Description: A set of subsets S_1, ..., S_m of the
+universal set U = {1,...,n}.
 
-  Problem: What is the smallest subset of subsets T subset S such
-  that \cup_{t_i in T} t_i = U?
-  '''
-  Data is from the pictures INPUT/OUTPUT.
+Problem: What is the smallest subset of subsets T subset S such
+that \cup_{t_i in T} t_i = U?
+'''
+Data is from the pictures INPUT/OUTPUT.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/set_covering_skiena.mzn
-  * Comet: http://www.hakank.org/comet/set_covering_skiena.co
-  * ECLiPSe: http://www.hakank.org/eclipse/set_covering_skiena.ecl
-  * SICStus Prolog: http://www.hakank.org/sicstus/set_covering_skiena.pl
-  * Gecode: http://hakank.org/gecode/set_covering_skiena.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/set_covering_skiena.mzn
+* Comet: http://www.hakank.org/comet/set_covering_skiena.co
+* ECLiPSe: http://www.hakank.org/eclipse/set_covering_skiena.ecl
+* SICStus Prolog: http://www.hakank.org/sicstus/set_covering_skiena.pl
+* Gecode: http://hakank.org/gecode/set_covering_skiena.cpp
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -59,7 +59,7 @@ def main():
       [0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0],  # 4
       [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0],  # 5
       [1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0],  # 6
-      [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]  # 7
+      [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1],  # 7
   ]
 
   #
@@ -84,9 +84,14 @@ def main():
     solver.Add(s >= 1)
 
   # number of used elements
-  solver.Add(tot_elements == solver.Sum([
-      x[i] * belongs[i][j] for i in range(num_sets) for j in range(num_elements)
-  ]))
+  solver.Add(
+      tot_elements
+      == solver.Sum([
+          x[i] * belongs[i][j]
+          for i in range(num_sets)
+          for j in range(num_elements)
+      ])
+  )
 
   # objective
   objective = solver.Minimize(z, 1)

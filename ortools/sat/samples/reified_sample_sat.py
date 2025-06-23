@@ -18,23 +18,23 @@ from ortools.sat.python import cp_model
 
 
 def reified_sample_sat():
-    """Showcase creating a reified constraint."""
-    model = cp_model.CpModel()
+  """Showcase creating a reified constraint."""
+  model = cp_model.CpModel()
 
-    x = model.new_bool_var("x")
-    y = model.new_bool_var("y")
-    b = model.new_bool_var("b")
+  x = model.new_bool_var("x")
+  y = model.new_bool_var("y")
+  b = model.new_bool_var("b")
 
-    # First version using a half-reified bool and.
-    model.add_bool_and(x, ~y).only_enforce_if(b)
+  # First version using a half-reified bool and.
+  model.add_bool_and(x, ~y).only_enforce_if(b)
 
-    # Second version using implications.
-    model.add_implication(b, x)
-    model.add_implication(b, ~y)
+  # Second version using implications.
+  model.add_implication(b, x)
+  model.add_implication(b, ~y)
 
-    # Third version using bool or.
-    model.add_bool_or(~b, x)
-    model.add_bool_or(~b, ~y)
+  # Third version using bool or.
+  model.add_bool_or(~b, x)
+  model.add_bool_or(~b, ~y)
 
 
 reified_sample_sat()

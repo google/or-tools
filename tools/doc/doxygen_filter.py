@@ -69,41 +69,37 @@ class DoxygenFormatter:
     self.substitutions = [
         # Remove copyright lines.
         (re.compile(r'^\s*//\s*[Cc]opyright.*Google.*'), r'', self.ANYWHERE),
-
         # Remove any comment lines that consist of only punctuation (banners).
         # We only allow a maximum of two spaces before the punctuation so we
         # don't accidentally get rid of code examples with bare braces and
         # whatnot.
         (re.compile(r'(^\s*)//\s{0,2}[-=#/]+$'), r'\1//\n', self.ANYWHERE),
-
         # If we find something that looks like a list item that is indented four
         # or more spaces, pull it back to the left so doxygen's Markdown engine
         # doesn't treat it like a code block.
         (re.compile(r'(^\s*)//\s{4,}([-\d*].*)'), r'\1 \2', self.COMMENT),
-
         # Replace TODO(user) in a comment with @todo (someone)
         (re.compile(r'TODO'), r'@todo ', self.COMMENT),
-
         # Replace leading 'Note:' or 'Note that' in a comment with @note
-        (re.compile(r'(\/\/\s+)Note(?:\:| that)', re.I), r'\1@note',
-         self.COMMENT),
-
+        (
+            re.compile(r'(\/\/\s+)Note(?:\:| that)', re.I),
+            r'\1@note',
+            self.COMMENT,
+        ),
         # Replace leading 'Warning:' in a comment with @warning
         (re.compile(r'(\/\/\s+)Warning:', re.I), r'\1@warning', self.COMMENT),
-
         # Replace leading 'Deprecated' in a comment with @deprecated
-        (re.compile(r'(\/\/\s+)Deprecated[^\w\s]*', re.I), r'\1@deprecated',
-         self.COMMENT),
-
+        (
+            re.compile(r'(\/\/\s+)Deprecated[^\w\s]*', re.I),
+            r'\1@deprecated',
+            self.COMMENT,
+        ),
         # Replace pipe-delimited parameter names with backtick-delimiters
         (re.compile(r'\|(\w+)\|'), r'`\1`', self.COMMENT),
-
         # Convert standalone comment lines to Doxygen style.
         (re.compile(r'(^\s*)//(?=[^/])'), r'\1///', self.ANYWHERE),
-
         # Strip trailing comments from preprocessor directives.
         (re.compile(r'(^#.*)//.*'), r'\1', self.ANYWHERE),
-
         # Convert remaining trailing comments to doxygen style, unless they are
         # documenting the end of a block.
         (re.compile(r'([^} ]\s+)//(?=[^/])'), r'\1///<', self.ANYWHERE),
@@ -118,7 +114,7 @@ class DoxygenFormatter:
     Returns:
         The resulting line.
     """
-    for (regex, repl, where) in self.substitutions:
+    for regex, repl, where in self.substitutions:
       if where is self.COMMENT and not self.comment_regex.match(line):
         return line
       line = regex.sub(repl, line)

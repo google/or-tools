@@ -13,34 +13,34 @@
 # limitations under the License.
 """
 
-  Crypto problem in Google CP Solver.
+Crypto problem in Google CP Solver.
 
-  Prolog benchmark problem GNU Prolog (crypta.pl)
-  '''
-  Name           : crypta.pl
-  Title          : crypt-arithmetic
-  Original Source: P. Van Hentenryck's book
-  Adapted by     : Daniel Diaz - INRIA France
-  Date           : September 1992
+Prolog benchmark problem GNU Prolog (crypta.pl)
+'''
+Name           : crypta.pl
+Title          : crypt-arithmetic
+Original Source: P. Van Hentenryck's book
+Adapted by     : Daniel Diaz - INRIA France
+Date           : September 1992
 
-  Solve the operation:
+Solve the operation:
 
-     B A I J J A J I I A H F C F E B B J E A
-   + D H F G A B C D I D B I F F A G F E J E
-   -----------------------------------------
-   = G J E G A C D D H F A F J B F I H E E F
-  '''
+   B A I J J A J I I A H F C F E B B J E A
+ + D H F G A B C D I D B I F F A G F E J E
+ -----------------------------------------
+ = G J E G A C D D H F A F J B F I H E E F
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/crypta.mzn
-  * Comet   : http://www.hakank.org/comet/crypta.co
-  * ECLiPSe : http://www.hakank.org/eclipse/crypta.ecl
-  * SICStus : http://hakank.org/sicstus/crypta.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/crypta.mzn
+* Comet   : http://www.hakank.org/comet/crypta.co
+* ECLiPSe : http://www.hakank.org/eclipse/crypta.ecl
+* SICStus : http://hakank.org/sicstus/crypta.pl
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -80,7 +80,34 @@ def main():
   # variables
   #
   LD = [solver.IntVar(1, num_letters, "LD[%i]" % i) for i in range(num_letters)]
-  A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z = LD
+  (
+      A,
+      B,
+      C,
+      D,
+      E,
+      F,
+      G,
+      H,
+      I,
+      J,
+      K,
+      L,
+      M,
+      N,
+      O,
+      P,
+      Q,
+      R,
+      S,
+      T,
+      U,
+      V,
+      W,
+      X,
+      Y,
+      Z,
+  ) = LD
 
   #
   # constraints
@@ -110,8 +137,9 @@ def main():
   #
   # search and result
   #
-  db = solver.Phase(LD, solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                    solver.ASSIGN_CENTER_VALUE)
+  db = solver.Phase(
+      LD, solver.CHOOSE_MIN_SIZE_LOWEST_MIN, solver.ASSIGN_CENTER_VALUE
+  )
 
   solver.NewSearch(db)
 
@@ -119,7 +147,7 @@ def main():
   str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   while solver.NextSolution():
     num_solutions += 1
-    for (letter, val) in [(str[i], LD[i].Value()) for i in range(num_letters)]:
+    for letter, val in [(str[i], LD[i].Value()) for i in range(num_letters)]:
       print("%s: %i" % (letter, val))
     print()
 

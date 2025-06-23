@@ -13,14 +13,14 @@
 # limitations under the License.
 """
 
-  Volsay problem in Google or-tools.
+Volsay problem in Google or-tools.
 
-  From the OPL model volsay.mod
-  Using arrays.
+From the OPL model volsay.mod
+Using arrays.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.linear_solver import pywraplp
 
@@ -59,13 +59,15 @@ def main(unused_argv):
   #
   for c in range(len(components)):
     solver.Add(
-        solver.Sum([demand[p][c] * production[p]
-                    for p in range(len(products))]) <= stock[c])
+        solver.Sum([demand[p][c] * production[p] for p in range(len(products))])
+        <= stock[c]
+    )
 
   # objective
   # Note: there is no support for solver.ScalProd in the LP/IP interface
   objective = solver.Maximize(
-      solver.Sum([production[p] * profit[p] for p in range(num_products)]))
+      solver.Sum([production[p] * profit[p] for p in range(num_products)])
+  )
 
   print('NumConstraints:', solver.NumConstraints())
   print('NumVariables:', solver.NumVariables())

@@ -11,19 +11,21 @@ import collections
 from ortools.sat.python import cp_model
 from google.protobuf import text_format
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Command line arguments.
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument(
-    '--problem_instance', default=0, type=int, help='Problem instance.')
+    '--problem_instance', default=0, type=int, help='Problem instance.'
+)
 PARSER.add_argument(
     '--output_proto',
     default='',
-    help='Output file to write the cp_model proto to.')
+    help='Output file to write the cp_model proto to.',
+)
 PARSER.add_argument('--params', default='', help='Sat solver parameters.')
 
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Intermediate solution printer
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
@@ -34,9 +36,15 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__makespan = makespan
 
   def OnSolutionCallback(self):
-    print('Solution %i, time = %f s, objective = %i, makespan = %i' %
-          (self.__solution_count, self.WallTime(), self.ObjectiveValue(),
-           self.Value(self.__makespan)))
+    print(
+        'Solution %i, time = %f s, objective = %i, makespan = %i'
+        % (
+            self.__solution_count,
+            self.WallTime(),
+            self.ObjectiveValue(),
+            self.Value(self.__makespan),
+        )
+    )
     self.__solution_count += 1
 
 
@@ -47,72 +55,108 @@ def main(args):
   parameters = args.params
   output_proto = args.output_proto
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Data.
-  small_jobs = [[[(100, 0, 'R6'), (2, 1, 'R6')]],
-                [[(2, 0, 'R3'), (100, 1, 'R3')]],
-                [[(100, 0, 'R1'), (16, 1, 'R1')]],
-                [[(1, 0, 'R1'), (38, 1, 'R1')]], [[(14, 0, 'R1'), (10, 1,
-                                                                   'R1')]],
-                [[(16, 0, 'R3'), (17, 1, 'R3')]],
-                [[(14, 0, 'R3'), (14, 1, 'R3')]],
-                [[(14, 0, 'R3'), (15, 1, 'R3')]],
-                [[(14, 0, 'R3'), (13, 1, 'R3')]],
-                [[(100, 0, 'R1'), (38, 1, 'R1')]]]
+  small_jobs = [
+      [[(100, 0, 'R6'), (2, 1, 'R6')]],
+      [[(2, 0, 'R3'), (100, 1, 'R3')]],
+      [[(100, 0, 'R1'), (16, 1, 'R1')]],
+      [[(1, 0, 'R1'), (38, 1, 'R1')]],
+      [[(14, 0, 'R1'), (10, 1, 'R1')]],
+      [[(16, 0, 'R3'), (17, 1, 'R3')]],
+      [[(14, 0, 'R3'), (14, 1, 'R3')]],
+      [[(14, 0, 'R3'), (15, 1, 'R3')]],
+      [[(14, 0, 'R3'), (13, 1, 'R3')]],
+      [[(100, 0, 'R1'), (38, 1, 'R1')]],
+  ]
 
   large_jobs = [
-      [[(-1, 0, 'R1'), (10, 1, 'R1')]], [[(9, 0, 'R3'),
-                                          (22, 1, 'R3')]],
-      [[(-1, 0, 'R3'), (13, 1, 'R3')]], [[(-1, 0, 'R3'), (38, 1, 'R3')]],
-      [[(-1, 0, 'R3'), (38, 1, 'R3')]], [[(-1, 0, 'R3'), (16, 1, 'R3')]],
-      [[(-1, 0, 'R3'), (11, 1, 'R3')]], [[(-1, 0, 'R3'), (13, 1, 'R3')]],
-      [[(13, 0, 'R3'), (-1, 1, 'R3')]], [[(13, 0, 'R3'), (-1, 1, 'R3')]],
-      [[(-1, 0, 'R3'), (15, 1, 'R3')]], [[(12, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(14, 0, 'R1'), (-1, 1, 'R1')]], [[(13, 0, 'R3'), (-1, 1, 'R3')]],
-      [[(-1, 0, 'R3'), (15, 1, 'R3')]], [[(14, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(13, 0, 'R3'), (-1, 1, 'R3')]], [[(14, 0, 'R3'), (-1, 1, 'R3')]],
-      [[(13, 0, 'R1'), (-1, 1, 'R1')]], [[(15, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(-1, 0, 'R2'), (16, 1, 'R2')]], [[(-1, 0, 'R2'), (16, 1, 'R2')]],
-      [[(-1, 0, 'R5'), (27, 1, 'R5')]], [[(-1, 0, 'R5'), (13, 1, 'R5')]],
-      [[(-1, 0, 'R5'), (13, 1, 'R5')]], [[(-1, 0, 'R5'), (13, 1, 'R5')]],
-      [[(13, 0, 'R1'), (-1, 1, 'R1')]], [[(-1, 0, 'R1'), (17, 1, 'R1')]],
-      [[(14, 0, 'R4'), (-1, 1, 'R4')]], [[(13, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(16, 0, 'R4'), (-1, 1, 'R4')]], [[(16, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(16, 0, 'R4'), (-1, 1, 'R4')]], [[(16, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(13, 0, 'R1'), (-1, 1, 'R1')]], [[(13, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(14, 0, 'R4'), (-1, 1, 'R4')]], [[(13, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(12, 0, 'R1'), (-1, 1, 'R1')]], [[(14, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(-1, 0, 'R5'), (14, 1, 'R5')]], [[(14, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(14, 0, 'R4'), (-1, 1, 'R4')]], [[(14, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(14, 0, 'R4'), (-1, 1, 'R4')]], [[(-1, 0, 'R1'), (21, 1, 'R1')]],
-      [[(-1, 0, 'R1'), (21, 1, 'R1')]], [[(-1, 0, 'R1'), (21, 1, 'R1')]],
-      [[(13, 0, 'R6'), (-1, 1, 'R6')]], [[(13, 0, 'R2'), (-1, 1, 'R2')]],
-      [[(-1, 0, 'R6'), (12, 1, 'R6')]], [[(13, 0, 'R1'), (-1, 1, 'R1')]],
-      [[(13, 0, 'R1'), (-1, 1, 'R1')]], [[(-1, 0, 'R6'), (14, 1, 'R6')]],
-      [[(-1, 0, 'R5'), (5, 1, 'R5')]], [[(3, 0, 'R2'), (-1, 1, 'R2')]],
-      [[(-1, 0, 'R1'), (21, 1, 'R1')]], [[(-1, 0, 'R1'), (21, 1, 'R1')]],
-      [[(-1, 0, 'R1'), (21, 1, 'R1')]], [[(-1, 0, 'R5'), (1, 1, 'R5')]],
-      [[(1, 0, 'R2'), (-1, 1, 'R2')]], [[(-1, 0, 'R2'), (19, 1, 'R2')]],
-      [[(13, 0, 'R4'), (-1, 1, 'R4')]], [[(12, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(-1, 0, 'R3'), (2, 1, 'R3')]], [[(11, 0, 'R4'), (-1, 1, 'R4')]],
-      [[(6, 0, 'R6'), (-1, 1, 'R6')]], [[(6, 0, 'R6'), (-1, 1, 'R6')]],
-      [[(1, 0, 'R2'), (-1, 1, 'R2')]], [[(12, 0, 'R4'), (-1, 1, 'R4')]]
+      [[(-1, 0, 'R1'), (10, 1, 'R1')]],
+      [[(9, 0, 'R3'), (22, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (13, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (38, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (38, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (16, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (11, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (13, 1, 'R3')]],
+      [[(13, 0, 'R3'), (-1, 1, 'R3')]],
+      [[(13, 0, 'R3'), (-1, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (15, 1, 'R3')]],
+      [[(12, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(14, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(13, 0, 'R3'), (-1, 1, 'R3')]],
+      [[(-1, 0, 'R3'), (15, 1, 'R3')]],
+      [[(14, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(13, 0, 'R3'), (-1, 1, 'R3')]],
+      [[(14, 0, 'R3'), (-1, 1, 'R3')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(15, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(-1, 0, 'R2'), (16, 1, 'R2')]],
+      [[(-1, 0, 'R2'), (16, 1, 'R2')]],
+      [[(-1, 0, 'R5'), (27, 1, 'R5')]],
+      [[(-1, 0, 'R5'), (13, 1, 'R5')]],
+      [[(-1, 0, 'R5'), (13, 1, 'R5')]],
+      [[(-1, 0, 'R5'), (13, 1, 'R5')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(-1, 0, 'R1'), (17, 1, 'R1')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(16, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(16, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(16, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(16, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(12, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(-1, 0, 'R5'), (14, 1, 'R5')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(14, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(13, 0, 'R6'), (-1, 1, 'R6')]],
+      [[(13, 0, 'R2'), (-1, 1, 'R2')]],
+      [[(-1, 0, 'R6'), (12, 1, 'R6')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(13, 0, 'R1'), (-1, 1, 'R1')]],
+      [[(-1, 0, 'R6'), (14, 1, 'R6')]],
+      [[(-1, 0, 'R5'), (5, 1, 'R5')]],
+      [[(3, 0, 'R2'), (-1, 1, 'R2')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(-1, 0, 'R1'), (21, 1, 'R1')]],
+      [[(-1, 0, 'R5'), (1, 1, 'R5')]],
+      [[(1, 0, 'R2'), (-1, 1, 'R2')]],
+      [[(-1, 0, 'R2'), (19, 1, 'R2')]],
+      [[(13, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(12, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(-1, 0, 'R3'), (2, 1, 'R3')]],
+      [[(11, 0, 'R4'), (-1, 1, 'R4')]],
+      [[(6, 0, 'R6'), (-1, 1, 'R6')]],
+      [[(6, 0, 'R6'), (-1, 1, 'R6')]],
+      [[(1, 0, 'R2'), (-1, 1, 'R2')]],
+      [[(12, 0, 'R4'), (-1, 1, 'R4')]],
   ]
 
   jobs = small_jobs if instance == 0 else large_jobs
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Helper data.
   num_jobs = len(jobs)
   all_jobs = range(num_jobs)
   num_machines = 2
   all_machines = range(num_machines)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Model.
   model = cp_model.CpModel()
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Compute a maximum makespan greedily.
   horizon = 0
   for job in jobs:
@@ -124,7 +168,7 @@ def main(args):
 
   print('Horizon = %i' % horizon)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Global storage of variables.
   intervals_per_machines = collections.defaultdict(list)
   presences_per_machines = collections.defaultdict(list)
@@ -138,7 +182,7 @@ def main(args):
   job_ranks = {}  # indexed by (job_id, task_id, alt_id).
   job_ends = []  # indexed by job_id
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Scan the jobs and create the relevant variables and intervals.
   for job_id in all_jobs:
     job = jobs[job_id]
@@ -161,8 +205,9 @@ def main(args):
       # Create main interval for the task.
       suffix_name = '_j%i_t%i' % (job_id, task_id)
       start = model.NewIntVar(0, horizon, 'start' + suffix_name)
-      duration = model.NewIntVar(min_duration, max_duration,
-                                 'duration' + suffix_name)
+      duration = model.NewIntVar(
+          min_duration, max_duration, 'duration' + suffix_name
+      )
       end = model.NewIntVar(0, horizon, 'end' + suffix_name)
 
       # Store the start for the solution.
@@ -186,7 +231,8 @@ def main(args):
         l_duration = task[alt_id][0]
         l_end = model.NewIntVar(0, horizon, 'end' + alt_suffix)
         l_interval = model.NewOptionalIntervalVar(
-            l_start, l_duration, l_end, l_presence, 'interval' + alt_suffix)
+            l_start, l_duration, l_end, l_presence, 'interval' + alt_suffix
+        )
         l_rank = model.NewIntVar(-1, num_jobs, 'rank' + alt_suffix)
         l_presences.append(l_presence)
         l_machine = task[alt_id][1]
@@ -214,14 +260,14 @@ def main(args):
 
     job_ends.append(previous_end)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Create machines constraints nonoverlap process
   for machine_id in all_machines:
     intervals = intervals_per_machines[machine_id]
     if len(intervals) > 1:
       model.AddNoOverlap(intervals)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Transition times and transition costs using a circuit constraint.
   switch_literals = []
   for machine_id in all_machines:
@@ -247,7 +293,8 @@ def main(args):
       # Self arc if the task is not performed.
       arcs.append([i + 1, i + 1, machine_presences[i].Not()])
       model.Add(machine_ranks[i] == -1).OnlyEnforceIf(
-          machine_presences[i].Not())
+          machine_presences[i].Not()
+      )
 
       for j in all_machine_tasks:
         if i == j:
@@ -269,28 +316,30 @@ def main(args):
           transition_time = 0
         # We add the reified transition to link the literals with the times
         # of the tasks.
-        model.Add(machine_starts[j] == machine_ends[i] +
-                  transition_time).OnlyEnforceIf(lit)
+        model.Add(
+            machine_starts[j] == machine_ends[i] + transition_time
+        ).OnlyEnforceIf(lit)
     if arcs:
-        model.AddCircuit(arcs)
+      model.AddCircuit(arcs)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Objective.
   makespan = model.NewIntVar(0, horizon, 'makespan')
   model.AddMaxEquality(makespan, job_ends)
   makespan_weight = 1
   transition_weight = 5
-  model.Minimize(makespan * makespan_weight +
-                 sum(switch_literals) * transition_weight)
+  model.Minimize(
+      makespan * makespan_weight + sum(switch_literals) * transition_weight
+  )
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Write problem to file.
   if output_proto:
     print('Writing proto to %s' % output_proto)
     with open(output_proto, 'w') as text_file:
       text_file.write(str(model))
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Solve.
   solver = cp_model.CpSolver()
   solver.parameters.max_time_in_seconds = 60 * 60 * 2
@@ -299,7 +348,7 @@ def main(args):
   solution_printer = SolutionPrinter(makespan)
   status = solver.Solve(model, solution_printer)
 
-  #----------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------
   # Print solution.
   if status == cp_model.FEASIBLE or status == cp_model.OPTIMAL:
     for job_id in all_jobs:
@@ -321,8 +370,10 @@ def main(args):
             rank = solver.Value(job_ranks[(job_id, task_id, alt_id)])
 
         print(
-            '  Job %i starts at %i (alt %i, duration %i) with rank %i on machine %i'
-            % (job_id, start_value, select, duration, rank, machine))
+            '  Job %i starts at %i (alt %i, duration %i) with rank %i on'
+            ' machine %i'
+            % (job_id, start_value, select, duration, rank, machine)
+        )
 
     print('Solve status: %s' % solver.StatusName(status))
     print('Objective value: %i' % solver.ObjectiveValue())

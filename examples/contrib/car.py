@@ -13,20 +13,20 @@
 # limitations under the License.
 """
 
-  Car sequencing in Google CP Solver.
+Car sequencing in Google CP Solver.
 
-  This model is based on the car sequencing model in
-  Pascal Van Hentenryck
-  'The OPL Optimization Programming Language', page 184ff.
+This model is based on the car sequencing model in
+Pascal Van Hentenryck
+'The OPL Optimization Programming Language', page 184ff.
 
 
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/car.mzn
-  * Comet: http://hakank.org/comet/car.co
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/car.mzn
+* Comet: http://hakank.org/comet/car.co
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -58,7 +58,7 @@ def main(num_sol=3):
       [0, 0, 1, 1, 0, 1],  # option 2
       [1, 0, 0, 0, 1, 0],  # option 3
       [1, 1, 0, 1, 0, 0],  # option 4
-      [0, 0, 1, 0, 0, 0]  # option 5
+      [0, 0, 1, 0, 0, 0],  # option 5
   ]
 
   capacity = [(1, 2), (2, 3), (1, 3), (2, 5), (1, 5)]
@@ -104,8 +104,9 @@ def main(num_sol=3):
   #
   # search and result
   #
-  db = solver.Phase(slot + setup_flat, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      slot + setup_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
   num_solutions = 0

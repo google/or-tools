@@ -5,8 +5,14 @@ def SolveRosteringWithTravel():
   model = cp_model.CpModel()
 
   # [duration, start, end, location]
-  jobs = [[3, 0, 6, 1], [5, 0, 6, 0], [1, 3, 7, 1], [1, 3, 5, 0], [3, 0, 3, 0],
-          [3, 0, 8, 0]]
+  jobs = [
+      [3, 0, 6, 1],
+      [5, 0, 6, 0],
+      [1, 3, 7, 1],
+      [1, 3, 5, 0],
+      [3, 0, 3, 0],
+      [3, 0, 8, 0],
+  ]
 
   max_length = 20
 
@@ -45,12 +51,14 @@ def SolveRosteringWithTravel():
       job_performed.append(performed_on_m)
 
       # Create an optional copy of interval to be executed on a machine
-      location0 = model.NewIntVar(jobs[i][3], jobs[i][3],
-                                  'location_%i_on_m%i' % (i, m))
+      location0 = model.NewIntVar(
+          jobs[i][3], jobs[i][3], 'location_%i_on_m%i' % (i, m)
+      )
       start0 = model.NewIntVar(jobs[i][1], horizon, 'start_%i_on_m%i' % (i, m))
       end0 = model.NewIntVar(0, jobs[i][2], 'end_%i_on_m%i' % (i, m))
       interval0 = model.NewOptionalIntervalVar(
-          start0, duration, end0, performed_on_m, 'interval_%i_on_m%i' % (i, m))
+          start0, duration, end0, performed_on_m, 'interval_%i_on_m%i' % (i, m)
+      )
       optional_intervals[m].append(interval0)
 
       # We only propagate the constraint if the tasks is performed on the machine.
@@ -60,8 +68,12 @@ def SolveRosteringWithTravel():
       startT = model.NewIntVar(0, horizon, 'start_%i_on_m%i' % (i, m))
       endT = model.NewIntVar(0, horizon, 'end_%i_on_m%i' % (i, m))
       intervalT = model.NewOptionalIntervalVar(
-          startT, travel_time, endT, travel,
-          'travel_interval_%i_on_m%i' % (i, m))
+          startT,
+          travel_time,
+          endT,
+          travel,
+          'travel_interval_%i_on_m%i' % (i, m),
+      )
       optional_intervals[m].append(intervalT)
       job_travels.append(travel)
 
@@ -81,7 +93,8 @@ def SolveRosteringWithTravel():
               is_job_earlier = model.NewBoolVar('is_j%i_earlier_j%i' % (i, c))
               model.Add(starts[i] < starts[c]).OnlyEnforceIf(is_job_earlier)
               model.Add(starts[i] >= starts[c]).OnlyEnforceIf(
-                  is_job_earlier.Not())
+                  is_job_earlier.Not()
+              )
 
   # Max Length constraint (modeled as a cumulative)
   # model.AddCumulative(intervals, demands, max_length)
@@ -92,8 +105,14 @@ def SolveRosteringWithTravel():
 
   # Objective variable.
   total_cost = model.NewIntVar(0, 1000, 'cost')
-  model.Add(total_cost == sum(
-      performed[j][m] * (10 * (m + 1)) for j in all_jobs for m in all_machines))
+  model.Add(
+      total_cost
+      == sum(
+          performed[j][m] * (10 * (m + 1))
+          for j in all_jobs
+          for m in all_machines
+      )
+  )
   model.Minimize(total_cost)
 
   # Solve model.

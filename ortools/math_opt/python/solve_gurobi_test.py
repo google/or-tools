@@ -41,240 +41,240 @@ _bad_isv_key = init_arguments.GurobiISVKey(
 def _init_args(
     gurobi_key: init_arguments.GurobiISVKey,
 ) -> init_arguments.StreamableSolverInitArguments:
-    return init_arguments.StreamableSolverInitArguments(
-        gurobi=init_arguments.StreamableGurobiInitArguments(isv_key=gurobi_key)
-    )
+  return init_arguments.StreamableSolverInitArguments(
+      gurobi=init_arguments.StreamableGurobiInitArguments(isv_key=gurobi_key)
+  )
 
 
 class SolveTest(absltest.TestCase):
 
-    def test_callback(self) -> None:
-        mod = model.Model(name="test_model")
-        # Solve the problem:
-        #   max    x + 2 * y
-        #   s.t.   x + y <= 1 (added in callback)
-        #          x, y in {0, 1}
-        # Primal optimal: [x, y] = [0.0, 1.0]
-        x = mod.add_binary_variable(name="x")
-        y = mod.add_binary_variable(name="y")
-        mod.objective.is_maximize = True
-        mod.objective.set_linear_coefficient(x, 1.0)
-        mod.objective.set_linear_coefficient(y, 2.0)
+  def test_callback(self) -> None:
+    mod = model.Model(name="test_model")
+    # Solve the problem:
+    #   max    x + 2 * y
+    #   s.t.   x + y <= 1 (added in callback)
+    #          x, y in {0, 1}
+    # Primal optimal: [x, y] = [0.0, 1.0]
+    x = mod.add_binary_variable(name="x")
+    y = mod.add_binary_variable(name="y")
+    mod.objective.is_maximize = True
+    mod.objective.set_linear_coefficient(x, 1.0)
+    mod.objective.set_linear_coefficient(y, 2.0)
 
-        def cb(cb_data: callback.CallbackData) -> callback.CallbackResult:
-            cb_res = callback.CallbackResult()
-            if cb_data.solution[x] + cb_data.solution[y] >= 1 + 1e-4:
-                cb_res.add_lazy_constraint(x + y <= 1.0)
-            return cb_res
+    def cb(cb_data: callback.CallbackData) -> callback.CallbackResult:
+      cb_res = callback.CallbackResult()
+      if cb_data.solution[x] + cb_data.solution[y] >= 1 + 1e-4:
+        cb_res.add_lazy_constraint(x + y <= 1.0)
+      return cb_res
 
-        cb_reg = callback.CallbackRegistration()
-        cb_reg.events.add(callback.Event.MIP_SOLUTION)
-        cb_reg.add_lazy_constraints = True
-        params = parameters.SolveParameters(enable_output=True)
-        res = solve.solve(
-            mod,
-            parameters.SolverType.GUROBI,
-            params=params,
-            callback_reg=cb_reg,
-            cb=cb,
+    cb_reg = callback.CallbackRegistration()
+    cb_reg.events.add(callback.Event.MIP_SOLUTION)
+    cb_reg.add_lazy_constraints = True
+    params = parameters.SolveParameters(enable_output=True)
+    res = solve.solve(
+        mod,
+        parameters.SolverType.GUROBI,
+        params=params,
+        callback_reg=cb_reg,
+        cb=cb,
+    )
+    self.assertEqual(
+        res.termination.reason,
+        result.TerminationReason.OPTIMAL,
+        msg=res.termination,
+    )
+    self.assertAlmostEqual(2.0, res.termination.objective_bounds.primal_bound)
+
+  def test_hierarchical_objectives(self) -> None:
+    mod = model.Model()
+    # The model is:
+    #   max    x + y + 2 z
+    #   s.t.   x + y + z <= 1.5
+    #          x, y in [0, 1]
+    #          z binary
+    # With secondary objective
+    #   max y
+    #
+    # The first problem is solved by any convex combination of:
+    #   (0.5, 0, 1) and (0, 0.5, 1)
+    # But with the secondary objective, the unique solution is (0, 0.5, 1), with
+    # a primary objective value of 2.5 and secondary objective value of 0.5.
+    x = mod.add_variable(lb=0, ub=1)
+    y = mod.add_variable(lb=0, ub=1)
+    z = mod.add_binary_variable()
+    mod.add_linear_constraint(x + y + z <= 1.5)
+    mod.maximize(x + y + 2 * z)
+    aux = mod.add_maximization_objective(y, priority=1)
+
+    res = solve.solve(mod, parameters.SolverType.GUROBI)
+    self.assertEqual(
+        res.termination.reason,
+        result.TerminationReason.OPTIMAL,
+        msg=res.termination,
+    )
+    self.assertAlmostEqual(res.objective_value(), 2.5, delta=1e-4)
+    self.assertAlmostEqual(res.variable_values(x), 0.0, delta=1e-4)
+    self.assertAlmostEqual(res.variable_values(y), 0.5, delta=1e-4)
+    self.assertAlmostEqual(res.variable_values(z), 1.0, delta=1e-4)
+    prim_sol = res.solutions[0].primal_solution
+    self.assertIsNotNone(prim_sol)
+    self.assertDictEqual(prim_sol.auxiliary_objective_values, {aux: 0.5})
+
+  def test_quadratic_dual(self) -> None:
+    mod = model.Model()
+    x = mod.add_variable()
+    mod.minimize(x)
+    c = mod.add_quadratic_constraint(expr=x * x, ub=1.0)
+    params = parameters.SolveParameters()
+    params.gurobi.param_values["QCPDual"] = "1"
+    res = solve.solve(mod, parameters.SolverType.GUROBI, params=params)
+    self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
+    sol = res.solutions[0]
+    primal = sol.primal_solution
+    dual = sol.dual_solution
+    self.assertIsNotNone(primal)
+    self.assertIsNotNone(dual)
+    self.assertAlmostEqual(primal.variable_values[x], -1.0)
+    self.assertAlmostEqual(dual.quadratic_dual_values[c], -0.5)
+
+  def test_quadratic_dual_filter(self) -> None:
+    # Same as the previous test, but now with a filter on the quadratic duals
+    # that are returned.
+    mod = model.Model()
+    x = mod.add_variable()
+    mod.minimize(x)
+    mod.add_quadratic_constraint(expr=x * x, ub=1.0)
+    params = parameters.SolveParameters()
+    params.gurobi.param_values["QCPDual"] = "1"
+    mod_params = model_parameters.ModelSolveParameters(
+        quadratic_dual_values_filter=sparse_containers.QuadraticConstraintFilter(
+            filtered_items={}
         )
-        self.assertEqual(
-            res.termination.reason,
-            result.TerminationReason.OPTIMAL,
-            msg=res.termination,
-        )
-        self.assertAlmostEqual(2.0, res.termination.objective_bounds.primal_bound)
+    )
+    res = solve.solve(
+        mod,
+        parameters.SolverType.GUROBI,
+        params=params,
+        model_params=mod_params,
+    )
+    self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
+    sol = res.solutions[0]
+    primal = sol.primal_solution
+    dual = sol.dual_solution
+    self.assertIsNotNone(primal)
+    self.assertIsNotNone(dual)
+    self.assertAlmostEqual(primal.variable_values[x], -1.0)
+    self.assertEmpty(dual.quadratic_dual_values)
 
-    def test_hierarchical_objectives(self) -> None:
-        mod = model.Model()
-        # The model is:
-        #   max    x + y + 2 z
-        #   s.t.   x + y + z <= 1.5
-        #          x, y in [0, 1]
-        #          z binary
-        # With secondary objective
-        #   max y
-        #
-        # The first problem is solved by any convex combination of:
-        #   (0.5, 0, 1) and (0, 0.5, 1)
-        # But with the secondary objective, the unique solution is (0, 0.5, 1), with
-        # a primary objective value of 2.5 and secondary objective value of 0.5.
-        x = mod.add_variable(lb=0, ub=1)
-        y = mod.add_variable(lb=0, ub=1)
-        z = mod.add_binary_variable()
-        mod.add_linear_constraint(x + y + z <= 1.5)
-        mod.maximize(x + y + 2 * z)
-        aux = mod.add_maximization_objective(y, priority=1)
+  def test_compute_infeasible_subsystem_infeasible(self):
+    mod = model.Model()
+    x = mod.add_variable(lb=0.0, ub=1.0)
+    y = mod.add_variable(lb=0.0, ub=1.0)
+    z = mod.add_variable(lb=0.0, ub=1.0)
+    mod.add_linear_constraint(x + y <= 4.0)
+    d = mod.add_linear_constraint(x + z >= 3.0)
 
-        res = solve.solve(mod, parameters.SolverType.GUROBI)
-        self.assertEqual(
-            res.termination.reason,
-            result.TerminationReason.OPTIMAL,
-            msg=res.termination,
-        )
-        self.assertAlmostEqual(res.objective_value(), 2.5, delta=1e-4)
-        self.assertAlmostEqual(res.variable_values(x), 0.0, delta=1e-4)
-        self.assertAlmostEqual(res.variable_values(y), 0.5, delta=1e-4)
-        self.assertAlmostEqual(res.variable_values(z), 1.0, delta=1e-4)
-        prim_sol = res.solutions[0].primal_solution
-        self.assertIsNotNone(prim_sol)
-        self.assertDictEqual(prim_sol.auxiliary_objective_values, {aux: 0.5})
+    iis = solve.compute_infeasible_subsystem(mod, parameters.SolverType.GUROBI)
+    self.assertTrue(iis.is_minimal)
+    self.assertEqual(iis.feasibility, result.FeasibilityStatus.INFEASIBLE)
+    self.assertDictEqual(
+        iis.infeasible_subsystem.variable_bounds,
+        {x: _Bounds(upper=True), z: _Bounds(upper=True)},
+    )
+    self.assertDictEqual(
+        iis.infeasible_subsystem.linear_constraints, {d: _Bounds(lower=True)}
+    )
+    self.assertEmpty(iis.infeasible_subsystem.variable_integrality)
 
-    def test_quadratic_dual(self) -> None:
-        mod = model.Model()
-        x = mod.add_variable()
-        mod.minimize(x)
-        c = mod.add_quadratic_constraint(expr=x * x, ub=1.0)
-        params = parameters.SolveParameters()
-        params.gurobi.param_values["QCPDual"] = "1"
-        res = solve.solve(mod, parameters.SolverType.GUROBI, params=params)
-        self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
-        sol = res.solutions[0]
-        primal = sol.primal_solution
-        dual = sol.dual_solution
-        self.assertIsNotNone(primal)
-        self.assertIsNotNone(dual)
-        self.assertAlmostEqual(primal.variable_values[x], -1.0)
-        self.assertAlmostEqual(dual.quadratic_dual_values[c], -0.5)
+  def test_solve_valid_isv_success(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.maximize(x)
+    res = solve.solve(
+        mod,
+        parameters.SolverType.GUROBI,
+        streamable_init_args=_init_args(
+            gurobi_test_isv_key.google_test_isv_key_placeholder()
+        ),
+    )
+    self.assertEqual(
+        res.termination.reason,
+        result.TerminationReason.OPTIMAL,
+        msg=res.termination,
+    )
+    self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
 
-    def test_quadratic_dual_filter(self) -> None:
-        # Same as the previous test, but now with a filter on the quadratic duals
-        # that are returned.
-        mod = model.Model()
-        x = mod.add_variable()
-        mod.minimize(x)
-        mod.add_quadratic_constraint(expr=x * x, ub=1.0)
-        params = parameters.SolveParameters()
-        params.gurobi.param_values["QCPDual"] = "1"
-        mod_params = model_parameters.ModelSolveParameters(
-            quadratic_dual_values_filter=sparse_containers.QuadraticConstraintFilter(
-                filtered_items={}
-            )
-        )
-        res = solve.solve(
-            mod,
-            parameters.SolverType.GUROBI,
-            params=params,
-            model_params=mod_params,
-        )
-        self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
-        sol = res.solutions[0]
-        primal = sol.primal_solution
-        dual = sol.dual_solution
-        self.assertIsNotNone(primal)
-        self.assertIsNotNone(dual)
-        self.assertAlmostEqual(primal.variable_values[x], -1.0)
-        self.assertEmpty(dual.quadratic_dual_values)
+  def test_solve_wrong_isv_error(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.maximize(x)
+    with self.assertRaisesRegex(
+        ValueError, "failed to create Gurobi primary environment with ISV key"
+    ):
+      solve.solve(
+          mod,
+          parameters.SolverType.GUROBI,
+          streamable_init_args=_init_args(_bad_isv_key),
+      )
 
-    def test_compute_infeasible_subsystem_infeasible(self):
-        mod = model.Model()
-        x = mod.add_variable(lb=0.0, ub=1.0)
-        y = mod.add_variable(lb=0.0, ub=1.0)
-        z = mod.add_variable(lb=0.0, ub=1.0)
-        mod.add_linear_constraint(x + y <= 4.0)
-        d = mod.add_linear_constraint(x + z >= 3.0)
+  def test_incremental_solver_valid_isv_success(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.maximize(x)
+    s = solve.IncrementalSolver(
+        mod,
+        parameters.SolverType.GUROBI,
+        streamable_init_args=_init_args(
+            gurobi_test_isv_key.google_test_isv_key_placeholder()
+        ),
+    )
+    res = s.solve()
+    self.assertEqual(
+        res.termination.reason,
+        result.TerminationReason.OPTIMAL,
+        msg=res.termination,
+    )
+    self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
 
-        iis = solve.compute_infeasible_subsystem(mod, parameters.SolverType.GUROBI)
-        self.assertTrue(iis.is_minimal)
-        self.assertEqual(iis.feasibility, result.FeasibilityStatus.INFEASIBLE)
-        self.assertDictEqual(
-            iis.infeasible_subsystem.variable_bounds,
-            {x: _Bounds(upper=True), z: _Bounds(upper=True)},
-        )
-        self.assertDictEqual(
-            iis.infeasible_subsystem.linear_constraints, {d: _Bounds(lower=True)}
-        )
-        self.assertEmpty(iis.infeasible_subsystem.variable_integrality)
+  def test_incremental_solver_wrong_isv_error(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.maximize(x)
+    with self.assertRaisesRegex(
+        ValueError, "failed to create Gurobi primary environment with ISV key"
+    ):
+      solve.IncrementalSolver(
+          mod,
+          parameters.SolverType.GUROBI,
+          streamable_init_args=_init_args(_bad_isv_key),
+      )
 
-    def test_solve_valid_isv_success(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.maximize(x)
-        res = solve.solve(
-            mod,
-            parameters.SolverType.GUROBI,
-            streamable_init_args=_init_args(
-                gurobi_test_isv_key.google_test_isv_key_placeholder()
-            ),
-        )
-        self.assertEqual(
-            res.termination.reason,
-            result.TerminationReason.OPTIMAL,
-            msg=res.termination,
-        )
-        self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
+  def test_compute_infeasible_subsystem_valid_isv_success(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.add_linear_constraint(x >= 3.0)
+    res = solve.compute_infeasible_subsystem(
+        mod,
+        parameters.SolverType.GUROBI,
+        streamable_init_args=_init_args(
+            gurobi_test_isv_key.google_test_isv_key_placeholder()
+        ),
+    )
+    self.assertEqual(res.feasibility, result.FeasibilityStatus.INFEASIBLE)
 
-    def test_solve_wrong_isv_error(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.maximize(x)
-        with self.assertRaisesRegex(
-            ValueError, "failed to create Gurobi primary environment with ISV key"
-        ):
-            solve.solve(
-                mod,
-                parameters.SolverType.GUROBI,
-                streamable_init_args=_init_args(_bad_isv_key),
-            )
-
-    def test_incremental_solver_valid_isv_success(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.maximize(x)
-        s = solve.IncrementalSolver(
-            mod,
-            parameters.SolverType.GUROBI,
-            streamable_init_args=_init_args(
-                gurobi_test_isv_key.google_test_isv_key_placeholder()
-            ),
-        )
-        res = s.solve()
-        self.assertEqual(
-            res.termination.reason,
-            result.TerminationReason.OPTIMAL,
-            msg=res.termination,
-        )
-        self.assertAlmostEqual(1.0, res.termination.objective_bounds.primal_bound)
-
-    def test_incremental_solver_wrong_isv_error(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.maximize(x)
-        with self.assertRaisesRegex(
-            ValueError, "failed to create Gurobi primary environment with ISV key"
-        ):
-            solve.IncrementalSolver(
-                mod,
-                parameters.SolverType.GUROBI,
-                streamable_init_args=_init_args(_bad_isv_key),
-            )
-
-    def test_compute_infeasible_subsystem_valid_isv_success(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.add_linear_constraint(x >= 3.0)
-        res = solve.compute_infeasible_subsystem(
-            mod,
-            parameters.SolverType.GUROBI,
-            streamable_init_args=_init_args(
-                gurobi_test_isv_key.google_test_isv_key_placeholder()
-            ),
-        )
-        self.assertEqual(res.feasibility, result.FeasibilityStatus.INFEASIBLE)
-
-    def test_compute_infeasible_subsystem_wrong_isv_error(self):
-        mod = model.Model()
-        x = mod.add_binary_variable()
-        mod.add_linear_constraint(x >= 3.0)
-        with self.assertRaisesRegex(
-            ValueError, "failed to create Gurobi primary environment with ISV key"
-        ):
-            solve.compute_infeasible_subsystem(
-                mod,
-                parameters.SolverType.GUROBI,
-                streamable_init_args=_init_args(_bad_isv_key),
-            )
+  def test_compute_infeasible_subsystem_wrong_isv_error(self):
+    mod = model.Model()
+    x = mod.add_binary_variable()
+    mod.add_linear_constraint(x >= 3.0)
+    with self.assertRaisesRegex(
+        ValueError, "failed to create Gurobi primary environment with ISV key"
+    ):
+      solve.compute_infeasible_subsystem(
+          mod,
+          parameters.SolverType.GUROBI,
+          streamable_init_args=_init_args(_bad_isv_key),
+      )
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

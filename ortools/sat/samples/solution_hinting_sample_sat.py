@@ -19,42 +19,42 @@ from ortools.sat.python import cp_model
 
 
 def solution_hinting_sample_sat():
-    """Showcases solution hinting."""
-    # Creates the model.
-    # [START model]
-    model = cp_model.CpModel()
-    # [END model]
+  """Showcases solution hinting."""
+  # Creates the model.
+  # [START model]
+  model = cp_model.CpModel()
+  # [END model]
 
-    # Creates the variables.
-    # [START variables]
-    num_vals = 3
-    x = model.new_int_var(0, num_vals - 1, "x")
-    y = model.new_int_var(0, num_vals - 1, "y")
-    z = model.new_int_var(0, num_vals - 1, "z")
-    # [END variables]
+  # Creates the variables.
+  # [START variables]
+  num_vals = 3
+  x = model.new_int_var(0, num_vals - 1, "x")
+  y = model.new_int_var(0, num_vals - 1, "y")
+  z = model.new_int_var(0, num_vals - 1, "z")
+  # [END variables]
 
-    # Creates the constraints.
-    # [START constraints]
-    model.add(x != y)
-    # [END constraints]
+  # Creates the constraints.
+  # [START constraints]
+  model.add(x != y)
+  # [END constraints]
 
-    # [START objective]
-    model.maximize(x + 2 * y + 3 * z)
-    # [END objective]
+  # [START objective]
+  model.maximize(x + 2 * y + 3 * z)
+  # [END objective]
 
-    # Solution hinting: x <- 1, y <- 2
-    model.add_hint(x, 1)
-    model.add_hint(y, 2)
+  # Solution hinting: x <- 1, y <- 2
+  model.add_hint(x, 1)
+  model.add_hint(y, 2)
 
-    # Creates a solver and solves.
-    # [START solve]
-    solver = cp_model.CpSolver()
-    solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
-    status = solver.solve(model, solution_printer)
-    # [END solve]
+  # Creates a solver and solves.
+  # [START solve]
+  solver = cp_model.CpSolver()
+  solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
+  status = solver.solve(model, solution_printer)
+  # [END solve]
 
-    print(f"Status = {solver.status_name(status)}")
-    print(f"Number of solutions found: {solution_printer.solution_count}")
+  print(f"Status = {solver.status_name(status)}")
+  print(f"Number of solutions found: {solution_printer.solution_count}")
 
 
 solution_hinting_sample_sat()

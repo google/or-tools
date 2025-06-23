@@ -29,11 +29,13 @@ import math
 from ortools.sat.python import cp_model
 
 PARSER = argparse.ArgumentParser()
-PARSER.add_argument("--instance", default=1, type=int, help="Instance number (1..3).")
+PARSER.add_argument(
+    "--instance", default=1, type=int, help="Instance number (1..3)."
+)
 PARSER.add_argument(
     "--output_proto_file",
     default="",
-    help="Output file to write the cp_model" "proto to.",
+    help="Output file to write the cp_modelproto to.",
 )
 PARSER.add_argument("--params", default="", help="Sat solver parameters.")
 
@@ -1663,165 +1665,169 @@ SAMPLE_SHIFTS_LARGE = [
 
 
 def find_minimum_number_of_drivers(shifts, params):
-    """Minimize the number of needed drivers."""
+  """Minimize the number of needed drivers."""
 
-    num_shifts = len(shifts)
+  num_shifts = len(shifts)
 
-    # All durations are in minutes.
-    max_driving_time = 540  # 8 hours.
-    max_driving_time_without_pauses = 240  # 4 hours
-    min_pause_after_4h = 30
-    min_delay_between_shifts = 2
-    max_working_time = 720
-    min_working_time = 390  # 6.5 hours
-    extra_time = 10 + 25
-    max_break = 180
+  # All durations are in minutes.
+  max_driving_time = 540  # 8 hours.
+  max_driving_time_without_pauses = 240  # 4 hours
+  min_pause_after_4h = 30
+  min_delay_between_shifts = 2
+  max_working_time = 720
+  min_working_time = 390  # 6.5 hours
+  extra_time = 10 + 25
+  max_break = 180
 
-    # Computed data.
-    total_driving_time = sum(shift[5] for shift in shifts)
-    min_num_drivers = int(math.ceil(total_driving_time * 1.0 / max_driving_time))
-    min_start_time = min(shift[3] for shift in shifts)
-    max_end_time = max(shift[4] for shift in shifts)
+  # Computed data.
+  total_driving_time = sum(shift[5] for shift in shifts)
+  min_num_drivers = int(math.ceil(total_driving_time * 1.0 / max_driving_time))
+  min_start_time = min(shift[3] for shift in shifts)
+  max_end_time = max(shift[4] for shift in shifts)
 
-    print("Bus driver scheduling")
-    print("  num shifts =", num_shifts)
-    print("  total driving time =", total_driving_time, "minutes")
-    print("  min num drivers =", min_num_drivers)
-    print("  min start time =", min_start_time)
-    print("  max end time =", max_end_time)
+  print("Bus driver scheduling")
+  print("  num shifts =", num_shifts)
+  print("  total driving time =", total_driving_time, "minutes")
+  print("  min num drivers =", min_num_drivers)
+  print("  min start time =", min_start_time)
+  print("  max end time =", max_end_time)
 
-    # We are going to build a flow from a the start of the day to the end
-    # of the day.
-    #
-    # Along the path, we will accumulate driving time, accrued time since the
-    # last break, and total working time.
+  # We are going to build a flow from a the start of the day to the end
+  # of the day.
+  #
+  # Along the path, we will accumulate driving time, accrued time since the
+  # last break, and total working time.
 
-    model = cp_model.CpModel()
+  model = cp_model.CpModel()
 
-    # Per node info
-    driving_time = {}
-    working_time = {}
-    no_break_driving_time = {}
+  # Per node info
+  driving_time = {}
+  working_time = {}
+  no_break_driving_time = {}
 
-    incoming_literals = collections.defaultdict(list)
-    outgoing_literals = collections.defaultdict(list)
-    outgoing_source_literals = []
-    incoming_sink_literals = []
+  incoming_literals = collections.defaultdict(list)
+  outgoing_literals = collections.defaultdict(list)
+  outgoing_source_literals = []
+  incoming_sink_literals = []
 
-    all_literals = []
+  all_literals = []
 
-    # Create all the shift variables before iterating on the transitions
-    # between these shifts.
-    for shift in range(num_shifts):
-        driving_time[shift] = model.NewIntVar(0, max_driving_time, "dt_%i" % shift)
-        no_break_driving_time[shift] = model.NewIntVar(
-            0, max_driving_time_without_pauses, "nbdt_%i" % shift
+  # Create all the shift variables before iterating on the transitions
+  # between these shifts.
+  for shift in range(num_shifts):
+    driving_time[shift] = model.NewIntVar(0, max_driving_time, "dt_%i" % shift)
+    no_break_driving_time[shift] = model.NewIntVar(
+        0, max_driving_time_without_pauses, "nbdt_%i" % shift
+    )
+    working_time[shift] = model.NewIntVar(0, max_working_time, "wt_%i" % shift)
+
+  for shift in range(num_shifts):
+    duration = shifts[shift][5]
+
+    # Arc from source to shift.
+    #    - set the working time of the driver
+    #    - increase driving time and driving time since the last break
+    source_lit = model.NewBoolVar("from source to %i" % shift)
+    all_literals.append(source_lit)
+    outgoing_source_literals.append(source_lit)
+    incoming_literals[shift].append(source_lit)
+    model.Add(driving_time[shift] == duration).OnlyEnforceIf(source_lit)
+    model.Add(no_break_driving_time[shift] == duration).OnlyEnforceIf(
+        source_lit
+    )
+    model.Add(working_time[shift] == duration + extra_time).OnlyEnforceIf(
+        source_lit
+    )
+
+    # Arc from shift to sink
+    #     - checks that working time is greater than min_working_time
+    sink_lit = model.NewBoolVar("from %i to sink" % shift)
+    all_literals.append(sink_lit)
+    outgoing_literals[shift].append(sink_lit)
+    incoming_sink_literals.append(sink_lit)
+    model.Add(working_time[shift] >= min_working_time).OnlyEnforceIf(sink_lit)
+
+    for other in range(num_shifts):
+      delay = shifts[other][3] - shifts[shift][4]
+      if delay < min_delay_between_shifts:
+        continue
+      if delay > max_break:
+        break  # Assumes start times are sorted.
+      other_duration = shifts[other][5]
+      lit = model.NewBoolVar("from %i to %i" % (shift, other))
+      all_literals.append(lit)
+
+      # Increase driving time
+      model.Add(
+          driving_time[other] == driving_time[shift] + other_duration
+      ).OnlyEnforceIf(lit)
+
+      # Increase no_break_driving or reset it to 0 depending on the delay
+      if delay >= min_pause_after_4h:
+        model.Add(no_break_driving_time[other] == other_duration).OnlyEnforceIf(
+            lit
         )
-        working_time[shift] = model.NewIntVar(0, max_working_time, "wt_%i" % shift)
+      else:
+        model.Add(
+            no_break_driving_time[other]
+            == no_break_driving_time[shift] + other_duration
+        ).OnlyEnforceIf(lit)
 
-    for shift in range(num_shifts):
-        duration = shifts[shift][5]
+      # Increase working time
+      model.Add(
+          working_time[other] == working_time[shift] + delay + other_duration
+      ).OnlyEnforceIf(lit)
 
-        # Arc from source to shift.
-        #    - set the working time of the driver
-        #    - increase driving time and driving time since the last break
-        source_lit = model.NewBoolVar("from source to %i" % shift)
-        all_literals.append(source_lit)
-        outgoing_source_literals.append(source_lit)
-        incoming_literals[shift].append(source_lit)
-        model.Add(driving_time[shift] == duration).OnlyEnforceIf(source_lit)
-        model.Add(no_break_driving_time[shift] == duration).OnlyEnforceIf(source_lit)
-        model.Add(working_time[shift] == duration + extra_time).OnlyEnforceIf(
-            source_lit
-        )
+      # Add arc
+      outgoing_literals[shift].append(lit)
+      incoming_literals[other].append(lit)
 
-        # Arc from shift to sink
-        #     - checks that working time is greater than min_working_time
-        sink_lit = model.NewBoolVar("from %i to sink" % shift)
-        all_literals.append(sink_lit)
-        outgoing_literals[shift].append(sink_lit)
-        incoming_sink_literals.append(sink_lit)
-        model.Add(working_time[shift] >= min_working_time).OnlyEnforceIf(sink_lit)
+  # Create dag constraint.
+  for shift in range(num_shifts):
+    model.Add(sum(outgoing_literals[shift]) == 1)
+    model.Add(sum(incoming_literals[shift]) == 1)
 
-        for other in range(num_shifts):
-            delay = shifts[other][3] - shifts[shift][4]
-            if delay < min_delay_between_shifts:
-                continue
-            if delay > max_break:
-                break  # Assumes start times are sorted.
-            other_duration = shifts[other][5]
-            lit = model.NewBoolVar("from %i to %i" % (shift, other))
-            all_literals.append(lit)
+  # Num drivers
+  num_drivers = model.NewIntVar(
+      min_num_drivers, min_num_drivers * 3, "num_drivers"
+  )
+  model.Add(sum(incoming_sink_literals) == num_drivers)
+  model.Add(sum(outgoing_source_literals) == num_drivers)
 
-            # Increase driving time
-            model.Add(
-                driving_time[other] == driving_time[shift] + other_duration
-            ).OnlyEnforceIf(lit)
+  model.Minimize(num_drivers)
 
-            # Increase no_break_driving or reset it to 0 depending on the delay
-            if delay >= min_pause_after_4h:
-                model.Add(no_break_driving_time[other] == other_duration).OnlyEnforceIf(
-                    lit
-                )
-            else:
-                model.Add(
-                    no_break_driving_time[other]
-                    == no_break_driving_time[shift] + other_duration
-                ).OnlyEnforceIf(lit)
+  # Solve model.
+  solver = cp_model.CpSolver()
+  solver.parameters.log_search_progress = True
+  # solver.parameters.num_search_workers = 16
+  # solver.parameters.boolean_encoding_level = 0
+  # solver.parameters.lns_focus_on_decision_variables = True
+  status = solver.Solve(model)
 
-            # Increase working time
-            model.Add(
-                working_time[other] == working_time[shift] + delay + other_duration
-            ).OnlyEnforceIf(lit)
+  if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:
+    return -1
 
-            # Add arc
-            outgoing_literals[shift].append(lit)
-            incoming_literals[other].append(lit)
-
-    # Create dag constraint.
-    for shift in range(num_shifts):
-        model.Add(sum(outgoing_literals[shift]) == 1)
-        model.Add(sum(incoming_literals[shift]) == 1)
-
-    # Num drivers
-    num_drivers = model.NewIntVar(min_num_drivers, min_num_drivers * 3, "num_drivers")
-    model.Add(sum(incoming_sink_literals) == num_drivers)
-    model.Add(sum(outgoing_source_literals) == num_drivers)
-
-    model.Minimize(num_drivers)
-
-    # Solve model.
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    # solver.parameters.num_search_workers = 16
-    # solver.parameters.boolean_encoding_level = 0
-    # solver.parameters.lns_focus_on_decision_variables = True
-    status = solver.Solve(model)
-
-    if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:
-        return -1
-
-    # Display solution
-    optimal_num_drivers = int(solver.ObjectiveValue())
-    print("minimal number of drivers =", optimal_num_drivers)
-    return optimal_num_drivers
+  # Display solution
+  optimal_num_drivers = int(solver.ObjectiveValue())
+  print("minimal number of drivers =", optimal_num_drivers)
+  return optimal_num_drivers
 
 
 def main(args):
-    """Optimize the bus driver allocation in two passes."""
-    print("----------- first pass: minimize the number of drivers")
-    shifts = []
-    if args.instance == 1:
-        shifts = SAMPLE_SHIFTS_SMALL
-    elif args.instance == 2:
-        shifts = SAMPLE_SHIFTS_MEDIUM
-    elif args.instance == 3:
-        shifts = SAMPLE_SHIFTS_LARGE
-    num_drivers = find_minimum_number_of_drivers(shifts, args.params)
+  """Optimize the bus driver allocation in two passes."""
+  print("----------- first pass: minimize the number of drivers")
+  shifts = []
+  if args.instance == 1:
+    shifts = SAMPLE_SHIFTS_SMALL
+  elif args.instance == 2:
+    shifts = SAMPLE_SHIFTS_MEDIUM
+  elif args.instance == 3:
+    shifts = SAMPLE_SHIFTS_LARGE
+  num_drivers = find_minimum_number_of_drivers(shifts, args.params)
 
-    print("----------- second pass: minimize the sum of working times")
-    # bus_driver_scheduling(False, num_drivers)
+  print("----------- second pass: minimize the sum of working times")
+  # bus_driver_scheduling(False, num_drivers)
 
 
 if __name__ == "__main__":
-    main(PARSER.parse_args())
+  main(PARSER.parse_args())

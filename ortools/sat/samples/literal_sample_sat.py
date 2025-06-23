@@ -19,11 +19,11 @@ from ortools.sat.python import cp_model
 
 
 def literal_sample_sat():
-    model = cp_model.CpModel()
-    x = model.new_bool_var("x")
-    not_x = ~x
-    print(x)
-    print(not_x)
+  model = cp_model.CpModel()
+  x = model.new_bool_var("x")
+  not_x = ~x
+  print(x)
+  print(not_x)
 
 
 literal_sample_sat()

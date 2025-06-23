@@ -13,33 +13,33 @@
 # limitations under the License.
 """
 
-  Magic square (integer programming) in Google or-tools.
+Magic square (integer programming) in Google or-tools.
 
-  Translated from GLPK:s example magic.mod
-  '''
-  MAGIC, Magic Square
+Translated from GLPK:s example magic.mod
+'''
+MAGIC, Magic Square
 
-  Written in GNU MathProg by Andrew Makhorin <mao@mai2.rcnet.ru>
+Written in GNU MathProg by Andrew Makhorin <mao@mai2.rcnet.ru>
 
-  In recreational mathematics, a magic square of order n is an
-  arrangement of n^2 numbers, usually distinct integers, in a square,
-  such that n numbers in all rows, all columns, and both diagonals sum
-  to the same constant. A normal magic square contains the integers
-  from 1 to n^2.
+In recreational mathematics, a magic square of order n is an
+arrangement of n^2 numbers, usually distinct integers, in a square,
+such that n numbers in all rows, all columns, and both diagonals sum
+to the same constant. A normal magic square contains the integers
+from 1 to n^2.
 
-  (From Wikipedia, the free encyclopedia.)
-  '''
+(From Wikipedia, the free encyclopedia.)
+'''
 
-  Compare to the CP version:
-     http://www.hakank.org/google_or_tools/magic_square.py
+Compare to the CP version:
+   http://www.hakank.org/google_or_tools/magic_square.py
 
-  Here we also experiment with how long it takes when
-  using an output_matrix (much longer).
+Here we also experiment with how long it takes when
+using an output_matrix (much longer).
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -107,37 +107,41 @@ def main(n=3, sol='CBC', use_output_matrix=0):
   # # the sum in each row must be the magic sum
   for i in range_n:
     solver.Add(
-        solver.Sum([k * x[i, j, k] for j in range_n for k in range_N]) == s)
+        solver.Sum([k * x[i, j, k] for j in range_n for k in range_N]) == s
+    )
 
   # # the sum in each column must be the magic sum
   for j in range_n:
     solver.Add(
-        solver.Sum([k * x[i, j, k] for i in range_n for k in range_N]) == s)
+        solver.Sum([k * x[i, j, k] for i in range_n for k in range_N]) == s
+    )
 
   # # the sum in the diagonal must be the magic sum
   solver.Add(
-      solver.Sum([k * x[i, i, k] for i in range_n for k in range_N]) == s)
+      solver.Sum([k * x[i, i, k] for i in range_n for k in range_N]) == s
+  )
 
   # # the sum in the co-diagonal must be the magic sum
   if range_n[0] == 1:
     # for range_n = 1..n
     solver.Add(
-        solver.Sum([k * x[i, n - i + 1, k]
-                    for i in range_n
-                    for k in range_N]) == s)
+        solver.Sum([k * x[i, n - i + 1, k] for i in range_n for k in range_N])
+        == s
+    )
   else:
     # for range_n = 0..n-1
     solver.Add(
-        solver.Sum([k * x[i, n - i - 1, k]
-                    for i in range_n
-                    for k in range_N]) == s)
+        solver.Sum([k * x[i, n - i - 1, k] for i in range_n for k in range_N])
+        == s
+    )
 
   # for output
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
         solver.Add(
-            square[i, j] == solver.Sum([k * x[i, j, k] for k in range_N]))
+            square[i, j] == solver.Sum([k * x[i, j, k] for k in range_N])
+        )
 
   #
   # solution and search
@@ -159,7 +163,8 @@ def main(n=3, sol='CBC', use_output_matrix=0):
         print(
             sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]),
             ' ',
-            end=' ')
+            end=' ',
+        )
       print()
 
   print('\nx:')

@@ -13,28 +13,28 @@
 # limitations under the License.
 """
 
-  Least diff problem in Google CP Solver.
+Least diff problem in Google CP Solver.
 
-  This model solves the following problem:
+This model solves the following problem:
 
-  What is the smallest difference between two numbers X - Y
-  if you must use all the digits (0..9) exactly once.
+What is the smallest difference between two numbers X - Y
+if you must use all the digits (0..9) exactly once.
 
-  Compare with the following models:
-  * Choco   : http://www.hakank.org/choco/LeastDiff2.java
-  * ECLiPSE : http://www.hakank.org/eclipse/least_diff2.ecl
-  * Comet   : http://www.hakank.org/comet/least_diff.co
-  * Tailor/Essence': http://www.hakank.org/tailor/leastDiff.eprime
-  * Gecode  : http://www.hakank.org/gecode/least_diff.cpp
-  * Gecode/R: http://www.hakank.org/gecode_r/least_diff.rb
-  * JaCoP   : http://www.hakank.org/JaCoP/LeastDiff.java
-  * MiniZinc: http://www.hakank.org/minizinc/least_diff.mzn
-  * SICStus : http://www.hakank.org/sicstus/least_diff.pl
-  * Zinc    : http://hakank.org/minizinc/least_diff.zinc
+Compare with the following models:
+* Choco   : http://www.hakank.org/choco/LeastDiff2.java
+* ECLiPSE : http://www.hakank.org/eclipse/least_diff2.ecl
+* Comet   : http://www.hakank.org/comet/least_diff.co
+* Tailor/Essence': http://www.hakank.org/tailor/leastDiff.eprime
+* Gecode  : http://www.hakank.org/gecode/least_diff.cpp
+* Gecode/R: http://www.hakank.org/gecode_r/least_diff.rb
+* JaCoP   : http://www.hakank.org/JaCoP/LeastDiff.java
+* MiniZinc: http://www.hakank.org/minizinc/least_diff.mzn
+* SICStus : http://www.hakank.org/sicstus/least_diff.pl
+* Zinc    : http://hakank.org/minizinc/least_diff.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_cp_solver/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_cp_solver/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -91,7 +91,8 @@ def main(unused_argv):
   #       find the solution in just 4 steps
   solver.Solve(
       solver.Phase(letters, solver.CHOOSE_PATH, solver.ASSIGN_MIN_VALUE),
-      [objective, search_log, collector])
+      [objective, search_log, collector],
+  )
 
   # get the first (and only) solution
 
@@ -102,7 +103,7 @@ def main(unused_argv):
   print("y:", yval)
   print("diff:", diffval)
   print(xval, "-", yval, "=", diffval)
-  print([("abcdefghij" [i], collector.Value(0, letters[i])) for i in range(10)])
+  print([("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)])
   print()
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())

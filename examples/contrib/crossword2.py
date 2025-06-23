@@ -13,48 +13,48 @@
 # limitations under the License.
 """
 
-  Crosswords in Google CP Solver.
+ Crosswords in Google CP Solver.
 
-  This is a standard example for constraint logic programming. See e.g.
+ This is a standard example for constraint logic programming. See e.g.
 
-  http://www.cis.temple.edu/~ingargio/cis587/readings/constraints.html
-  '''
-  We are to complete the puzzle
+ http://www.cis.temple.edu/~ingargio/cis587/readings/constraints.html
+ '''
+ We are to complete the puzzle
 
-     1   2   3   4   5
-   +---+---+---+---+---+       Given the list of words:
- 1 | 1 |   | 2 |   | 3 |             AFT     LASER
-   +---+---+---+---+---+             ALE     LEE
- 2 | # | # |   | # |   |             EEL     LINE
-   +---+---+---+---+---+             HEEL    SAILS
- 3 | # | 4 |   | 5 |   |             HIKE    SHEET
-   +---+---+---+---+---+             HOSES   STEER
- 4 | 6 | # | 7 |   |   |             KEEL    TIE
-   +---+---+---+---+---+             KNOT
- 5 | 8 |   |   |   |   |
-   +---+---+---+---+---+
- 6 |   | # | # |   | # |       The numbers 1,2,3,4,5,6,7,8 in the crossword
-   +---+---+---+---+---+       puzzle correspond to the words
-                               that will start at those locations.
-  '''
+    1   2   3   4   5
+  +---+---+---+---+---+       Given the list of words:
+1 | 1 |   | 2 |   | 3 |             AFT     LASER
+  +---+---+---+---+---+             ALE     LEE
+2 | # | # |   | # |   |             EEL     LINE
+  +---+---+---+---+---+             HEEL    SAILS
+3 | # | 4 |   | 5 |   |             HIKE    SHEET
+  +---+---+---+---+---+             HOSES   STEER
+4 | 6 | # | 7 |   |   |             KEEL    TIE
+  +---+---+---+---+---+             KNOT
+5 | 8 |   |   |   |   |
+  +---+---+---+---+---+
+6 |   | # | # |   | # |       The numbers 1,2,3,4,5,6,7,8 in the crossword
+  +---+---+---+---+---+       puzzle correspond to the words
+                              that will start at those locations.
+ '''
 
-  The model was inspired by Sebastian Brand's Array Constraint cross word
-  example
-  http://www.cs.mu.oz.au/~sbrand/project/ac/
-  http://www.cs.mu.oz.au/~sbrand/project/ac/examples.pl
+ The model was inspired by Sebastian Brand's Array Constraint cross word
+ example
+ http://www.cs.mu.oz.au/~sbrand/project/ac/
+ http://www.cs.mu.oz.au/~sbrand/project/ac/examples.pl
 
 
-  Also, see the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/crossword.mzn
-  * Comet: http://www.hakank.org/comet/crossword.co
-  * ECLiPSe: http://hakank.org/eclipse/crossword2.ecl
-  * Gecode: http://hakank.org/gecode/crossword2.cpp
-  * SICStus: http://hakank.org/sicstus/crossword2.pl
-  * Zinc: http://hakank.org/minizinc/crossword2.zinc
+ Also, see the following models:
+ * MiniZinc: http://www.hakank.org/minizinc/crossword.mzn
+ * Comet: http://www.hakank.org/comet/crossword.co
+ * ECLiPSe: http://hakank.org/eclipse/crossword2.ecl
+ * Gecode: http://hakank.org/gecode/crossword2.cpp
+ * SICStus: http://hakank.org/sicstus/crossword2.pl
+ * Zinc: http://hakank.org/minizinc/crossword2.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+ This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+ Also see my other Google CP Solver models:
+ http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -111,7 +111,7 @@ def main():
       [a, l, e, 0, 0],  # ALE
       [e, e, l, 0, 0],  # EEL
       [l, e, e, 0, 0],  # LEE
-      [t, i, e, 0, 0]  # TIE
+      [t, i, e, 0, 0],  # TIE
   ]
 
   num_overlapping = 12
@@ -127,7 +127,7 @@ def main():
       [7, 0, 5, 1],  # l
       [7, 2, 1, 4],  # s
       [7, 3, 4, 2],  # e
-      [7, 4, 2, 4]  # r
+      [7, 4, 2, 4],  # r
   ]
 
   n = 8
@@ -156,9 +156,13 @@ def main():
 
     # But we must use Element explicitly
     solver.Add(
-        solver.Element(A_flat, E[overlapping[I][0]] * word_len +
-                       overlapping[I][1]) == solver
-        .Element(A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]))
+        solver.Element(
+            A_flat, E[overlapping[I][0]] * word_len + overlapping[I][1]
+        )
+        == solver.Element(
+            A_flat, E[overlapping[I][2]] * word_len + overlapping[I][3]
+        )
+    )
 
   #
   # solution and search
@@ -187,8 +191,9 @@ def main():
 def print_solution(A, E, alpha, n, word_len):
   for ee in range(n):
     print("%i: (%2i)" % (ee, E[ee].Value()), end=" ")
-    print("".join(
-        ["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)]))
+    print(
+        "".join(["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)])
+    )
 
 
 if __name__ == "__main__":

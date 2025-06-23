@@ -26,9 +26,9 @@ from ortools.sat.python import cp_model
 
 
 def main() -> None:
-    # Data
-    # [START data_model]
-    data_str = """
+  # Data
+  # [START data_model]
+  data_str = """
   worker  task  cost
       w1    t1    90
       w1    t2    80
@@ -52,55 +52,55 @@ def main() -> None:
       w5    t4   100
   """
 
-    data = pd.read_table(io.StringIO(data_str), sep=r"\s+")
-    # [END data_model]
+  data = pd.read_table(io.StringIO(data_str), sep=r"\s+")
+  # [END data_model]
 
-    # Model
-    # [START model]
-    model = cp_model.CpModel()
-    # [END model]
+  # Model
+  # [START model]
+  model = cp_model.CpModel()
+  # [END model]
 
-    # Variables
-    # [START variables]
-    x = model.new_bool_var_series(name="x", index=data.index)
-    # [END variables]
+  # Variables
+  # [START variables]
+  x = model.new_bool_var_series(name="x", index=data.index)
+  # [END variables]
 
-    # Constraints
-    # [START constraints]
-    # Each worker is assigned to at most one task.
-    for unused_name, tasks in data.groupby("worker"):
-        model.add_at_most_one(x[tasks.index])
+  # Constraints
+  # [START constraints]
+  # Each worker is assigned to at most one task.
+  for unused_name, tasks in data.groupby("worker"):
+    model.add_at_most_one(x[tasks.index])
 
-    # Each task is assigned to exactly one worker.
-    for unused_name, workers in data.groupby("task"):
-        model.add_exactly_one(x[workers.index])
-    # [END constraints]
+  # Each task is assigned to exactly one worker.
+  for unused_name, workers in data.groupby("task"):
+    model.add_exactly_one(x[workers.index])
+  # [END constraints]
 
-    # Objective
-    # [START objective]
-    model.minimize(data.cost.dot(x))
-    # [END objective]
+  # Objective
+  # [START objective]
+  model.minimize(data.cost.dot(x))
+  # [END objective]
 
-    # Solve
-    # [START solve]
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-    # [END solve]
+  # Solve
+  # [START solve]
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
+  # [END solve]
 
-    # Print solution.
-    # [START print_solution]
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        print(f"Total cost = {solver.objective_value}\n")
-        selected = data.loc[solver.boolean_values(x).loc[lambda x: x].index]
-        for unused_index, row in selected.iterrows():
-            print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
-    elif status == cp_model.INFEASIBLE:
-        print("No solution found")
-    else:
-        print("Something is wrong, check the status and the log of the solve")
-    # [END print_solution]
+  # Print solution.
+  # [START print_solution]
+  if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+    print(f"Total cost = {solver.objective_value}\n")
+    selected = data.loc[solver.boolean_values(x).loc[lambda x: x].index]
+    for unused_index, row in selected.iterrows():
+      print(f"{row.task} assigned to {row.worker} with a cost of {row.cost}")
+  elif status == cp_model.INFEASIBLE:
+    print("No solution found")
+  else:
+    print("Something is wrong, check the status and the log of the solve")
+  # [END print_solution]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

@@ -42,17 +42,17 @@ _PARAMS = flags.DEFINE_string(
 def build_problem(
     problem_id: int,
 ) -> tuple[int, list[int], int, list[tuple[int, int]]]:
-    """Build problem data."""
-    if problem_id == 0:
-        capacities = [
-            # fmt:off
+  """Build problem data."""
+  if problem_id == 0:
+    capacities = [
+        # fmt:off
         0, 12, 14, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28, 29, 30, 32, 35, 39, 42, 43, 44,
-            # fmt:on
-        ]
-        num_colors = 88
-        num_slabs = 111
-        orders = [  # (size, color)
-            # fmt:off
+        # fmt:on
+    ]
+    num_colors = 88
+    num_slabs = 111
+    orders = [  # (size, color)
+        # fmt:off
         (4, 1), (22, 2), (9, 3), (5, 4), (8, 5), (3, 6), (3, 4), (4, 7),
         (7, 4), (7, 8), (3, 6), (2, 6), (2, 4), (8, 9), (5, 10), (7, 11),
         (4, 7), (7, 11), (5, 10), (7, 11), (8, 9), (3, 1), (25, 12), (14, 13),
@@ -69,242 +69,244 @@ def build_problem(
         (30, 73), (30, 74), (30, 75), (23, 76), (15, 77), (15, 78), (27, 79),
         (27, 80), (27, 81), (27, 82), (27, 83), (27, 84), (27, 79), (27, 85),
         (27, 86), (10, 87), (3, 88),
-            # fmt:on
-        ]
-    elif problem_id == 1:
-        capacities = [0, 17, 44]
-        num_colors = 23
-        num_slabs = 30
-        orders = [  # (size, color)
-            # fmt:off
+        # fmt:on
+    ]
+  elif problem_id == 1:
+    capacities = [0, 17, 44]
+    num_colors = 23
+    num_slabs = 30
+    orders = [  # (size, color)
+        # fmt:off
         (4, 1), (22, 2), (9, 3), (5, 4), (8, 5), (3, 6), (3, 4), (4, 7), (7, 4),
         (7, 8), (3, 6), (2, 6), (2, 4), (8, 9), (5, 10), (7, 11), (4, 7), (7, 11),
         (5, 10), (7, 11), (8, 9), (3, 1), (25, 12), (14, 13), (3, 6), (22, 14),
         (19, 15), (19, 15), (22, 16), (22, 17), (22, 18), (20, 19), (22, 20),
         (5, 21), (4, 22), (10, 23),
-            # fmt:on
-        ]
-    elif problem_id == 2:
-        capacities = [0, 17, 44]
-        num_colors = 15
-        num_slabs = 20
-        orders = [  # (size, color)
-            # fmt:off
+        # fmt:on
+    ]
+  elif problem_id == 2:
+    capacities = [0, 17, 44]
+    num_colors = 15
+    num_slabs = 20
+    orders = [  # (size, color)
+        # fmt:off
         (4, 1), (22, 2), (9, 3), (5, 4), (8, 5), (3, 6), (3, 4), (4, 7), (7, 4),
         (7, 8), (3, 6), (2, 6), (2, 4), (8, 9), (5, 10), (7, 11), (4, 7), (7, 11),
         (5, 10), (7, 11), (8, 9), (3, 1), (25, 12), (14, 13), (3, 6), (22, 14),
         (19, 15), (19, 15),
-            # fmt:on
-        ]
+        # fmt:on
+    ]
 
-    else:  # problem_id == 3, default problem.
-        capacities = [0, 17, 44]
-        num_colors = 8
-        num_slabs = 10
-        orders = [  # (size, color)
-            (4, 1),
-            (22, 2),
-            (9, 3),
-            (5, 4),
-            (8, 5),
-            (3, 6),
-            (3, 4),
-            (4, 7),
-            (7, 4),
-            (7, 8),
-            (3, 6),
-        ]
+  else:  # problem_id == 3, default problem.
+    capacities = [0, 17, 44]
+    num_colors = 8
+    num_slabs = 10
+    orders = [  # (size, color)
+        (4, 1),
+        (22, 2),
+        (9, 3),
+        (5, 4),
+        (8, 5),
+        (3, 6),
+        (3, 4),
+        (4, 7),
+        (7, 4),
+        (7, 8),
+        (3, 6),
+    ]
 
-    return (num_slabs, capacities, num_colors, orders)
+  return (num_slabs, capacities, num_colors, orders)
 
 
 class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, orders, assign, load, loss) -> None:
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__orders = orders
-        self.__assign = assign
-        self.__load = load
-        self.__loss = loss
-        self.__solution_count = 0
-        self.__all_orders = range(len(orders))
-        self.__all_slabs = range(len(assign[0]))
-        self.__start_time = time.time()
+  def __init__(self, orders, assign, load, loss) -> None:
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__orders = orders
+    self.__assign = assign
+    self.__load = load
+    self.__loss = loss
+    self.__solution_count = 0
+    self.__all_orders = range(len(orders))
+    self.__all_slabs = range(len(assign[0]))
+    self.__start_time = time.time()
 
-    def on_solution_callback(self) -> None:
-        """Called on each new solution."""
-        current_time = time.time()
-        objective = sum(self.value(l) for l in self.__loss)
-        print(
-            f"Solution {self.__solution_count}, time ="
-            f" {current_time - self.__start_time} s, objective = {objective}"
+  def on_solution_callback(self) -> None:
+    """Called on each new solution."""
+    current_time = time.time()
+    objective = sum(self.value(l) for l in self.__loss)
+    print(
+        f"Solution {self.__solution_count}, time ="
+        f" {current_time - self.__start_time} s, objective = {objective}"
+    )
+    self.__solution_count += 1
+    orders_in_slab = [
+        [o for o in self.__all_orders if self.value(self.__assign[o][s])]
+        for s in self.__all_slabs
+    ]
+    for s in self.__all_slabs:
+      if orders_in_slab[s]:
+        line = (
+            f"  - slab {s}, load = {self.value(self.__load[s])}, loss ="
+            f" {self.value(self.__loss[s])}, orders = ["
         )
-        self.__solution_count += 1
-        orders_in_slab = [
-            [o for o in self.__all_orders if self.value(self.__assign[o][s])]
-            for s in self.__all_slabs
-        ]
-        for s in self.__all_slabs:
-            if orders_in_slab[s]:
-                line = (
-                    f"  - slab {s}, load = {self.value(self.__load[s])}, loss ="
-                    f" {self.value(self.__loss[s])}, orders = ["
-                )
-                for o in orders_in_slab[s]:
-                    line += f"#{o}(w{self.__orders[o][0]}, c{self.__orders[o][1]})"
-                line += "]"
-                print(line)
+        for o in orders_in_slab[s]:
+          line += f"#{o}(w{self.__orders[o][0]}, c{self.__orders[o][1]})"
+        line += "]"
+        print(line)
 
 
 def steel_mill_slab(problem_id: int, break_symmetries: bool) -> None:
-    """Solves the Steel Mill Slab Problem."""
-    ### Load problem.
-    num_slabs, capacities, num_colors, orders = build_problem(problem_id)
+  """Solves the Steel Mill Slab Problem."""
+  ### Load problem.
+  num_slabs, capacities, num_colors, orders = build_problem(problem_id)
 
-    num_orders = len(orders)
-    num_capacities = len(capacities)
-    all_slabs = range(num_slabs)
-    all_colors = range(num_colors)
-    all_orders = range(len(orders))
-    print(
-        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
-        f" {num_capacities - 1} capacities"
-    )
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_slabs = range(num_slabs)
+  all_colors = range(num_colors)
+  all_orders = range(len(orders))
+  print(
+      f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+      f" {num_capacities - 1} capacities"
+  )
 
-    # Compute auxiliary data.
-    widths = [x[0] for x in orders]
-    colors = [x[1] for x in orders]
-    max_capacity = max(capacities)
-    loss_array = [
-        min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
-    ]
-    max_loss = max(loss_array)
-    orders_per_color = [
-        [o for o in all_orders if colors[o] == c + 1] for c in all_colors
-    ]
-    unique_color_orders = [
-        o for o in all_orders if len(orders_per_color[colors[o] - 1]) == 1
-    ]
+  # Compute auxiliary data.
+  widths = [x[0] for x in orders]
+  colors = [x[1] for x in orders]
+  max_capacity = max(capacities)
+  loss_array = [
+      min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
+  ]
+  max_loss = max(loss_array)
+  orders_per_color = [
+      [o for o in all_orders if colors[o] == c + 1] for c in all_colors
+  ]
+  unique_color_orders = [
+      o for o in all_orders if len(orders_per_color[colors[o] - 1]) == 1
+  ]
 
-    ### Model problem.
+  ### Model problem.
 
-    # Create the model and the decision variables.
-    model = cp_model.CpModel()
-    assign = [
-        [model.new_bool_var(f"assign_{o}_to_slab_{s}") for s in all_slabs]
-        for o in all_orders
-    ]
-    loads = [model.new_int_var(0, max_capacity, f"load_of_slab_{s}") for s in all_slabs]
-    color_is_in_slab = [
-        [model.new_bool_var(f"color_{c + 1}_in_slab_{s}") for c in all_colors]
-        for s in all_slabs
-    ]
+  # Create the model and the decision variables.
+  model = cp_model.CpModel()
+  assign = [
+      [model.new_bool_var(f"assign_{o}_to_slab_{s}") for s in all_slabs]
+      for o in all_orders
+  ]
+  loads = [
+      model.new_int_var(0, max_capacity, f"load_of_slab_{s}") for s in all_slabs
+  ]
+  color_is_in_slab = [
+      [model.new_bool_var(f"color_{c + 1}_in_slab_{s}") for c in all_colors]
+      for s in all_slabs
+  ]
 
-    # Compute load of all slabs.
+  # Compute load of all slabs.
+  for s in all_slabs:
+    model.add(sum(assign[o][s] * widths[o] for o in all_orders) == loads[s])
+
+  # Orders are assigned to one slab.
+  for o in all_orders:
+    model.add_exactly_one(assign[o])
+
+  # Redundant constraint (sum of loads == sum of widths).
+  model.add(sum(loads) == sum(widths))
+
+  # Link present_colors and assign.
+  for c in all_colors:
     for s in all_slabs:
-        model.add(sum(assign[o][s] * widths[o] for o in all_orders) == loads[s])
+      for o in orders_per_color[c]:
+        model.add_implication(assign[o][s], color_is_in_slab[s][c])
+        model.add_implication(~color_is_in_slab[s][c], ~assign[o][s])
 
-    # Orders are assigned to one slab.
-    for o in all_orders:
-        model.add_exactly_one(assign[o])
+  # At most two colors per slab.
+  for s in all_slabs:
+    model.add(sum(color_is_in_slab[s]) <= 2)
 
-    # Redundant constraint (sum of loads == sum of widths).
-    model.add(sum(loads) == sum(widths))
+  # Project previous constraint on unique_color_orders
+  for s in all_slabs:
+    model.add(sum(assign[o][s] for o in unique_color_orders) <= 2)
 
-    # Link present_colors and assign.
-    for c in all_colors:
-        for s in all_slabs:
-            for o in orders_per_color[c]:
-                model.add_implication(assign[o][s], color_is_in_slab[s][c])
-                model.add_implication(~color_is_in_slab[s][c], ~assign[o][s])
+  # Symmetry breaking.
+  for s in range(num_slabs - 1):
+    model.add(loads[s] >= loads[s + 1])
 
-    # At most two colors per slab.
-    for s in all_slabs:
-        model.add(sum(color_is_in_slab[s]) <= 2)
-
-    # Project previous constraint on unique_color_orders
-    for s in all_slabs:
-        model.add(sum(assign[o][s] for o in unique_color_orders) <= 2)
-
-    # Symmetry breaking.
-    for s in range(num_slabs - 1):
-        model.add(loads[s] >= loads[s + 1])
-
-    # Collect equivalent orders.
-    width_to_unique_color_order = {}
-    ordered_equivalent_orders = []
-    for c in all_colors:
-        colored_orders = orders_per_color[c]
-        if not colored_orders:
-            continue
-        if len(colored_orders) == 1:
-            o = colored_orders[0]
-            w = widths[o]
-            if w not in width_to_unique_color_order:
-                width_to_unique_color_order[w] = [o]
-            else:
-                width_to_unique_color_order[w].append(o)
-        else:
-            local_width_to_order = {}
-            for o in colored_orders:
-                w = widths[o]
-                if w not in local_width_to_order:
-                    local_width_to_order[w] = []
-                local_width_to_order[w].append(o)
-            for _, os in local_width_to_order.items():
-                if len(os) > 1:
-                    for p in range(len(os) - 1):
-                        ordered_equivalent_orders.append((os[p], os[p + 1]))
-    for _, os in width_to_unique_color_order.items():
-        if len(os) > 1:
-            for p in range(len(os) - 1):
-                ordered_equivalent_orders.append((os[p], os[p + 1]))
-
-    # Create position variables if there are symmetries to be broken.
-    if break_symmetries and ordered_equivalent_orders:
-        print(
-            f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
-            " constraints"
-        )
-        positions = {}
-        for p in ordered_equivalent_orders:
-            if p[0] not in positions:
-                positions[p[0]] = model.new_int_var(
-                    0, num_slabs - 1, f"position_of_slab_{p[0]}"
-                )
-                model.add_map_domain(positions[p[0]], assign[p[0]])
-            if p[1] not in positions:
-                positions[p[1]] = model.new_int_var(
-                    0, num_slabs - 1, f"position_of_slab_{p[1]}"
-                )
-                model.add_map_domain(positions[p[1]], assign[p[1]])
-            # Finally add the symmetry breaking constraint.
-            model.add(positions[p[0]] <= positions[p[1]])
-
-    # Objective.
-    obj = model.new_int_var(0, num_slabs * max_loss, "obj")
-    losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
-    for s in all_slabs:
-        model.add_element(loads[s], loss_array, losses[s])
-    model.add(obj == sum(losses))
-    model.minimize(obj)
-
-    ### Solve model.
-    solver = cp_model.CpSolver()
-    if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
-    objective_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.solve(model, objective_printer)
-
-    ### Output the solution.
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        print(
-            f"Loss = {solver.objective_value}, time = {solver.wall_time} s,"
-            f" {solver.num_conflicts} conflicts"
-        )
+  # Collect equivalent orders.
+  width_to_unique_color_order = {}
+  ordered_equivalent_orders = []
+  for c in all_colors:
+    colored_orders = orders_per_color[c]
+    if not colored_orders:
+      continue
+    if len(colored_orders) == 1:
+      o = colored_orders[0]
+      w = widths[o]
+      if w not in width_to_unique_color_order:
+        width_to_unique_color_order[w] = [o]
+      else:
+        width_to_unique_color_order[w].append(o)
     else:
-        print("No solution")
+      local_width_to_order = {}
+      for o in colored_orders:
+        w = widths[o]
+        if w not in local_width_to_order:
+          local_width_to_order[w] = []
+        local_width_to_order[w].append(o)
+      for _, os in local_width_to_order.items():
+        if len(os) > 1:
+          for p in range(len(os) - 1):
+            ordered_equivalent_orders.append((os[p], os[p + 1]))
+  for _, os in width_to_unique_color_order.items():
+    if len(os) > 1:
+      for p in range(len(os) - 1):
+        ordered_equivalent_orders.append((os[p], os[p + 1]))
+
+  # Create position variables if there are symmetries to be broken.
+  if break_symmetries and ordered_equivalent_orders:
+    print(
+        f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
+        " constraints"
+    )
+    positions = {}
+    for p in ordered_equivalent_orders:
+      if p[0] not in positions:
+        positions[p[0]] = model.new_int_var(
+            0, num_slabs - 1, f"position_of_slab_{p[0]}"
+        )
+        model.add_map_domain(positions[p[0]], assign[p[0]])
+      if p[1] not in positions:
+        positions[p[1]] = model.new_int_var(
+            0, num_slabs - 1, f"position_of_slab_{p[1]}"
+        )
+        model.add_map_domain(positions[p[1]], assign[p[1]])
+      # Finally add the symmetry breaking constraint.
+      model.add(positions[p[0]] <= positions[p[1]])
+
+  # Objective.
+  obj = model.new_int_var(0, num_slabs * max_loss, "obj")
+  losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
+  for s in all_slabs:
+    model.add_element(loads[s], loss_array, losses[s])
+  model.add(obj == sum(losses))
+  model.minimize(obj)
+
+  ### Solve model.
+  solver = cp_model.CpSolver()
+  if _PARAMS.value:
+    text_format.Parse(_PARAMS.value, solver.parameters)
+  objective_printer = cp_model.ObjectiveSolutionPrinter()
+  status = solver.solve(model, objective_printer)
+
+  ### Output the solution.
+  if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    print(
+        f"Loss = {solver.objective_value}, time = {solver.wall_time} s,"
+        f" {solver.num_conflicts} conflicts"
+    )
+  else:
+    print("No solution")
 
 
 def collect_valid_slabs_dp(
@@ -313,264 +315,269 @@ def collect_valid_slabs_dp(
     widths: list[int],
     loss_array: list[int],
 ) -> list[list[int]]:
-    """Collect valid columns (assign, loss) for one slab."""
-    start_time = time.time()
+  """Collect valid columns (assign, loss) for one slab."""
+  start_time = time.time()
 
-    max_capacity = max(capacities)
+  max_capacity = max(capacities)
 
-    valid_assignment = collections.namedtuple("valid_assignment", "orders load colors")
-    all_valid_assignments = [valid_assignment(orders=[], load=0, colors=[])]
+  valid_assignment = collections.namedtuple(
+      "valid_assignment", "orders load colors"
+  )
+  all_valid_assignments = [valid_assignment(orders=[], load=0, colors=[])]
 
-    for order_id, new_color in enumerate(colors):
-        new_width = widths[order_id]
-        new_assignments = []
-        for assignment in all_valid_assignments:
-            if assignment.load + new_width > max_capacity:
-                continue
-            new_colors = list(assignment.colors)
-            if new_color not in new_colors:
-                new_colors.append(new_color)
-            if len(new_colors) > 2:
-                continue
-            new_assignment = valid_assignment(
-                orders=assignment.orders + [order_id],
-                load=assignment.load + new_width,
-                colors=new_colors,
-            )
-            new_assignments.append(new_assignment)
-        all_valid_assignments.extend(new_assignments)
-
-    print(
-        f"{len(all_valid_assignments)} assignments created in"
-        f" {time.time() - start_time:2f} s"
-    )
-    tuples = []
+  for order_id, new_color in enumerate(colors):
+    new_width = widths[order_id]
+    new_assignments = []
     for assignment in all_valid_assignments:
-        solution = [0] * len(colors)
-        for i in assignment.orders:
-            solution[i] = 1
-        solution.append(loss_array[assignment.load])
-        solution.append(assignment.load)
-        tuples.append(solution)
+      if assignment.load + new_width > max_capacity:
+        continue
+      new_colors = list(assignment.colors)
+      if new_color not in new_colors:
+        new_colors.append(new_color)
+      if len(new_colors) > 2:
+        continue
+      new_assignment = valid_assignment(
+          orders=assignment.orders + [order_id],
+          load=assignment.load + new_width,
+          colors=new_colors,
+      )
+      new_assignments.append(new_assignment)
+    all_valid_assignments.extend(new_assignments)
 
-    return tuples
+  print(
+      f"{len(all_valid_assignments)} assignments created in"
+      f" {time.time() - start_time:2f} s"
+  )
+  tuples = []
+  for assignment in all_valid_assignments:
+    solution = [0] * len(colors)
+    for i in assignment.orders:
+      solution[i] = 1
+    solution.append(loss_array[assignment.load])
+    solution.append(assignment.load)
+    tuples.append(solution)
+
+  return tuples
 
 
-def steel_mill_slab_with_valid_slabs(problem_id: int, break_symmetries: bool) -> None:
-    """Solves the Steel Mill Slab Problem."""
-    ### Load problem.
-    (num_slabs, capacities, num_colors, orders) = build_problem(problem_id)
+def steel_mill_slab_with_valid_slabs(
+    problem_id: int, break_symmetries: bool
+) -> None:
+  """Solves the Steel Mill Slab Problem."""
+  ### Load problem.
+  (num_slabs, capacities, num_colors, orders) = build_problem(problem_id)
 
-    num_orders = len(orders)
-    num_capacities = len(capacities)
-    all_slabs = range(num_slabs)
-    all_colors = range(num_colors)
-    all_orders = range(len(orders))
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_slabs = range(num_slabs)
+  all_colors = range(num_colors)
+  all_orders = range(len(orders))
+  print(
+      f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+      f" {num_capacities - 1} capacities"
+  )
+
+  # Compute auxiliary data.
+  widths = [x[0] for x in orders]
+  colors = [x[1] for x in orders]
+  max_capacity = max(capacities)
+  loss_array = [
+      min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
+  ]
+  max_loss = max(loss_array)
+
+  ### Model problem.
+
+  # Create the model and the decision variables.
+  model = cp_model.CpModel()
+  assign = [
+      [model.new_bool_var(r"assign_{o}_to_slab_{s}") for s in all_slabs]
+      for o in all_orders
+  ]
+  loads = [model.new_int_var(0, max_capacity, f"load_{s}") for s in all_slabs]
+  losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
+
+  unsorted_valid_slabs = collect_valid_slabs_dp(
+      capacities, colors, widths, loss_array
+  )
+  # Sort slab by descending load/loss. Remove duplicates.
+  valid_slabs = sorted(unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
+
+  for s in all_slabs:
+    model.add_allowed_assignments(
+        [assign[o][s] for o in all_orders] + [losses[s], loads[s]], valid_slabs
+    )
+
+  # Orders are assigned to one slab.
+  for o in all_orders:
+    model.add_exactly_one(assign[o])
+
+  # Redundant constraint (sum of loads == sum of widths).
+  model.add(sum(loads) == sum(widths))
+
+  # Symmetry breaking.
+  for s in range(num_slabs - 1):
+    model.add(loads[s] >= loads[s + 1])
+
+  # Collect equivalent orders.
+  if break_symmetries:
+    print("Breaking symmetries")
+    width_to_unique_color_order = {}
+    ordered_equivalent_orders = []
+    orders_per_color = [
+        [o for o in all_orders if colors[o] == c + 1] for c in all_colors
+    ]
+    for c in all_colors:
+      colored_orders = orders_per_color[c]
+      if not colored_orders:
+        continue
+      if len(colored_orders) == 1:
+        o = colored_orders[0]
+        w = widths[o]
+        if w not in width_to_unique_color_order:
+          width_to_unique_color_order[w] = [o]
+        else:
+          width_to_unique_color_order[w].append(o)
+      else:
+        local_width_to_order = {}
+        for o in colored_orders:
+          w = widths[o]
+          if w not in local_width_to_order:
+            local_width_to_order[w] = []
+            local_width_to_order[w].append(o)
+        for _, os in local_width_to_order.items():
+          if len(os) > 1:
+            for p in range(len(os) - 1):
+              ordered_equivalent_orders.append((os[p], os[p + 1]))
+    for _, os in width_to_unique_color_order.items():
+      if len(os) > 1:
+        for p in range(len(os) - 1):
+          ordered_equivalent_orders.append((os[p], os[p + 1]))
+
+    # Create position variables if there are symmetries to be broken.
+    if ordered_equivalent_orders:
+      print(
+          f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
+          " constraints"
+      )
+      positions = {}
+      for p in ordered_equivalent_orders:
+        if p[0] not in positions:
+          positions[p[0]] = model.new_int_var(
+              0, num_slabs - 1, f"position_of_slab_{p[0]}"
+          )
+          model.add_map_domain(positions[p[0]], assign[p[0]])
+        if p[1] not in positions:
+          positions[p[1]] = model.new_int_var(
+              0, num_slabs - 1, f"position_of_slab_{p[1]}"
+          )
+          model.add_map_domain(positions[p[1]], assign[p[1]])
+          # Finally add the symmetry breaking constraint.
+        model.add(positions[p[0]] <= positions[p[1]])
+
+  # Objective.
+  model.minimize(sum(losses))
+
+  print("Model created")
+
+  ### Solve model.
+  solver = cp_model.CpSolver()
+  if _PARAMS.value:
+    text_format.Parse(_PARAMS.value, solver.parameters)
+
+  solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads, losses)
+  status = solver.solve(model, solution_printer)
+
+  ### Output the solution.
+  if status == cp_model.OPTIMAL:
     print(
-        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
-        f" {num_capacities - 1} capacities"
+        f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
+        f" {solver.num_conflicts} conflicts"
     )
-
-    # Compute auxiliary data.
-    widths = [x[0] for x in orders]
-    colors = [x[1] for x in orders]
-    max_capacity = max(capacities)
-    loss_array = [
-        min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
-    ]
-    max_loss = max(loss_array)
-
-    ### Model problem.
-
-    # Create the model and the decision variables.
-    model = cp_model.CpModel()
-    assign = [
-        [model.new_bool_var(r"assign_{o}_to_slab_{s}") for s in all_slabs]
-        for o in all_orders
-    ]
-    loads = [model.new_int_var(0, max_capacity, f"load_{s}") for s in all_slabs]
-    losses = [model.new_int_var(0, max_loss, f"loss_{s}") for s in all_slabs]
-
-    unsorted_valid_slabs = collect_valid_slabs_dp(
-        capacities, colors, widths, loss_array
-    )
-    # Sort slab by descending load/loss. Remove duplicates.
-    valid_slabs = sorted(unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
-
-    for s in all_slabs:
-        model.add_allowed_assignments(
-            [assign[o][s] for o in all_orders] + [losses[s], loads[s]], valid_slabs
-        )
-
-    # Orders are assigned to one slab.
-    for o in all_orders:
-        model.add_exactly_one(assign[o])
-
-    # Redundant constraint (sum of loads == sum of widths).
-    model.add(sum(loads) == sum(widths))
-
-    # Symmetry breaking.
-    for s in range(num_slabs - 1):
-        model.add(loads[s] >= loads[s + 1])
-
-    # Collect equivalent orders.
-    if break_symmetries:
-        print("Breaking symmetries")
-        width_to_unique_color_order = {}
-        ordered_equivalent_orders = []
-        orders_per_color = [
-            [o for o in all_orders if colors[o] == c + 1] for c in all_colors
-        ]
-        for c in all_colors:
-            colored_orders = orders_per_color[c]
-            if not colored_orders:
-                continue
-            if len(colored_orders) == 1:
-                o = colored_orders[0]
-                w = widths[o]
-                if w not in width_to_unique_color_order:
-                    width_to_unique_color_order[w] = [o]
-                else:
-                    width_to_unique_color_order[w].append(o)
-            else:
-                local_width_to_order = {}
-                for o in colored_orders:
-                    w = widths[o]
-                    if w not in local_width_to_order:
-                        local_width_to_order[w] = []
-                        local_width_to_order[w].append(o)
-                for _, os in local_width_to_order.items():
-                    if len(os) > 1:
-                        for p in range(len(os) - 1):
-                            ordered_equivalent_orders.append((os[p], os[p + 1]))
-        for _, os in width_to_unique_color_order.items():
-            if len(os) > 1:
-                for p in range(len(os) - 1):
-                    ordered_equivalent_orders.append((os[p], os[p + 1]))
-
-        # Create position variables if there are symmetries to be broken.
-        if ordered_equivalent_orders:
-            print(
-                f"  - creating {len(ordered_equivalent_orders)} symmetry breaking"
-                " constraints"
-            )
-            positions = {}
-            for p in ordered_equivalent_orders:
-                if p[0] not in positions:
-                    positions[p[0]] = model.new_int_var(
-                        0, num_slabs - 1, f"position_of_slab_{p[0]}"
-                    )
-                    model.add_map_domain(positions[p[0]], assign[p[0]])
-                if p[1] not in positions:
-                    positions[p[1]] = model.new_int_var(
-                        0, num_slabs - 1, f"position_of_slab_{p[1]}"
-                    )
-                    model.add_map_domain(positions[p[1]], assign[p[1]])
-                    # Finally add the symmetry breaking constraint.
-                model.add(positions[p[0]] <= positions[p[1]])
-
-    # Objective.
-    model.minimize(sum(losses))
-
-    print("Model created")
-
-    ### Solve model.
-    solver = cp_model.CpSolver()
-    if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
-
-    solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads, losses)
-    status = solver.solve(model, solution_printer)
-
-    ### Output the solution.
-    if status == cp_model.OPTIMAL:
-        print(
-            f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
-            f" {solver.num_conflicts} conflicts"
-        )
-    else:
-        print("No solution")
+  else:
+    print("No solution")
 
 
 def steel_mill_slab_with_column_generation(problem_id: int) -> None:
-    """Solves the Steel Mill Slab Problem."""
-    ### Load problem.
-    (num_slabs, capacities, _, orders) = build_problem(problem_id)
+  """Solves the Steel Mill Slab Problem."""
+  ### Load problem.
+  (num_slabs, capacities, _, orders) = build_problem(problem_id)
 
-    num_orders = len(orders)
-    num_capacities = len(capacities)
-    all_orders = range(len(orders))
-    print(
-        f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
-        f" {num_capacities - 1} capacities"
-    )
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_orders = range(len(orders))
+  print(
+      f"Solving steel mill with {num_orders} orders, {num_slabs} slabs, and"
+      f" {num_capacities - 1} capacities"
+  )
 
-    # Compute auxiliary data.
-    widths = [x[0] for x in orders]
-    colors = [x[1] for x in orders]
-    max_capacity = max(capacities)
-    loss_array = [
-        min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
-    ]
+  # Compute auxiliary data.
+  widths = [x[0] for x in orders]
+  colors = [x[1] for x in orders]
+  max_capacity = max(capacities)
+  loss_array = [
+      min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
+  ]
 
-    ### Model problem.
+  ### Model problem.
 
-    # Generate all valid slabs (columns)
-    unsorted_valid_slabs = collect_valid_slabs_dp(
-        capacities, colors, widths, loss_array
-    )
+  # Generate all valid slabs (columns)
+  unsorted_valid_slabs = collect_valid_slabs_dp(
+      capacities, colors, widths, loss_array
+  )
 
-    # Sort slab by descending load/loss. Remove duplicates.
-    valid_slabs = sorted(unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
-    all_valid_slabs = range(len(valid_slabs))
+  # Sort slab by descending load/loss. Remove duplicates.
+  valid_slabs = sorted(unsorted_valid_slabs, key=lambda c: 1000 * c[-1] + c[-2])
+  all_valid_slabs = range(len(valid_slabs))
 
-    # create model and decision variables.
-    model = cp_model.CpModel()
-    selected = [model.new_bool_var(f"selected_{i}") for i in all_valid_slabs]
+  # create model and decision variables.
+  model = cp_model.CpModel()
+  selected = [model.new_bool_var(f"selected_{i}") for i in all_valid_slabs]
 
-    for order_id in all_orders:
-        model.add(
-            sum(selected[i] for i, slab in enumerate(valid_slabs) if slab[order_id])
-            == 1
-        )
-
-    # Redundant constraint (sum of loads == sum of widths).
+  for order_id in all_orders:
     model.add(
-        sum(selected[i] * valid_slabs[i][-1] for i in all_valid_slabs) == sum(widths)
+        sum(selected[i] for i, slab in enumerate(valid_slabs) if slab[order_id])
+        == 1
     )
 
-    # Objective.
-    model.minimize(sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
+  # Redundant constraint (sum of loads == sum of widths).
+  model.add(
+      sum(selected[i] * valid_slabs[i][-1] for i in all_valid_slabs)
+      == sum(widths)
+  )
 
-    print("Model created")
+  # Objective.
+  model.minimize(sum(selected[i] * valid_slabs[i][-2] for i in all_valid_slabs))
 
-    ### Solve model.
-    solver = cp_model.CpSolver()
-    if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
-    solution_printer = cp_model.ObjectiveSolutionPrinter()
-    status = solver.solve(model, solution_printer)
+  print("Model created")
 
-    ### Output the solution.
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        print(
-            f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
-            f" {solver.num_conflicts} conflicts"
-        )
-    else:
-        print("No solution")
+  ### Solve model.
+  solver = cp_model.CpSolver()
+  if _PARAMS.value:
+    text_format.Parse(_PARAMS.value, solver.parameters)
+  solution_printer = cp_model.ObjectiveSolutionPrinter()
+  status = solver.solve(model, solution_printer)
+
+  ### Output the solution.
+  if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    print(
+        f"Loss = {solver.objective_value}, time = {solver.wall_time:2f} s,"
+        f" {solver.num_conflicts} conflicts"
+    )
+  else:
+    print("No solution")
 
 
 def main(_):
-    if _SOLVER.value == "sat":
-        steel_mill_slab(_PROBLEM.value, _BREAK_SYMMETRIES.value)
-    elif _SOLVER.value == "sat_table":
-        steel_mill_slab_with_valid_slabs(_PROBLEM.value, _BREAK_SYMMETRIES.value)
-    elif _SOLVER.value == "sat_column":
-        steel_mill_slab_with_column_generation(_PROBLEM.value)
-    else:
-        print(f"Unknown model {_SOLVER.value}")
+  if _SOLVER.value == "sat":
+    steel_mill_slab(_PROBLEM.value, _BREAK_SYMMETRIES.value)
+  elif _SOLVER.value == "sat_table":
+    steel_mill_slab_with_valid_slabs(_PROBLEM.value, _BREAK_SYMMETRIES.value)
+  elif _SOLVER.value == "sat_column":
+    steel_mill_slab_with_column_generation(_PROBLEM.value)
+  else:
+    print(f"Unknown model {_SOLVER.value}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

@@ -22,54 +22,54 @@ from ortools.constraint_solver import pywrapcp
 
 
 def main():
-    """Entry point of the program."""
-    # Instantiate the solver.
-    # [START solver]
-    solver = pywrapcp.Solver("CPSimple")
-    # [END solver]
+  """Entry point of the program."""
+  # Instantiate the solver.
+  # [START solver]
+  solver = pywrapcp.Solver("CPSimple")
+  # [END solver]
 
-    # Create the variables.
-    # [START variables]
-    num_vals = 3
-    x = solver.IntVar(0, num_vals - 1, "x")
-    y = solver.IntVar(0, num_vals - 1, "y")
-    z = solver.IntVar(0, num_vals - 1, "z")
-    # [END variables]
+  # Create the variables.
+  # [START variables]
+  num_vals = 3
+  x = solver.IntVar(0, num_vals - 1, "x")
+  y = solver.IntVar(0, num_vals - 1, "y")
+  z = solver.IntVar(0, num_vals - 1, "z")
+  # [END variables]
 
-    # Constraint 0: x != y.
-    # [START constraints]
-    solver.Add(x != y)
-    print("Number of constraints: ", solver.Constraints())
-    # [END constraints]
+  # Constraint 0: x != y.
+  # [START constraints]
+  solver.Add(x != y)
+  print("Number of constraints: ", solver.Constraints())
+  # [END constraints]
 
-    # Solve the problem.
-    # [START solve]
-    decision_builder = solver.Phase(
-        [x, y, z], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
-    )
-    # [END solve]
+  # Solve the problem.
+  # [START solve]
+  decision_builder = solver.Phase(
+      [x, y, z], solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
+  # [END solve]
 
-    # Print solution on console.
-    # [START print_solution]
-    count = 0
-    solver.NewSearch(decision_builder)
-    while solver.NextSolution():
-        count += 1
-        solution = f"Solution {count}:\n"
-        for var in [x, y, z]:
-            solution += f" {var.Name()} = {var.Value()}"
-        print(solution)
-    solver.EndSearch()
-    print(f"Number of solutions found: {count}")
-    # [END print_solution]
+  # Print solution on console.
+  # [START print_solution]
+  count = 0
+  solver.NewSearch(decision_builder)
+  while solver.NextSolution():
+    count += 1
+    solution = f"Solution {count}:\n"
+    for var in [x, y, z]:
+      solution += f" {var.Name()} = {var.Value()}"
+    print(solution)
+  solver.EndSearch()
+  print(f"Number of solutions found: {count}")
+  # [END print_solution]
 
-    # [START advanced]
-    print("Advanced usage:")
-    print(f"Problem solved in {solver.WallTime()}ms")
-    print(f"Memory usage: {pywrapcp.Solver.MemoryUsage()}bytes")
-    # [END advanced]
+  # [START advanced]
+  print("Advanced usage:")
+  print(f"Problem solved in {solver.WallTime()}ms")
+  print(f"Memory usage: {pywrapcp.Solver.MemoryUsage()}bytes")
+  # [END advanced]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

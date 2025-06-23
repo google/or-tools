@@ -15,92 +15,92 @@
 
 
 class NotebookStringFlag:
-    """Stub for absl flag to be used within a jupyter notebook."""
+  """Stub for absl flag to be used within a jupyter notebook."""
 
-    def __init__(self, name: str, value: str, doc: str):
-        self.__name = name
-        self.__value = value
-        self.__doc__ = doc
+  def __init__(self, name: str, value: str, doc: str):
+    self.__name = name
+    self.__value = value
+    self.__doc__ = doc
 
-    @property
-    def value(self) -> str:
-        """Returns the value passed at creation."""
-        return self.__value
+  @property
+  def value(self) -> str:
+    """Returns the value passed at creation."""
+    return self.__value
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the parameter."""
-        return self.__name
+  @property
+  def name(self) -> str:
+    """Returns the name of the parameter."""
+    return self.__name
 
 
 def define_string(name: str, value: str, doc: str):
-    return NotebookStringFlag(name, value, doc)
+  return NotebookStringFlag(name, value, doc)
 
 
 class NotebookIntFlag:
-    """Stub for absl flag to be used within a jupyter notebook."""
+  """Stub for absl flag to be used within a jupyter notebook."""
 
-    def __init__(self, name: str, value: int, doc: str):
-        self.__name = name
-        self.__value = value
-        self.__doc__ = doc
+  def __init__(self, name: str, value: int, doc: str):
+    self.__name = name
+    self.__value = value
+    self.__doc__ = doc
 
-    @property
-    def value(self) -> int:
-        """Returns the value passed at creation."""
-        return self.__value
+  @property
+  def value(self) -> int:
+    """Returns the value passed at creation."""
+    return self.__value
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the parameter."""
-        return self.__name
+  @property
+  def name(self) -> str:
+    """Returns the name of the parameter."""
+    return self.__name
 
 
 def define_integer(name: str, value: int, doc: str):
-    return NotebookIntFlag(name, value, doc)
+  return NotebookIntFlag(name, value, doc)
 
 
 class NotebookFloatFlag:
-    """Stub for absl flag to be used within a jupyter notebook."""
+  """Stub for absl flag to be used within a jupyter notebook."""
 
-    def __init__(self, name: str, value: float, doc: str):
-        self.__name = name
-        self.__value = value
-        self.__doc__ = doc
+  def __init__(self, name: str, value: float, doc: str):
+    self.__name = name
+    self.__value = value
+    self.__doc__ = doc
 
-    @property
-    def value(self) -> float:
-        """Returns the value passed at creation."""
-        return self.__value
+  @property
+  def value(self) -> float:
+    """Returns the value passed at creation."""
+    return self.__value
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the parameter."""
-        return self.__name
+  @property
+  def name(self) -> str:
+    """Returns the name of the parameter."""
+    return self.__name
 
 
 def define_float(name: str, value: bool, doc: str):
-    return NotebookFloatFlag(name, value, doc)
+  return NotebookFloatFlag(name, value, doc)
 
 
 class NotebookBoolFlag:
-    """Stub for absl flag to be used within a jupyter notebook."""
+  """Stub for absl flag to be used within a jupyter notebook."""
 
-    def __init__(self, name: str, value: bool, doc: str):
-        self.__name = name
-        self.__value = value
-        self.__doc__ = doc
+  def __init__(self, name: str, value: bool, doc: str):
+    self.__name = name
+    self.__value = value
+    self.__doc__ = doc
 
-    @property
-    def value(self) -> bool:
-        """Returns the value passed at creation."""
-        return self.__value
+  @property
+  def value(self) -> bool:
+    """Returns the value passed at creation."""
+    return self.__value
 
-    @property
-    def name(self) -> str:
-        """Returns the name of the parameter."""
-        return self.__name
+  @property
+  def name(self) -> str:
+    """Returns the name of the parameter."""
+    return self.__name
 
 
 def define_bool(name: str, value: bool, doc: str):
-    return NotebookBoolFlag(name, value, doc)
+  return NotebookBoolFlag(name, value, doc)

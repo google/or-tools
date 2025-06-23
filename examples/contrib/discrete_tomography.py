@@ -13,45 +13,45 @@
 # limitations under the License.
 """
 
-  Discrete tomography in Google CP Solver.
+ Discrete tomography in Google CP Solver.
 
-  Problem from http://eclipse.crosscoreop.com/examples/tomo.ecl.txt
-  '''
-  This is a little 'tomography' problem, taken from an old issue
-  of Scientific American.
-
-  A matrix which contains zeroes and ones gets "x-rayed" vertically and
-  horizontally, giving the total number of ones in each row and column.
-  The problem is to reconstruct the contents of the matrix from this
-  information. Sample run:
-
-  ?- go.
-    0 0 7 1 6 3 4 5 2 7 0 0
- 0
- 0
- 8      * * * * * * * *
- 2      *             *
- 6      *   * * * *   *
- 4      *   *     *   *
- 5      *   *   * *   *
- 3      *   *         *
- 7      *   * * * * * *
- 0
- 0
-
- Eclipse solution by Joachim Schimpf, IC-Parc
+ Problem from http://eclipse.crosscoreop.com/examples/tomo.ecl.txt
  '''
+ This is a little 'tomography' problem, taken from an old issue
+ of Scientific American.
 
- Compare with the following models:
- * Comet: http://www.hakank.org/comet/discrete_tomography.co
- * Gecode: http://www.hakank.org/gecode/discrete_tomography.cpp
- * MiniZinc: http://www.hakank.org/minizinc/tomography.mzn
- * Tailor/Essence': http://www.hakank.org/tailor/tomography.eprime
- * SICStus: http://hakank.org/sicstus/discrete_tomography.pl
+ A matrix which contains zeroes and ones gets "x-rayed" vertically and
+ horizontally, giving the total number of ones in each row and column.
+ The problem is to reconstruct the contents of the matrix from this
+ information. Sample run:
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+ ?- go.
+   0 0 7 1 6 3 4 5 2 7 0 0
+0
+0
+8      * * * * * * * *
+2      *             *
+6      *   * * * *   *
+4      *   *     *   *
+5      *   *   * *   *
+3      *   *         *
+7      *   * * * * * *
+0
+0
+
+Eclipse solution by Joachim Schimpf, IC-Parc
+'''
+
+Compare with the following models:
+* Comet: http://www.hakank.org/comet/discrete_tomography.co
+* Gecode: http://www.hakank.org/gecode/discrete_tomography.cpp
+* MiniZinc: http://www.hakank.org/minizinc/tomography.mzn
+* Tailor/Essence': http://www.hakank.org/tailor/tomography.eprime
+* SICStus: http://hakank.org/sicstus/discrete_tomography.pl
+
+ This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+ Also see my other Google CP Solver models:
+ http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -86,13 +86,11 @@ def main(row_sums="", col_sums=""):
   # constraints
   #
   [
-      solver.Add(solver.Sum([x[i][j]
-                             for j in range(c)]) == row_sums[i])
+      solver.Add(solver.Sum([x[i][j] for j in range(c)]) == row_sums[i])
       for i in range(r)
   ]
   [
-      solver.Add(solver.Sum([x[i][j]
-                             for i in range(r)]) == col_sums[j])
+      solver.Add(solver.Sum([x[i][j] for i in range(r)]) == col_sums[j])
       for j in range(c)
   ]
 

@@ -13,109 +13,109 @@
 # limitations under the License.
 """
 
-  Original Stigler's 1939 diet problem Google or-tools.
+Original Stigler's 1939 diet problem Google or-tools.
 
-  From GLPK:s example stigler.mod
-  '''
-  STIGLER, original Stigler's 1939 diet problem
+From GLPK:s example stigler.mod
+'''
+STIGLER, original Stigler's 1939 diet problem
 
-  The Stigler Diet is an optimization problem named for George Stigler,
-  a 1982 Nobel Laureate in economics, who posed the following problem:
-  For a moderately active man weighing 154 pounds, how much of each of
-  77 foods should be eaten on a daily basis so that the man's intake of
-  nine nutrients will be at least equal to the recommended dietary
-  allowances (RDSs) suggested by the National Research Council in 1943,
-  with the cost of the diet being minimal?
+The Stigler Diet is an optimization problem named for George Stigler,
+a 1982 Nobel Laureate in economics, who posed the following problem:
+For a moderately active man weighing 154 pounds, how much of each of
+77 foods should be eaten on a daily basis so that the man's intake of
+nine nutrients will be at least equal to the recommended dietary
+allowances (RDSs) suggested by the National Research Council in 1943,
+with the cost of the diet being minimal?
 
-  The nutrient RDAs required to be met in Stigler's experiment were
-  calories, protein, calcium, iron, vitamin A, thiamine, riboflavin,
-  niacin, and ascorbic acid. The result was an annual budget allocated
-  to foods such as evaporated milk, cabbage, dried navy beans, and beef
-  liver at a cost of approximately $0.11 a day in 1939 U.S. dollars.
+The nutrient RDAs required to be met in Stigler's experiment were
+calories, protein, calcium, iron, vitamin A, thiamine, riboflavin,
+niacin, and ascorbic acid. The result was an annual budget allocated
+to foods such as evaporated milk, cabbage, dried navy beans, and beef
+liver at a cost of approximately $0.11 a day in 1939 U.S. dollars.
 
-  While the name 'Stigler Diet' was applied after the experiment by
-  outsiders, according to Stigler, 'No one recommends these diets for
-  anyone, let alone everyone.' The Stigler diet has been much ridiculed
-  for its lack of variety and palatability, however his methodology has
-  received praise and is considered to be some of the earliest work in
-  linear programming.
+While the name 'Stigler Diet' was applied after the experiment by
+outsiders, according to Stigler, 'No one recommends these diets for
+anyone, let alone everyone.' The Stigler diet has been much ridiculed
+for its lack of variety and palatability, however his methodology has
+received praise and is considered to be some of the earliest work in
+linear programming.
 
-  The Stigler diet question is a linear programming problem. Lacking
-  any sophisticated method of solving such a problem, Stigler was
-  forced to utilize heuristic methods in order to find a solution. The
-  diet question originally asked in which quantities a 154 pound male
-  would have to consume 77 different foods in order to fulfill the
-  recommended intake of 9 different nutrients while keeping expense at
-  a minimum. Through 'trial and error, mathematical insight and
-  agility,' Stigler was able to eliminate 62 of the foods from the
-  original 77 (these foods were removed based because they lacked
-  nutrients in comparison to the remaining 15). From the reduced list,
-  Stigler calculated the required amounts of each of the remaining 15
-  foods to arrive at a cost-minimizing solution to his question.
-  According to Stigler's calculations, the annual cost of his solution
-  was $39.93 in 1939 dollars. When corrected for inflation using the
-  consumer price index, the cost of the diet in 2005 dollars is
-  $561.43. The specific combination of foods and quantities is as
-  follows:
+The Stigler diet question is a linear programming problem. Lacking
+any sophisticated method of solving such a problem, Stigler was
+forced to utilize heuristic methods in order to find a solution. The
+diet question originally asked in which quantities a 154 pound male
+would have to consume 77 different foods in order to fulfill the
+recommended intake of 9 different nutrients while keeping expense at
+a minimum. Through 'trial and error, mathematical insight and
+agility,' Stigler was able to eliminate 62 of the foods from the
+original 77 (these foods were removed based because they lacked
+nutrients in comparison to the remaining 15). From the reduced list,
+Stigler calculated the required amounts of each of the remaining 15
+foods to arrive at a cost-minimizing solution to his question.
+According to Stigler's calculations, the annual cost of his solution
+was $39.93 in 1939 dollars. When corrected for inflation using the
+consumer price index, the cost of the diet in 2005 dollars is
+$561.43. The specific combination of foods and quantities is as
+follows:
 
-  Stigler's 1939 Diet
+Stigler's 1939 Diet
 
-  Food             Annual Quantities Annual Cost
-  ---------------- ----------------- -----------
-  Wheat Flour           370 lb.         $13.33
-  Evaporated Milk        57 cans          3.84
-  Cabbage               111 lb.           4.11
-  Spinach                23 lb.           1.85
-  Dried Navy Beans      285 lb.          16.80
-  ----------------------------------------------
-  Total Annual Cost                     $39.93
+Food             Annual Quantities Annual Cost
+---------------- ----------------- -----------
+Wheat Flour           370 lb.         $13.33
+Evaporated Milk        57 cans          3.84
+Cabbage               111 lb.           4.11
+Spinach                23 lb.           1.85
+Dried Navy Beans      285 lb.          16.80
+----------------------------------------------
+Total Annual Cost                     $39.93
 
-  The 9 nutrients that Stigler's diet took into consideration and their
-  respective recommended daily amounts were:
+The 9 nutrients that Stigler's diet took into consideration and their
+respective recommended daily amounts were:
 
-  Table of nutrients considered in Stigler's diet
+Table of nutrients considered in Stigler's diet
 
-  Nutrient                  Daily Recommended Intake
-  ------------------------- ------------------------
-  Calories                       3,000 Calories
-  Protein                           70 grams
-  Calcium                           .8 grams
-  Iron                              12 milligrams
-  Vitamin A                      5,000 IU
-  Thiamine (Vitamin B1)            1.8 milligrams
-  Riboflavin (Vitamin B2)          2.7 milligrams
-  Niacin                            18 milligrams
-  Ascorbic Acid (Vitamin C)         75 milligrams
+Nutrient                  Daily Recommended Intake
+------------------------- ------------------------
+Calories                       3,000 Calories
+Protein                           70 grams
+Calcium                           .8 grams
+Iron                              12 milligrams
+Vitamin A                      5,000 IU
+Thiamine (Vitamin B1)            1.8 milligrams
+Riboflavin (Vitamin B2)          2.7 milligrams
+Niacin                            18 milligrams
+Ascorbic Acid (Vitamin C)         75 milligrams
 
-  Seven years after Stigler made his initial estimates, the development
-  of George Dantzig's Simplex algorithm made it possible to solve the
-  problem without relying on heuristic methods. The exact value was
-  determined to be $39.69 (using the original 1939 data). Dantzig's
-  algorithm describes a method of traversing the vertices of a polytope
-  of N+1 dimensions in order to find the optimal solution to a specific
-  situation.
+Seven years after Stigler made his initial estimates, the development
+of George Dantzig's Simplex algorithm made it possible to solve the
+problem without relying on heuristic methods. The exact value was
+determined to be $39.69 (using the original 1939 data). Dantzig's
+algorithm describes a method of traversing the vertices of a polytope
+of N+1 dimensions in order to find the optimal solution to a specific
+situation.
 
-  (From Wikipedia, the free encyclopedia.)
+(From Wikipedia, the free encyclopedia.)
 
-  Translated from GAMS by Andrew Makhorin <mao@mai2.rcnet.ru>.
+Translated from GAMS by Andrew Makhorin <mao@mai2.rcnet.ru>.
 
-  For the original GAMS model stigler1939.gms see [3].
+For the original GAMS model stigler1939.gms see [3].
 
-  References:
+References:
 
-  1. George J. Stigler, 'The Cost of Subsistence,' J. Farm Econ. 27,
-     1945, pp. 303-14.
+1. George J. Stigler, 'The Cost of Subsistence,' J. Farm Econ. 27,
+   1945, pp. 303-14.
 
-  2. National Research Council, 'Recommended Daily Allowances,' Reprint
-     and Circular Series No. 115, January, 1943.
+2. National Research Council, 'Recommended Daily Allowances,' Reprint
+   and Circular Series No. 115, January, 1943.
 
-  3. Erwin Kalvelagen, 'Model building with GAMS,' Chapter 2, 'Building
-     linear programming models,' pp. 128-34.
-  '''
+3. Erwin Kalvelagen, 'Model building with GAMS,' Chapter 2, 'Building
+   linear programming models,' pp. 128-34.
+'''
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -151,49 +151,88 @@ def main(sol="CBC"):
       "thiamine",  # Thiamine, Vit. B1, unit = milligrams
       "riboflavin",  # Riboflavin, Vit. B2, unit = milligrams
       "niacin",  # Niacin (Nicotinic Acid), unit = milligrams
-      "ascorbicAcid"  # Ascorbic Acid, Vit. C, unit = milligrams
+      "ascorbicAcid",  # Ascorbic Acid, Vit. C, unit = milligrams
   ]
 
-  commodities = [["Wheat Flour (Enriched)", "10 lb."], ["Macaroni", "1 lb."],
-                 ["Wheat Cereal (Enriched)",
-                  "28 oz."], ["Corn Flakes", "8 oz."], ["Corn Meal", "1 lb."],
-                 ["Hominy Grits", "24 oz."], ["Rice", "1 lb."],
-                 ["Rolled Oats", "1 lb."], ["White Bread (Enriched)", "1 lb."],
-                 ["Whole Wheat Bread", "1 lb."], ["Rye Bread", "1 lb."],
-                 ["Pound Cake", "1 lb."], ["Soda Crackers", "1 lb."],
-                 ["Milk", "1 qt."], ["Evaporated Milk (can)", "14.5 oz."],
-                 ["Butter", "1 lb."], ["Oleomargarine", "1 lb."],
-                 ["Eggs", "1 doz."], ["Cheese (Cheddar)", "1 lb."],
-                 ["Cream", "1/2 pt."], ["Peanut Butter", "1 lb."],
-                 ["Mayonnaise", "1/2 pt."], ["Crisco", "1 lb."],
-                 ["Lard", "1 lb."], ["Sirloin Steak", "1 lb."],
-                 ["Round Steak", "1 lb."], ["Rib Roast", "1 lb."],
-                 ["Chuck Roast", "1 lb."], ["Plate", "1 lb."],
-                 ["Liver (Beef)", "1 lb."], ["Leg of Lamb", "1 lb."],
-                 ["Lamb Chops (Rib)", "1 lb."], ["Pork Chops", "1 lb."],
-                 ["Pork Loin Roast", "1 lb."], ["Bacon", "1 lb."],
-                 ["Ham - smoked", "1 lb."], ["Salt Pork", "1 lb."],
-                 ["Roasting Chicken", "1 lb."], ["Veal Cutlets", "1 lb."],
-                 ["Salmon, Pink (can)", "16 oz."], ["Apples", "1 lb."],
-                 ["Bananas", "1 lb."], ["Lemons", "1 doz."],
-                 ["Oranges", "1 doz."], ["Green Beans", "1 lb."],
-                 ["Cabbage", "1 lb."], ["Carrots", "1 bunch"],
-                 ["Celery", "1 stalk"], ["Lettuce", "1 head"],
-                 ["Onions", "1 lb."], ["Potatoes", "15 lb."],
-                 ["Spinach", "1 lb."], ["Sweet Potatoes", "1 lb."],
-                 ["Peaches (can)", "No. 2 1/2"], ["Pears (can)", "No. 2 1/2,"],
-                 ["Pineapple (can)", "No. 2 1/2"], ["Asparagus (can)", "No. 2"],
-                 ["Grean Beans (can)", "No. 2"],
-                 ["Pork and Beans (can)", "16 oz."], ["Corn (can)", "No. 2"],
-                 ["Peas (can)", "No. 2"], ["Tomatoes (can)", "No. 2"],
-                 ["Tomato Soup (can)", "10 1/2 oz."],
-                 ["Peaches, Dried", "1 lb."], ["Prunes, Dried", "1 lb."],
-                 ["Raisins, Dried", "15 oz."], ["Peas, Dried", "1 lb."],
-                 ["Lima Beans, Dried", "1 lb."], ["Navy Beans, Dried", "1 lb."],
-                 ["Coffee", "1 lb."], ["Tea", "1/4 lb."], ["Cocoa", "8 oz."],
-                 ["Chocolate", "8 oz."], ["Sugar", "10 lb."],
-                 ["Corn Sirup", "24 oz."], ["Molasses", "18 oz."],
-                 ["Strawberry Preserve", "1 lb."]]
+  commodities = [
+      ["Wheat Flour (Enriched)", "10 lb."],
+      ["Macaroni", "1 lb."],
+      ["Wheat Cereal (Enriched)", "28 oz."],
+      ["Corn Flakes", "8 oz."],
+      ["Corn Meal", "1 lb."],
+      ["Hominy Grits", "24 oz."],
+      ["Rice", "1 lb."],
+      ["Rolled Oats", "1 lb."],
+      ["White Bread (Enriched)", "1 lb."],
+      ["Whole Wheat Bread", "1 lb."],
+      ["Rye Bread", "1 lb."],
+      ["Pound Cake", "1 lb."],
+      ["Soda Crackers", "1 lb."],
+      ["Milk", "1 qt."],
+      ["Evaporated Milk (can)", "14.5 oz."],
+      ["Butter", "1 lb."],
+      ["Oleomargarine", "1 lb."],
+      ["Eggs", "1 doz."],
+      ["Cheese (Cheddar)", "1 lb."],
+      ["Cream", "1/2 pt."],
+      ["Peanut Butter", "1 lb."],
+      ["Mayonnaise", "1/2 pt."],
+      ["Crisco", "1 lb."],
+      ["Lard", "1 lb."],
+      ["Sirloin Steak", "1 lb."],
+      ["Round Steak", "1 lb."],
+      ["Rib Roast", "1 lb."],
+      ["Chuck Roast", "1 lb."],
+      ["Plate", "1 lb."],
+      ["Liver (Beef)", "1 lb."],
+      ["Leg of Lamb", "1 lb."],
+      ["Lamb Chops (Rib)", "1 lb."],
+      ["Pork Chops", "1 lb."],
+      ["Pork Loin Roast", "1 lb."],
+      ["Bacon", "1 lb."],
+      ["Ham - smoked", "1 lb."],
+      ["Salt Pork", "1 lb."],
+      ["Roasting Chicken", "1 lb."],
+      ["Veal Cutlets", "1 lb."],
+      ["Salmon, Pink (can)", "16 oz."],
+      ["Apples", "1 lb."],
+      ["Bananas", "1 lb."],
+      ["Lemons", "1 doz."],
+      ["Oranges", "1 doz."],
+      ["Green Beans", "1 lb."],
+      ["Cabbage", "1 lb."],
+      ["Carrots", "1 bunch"],
+      ["Celery", "1 stalk"],
+      ["Lettuce", "1 head"],
+      ["Onions", "1 lb."],
+      ["Potatoes", "15 lb."],
+      ["Spinach", "1 lb."],
+      ["Sweet Potatoes", "1 lb."],
+      ["Peaches (can)", "No. 2 1/2"],
+      ["Pears (can)", "No. 2 1/2,"],
+      ["Pineapple (can)", "No. 2 1/2"],
+      ["Asparagus (can)", "No. 2"],
+      ["Grean Beans (can)", "No. 2"],
+      ["Pork and Beans (can)", "16 oz."],
+      ["Corn (can)", "No. 2"],
+      ["Peas (can)", "No. 2"],
+      ["Tomatoes (can)", "No. 2"],
+      ["Tomato Soup (can)", "10 1/2 oz."],
+      ["Peaches, Dried", "1 lb."],
+      ["Prunes, Dried", "1 lb."],
+      ["Raisins, Dried", "15 oz."],
+      ["Peas, Dried", "1 lb."],
+      ["Lima Beans, Dried", "1 lb."],
+      ["Navy Beans, Dried", "1 lb."],
+      ["Coffee", "1 lb."],
+      ["Tea", "1/4 lb."],
+      ["Cocoa", "8 oz."],
+      ["Chocolate", "8 oz."],
+      ["Sugar", "10 lb."],
+      ["Corn Sirup", "24 oz."],
+      ["Molasses", "18 oz."],
+      ["Strawberry Preserve", "1 lb."],
+  ]
 
   # price and weight are the two first columns
   data = [
@@ -273,7 +312,7 @@ def main(sol="CBC"):
       [51.7, 8773.0, 34.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
       [13.7, 4996.0, 14.7, 0.0, 0.5, 74.0, 0.0, 0.0, 0.0, 5.0, 0.0],
       [13.6, 3752.0, 9.0, 0.0, 10.3, 244.0, 0.0, 1.9, 7.5, 146.0, 0.0],
-      [20.5, 2213.0, 6.4, 11.0, 0.4, 7.0, 0.2, 0.2, 0.4, 3.0, 0.0]
+      [20.5, 2213.0, 6.4, 11.0, 0.4, 7.0, 0.2, 0.2, 0.4, 3.0, 0.0],
   ]
 
   # recommended daily allowance for a moderately active man
@@ -320,9 +359,15 @@ def main(sol="CBC"):
   print()
   for i in C:
     if x[i].SolutionValue() > 0:
-      print("%-21s %-11s  %0.2f  %0.2f" %
-            (commodities[i][0], commodities[i][1], x_cost[i].SolutionValue(),
-             quant[i].SolutionValue()))
+      print(
+          "%-21s %-11s  %0.2f  %0.2f"
+          % (
+              commodities[i][0],
+              commodities[i][1],
+              x_cost[i].SolutionValue(),
+              quant[i].SolutionValue(),
+          )
+      )
 
   print()
 

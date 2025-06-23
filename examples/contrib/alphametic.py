@@ -13,34 +13,34 @@
 # limitations under the License.
 """
 
-  Generic alphametic solver in Google CP Solver.
+Generic alphametic solver in Google CP Solver.
 
-  This is a generic alphametic solver.
+This is a generic alphametic solver.
 
-  Usage:
-     python alphametic.py
-                         ->  solves SEND+MORE=MONEY in base 10
+Usage:
+   python alphametic.py
+                       ->  solves SEND+MORE=MONEY in base 10
 
-     python alphametic.py  'SEND+MOST=MONEY' 11
-                         -> solver SEND+MOST=MONEY in base 11
+   python alphametic.py  'SEND+MOST=MONEY' 11
+                       -> solver SEND+MOST=MONEY in base 11
 
-     python alphametic.py TEST <base>
-                         -> solve some test problems in base <base>
-                            (defined in test_problems())
+   python alphametic.py TEST <base>
+                       -> solve some test problems in base <base>
+                          (defined in test_problems())
 
-  Assumptions:
-  - we only solves problems of the form
-           NUMBER<1>+NUMBER<2>...+NUMBER<N-1> = NUMBER<N>
-    i.e. the last number is the sum
-  - the only nonletter characters are: +, =, \d (which are splitted upon)
+Assumptions:
+- we only solves problems of the form
+         NUMBER<1>+NUMBER<2>...+NUMBER<N-1> = NUMBER<N>
+  i.e. the last number is the sum
+- the only nonletter characters are: +, =, \d (which are splitted upon)
 
 
-  Compare with the following model:
-  * Zinc: http://www.hakank.org/minizinc/alphametic.zinc
+Compare with the following model:
+* Zinc: http://www.hakank.org/minizinc/alphametic.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -78,7 +78,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   # the digits
   x = [solver.IntVar(0, base - 1, "x[%i]" % i) for i in range(n)]
   # the sums of each number (e.g. the three numbers SEND, MORE, MONEY)
-  sums = [solver.IntVar(1, 10**(lens[i]) - 1) for i in range(p_len)]
+  sums = [solver.IntVar(1, 10 ** (lens[i]) - 1) for i in range(p_len)]
 
   #
   # constraints
@@ -91,8 +91,12 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
 
     # sum all the digits with proper exponents to a number
     solver.Add(
-        sums[ix] == solver.Sum([(base**i) * x[lookup[prob[this_len - i - 1]]]
-                                for i in range(this_len)[::-1]]))
+        sums[ix]
+        == solver.Sum([
+            (base**i) * x[lookup[prob[this_len - i - 1]]]
+            for i in range(this_len)[::-1]
+        ])
+    )
     # leading digits must be > 0
     solver.Add(x[lookup[prob[0]]] > 0)
     ix += 1
@@ -139,9 +143,13 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
 
 def test_problems(base=10):
   problems = [
-      "SEND+MORE=MONEY", "SEND+MOST=MONEY", "VINGT+CINQ+CINQ=TRENTE",
-      "EIN+EIN+EIN+EIN=VIER", "DONALD+GERALD=ROBERT",
-      "SATURN+URANUS+NEPTUNE+PLUTO+PLANETS", "WRONG+WRONG=RIGHT"
+      "SEND+MORE=MONEY",
+      "SEND+MOST=MONEY",
+      "VINGT+CINQ+CINQ=TRENTE",
+      "EIN+EIN+EIN+EIN=VIER",
+      "DONALD+GERALD=ROBERT",
+      "SATURN+URANUS+NEPTUNE+PLUTO+PLANETS",
+      "WRONG+WRONG=RIGHT",
   ]
 
   for p in problems:

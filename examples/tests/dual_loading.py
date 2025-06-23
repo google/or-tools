@@ -5,7 +5,7 @@ from ortools.linear_solver import pywraplp
 
 def main():
   cp = pywrapcp.Solver("test")
-  lp = pywraplp.Solver.CreateSolver('GLOP')
+  lp = pywraplp.Solver.CreateSolver("GLOP")
 
 
 if __name__ == "__main__":

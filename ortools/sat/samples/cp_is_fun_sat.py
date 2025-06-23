@@ -28,85 +28,85 @@ from ortools.sat.python import cp_model
 
 # [START solution_printer]
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
+    self.__solution_count = 0
 
-    def on_solution_callback(self) -> None:
-        self.__solution_count += 1
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    self.__solution_count += 1
+    for v in self.__variables:
+      print(f"{v}={self.value(v)}", end=" ")
+    print()
 
-    @property
-    def solution_count(self) -> int:
-        return self.__solution_count
-        # [END solution_printer]
+  @property
+  def solution_count(self) -> int:
+    return self.__solution_count
+    # [END solution_printer]
 
 
 def main() -> None:
-    """solve the CP+IS+FUN==TRUE cryptarithm."""
-    # Constraint programming engine
-    # [START model]
-    model = cp_model.CpModel()
-    # [END model]
+  """solve the CP+IS+FUN==TRUE cryptarithm."""
+  # Constraint programming engine
+  # [START model]
+  model = cp_model.CpModel()
+  # [END model]
 
-    # [START variables]
-    base = 10
+  # [START variables]
+  base = 10
 
-    c = model.new_int_var(1, base - 1, "C")
-    p = model.new_int_var(0, base - 1, "P")
-    i = model.new_int_var(1, base - 1, "I")
-    s = model.new_int_var(0, base - 1, "S")
-    f = model.new_int_var(1, base - 1, "F")
-    u = model.new_int_var(0, base - 1, "U")
-    n = model.new_int_var(0, base - 1, "N")
-    t = model.new_int_var(1, base - 1, "T")
-    r = model.new_int_var(0, base - 1, "R")
-    e = model.new_int_var(0, base - 1, "E")
+  c = model.new_int_var(1, base - 1, "C")
+  p = model.new_int_var(0, base - 1, "P")
+  i = model.new_int_var(1, base - 1, "I")
+  s = model.new_int_var(0, base - 1, "S")
+  f = model.new_int_var(1, base - 1, "F")
+  u = model.new_int_var(0, base - 1, "U")
+  n = model.new_int_var(0, base - 1, "N")
+  t = model.new_int_var(1, base - 1, "T")
+  r = model.new_int_var(0, base - 1, "R")
+  e = model.new_int_var(0, base - 1, "E")
 
-    # We need to group variables in a list to use the constraint AllDifferent.
-    letters = [c, p, i, s, f, u, n, t, r, e]
+  # We need to group variables in a list to use the constraint AllDifferent.
+  letters = [c, p, i, s, f, u, n, t, r, e]
 
-    # Verify that we have enough digits.
-    assert base >= len(letters)
-    # [END variables]
+  # Verify that we have enough digits.
+  assert base >= len(letters)
+  # [END variables]
 
-    # Define constraints.
-    # [START constraints]
-    model.add_all_different(letters)
+  # Define constraints.
+  # [START constraints]
+  model.add_all_different(letters)
 
-    # CP + IS + FUN = TRUE
-    model.add(
-        c * base + p + i * base + s + f * base * base + u * base + n
-        == t * base * base * base + r * base * base + u * base + e
-    )
-    # [END constraints]
+  # CP + IS + FUN = TRUE
+  model.add(
+      c * base + p + i * base + s + f * base * base + u * base + n
+      == t * base * base * base + r * base * base + u * base + e
+  )
+  # [END constraints]
 
-    # Creates a solver and solves the model.
-    # [START solve]
-    solver = cp_model.CpSolver()
-    solution_printer = VarArraySolutionPrinter(letters)
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
-    # Solve.
-    status = solver.solve(model, solution_printer)
-    # [END solve]
+  # Creates a solver and solves the model.
+  # [START solve]
+  solver = cp_model.CpSolver()
+  solution_printer = VarArraySolutionPrinter(letters)
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
+  # Solve.
+  status = solver.solve(model, solution_printer)
+  # [END solve]
 
-    # Statistics.
-    # [START statistics]
-    print("\nStatistics")
-    print(f"  status   : {solver.status_name(status)}")
-    print(f"  conflicts: {solver.num_conflicts}")
-    print(f"  branches : {solver.num_branches}")
-    print(f"  wall time: {solver.wall_time} s")
-    print(f"  sol found: {solution_printer.solution_count}")
-    # [END statistics]
+  # Statistics.
+  # [START statistics]
+  print("\nStatistics")
+  print(f"  status   : {solver.status_name(status)}")
+  print(f"  conflicts: {solver.num_conflicts}")
+  print(f"  branches : {solver.num_branches}")
+  print(f"  wall time: {solver.wall_time} s")
+  print(f"  sol found: {solution_printer.solution_count}")
+  # [END statistics]
 
 
 if __name__ == "__main__":
-    main()
+  main()
 # [END program]

@@ -39,57 +39,57 @@ _PARAMS = flags.DEFINE_string(
 
 
 def solve_golomb_ruler(order: int, params: str) -> None:
-    """Solve the Golomb ruler problem."""
-    # Create the model.
-    model = cp_model.CpModel()
+  """Solve the Golomb ruler problem."""
+  # Create the model.
+  model = cp_model.CpModel()
 
-    var_max = order * order
-    all_vars = list(range(0, order))
+  var_max = order * order
+  all_vars = list(range(0, order))
 
-    marks = [model.new_int_var(0, var_max, f"marks_{i}") for i in all_vars]
+  marks = [model.new_int_var(0, var_max, f"marks_{i}") for i in all_vars]
 
-    model.add(marks[0] == 0)
-    for i in range(order - 2):
-        model.add(marks[i + 1] > marks[i])
+  model.add(marks[0] == 0)
+  for i in range(order - 2):
+    model.add(marks[i + 1] > marks[i])
 
-    diffs = []
-    for i in range(order - 1):
-        for j in range(i + 1, order):
-            diff = model.new_int_var(0, var_max, f"diff [{j},{i}]")
-            model.add(diff == marks[j] - marks[i])
-            diffs.append(diff)
-    model.add_all_different(diffs)
+  diffs = []
+  for i in range(order - 1):
+    for j in range(i + 1, order):
+      diff = model.new_int_var(0, var_max, f"diff [{j},{i}]")
+      model.add(diff == marks[j] - marks[i])
+      diffs.append(diff)
+  model.add_all_different(diffs)
 
-    # symmetry breaking
-    if order > 2:
-        model.add(marks[order - 1] - marks[order - 2] > marks[1] - marks[0])
+  # symmetry breaking
+  if order > 2:
+    model.add(marks[order - 1] - marks[order - 2] > marks[1] - marks[0])
 
-    # Objective
-    model.minimize(marks[order - 1])
+  # Objective
+  model.minimize(marks[order - 1])
 
-    # Solve the model.
-    solver = cp_model.CpSolver()
-    if params:
-        text_format.Parse(params, solver.parameters)
-    solution_printer = cp_model.ObjectiveSolutionPrinter()
-    print(f"Golomb ruler(order={order})")
-    status = solver.solve(model, solution_printer)
+  # Solve the model.
+  solver = cp_model.CpSolver()
+  if params:
+    text_format.Parse(params, solver.parameters)
+  solution_printer = cp_model.ObjectiveSolutionPrinter()
+  print(f"Golomb ruler(order={order})")
+  status = solver.solve(model, solution_printer)
 
-    # Print solution.
-    if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        for idx, var in enumerate(marks):
-            print(f"mark[{idx}]: {solver.value(var)}")
-        intervals = [solver.value(diff) for diff in diffs]
-        intervals.sort()
-        print(f"intervals: {intervals}")
-    print(solver.response_stats())
+  # Print solution.
+  if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+    for idx, var in enumerate(marks):
+      print(f"mark[{idx}]: {solver.value(var)}")
+    intervals = [solver.value(diff) for diff in diffs]
+    intervals.sort()
+    print(f"intervals: {intervals}")
+  print(solver.response_stats())
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    solve_golomb_ruler(_ORDER.value, _PARAMS.value)
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  solve_golomb_ruler(_ORDER.value, _PARAMS.value)
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

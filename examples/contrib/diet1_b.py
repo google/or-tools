@@ -13,37 +13,37 @@
 # limitations under the License.
 """
 
-  Simple diet problem in Google CP Solver.
+Simple diet problem in Google CP Solver.
 
-  Standard Operations Research example in Minizinc
-
-
-  Minimize the cost for the products:
-  Type of                        Calories   Chocolate    Sugar    Fat
-  Food                                      (ounces)     (ounces) (ounces)
-  Chocolate Cake (1 slice)       400           3            2      2
-  Chocolate ice cream (1 scoop)  200           2            2      4
-  Cola (1 bottle)                150           0            4      1
-  Pineapple cheesecake (1 piece) 500           0            4      5
-
-  Compare with the following models:
-  * Tailor/Essence': http://hakank.org/tailor/diet1.eprime
-  * MiniZinc: http://hakank.org/minizinc/diet1.mzn
-  * SICStus: http://hakank.org/sicstus/diet1.pl
-  * Zinc: http://hakank.org/minizinc/diet1.zinc
-  * Choco: http://hakank.org/choco/Diet.java
-  * Comet: http://hakank.org/comet/diet.co
-  * ECLiPSe: http://hakank.org/eclipse/diet.ecl
-  * Gecode: http://hakank.org/gecode/diet.cpp
-  * Gecode/R: http://hakank.org/gecode_r/diet.rb
-  * JaCoP: http://hakank.org/JaCoP/Diet.java
-
-  This version use ScalProd() instead of Sum().
+Standard Operations Research example in Minizinc
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+Minimize the cost for the products:
+Type of                        Calories   Chocolate    Sugar    Fat
+Food                                      (ounces)     (ounces) (ounces)
+Chocolate Cake (1 slice)       400           3            2      2
+Chocolate ice cream (1 scoop)  200           2            2      4
+Cola (1 bottle)                150           0            4      1
+Pineapple cheesecake (1 piece) 500           0            4      5
+
+Compare with the following models:
+* Tailor/Essence': http://hakank.org/tailor/diet1.eprime
+* MiniZinc: http://hakank.org/minizinc/diet1.mzn
+* SICStus: http://hakank.org/sicstus/diet1.pl
+* Zinc: http://hakank.org/minizinc/diet1.zinc
+* Choco: http://hakank.org/choco/Diet.java
+* Comet: http://hakank.org/comet/diet.co
+* ECLiPSe: http://hakank.org/eclipse/diet.ecl
+* Gecode: http://hakank.org/gecode/diet.cpp
+* Gecode/R: http://hakank.org/gecode_r/diet.rb
+* JaCoP: http://hakank.org/JaCoP/Diet.java
+
+This version use ScalProd() instead of Sum().
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -94,11 +94,12 @@ def main(unused_argv):
   search_log = solver.SearchLog(100, cost)
   solver.Solve(
       solver.Phase(x + [cost], solver.INT_VAR_SIMPLE, solver.ASSIGN_MIN_VALUE),
-      [objective, search_log, collector])
+      [objective, search_log, collector],
+  )
 
   # get the first (and only) solution
   print("cost:", collector.ObjectiveValue(0))
-  print([("abcdefghij" [i], collector.Value(0, x[i])) for i in range(n)])
+  print([("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)])
   print()
   print("failures:", solver.Failures())
   print("branches:", solver.Branches())

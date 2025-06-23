@@ -653,53 +653,53 @@ RAW_DATA: List[List[float]] = [
 
 
 def solve_qubo() -> None:
-    """solve the Qubo problem."""
+  """solve the Qubo problem."""
 
-    # Build the model.
-    model = cp_model.CpModel()
+  # Build the model.
+  model = cp_model.CpModel()
 
-    num_vars = len(RAW_DATA)
-    all_vars = range(num_vars)
-    variables = [model.new_bool_var("x_%i" % i) for i in all_vars]
+  num_vars = len(RAW_DATA)
+  all_vars = range(num_vars)
+  variables = [model.new_bool_var("x_%i" % i) for i in all_vars]
 
-    obj_vars = []
-    obj_coeffs = []
+  obj_vars = []
+  obj_coeffs = []
 
-    for i in range(num_vars - 1):
-        x_i = variables[i]
-        for j in range(i + 1, num_vars):
-            coeff = RAW_DATA[i][j] + RAW_DATA[j][i]
-            if coeff == 0.0:
-                continue
-            x_j = variables[j]
-            var = model.new_bool_var("")
-            model.add_bool_or([~x_i, ~x_j, var])
-            model.add_implication(var, x_i)
-            model.add_implication(var, x_j)
-            obj_vars.append(var)
-            obj_coeffs.append(coeff)
+  for i in range(num_vars - 1):
+    x_i = variables[i]
+    for j in range(i + 1, num_vars):
+      coeff = RAW_DATA[i][j] + RAW_DATA[j][i]
+      if coeff == 0.0:
+        continue
+      x_j = variables[j]
+      var = model.new_bool_var("")
+      model.add_bool_or([~x_i, ~x_j, var])
+      model.add_implication(var, x_i)
+      model.add_implication(var, x_j)
+      obj_vars.append(var)
+      obj_coeffs.append(coeff)
 
-    for i in all_vars:
-        self_coeff = RAW_DATA[i][i] + RAW_DATA[i][-1]
-        if self_coeff != 0.0:
-            obj_vars.append(variables[i])
-            obj_coeffs.append(self_coeff)
+  for i in all_vars:
+    self_coeff = RAW_DATA[i][i] + RAW_DATA[i][-1]
+    if self_coeff != 0.0:
+      obj_vars.append(variables[i])
+      obj_coeffs.append(self_coeff)
 
-    model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
+  model.minimize(sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
-    ### Solve model.
-    solver = cp_model.CpSolver()
-    solver.parameters.num_search_workers = 16
-    solver.parameters.log_search_progress = True
-    solver.parameters.max_time_in_seconds = 30
-    solver.solve(model)
+  ### Solve model.
+  solver = cp_model.CpSolver()
+  solver.parameters.num_search_workers = 16
+  solver.parameters.log_search_progress = True
+  solver.parameters.max_time_in_seconds = 30
+  solver.solve(model)
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    solve_qubo()
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  solve_qubo()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

@@ -18,7 +18,7 @@ from ortools.constraint_solver import pywrapcp
 from time import time
 from random import randint
 
-#----------------helper for binpacking posting----------------
+# ----------------helper for binpacking posting----------------
 
 
 def binpacking(cp, binvars, weights, loadvars):
@@ -33,36 +33,81 @@ def binpacking(cp, binvars, weights, loadvars):
     cp.Add(solver.Sum([b[i] * weights[i] for i in range(nitems)]) == l[j])
   cp.Add(solver.Sum(loadvars) == sum(weights))
 
-#------------------------------data reading-------------------
+
+# ------------------------------data reading-------------------
 
 maxcapa = 44
 weights = [4, 22, 9, 5, 8, 3, 3, 4, 7, 7, 3]
 loss = [
-    0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 1, 0, 2, 1, 0, 0, 0, 0, 2, 1, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 1, 0, 3, 2, 1, 0, 2, 1, 0, 0, 0]
+    0,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
+    0,
+    1,
+    0,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    2,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    2,
+    1,
+    0,
+    3,
+    2,
+    1,
+    0,
+    2,
+    1,
+    0,
+    0,
+    0,
+]
 nbslab = 11
 
-#------------------solver and variable declaration-------------
+# ------------------solver and variable declaration-------------
 
 solver = pywrapcp.Solver('Steel Mill Slab')
-x = [solver.IntVar(0, nbslab-1, 'x' + str(i)) for i in range(nbslab)]
+x = [solver.IntVar(0, nbslab - 1, 'x' + str(i)) for i in range(nbslab)]
 l = [solver.IntVar(0, maxcapa, 'l' + str(i)) for i in range(nbslab)]
 obj = solver.IntVar(0, nbslab * maxcapa, 'obj')
 
-#-------------------post of the constraints--------------
+# -------------------post of the constraints--------------
 
 
 binpacking(solver, x, weights[:nbslab], l)
-solver.Add(solver.Sum([solver.Element(loss, l[s])
-                       for s in range(nbslab)]) == obj)
+solver.Add(
+    solver.Sum([solver.Element(loss, l[s]) for s in range(nbslab)]) == obj
+)
 
 sol = [2, 0, 0, 0, 0, 1, 2, 2, 1, 1, 2]
 
-#------------start the search and optimization-----------
+# ------------start the search and optimization-----------
 
 objective = solver.Minimize(obj, 1)
-db = solver.Phase(x, solver.INT_VAR_DEFAULT,
-                  solver.INT_VALUE_DEFAULT)
+db = solver.Phase(x, solver.INT_VAR_DEFAULT, solver.INT_VALUE_DEFAULT)
 # solver.NewSearch(db,[objective]) #segfault if I comment this
 
 while solver.NextSolution():

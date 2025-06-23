@@ -13,27 +13,27 @@
 # limitations under the License.
 """
 
-  Grocery problem in Google CP Solver.
+Grocery problem in Google CP Solver.
 
-  From  Christian Schulte, Gert Smolka, Finite Domain
-  http://www.mozart-oz.org/documentation/fdt/
-  Constraint Programming in Oz. A Tutorial. 2001.
-  '''
-  A kid goes into a grocery store and buys four items. The cashier
-  charges $7.11, the kid pays and is about to leave when the cashier
-  calls the kid back, and says 'Hold on, I multiplied the four items
-  instead of adding them; I'll try again; Hah, with adding them the
-  price still comes to $7.11'. What were the prices of the four items?
-  '''
+From  Christian Schulte, Gert Smolka, Finite Domain
+http://www.mozart-oz.org/documentation/fdt/
+Constraint Programming in Oz. A Tutorial. 2001.
+'''
+A kid goes into a grocery store and buys four items. The cashier
+charges $7.11, the kid pays and is about to leave when the cashier
+calls the kid back, and says 'Hold on, I multiplied the four items
+instead of adding them; I'll try again; Hah, with adding them the
+price still comes to $7.11'. What were the prices of the four items?
+'''
 
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/grocery.mzn
-  * Comet: http://hakank.org/comet/grocery.co
-  * Zinc: http://hakank.org/minizinc/grocery.zinc
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/grocery.mzn
+* Comet: http://hakank.org/comet/grocery.co
+* Zinc: http://hakank.org/minizinc/grocery.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 

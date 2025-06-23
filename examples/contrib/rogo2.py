@@ -13,35 +13,35 @@
 # limitations under the License.
 """
 
-  Rogo puzzle solver in Google CP Solver.
+Rogo puzzle solver in Google CP Solver.
 
-  From http://www.rogopuzzle.co.nz/
-  '''
-  The object is to collect the biggest score possible using a given
-  number of steps in a loop around a grid. The best possible score
-  for a puzzle is given with it, so you can easily check that you have
-  solved the puzzle. Rogo puzzles can also include forbidden squares,
-  which must be avoided in your loop.
-  '''
+From http://www.rogopuzzle.co.nz/
+'''
+The object is to collect the biggest score possible using a given
+number of steps in a loop around a grid. The best possible score
+for a puzzle is given with it, so you can easily check that you have
+solved the puzzle. Rogo puzzles can also include forbidden squares,
+which must be avoided in your loop.
+'''
 
-  Also see Mike Trick:
-  'Operations Research, Sudoko, Rogo, and Puzzles'
-  http://mat.tepper.cmu.edu/blog/?p=1302
+Also see Mike Trick:
+'Operations Research, Sudoko, Rogo, and Puzzles'
+http://mat.tepper.cmu.edu/blog/?p=1302
 
-  Problem instances:
-  * http://www.hakank.org/google_or_tools/rogo_mike_trick.py
-  * http://www.hakank.org/google_or_tools/rogo_20110106.py
-  * http://www.hakank.org/google_or_tools/rogo_20110107.py
+Problem instances:
+* http://www.hakank.org/google_or_tools/rogo_mike_trick.py
+* http://www.hakank.org/google_or_tools/rogo_20110106.py
+* http://www.hakank.org/google_or_tools/rogo_20110107.py
 
 
-  Compare with the following models:
-  * Answer Set Programming:
-     http://www.hakank.org/answer_set_programming/rogo2.lp
-  * MiniZinc: http://www.hakank.org/minizinc/rogo2.mzn
+Compare with the following models:
+* Answer Set Programming:
+   http://www.hakank.org/answer_set_programming/rogo2.lp
+* MiniZinc: http://www.hakank.org/minizinc/rogo2.mzn
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -180,9 +180,13 @@ cols = 9
 max_steps = 12
 W = 0
 B = -1
-problem = [[2, W, W, W, W, W, W, W, W], [W, 3, W, W, 1, W, W, 2, W],
-           [W, W, W, W, W, W, B, W, 2], [W, W, 2, B, W, W, W, W, W],
-           [W, W, W, W, 2, W, W, 1, W]]
+problem = [
+    [2, W, W, W, W, W, W, W, W],
+    [W, 3, W, W, 1, W, W, 2, W],
+    [W, W, W, W, W, W, B, W, 2],
+    [W, W, 2, B, W, W, W, W, W],
+    [W, W, W, W, 2, W, W, 1, W],
+]
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     exec(compile(open(sys.argv[1]).read(), sys.argv[1], "exec"))

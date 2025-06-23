@@ -13,19 +13,19 @@
 # limitations under the License.
 """
 
-  3 jugs problem using MIP in Google or-tools.
+3 jugs problem using MIP in Google or-tools.
 
-  A.k.a. water jugs problem.
+A.k.a. water jugs problem.
 
-  Problem from Taha 'Introduction to Operations Research',
-  page 245f .
+Problem from Taha 'Introduction to Operations Research',
+page 245f .
 
-  Compare with the CP model:
-     http://www.hakank.org/google_or_tools/3_jugs_regular
+Compare with the CP model:
+   http://www.hakank.org/google_or_tools/3_jugs_regular
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -61,25 +61,27 @@ def main(sol='CBC'):
       '6,0,2',
       '1,5,2',
       '1,4,3',
-      '4,4,0'  # goal!
+      '4,4,0',  # goal!
   ]
 
   # distance
-  d = [[M, 1, M, M, M, M, M, M, 1, M, M, M, M, M, M],
-       [M, M, 1, M, M, M, M, M, M, M, M, M, M, M, M],
-       [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M, M],
-       [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
-       [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, 1, M, M, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1],
-       [M, M, M, M, M, M, M, M, M, 1, M, M, M, M, M],
-       [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, 1, M, M, M],
-       [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M, M],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M],
-       [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
-       [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M]]
+  d = [
+      [M, 1, M, M, M, M, M, M, 1, M, M, M, M, M, M],
+      [M, M, 1, M, M, M, M, M, M, M, M, M, M, M, M],
+      [M, M, M, 1, M, M, M, M, 1, M, M, M, M, M, M],
+      [M, M, M, M, 1, M, M, M, M, M, M, M, M, M, M],
+      [M, M, M, M, M, 1, M, M, 1, M, M, M, M, M, M],
+      [M, M, M, M, M, M, 1, M, M, M, M, M, M, M, M],
+      [M, M, M, M, M, M, M, 1, 1, M, M, M, M, M, M],
+      [M, M, M, M, M, M, M, M, M, M, M, M, M, M, 1],
+      [M, M, M, M, M, M, M, M, M, 1, M, M, M, M, M],
+      [M, 1, M, M, M, M, M, M, M, M, 1, M, M, M, M],
+      [M, M, M, M, M, M, M, M, M, M, M, 1, M, M, M],
+      [M, 1, M, M, M, M, M, M, M, M, M, M, 1, M, M],
+      [M, M, M, M, M, M, M, M, M, M, M, M, M, 1, M],
+      [M, 1, M, M, M, M, M, M, M, M, M, M, M, M, 1],
+      [M, M, M, M, M, M, M, M, M, M, M, M, M, M, M],
+  ]
 
   #
   # variables
@@ -98,7 +100,8 @@ def main(sol='CBC'):
 
   # length of path, to be minimized
   z = solver.Sum(
-      [d[i][j] * x[i, j] for i in range(n) for j in range(n) if d[i][j] < M])
+      [d[i][j] * x[i, j] for i in range(n) for j in range(n) if d[i][j] < M]
+  )
 
   #
   # constraints
@@ -115,12 +118,14 @@ def main(sol='CBC'):
   # outflow constraint
   for i in range(n):
     solver.Add(
-        out_flow[i] == solver.Sum([x[i, j] for j in range(n) if d[i][j] < M]))
+        out_flow[i] == solver.Sum([x[i, j] for j in range(n) if d[i][j] < M])
+    )
 
   # inflow constraint
   for j in range(n):
     solver.Add(
-        in_flow[j] == solver.Sum([x[i, j] for i in range(n) if d[i][j] < M]))
+        in_flow[j] == solver.Sum([x[i, j] for i in range(n) if d[i][j] < M])
+    )
 
   # inflow = outflow
   for i in range(n):

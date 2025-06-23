@@ -27,45 +27,45 @@ _ENABLE_OUTPUT = flags.DEFINE_bool(
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    model = mathopt.Model()
-    # The model is:
-    #   max    x + y + 2 z
-    #   s.t.   x + y + z <= 1.5
-    #          x, y in [0, 1]
-    #          z binary
-    # With secondary objective
-    #   max y
-    #
-    # The first problem is solved by any convex combination of:
-    #   (0.5, 0, 1) and (0, 0.5, 1)
-    # But with the secondary objective, the unique solution is (0, 0.5, 1), with
-    # a primary objective value of 2.5 and secondary objective value of 0.5.
-    x = model.add_variable(lb=0, ub=1)
-    y = model.add_variable(lb=0, ub=1)
-    z = model.add_binary_variable()
-    model.add_linear_constraint(x + y + z <= 1.5)
-    model.maximize(x + y + 2 * z)
-    aux = model.add_maximization_objective(y, priority=1)
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  model = mathopt.Model()
+  # The model is:
+  #   max    x + y + 2 z
+  #   s.t.   x + y + z <= 1.5
+  #          x, y in [0, 1]
+  #          z binary
+  # With secondary objective
+  #   max y
+  #
+  # The first problem is solved by any convex combination of:
+  #   (0.5, 0, 1) and (0, 0.5, 1)
+  # But with the secondary objective, the unique solution is (0, 0.5, 1), with
+  # a primary objective value of 2.5 and secondary objective value of 0.5.
+  x = model.add_variable(lb=0, ub=1)
+  y = model.add_variable(lb=0, ub=1)
+  z = model.add_binary_variable()
+  model.add_linear_constraint(x + y + z <= 1.5)
+  model.maximize(x + y + 2 * z)
+  aux = model.add_maximization_objective(y, priority=1)
 
-    result = mathopt.solve(
-        model,
-        mathopt.SolverType.GUROBI,
-        params=mathopt.SolveParameters(enable_output=_ENABLE_OUTPUT.value),
+  result = mathopt.solve(
+      model,
+      mathopt.SolverType.GUROBI,
+      params=mathopt.SolveParameters(enable_output=_ENABLE_OUTPUT.value),
+  )
+  if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise ValueError(
+        f"Expected an optimal termination, found: {result.termination}"
     )
-    if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise ValueError(
-            f"Expected an optimal termination, found: {result.termination}"
-        )
-    print(f"primary objective: {result.objective_value()}")
-    print(f"x: {result.variable_values(x)}")
-    print(f"y: {result.variable_values(y)}")
-    print(f"z: {result.variable_values(z)}")
-    prim_sol = result.solutions[0].primal_solution
-    assert prim_sol is not None
-    print(f"secondary objective: {prim_sol.auxiliary_objective_values[aux]}")
+  print(f"primary objective: {result.objective_value()}")
+  print(f"x: {result.variable_values(x)}")
+  print(f"y: {result.variable_values(y)}")
+  print(f"z: {result.variable_values(z)}")
+  prim_sol = result.solutions[0].primal_solution
+  assert prim_sol is not None
+  print(f"secondary objective: {prim_sol.auxiliary_objective_values[aux]}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

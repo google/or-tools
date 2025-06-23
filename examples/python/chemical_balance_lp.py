@@ -48,24 +48,31 @@ ALL_SETS = range(NUM_SETS)
 # Model
 
 max_set = [
-    min(max_quantities[q][1] / chemical_set[s][q + 1] for q in ALL_PRODUCTS
-        if chemical_set[s][q + 1] != 0.0) for s in ALL_SETS
+    min(
+        max_quantities[q][1] / chemical_set[s][q + 1]
+        for q in ALL_PRODUCTS
+        if chemical_set[s][q + 1] != 0.0
+    )
+    for s in ALL_SETS
 ]
 
-solver = pywraplp.Solver("chemical_set_lp",
-                         pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+solver = pywraplp.Solver(
+    "chemical_set_lp", pywraplp.Solver.GLOP_LINEAR_PROGRAMMING
+)
 
 set_vars = [solver.NumVar(0, max_set[s], f"set_{s}") for s in ALL_SETS]
 
 epsilon = solver.NumVar(0, 1000, "epsilon")
 
 for p in ALL_PRODUCTS:
-    solver.Add(
-        sum(chemical_set[s][p + 1] * set_vars[s]
-            for s in ALL_SETS) <= max_quantities[p][1])
-    solver.Add(
-        sum(chemical_set[s][p + 1] * set_vars[s]
-            for s in ALL_SETS) >= max_quantities[p][1] - epsilon)
+  solver.Add(
+      sum(chemical_set[s][p + 1] * set_vars[s] for s in ALL_SETS)
+      <= max_quantities[p][1]
+  )
+  solver.Add(
+      sum(chemical_set[s][p + 1] * set_vars[s] for s in ALL_SETS)
+      >= max_quantities[p][1] - epsilon
+  )
 
 solver.Minimize(epsilon)
 
@@ -85,11 +92,12 @@ print(f"Problem solved in {solver.wall_time()} milliseconds")
 print(f"Optimal objective value = {solver.Objective().Value()}")
 
 for s in ALL_SETS:
-    print(f"  {chemical_set[s][0]} = {set_vars[s].solution_value()}", end=" ")
-    print()
+  print(f"  {chemical_set[s][0]} = {set_vars[s].solution_value()}", end=" ")
+  print()
 for p in ALL_PRODUCTS:
-    name = max_quantities[p][0]
-    max_quantity = max_quantities[p][1]
-    quantity = sum(set_vars[s].solution_value() * chemical_set[s][p + 1]
-                   for s in ALL_SETS)
-    print(f"{name}: {quantity} out of {max_quantity}")
+  name = max_quantities[p][0]
+  max_quantity = max_quantities[p][1]
+  quantity = sum(
+      set_vars[s].solution_value() * chemical_set[s][p + 1] for s in ALL_SETS
+  )
+  print(f"{name}: {quantity} out of {max_quantity}")

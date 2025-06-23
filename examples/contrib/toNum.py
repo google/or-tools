@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  toNum in Google CP Solver.
+toNum in Google CP Solver.
 
-  Convert a number <-> array of int in a specific base.
+Convert a number <-> array of int in a specific base.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -32,7 +32,8 @@ from ortools.constraint_solver import pywrapcp
 def toNum(solver, t, s, base):
   tlen = len(t)
   solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)])
+  )
 
 
 def main(unused_argv):
@@ -65,8 +66,13 @@ def main(unused_argv):
 
   collector = solver.AllSolutionCollector(solution)
   solver.Solve(
-      solver.Phase([x[i] for i in range(n)], solver.CHOOSE_FIRST_UNBOUND,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [x[i] for i in range(n)],
+          solver.CHOOSE_FIRST_UNBOUND,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):

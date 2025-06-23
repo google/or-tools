@@ -13,31 +13,31 @@
 # limitations under the License.
 """
 
-  Assignment problem using MIP in Google or-tools.
+Assignment problem using MIP in Google or-tools.
 
-  From GLPK:s example assign.mod:
-  '''
-  The assignment problem is one of the fundamental combinatorial
-  optimization problems.
+From GLPK:s example assign.mod:
+'''
+The assignment problem is one of the fundamental combinatorial
+optimization problems.
 
-  In its most general form, the problem is as follows:
+In its most general form, the problem is as follows:
 
-  There are a number of agents and a number of tasks. Any agent can be
-  assigned to perform any task, incurring some cost that may vary
-  depending on the agent-task assignment. It is required to perform all
-  tasks by assigning exactly one agent to each task in such a way that
-  the total cost of the assignment is minimized.
+There are a number of agents and a number of tasks. Any agent can be
+assigned to perform any task, incurring some cost that may vary
+depending on the agent-task assignment. It is required to perform all
+tasks by assigning exactly one agent to each task in such a way that
+the total cost of the assignment is minimized.
 
-  (From Wikipedia, the free encyclopedia.)
-  '''
+(From Wikipedia, the free encyclopedia.)
+'''
 
-  Compare with the Comet model:
-     http://www.hakank.org/comet/assignment6.co
+Compare with the Comet model:
+   http://www.hakank.org/comet/assignment6.co
 
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -77,10 +77,16 @@ def main(sol='CBC'):
   #
   # Optimal solution is 76
   # """
-  c = [[13, 21, 20, 12, 8, 26, 22, 11], [12, 36, 25, 41, 40, 11, 4, 8],
-       [35, 32, 13, 36, 26, 21, 13, 37], [34, 54, 7, 8, 12, 22, 11, 40],
-       [21, 6, 45, 18, 24, 34, 12, 48], [42, 19, 39, 15, 14, 16, 28, 46],
-       [16, 34, 38, 3, 34, 40, 22, 24], [26, 20, 5, 17, 45, 31, 37, 43]]
+  c = [
+      [13, 21, 20, 12, 8, 26, 22, 11],
+      [12, 36, 25, 41, 40, 11, 4, 8],
+      [35, 32, 13, 36, 26, 21, 13, 37],
+      [34, 54, 7, 8, 12, 22, 11, 40],
+      [21, 6, 45, 18, 24, 34, 12, 48],
+      [42, 19, 39, 15, 14, 16, 28, 46],
+      [16, 34, 38, 3, 34, 40, 22, 24],
+      [26, 20, 5, 17, 45, 31, 37, 43],
+  ]
 
   #
   # variables

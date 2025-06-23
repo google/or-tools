@@ -13,47 +13,47 @@
 # limitations under the License.
 """
 
-  KenKen puzzle in Google CP Solver.
+KenKen puzzle in Google CP Solver.
 
-  http://en.wikipedia.org/wiki/KenKen
-  '''
-  KenKen or KEN-KEN is a style of arithmetic and logical puzzle sharing
-  several characteristics with sudoku. The name comes from Japanese and
-  is translated as 'square wisdom' or 'cleverness squared'.
-  ...
-  The objective is to fill the grid in with the digits 1 through 6 such that:
+http://en.wikipedia.org/wiki/KenKen
+'''
+KenKen or KEN-KEN is a style of arithmetic and logical puzzle sharing
+several characteristics with sudoku. The name comes from Japanese and
+is translated as 'square wisdom' or 'cleverness squared'.
+...
+The objective is to fill the grid in with the digits 1 through 6 such that:
 
-    * Each row contains exactly one of each digit
-    * Each column contains exactly one of each digit
-    * Each bold-outlined group of cells is a cage containing digits which
-      achieve the specified result using the specified mathematical operation:
-        addition (+),
-        subtraction (-),
-        multiplication (x),
-        and division (/).
-        (Unlike in Killer sudoku, digits may repeat within a group.)
+  * Each row contains exactly one of each digit
+  * Each column contains exactly one of each digit
+  * Each bold-outlined group of cells is a cage containing digits which
+    achieve the specified result using the specified mathematical operation:
+      addition (+),
+      subtraction (-),
+      multiplication (x),
+      and division (/).
+      (Unlike in Killer sudoku, digits may repeat within a group.)
 
-  ...
-  More complex KenKen problems are formed using the principles described
-  above but omitting the symbols +, -, x and /, thus leaving them as
-  yet another unknown to be determined.
-  '''
-
-
-  The solution is:
-
-    5 6 3 4 1 2
-    6 1 4 5 2 3
-    4 5 2 3 6 1
-    3 4 1 2 5 6
-    2 3 6 1 4 5
-    1 2 5 6 3 4
+...
+More complex KenKen problems are formed using the principles described
+above but omitting the symbols +, -, x and /, thus leaving them as
+yet another unknown to be determined.
+'''
 
 
+The solution is:
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+  5 6 3 4 1 2
+  6 1 4 5 2 3
+  4 5 2 3 6 1
+  3 4 1 2 5 6
+  2 3 6 1 4 5
+  1 2 5 6 3 4
+
+
+
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -124,14 +124,23 @@ def main():
   # hints
   #    [sum, [segments]]
   # Note: 1-based
-  problem = [[11, [[1, 1], [2, 1]]], [2, [[1, 2], [1, 3]]],
-             [20, [[1, 4], [2, 4]]], [6, [[1, 5], [1, 6], [2, 6], [3, 6]]],
-             [3, [[2, 2], [2, 3]]], [3, [[2, 5], [3, 5]]],
-             [240, [[3, 1], [3, 2], [4, 1], [4, 2]]], [6, [[3, 3], [3, 4]]],
-             [6, [[4, 3], [5, 3]]], [7, [[4, 4], [5, 4], [5, 5]]],
-             [30, [[4, 5], [4, 6]]], [6, [[5, 1], [5, 2]]],
-             [9, [[5, 6], [6, 6]]], [8, [[6, 1], [6, 2], [6, 3]]],
-             [2, [[6, 4], [6, 5]]]]
+  problem = [
+      [11, [[1, 1], [2, 1]]],
+      [2, [[1, 2], [1, 3]]],
+      [20, [[1, 4], [2, 4]]],
+      [6, [[1, 5], [1, 6], [2, 6], [3, 6]]],
+      [3, [[2, 2], [2, 3]]],
+      [3, [[2, 5], [3, 5]]],
+      [240, [[3, 1], [3, 2], [4, 1], [4, 2]]],
+      [6, [[3, 3], [3, 4]]],
+      [6, [[4, 3], [5, 3]]],
+      [7, [[4, 4], [5, 4], [5, 5]]],
+      [30, [[4, 5], [4, 6]]],
+      [6, [[5, 1], [5, 2]]],
+      [9, [[5, 6], [6, 6]]],
+      [8, [[6, 1], [6, 2], [6, 3]]],
+      [2, [[6, 4], [6, 5]]],
+  ]
 
   num_p = len(problem)
 
@@ -160,7 +169,7 @@ def main():
     solver.Add(solver.AllDifferent(col))
 
   # calculate the segments
-  for (res, segment) in problem:
+  for res, segment in problem:
     calc(segment, x, res)
 
   #

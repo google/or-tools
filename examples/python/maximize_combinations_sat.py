@@ -21,55 +21,55 @@ from ortools.sat.python import cp_model
 
 
 def maximize_combinations_sat() -> None:
-    """Maximize the number of valid combinations of Boolean variables."""
-    model = cp_model.CpModel()
-    cards: list[cp_model.IntVar] = [
-        model.new_bool_var("card1"),
-        model.new_bool_var("card2"),
-        model.new_bool_var("card3"),
-        model.new_bool_var("card4"),
-    ]
+  """Maximize the number of valid combinations of Boolean variables."""
+  model = cp_model.CpModel()
+  cards: list[cp_model.IntVar] = [
+      model.new_bool_var("card1"),
+      model.new_bool_var("card2"),
+      model.new_bool_var("card3"),
+      model.new_bool_var("card4"),
+  ]
 
-    combos: list[list[cp_model.IntVar]] = [
-        [cards[0], cards[1]],
-        [cards[0], cards[2]],
-        [cards[1], cards[3]],
-        [cards[0], cards[2], cards[3]],
-    ]
+  combos: list[list[cp_model.IntVar]] = [
+      [cards[0], cards[1]],
+      [cards[0], cards[2]],
+      [cards[1], cards[3]],
+      [cards[0], cards[2], cards[3]],
+  ]
 
-    deck_size: int = 3
-    model.add(sum(cards) == deck_size)
+  deck_size: int = 3
+  model.add(sum(cards) == deck_size)
 
-    valid_combos: list[cp_model.IntVar] = []
-    for combination in combos:
-        is_valid = model.new_bool_var("")
+  valid_combos: list[cp_model.IntVar] = []
+  for combination in combos:
+    is_valid = model.new_bool_var("")
 
-        # All true implies is_valid.
-        model.add_bool_and(is_valid).only_enforce_if(combination)
+    # All true implies is_valid.
+    model.add_bool_and(is_valid).only_enforce_if(combination)
 
-        # is_valid implies all true.
-        for literal in combination:
-            model.add_implication(is_valid, literal)
-        valid_combos.append(is_valid)
+    # is_valid implies all true.
+    for literal in combination:
+      model.add_implication(is_valid, literal)
+    valid_combos.append(is_valid)
 
-    model.maximize(sum(valid_combos))
+  model.maximize(sum(valid_combos))
 
-    solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = True
-    status = solver.solve(model)
+  solver = cp_model.CpSolver()
+  solver.parameters.log_search_progress = True
+  status = solver.solve(model)
 
-    if status == cp_model.OPTIMAL:
-        print(
-            "chosen cards:",
-            [card.name for card in cards if solver.boolean_value(card)],
-        )
+  if status == cp_model.OPTIMAL:
+    print(
+        "chosen cards:",
+        [card.name for card in cards if solver.boolean_value(card)],
+    )
 
 
 def main(argv: Sequence[str]) -> None:
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    maximize_combinations_sat()
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  maximize_combinations_sat()
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

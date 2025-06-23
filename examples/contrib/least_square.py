@@ -13,16 +13,16 @@
 # limitations under the License.
 """
 
-  Least square optimization problem in Google or-tools.
+Least square optimization problem in Google or-tools.
 
-  Solving a fourth grade least square equation.
+Solving a fourth grade least square equation.
 
-  From the Swedish book 'Optimeringslara' [Optimization Theory],
-  page 286f.
+From the Swedish book 'Optimeringslara' [Optimization Theory],
+page 286f.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -44,8 +44,20 @@ def main(sol='CBC'):
 
   # percentage gas
   F = [
-      0.0, 5.8, 14.7, 31.6, 43.2, 58.3, 78.4, 89.4, 96.4, 99.1, 99.5, 99.9,
-      100.0, 100.0
+      0.0,
+      5.8,
+      14.7,
+      31.6,
+      43.2,
+      58.3,
+      78.4,
+      89.4,
+      96.4,
+      99.1,
+      99.5,
+      99.9,
+      100.0,
+      100.0,
   ]
 
   p = 4
@@ -57,7 +69,8 @@ def main(sol='CBC'):
 
   # to minimize
   z = solver.Sum([
-      (F[i] - (sum([a[j] * t[i]**j for j in range(p + 1)]))) for i in range(num)
+      (F[i] - (sum([a[j] * t[i] ** j for j in range(p + 1)])))
+      for i in range(num)
   ])
 
   #
@@ -69,7 +82,8 @@ def main(sol='CBC'):
 
   for i in range(num):
     solver.Add(
-        solver.Sum([j * a[j] * t[i]**(j - 1) for j in range(p + 1)]) >= 0)
+        solver.Sum([j * a[j] * t[i] ** (j - 1) for j in range(p + 1)]) >= 0
+    )
 
   objective = solver.Minimize(z)
 

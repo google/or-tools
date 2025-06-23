@@ -13,14 +13,14 @@
 # limitations under the License.
 """
 
-  Volsay problem in Google or-tools.
+Volsay problem in Google or-tools.
 
-  From the OPL model volsay.mod
-  Using arrays.
+From the OPL model volsay.mod
+Using arrays.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.linear_solver import pywraplp
 

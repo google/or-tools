@@ -13,37 +13,37 @@
 # limitations under the License.
 """
 
-  Photo problem in Google CP Solver.
+Photo problem in Google CP Solver.
 
-  Problem statement from Mozart/Oz tutorial:
-  http://www.mozart-oz.org/home/doc/fdt/node37.html#section.reified.photo
-  '''
-  Betty, Chris, Donald, Fred, Gary, Mary, and Paul want to align in one
-  row for taking a photo. Some of them have preferences next to whom
-  they want to stand:
+Problem statement from Mozart/Oz tutorial:
+http://www.mozart-oz.org/home/doc/fdt/node37.html#section.reified.photo
+'''
+Betty, Chris, Donald, Fred, Gary, Mary, and Paul want to align in one
+row for taking a photo. Some of them have preferences next to whom
+they want to stand:
 
-     1. Betty wants to stand next to Gary and Mary.
-     2. Chris wants to stand next to Betty and Gary.
-     3. Fred wants to stand next to Mary and Donald.
-     4. Paul wants to stand next to Fred and Donald.
+   1. Betty wants to stand next to Gary and Mary.
+   2. Chris wants to stand next to Betty and Gary.
+   3. Fred wants to stand next to Mary and Donald.
+   4. Paul wants to stand next to Fred and Donald.
 
-  Obviously, it is impossible to satisfy all preferences. Can you find
-  an alignment that maximizes the number of satisfied preferences?
-  '''
+Obviously, it is impossible to satisfy all preferences. Can you find
+an alignment that maximizes the number of satisfied preferences?
+'''
 
-  Oz solution:
-    6 # alignment(betty:5  chris:6  donald:1  fred:3  gary:7   mary:4   paul:2)
-  [5, 6, 1, 3, 7, 4, 2]
+Oz solution:
+  6 # alignment(betty:5  chris:6  donald:1  fred:3  gary:7   mary:4   paul:2)
+[5, 6, 1, 3, 7, 4, 2]
 
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/photo_hkj.mzn
-  * Comet: http://hakank.org/comet/photo_problem.co
-  * SICStus: http://hakank.org/sicstus/photo_problem.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/photo_hkj.mzn
+* Comet: http://hakank.org/comet/photo_problem.co
+* SICStus: http://hakank.org/sicstus/photo_problem.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 
@@ -69,7 +69,7 @@ def main(show_all_max=0):
       [0, 0, 1, 0, 0, 1, 0],  # Fred   3
       [0, 0, 0, 0, 0, 0, 0],  # Gary   4
       [0, 0, 0, 0, 0, 0, 0],  # Mary   5
-      [0, 0, 1, 1, 0, 0, 0]  # Paul   6
+      [0, 0, 1, 1, 0, 0, 0],  # Paul   6
   ]
 
   print("""Preferences:
@@ -115,8 +115,9 @@ def main(show_all_max=0):
   #
   # search and result
   #
-  db = solver.Phase(positions, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MAX_VALUE)
+  db = solver.Phase(
+      positions, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE
+  )
 
   if show_all_max == 0:
     solver.NewSearch(db, [objective])
@@ -128,8 +129,9 @@ def main(show_all_max=0):
     print("z:", z.Value())
     p = [positions[i].Value() for i in range(n)]
 
-    print(" ".join(
-        [persons[j] for i in range(n) for j in range(n) if p[j] == i]))
+    print(
+        " ".join([persons[j] for i in range(n) for j in range(n) if p[j] == i])
+    )
     print("Successful preferences:")
     for i in range(n):
       for j in range(n):

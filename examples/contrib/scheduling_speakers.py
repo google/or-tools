@@ -13,20 +13,20 @@
 # limitations under the License.
 """
 
-  Scheduling speakers problem in Google CP Solver.
+Scheduling speakers problem in Google CP Solver.
 
-  From Rina Dechter, Constraint Processing, page 72
-  Scheduling of 6 speakers in 6 slots.
+From Rina Dechter, Constraint Processing, page 72
+Scheduling of 6 speakers in 6 slots.
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/scheduling_speakers.mzn
-  * SICStus Prolog: http://www.hakank.org/sicstus/scheduling_speakers.pl
-  * ECLiPSe: http://hakank.org/eclipse/scheduling_speakers.ecl
-  * Gecode: http://hakank.org/gecode/scheduling_speakers.cpp
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/scheduling_speakers.mzn
+* SICStus Prolog: http://www.hakank.org/sicstus/scheduling_speakers.pl
+* ECLiPSe: http://hakank.org/eclipse/scheduling_speakers.ecl
+* Gecode: http://hakank.org/gecode/scheduling_speakers.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -49,7 +49,7 @@ def main():
       [2, 3, 4, 5],  # 3) only with 5 after F -> 1 and A -> 6
       [2, 3, 4],  # 4) only with 2 after C -> 5 and F -> 1
       [3, 4],  # 5) 3 or 4
-      [1, 2, 3, 4, 5, 6]  # 1) the only with 1
+      [1, 2, 3, 4, 5, 6],  # 1) the only with 1
   ]
 
   #

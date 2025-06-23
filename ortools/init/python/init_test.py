@@ -20,35 +20,35 @@ from ortools.init.python import init
 
 class InitTest(absltest.TestCase):
 
-    def test_logging(self):
-        print("test_logging")
-        init.CppBridge.init_logging("pywrapinit_test.py")
-        init.CppBridge.shutdown_logging()
+  def test_logging(self):
+    print("test_logging")
+    init.CppBridge.init_logging("pywrapinit_test.py")
+    init.CppBridge.shutdown_logging()
 
-    def test_flags(self):
-        print("test_cpp_flags")
-        cpp_flags = init.CppFlags()
-        assert hasattr(cpp_flags, "stderrthreshold")
-        assert hasattr(cpp_flags, "log_prefix")
-        assert hasattr(cpp_flags, "cp_model_dump_prefix")
-        assert hasattr(cpp_flags, "cp_model_dump_models")
-        assert hasattr(cpp_flags, "cp_model_dump_submodels")
-        assert hasattr(cpp_flags, "cp_model_dump_response")
-        init.CppBridge.set_flags(cpp_flags)
+  def test_flags(self):
+    print("test_cpp_flags")
+    cpp_flags = init.CppFlags()
+    assert hasattr(cpp_flags, "stderrthreshold")
+    assert hasattr(cpp_flags, "log_prefix")
+    assert hasattr(cpp_flags, "cp_model_dump_prefix")
+    assert hasattr(cpp_flags, "cp_model_dump_models")
+    assert hasattr(cpp_flags, "cp_model_dump_submodels")
+    assert hasattr(cpp_flags, "cp_model_dump_response")
+    init.CppBridge.set_flags(cpp_flags)
 
-    def test_version(self):
-        print("test_version")
-        major = init.OrToolsVersion.major_number()
-        self.assertIsInstance(major, int)
-        minor = init.OrToolsVersion.minor_number()
-        self.assertIsInstance(minor, int)
-        patch = init.OrToolsVersion.patch_number()
-        self.assertIsInstance(patch, int)
-        version = init.OrToolsVersion.version_string()
-        self.assertIsInstance(version, str)
-        string = f"{major}.{minor}.{patch}"
-        self.assertEqual(version, string)
+  def test_version(self):
+    print("test_version")
+    major = init.OrToolsVersion.major_number()
+    self.assertIsInstance(major, int)
+    minor = init.OrToolsVersion.minor_number()
+    self.assertIsInstance(minor, int)
+    patch = init.OrToolsVersion.patch_number()
+    self.assertIsInstance(patch, int)
+    version = init.OrToolsVersion.version_string()
+    self.assertIsInstance(version, str)
+    string = f"{major}.{minor}.{patch}"
+    self.assertEqual(version, string)
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

@@ -19,69 +19,71 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
 
-    def on_solution_callback(self) -> None:
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    for v in self.__variables:
+      print(f"{v}={self.value(v)}", end=" ")
+    print()
 
 
 def earliness_tardiness_cost_sample_sat():
-    """Encode the piecewise linear expression."""
+  """Encode the piecewise linear expression."""
 
-    earliness_date = 5  # ed.
-    earliness_cost = 8
-    lateness_date = 15  # ld.
-    lateness_cost = 12
+  earliness_date = 5  # ed.
+  earliness_cost = 8
+  lateness_date = 15  # ld.
+  lateness_cost = 12
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Declare our primary variable.
-    x = model.new_int_var(0, 20, "x")
+  # Declare our primary variable.
+  x = model.new_int_var(0, 20, "x")
 
-    # Create the expression variable and implement the piecewise linear function.
-    #
-    #  \        /
-    #   \______/
-    #   ed    ld
-    #
-    large_constant = 1000
-    expr = model.new_int_var(0, large_constant, "expr")
+  # Create the expression variable and implement the piecewise linear function.
+  #
+  #  \        /
+  #   \______/
+  #   ed    ld
+  #
+  large_constant = 1000
+  expr = model.new_int_var(0, large_constant, "expr")
 
-    # First segment.
-    s1 = model.new_int_var(-large_constant, large_constant, "s1")
-    model.add(s1 == earliness_cost * (earliness_date - x))
+  # First segment.
+  s1 = model.new_int_var(-large_constant, large_constant, "s1")
+  model.add(s1 == earliness_cost * (earliness_date - x))
 
-    # Second segment.
-    s2 = 0
+  # Second segment.
+  s2 = 0
 
-    # Third segment.
-    s3 = model.new_int_var(-large_constant, large_constant, "s3")
-    model.add(s3 == lateness_cost * (x - lateness_date))
+  # Third segment.
+  s3 = model.new_int_var(-large_constant, large_constant, "s3")
+  model.add(s3 == lateness_cost * (x - lateness_date))
 
-    # Link together expr and x through s1, s2, and s3.
-    model.add_max_equality(expr, [s1, s2, s3])
+  # Link together expr and x through s1, s2, and s3.
+  model.add_max_equality(expr, [s1, s2, s3])
 
-    # Search for x values in increasing order.
-    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+  # Search for x values in increasing order.
+  model.add_decision_strategy(
+      [x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
-    # Search and print out all solutions.
-    solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter([x, expr])
+  solver.solve(model, solution_printer)
 
 
 earliness_tardiness_cost_sample_sat()

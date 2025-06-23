@@ -13,30 +13,30 @@
 # limitations under the License.
 """
 
-  Global constraint contiguity using regularin Google CP Solver.
+Global constraint contiguity using regularin Google CP Solver.
 
-  This is a decomposition of the global constraint
-  global contiguity.
+This is a decomposition of the global constraint
+global contiguity.
 
-  From Global Constraint Catalogue
-  http://www.emn.fr/x-info/sdemasse/gccat/Cglobal_contiguity.html
-  '''
-  Enforce all variables of the VARIABLES collection to be assigned to 0 or 1.
-  In addition, all variables assigned to value 1 appear contiguously.
+From Global Constraint Catalogue
+http://www.emn.fr/x-info/sdemasse/gccat/Cglobal_contiguity.html
+'''
+Enforce all variables of the VARIABLES collection to be assigned to 0 or 1.
+In addition, all variables assigned to value 1 appear contiguously.
 
-  Example:
-  (<0, 1, 1, 0>)
+Example:
+(<0, 1, 1, 0>)
 
-  The global_contiguity constraint holds since the sequence 0 1 1 0 contains
-  no more than one group of contiguous 1.
-  '''
+The global_contiguity constraint holds since the sequence 0 1 1 0 contains
+no more than one group of contiguous 1.
+'''
 
-  Compare with the following model:
-  * MiniZinc: http://www.hakank.org/minizinc/contiguity_regular.mzn
+Compare with the following model:
+* MiniZinc: http://www.hakank.org/minizinc/contiguity_regular.mzn
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 from ortools.constraint_solver import pywrapcp
@@ -108,7 +108,8 @@ def regular(x, Q, S, d, q0, F):
 
     # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
     solver.Add(
-        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1)))
+        a[i + 1] == solver.Element(d2_flatten, ((a[i]) * S) + (x[i] - 1))
+    )
 
 
 def main():
@@ -146,14 +147,21 @@ def main():
   #
   # constraints
   #
-  regular(reg_input, n_states, input_max, transition_fn, initial_state,
-          accepting_states)
+  regular(
+      reg_input,
+      n_states,
+      input_max,
+      transition_fn,
+      initial_state,
+      accepting_states,
+  )
 
   #
   # solution and search
   #
-  db = solver.Phase(reg_input, solver.CHOOSE_FIRST_UNBOUND,
-                    solver.ASSIGN_MIN_VALUE)
+  db = solver.Phase(
+      reg_input, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MIN_VALUE
+  )
 
   solver.NewSearch(db)
 

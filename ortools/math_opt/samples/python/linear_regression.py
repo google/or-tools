@@ -56,7 +56,8 @@ _SOLVER_TYPE = flags.DEFINE_enum_class(
     "solver_type",
     mathopt.SolverType.PDLP,
     mathopt.SolverType,
-    "The solver needs to support quadratic objectives, e.g. pdlp, gurobi, or " "osqp.",
+    "The solver needs to support quadratic objectives, e.g. pdlp, gurobi, or "
+    "osqp.",
 )
 
 _NUM_FEATURES = flags.DEFINE_integer(
@@ -76,8 +77,8 @@ _NOISE = flags.DEFINE_float(
 
 @dataclasses.dataclass
 class LabeledData:
-    xs: np.ndarray
-    ys: np.ndarray
+  xs: np.ndarray
+  ys: np.ndarray
 
 
 def random_data(
@@ -86,74 +87,76 @@ def random_data(
     noise_stddev: float,
     rng: np.random._generator.Generator,
 ) -> LabeledData:
-    """Creates randomly perturbed labeled data from a ground truth beta."""
-    num_features = betas.shape[0]
-    xs = rng.standard_normal(size=(num_examples, num_features))
-    ys = xs @ betas + rng.normal(0, noise_stddev, size=(num_examples))
-    return LabeledData(xs=xs, ys=ys)
+  """Creates randomly perturbed labeled data from a ground truth beta."""
+  num_features = betas.shape[0]
+  xs = rng.standard_normal(size=(num_examples, num_features))
+  ys = xs @ betas + rng.normal(0, noise_stddev, size=(num_examples))
+  return LabeledData(xs=xs, ys=ys)
 
 
 def l2_loss(betas: np.ndarray, labeled_data: LabeledData) -> float:
-    """Computes the average squared error between model(labeled_data.xs) and labeled_data.y."""
-    num_examples = labeled_data.xs.shape[0]
-    if num_examples == 0:
-        return 0
-    residuals = labeled_data.xs @ betas - labeled_data.ys
-    return np.inner(residuals, residuals) / num_examples
+  """Computes the average squared error between model(labeled_data.xs) and labeled_data.y."""
+  num_examples = labeled_data.xs.shape[0]
+  if num_examples == 0:
+    return 0
+  residuals = labeled_data.xs @ betas - labeled_data.ys
+  return np.inner(residuals, residuals) / num_examples
 
 
-def train(labeled_data: LabeledData, solver_type: mathopt.SolverType) -> np.ndarray:
-    """Returns minimum L2Loss beta on labeled_data by solving a quadratic optimization problem."""
-    num_examples, num_features = labeled_data.xs.shape
+def train(
+    labeled_data: LabeledData, solver_type: mathopt.SolverType
+) -> np.ndarray:
+  """Returns minimum L2Loss beta on labeled_data by solving a quadratic optimization problem."""
+  num_examples, num_features = labeled_data.xs.shape
 
-    model = mathopt.Model(name="linear_regression")
+  model = mathopt.Model(name="linear_regression")
 
-    # Create the decision variables: beta, and z.
-    betas = [model.add_variable(name=f"beta_{j}") for j in range(num_features)]
-    zs = [model.add_variable(name=f"z_{i}") for i in range(num_examples)]
+  # Create the decision variables: beta, and z.
+  betas = [model.add_variable(name=f"beta_{j}") for j in range(num_features)]
+  zs = [model.add_variable(name=f"z_{i}") for i in range(num_examples)]
 
-    # Set the objective function:
-    model.minimize(sum(z * z for z in zs))
+  # Set the objective function:
+  model.minimize(sum(z * z for z in zs))
 
-    # Add the constraints:
-    #      z_i = y_i - x_i * beta
-    for i in range(num_examples):
-        model.add_linear_constraint(
-            zs[i]
-            == labeled_data.ys[i]
-            - sum(betas[j] * labeled_data.xs[i, j] for j in range(num_features))
-        )
-
-    # Done building the model, now solve.
-    result = mathopt.solve(
-        model, solver_type, params=mathopt.SolveParameters(enable_output=True)
+  # Add the constraints:
+  #      z_i = y_i - x_i * beta
+  for i in range(num_examples):
+    model.add_linear_constraint(
+        zs[i]
+        == labeled_data.ys[i]
+        - sum(betas[j] * labeled_data.xs[i, j] for j in range(num_features))
     )
-    if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise RuntimeError(
-            "Expected termination reason optimal, but termination was: "
-            f"{result.termination}"
-        )
-    print(f"Training time: {result.solve_time()}")
-    return np.array(result.variable_values(betas))
+
+  # Done building the model, now solve.
+  result = mathopt.solve(
+      model, solver_type, params=mathopt.SolveParameters(enable_output=True)
+  )
+  if result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise RuntimeError(
+        "Expected termination reason optimal, but termination was: "
+        f"{result.termination}"
+    )
+  print(f"Training time: {result.solve_time()}")
+  return np.array(result.variable_values(betas))
 
 
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
+  del argv  # Unused.
 
-    num_features = _NUM_FEATURES.value
-    num_examples = _NUM_EXAMPLES.value
-    noise_stddev = _NOISE.value
+  num_features = _NUM_FEATURES.value
+  num_examples = _NUM_EXAMPLES.value
+  noise_stddev = _NOISE.value
 
-    rng = np.random.default_rng(123)
+  rng = np.random.default_rng(123)
 
-    ground_truth_betas = rng.standard_normal(size=(num_features))
-    train_data = random_data(ground_truth_betas, num_examples, noise_stddev, rng)
-    test_data = random_data(ground_truth_betas, num_examples, noise_stddev, rng)
+  ground_truth_betas = rng.standard_normal(size=(num_features))
+  train_data = random_data(ground_truth_betas, num_examples, noise_stddev, rng)
+  test_data = random_data(ground_truth_betas, num_examples, noise_stddev, rng)
 
-    learned_beta = train(train_data, _SOLVER_TYPE.value)
-    print(f"In sample loss: {l2_loss(learned_beta, train_data)}")
-    print(f"Out of sample loss: {l2_loss(learned_beta, test_data)}")
+  learned_beta = train(train_data, _SOLVER_TYPE.value)
+  print(f"In sample loss: {l2_loss(learned_beta, train_data)}")
+  print(f"Out of sample loss: {l2_loss(learned_beta, test_data)}")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

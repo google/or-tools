@@ -28,157 +28,162 @@ from ortools.sat.python import cp_model
 
 # Create a solution printer.
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, values, colors, all_groups, all_items, item_in_group):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__solution_count = 0
-        self.__values = values
-        self.__colors = colors
-        self.__all_groups = all_groups
-        self.__all_items = all_items
-        self.__item_in_group = item_in_group
+  def __init__(self, values, colors, all_groups, all_items, item_in_group):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__solution_count = 0
+    self.__values = values
+    self.__colors = colors
+    self.__all_groups = all_groups
+    self.__all_items = all_items
+    self.__item_in_group = item_in_group
 
-    def on_solution_callback(self):
-        print(f"Solution {self.__solution_count}")
-        self.__solution_count += 1
+  def on_solution_callback(self):
+    print(f"Solution {self.__solution_count}")
+    self.__solution_count += 1
 
-        print(f"  objective value = {self.objective_value}")
-        groups = {}
-        sums = {}
-        for g in self.__all_groups:
-            groups[g] = []
-            sums[g] = 0
-            for item in self.__all_items:
-                if self.boolean_value(self.__item_in_group[(item, g)]):
-                    groups[g].append(item)
-                    sums[g] += self.__values[item]
+    print(f"  objective value = {self.objective_value}")
+    groups = {}
+    sums = {}
+    for g in self.__all_groups:
+      groups[g] = []
+      sums[g] = 0
+      for item in self.__all_items:
+        if self.boolean_value(self.__item_in_group[(item, g)]):
+          groups[g].append(item)
+          sums[g] += self.__values[item]
 
-        for g in self.__all_groups:
-            group = groups[g]
-            print(f"group {g}: sum = {sums[g]:0.2f} [", end="")
-            for item in group:
-                value = self.__values[item]
-                color = self.__colors[item]
-                print(f" ({item}, {value}, {color})", end="")
-            print("]")
+    for g in self.__all_groups:
+      group = groups[g]
+      print(f"group {g}: sum = {sums[g]:0.2f} [", end="")
+      for item in group:
+        value = self.__values[item]
+        color = self.__colors[item]
+        print(f" ({item}, {value}, {color})", end="")
+      print("]")
 
 
 def main(argv: Sequence[str]) -> None:
-    """Solves a group balancing problem."""
+  """Solves a group balancing problem."""
 
-    if len(argv) > 1:
-        raise app.UsageError("Too many command-line arguments.")
-    # Data.
-    num_groups = 10
-    num_items = 100
-    num_colors = 3
-    min_items_of_same_color_per_group = 4
+  if len(argv) > 1:
+    raise app.UsageError("Too many command-line arguments.")
+  # Data.
+  num_groups = 10
+  num_items = 100
+  num_colors = 3
+  min_items_of_same_color_per_group = 4
 
-    all_groups = range(num_groups)
-    all_items = range(num_items)
-    all_colors = range(num_colors)
+  all_groups = range(num_groups)
+  all_items = range(num_items)
+  all_colors = range(num_colors)
 
-    # values for each items.
-    values = [1 + i + (i * i // 200) for i in all_items]
-    # Color for each item (simple modulo).
-    colors = [i % num_colors for i in all_items]
+  # values for each items.
+  values = [1 + i + (i * i // 200) for i in all_items]
+  # Color for each item (simple modulo).
+  colors = [i % num_colors for i in all_items]
 
-    sum_of_values = sum(values)
-    average_sum_per_group = sum_of_values // num_groups
+  sum_of_values = sum(values)
+  average_sum_per_group = sum_of_values // num_groups
 
-    num_items_per_group = num_items // num_groups
+  num_items_per_group = num_items // num_groups
 
-    # Collect all items in a given color.
-    items_per_color: Dict[int, list[int]] = {}
-    for color in all_colors:
-        items_per_color[color] = []
-        for i in all_items:
-            if colors[i] == color:
-                items_per_color[color].append(i)
+  # Collect all items in a given color.
+  items_per_color: Dict[int, list[int]] = {}
+  for color in all_colors:
+    items_per_color[color] = []
+    for i in all_items:
+      if colors[i] == color:
+        items_per_color[color].append(i)
 
-    print(
-        f"Model has {num_items} items, {num_groups} groups, and" f" {num_colors} colors"
+  print(
+      f"Model has {num_items} items, {num_groups} groups, and"
+      f" {num_colors} colors"
+  )
+  print(f"  average sum per group = {average_sum_per_group}")
+
+  # Model.
+
+  model = cp_model.CpModel()
+
+  item_in_group = {}
+  for i in all_items:
+    for g in all_groups:
+      item_in_group[(i, g)] = model.new_bool_var(f"item {i} in group {g}")
+
+  # Each group must have the same size.
+  for g in all_groups:
+    model.add(
+        sum(item_in_group[(i, g)] for i in all_items) == num_items_per_group
     )
-    print(f"  average sum per group = {average_sum_per_group}")
 
-    # Model.
+  # One item must belong to exactly one group.
+  for i in all_items:
+    model.add(sum(item_in_group[(i, g)] for g in all_groups) == 1)
 
-    model = cp_model.CpModel()
+  # The deviation of the sum of each items in a group against the average.
+  e = model.new_int_var(0, 550, "epsilon")
 
-    item_in_group = {}
-    for i in all_items:
-        for g in all_groups:
-            item_in_group[(i, g)] = model.new_bool_var(f"item {i} in group {g}")
+  # Constrain the sum of values in one group around the average sum per group.
+  for g in all_groups:
+    model.add(
+        sum(item_in_group[(i, g)] * values[i] for i in all_items)
+        <= average_sum_per_group + e
+    )
+    model.add(
+        sum(item_in_group[(i, g)] * values[i] for i in all_items)
+        >= average_sum_per_group - e
+    )
 
-    # Each group must have the same size.
-    for g in all_groups:
-        model.add(sum(item_in_group[(i, g)] for i in all_items) == num_items_per_group)
-
-    # One item must belong to exactly one group.
-    for i in all_items:
-        model.add(sum(item_in_group[(i, g)] for g in all_groups) == 1)
-
-    # The deviation of the sum of each items in a group against the average.
-    e = model.new_int_var(0, 550, "epsilon")
-
-    # Constrain the sum of values in one group around the average sum per group.
-    for g in all_groups:
-        model.add(
-            sum(item_in_group[(i, g)] * values[i] for i in all_items)
-            <= average_sum_per_group + e
-        )
-        model.add(
-            sum(item_in_group[(i, g)] * values[i] for i in all_items)
-            >= average_sum_per_group - e
-        )
-
-    # color_in_group variables.
-    color_in_group = {}
-    for g in all_groups:
-        for c in all_colors:
-            color_in_group[(c, g)] = model.new_bool_var(f"color {c} is in group {g}")
-
-    # Item is in a group implies its color is in that group.
-    for i in all_items:
-        for g in all_groups:
-            model.add_implication(item_in_group[(i, g)], color_in_group[(colors[i], g)])
-
-    # If a color is in a group, it must contains at least
-    # min_items_of_same_color_per_group items from that color.
+  # color_in_group variables.
+  color_in_group = {}
+  for g in all_groups:
     for c in all_colors:
-        for g in all_groups:
-            literal = color_in_group[(c, g)]
-            model.add(
-                sum(item_in_group[(i, g)] for i in items_per_color[c])
-                >= min_items_of_same_color_per_group
-            ).only_enforce_if(literal)
+      color_in_group[(c, g)] = model.new_bool_var(f"color {c} is in group {g}")
 
-    # Compute the maximum number of colors in a group.
-    max_color = num_items_per_group // min_items_of_same_color_per_group
+  # Item is in a group implies its color is in that group.
+  for i in all_items:
+    for g in all_groups:
+      model.add_implication(
+          item_in_group[(i, g)], color_in_group[(colors[i], g)]
+      )
 
-    # Redundant constraint, it helps with solving time.
-    if max_color < num_colors:
-        for g in all_groups:
-            model.add(sum(color_in_group[(c, g)] for c in all_colors) <= max_color)
+  # If a color is in a group, it must contains at least
+  # min_items_of_same_color_per_group items from that color.
+  for c in all_colors:
+    for g in all_groups:
+      literal = color_in_group[(c, g)]
+      model.add(
+          sum(item_in_group[(i, g)] for i in items_per_color[c])
+          >= min_items_of_same_color_per_group
+      ).only_enforce_if(literal)
 
-    # minimize epsilon
-    model.minimize(e)
+  # Compute the maximum number of colors in a group.
+  max_color = num_items_per_group // min_items_of_same_color_per_group
 
-    solver = cp_model.CpSolver()
-    # solver.parameters.log_search_progress = True
-    solver.parameters.num_workers = 16
-    solution_printer = SolutionPrinter(
-        values, colors, all_groups, all_items, item_in_group
-    )
-    status = solver.solve(model, solution_printer)
+  # Redundant constraint, it helps with solving time.
+  if max_color < num_colors:
+    for g in all_groups:
+      model.add(sum(color_in_group[(c, g)] for c in all_colors) <= max_color)
 
-    if status == cp_model.OPTIMAL:
-        print(f"Optimal epsilon: {solver.objective_value}")
-        print(solver.response_stats())
-    else:
-        print("No solution found")
+  # minimize epsilon
+  model.minimize(e)
+
+  solver = cp_model.CpSolver()
+  # solver.parameters.log_search_progress = True
+  solver.parameters.num_workers = 16
+  solution_printer = SolutionPrinter(
+      values, colors, all_groups, all_items, item_in_group
+  )
+  status = solver.solve(model, solution_printer)
+
+  if status == cp_model.OPTIMAL:
+    print(f"Optimal epsilon: {solver.objective_value}")
+    print(solver.response_stats())
+  else:
+    print("No solution found")
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

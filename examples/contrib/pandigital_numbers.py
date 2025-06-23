@@ -13,51 +13,51 @@
 # limitations under the License.
 """
 
-  Pandigital numbers in Google CP Solver.
+Pandigital numbers in Google CP Solver.
 
-  From Albert H. Beiler 'Recreations in the Theory of Numbers',
-  quoted from http://www.worldofnumbers.com/ninedig1.htm
-  '''
-  Chapter VIII : Digits - and the magic of 9
+From Albert H. Beiler 'Recreations in the Theory of Numbers',
+quoted from http://www.worldofnumbers.com/ninedig1.htm
+'''
+Chapter VIII : Digits - and the magic of 9
 
-  The following curious table shows how to arrange the 9 digits so that
-  the product of 2 groups is equal to a number represented by the
-  remaining digits.
+The following curious table shows how to arrange the 9 digits so that
+the product of 2 groups is equal to a number represented by the
+remaining digits.
 
-     12 x 483 = 5796
-     42 x 138 = 5796
-     18 x 297 = 5346
-     27 x 198 = 5346
-     39 x 186 = 7254
-     48 x 159 = 7632
-     28 x 157 = 4396
-     4 x 1738 = 6952
-     4 x 1963 = 7852
-  '''
+   12 x 483 = 5796
+   42 x 138 = 5796
+   18 x 297 = 5346
+   27 x 198 = 5346
+   39 x 186 = 7254
+   48 x 159 = 7632
+   28 x 157 = 4396
+   4 x 1738 = 6952
+   4 x 1963 = 7852
+'''
 
-  See also MathWorld http://mathworld.wolfram.com/PandigitalNumber.html
-  '''
-  A number is said to be pandigital if it contains each of the digits
-  from 0 to 9 (and whose leading digit must be nonzero). However,
-  'zeroless' pandigital quantities contain the digits 1 through 9.
-  Sometimes exclusivity is also required so that each digit is
-  restricted to appear exactly once.
-  '''
+See also MathWorld http://mathworld.wolfram.com/PandigitalNumber.html
+'''
+A number is said to be pandigital if it contains each of the digits
+from 0 to 9 (and whose leading digit must be nonzero). However,
+'zeroless' pandigital quantities contain the digits 1 through 9.
+Sometimes exclusivity is also required so that each digit is
+restricted to appear exactly once.
+'''
 
-  * Wikipedia http://en.wikipedia.org/wiki/Pandigital_number
+* Wikipedia http://en.wikipedia.org/wiki/Pandigital_number
 
 
-  Compare with the following models:
-  * MiniZinc: http://www.hakank.org/minizinc/pandigital_numbers.mzn
-  * Comet   : http://www.hakank.org/comet/pandigital_numbers.co
-  * ECLiPSe : http://www.hakank.org/eclipse/pandigital_numbers.ecl
-  * Gecode/R: http://www.hakank.org/gecoder/pandigital_numbers.rb
-  * ECLiPSe : http://hakank.org/eclipse/pandigital_numbers.ecl
-  * SICStus : http://hakank.org/sicstus/pandigital_numbers.pl
+Compare with the following models:
+* MiniZinc: http://www.hakank.org/minizinc/pandigital_numbers.mzn
+* Comet   : http://www.hakank.org/comet/pandigital_numbers.co
+* ECLiPSe : http://www.hakank.org/eclipse/pandigital_numbers.ecl
+* Gecode/R: http://www.hakank.org/gecoder/pandigital_numbers.rb
+* ECLiPSe : http://hakank.org/eclipse/pandigital_numbers.ecl
+* SICStus : http://hakank.org/sicstus/pandigital_numbers.pl
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 
 """
 import sys
@@ -72,7 +72,8 @@ from ortools.constraint_solver import pywrapcp
 def toNum(solver, t, s, base):
   tlen = len(t)
   solver.Add(
-      s == solver.Sum([(base**(tlen - i - 1)) * t[i] for i in range(tlen)]))
+      s == solver.Sum([(base ** (tlen - i - 1)) * t[i] for i in range(tlen)])
+  )
 
 
 def main(base=10, start=1, len1=1, len2=4):

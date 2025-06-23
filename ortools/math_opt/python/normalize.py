@@ -26,52 +26,52 @@ from google.protobuf import message
 
 
 def math_opt_normalize_proto(protobuf_message: message.Message) -> None:
-    """Clears all non-duration submessages that are not in one_ofs.
+  """Clears all non-duration submessages that are not in one_ofs.
 
-    A message is considered `empty` if:
-      * every non-optional scalar fields has its default value,
-      * every optional scalar field is unset,
-      * every repeated/map fields is empty
-      * every oneof is unset,
-      * every duration field is unset
-      * all other message fields (singular, not oneof, not duration) are `empty`.
-    This function clears all `empty` fields from `message`.
+  A message is considered `empty` if:
+    * every non-optional scalar fields has its default value,
+    * every optional scalar field is unset,
+    * every repeated/map fields is empty
+    * every oneof is unset,
+    * every duration field is unset
+    * all other message fields (singular, not oneof, not duration) are `empty`.
+  This function clears all `empty` fields from `message`.
 
-    This is useful for testing.
+  This is useful for testing.
 
-    Args:
-      protobuf_message: The Message object to clear.
-    """
-    for field, value in protobuf_message.ListFields():
-        if field.type != field.TYPE_MESSAGE:
-            continue
-        if field.label == field.LABEL_REPEATED:
-            # Now the repeated case, recursively normalize each member. Note that
-            # there is no field presence for repeated fields, so we don't need to call
-            # ClearField().
-            #
-            # Maps need to be handled specially.
-            if (
-                field.message_type.has_options
-                and field.message_type.GetOptions().map_entry
-            ):
-                if (
-                    field.message_type.fields_by_number[2].type
-                    == descriptor.FieldDescriptor.TYPE_MESSAGE
-                ):
-                    for item in value.values():
-                        math_opt_normalize_proto(item)
-            # The remaining case is a regular repeated field (a list).
-            else:
-                for item in value:
-                    math_opt_normalize_proto(item)
-            continue
-        # Last case, the non-repeated sub-message
-        math_opt_normalize_proto(value)
-        # If field value is empty, not a Duration, and not in a oneof, clear it.
+  Args:
+    protobuf_message: The Message object to clear.
+  """
+  for field, value in protobuf_message.ListFields():
+    if field.type != field.TYPE_MESSAGE:
+      continue
+    if field.label == field.LABEL_REPEATED:
+      # Now the repeated case, recursively normalize each member. Note that
+      # there is no field presence for repeated fields, so we don't need to call
+      # ClearField().
+      #
+      # Maps need to be handled specially.
+      if (
+          field.message_type.has_options
+          and field.message_type.GetOptions().map_entry
+      ):
         if (
-            not value.ListFields()
-            and field.message_type != duration_pb2.Duration.DESCRIPTOR
-            and field.containing_oneof is None
+            field.message_type.fields_by_number[2].type
+            == descriptor.FieldDescriptor.TYPE_MESSAGE
         ):
-            protobuf_message.ClearField(field.name)
+          for item in value.values():
+            math_opt_normalize_proto(item)
+      # The remaining case is a regular repeated field (a list).
+      else:
+        for item in value:
+          math_opt_normalize_proto(item)
+      continue
+    # Last case, the non-repeated sub-message
+    math_opt_normalize_proto(value)
+    # If field value is empty, not a Duration, and not in a oneof, clear it.
+    if (
+        not value.ListFields()
+        and field.message_type != duration_pb2.Duration.DESCRIPTOR
+        and field.containing_oneof is None
+    ):
+      protobuf_message.ClearField(field.name)

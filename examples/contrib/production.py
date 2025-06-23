@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  Production planning problem in Google or-tools.
+Production planning problem in Google or-tools.
 
-  From the OPL model production.mod.
+From the OPL model production.mod.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.linear_solver import pywraplp
@@ -73,8 +73,9 @@ def main():
   #
   for r in range(num_resources):
     solver.Add(
-        solver.Sum([consumption[p][r] * inside[p]
-                    for p in range(num_products)]) <= capacity[r])
+        solver.Sum([consumption[p][r] * inside[p] for p in range(num_products)])
+        <= capacity[r]
+    )
 
   for p in range(num_products):
     solver.Add(inside[p] + outside[p] >= demand[p])
@@ -94,9 +95,15 @@ def main():
         '(ReducedCost:',
         inside[p].ReducedCost(),
         ')',
-        end=' ')
-    print('outside:', outside[p].SolutionValue(), ' (ReducedCost:',
-          outside[p].ReducedCost(), ')')
+        end=' ',
+    )
+    print(
+        'outside:',
+        outside[p].SolutionValue(),
+        ' (ReducedCost:',
+        outside[p].ReducedCost(),
+        ')',
+    )
   print()
 
 

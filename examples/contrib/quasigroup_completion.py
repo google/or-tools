@@ -13,44 +13,44 @@
 # limitations under the License.
 """
 
-  Quasigroup completion Google CP Solver.
+Quasigroup completion Google CP Solver.
 
 
-  See Carla P. Gomes and David Shmoys:
-  "Completing Quasigroups or Latin Squares: Structured Graph Coloring Problem"
+See Carla P. Gomes and David Shmoys:
+"Completing Quasigroups or Latin Squares: Structured Graph Coloring Problem"
 
-  See also
-  Ivars Peterson "Completing Latin Squares"
-  http://www.maa.org/mathland/mathtrek_5_8_00.html
+See also
+Ivars Peterson "Completing Latin Squares"
+http://www.maa.org/mathland/mathtrek_5_8_00.html
+'''
+  Using only the numbers 1, 2, 3, and 4, arrange four sets of these numbers
+  into
+  a four-by-four array so that no column or row contains the same two numbers.
+  The result is known as a Latin square.
+  ...
+  The so-called quasigroup completion problem concerns a table that is
+  correctly
+  but only partially filled in. The question is whether the remaining blanks
+  in
+  the table can be filled in to obtain a complete Latin square (or a proper
+  quasigroup multiplication table).
   '''
-    Using only the numbers 1, 2, 3, and 4, arrange four sets of these numbers
-    into
-    a four-by-four array so that no column or row contains the same two numbers.
-    The result is known as a Latin square.
-    ...
-    The so-called quasigroup completion problem concerns a table that is
-    correctly
-    but only partially filled in. The question is whether the remaining blanks
-    in
-    the table can be filled in to obtain a complete Latin square (or a proper
-    quasigroup multiplication table).
-    '''
 
-    Compare with the following models:
-    * Choco: http://www.hakank.org/choco/QuasigroupCompletion.java
-    * Comet: http://www.hakank.org/comet/quasigroup_completion.co
-    * ECLiPSE: http://www.hakank.org/eclipse/quasigroup_completion.ecl
-    * Gecode: http://www.hakank.org/gecode/quasigroup_completion.cpp
-    * Gecode/R: http://www.hakank.org/gecode_r/quasigroup_completion.rb
-    * JaCoP: http://www.hakank.org/JaCoP/QuasigroupCompletion.java
-    * MiniZinc: http://www.hakank.org/minizinc/quasigroup_completion.mzn
-    * Tailor/Essence': http://www.hakank.org/tailor/quasigroup_completion.eprime
-    * SICStus: http://hakank.org/sicstus/quasigroup_completion.pl
-    * Zinc: http://hakank.org/minizinc/quasigroup_completion.zinc
+  Compare with the following models:
+  * Choco: http://www.hakank.org/choco/QuasigroupCompletion.java
+  * Comet: http://www.hakank.org/comet/quasigroup_completion.co
+  * ECLiPSE: http://www.hakank.org/eclipse/quasigroup_completion.ecl
+  * Gecode: http://www.hakank.org/gecode/quasigroup_completion.cpp
+  * Gecode/R: http://www.hakank.org/gecode_r/quasigroup_completion.rb
+  * JaCoP: http://www.hakank.org/JaCoP/QuasigroupCompletion.java
+  * MiniZinc: http://www.hakank.org/minizinc/quasigroup_completion.mzn
+  * Tailor/Essence': http://www.hakank.org/tailor/quasigroup_completion.eprime
+  * SICStus: http://hakank.org/sicstus/quasigroup_completion.pl
+  * Zinc: http://hakank.org/minizinc/quasigroup_completion.zinc
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from ortools.constraint_solver import pywrapcp
@@ -59,8 +59,13 @@ default_n = 5
 X = 0
 # default problem
 # (This is the same as quasigroup1.txt)
-default_puzzle = [[1, X, X, X, 4], [X, 5, X, X, X], [4, X, X, 2, X],
-                  [X, 4, X, X, X], [X, X, 5, X, 1]]
+default_puzzle = [
+    [1, X, X, X, 4],
+    [X, 5, X, X, X],
+    [4, X, X, 2, X],
+    [X, 4, X, X, X],
+    [X, X, 5, X, 1],
+]
 
 
 def main(puzzle="", n=0):

@@ -34,22 +34,22 @@ T = TypeVar("T")
 # We cannot use Callable here because we need to support a named argument.
 class GetElement(Protocol, Generic[T]):
 
-    def __call__(
-        self, mod: model.Model, element_id: int, *, validate: bool = True
-    ) -> T:
-        pass
+  def __call__(
+      self, mod: model.Model, element_id: int, *, validate: bool = True
+  ) -> T:
+    pass
 
 
 @dataclasses.dataclass(frozen=True)
 class ElementAdapter(Generic[T]):
-    add: Callable[[model.Model], T]
-    delete: Callable[[model.Model, T], None]
-    has: Callable[[model.Model, int], bool]
-    get: GetElement[T]
-    get_all: Callable[[model.Model], Iterator[T]]
-    num: Callable[[model.Model], int]
-    next_id: Callable[[model.Model], int]
-    ensure_next_id: Callable[[model.Model, int], None]
+  add: Callable[[model.Model], T]
+  delete: Callable[[model.Model, T], None]
+  has: Callable[[model.Model, int], bool]
+  get: GetElement[T]
+  get_all: Callable[[model.Model], Iterator[T]]
+  num: Callable[[model.Model], int]
+  next_id: Callable[[model.Model], int]
+  ensure_next_id: Callable[[model.Model, int], None]
 
 
 _VARIABLE_ADAPTER = ElementAdapter[variables.Variable](
@@ -63,7 +63,9 @@ _VARIABLE_ADAPTER = ElementAdapter[variables.Variable](
     ensure_next_id=model.Model.ensure_next_variable_id_at_least,
 )
 
-_LINEAR_CONSTRAINT_ADAPTER = ElementAdapter[linear_constraints.LinearConstraint](
+_LINEAR_CONSTRAINT_ADAPTER = ElementAdapter[
+    linear_constraints.LinearConstraint
+](
     add=model.Model.add_linear_constraint,
     delete=model.Model.delete_linear_constraint,
     has=model.Model.has_linear_constraint,
@@ -76,7 +78,7 @@ _LINEAR_CONSTRAINT_ADAPTER = ElementAdapter[linear_constraints.LinearConstraint]
 
 
 def _aux_add(mod: model.Model) -> objectives.AuxiliaryObjective:
-    return mod.add_auxiliary_objective(priority=1)
+  return mod.add_auxiliary_objective(priority=1)
 
 
 _AUX_OBJECTIVE_ADAPTER = ElementAdapter[objectives.AuxiliaryObjective](
@@ -134,137 +136,141 @@ _ADAPTER = Union[
 )
 class ModelElementTest(parameterized.TestCase):
 
-    def test_no_elements(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        self.assertFalse(element_adapter.has(mod, 0))
-        self.assertEqual(element_adapter.next_id(mod), 0)
-        self.assertEqual(element_adapter.num(mod), 0)
-        self.assertEmpty(list(element_adapter.get_all(mod)))
+  def test_no_elements(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    self.assertFalse(element_adapter.has(mod, 0))
+    self.assertEqual(element_adapter.next_id(mod), 0)
+    self.assertEqual(element_adapter.num(mod), 0)
+    self.assertEmpty(list(element_adapter.get_all(mod)))
 
-    def test_add_element(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        e0 = element_adapter.add(mod)
-        e1 = element_adapter.add(mod)
-        e2 = element_adapter.add(mod)
+  def test_add_element(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    e0 = element_adapter.add(mod)
+    e1 = element_adapter.add(mod)
+    e2 = element_adapter.add(mod)
 
-        self.assertTrue(element_adapter.has(mod, 0))
-        self.assertTrue(element_adapter.has(mod, 1))
-        self.assertTrue(element_adapter.has(mod, 2))
-        self.assertFalse(element_adapter.has(mod, 3))
+    self.assertTrue(element_adapter.has(mod, 0))
+    self.assertTrue(element_adapter.has(mod, 1))
+    self.assertTrue(element_adapter.has(mod, 2))
+    self.assertFalse(element_adapter.has(mod, 3))
 
-        self.assertEqual(element_adapter.next_id(mod), 3)
-        self.assertEqual(element_adapter.num(mod), 3)
-        self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2])
+    self.assertEqual(element_adapter.next_id(mod), 3)
+    self.assertEqual(element_adapter.num(mod), 3)
+    self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2])
 
-        self.assertEqual(element_adapter.get(mod, 1), e1)
+    self.assertEqual(element_adapter.get(mod, 1), e1)
 
-    def test_get_invalid_element(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        with self.assertRaises(KeyError):
-            element_adapter.get(mod, 0, validate=True)
-        # Check that default for validate is True as well
-        with self.assertRaises(KeyError):
-            element_adapter.get(mod, 0)
+  def test_get_invalid_element(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    with self.assertRaises(KeyError):
+      element_adapter.get(mod, 0, validate=True)
+    # Check that default for validate is True as well
+    with self.assertRaises(KeyError):
+      element_adapter.get(mod, 0)
 
-        # No crash
-        bad_el = element_adapter.get(mod, 0, validate=False)
-        del bad_el
+    # No crash
+    bad_el = element_adapter.get(mod, 0, validate=False)
+    del bad_el
 
-    def test_delete_element(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        e0 = element_adapter.add(mod)
-        e1 = element_adapter.add(mod)
-        e2 = element_adapter.add(mod)
+  def test_delete_element(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    e0 = element_adapter.add(mod)
+    e1 = element_adapter.add(mod)
+    e2 = element_adapter.add(mod)
 
-        element_adapter.delete(mod, e1)
+    element_adapter.delete(mod, e1)
 
-        self.assertTrue(element_adapter.has(mod, 0))
-        self.assertFalse(element_adapter.has(mod, 1))
-        self.assertTrue(element_adapter.has(mod, 2))
-        self.assertFalse(element_adapter.has(mod, 3))
+    self.assertTrue(element_adapter.has(mod, 0))
+    self.assertFalse(element_adapter.has(mod, 1))
+    self.assertTrue(element_adapter.has(mod, 2))
+    self.assertFalse(element_adapter.has(mod, 3))
 
-        self.assertEqual(element_adapter.next_id(mod), 3)
-        self.assertEqual(element_adapter.num(mod), 2)
-        self.assertEqual(list(element_adapter.get_all(mod)), [e0, e2])
+    self.assertEqual(element_adapter.next_id(mod), 3)
+    self.assertEqual(element_adapter.num(mod), 2)
+    self.assertEqual(list(element_adapter.get_all(mod)), [e0, e2])
 
-        self.assertEqual(element_adapter.get(mod, 2), e2)
+    self.assertEqual(element_adapter.get(mod, 2), e2)
 
-    def test_delete_invalid_element_error(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        bad_el = element_adapter.get(mod, 0, validate=False)
-        with self.assertRaises(ValueError):
-            element_adapter.delete(mod, bad_el)
+  def test_delete_invalid_element_error(
+      self, element_adapter: _ADAPTER
+  ) -> None:
+    mod = model.Model()
+    bad_el = element_adapter.get(mod, 0, validate=False)
+    with self.assertRaises(ValueError):
+      element_adapter.delete(mod, bad_el)
 
-    def test_delete_element_twice_error(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        el = element_adapter.add(mod)
-        element_adapter.delete(mod, el)
-        with self.assertRaises(ValueError):
-            element_adapter.delete(mod, el)
+  def test_delete_element_twice_error(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    el = element_adapter.add(mod)
+    element_adapter.delete(mod, el)
+    with self.assertRaises(ValueError):
+      element_adapter.delete(mod, el)
 
-    def test_delete_element_wrong_model_error(self, element_adapter: _ADAPTER) -> None:
-        mod1 = model.Model()
-        element_adapter.add(mod1)
+  def test_delete_element_wrong_model_error(
+      self, element_adapter: _ADAPTER
+  ) -> None:
+    mod1 = model.Model()
+    element_adapter.add(mod1)
 
-        mod2 = model.Model()
-        e2 = element_adapter.add(mod2)
+    mod2 = model.Model()
+    e2 = element_adapter.add(mod2)
 
-        with self.assertRaises(ValueError):
-            element_adapter.delete(mod1, e2)
+    with self.assertRaises(ValueError):
+      element_adapter.delete(mod1, e2)
 
-    def test_get_deleted_element_error(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        el = element_adapter.add(mod)
-        element_adapter.delete(mod, el)
-        with self.assertRaises(KeyError):
-            element_adapter.get(mod, 0, validate=True)
+  def test_get_deleted_element_error(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    el = element_adapter.add(mod)
+    element_adapter.delete(mod, el)
+    with self.assertRaises(KeyError):
+      element_adapter.get(mod, 0, validate=True)
 
-        # No crash
-        bad_el = element_adapter.get(mod, 0, validate=False)
-        del bad_el
+    # No crash
+    bad_el = element_adapter.get(mod, 0, validate=False)
+    del bad_el
 
-    def test_ensure_next_id_with_effect(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        element_adapter.ensure_next_id(mod, 6)
+  def test_ensure_next_id_with_effect(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    element_adapter.ensure_next_id(mod, 6)
 
-        self.assertEqual(element_adapter.next_id(mod), 6)
-        self.assertFalse(element_adapter.has(mod, 0))
-        self.assertFalse(element_adapter.has(mod, 6))
-        self.assertEqual(element_adapter.num(mod), 0)
-        self.assertEmpty(list(element_adapter.get_all(mod)))
+    self.assertEqual(element_adapter.next_id(mod), 6)
+    self.assertFalse(element_adapter.has(mod, 0))
+    self.assertFalse(element_adapter.has(mod, 6))
+    self.assertEqual(element_adapter.num(mod), 0)
+    self.assertEmpty(list(element_adapter.get_all(mod)))
 
-        e6 = element_adapter.add(mod)
-        e7 = element_adapter.add(mod)
+    e6 = element_adapter.add(mod)
+    e7 = element_adapter.add(mod)
 
-        self.assertFalse(element_adapter.has(mod, 0))
-        self.assertTrue(element_adapter.has(mod, 6))
-        self.assertTrue(element_adapter.has(mod, 7))
-        self.assertFalse(element_adapter.has(mod, 8))
+    self.assertFalse(element_adapter.has(mod, 0))
+    self.assertTrue(element_adapter.has(mod, 6))
+    self.assertTrue(element_adapter.has(mod, 7))
+    self.assertFalse(element_adapter.has(mod, 8))
 
-        self.assertEqual(element_adapter.next_id(mod), 8)
-        self.assertEqual(element_adapter.num(mod), 2)
-        self.assertEqual(list(element_adapter.get_all(mod)), [e6, e7])
-        self.assertEqual(element_adapter.get(mod, 6), e6)
-        self.assertEqual(element_adapter.get(mod, 7), e7)
+    self.assertEqual(element_adapter.next_id(mod), 8)
+    self.assertEqual(element_adapter.num(mod), 2)
+    self.assertEqual(list(element_adapter.get_all(mod)), [e6, e7])
+    self.assertEqual(element_adapter.get(mod, 6), e6)
+    self.assertEqual(element_adapter.get(mod, 7), e7)
 
-    def test_ensure_next_id_no_effect(self, element_adapter: _ADAPTER) -> None:
-        mod = model.Model()
-        e0 = element_adapter.add(mod)
-        e1 = element_adapter.add(mod)
-        e2 = element_adapter.add(mod)
+  def test_ensure_next_id_no_effect(self, element_adapter: _ADAPTER) -> None:
+    mod = model.Model()
+    e0 = element_adapter.add(mod)
+    e1 = element_adapter.add(mod)
+    e2 = element_adapter.add(mod)
 
-        element_adapter.ensure_next_id(mod, 1)
+    element_adapter.ensure_next_id(mod, 1)
 
-        self.assertEqual(element_adapter.next_id(mod), 3)
-        self.assertEqual(element_adapter.num(mod), 3)
-        self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2])
+    self.assertEqual(element_adapter.next_id(mod), 3)
+    self.assertEqual(element_adapter.num(mod), 3)
+    self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2])
 
-        e3 = element_adapter.add(mod)
-        self.assertEqual(element_adapter.next_id(mod), 4)
-        self.assertEqual(element_adapter.num(mod), 4)
-        self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2, e3])
-        self.assertEqual(element_adapter.get(mod, 3), e3)
+    e3 = element_adapter.add(mod)
+    self.assertEqual(element_adapter.next_id(mod), 4)
+    self.assertEqual(element_adapter.num(mod), 4)
+    self.assertEqual(list(element_adapter.get_all(mod)), [e0, e1, e2, e3])
+    self.assertEqual(element_adapter.get(mod, 3), e3)
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

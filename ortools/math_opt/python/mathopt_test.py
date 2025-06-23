@@ -81,43 +81,43 @@ _TYPING_PUBLIC_CONTENT = [
 
 
 def _is_actual_export(v: Any) -> bool:
-    if inspect.ismodule(v):
-        return False
-    if getattr(v, "__module__", None) != typing.__name__:
-        return True
-    return v not in _TYPING_PUBLIC_CONTENT
+  if inspect.ismodule(v):
+    return False
+  if getattr(v, "__module__", None) != typing.__name__:
+    return True
+  return v not in _TYPING_PUBLIC_CONTENT
 
 
 def _get_public_api(module: types.ModuleType) -> List[Tuple[str, Any]]:
-    tuple_list = inspect.getmembers(module, _is_actual_export)
-    return [(name, obj) for name, obj in tuple_list if not name.startswith("_")]
+  tuple_list = inspect.getmembers(module, _is_actual_export)
+  return [(name, obj) for name, obj in tuple_list if not name.startswith("_")]
 
 
 class MathoptTest(absltest.TestCase):
 
-    def test_imports(self) -> None:
-        missing_imports: List[str] = []
-        for module in _MODULES_TO_CHECK:
-            for name, obj in _get_public_api(module):
-                if (module, name) in _EXCLUDED_SYMBOLS:
-                    continue
-                if hasattr(mathopt, name):
-                    self.assertIs(
-                        getattr(mathopt, name),
-                        obj,
-                        msg=f"module: {module.__name__} name: {name}",
-                    )
-                else:
-                    # We don't immediately asserts on a missing import so that we can get
-                    # the list of all missing ones.
-                    missing_imports.append(f"from {module.__name__} import {name}")
-        # We can't have \ in an expression inside an f-string.
-        nl = "\n"
-        self.assertFalse(
-            bool(missing_imports),
-            msg=f"missing imports:\n{nl.join(missing_imports)}",
-        )
+  def test_imports(self) -> None:
+    missing_imports: List[str] = []
+    for module in _MODULES_TO_CHECK:
+      for name, obj in _get_public_api(module):
+        if (module, name) in _EXCLUDED_SYMBOLS:
+          continue
+        if hasattr(mathopt, name):
+          self.assertIs(
+              getattr(mathopt, name),
+              obj,
+              msg=f"module: {module.__name__} name: {name}",
+          )
+        else:
+          # We don't immediately asserts on a missing import so that we can get
+          # the list of all missing ones.
+          missing_imports.append(f"from {module.__name__} import {name}")
+    # We can't have \ in an expression inside an f-string.
+    nl = "\n"
+    self.assertFalse(
+        bool(missing_imports),
+        msg=f"missing imports:\n{nl.join(missing_imports)}",
+    )
 
 
 if __name__ == "__main__":
-    absltest.main()
+  absltest.main()

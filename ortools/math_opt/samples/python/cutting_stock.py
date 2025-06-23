@@ -82,225 +82,229 @@ from ortools.math_opt.python import mathopt
 
 @dataclasses.dataclass
 class CuttingStockInstance:
-    """Data for a cutting stock instance.
+  """Data for a cutting stock instance.
 
-    Attributes:
-      piece_sizes: The size of each piece with non-zero demand. Must have the same
-        length as piece_demands, and each size must be in [0, board_length].
-      piece_demands: The demand for a given piece. Must have the same length as
-        piece_sizes.
-      board_length: The length of each board.
-    """
+  Attributes:
+    piece_sizes: The size of each piece with non-zero demand. Must have the same
+      length as piece_demands, and each size must be in [0, board_length].
+    piece_demands: The demand for a given piece. Must have the same length as
+      piece_sizes.
+    board_length: The length of each board.
+  """
 
-    piece_sizes: List[int] = dataclasses.field(default_factory=list)
-    piece_demands: List[int] = dataclasses.field(default_factory=list)
-    board_length: int = 0
+  piece_sizes: List[int] = dataclasses.field(default_factory=list)
+  piece_demands: List[int] = dataclasses.field(default_factory=list)
+  board_length: int = 0
 
 
 @dataclasses.dataclass
 class Configuration:
-    """Describes a size-configuration that can be cut out of a board.
+  """Describes a size-configuration that can be cut out of a board.
 
-    Attributes:
-      pieces: The size of each piece in the configuration. Must have the same
-        length as piece_demands, and the total sum of pieces (sum of piece sizes
-        times quantity of pieces) must not exceed the board length of the
-        associated cutting stock instance.
-      quantity: The qualtity of pieces of a given size. Must have the same length
-        as pieces.
-    """
+  Attributes:
+    pieces: The size of each piece in the configuration. Must have the same
+      length as piece_demands, and the total sum of pieces (sum of piece sizes
+      times quantity of pieces) must not exceed the board length of the
+      associated cutting stock instance.
+    quantity: The qualtity of pieces of a given size. Must have the same length
+      as pieces.
+  """
 
-    pieces: List[int] = dataclasses.field(default_factory=list)
-    quantity: List[int] = dataclasses.field(default_factory=list)
+  pieces: List[int] = dataclasses.field(default_factory=list)
+  quantity: List[int] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
 class CuttingStockSolution:
-    """Describes a solution to a cutting stock problem.
+  """Describes a solution to a cutting stock problem.
 
-    To be feasible, the demand for each piece type must be met by the produced
-    configurations
+  To be feasible, the demand for each piece type must be met by the produced
+  configurations
 
-    Attributes:
-      configurations: The configurations used by the solution. Must have the same
-        length as quantity.
-      quantity: The number of each configuration in the solution. Must have the
-        same length as configurations.
-      objective_value: The objective value of the configuration, which is equal to
-        sum(quantity).
-    """
+  Attributes:
+    configurations: The configurations used by the solution. Must have the same
+      length as quantity.
+    quantity: The number of each configuration in the solution. Must have the
+      same length as configurations.
+    objective_value: The objective value of the configuration, which is equal to
+      sum(quantity).
+  """
 
-    configurations: List[Configuration] = dataclasses.field(default_factory=list)
-    quantity: List[int] = dataclasses.field(default_factory=list)
-    objective_value: int = 0
+  configurations: List[Configuration] = dataclasses.field(default_factory=list)
+  quantity: List[int] = dataclasses.field(default_factory=list)
+  objective_value: int = 0
 
 
 def best_configuration(
     piece_prices: List[float], piece_sizes: List[int], board_size: int
 ) -> Tuple[Configuration, float]:
-    """Solves the worker problem.
+  """Solves the worker problem.
 
-    Solves the problem on finding the configuration (with its objective value) to
-    add the to model that will give the greatest improvement in the LP
-    relaxation. This is equivalent to a knapsack problem.
+  Solves the problem on finding the configuration (with its objective value) to
+  add the to model that will give the greatest improvement in the LP
+  relaxation. This is equivalent to a knapsack problem.
 
-    Args:
-      piece_prices: The price for each piece with non-zero demand. Must have the
-        same length as piece_sizes.
-      piece_sizes: The size of each piece with non-zero demand. Must have the same
-        length as piece_prices, and each size must be in [0, board_length].
-      board_size: The length of each board.
+  Args:
+    piece_prices: The price for each piece with non-zero demand. Must have the
+      same length as piece_sizes.
+    piece_sizes: The size of each piece with non-zero demand. Must have the same
+      length as piece_prices, and each size must be in [0, board_length].
+    board_size: The length of each board.
 
-    Returns:
-      The best configuration and its cost.
+  Returns:
+    The best configuration and its cost.
 
-    Raises:
-      RuntimeError: On solve errors.
-    """
-    num_pieces = len(piece_sizes)
-    assert len(piece_sizes) == num_pieces
-    model = mathopt.Model(name="knapsack")
-    pieces = [
-        model.add_integer_variable(lb=0, name=f"item_{i}") for i in range(num_pieces)
-    ]
-    model.maximize(sum(piece_prices[i] * pieces[i] for i in range(num_pieces)))
-    model.add_linear_constraint(
-        sum(piece_sizes[i] * pieces[i] for i in range(num_pieces)) <= board_size
+  Raises:
+    RuntimeError: On solve errors.
+  """
+  num_pieces = len(piece_sizes)
+  assert len(piece_sizes) == num_pieces
+  model = mathopt.Model(name="knapsack")
+  pieces = [
+      model.add_integer_variable(lb=0, name=f"item_{i}")
+      for i in range(num_pieces)
+  ]
+  model.maximize(sum(piece_prices[i] * pieces[i] for i in range(num_pieces)))
+  model.add_linear_constraint(
+      sum(piece_sizes[i] * pieces[i] for i in range(num_pieces)) <= board_size
+  )
+  solve_result = mathopt.solve(model, mathopt.SolverType.CP_SAT)
+  if solve_result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+    raise RuntimeError(
+        "Failed to solve knapsack pricing problem to "
+        f" optimality: {solve_result.termination}"
     )
-    solve_result = mathopt.solve(model, mathopt.SolverType.CP_SAT)
-    if solve_result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-        raise RuntimeError(
-            "Failed to solve knapsack pricing problem to "
-            f" optimality: {solve_result.termination}"
-        )
-    config = Configuration()
-    for i in range(num_pieces):
-        use = round(solve_result.variable_values()[pieces[i]])
-        if use > 0:
-            config.pieces.append(i)
-            config.quantity.append(use)
-    return config, solve_result.objective_value()
+  config = Configuration()
+  for i in range(num_pieces):
+    use = round(solve_result.variable_values()[pieces[i]])
+    if use > 0:
+      config.pieces.append(i)
+      config.quantity.append(use)
+  return config, solve_result.objective_value()
 
 
 def solve_cutting_stock(instance: CuttingStockInstance) -> CuttingStockSolution:
-    """Solves the full cutting stock problem by decomposition.
+  """Solves the full cutting stock problem by decomposition.
 
-    Args:
-      instance: A cutting stock instance.
+  Args:
+    instance: A cutting stock instance.
 
-    Returns:
-      A solution to the cutting stock instance.
+  Returns:
+    A solution to the cutting stock instance.
 
-    Raises:
-      RuntimeError: On solve errors.
-    """
-    model = mathopt.Model(name="cutting_stock")
-    model.objective.is_maximize = False
-    n = len(instance.piece_sizes)
-    demands = instance.piece_demands
-    demand_met = [
-        model.add_linear_constraint(lb=demands[i], ub=demands[i]) for i in range(n)
-    ]
+  Raises:
+    RuntimeError: On solve errors.
+  """
+  model = mathopt.Model(name="cutting_stock")
+  model.objective.is_maximize = False
+  n = len(instance.piece_sizes)
+  demands = instance.piece_demands
+  demand_met = [
+      model.add_linear_constraint(lb=demands[i], ub=demands[i])
+      for i in range(n)
+  ]
 
-    configs: List[Tuple[Configuration, mathopt.Variable]] = []
+  configs: List[Tuple[Configuration, mathopt.Variable]] = []
 
-    def add_config(config: Configuration) -> None:
-        v = model.add_variable(lb=0.0)
-        model.objective.set_linear_coefficient(v, 1)
-        for item, use in zip(config.pieces, config.quantity):
-            if use >= 1:
-                demand_met[item].set_coefficient(v, use)
-        configs.append((config, v))
+  def add_config(config: Configuration) -> None:
+    v = model.add_variable(lb=0.0)
+    model.objective.set_linear_coefficient(v, 1)
+    for item, use in zip(config.pieces, config.quantity):
+      if use >= 1:
+        demand_met[item].set_coefficient(v, use)
+    configs.append((config, v))
 
-    # To ensure the leader problem is always feasible, begin a configuration for
-    # every item that has a single copy of the item.
-    for i in range(n):
-        add_config(Configuration(pieces=[i], quantity=[1]))
+  # To ensure the leader problem is always feasible, begin a configuration for
+  # every item that has a single copy of the item.
+  for i in range(n):
+    add_config(Configuration(pieces=[i], quantity=[1]))
 
-    solver = mathopt.IncrementalSolver(model, mathopt.SolverType.GLOP)
+  solver = mathopt.IncrementalSolver(model, mathopt.SolverType.GLOP)
 
-    pricing_round = 0
-    while True:
-        solve_result = solver.solve()
-        if solve_result.termination.reason != mathopt.TerminationReason.OPTIMAL:
-            raise RuntimeError(
-                "Failed to solve leader LP problem to optimality at "
-                f"iteration {pricing_round} termination: "
-                f"{solve_result.termination}"
-            )
-        if not solve_result.has_dual_feasible_solution:
-            # MathOpt does not require solvers to return a dual solution on optimal,
-            # but most LP solvers always will, see go/mathopt-solver-contracts for
-            # details.
-            raise RuntimeError(
-                "no dual solution was returned with optimal solution "
-                f"at iteration {pricing_round}"
-            )
-        prices = [solve_result.dual_values()[d] for d in demand_met]
-        config, value = best_configuration(
-            prices, instance.piece_sizes, instance.board_length
-        )
-        if value < 1 + 1e-3:
-            # The LP relaxation is solved, we can stop adding columns.
-            break
-        add_config(config)
-        print(
-            f"round: {pricing_round}, "
-            f"lp objective: {solve_result.objective_value()}",
-            flush=True,
-        )
-        pricing_round += 1
-    print("Done adding columns, switching to MIP")
-    for _, var in configs:
-        var.integer = True
+  pricing_round = 0
+  while True:
+    solve_result = solver.solve()
+    if solve_result.termination.reason != mathopt.TerminationReason.OPTIMAL:
+      raise RuntimeError(
+          "Failed to solve leader LP problem to optimality at "
+          f"iteration {pricing_round} termination: "
+          f"{solve_result.termination}"
+      )
+    if not solve_result.has_dual_feasible_solution:
+      # MathOpt does not require solvers to return a dual solution on optimal,
+      # but most LP solvers always will, see go/mathopt-solver-contracts for
+      # details.
+      raise RuntimeError(
+          "no dual solution was returned with optimal solution "
+          f"at iteration {pricing_round}"
+      )
+    prices = [solve_result.dual_values()[d] for d in demand_met]
+    config, value = best_configuration(
+        prices, instance.piece_sizes, instance.board_length
+    )
+    if value < 1 + 1e-3:
+      # The LP relaxation is solved, we can stop adding columns.
+      break
+    add_config(config)
+    print(
+        f"round: {pricing_round}, "
+        f"lp objective: {solve_result.objective_value()}",
+        flush=True,
+    )
+    pricing_round += 1
+  print("Done adding columns, switching to MIP")
+  for _, var in configs:
+    var.integer = True
 
-    solve_result = mathopt.solve(model, mathopt.SolverType.CP_SAT)
-    if solve_result.termination.reason not in (
-        mathopt.TerminationReason.OPTIMAL,
-        mathopt.TerminationReason.FEASIBLE,
-    ):
-        raise RuntimeError(
-            "Failed to solve final cutting stock MIP, "
-            f"termination: {solve_result.termination}"
-        )
+  solve_result = mathopt.solve(model, mathopt.SolverType.CP_SAT)
+  if solve_result.termination.reason not in (
+      mathopt.TerminationReason.OPTIMAL,
+      mathopt.TerminationReason.FEASIBLE,
+  ):
+    raise RuntimeError(
+        "Failed to solve final cutting stock MIP, "
+        f"termination: {solve_result.termination}"
+    )
 
-    solution = CuttingStockSolution()
-    for config, var in configs:
-        use = round(solve_result.variable_values()[var])
-        if use > 0:
-            solution.configurations.append(config)
-            solution.quantity.append(use)
-            solution.objective_value += use
-    return solution
+  solution = CuttingStockSolution()
+  for config, var in configs:
+    use = round(solve_result.variable_values()[var])
+    if use > 0:
+      solution.configurations.append(config)
+      solution.quantity.append(use)
+      solution.objective_value += use
+  return solution
 
 
 def main(argv: Sequence[str]) -> None:
-    del argv  # Unused.
+  del argv  # Unused.
 
-    # Data from https://en.wikipedia.org/wiki/Cutting_stock_problem
-    instance = CuttingStockInstance(
-        board_length=5600,
-        piece_sizes=[
-            1380,
-            1520,
-            1560,
-            1710,
-            1820,
-            1880,
-            1930,
-            2000,
-            2050,
-            2100,
-            2140,
-            2150,
-            2200,
-        ],
-        piece_demands=[22, 25, 12, 14, 18, 18, 20, 10, 12, 14, 16, 18, 20],
-    )
-    solution = solve_cutting_stock(instance)
-    print("Best known solution uses 73 rolls.")
-    print(f"Total rolls used in actual solution found: {solution.objective_value}")
+  # Data from https://en.wikipedia.org/wiki/Cutting_stock_problem
+  instance = CuttingStockInstance(
+      board_length=5600,
+      piece_sizes=[
+          1380,
+          1520,
+          1560,
+          1710,
+          1820,
+          1880,
+          1930,
+          2000,
+          2050,
+          2100,
+          2140,
+          2150,
+          2200,
+      ],
+      piece_demands=[22, 25, 12, 14, 18, 18, 20, 10, 12, 14, 16, 18, 20],
+  )
+  solution = solve_cutting_stock(instance)
+  print("Best known solution uses 73 rolls.")
+  print(
+      f"Total rolls used in actual solution found: {solution.objective_value}"
+  )
 
 
 if __name__ == "__main__":
-    app.run(main)
+  app.run(main)

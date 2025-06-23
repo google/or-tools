@@ -22,16 +22,17 @@ from ortools.math_opt.python.elemental import elemental
 
 class FromModel(Protocol):
 
-    __slots__ = ()
+  __slots__ = ()
 
-    @property
-    def elemental(self) -> elemental.Elemental: ...
+  @property
+  def elemental(self) -> elemental.Elemental:
+    ...
 
 
 def model_is_same(e1: FromModel, e2: FromModel) -> None:
-    if e1.elemental is not e2.elemental:
-        raise ValueError(
-            f"Expected two elements from the same model, but observed {e1} from"
-            f" model named: '{e1.elemental.model_name!r}', and {e2} from model"
-            f" named: '{e2.elemental.model_name!r}'."
-        )
+  if e1.elemental is not e2.elemental:
+    raise ValueError(
+        f"Expected two elements from the same model, but observed {e1} from"
+        f" model named: '{e1.elemental.model_name!r}', and {e2} from model"
+        f" named: '{e2.elemental.model_name!r}'."
+    )

@@ -13,20 +13,20 @@
 # limitations under the License.
 """Combinatorial auction in Google CP Solver.
 
-  This is a more general model for the combinatorial example
-  in the Numberjack Tutorial, pages 9 and 24 (slides  19/175 and
-  51/175).
+This is a more general model for the combinatorial example
+in the Numberjack Tutorial, pages 9 and 24 (slides  19/175 and
+51/175).
 
-  The original and more talkative model is here:
-  http://www.hakank.org/numberjack/combinatorial_auction.py
+The original and more talkative model is here:
+http://www.hakank.org/numberjack/combinatorial_auction.py
 
-  Compare with the following models:
-  * MiniZinc: http://hakank.org/minizinc/combinatorial_auction.mzn
-  * Gecode: http://hakank.org/gecode/combinatorial_auction.cpp
+Compare with the following models:
+* MiniZinc: http://hakank.org/minizinc/combinatorial_auction.mzn
+* Gecode: http://hakank.org/gecode/combinatorial_auction.cpp
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 import sys
 from collections import *
@@ -49,7 +49,7 @@ def main():
       [0, 2],  # A, C
       [1, 3],  # B,D
       [1, 2, 3],  # B,C,D
-      [0]  # A
+      [0],  # A
   ]
   # collect the bids for each item
   items_t = defaultdict(list)

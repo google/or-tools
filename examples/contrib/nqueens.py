@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 
-  n-queens problem in Google CP Solver.
+n-queens problem in Google CP Solver.
 
-  N queens problem.
+N queens problem.
 
-  This model was created by Hakan Kjellerstrand (hakank@gmail.com)
-  Also see my other Google CP Solver models:
-  http://www.hakank.org/google_or_tools/
+This model was created by Hakan Kjellerstrand (hakank@gmail.com)
+Also see my other Google CP Solver models:
+http://www.hakank.org/google_or_tools/
 """
 from ortools.constraint_solver import pywrapcp
 
@@ -63,8 +63,13 @@ def main(n=8):
   # collector = solver.FirstSolutionCollector(solution)
   # search_log = solver.SearchLog(100, x[0])
   solver.Solve(
-      solver.Phase([q[i] for i in range(n)], solver.INT_VAR_SIMPLE,
-                   solver.ASSIGN_MIN_VALUE), [collector])
+      solver.Phase(
+          [q[i] for i in range(n)],
+          solver.INT_VAR_SIMPLE,
+          solver.ASSIGN_MIN_VALUE,
+      ),
+      [collector],
+  )
 
   num_solutions = collector.SolutionCount()
   print("num_solutions: ", num_solutions)
