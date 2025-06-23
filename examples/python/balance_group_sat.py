@@ -19,6 +19,7 @@ be as close to the average as possible.
 Furthermore, if one color is an a group, at least k items with this color must
 be in that group.
 """
+
 from typing import Dict, Sequence
 
 from absl import app

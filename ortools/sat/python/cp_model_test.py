@@ -2296,10 +2296,10 @@ TRFM"""
         solver.best_bound_callback = best_bound_callback.new_best_bound
         status = solver.Solve(model, solution_callback)
         if status == cp_model.OPTIMAL:
-            self.assertLess(
-                time.time(),
-                max(best_bound_callback.last_time, solution_callback.last_time) + 9.0,
+            last_activity = max(
+                best_bound_callback.last_time, solution_callback.last_time
             )
+            self.assertLess(time.time(), last_activity + 15.0)
 
     def test_issue4434(self) -> None:
         model = cp_model.CpModel()

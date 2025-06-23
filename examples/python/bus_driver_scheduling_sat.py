@@ -29,6 +29,7 @@ import math
 
 from absl import app
 from absl import flags
+
 from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
@@ -81,7 +82,7 @@ SAMPLE_SHIFTS_TINY = [
     [25, "15:40", "15:56", 940, 956, 16],
     [26, "15:58", "16:45", 958, 1005, 47],
     [27, "16:04", "17:30", 964, 1050, 86],
-]  # yapf:disable
+]
 
 SAMPLE_SHIFTS_SMALL = [
     #
@@ -143,7 +144,7 @@ SAMPLE_SHIFTS_SMALL = [
     [47, "18:34", "19:58", 1114, 1198, 84],
     [48, "19:56", "20:34", 1196, 1234, 38],
     [49, "20:05", "20:48", 1205, 1248, 43],
-]  # yapf:disable
+]
 
 SAMPLE_SHIFTS_MEDIUM = [
     [0, "04:30", "04:53", 270, 293, 23],
@@ -346,7 +347,7 @@ SAMPLE_SHIFTS_MEDIUM = [
     [197, "00:02", "00:12", 1442, 1452, 10],
     [198, "00:07", "00:39", 1447, 1479, 32],
     [199, "00:25", "01:12", 1465, 1512, 47],
-]  # yapf:disable
+]
 
 SAMPLE_SHIFTS_LARGE = [
     [0, "04:18", "05:00", 258, 300, 42],
@@ -1705,7 +1706,7 @@ SAMPLE_SHIFTS_LARGE = [
     [1353, "00:47", "01:26", 1487, 1526, 39],
     [1354, "00:54", "01:04", 1494, 1504, 10],
     [1355, "00:57", "01:07", 1497, 1507, 10],
-]  # yapf:disable
+]
 
 
 def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:

@@ -69,7 +69,7 @@ def main(_) -> None:
         branches = collector.Branches(i)
         failures = collector.Failures(i)
         print(
-            ("Solution #%i: value = %i, failures = %i, branches = %i," "time = %i ms")
+            "Solution #%i: value = %i, failures = %i, branches = %i,time = %i ms"
             % (i, obj_value, failures, branches, time)
         )
     time = solver.WallTime()

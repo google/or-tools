@@ -20,6 +20,7 @@ visit all boxes in order, and walk on each block in a 4x4x4 map exactly once.
 Admissible moves are one step in one of the 6 directions:
   x+, x-, y+, y-, z+(up), z-(down)
 """
+
 from typing import Dict, Sequence, Tuple
 
 from absl import app

@@ -111,7 +111,10 @@ if __name__ == "__main__":
         "-l",
         "--log",
         type="string",
-        help="Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)",
+        help=(
+            "Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0),"
+            " DEBUG (-1)"
+        ),
         default="INFO",
     )
     options, args = parser.parse_args()
