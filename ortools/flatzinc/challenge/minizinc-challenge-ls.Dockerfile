@@ -1,6 +1,6 @@
 FROM minizinc/mznc2025:latest AS env
 
-ENV SRC_GIT_BRANCH=v99bugfix
+ENV SRC_GIT_BRANCH v99bugfix
 
 ENV TZ=America/Los_Angeles
 

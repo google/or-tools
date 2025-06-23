@@ -183,7 +183,7 @@ double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
 }
 
 std::string ModelBuilderHelper::VarName(int var_index) const {
-  return model_.variable(var_index).name();
+  return std::string(model_.variable(var_index).name());
 }
 
 int ModelBuilderHelper::AddLinearConstraint() {
@@ -259,7 +259,7 @@ double ModelBuilderHelper::ConstraintUpperBound(int ct_index) const {
 }
 
 std::string ModelBuilderHelper::ConstraintName(int ct_index) const {
-  return model_.constraint(ct_index).name();
+  return std::string(model_.constraint(ct_index).name());
 }
 
 std::vector<int> ModelBuilderHelper::ConstraintVarIndices(int ct_index) const {
@@ -399,7 +399,7 @@ double ModelBuilderHelper::EnforcedConstraintUpperBound(int ct_index) const {
 
 std::string ModelBuilderHelper::EnforcedConstraintName(int ct_index) const {
   DCHECK(IsEnforcedConstraint(ct_index));
-  return model_.general_constraint(ct_index).name();
+  return std::string(model_.general_constraint(ct_index).name());
 }
 
 std::vector<int> ModelBuilderHelper::EnforcedConstraintVarIndices(
@@ -436,7 +436,9 @@ int ModelBuilderHelper::num_constraints() const {
   return model_.constraint_size() + model_.general_constraint_size();
 }
 
-std::string ModelBuilderHelper::name() const { return model_.name(); }
+std::string ModelBuilderHelper::name() const {
+  return std::string(model_.name());
+}
 
 void ModelBuilderHelper::SetName(const std::string& name) {
   model_.set_name(name);
@@ -741,7 +743,7 @@ double ModelSolverHelper::activity(int ct_index) {
 
 std::string ModelSolverHelper::status_string() const {
   if (!has_response()) return "";
-  return response_.value().status_str();
+  return std::string(response_.value().status_str());
 }
 
 double ModelSolverHelper::wall_time() const {
