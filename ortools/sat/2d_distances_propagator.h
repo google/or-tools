@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -47,8 +48,26 @@ class Precedences2DPropagator : public PropagatorInterface {
  private:
   void CollectNewPairsOfBoxesWithNonTrivialDistance();
   void UpdateVarLookups();
+  IntegerValue UpperBound(
+      std::variant<LinearExpression2, LinearExpression2Index> linear2) const;
+  void AddOrUpdateDataForPairOfBoxes(int box1, int box2);
 
-  std::vector<std::pair<int, int>> non_trivial_pairs_;
+  struct PairData {
+    // The condition must be true if ub(linear2) < ub.
+    struct Condition {
+      // If the expression is in the Linear2Indices it is represented by its
+      // index, otherwise it is represented by the expression itself.
+      std::variant<LinearExpression2, LinearExpression2Index> linear2;
+      IntegerValue ub;
+    };
+
+    int box1;
+    int box2;
+    // start1_before_end2[0==x, 1==y][0=start_1_end_2, 1=start_2_end_1]
+    Condition start_before_end[2][2];
+  };
+  absl::flat_hash_map<std::pair<int, int>, int> non_trivial_pairs_index_;
+  std::vector<PairData> pair_data_;
   struct VarUsage {
     // boxes[0=x, 1=y][0=start, 1=end]
     std::vector<int> boxes[2][2];
@@ -60,7 +79,8 @@ class Precedences2DPropagator : public PropagatorInterface {
   Linear2Bounds* linear2_bounds_;
   Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
-  Linear2WithPotentialNonTrivalBounds* non_trivial_bounds_;
+  Linear2Indices* lin2_indices_;
+  IntegerTrail* integer_trail_;
 
   int last_helper_inprocessing_count_ = -1;
   int num_known_linear2_ = 0;

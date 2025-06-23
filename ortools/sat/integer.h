@@ -1379,11 +1379,14 @@ inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
 }
 
 inline IntegerValue IntegerTrail::UpperBound(LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
   IntegerValue result = 0;
   for (int i = 0; i < 2; ++i) {
-    if (expr.coeffs[i] != 0) {
+    if (expr.coeffs[i] == 0) {
+      continue;
+    } else if (expr.coeffs[i] > 0) {
       result += expr.coeffs[i] * UpperBound(expr.vars[i]);
+    } else {
+      result += expr.coeffs[i] * LowerBound(expr.vars[i]);
     }
   }
   return result;

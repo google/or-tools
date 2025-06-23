@@ -3577,6 +3577,7 @@ cc_library(
         ":synchronization",
         ":timetable",
         ":util",
+        "//ortools/base:stl_util",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",

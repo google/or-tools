@@ -190,8 +190,7 @@ TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   auto* lin2_bounds = model.GetOrCreate<Linear2Bounds>();
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* precedences = model.GetOrCreate<EnforcedLinear2Bounds>();
-  auto* non_trivial_bounds =
-      model.GetOrCreate<Linear2WithPotentialNonTrivalBounds>();
+  auto* lin2_indices = model.GetOrCreate<Linear2Indices>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   const Literal l(model.Add(NewBooleanVariable()), true);
@@ -210,7 +209,7 @@ TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   std::vector<Literal> literal_reason;
   std::vector<IntegerLiteral> integer_reason;
   precedences->AddReasonForUpperBoundLowerThan(
-      non_trivial_bounds->AddOrGet(expr_a_plus_b), 15, &literal_reason,
+      lin2_indices->AddOrGet(expr_a_plus_b), 15, &literal_reason,
       &integer_reason);
   EXPECT_THAT(literal_reason, ElementsAre(l.Negated()));
 
@@ -220,8 +219,8 @@ TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   literal_reason.clear();
   integer_reason.clear();
   precedences->AddReasonForUpperBoundLowerThan(
-      non_trivial_bounds->AddOrGet(expr_a_plus_b), kMaxIntegerValue,
-      &literal_reason, &integer_reason);
+      lin2_indices->AddOrGet(expr_a_plus_b), kMaxIntegerValue, &literal_reason,
+      &integer_reason);
   EXPECT_THAT(literal_reason, IsEmpty());
 }
 
@@ -515,7 +514,7 @@ TEST(EnforcedLinear2BoundsTest, CollectPrecedences) {
   std::vector<int> indices;
   std::vector<IntegerVariable> variables;
   for (const auto precedence : p) {
-    indices.push_back(precedence.index);
+    indices.push_back(precedence.var_index);
     variables.push_back(precedence.var);
   }
   EXPECT_EQ(indices, (std::vector<int>{1, 2}));

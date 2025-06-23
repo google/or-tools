@@ -17,13 +17,13 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -43,8 +43,8 @@ Precedences2DPropagator::Precedences2DPropagator(
       linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
       linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
-      non_trivial_bounds_(
-          model->GetOrCreate<Linear2WithPotentialNonTrivalBounds>()) {
+      lin2_indices_(model->GetOrCreate<Linear2Indices>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
   model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
 }
 
@@ -67,15 +67,46 @@ void Precedences2DPropagator::UpdateVarLookups() {
   }
 }
 
+void Precedences2DPropagator::AddOrUpdateDataForPairOfBoxes(int box1,
+                                                            int box2) {
+  if (box1 > box2) std::swap(box1, box2);
+  const auto [it, inserted] = non_trivial_pairs_index_.insert(
+      {std::make_pair(box1, box2), static_cast<int>(pair_data_.size())});
+  if (inserted) {
+    pair_data_.emplace_back();
+  }
+  PairData& pair_data = pair_data_[it->second];
+  pair_data.box1 = box1;
+  pair_data.box2 = box2;
+  for (int dim = 0; dim < 2; ++dim) {
+    const SchedulingConstraintHelper& dim_helper =
+        dim == 0 ? helper_.x_helper() : helper_.y_helper();
+    for (int j = 0; j < 2; ++j) {
+      int b1 = j == 0 ? box1 : box2;
+      int b2 = j == 0 ? box2 : box1;
+      auto [start_minus_end_expr, start_minus_end_ub] =
+          EncodeDifferenceLowerThan(dim_helper.Starts()[b1],
+                                    dim_helper.Ends()[b2], 0);
+      const LinearExpression2Index start_minus_end_index =
+          lin2_indices_->GetIndex(start_minus_end_expr);
+      pair_data.start_before_end[dim][j].ub = start_minus_end_ub;
+      if (start_minus_end_index != kNoLinearExpression2Index) {
+        pair_data.start_before_end[dim][j].linear2 = start_minus_end_index;
+      } else {
+        pair_data.start_before_end[dim][j].linear2 = start_minus_end_expr;
+      }
+    }
+  }
+}
+
 void Precedences2DPropagator::CollectNewPairsOfBoxesWithNonTrivialDistance() {
   const absl::Span<const LinearExpression2> exprs =
-      non_trivial_bounds_->GetLinear2WithPotentialNonTrivalBounds();
+      lin2_indices_->GetStoredLinear2Indices();
   if (exprs.size() == num_known_linear2_) {
     return;
   }
   VLOG(2) << "CollectPairsOfBoxesWithNonTrivialDistance called, num_exprs: "
           << exprs.size();
-  const int previous_num_pairs = non_trivial_pairs_.size();
   for (; num_known_linear2_ < exprs.size(); ++num_known_linear2_) {
     const LinearExpression2& positive_expr = exprs[num_known_linear2_];
     LinearExpression2 negated_expr = positive_expr;
@@ -93,52 +124,25 @@ void Precedences2DPropagator::CollectNewPairsOfBoxesWithNonTrivialDistance() {
       const VarUsage& usage1 = it1->second;
       const VarUsage& usage2 = it2->second;
       for (int dim = 0; dim < 2; ++dim) {
-        const SchedulingConstraintHelper& dim_helper =
-            dim == 0 ? helper_.x_helper() : helper_.y_helper();
         for (const int box1 : usage1.boxes[dim][0 /* start */]) {
           for (const int box2 : usage2.boxes[dim][1 /* end */]) {
             if (box1 == box2) continue;
-            const auto [expr2, unused] = EncodeDifferenceLowerThan(
-                dim_helper.Starts()[box1], dim_helper.Ends()[box2],
-                /*ub=unused*/ 0);
-            if (expr == expr2) {
-              if (box1 < box2) {
-                non_trivial_pairs_.push_back({box1, box2});
-              } else {
-                non_trivial_pairs_.push_back({box2, box1});
-              }
-            }
+            AddOrUpdateDataForPairOfBoxes(box1, box2);
           }
         }
       }
     }
   }
+}
 
-  // Sort the new pairs.
-  std::sort(non_trivial_pairs_.begin() + previous_num_pairs,
-            non_trivial_pairs_.end());
-
-  // Remove duplicates from new pairs.
-  non_trivial_pairs_.erase(
-      std::unique(non_trivial_pairs_.begin() + previous_num_pairs,
-                  non_trivial_pairs_.end()),
-      non_trivial_pairs_.end());
-
-  // Merge with the old pairs keeping sorted.
-  std::inplace_merge(non_trivial_pairs_.begin(),
-                     non_trivial_pairs_.begin() + previous_num_pairs,
-                     non_trivial_pairs_.end());
-
-  // Remove newly-added duplicates.
-  non_trivial_pairs_.erase(
-      std::unique(non_trivial_pairs_.begin(), non_trivial_pairs_.end()),
-      non_trivial_pairs_.end());
-
-  // Result should be sorted and without duplicates.
-  DCHECK(std::is_sorted(non_trivial_pairs_.begin(), non_trivial_pairs_.end()));
-  DCHECK(std::adjacent_find(non_trivial_pairs_.begin(),
-                            non_trivial_pairs_.end()) ==
-         non_trivial_pairs_.end());
+IntegerValue Precedences2DPropagator::UpperBound(
+    std::variant<LinearExpression2, LinearExpression2Index> linear2) const {
+  if (std::holds_alternative<LinearExpression2Index>(linear2)) {
+    return linear2_bounds_->UpperBound(
+        std::get<LinearExpression2Index>(linear2));
+  } else {
+    return integer_trail_->UpperBound(std::get<LinearExpression2>(linear2));
+  }
 }
 
 bool Precedences2DPropagator::Propagate() {
@@ -147,7 +151,8 @@ bool Precedences2DPropagator::Propagate() {
     last_helper_inprocessing_count_ = helper_.InProcessingCount();
     UpdateVarLookups();
     num_known_linear2_ = 0;
-    non_trivial_pairs_.clear();
+    non_trivial_pairs_index_.clear();
+    pair_data_.clear();
   }
   CollectNewPairsOfBoxesWithNonTrivialDistance();
 
@@ -156,7 +161,9 @@ bool Precedences2DPropagator::Propagate() {
   SchedulingConstraintHelper* helpers[2] = {&helper_.x_helper(),
                                             &helper_.y_helper()};
 
-  for (const auto& [box1, box2] : non_trivial_pairs_) {
+  for (const PairData& pair_data : pair_data_) {
+    const int box1 = pair_data.box1;
+    const int box2 = pair_data.box2;
     DCHECK(box1 < helper_.NumBoxes());
     DCHECK(box2 < helper_.NumBoxes());
     DCHECK_NE(box1, box2);
@@ -166,16 +173,10 @@ bool Precedences2DPropagator::Propagate() {
 
     bool is_unfeasible = true;
     for (int dim = 0; dim < 2; dim++) {
-      const SchedulingConstraintHelper* helper = helpers[dim];
       for (int j = 0; j < 2; j++) {
-        int b1 = box1;
-        int b2 = box2;
-        if (j == 1) {
-          std::swap(b1, b2);
-        }
-        const auto [expr, ub_for_no_overlap] = EncodeDifferenceLowerThan(
-            helper->Starts()[b1], helper->Ends()[b2], 0);
-        if (linear2_bounds_->UpperBound(expr) >= ub_for_no_overlap) {
+        const PairData::Condition& start_before_end =
+            pair_data.start_before_end[dim][j];
+        if (UpperBound(start_before_end.linear2) >= start_before_end.ub) {
           is_unfeasible = false;
           break;
         }
@@ -223,7 +224,7 @@ Precedences2DPropagator::~Precedences2DPropagator() {
   std::vector<std::pair<std::string, int64_t>> stats;
   stats.push_back({"Precedences2DPropagator/called", num_calls_});
   stats.push_back({"Precedences2DPropagator/conflicts", num_conflicts_});
-  stats.push_back({"Precedences2DPropagator/pairs", non_trivial_pairs_.size()});
+  stats.push_back({"Precedences2DPropagator/pairs", pair_data_.size()});
 
   shared_stats_->AddStats(stats);
 }

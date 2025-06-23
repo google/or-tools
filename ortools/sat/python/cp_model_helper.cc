@@ -151,7 +151,9 @@ class ResponseWrapper {
     return CpSatHelper::SolverResponseStats(response_);
   }
 
-  std::string SolutionInfo() const { return response_.solution_info(); }
+  std::string SolutionInfo() const {
+    return std::string(response_.solution_info());
+  }
 
   std::vector<int> SufficientAssumptionsForInfeasibility() const {
     return std::vector<int>(

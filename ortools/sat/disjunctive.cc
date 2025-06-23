@@ -1222,8 +1222,6 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // Note that like in Propagate() we split this set of task into critical
     // subpart as there is no point considering them together.
     //
-    // TODO(user): we should probably change the api to return a Span.
-    //
     // TODO(user): If more than one set of task push the same variable, we
     // probably only want to keep the best push? Maybe we want to process them
     // in reverse order of what we do here?
@@ -1233,7 +1231,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     for (; global_i < size; ++global_i) {
       const EnforcedLinear2Bounds::PrecedenceData& data = before_[global_i];
       if (data.var != var) break;
-      const int index = data.index;
+      const int index = data.var_index;
       const auto [t, start_of_t] = window_[index];
       if (global_i == global_start_i) {  // First loop.
         local_start = start_of_t;
@@ -1242,7 +1240,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         if (start_of_t >= local_end) break;
         local_end += helper_->SizeMin(t);
       }
-      indices_before_.push_back(index);
+      indices_before_.push_back({index, data.lin2_index});
     }
 
     // No need to consider if we don't have at least two tasks before var.
@@ -1268,16 +1266,14 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     IntegerValue min_offset = kMaxIntegerValue;
     IntegerValue sum_of_duration = 0;
     for (int i = num_before; --i >= 0;) {
-      const TaskTime task_time = window_[indices_before_[i]];
+      const auto [task_index, lin2_index] = indices_before_[i];
+      const TaskTime task_time = window_[task_index];
       const AffineExpression& end_exp = helper_->Ends()[task_time.task_index];
 
-      // TODO(user): The hash lookup here is a bit slow, so we avoid fetching
-      // the offset as much as possible. Note that the alternative of storing it
-      // in PrecedenceData is not necessarily better and harder to update as we
-      // dive/backtrack.
+      // TODO(user): The lookup here is a bit slow, so we avoid fetching
+      // the offset as much as possible.
       const IntegerValue inner_offset =
-          -linear2_bounds_->NonTrivialUpperBoundForGcd1(
-              LinearExpression2::Difference(end_exp.var, var));
+          -linear2_bounds_->NonTrivialUpperBound(lin2_index);
       DCHECK_NE(inner_offset, kMinIntegerValue);
 
       // We have var >= end_exp.var + inner_offset, so
@@ -1320,10 +1316,10 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       DCHECK_NE(best_index, -1);
       helper_->ClearReason();
       const IntegerValue window_start =
-          window_[indices_before_[best_index]].time;
+          window_[indices_before_[best_index].first].time;
       for (int i = best_index; i < num_before; ++i) {
         if (skip_[i]) continue;
-        const int ct = window_[indices_before_[i]].task_index;
+        const int ct = window_[indices_before_[i].first].task_index;
         helper_->AddPresenceReason(ct);
         helper_->AddEnergyAfterReason(ct, helper_->SizeMin(ct), window_start);
 

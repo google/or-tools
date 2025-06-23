@@ -1453,6 +1453,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       if (row_has_at_most_one_true[row]) {
         context->UpdateRuleStats(
             "symmetry: fixed all but one to false in orbitope row");
+        context->solution_crush().MaybeSwapOrbitopeColumns(
+            orbitope, row, num_processed_rows - 1, true);
         for (int j = num_processed_rows; j < num_cols; ++j) {
           if (!context->SetLiteralToFalse(orbitope[row][j])) return false;
         }
@@ -1460,6 +1462,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         CHECK(row_has_at_most_one_false[row]);
         context->UpdateRuleStats(
             "symmetry: fixed all but one to true in orbitope row");
+        context->solution_crush().MaybeSwapOrbitopeColumns(
+            orbitope, row, num_processed_rows - 1, false);
         for (int j = num_processed_rows; j < num_cols; ++j) {
           if (!context->SetLiteralToTrue(orbitope[row][j])) return false;
         }

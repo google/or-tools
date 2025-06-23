@@ -135,10 +135,10 @@ class ProtoTrail {
   // the decision.
   absl::Span<const ProtoLiteral> Implications(int level) const;
   void AddImplication(int level, ProtoLiteral implication) {
-    auto it = implication_level_.find(implication);
-    if (it != implication_level_.end() && it->second <= level) return;
+    auto it = assigned_at_level_.find(implication);
+    if (it != assigned_at_level_.end() && it->second <= level) return;
     MutableImplications(level).push_back(implication);
-    implication_level_[implication] = level;
+    assigned_at_level_[implication] = level;
   }
 
   IntegerValue ObjectiveLb(int level) const {
@@ -153,7 +153,7 @@ class ProtoTrail {
   // Appends a literal to the target phase, returns false if the phase is full.
   bool AddPhase(const ProtoLiteral& lit) {
     if (target_phase_.size() >= kMaxPhaseSize) return false;
-    if (!implication_level_.contains(lit)) {
+    if (!IsAssigned(lit)) {
       target_phase_.push_back(lit);
     }
     return true;
@@ -163,6 +163,10 @@ class ProtoTrail {
     for (const ProtoLiteral& lit : phase) {
       if (!AddPhase(lit)) break;
     }
+  }
+  bool IsAssigned(const ProtoLiteral& lit) const {
+    return assigned_at_level_.contains(lit) ||
+           assigned_at_level_.contains(lit.Negated());
   }
 
  private:
@@ -179,7 +183,7 @@ class ProtoTrail {
   // Extra implications that can be propagated at each level but were never
   // branches in the shared tree.
   std::vector<std::vector<ProtoLiteral>> implications_;
-  absl::flat_hash_map<ProtoLiteral, int> implication_level_;
+  absl::flat_hash_map<ProtoLiteral, int> assigned_at_level_;
 
   // The index in the literals_/node_ids_ vectors for the start of each level.
   std::vector<int> decision_indexes_;

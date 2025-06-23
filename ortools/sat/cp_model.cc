@@ -125,7 +125,7 @@ IntVar IntVar::WithName(absl::string_view name) {
 
 std::string IntVar::Name() const {
   if (builder_ == nullptr) return "null";
-  return builder_->Proto().variables(index_).name();
+  return std::string(builder_->Proto().variables(index_).name());
 }
 
 ::operations_research::Domain IntVar::Domain() const {
@@ -619,7 +619,7 @@ BoolVar IntervalVar::PresenceBoolVar() const {
 
 std::string IntervalVar::Name() const {
   if (builder_ == nullptr) return "null";
-  return builder_->Proto().constraints(index_).name();
+  return std::string(builder_->Proto().constraints(index_).name());
 }
 
 std::string IntervalVar::DebugString() const {

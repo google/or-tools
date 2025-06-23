@@ -376,7 +376,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
   FixedCapacityVector<TaskTime> window_;
   FixedCapacityVector<IntegerVariable> index_to_end_vars_;
 
-  FixedCapacityVector<int> indices_before_;
+  FixedCapacityVector<std::pair<int, LinearExpression2Index>> indices_before_;
   std::vector<bool> skip_;
   std::vector<EnforcedLinear2Bounds::PrecedenceData> before_;
 

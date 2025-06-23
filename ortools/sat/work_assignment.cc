@@ -149,6 +149,7 @@ ProtoTrail::ProtoTrail() { target_phase_.reserve(kMaxPhaseSize); }
 void ProtoTrail::PushLevel(const ProtoLiteral& decision,
                            IntegerValue objective_lb, int node_id) {
   CHECK_GT(node_id, 0);
+  assigned_at_level_[decision] = decision_indexes_.size();
   decision_indexes_.push_back(literals_.size());
   literals_.push_back(decision);
   node_ids_.push_back(node_id);
@@ -165,14 +166,14 @@ void ProtoTrail::SetLevelImplied(int level) {
   DCHECK_LE(level, implications_.size());
   SetObjectiveLb(level - 1, ObjectiveLb(level));
   const ProtoLiteral decision = Decision(level);
-  implication_level_[decision] = level - 1;
+  assigned_at_level_[decision] = level - 1;
   // We don't store implications for level 0, so only move implications up to
   // the parent if we are removing level 2 or greater.
   if (level >= 2) {
     MutableImplications(level - 1).push_back(decision);
   }
   for (const ProtoLiteral& implication : Implications(level)) {
-    implication_level_[implication] = level - 1;
+    assigned_at_level_[implication] = level - 1;
     if (level >= 2) {
       MutableImplications(level - 1).push_back(implication);
     }
@@ -190,7 +191,7 @@ void ProtoTrail::Clear() {
   level_to_objective_lbs_.clear();
   node_ids_.clear();
   target_phase_.clear();
-  implication_level_.clear();
+  assigned_at_level_.clear();
   implications_.clear();
 }
 
@@ -778,6 +779,7 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
 }
 
 bool SharedTreeWorker::SyncWithSharedTree() {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   manager_->SyncTree(assigned_tree_);
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
@@ -793,6 +795,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         !decision_policy_->GetBestPartialAssignment().empty()) {
       assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
+        // Skip saving the phase for anything assigned at the root.
+        if (trail_->Assignment().LiteralIsAssigned(lit)) continue;
         // Only set the phase for booleans to avoid creating literals on other
         // workers.
         auto encoded = ProtoLiteral::EncodeLiteral(lit, mapping_);
@@ -809,7 +813,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
               << assigned_tree_.TargetPhase().size();
       decision_policy_->ClearBestPartialAssignment();
       for (const ProtoLiteral& lit : assigned_tree_.TargetPhase()) {
-        decision_policy_->SetTargetPolarity(DecodeDecision(lit));
+        decision_policy_->SetTargetPolarityIfUnassigned(DecodeDecision(lit));
       }
     }
   }

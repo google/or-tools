@@ -107,7 +107,8 @@ class SatDecisionPolicy {
   }
 
   // Like SetAssignmentPreference() but it can be overridden by phase-saving.
-  void SetTargetPolarity(Literal l) {
+  void SetTargetPolarityIfUnassigned(Literal l) {
+    if (trail_.Assignment().VariableIsAssigned(l.Variable())) return;
     has_target_polarity_[l.Variable()] = true;
     target_polarity_[l.Variable()] = var_polarity_[l.Variable()] =
         l.IsPositive();

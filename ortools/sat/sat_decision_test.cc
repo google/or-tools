@@ -104,7 +104,7 @@ TEST(SatDecisionPolicyTest, SetTargetPolarityInStablePhase) {
   decision->IncreaseNumVariables(num_variables);
 
   for (int i = 0; i < num_variables; ++i) {
-    decision->SetTargetPolarity(Literal(BooleanVariable(i), i % 2));
+    decision->SetTargetPolarityIfUnassigned(Literal(BooleanVariable(i), i % 2));
   }
 
   decision->SetStablePhase(true);
@@ -125,7 +125,7 @@ TEST(SatDecisionPolicyTest, SetTargetPolarity) {
   decision->IncreaseNumVariables(num_variables);
 
   for (int i = 0; i < num_variables; ++i) {
-    decision->SetTargetPolarity(Literal(BooleanVariable(i), i % 2));
+    decision->SetTargetPolarityIfUnassigned(Literal(BooleanVariable(i), i % 2));
   }
 
   decision->SetStablePhase(false);

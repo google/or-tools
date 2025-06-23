@@ -41,6 +41,11 @@ namespace sat {
 
 // Callbacks that will be called when the search goes back to level 0.
 // Callbacks should return false if the propagation fails.
+//
+// We will call this after propagation has reached a fixed point. Note however
+// that if any callbacks "propagate" something, the callbacks following it might
+// not see a state where the propagation have been called again.
+// TODO(user): maybe we should re-propagate before calling the next callback.
 struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
 };
