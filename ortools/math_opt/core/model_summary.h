@@ -256,7 +256,7 @@ absl::Status UpdateBiMapFromMappedData(
   }
   absl::c_sort(new_ids);
   for (const int64_t id : new_ids) {
-    RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
+    RETURN_IF_ERROR(bimap.Insert(id, std::string(proto_map.at(id).name())));
   }
   return absl::OkStatus();
 }

@@ -174,9 +174,10 @@ class ModelStorageItemContainer {
 
   // When moving we're leaving the moved-from object unassociated with any
   // model. Derived classes should hold no items after being moved from.
-  ModelStorageItemContainer(ModelStorageItemContainer&& other)
+  ModelStorageItemContainer(ModelStorageItemContainer&& other) noexcept
       : storage_(std::exchange(other.storage_, nullptr)) {}
-  ModelStorageItemContainer& operator=(ModelStorageItemContainer&& other) {
+  ModelStorageItemContainer& operator=(
+      ModelStorageItemContainer&& other) noexcept {
     storage_ = std::exchange(other.storage_, nullptr);
     return *this;
   }

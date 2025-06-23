@@ -34,10 +34,10 @@ GurobiInitializerProto::ISVKey GurobiISVKey::Proto() const {
 GurobiISVKey GurobiISVKey::FromProto(
     const GurobiInitializerProto::ISVKey& key_proto) {
   return GurobiISVKey{
-      .name = key_proto.name(),
-      .application_name = key_proto.application_name(),
+      .name = std::string(key_proto.name()),
+      .application_name = std::string(key_proto.application_name()),
       .expiration = key_proto.expiration(),
-      .key = key_proto.key(),
+      .key = std::string(key_proto.key()),
   };
 }
 

@@ -373,7 +373,7 @@ absl::StatusOr<Termination> Termination::FromProto(
     return absl::InvalidArgumentError("reason must be specified");
   }
   Termination result(/*is_maximize=*/false, *reason,
-                     termination_proto.detail());
+                     std::string(termination_proto.detail()));
   result.limit = EnumFromProto(termination_proto.limit());
   OR_ASSIGN_OR_RETURN3(
       result.problem_status,

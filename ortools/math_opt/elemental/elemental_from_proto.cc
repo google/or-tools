@@ -253,7 +253,8 @@ absl::StatusOr<Elemental> ElementalFromModelProtoImpl(const ModelProto& proto) {
     return absl::UnimplementedError(
         "Elemental does not support sos2 constraints yet");
   }
-  Elemental elemental(proto.name(), proto.objective().name());
+  Elemental elemental(std::string(proto.name()),
+                      std::string(proto.objective().name()));
   AddVariables(proto.variables(), elemental);
   {
     const ObjectiveProto& objective = proto.objective();
