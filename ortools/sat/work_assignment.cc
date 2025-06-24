@@ -815,6 +815,7 @@ bool SharedTreeWorker::SyncWithSharedTree() {
       for (const ProtoLiteral& lit : assigned_tree_.TargetPhase()) {
         decision_policy_->SetTargetPolarityIfUnassigned(DecodeDecision(lit));
       }
+      decision_policy_->ResetActivitiesToFollowBestPartialAssignment();
     }
   }
   // If we commit to this subtree, keep it for at least 1s of dtime.

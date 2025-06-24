@@ -526,13 +526,16 @@ bool TransitivePrecedencesEvaluator::Build() {
   is_dag_ = !graph_has_cycle;
 
   // Lets get the transitive closure if it is cheap. This is also a way not to
-  // add too many relations (not more than 1e6) per call.
+  // add too many relations per call.
   int total_work = 0;
-  const int kWorkLimit = 1e6;
-  for (const IntegerVariable var : topological_order_) {
-    const int work = root_level_bounds_->AugmentSimpleRelations(
-        var, kWorkLimit - total_work);
-    total_work += work;
+  const int kWorkLimit = params_->transitive_precedences_work_limit();
+  if (kWorkLimit > 0) {
+    for (const IntegerVariable var : topological_order_) {
+      const int work = root_level_bounds_->AugmentSimpleRelations(
+          var, kWorkLimit - total_work);
+      total_work += work;
+      if (total_work >= kWorkLimit) break;
+    }
   }
 
   build_timestamp_ = root_level_bounds_->num_updates();

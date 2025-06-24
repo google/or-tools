@@ -296,7 +296,8 @@ struct FullIntegerPrecedence {
 class TransitivePrecedencesEvaluator {
  public:
   explicit TransitivePrecedencesEvaluator(Model* model)
-      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      : params_(model->GetOrCreate<SatParameters>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()),
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
     // Call Build() each time we go back to level zero.
@@ -335,6 +336,7 @@ class TransitivePrecedencesEvaluator {
   bool Build();
 
  private:
+  SatParameters* params_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_;
   RootLevelLinear2Bounds* root_level_bounds_;

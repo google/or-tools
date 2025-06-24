@@ -124,6 +124,15 @@ class SatDecisionPolicy {
     best_partial_assignment_.clear();
   }
 
+  // Increases activities of variables in the best partial assignment to ensure
+  // they are branched on first in the same order until the next conflict.
+  // Activities before this call are scaled to become disambiguation terms.
+  // Future conflicts will bump activity by the largest increase applied by this
+  // method.
+  // This acts as a soft-reset of the decision policy, useful when exploring a
+  // new region of the search space.
+  void ResetActivitiesToFollowBestPartialAssignment();
+
  private:
   // Computes an initial variable ordering.
   void InitializeVariableOrdering();
