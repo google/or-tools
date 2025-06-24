@@ -2599,6 +2599,11 @@ void RoutingModel::CloseModelWithParameters(
   if (vehicles_ > max_active_vehicles_) {
     solver_->AddConstraint(
         solver_->MakeSumLessOrEqual(vehicle_active_, max_active_vehicles_));
+    for (const RoutingDimension* dimension : dimensions_) {
+      solver_->AddConstraint(MakeNumActiveVehiclesCapacityConstraint(
+          solver_.get(), dimension->fixed_transits_, active_, vehicle_active_,
+          dimension->vehicle_capacities_, max_active_vehicles_));
+    }
   }
 
   // If there is only one vehicle in the model the vehicle variables will have
@@ -2615,7 +2620,17 @@ void RoutingModel::CloseModelWithParameters(
   // Nodes which are not in a disjunction are mandatory, and those with a
   // trivially infeasible type are necessarily unperformed
   for (int i = 0; i < size; ++i) {
-    if (GetDisjunctionIndices(i).empty() && active_[i]->Max() != 0) {
+    const std::vector<DisjunctionIndex>& disjunctions =
+        GetDisjunctionIndices(i);
+    bool is_mandatory = disjunctions.empty();
+    for (const DisjunctionIndex& disjunction : disjunctions) {
+      if (GetDisjunctionNodeIndices(disjunction).size() == 1 &&
+          GetDisjunctionPenalty(disjunction) == kNoPenalty) {
+        is_mandatory = true;
+        break;
+      }
+    }
+    if (is_mandatory && active_[i]->Max() != 0) {
       active_[i]->SetValue(1);
     }
     const int type = GetVisitType(i);
@@ -3374,7 +3389,8 @@ const Assignment* RoutingModel::SolveFromAssignmentsWithParameters(
     VLOG(1) << "Solving with CP-SAT";
     Assignment* const cp_solution = solution_collector->last_solution_or_null();
     Assignment sat_solution(solver_.get());
-    if (SolveModelWithSat(this, parameters, cp_solution, &sat_solution) &&
+    if (SolveModelWithSat(this, &search_stats_, parameters, cp_solution,
+                          &sat_solution) &&
         update_time_limits(/*leave_secondary_solve_buffer=*/false) &&
         AppendAssignmentIfFeasible(sat_solution, &solution_pool)) {
       if (parameters.log_search()) {
@@ -6688,10 +6704,22 @@ void RoutingDimension::InitializeTransitVariables(int64_t slack_max) {
       break;
     }
   }
+  const bool is_unary = IsUnary();
   for (int64_t i = 0; i < size; ++i) {
+    int64_t min_fixed_transit = std::numeric_limits<int64_t>::max();
+    if (is_unary) {
+      for (int evaluator_index : class_evaluators_) {
+        const auto& unary_transit_callback =
+            model_->UnaryTransitCallbackOrNull(evaluator_index);
+        DCHECK(unary_transit_callback != nullptr);
+        min_fixed_transit =
+            std::min(min_fixed_transit, unary_transit_callback(i));
+      }
+    }
     fixed_transits_[i] = solver->MakeIntVar(
-        are_all_evaluators_positive ? int64_t{0}
-                                    : std::numeric_limits<int64_t>::min(),
+        is_unary                      ? min_fixed_transit
+        : are_all_evaluators_positive ? int64_t{0}
+                                      : std::numeric_limits<int64_t>::min(),
         std::numeric_limits<int64_t>::max(), absl::StrCat(transit_name, i));
     // Setting dependent_transits_[i].
     if (base_dimension_ != nullptr) {

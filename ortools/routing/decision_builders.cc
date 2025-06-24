@@ -255,11 +255,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     vehicles_without_resource_assignment_.clear();
     vehicles_with_resource_assignment_.clear();
 
-    util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
-        used_resources_per_class;
+    used_resources_per_class_.clear();
     DetermineVehiclesRequiringResourceAssignment(
         &vehicles_without_resource_assignment_,
-        &vehicles_with_resource_assignment_, &used_resources_per_class);
+        &vehicles_with_resource_assignment_, &used_resources_per_class_);
 
     const auto next = [&model = model_](int64_t n) {
       return model.NextVar(n)->Value();
@@ -272,6 +271,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     int solve_duration_shares = vehicles_without_resource_assignment_.size() +
                                 vehicles_with_resource_assignment_.size();
     for (int vehicle : vehicles_without_resource_assignment_) {
+      // This can trigger a fail if the time limit is reached.
       solver->TopPeriodicCheck();
       cumul_values_.clear();
       break_start_end_values_.clear();
@@ -298,7 +298,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     // corresponding var and values.
     resource_indices_.clear();
     if (!ComputeVehicleResourceClassValuesAndIndices(
-            vehicles_with_resource_assignment_, used_resources_per_class, next,
+            vehicles_with_resource_assignment_, used_resources_per_class_, next,
             &resource_indices_)) {
       return false;
     }
@@ -532,6 +532,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   // limit is reached.
   std::vector<int> vehicles_without_resource_assignment_;
   std::vector<int> vehicles_with_resource_assignment_;
+  util_intops::StrongVector<RCIndex, absl::flat_hash_set<int>>
+      used_resources_per_class_;
   std::vector<int64_t> cumul_values_;
   std::vector<int64_t> break_start_end_values_;
   std::vector<int> resource_indices_;

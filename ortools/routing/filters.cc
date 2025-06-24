@@ -941,8 +941,9 @@ class SameVehicleCostFilter : public BasePathFilter {
                &current_cost_);
     }
   }
-  int64_t GetCost(int index, const std::vector<absl::flat_hash_map<int, int>>&
-                                 nodes_per_vehicle) const {
+  int64_t GetCost(
+      int index,
+      absl::Span<const absl::flat_hash_map<int, int>> nodes_per_vehicle) const {
     const int num_vehicles_used = nodes_per_vehicle[index].size();
     if (num_vehicles_used <= 1) return 0;
     return CapProd(num_vehicles_used - 1, model_.GetSoftSameVehicleCost(index));

@@ -255,6 +255,8 @@ struct RoutingSearchStats {
   int64_t num_cp_sat_calls_in_lp_scheduling = 0;
   int64_t num_glop_calls_in_lp_scheduling = 0;
   int64_t num_min_cost_flow_calls = 0;
+  int64_t num_cp_sat_calls_in_routing = 0;
+  int64_t num_generalized_cp_sat_calls_in_routing = 0;
 };
 
 class OR_DLL RoutingModel {
@@ -1469,6 +1471,8 @@ class OR_DLL RoutingModel {
   int64_t objective_lower_bound() const { return objective_lower_bound_; }
   /// Returns the current status of the routing model.
   RoutingSearchStatus::Value status() const { return status_; }
+  /// Returns search statistics.
+  const RoutingSearchStats& search_stats() const { return search_stats_; }
   /// Returns the value of the internal enable_deep_serialization_ parameter.
   bool enable_deep_serialization() const { return enable_deep_serialization_; }
   /// Applies a lock chain to the next search. 'locks' represents an ordered
@@ -3644,7 +3648,7 @@ class RoutingDimension {
 /// solve the TSP corresponding to the model if it has a single vehicle.
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
-bool SolveModelWithSat(RoutingModel* model,
+bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
                        const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution);

@@ -52,6 +52,15 @@ Constraint* MakeRouteConstraint(
 Constraint* MakeGlobalVehicleBreaksConstraint(
     Solver* solver, const RoutingDimension* dimension);
 
+/// Makes inactive the vehicles which cannot cover the demand resulting from
+/// the transit variables of the active nodes given the maximum number of
+/// vehicles which can be active.
+Constraint* MakeNumActiveVehiclesCapacityConstraint(
+    Solver* solver, std::vector<IntVar*> transit_vars,
+    std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
+    std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
+    bool enforce_active_vehicles = false);
+
 }  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_CONSTRAINTS_H_

@@ -494,6 +494,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     parameters_.set_add_lp_constraints_lazily(false);
     parameters_.set_use_absl_random(false);
     parameters_.set_alternative_pool_size(0);
+    parameters_.set_transitive_precedences_work_limit(0);
   }
   ~RoutingCPSatWrapper() override {}
   void Clear() override {

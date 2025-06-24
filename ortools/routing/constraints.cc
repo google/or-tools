@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
@@ -1030,6 +1031,119 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
 Constraint* MakeGlobalVehicleBreaksConstraint(
     Solver* solver, const RoutingDimension* dimension) {
   return solver->RevAlloc(new GlobalVehicleBreaksConstraint(dimension));
+}
+
+namespace {
+
+// TODO(user): Make this a real constraint with demons on transit and active
+// variables.
+class NumActiveVehiclesCapacityConstraint : public Constraint {
+ public:
+  NumActiveVehiclesCapacityConstraint(Solver* solver,
+                                      std::vector<IntVar*> transit_vars,
+                                      std::vector<IntVar*> active_vars,
+                                      std::vector<IntVar*> vehicle_active_vars,
+                                      std::vector<int64_t> vehicle_capacities,
+                                      int max_active_vehicles,
+                                      bool enforce_active_vehicles)
+      : Constraint(solver),
+        transit_vars_(std::move(transit_vars)),
+        active_vars_(std::move(active_vars)),
+        vehicle_active_vars_(std::move(vehicle_active_vars)),
+        vehicle_capacities_(std::move(vehicle_capacities)),
+        max_active_vehicles_(
+            std::min(max_active_vehicles,
+                     static_cast<int>(vehicle_active_vars_.size()))),
+        enforce_active_vehicles_(enforce_active_vehicles) {
+    DCHECK_EQ(transit_vars_.size(), active_vars_.size());
+    DCHECK_EQ(vehicle_capacities_.size(), vehicle_active_vars_.size());
+  }
+  std::string DebugString() const override {
+    return "NumActiveVehiclesCapacityConstraint";
+  }
+  void Post() override {
+    int64_t remaining_demand = 0;
+    for (int i = 0; i < transit_vars_.size(); ++i) {
+      if (active_vars_[i]->Min() == 1) {
+        CapAddTo(transit_vars_[i]->Min(), &remaining_demand);
+      }
+    }
+    sorted_by_capacity_vehicles_.clear();
+    sorted_by_capacity_vehicles_.reserve(vehicle_capacities_.size());
+    for (int v = 0; v < vehicle_active_vars_.size(); ++v) {
+      if (vehicle_active_vars_[v]->Max() == 0) continue;
+      sorted_by_capacity_vehicles_.push_back(v);
+    }
+    const int updated_max_active_vehicles = std::min<int>(
+        max_active_vehicles_, sorted_by_capacity_vehicles_.size());
+    absl::c_sort(sorted_by_capacity_vehicles_, [this](int a, int b) {
+      return vehicle_capacities_[a] > vehicle_capacities_[b];
+    });
+    for (int i = 0; i < updated_max_active_vehicles; ++i) {
+      CapSubFrom(vehicle_capacities_[sorted_by_capacity_vehicles_[i]],
+                 &remaining_demand);
+    }
+    if (remaining_demand > 0) solver()->Fail();
+
+    // Check vehicles that need to be forced to be active.
+    if (enforce_active_vehicles_) {
+      int64_t extended_capacity = 0;
+      if (updated_max_active_vehicles < sorted_by_capacity_vehicles_.size()) {
+        extended_capacity = vehicle_capacities_
+            [sorted_by_capacity_vehicles_[updated_max_active_vehicles]];
+      }
+      for (int i = 0; i < updated_max_active_vehicles; ++i) {
+        const int vehicle = sorted_by_capacity_vehicles_[i];
+        if (CapAdd(remaining_demand, vehicle_capacities_[vehicle]) >
+            extended_capacity) {
+          vehicle_active_vars_[vehicle]->SetValue(1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Check remaining vehicles and make inactive the ones which do not have
+    // enough capacity.
+    if (updated_max_active_vehicles > 0 &&
+        updated_max_active_vehicles - 1 < sorted_by_capacity_vehicles_.size()) {
+      CapAddTo(
+          vehicle_capacities_
+              [sorted_by_capacity_vehicles_[updated_max_active_vehicles - 1]],
+          &remaining_demand);
+    }
+    for (int i = updated_max_active_vehicles;
+         i < sorted_by_capacity_vehicles_.size(); ++i) {
+      const int vehicle = sorted_by_capacity_vehicles_[i];
+      if (vehicle_capacities_[vehicle] < remaining_demand ||
+          updated_max_active_vehicles == 0) {
+        vehicle_active_vars_[vehicle]->SetValue(0);
+      }
+    }
+  }
+  void InitialPropagate() override {}
+
+ private:
+  const std::vector<IntVar*> transit_vars_;
+  const std::vector<IntVar*> active_vars_;
+  const std::vector<IntVar*> vehicle_active_vars_;
+  const std::vector<int64_t> vehicle_capacities_;
+  const int max_active_vehicles_;
+  const bool enforce_active_vehicles_;
+  std::vector<int> sorted_by_capacity_vehicles_;
+};
+
+}  // namespace
+
+Constraint* MakeNumActiveVehiclesCapacityConstraint(
+    Solver* solver, std::vector<IntVar*> transit_vars,
+    std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
+    std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
+    bool enforce_active_vehicles) {
+  return solver->RevAlloc(new NumActiveVehiclesCapacityConstraint(
+      solver, std::move(transit_vars), std::move(active_vars),
+      std::move(vehicle_active_vars), std::move(vehicle_capacities),
+      max_active_vehicles, enforce_active_vehicles));
 }
 
 }  // namespace operations_research::routing
