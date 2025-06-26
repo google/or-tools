@@ -517,6 +517,7 @@ if(BUILD_DOTNET_DOC)
         dotnet_package
         ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
         ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
         ${PROJECT_SOURCE_DIR}/ortools/dotnet/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating .Net API documentation with Doxygen"
