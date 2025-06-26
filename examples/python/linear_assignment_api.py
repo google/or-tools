@@ -14,9 +14,9 @@
 
 """Test linear sum assignment on a 4x4 matrix.
 
-   Example taken from:
-   http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
-   modified so the optimum solution is unique.
+Example taken from:
+http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
+modified so the optimum solution is unique.
 """
 
 from typing import Sequence
@@ -28,7 +28,12 @@ def run_assignment_on_4x4_matrix():
     """Test linear sum assignment on a 4x4 matrix."""
     num_sources = 4
     num_targets = 4
-    cost = [[90, 76, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105], [45, 110, 95, 115]]
+    cost = [
+        [90, 76, 75, 80],
+        [35, 85, 55, 65],
+        [125, 95, 90, 105],
+        [45, 110, 95, 115],
+    ]
     expected_cost = cost[0][3] + cost[1][2] + cost[2][1] + cost[3][0]
 
     assignment = linear_sum_assignment.SimpleLinearSumAssignment()

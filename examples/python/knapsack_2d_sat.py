@@ -26,7 +26,6 @@ import numpy as np
 import pandas as pd
 
 from google.protobuf import text_format
-
 from ortools.sat.python import cp_model
 
 

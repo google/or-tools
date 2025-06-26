@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Use CP-SAT to solve a simple cryptarithmetic problem: SEND+MORE=MONEY.
-"""
+"""Use CP-SAT to solve a simple cryptarithmetic problem: SEND+MORE=MONEY."""
 
 from absl import app
 from ortools.sat.python import cp_model

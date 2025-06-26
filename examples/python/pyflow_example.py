@@ -52,7 +52,12 @@ def min_cost_flow_api():
     print("MinCostFlow on 4x4 matrix.")
     num_sources = 4
     num_targets = 4
-    costs = [[90, 75, 75, 80], [35, 85, 55, 65], [125, 95, 90, 105], [45, 110, 95, 115]]
+    costs = [
+        [90, 75, 75, 80],
+        [35, 85, 55, 65],
+        [125, 95, 90, 105],
+        [45, 110, 95, 115],
+    ]
     expected_cost = 275
     smcf = min_cost_flow.SimpleMinCostFlow()
     for source in range(0, num_sources):
