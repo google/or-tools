@@ -612,6 +612,7 @@ if(BUILD_CXX_DOC)
       DEPENDS
         ${PROJECT_BINARY_DIR}/cpp/Doxyfile
         ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
         ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating C++ API documentation with Doxygen"
