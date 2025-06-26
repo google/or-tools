@@ -867,7 +867,7 @@ if(BUILD_PYTHON_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/python/Doxyfile.in ${PROJECT_BINARY_DIR}/python/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
       SHOW_PROGRESS
     )
