@@ -73,10 +73,10 @@ Vagrant.configure("2") do |config|
   # note: clang installed by default
   config.vm.provision "env", type: "shell", inline:<<-SHELL
   set -x
-  pkg update -f
-  pkg install -y git cmake
+  pkgin update
+  pkgin -y install git cmake
   kldload linux64
-  pkg install -y swig linux-dotnet-sdk
+  pkgin -y install swig linux-dotnet-sdk
   SHELL
 
   config.vm.provision "file", source: "../../../../CMakeLists.txt", destination: "$HOME/project/"

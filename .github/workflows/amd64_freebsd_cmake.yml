@@ -1,3 +1,4 @@
+# ref: https://github.com/actions/runner-images
 name: amd64 FreeBSD CMake
 
 on: [push, pull_request, workflow_dispatch]
@@ -6,31 +7,44 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
-# Only macos-12 runner provide virtualisation with vagrant/virtualbox installed.
-# ref: https://github.com/actions/runner-images/tree/main/images/macos
-# ref: https://app.vagrantup.com/generic/boxes/freebsd13
+# Building using the github runner environement directly.
 jobs:
   vagrant:
     strategy:
-      fail-fast: false
       matrix:
-        distro: [freebsd]
-        lang: [cpp, python]
-        allow_failure: [false]
-        include:
-        - distro: freebsd
-          lang: dotnet
-          allow_failure: true
-        - distro: freebsd
-          lang: java
-          allow_failure: true
-    name: amd64•FreeBSD•CMake•${{matrix.lang}}
-    runs-on: macos-12
+        distro: [
+          freebsd,
+          #netbsd,
+          #openbsd,
+        ]
+        lang: [
+          cpp,
+          dotnet,
+          java,
+          python,
+        ]
+        allow_failure: [true]
+      fail-fast: false
+    name: amd64•${{matrix.distro}}•CMake•${{matrix.lang}}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: vagrant version
-        run: Vagrant --version
-      - name: VirtualBox version
-        run: virtualbox -h
+      - name: Virtualbox install
+        run: |
+          sudo apt update -q
+          sudo apt install -yq virtualbox
+          virtualbox --help
+      - name: Vagrant install
+        run: |
+          sudo apt update -q
+          wget https://releases.hashicorp.com/vagrant/2.4.7/vagrant_2.4.7-1_amd64.deb
+          sudo apt install -y ./vagrant_2.4.7-1_amd64.deb
+          vagrant --version
       - name: Build
         run: make --directory=cmake ${{matrix.distro}}_${{matrix.lang}}
+
+  amd64_bsd_cmake:
+    runs-on: ubuntu-latest
+    needs: vagrant
+    steps:
+      - uses: actions/checkout@v4
