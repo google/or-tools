@@ -1559,7 +1559,7 @@ void SharedClausesManager::Synchronize() {
 
 void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
                               IntegerValue ub) {
-  DCHECK(expr.IsCanonicalized());
+  DCHECK(expr.IsCanonicalized()) << expr;
 
   absl::MutexLock mutex_lock(&mutex_);
   auto [it, inserted] = shared_bounds_.insert({expr, {lb, ub}});

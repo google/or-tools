@@ -254,17 +254,6 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "lp_constraint_classifier",
-#    srcs = ["lp_constraint_classifier.cc"],
-#    hdrs = ["lp_constraint_classifier.h"],
-#    copts = SAFE_FP_CODE,
-#    deps = [
-#        ":lp_data",
-#        "//ortools/util:fp_utils",
-#    ],
-#)
-
 cc_library(
     name = "lp_print_utils",
     srcs = ["lp_print_utils.cc"],

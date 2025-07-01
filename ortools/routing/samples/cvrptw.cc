@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Capacitated Vehicle Routing Problem with Time Windows (and optional orders).
 // A description of the problem can be found here:
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem.

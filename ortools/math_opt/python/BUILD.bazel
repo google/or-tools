@@ -52,66 +52,6 @@ py_library(
 )
 
 py_library(
-    name = "model_storage",
-    srcs = ["model_storage.py"],
-    visibility = ["//ortools/math_opt/python:__subpackages__"],
-    deps = [
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:model_update_py_pb2",
-    ],
-)
-
-py_library(
-    name = "hash_model_storage",
-    srcs = ["hash_model_storage.py"],
-    deps = [
-        ":model_storage",
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt:sparse_containers_py_pb2",
-    ],
-)
-
-py_test(
-    name = "hash_model_storage_test",
-    size = "small",
-    srcs = ["hash_model_storage_test.py"],
-    deps = [
-        ":hash_model_storage",
-        requirement("absl-py"),
-    ],
-)
-
-py_test(
-    name = "model_storage_test",
-    size = "small",
-    srcs = ["model_storage_test.py"],
-    deps = [
-        ":hash_model_storage",
-        ":model_storage",
-        requirement("absl-py"),
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:sparse_containers_py_pb2",
-        "//ortools/math_opt/python/testing:compare_proto",
-    ],
-)
-
-py_test(
-    name = "model_storage_update_test",
-    size = "small",
-    srcs = ["model_storage_update_test.py"],
-    deps = [
-        ":hash_model_storage",
-        ":model_storage",
-        requirement("absl-py"),
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt:sparse_containers_py_pb2",
-        "//ortools/math_opt/python/testing:compare_proto",
-    ],
-)
-
-py_library(
     name = "model",
     srcs = ["model.py"],
     deps = [

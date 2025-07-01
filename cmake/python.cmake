@@ -384,7 +384,6 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/from_model.py
-    ortools/math_opt/python/hash_model_storage.py
     ortools/math_opt/python/indicator_constraints.py
     ortools/math_opt/python/init_arguments.py
     ortools/math_opt/python/linear_constraints.py
@@ -392,7 +391,6 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
     ortools/math_opt/python/model_parameters.py
-    ortools/math_opt/python/model_storage.py
     ortools/math_opt/python/normalized_inequality.py
     ortools/math_opt/python/normalize.py
     ortools/math_opt/python/objectives.py

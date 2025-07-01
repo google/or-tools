@@ -1013,9 +1013,9 @@ SatSolver::Status SatSolver::EnqueueDecisionAndBacktrackOnConflict(
 
 bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
+  if (model_is_unsat_) return kUnsatTrailIndex;
   DCHECK(PropagationIsDone());
 
-  if (model_is_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
   EnqueueNewDecision(true_literal);
   if (Propagate()) {

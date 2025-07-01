@@ -24,7 +24,7 @@
 #define ROOT_DIR "_main/"
 
 ABSL_FLAG(std::string, solomon_test_archive,
-          "ortools/bench/solomon/"
+          "ortools/routing/benchmarks/solomon/"
           "testdata/solomon.zip",
           "Solomon: testing archive");
 ABSL_FLAG(std::string, solomon_test_instance, "google2.txt",

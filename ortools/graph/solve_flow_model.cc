@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // This code loads flow-graph models (as Dimacs file or binary FlowModel proto)
 // and solves them with the OR-tools flow algorithms.
 //

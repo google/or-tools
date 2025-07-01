@@ -913,7 +913,7 @@ class SharedLinear2Bounds {
     IntegerValue coeffs[2];
 
     bool IsCanonicalized() {
-      return coeffs[0] > 0 && coeffs[1] != 0 && vars[0] < vars[1] &&
+      return vars[0] >= 0 && vars[1] >= 0 && vars[0] < vars[1] &&
              std::gcd(coeffs[0].value(), coeffs[1].value()) == 1;
     }
 
@@ -926,6 +926,12 @@ class SharedLinear2Bounds {
     friend H AbslHashValue(H h, const Key& k) {
       return H::combine(std::move(h), k.vars[0], k.vars[1], k.coeffs[0],
                         k.coeffs[1]);
+    }
+
+    template <typename Sink>
+    friend void AbslStringify(Sink& sink, const Key& k) {
+      absl::Format(&sink, "%d X%d + %d X%d", k.coeffs[0].value(), k.vars[0],
+                   k.coeffs[1].value(), k.vars[1]);
     }
   };
 

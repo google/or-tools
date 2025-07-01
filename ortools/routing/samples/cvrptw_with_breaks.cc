@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Capacitated Vehicle Routing Problem with Time Windows and Breaks.
 // A description of the Capacitated Vehicle Routing Problem with Time Windows
 // can be found here:

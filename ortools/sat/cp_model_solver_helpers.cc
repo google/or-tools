@@ -863,6 +863,10 @@ void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
     for (const auto& [proto_expr, bounds] : new_bounds) {
       // Lets create the corresponding LinearExpression2.
       LinearExpression2 expr;
+      if (!cp_model_mapping->IsInteger(proto_expr.vars[0]) ||
+          !cp_model_mapping->IsInteger(proto_expr.vars[1])) {
+        continue;
+      }
       for (const int i : {0, 1}) {
         expr.vars[i] = cp_model_mapping->Integer(proto_expr.vars[i]);
         expr.coeffs[i] = proto_expr.coeffs[i];

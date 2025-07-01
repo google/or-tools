@@ -586,8 +586,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
                         absl::StrCat("Evaluating a BoundedLinearExpression '",
                                      self.ToString(),
                                      "'instance as a Boolean is "
-                                     "not supported.")
-                            .c_str());
+                                     "not supported."));
              return false;
            })
       .def("__str__", &BoundedLinearExpression::ToString)

@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // This file implements the core objects of the constraint solver:
 // Solver, Search, Queue, ... along with the main resolution loop.
 
