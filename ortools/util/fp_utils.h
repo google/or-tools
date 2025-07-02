@@ -256,7 +256,7 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
 inline int fast_ilogb(double value) { return ilogb(value); }
 inline double fast_scalbn(double value, int exponent) {
   return scalbn(value, exponent);
-} 
+}
 
 }  // namespace operations_research
 
