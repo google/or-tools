@@ -13,7 +13,7 @@
 
 // This is the java SWIG wrapper for ../sorted_interval_list.h.  See that file.
 
-%include "ortools/util/java/vector.i"
+%include "ortools/util/java/vector.swig"
 
 %{
 #include <cstdint>

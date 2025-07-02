@@ -11,17 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE graph.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE graph.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE graph.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE graph.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE graph.swig PROPERTY SWIG_MODULE_NAME main)
+set_property(SOURCE graph.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE graph.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE graph.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.graph)
 swig_add_library(jnigraph
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/graph
-  SOURCES graph.i)
+  SOURCES graph.swig)
 
 target_include_directories(jnigraph PRIVATE ${JNI_INCLUDE_DIRS})
 set_target_properties(jnigraph PROPERTIES

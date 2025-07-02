@@ -12,7 +12,7 @@
 // limitations under the License.
 
 /* -----------------------------------------------------------------------------
- * absl_string_view.i
+ * absl_string_view.swig
  *
  * Typemaps for absl::string_view
  * This is mapped to a Java String and is passed around by value.

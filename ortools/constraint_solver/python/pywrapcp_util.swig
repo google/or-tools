@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file cannot be used in isolation!
-// It represents some of the inlined C++ content of ./constraint_solver.i,
+// This .swig file cannot be used in isolation!
+// It represents some of the inlined C++ content of ./constraint_solver.swig,
 // and was split out because it's a large enough chunk of C++ code.
 //
-// It can only be interpreted in the context of ./constraint_solver.i, where
+// It can only be interpreted in the context of ./constraint_solver.swig, where
 // it is included.
 %{
 #include <string>

@@ -21,7 +21,7 @@
 %include "enums.swg"
 
 %include "ortools/base/base.i"
-%import "ortools/util/java/vector.i"
+%import "ortools/util/java/vector.swig"
 
 %{
 #include "ortools/algorithms/knapsack_solver.h"

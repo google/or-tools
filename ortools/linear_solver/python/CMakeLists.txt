@@ -11,15 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME pywraplp)
-set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE linear_solver.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE linear_solver.swig PROPERTY SWIG_MODULE_NAME pywraplp)
+set_property(SOURCE linear_solver.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
 swig_add_library(pywraplp
   TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/linear_solver
-  SOURCES linear_solver.i)
+  SOURCES linear_solver.swig)
 
 target_include_directories(pywraplp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywraplp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)

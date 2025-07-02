@@ -15,7 +15,7 @@
 
 %include "ortools/base/base.i"
 %include "enums.swg"
-%include "ortools/util/java/vector.i"
+%include "ortools/util/java/vector.swig"
 
 %{
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
@@ -27,7 +27,7 @@
 // The only difference is that the argument is not a basic type, and needs
 // processing to be passed to the std::function.
 //
-// TODO(user): cleanup java/functions.i and move the code there.
+// TODO(user): cleanup java/functions.swig and move the code there.
 %{
 #include <memory> // std::make_shared<GlobalRefGuard>
 

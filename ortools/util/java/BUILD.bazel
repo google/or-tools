@@ -33,7 +33,7 @@ config_setting(
 filegroup(
     name = "vector_swig",
     srcs = [
-        "vector.i",
+        "vector.swig",
     ],
     visibility = ["//visibility:public"],
 )
@@ -49,7 +49,7 @@ filegroup(
 filegroup(
     name = "absl_string_view_swig",
     srcs = [
-        "absl_string_view.i",
+        "absl_string_view.swig",
     ],
     visibility = ["//visibility:public"],
 )
@@ -57,14 +57,14 @@ filegroup(
 filegroup(
     name = "sorted_interval_list_swig",
     srcs = [
-        "sorted_interval_list.i",
+        "sorted_interval_list.swig",
     ],
     visibility = ["//visibility:public"],
 )
 
 ortools_java_wrap_cc(
     name = "sorted_interval_list",
-    src = "sorted_interval_list.i",
+    src = "sorted_interval_list.swig",
     package = "com.google.ortools.util",
     swig_includes = [
         ":vector_swig",

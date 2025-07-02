@@ -13,20 +13,36 @@
 
 // Typemaps for Routing Index Types. This does not define any type wrappings,
 // because these index types are are never exposed to the target language.
-// Instead, indices are manipulated as native target language types (e.g. python
+// Instead, indices are manipulated as native target language types (e.g. Java
 // int).
 // This file is to be %included when wrapped objects need to use these typemaps.
 
 %include "ortools/base/base.i"
-%import "ortools/util/python/vector.i"
+%import "ortools/util/java/vector.swig"
 
 %{
 #include "ortools/routing/types.h"
 
-template<typename IndexT>
-inline PyObject* PyInt_FromIndexT(const IndexT i) {
-  return PyInt_FromLong(i.value());
-}
+/* Global JNI reference deleter */
+class GlobalRefGuard {
+  JavaVM *jvm_;
+  jobject jref_;
+  // non-copyable
+  GlobalRefGuard(const GlobalRefGuard &) = delete;
+  GlobalRefGuard &operator=(const GlobalRefGuard &) = delete;
+  public:
+  GlobalRefGuard(JavaVM *jvm, jobject jref): jvm_(jvm), jref_(jref) {}
+  ~GlobalRefGuard() {
+    JNIEnv *jenv = NULL;
+    JavaVMAttachArgs args;
+    args.version = JNI_VERSION_1_2;
+    args.name = NULL;
+    args.group = NULL;
+    jvm_->AttachCurrentThread((void**)&jenv, &args);
+    jenv->DeleteGlobalRef(jref_);
+    jvm_->DetachCurrentThread();
+  }
+};
 %}
 
 // This macro defines typemaps for IndexT, std::vector<IndexT> and
@@ -34,26 +50,23 @@ inline PyObject* PyInt_FromIndexT(const IndexT i) {
 %define DEFINE_INDEX_TYPE(IndexT)
 
 // Convert IndexT to (32-bit signed) integers.
+%typemap(jstype) IndexT "int"
+%typemap(javain) IndexT "$javainput"
+%typemap(jtype) IndexT "int"
+%typemap(jni) IndexT "jint"
 %typemap(in) IndexT {
-  $1 = IndexT(PyInt_AsLong($input));
+  $1 = IndexT($input);
 }
 %typemap(out) IndexT {
-  $result = PyInt_FromLong($1.value());
+  $result = (jint)$1.value();
 }
-%typemap(typecheck) IndexT = int;
+%typemap(javaout) IndexT {
+  return $jnicall;
+}
 
 // Convert std::vector<IndexT> to/from int arrays.
-%{
-template<>
-bool PyObjAs(PyObject *py, IndexT* i) {
-  int temp;
-  if (!PyObjAs(py, &temp)) return false;
-  *i = IndexT(temp);
-  return true;
-}
-%}
-PY_LIST_INPUT_OUTPUT_TYPEMAP(IndexT, PyInt_Check, PyInt_FromIndexT<IndexT>);
-PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
+VECTOR_AS_JAVA_ARRAY(IndexT, int, Int);
+MATRIX_AS_JAVA_ARRAY(IndexT, int, Int);
 
 %enddef  // DEFINE_INDEX_TYPE
 
@@ -64,8 +77,8 @@ PY_LIST_LIST_INPUT_TYPEMAP(IndexT, PyInt_Check);
 %define DEFINE_INDEX_TYPE_TYPEDEF(IndexT, NewIndexT)
 %apply IndexT { NewIndexT };
 %apply std::vector<IndexT> { std::vector<NewIndexT> };
-%apply std::vector<IndexT>* { std::vector<NewIndexT>* };
 %apply const std::vector<IndexT>& { std::vector<NewIndexT>& };
+%apply const std::vector<std::vector<IndexT> >& { const std::vector<std::vector<NewIndexT> >& };
 %enddef  // DEFINE_INDEX_TYPE_TYPEDEF
 
 DEFINE_INDEX_TYPE(operations_research::routing::RoutingNodeIndex);

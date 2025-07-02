@@ -17,7 +17,7 @@
 
 %include "ortools/util/java/proto.i"
 
-%import "ortools/util/java/sorted_interval_list.i"
+%import "ortools/util/java/sorted_interval_list.swig"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -76,7 +76,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 // The only difference is that the argument is not a basic type, and needs
 // processing to be passed to the std::function.
 //
-// TODO(user): cleanup java/functions.i and move the code there.
+// TODO(user): cleanup java/functions.swig and move the code there.
 %{
 #include <memory> // std::make_shared<GlobalRefGuard>
 %}

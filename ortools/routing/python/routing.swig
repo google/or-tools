@@ -18,19 +18,19 @@
 %include "ortools/util/python/proto.i"
 
 // PY_CONVERT_HELPER_* macros.
-%include "ortools/constraint_solver/python/constraint_solver_helpers.i"
+%include "ortools/constraint_solver/python/constraint_solver_helpers.swig"
 
-%include "ortools/util/python/functions.i"
-%include "ortools/util/python/pair.i"
-%include "ortools/util/python/vector.i"
+%include "ortools/util/python/functions.swig"
+%include "ortools/util/python/pair.swig"
+%include "ortools/util/python/vector.swig"
 
 // While the module name will be overridden by the one specified on the cmd line,
 // without this, derived classes (e.g. TypeRequirementChecker) will import base
 // class from the module specified in the following %import.
 %module pywraprouting
-%import(module="ortools.constraint_solver.pywrapcp") "ortools/constraint_solver/python/constraint_solver.i"
-%include "ortools/routing/python/types.i"
-%include "ortools/routing/python/index_manager.i"
+%import(module="ortools.constraint_solver.pywrapcp") "ortools/constraint_solver/python/constraint_solver.swig"
+%include "ortools/routing/python/types.swig"
+%include "ortools/routing/python/index_manager.swig"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
@@ -69,7 +69,7 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 
 // ============= Type conversions ==============
 
-// See ./constraint_solver_helpers.i.
+// See ./constraint_solver_helpers.swig.
 PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
 PY_CONVERT_HELPER_PTR(IntervalVar);
 PY_CONVERT_HELPER_PTR(LocalSearchFilter);

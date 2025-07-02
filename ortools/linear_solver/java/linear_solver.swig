@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file exposes the linear programming and integer programming
+// This .swig file exposes the linear programming and integer programming
 // solver. See the C++/Python codelab:  (there isn't
 // a java codelab yet, as of July 2014)
 //
@@ -33,7 +33,7 @@
 
 // We prefer our in-house vector wrapper to std_vector.i, because it
 // converts to and from native java arrays.
-%import "ortools/util/java/vector.i"
+%import "ortools/util/java/vector.swig"
 
 %include "ortools/util/java/proto.i"
 
