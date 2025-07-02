@@ -19,7 +19,7 @@ load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
 
 ortools_java_wrap_cc(
     name = "graph",
-    src = "graph.i",
+    src = "graph.swig",
     module = "graph",
     package = "com.google.ortools.graph",
     swig_includes = [

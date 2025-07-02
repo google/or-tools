@@ -11,17 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME Globals)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE routing.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE routing.swig PROPERTY SWIG_MODULE_NAME Globals)
+set_property(SOURCE routing.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE routing.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.routing)
 swig_add_library(jnirouting
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/routing
-  SOURCES routing.i)
+  SOURCES routing.swig)
 
 target_include_directories(jnirouting PRIVATE ${JNI_INCLUDE_DIRS})
 set_target_properties(jnirouting PROPERTIES

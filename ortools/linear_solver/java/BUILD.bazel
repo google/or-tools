@@ -19,7 +19,7 @@ load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
 
 ortools_java_wrap_cc(
     name = "modelbuilder",
-    src = "modelbuilder.i",
+    src = "modelbuilder.swig",
     module = "modelbuilder",
     package = "com.google.ortools.modelbuilder",
     swig_includes = [

@@ -20,10 +20,10 @@
 %include "exception.i"
 
 %include "ortools/base/base.i"
-%include "ortools/util/java/absl_string_view.i"
-%include "ortools/util/java/tuple_set.i"
-%include "ortools/util/java/vector.i"
-%include "ortools/util/java/proto.i"
+%include "ortools/util/java/absl_string_view.swig"
+%include "ortools/util/java/tuple_set.swig"
+%include "ortools/util/java/vector.swig"
+%include "ortools/util/java/proto.swig"
 
 // Make the SWIG-generated constructor public.
 // This is necessary as it will be called from the routing package.
@@ -82,7 +82,7 @@ class GlobalRefGuard {
 %}
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
-// IMPORTANT: keep this code block in sync with the .i
+// IMPORTANT: keep this code block in sync with the .swig
 // files in ../python and ../csharp.
 
 // Protect from failure.

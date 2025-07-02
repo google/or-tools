@@ -16,7 +16,7 @@
 
 %include "ortools/base/base.i"
 
-%include "ortools/util/java/vector.i"
+%include "ortools/util/java/vector.swig"
 
 %{
 // TODO(user): see if we can remove <vector>

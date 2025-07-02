@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file exposes the linear programming and integer programming
+// This .swig file exposes the linear programming and integer programming
 // solver. See the C++/Python codelab: .
 //
 // The python API is enriched by custom code defined here, making it
@@ -33,9 +33,9 @@
 
 %include "std_string.i"
 
-%include "ortools/util/python/proto.i"
+%include "ortools/util/python/proto.swig"
 
-%import "ortools/util/python/vector.i"
+%import "ortools/util/python/vector.swig"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration

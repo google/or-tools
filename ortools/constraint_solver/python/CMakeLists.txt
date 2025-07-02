@@ -32,16 +32,16 @@ target_link_libraries(constraint_solver_pybind11 PRIVATE
 add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_solver_pybind11)
 
 # legacy pywrapcp
-set_property(SOURCE constraint_solver.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE constraint_solver.i PROPERTY SWIG_MODULE_NAME pywrapcp)
-set_property(SOURCE constraint_solver.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE constraint_solver.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE constraint_solver.swig PROPERTY SWIG_MODULE_NAME pywrapcp)
+set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE constraint_solver.i PROPERTY COMPILE_OPTIONS -nofastunpack)
+set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
   TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
-  SOURCES constraint_solver.i)
+  SOURCES constraint_solver.swig)
 
 target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywrapcp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)

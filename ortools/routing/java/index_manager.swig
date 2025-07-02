@@ -14,7 +14,7 @@
 // Wrapper for RoutingIndexManager.
 
 %include "ortools/base/base.i"
-%include "ortools/routing/java/types.i"
+%include "ortools/routing/java/types.swig"
 
 %{
 #include "ortools/routing/index_manager.h"

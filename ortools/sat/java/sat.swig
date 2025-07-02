@@ -15,9 +15,9 @@
 
 %include "ortools/base/base.i"
 
-%include "ortools/util/java/proto.i"
+%include "ortools/util/java/proto.swig"
 
-%import "ortools/util/java/sorted_interval_list.i"
+%import "ortools/util/java/sorted_interval_list.swig"
 
 %{
 #include "ortools/sat/cp_model.pb.h"

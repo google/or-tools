@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i files exposes some of the C++ classes in ../, namely :
+// This .swig files exposes some of the C++ classes in ../, namely :
 // - MaxFlow, from SimpleMaxFlow in ../max_flow.h
 // - MinCostFlow, from SimpleMinCostFlow in ../min_cost_flow.h
 // - LinearSumAssignment, from SimpleLinearSumAssignment in ../assignment.h
