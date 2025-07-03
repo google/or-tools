@@ -32,7 +32,7 @@ PyObject* PyObjFrom<int64_t>(const int64_t& c) {
 
 // Conversion of IntExpr* and IntVar* are a bit special because of the two
 // possible casts from IntExpr and Constraint. We define them here because
-// they are used by both constraint_solver.i and routing.i, but need to
+// they are used by both constraint_solver.swig and routing.swig, but need to
 // be defined at a point where IntVar/IntExpr are known.
 %define PY_CONVERT_HELPER_INTEXPR_AND_INTVAR()
 %{

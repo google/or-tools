@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file exposes the code declared in ../constraint_solver.h and
+// This .swig file exposes the code declared in ../constraint_solver.h and
 // ../constraint_solveri.h.
 //
 // It is particularly complex for a swig file, mostly because it contains a
@@ -35,12 +35,12 @@
 %include "ortools/util/python/proto.i"
 
 // PY_CONVERT_HELPER_* macros.
-%include "ortools/constraint_solver/python/constraint_solver_helpers.i"
+%include "ortools/constraint_solver/python/constraint_solver_helpers.swig"
 
-%include "ortools/util/python/functions.i"
-%include "ortools/util/python/vector.i"
+%include "ortools/util/python/functions.swig"
+%include "ortools/util/python/vector.swig"
 
-%include "ortools/constraint_solver/python/pywrapcp_util.i"
+%include "ortools/constraint_solver/python/pywrapcp_util.swig"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2019-07, with
@@ -103,7 +103,7 @@ struct FailureProtect {
 
 // ============= Type conversions ==============
 
-// See ./constraint_solver_helpers.i
+// See ./constraint_solver_helpers.swig
 PY_CONVERT_HELPER_PTR(Constraint);
 PY_CONVERT_HELPER_PTR(Decision);
 PY_CONVERT_HELPER_PTR(DecisionBuilder);
@@ -131,7 +131,7 @@ PY_CONVERT(LocalSearchFilter);
 PY_CONVERT(LocalSearchFilterManager);
 
 // Support passing std::function<void(Solver*)> as argument.
-// See ../utils/python/functions.i, from which this was copied and adapted.
+// See ../utils/python/functions.swig, from which this was copied and adapted.
 
 %{
 static void PyFunctionSolverToVoid(PyObject* pyfunc,
@@ -647,10 +647,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 }
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
-// IMPORTANT: keep this code block in sync with the .i
+// IMPORTANT: keep this code block in sync with the .swig
 // files in ../java and ../csharp.
 // TODO(user): extract this duplicated code into a common, multi-language
-// .i file with SWIG_exception.
+// .swig file with SWIG_exception.
 
 // Protect from failure.
 // TODO(user): document this further.
@@ -1911,7 +1911,7 @@ RENAME_ASSIGNMENT_CONTAINER(
 
 }  // namespace operations_research
 
-// ================= constraint_solver.i API =====================
+// ================= constraint_solver.swig API =====================
 
 namespace operations_research {
 

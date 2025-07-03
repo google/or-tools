@@ -19,12 +19,12 @@
 %template(IntBoolPair) std::pair<int, bool>;
 
 %include "ortools/base/base.i"
-%include "ortools/util/java/vector.i"
+%include "ortools/util/java/vector.swig"
 %include "ortools/util/java/proto.i"
-%import "ortools/constraint_solver/java/constraint_solver.i"
-%import "ortools/util/java/sorted_interval_list.i" // Domain
+%import "ortools/constraint_solver/java/constraint_solver.swig"
+%import "ortools/util/java/sorted_interval_list.swig" // Domain
 
-%include "ortools/routing/java/index_manager.i"
+%include "ortools/routing/java/index_manager.swig"
 
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be

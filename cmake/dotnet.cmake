@@ -20,6 +20,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)

@@ -17,7 +17,7 @@ load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
 
 ortools_java_wrap_cc(
     name = "knapsacksolver",
-    src = "knapsack_solver.i",
+    src = "knapsack_solver.swig",
     module = "operations_research_algorithms",
     package = "com.google.ortools.algorithms",
     swig_includes = [

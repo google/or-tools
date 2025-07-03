@@ -14,8 +14,8 @@
 // Wrapper for RoutingIndexManager.
 
 %include "ortools/base/base.i"
-%include "ortools/routing/python/types.i"
-%import "ortools/util/python/vector.i"
+%include "ortools/routing/python/types.swig"
+%import "ortools/util/python/vector.swig"
 
 %{
 #include "ortools/routing/index_manager.h"

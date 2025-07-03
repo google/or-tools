@@ -33,16 +33,16 @@ target_link_libraries(routing_pybind11 PRIVATE
 add_library(${PROJECT_NAMESPACE}::routing_pybind11 ALIAS routing_pybind11)
 
 # legacy pywraprouting
-set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywraprouting)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE routing.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE routing.swig PROPERTY SWIG_MODULE_NAME pywraprouting)
+set_property(SOURCE routing.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
+set_property(SOURCE routing.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywraprouting
   TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/routing
-  SOURCES routing.i)
+  SOURCES routing.swig)
 
 target_include_directories(pywraprouting PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywraprouting PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
