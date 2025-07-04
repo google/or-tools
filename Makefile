@@ -101,13 +101,6 @@ include $(OR_ROOT)makefiles/Makefile.dotnet.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
-ifneq ($(PLATFORM),WIN64)
-include $(OR_ROOT)makefiles/Makefile.doc.mk
-else
-# Remove some rules on windows
-help_doc:
-
-endif
 
 .PHONY: help_usage
 help_usage:
@@ -125,7 +118,7 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_cpp help_dotnet help_java help_python help_archive help_doc
+help_all: help_usage help_cpp help_dotnet help_java help_python help_archive
 
 .PHONY: check_all
 check_all: check_cpp check_dotnet check_java check_python
