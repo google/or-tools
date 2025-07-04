@@ -1,36 +1,53 @@
 /*! @dir ortools/algorithms
-  Knapsack solver and related algorithms.
+Non-graph dedicated algorithms, like our Knapsack solver.
 */
 
 /*! @dir ortools/graph
-  Graph and Network Flows.
+Graph and Network Flows.
 */
 
-/*! @dir ortools/linear_solver
-*/
-
-/*! @dir ortools/math_opt
+/*! @dir ortools/bop
+Google's Boolean Optimization Programming solver (BOP) for binary programs, a specific form of integer programming (MIP).
 */
 
 /*! @dir ortools/glop
+Google's Linear Optimization Programming solver (GLOP) for continuous linear programs (LP).
+*/
+
+/*! @dir ortools/linear_solver
+A unified wrapper (MPsolver) around different linear (LP) and integer (MIP) solvers (Glop, Bop, CP-SAT, SCIP, Gurobi, etc.). Use MathOpt instead for new applications.
+*/
+
+/*! @dir ortools/math_opt
+Our next-generation unified wrapper for LP and MIP solvers.
 */
 
 /*! @dir ortools/sat
+Our next-gen constraint programming (CP) solver, CP-SAT.
 */
 
 /*! @dir ortools/pdlp
+This directory contains PDLP, a library for solving linear programming (LP) and
+quadratic programming (QP) problems using first-order methods.
 */
 
 /*! @dir ortools/constraint_solver
+Google's deprecated constraint programming (CP) solver.
 */
 
 /*! @dir ortools/routing
+Google's routing solver based on the constraint solver.
 */
 
 /*! @dir ortools/packing
 */
 
 /*! @dir ortools/scheduling
+This directory includes parsers for various standard scheduling problem formats, such as those from the PSP-LIB project scheduling library.
+*/
+
+/*! @dir ortols/set_cover
+Our advanced set-covering solver with innovative greedy algorithms.
 */
 
 /*! @dir ortools/lp_data
@@ -39,12 +56,18 @@
 */
 
 /*! @dir ortools/init
+This directory provides the core library initialization function (InitGoogle) and its language-specific wrappers for
+C#, Java, and Python.
 */
 
 /*! @dir ortools/base
+This directory provides fundamental utilities for file I/O, logging, and basic data structures that support the other operations research tools.
 */
 
 /*! @dir ortools/util
+Code shared between the different tools and libraries.
 */
 
-
+/*! @dir ortools/flatzinc
+This directory holds a parser and solver for the FlatZinc modeling language, enabling it to be solved using the CP-SAT solver.
+*/

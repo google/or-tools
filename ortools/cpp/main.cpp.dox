@@ -8,6 +8,26 @@ This is the reference documentation for Google OR-Tools.
 
 This repository contains several component:
 
+<table>
+<caption id="components">Components table</caption>
+<tr><th>Directories<th>Description
+<tr><td>@ref ortools/algorithms "algorithms"<td>Knapsack solver and related algorithms.
+<tr><td>@ref ortools/graph "graph"<td>Network flow library and related graph algorithms.
+<tr><td>@ref ortools/linear_solver "linear_solver"<td>Linear Solver
+<tr><td>@ref ortools/math_opt "math_opt"<td>Math Opt
+<tr><td>@ref ortools/glop "glop"<td>GLOP
+<tr><td>@ref ortools/sat <td>SAT
+<tr><td>@ref ortools/pdlp <td>PDLP
+<tr><td>@ref ortools/constraint_solver <td>Constraint Programming (CP) Solver
+<tr><td>@ref ortools/routing <td>Routing Solver
+<tr><td>@ref ortools/packing <td>Packing
+<tr><td>@ref ortools/scheduling <td>Scheduling
+<tr><td>@ref ortools/set_cover <td>Set Covering Solver
+<tr><td>@ref ortools/init <td>init
+<tr><td>@ref ortools/base <td>base
+<tr><td>@ref ortools/util <td>util
+</table>
+
 @li @ref ortools/algorithms "Algorithms"
 @li @ref ortools/graph "Graph"
 @li @ref ortools/linear_solver "Linear Solver"
