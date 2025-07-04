@@ -472,7 +472,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # the optimal cache size from a speed point of view.
 # Minimum value: 0, maximum value: 9, default value: 0.
 
-LOOKUP_CACHE_SIZE      = 0
+LOOKUP_CACHE_SIZE      = 3
 
 # The NUM_PROC_THREADS specifies the number of threads doxygen is allowed to use
 # during processing. When set to 0 doxygen will based this on the number of
