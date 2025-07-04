@@ -959,12 +959,12 @@ INPUT_FILE_ENCODING    =
 # *.vhdl, *.ucf, *.qsf and *.ice.
 
 FILE_PATTERNS          = \
+                         *.cpp.dox \
                          *.proto \
                          *.h \
                          *.c \
                          *.hh \
                          *.cc \
-                         *.cpp.dox
 
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.

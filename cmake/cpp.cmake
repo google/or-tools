@@ -615,6 +615,8 @@ if(BUILD_CXX_DOC)
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
+        ${PROJECT_SOURCE_DIR}/ortools/cpp/main.cpp.dox
+        ${PROJECT_SOURCE_DIR}/ortools/cpp/dirs.cpp.dox
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating C++ API documentation with Doxygen"
       VERBATIM)
