@@ -1,0 +1,77 @@
+/*! @file
+* @author Laurent Perron <lperron@google.com>
+* @author Corentin "Mizux" Le Molgat <corentinl@google.com>
+*/
+
+/*! @mainpage OR-Tools
+This is the reference documentation for Google OR-Tools.
+
+This repository contains several components:
+
+<table>
+<caption id="components">Components table</caption>
+<tr><th>Directories<th>Description
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/base "ortools/base"
+<td>Fundamental utilities for the other or-tools components.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/init "ortools/init"
+<td>Core library initialization functions.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/algorithms "ortools/algorithms"
+<td>Knapsack solver and related algorithms.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/graph "ortools/graph"\n
+@ref @PROJECT_BINARY_DIR@/ortools/graph "build/ortools/graph"
+<td>Network flow library and related graph algorithms.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/bop "ortools/bop"\n
+@ref @PROJECT_BINARY_DIR@/ortools/bop "build/ortools/bop"
+<td>Google's Boolean Optimization Programming Solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/glop "ortools/glop"\n
+@ref @PROJECT_BINARY_DIR@/ortools/glop "build/ortools/glop"
+<td>Google's Linear Optimization Programming Solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/linear_solver "ortools/linear_solver"\n
+@ref @PROJECT_BINARY_DIR@/ortools/linear_solver "build/ortools/linear_solver"
+<td>Unified wrapper for linear (LP) and mixed integer (MIP) solvers.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/math_opt "ortools/math_opt"\n
+@ref @PROJECT_BINARY_DIR@/ortools/math_opt "build/ortools/math_opt"
+<td>Next-generation unified wrapper for LP and MIP solvers.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/sat "ortools/sat"\n
+@ref @PROJECT_BINARY_DIR@/ortools/sat "build/ortools/sat"
+<td>Our next-gen constraint programming (CP) solver, CP-SAT.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/pdlp "ortools/pdlp"\n
+@ref @PROJECT_BINARY_DIR@/ortools/pdlp "build/ortools/pdlp"
+<td>A large-scale linear and quadratic programming solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/constraint_solver "ortools/constraint_solver"\n
+@ref @PROJECT_BINARY_DIR@/ortools/constraint_solver "build/ortools/constraint_solver"
+<td>Google's legacy Constraint Programming (CP) Solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/routing "ortools/routing"\n
+@ref @PROJECT_BINARY_DIR@/ortools/routing "build/ortools/routing"
+<td>Google's Routing Solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/packing "ortools/packing"\n
+@ref @PROJECT_BINARY_DIR@/ortools/packing "build/ortools/packing"
+<td>Packing solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/scheduling "ortools/scheduling"\n
+@ref @PROJECT_BINARY_DIR@/ortools/scheduling "build/ortools/scheduling"
+<td>Scheduling solver.
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/set_cover "ortools/set_cover"\n
+@ref @PROJECT_BINARY_DIR@/ortools/set_cover "build/ortools/set_cover"
+<td>Set Covering Solver
+
+<tr><td>@ref @PROJECT_SOURCE_DIR@/ortools/util "ortools/util"\n
+@ref @PROJECT_BINARY_DIR@/ortools/util "build/ortools/util"
+<td>Code shared between the different tools and libraries.
+</table>
+
+*/

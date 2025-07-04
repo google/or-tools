@@ -599,7 +599,18 @@ if(BUILD_CXX_DOC)
   # add a target to generate API documentation with Doxygen
   find_package(Doxygen REQUIRED)
   if(DOXYGEN_FOUND)
-    configure_file(${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in ${PROJECT_BINARY_DIR}/cpp/Doxyfile @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in
+      ${PROJECT_BINARY_DIR}/cpp/Doxyfile
+      @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/dirs.cpp.dox.in
+      ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
+      @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/main.cpp.dox.in
+      ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
+      @ONLY)
     file(DOWNLOAD
       https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
@@ -615,6 +626,8 @@ if(BUILD_CXX_DOC)
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
+        ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
+        ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating C++ API documentation with Doxygen"
       VERBATIM)
