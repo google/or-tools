@@ -1,0 +1,50 @@
+/*! @dir ortools/algorithms
+  Knapsack solver and related algorithms.
+*/
+
+/*! @dir ortools/graph
+  Graph and Network Flows.
+*/
+
+/*! @dir ortools/linear_solver
+*/
+
+/*! @dir ortools/math_opt
+*/
+
+/*! @dir ortools/glop
+*/
+
+/*! @dir ortools/sat
+*/
+
+/*! @dir ortools/pdlp
+*/
+
+/*! @dir ortools/constraint_solver
+*/
+
+/*! @dir ortools/routing
+*/
+
+/*! @dir ortools/packing
+*/
+
+/*! @dir ortools/scheduling
+*/
+
+/*! @dir ortools/lp_data
+  This directory contains a rich collection of C++ libraries for handling Linear
+  Programming (LP) data structures.
+*/
+
+/*! @dir ortools/init
+*/
+
+/*! @dir ortools/base
+*/
+
+/*! @dir ortools/util
+*/
+
+
