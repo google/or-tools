@@ -189,7 +189,6 @@ class IntType {
   }
 
   // Note that this may change from time to time without notice.
-  // See .
   struct Hasher {
     size_t operator()(const IntType& arg) const {
       return static_cast<size_t>(arg.value());
