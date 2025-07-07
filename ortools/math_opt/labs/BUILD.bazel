@@ -88,17 +88,3 @@ cc_library(
     ],
     alwayslink = 1,
 )
-
-cc_library(
-    name = "scaler_util",
-    srcs = ["scaler_util.cc"],
-    hdrs = ["scaler_util.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:types",
-        "//ortools/util:fp_utils",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
