@@ -98,6 +98,7 @@ endif()
 
 # Compiler options
 if(MSVC)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR")
   list(APPEND OR_TOOLS_COMPILE_OPTIONS
     "/bigobj" # Allow big object
     "/DNOMINMAX"
