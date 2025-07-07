@@ -149,6 +149,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_local_cheapest_insertion_expensive_chain_lns(BOOL_FALSE);
   o->set_use_global_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
   o->set_use_local_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_visit_types_lns(BOOL_TRUE);
+  o->set_use_local_cheapest_insertion_visit_types_lns(BOOL_TRUE);
   p.set_ls_operator_neighbors_ratio(1);
   p.set_ls_operator_min_neighbors(1);
   p.set_use_multi_armed_bandit_concatenate_operators(false);

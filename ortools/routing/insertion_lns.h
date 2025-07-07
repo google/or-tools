@@ -247,6 +247,41 @@ class FilteredHeuristicCloseNodesLNSOperator
   SparseBitset<> changed_prevs_;
 };
 
+/// Filtered heuristic LNS operator, where the destruction phase consists of
+/// removing all nodes of a given visit type connected component and relocates
+/// them to an empty route.
+class RelocateVisitTypeOperator : public FilteredHeuristicLocalSearchOperator {
+ public:
+  explicit RelocateVisitTypeOperator(
+      std::unique_ptr<RoutingFilteredHeuristic> heuristic);
+  ~RelocateVisitTypeOperator() override = default;
+
+  std::string DebugString() const override {
+    return absl::StrCat("RelocateVisitType(", HeuristicName(), ")");
+  }
+
+ private:
+  void OnStart() override;
+
+  bool IncrementPosition() override;
+  void RemoveNode(int64_t node);
+
+  std::function<int64_t(int64_t)> SetupNextAccessorForNeighbor() override;
+
+  int current_visit_type_component_index_;
+  int last_visit_type_component_index_;
+  int empty_route_index_;
+  int last_empty_route_index_;
+  std::vector<int> empty_routes_;
+  /// Keep track of changes when building a neighbor.
+  /// TODO(user): Refactor this with FilteredHeuristicCloseNodesLNSOperator.
+  std::vector<int64_t> new_nexts_;
+  SparseBitset<> changed_nexts_;
+  std::vector<int64_t> new_prevs_;
+  SparseBitset<> changed_prevs_;
+  bool just_started_;
+};
+
 }  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_INSERTION_LNS_H_

@@ -112,7 +112,7 @@ message RoutingSearchParameters {
   int32 first_solution_optimization_period = 59;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 39
+  // Next ID: 41
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -401,6 +401,13 @@ message RoutingSearchParameters {
     // Same as above, but insertion positions for nodes are determined by the
     // LocalCheapestInsertion heuristic.
     OptionalBoolean use_local_cheapest_insertion_close_nodes_lns = 32;
+    // The following operator removes all nodes of a visit type connected
+    // component from their current route and reinserts them to an empty route
+    // using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_visit_types_lns = 39;
+    // Same as above, but insertion positions for nodes are determined by the
+    // LocalCheapestInsertion heuristic.
+    OptionalBoolean use_local_cheapest_insertion_visit_types_lns = 40;
   }
   LocalSearchNeighborhoodOperators local_search_operators = 3;
 

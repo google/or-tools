@@ -1123,7 +1123,11 @@ class OR_DLL RoutingModel {
   const std::vector<int>& GetSingleNodesOfType(int type) const;
   const std::vector<int>& GetPairIndicesOfType(int type) const;
   VisitTypePolicy GetVisitTypePolicy(int64_t index) const;
-
+#ifndef SWIG
+  const std::vector<std::vector<int>>& GetVisitTypeComponents() const {
+    return visit_type_components_;
+  }
+#endif  // SWIG
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
 #ifndef SWIG
   const std::vector<std::vector<int>>& GetTopologicallySortedVisitTypes()
@@ -2141,6 +2145,8 @@ class OR_DLL RoutingModel {
     CROSS_EXCHANGE,
     TWO_OPT,
     OR_OPT,
+    GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
+    LOCAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
     GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
     LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
     GLOBAL_CHEAPEST_INSERTION_PATH_LNS,
@@ -2290,6 +2296,7 @@ class OR_DLL RoutingModel {
   ///   topological order based on required-->dependent arcs from the
   ///   visit type requirements.
   void FinalizeVisitTypes();
+  void ComputeVisitTypesConnectedComponents();
   // Called by FinalizeVisitTypes() to setup topologically_sorted_visit_types_.
   void TopologicallySortVisitTypes();
   // This method updates topologically_sorted_node_precedences_ which contains
@@ -2654,6 +2661,7 @@ class OR_DLL RoutingModel {
   //
   // The higher these two numbers, the tighter the type is wrt requirements.
   std::vector<std::vector<int> > topologically_sorted_visit_types_;
+  std::vector<std::vector<int>> visit_type_components_;
   // clang-format on
   int num_visit_types_;
   std::vector<std::vector<std::vector<int>>>
@@ -3260,7 +3268,7 @@ class RoutingDimension {
   /// never we called on any (end, _). If pre_travel_evaluator or
   /// post_travel_evaluator is -1, it will be taken as a function that always
   /// returns 0.
-  // TODO(user): Remove if !defined when routing.i is repaired.
+  // TODO(user): Remove if !defined when routing.swig is repaired.
 #if !defined(SWIGPYTHON)
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   int pre_travel_evaluator,

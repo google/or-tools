@@ -1752,6 +1752,7 @@ void RoutingModel::FinalizeVisitTypes() {
   }
 
   TopologicallySortVisitTypes();
+  ComputeVisitTypesConnectedComponents();
 }
 
 namespace {
@@ -1799,6 +1800,35 @@ std::vector<std::vector<int>> GetTopologicallySortedNodes(
   return topologically_sorted_nodes;
 }
 }  // namespace
+
+void RoutingModel::ComputeVisitTypesConnectedComponents() {
+  if (!HasSameVehicleTypeRequirements() && !HasTemporalTypeRequirements()) {
+    return;
+  }
+  std::vector<std::vector<int>> graph(num_visit_types_);
+  for (int type = 0; type < num_visit_types_; type++) {
+    for (const std::vector<absl::flat_hash_set<int>>*
+             required_type_alternatives :
+         {&GetRequiredTypeAlternativesWhenAddingType(type),
+          &GetRequiredTypeAlternativesWhenRemovingType(type),
+          &GetSameVehicleRequiredTypeAlternativesOfType(type)}) {
+      for (const absl::flat_hash_set<int>& alternatives :
+           *required_type_alternatives) {
+        for (int required_type : alternatives) {
+          graph[required_type].push_back(type);
+          graph[type].push_back(required_type);
+        }
+      }
+    }
+  }
+  const std::vector<int> connected_components =
+      util::GetConnectedComponents(num_visit_types_, graph);
+  visit_type_components_.clear();
+  visit_type_components_.resize(connected_components.size());
+  for (int type = 0; type < num_visit_types_; type++) {
+    visit_type_components_[connected_components[type]].push_back(type);
+  }
+}
 
 void RoutingModel::TopologicallySortVisitTypes() {
   if (!HasSameVehicleTypeRequirements() && !HasTemporalTypeRequirements()) {
@@ -5001,6 +5031,12 @@ void RoutingModel::CreateNeighborhoodOperators(
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
             /*use_first_solution_hint=*/false, bin_capacities_.get());
       };
+  local_search_operators_[GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS] =
+      solver_->RevAlloc(new RelocateVisitTypeOperator(
+          make_global_cheapest_insertion_filtered_heuristic()));
+  local_search_operators_[LOCAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS] =
+      solver_->RevAlloc(new RelocateVisitTypeOperator(
+          make_local_cheapest_insertion_filtered_heuristic()));
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS] =
       solver_->RevAlloc(new FilteredHeuristicCloseNodesLNSOperator(
           make_global_cheapest_insertion_filtered_heuristic(),
@@ -5186,6 +5222,13 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
                            global_cheapest_insertion_close_nodes_lns);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
                            local_cheapest_insertion_close_nodes_lns);
+  operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
+
+  operators.assign({main_operator_group});
+  CP_ROUTING_PUSH_OPERATOR(GLOBAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
+                           global_cheapest_insertion_visit_types_lns);
+  CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_VISIT_TYPES_LNS,
+                           local_cheapest_insertion_visit_types_lns);
   operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   // Third local search loop: Expensive LNS operators.
