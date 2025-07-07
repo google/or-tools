@@ -638,8 +638,6 @@ struct GraphTraits {
 //   + (ArcIndexType + NodeIndexType) * arc_capacity().
 // - Has an efficient Tail() but need an extra NodeIndexType/arc memory for it.
 // - Never changes the initial arc index returned by AddArc().
-//
-// All graphs should be -compatible, but we haven't tested that.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;

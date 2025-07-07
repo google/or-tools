@@ -309,7 +309,7 @@ class BoundedLinearExpression {
 // to be wrapped by SWIG correctly:
 // 1) Their types must include the full operations_research::
 //    namespace.
-// 2) Their names must correspond to the ones declared in the .i
+// 2) Their names must correspond to the ones declared in the .swig
 //    file (see the java/ and csharp/ subdirectories).
 
 // Helper for importing/exporting models and model protobufs.

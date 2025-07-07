@@ -20,20 +20,19 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "absl/types/optional.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
+#include "absl/synchronization/mutex.h"
+#include "absl/time/time.h"
+#include "lpi/lpi.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -45,12 +44,29 @@
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_indicator.h"
-#include "scip/scip.h"
+#include "scip/cons_linear.h"
+#include "scip/def.h"
+#include "scip/scip_cons.h"
 #include "scip/scip_copy.h"
+#include "scip/scip_general.h"
+#include "scip/scip_message.h"
 #include "scip/scip_numerics.h"
 #include "scip/scip_param.h"
 #include "scip/scip_prob.h"
+#include "scip/scip_sol.h"
+#include "scip/scip_solve.h"
+#include "scip/scip_solvingstats.h"
+#include "scip/scip_var.h"
 #include "scip/scipdefplugins.h"
+#include "scip/type_clock.h"
+#include "scip/type_cons.h"
+#include "scip/type_paramset.h"
+#include "scip/type_prob.h"
+#include "scip/type_retcode.h"
+#include "scip/type_scip.h"
+#include "scip/type_sol.h"
+#include "scip/type_stat.h"
+#include "scip/type_var.h"
 
 ABSL_FLAG(bool, scip_feasibility_emphasis, false,
           "When true, emphasize search towards feasibility. This may or "
@@ -98,11 +114,11 @@ class SCIPInterface : public MPSolverInterface {
 
   int64_t iterations() const override;
   int64_t nodes() const override;
-  MPSolver::BasisStatus row_status(int constraint_index) const override {
+  MPSolver::BasisStatus row_status(int) const override {
     LOG(DFATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
-  MPSolver::BasisStatus column_status(int variable_index) const override {
+  MPSolver::BasisStatus column_status(int) const override {
     LOG(DFATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
@@ -445,15 +461,12 @@ void SCIPInterface::ClearConstraint(MPConstraint* constraint) {
 }
 
 // Cached
-void SCIPInterface::SetObjectiveCoefficient(const MPVariable* variable,
-                                            double coefficient) {
+void SCIPInterface::SetObjectiveCoefficient(const MPVariable*, double) {
   sync_status_ = MUST_RELOAD;
 }
 
 // Cached
-void SCIPInterface::SetObjectiveOffset(double value) {
-  sync_status_ = MUST_RELOAD;
-}
+void SCIPInterface::SetObjectiveOffset(double) { sync_status_ = MUST_RELOAD; }
 
 // Clear objective of all its terms.
 void SCIPInterface::ClearObjective() {
@@ -492,16 +505,16 @@ void SCIPInterface::BranchingPriorityChangedForVariable(int var_index) {
   }
 }
 
-void SCIPInterface::AddRowConstraint(MPConstraint* ct) {
+void SCIPInterface::AddRowConstraint(MPConstraint*) {
   sync_status_ = MUST_RELOAD;
 }
 
-bool SCIPInterface::AddIndicatorConstraint(MPConstraint* ct) {
+bool SCIPInterface::AddIndicatorConstraint(MPConstraint*) {
   sync_status_ = MUST_RELOAD;
   return true;
 }
 
-void SCIPInterface::AddVariable(MPVariable* var) { sync_status_ = MUST_RELOAD; }
+void SCIPInterface::AddVariable(MPVariable*) { sync_status_ = MUST_RELOAD; }
 
 void SCIPInterface::ExtractNewVariables() {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
@@ -882,7 +895,7 @@ bool SCIPInterface::SupportsDirectlySolveProto(
 }
 
 MPSolutionResponse SCIPInterface::DirectlySolveProto(
-    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt) {
+    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>*) {
   const bool log_error = request->enable_internal_solver_output();
   return ConvertStatusOrMPSolutionResponse(log_error,
                                            ScipSolveProto(std::move(request)));
@@ -976,7 +989,7 @@ void SCIPInterface::SetPresolveMode(int presolve) {
   }
 }
 
-void SCIPInterface::SetScalingMode(int scaling) {
+void SCIPInterface::SetScalingMode(int) {
   SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 

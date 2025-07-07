@@ -13,7 +13,7 @@
 
 // Static part of SWIG-generated C++ wrapper for Python (_module_name.cc).
 //
-// This file should only be included in base.swig inside Python-specific part:
+// This file should only be included in base.i inside Python-specific part:
 //   #ifdef SWIGPYTHON
 //   %{
 //   #include "ortools/base/swig/python-swig.cc"
