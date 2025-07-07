@@ -44,7 +44,7 @@ setup(
     python_requires='>= 3.9',
     install_requires=[
         'absl-py >= 2.0.0',
-        'numpy >= 1.13.3',
+        'numpy >= 2.0.2',
         'pandas >= 2.0.0',
         'protobuf >= 6.31.1,<6.32',
         'typing-extensions >= 4.12',
