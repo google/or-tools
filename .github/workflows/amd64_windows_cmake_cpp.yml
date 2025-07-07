@@ -14,7 +14,7 @@ jobs:
       matrix:
         cmake: [
           {name: "VS2022", generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
-          {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+          # {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL}, # too many symbols
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}},${{matrix.cmake.config}})•C++
