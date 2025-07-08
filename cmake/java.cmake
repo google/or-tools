@@ -583,6 +583,7 @@ if(BUILD_JAVA_DOC)
         ${PROJECT_BINARY_DIR}/java/Doxyfile
         ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/java/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating Java API documentation with Doxygen"
