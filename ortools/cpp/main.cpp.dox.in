@@ -3,7 +3,7 @@
 * @author Corentin "Mizux" Le Molgat <corentinl@google.com>
 */
 
-/*! @mainpage OR-Tools
+/*! @mainpage OR-Tools C++ Reference
 This is the reference documentation for Google OR-Tools.
 
 This repository contains several components:

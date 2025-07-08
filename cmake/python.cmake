@@ -862,6 +862,7 @@ if(BUILD_PYTHON_DOC)
         ${PROJECT_BINARY_DIR}/python/Doxyfile
         ${PROJECT_BINARY_DIR}/python/doxygen-awesome.css
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/python/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating Python API documentation with Doxygen"
