@@ -21,22 +21,19 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/flags/flag.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/util/string_array.h"
 
 ABSL_FLAG(bool, cp_disable_expression_optimization, false,
           "Disable special optimization when creating expressions.");
@@ -5849,8 +5846,8 @@ class SimpleConvexPiecewiseExpr : public BaseIntExpr {
     DCHECK_GE(lc, int64_t{0});
     DCHECK_GE(ld, ed);
 
-    // If the penalty is 0, we can push the "confort zone or zone
-    // of no cost towards infinity.
+    // If the penalty is 0, we can push the "comfort zone or zone of no cost
+    // towards infinity.
   }
 
   ~SimpleConvexPiecewiseExpr() override {}

@@ -16,7 +16,7 @@
 // This file should only be included in base.i inside Python-specific part:
 //   #ifdef SWIGPYTHON
 //   %{
-//   #include "ortools/base/swig/python-swig.cc"
+//   #include "ortools/base/python-swig.h"
 //   %}
 //   #endif
 // It has no XXX_H_ guard because SWIG protects all %include'd files to be used
