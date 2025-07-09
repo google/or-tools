@@ -13,8 +13,4 @@
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(
-    [
-        "salbp_20_1.alb",
-    ],
-)
+exports_files(["salbp_20_1.alb"])
