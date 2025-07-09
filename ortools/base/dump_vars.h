@@ -43,12 +43,10 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 
 /* need extra level to force extra eval */
