@@ -601,6 +601,7 @@ if(BUILD_CXX_DOC)
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/cpp
       COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/cpp/Doxyfile
       DEPENDS
+        ${PROJECT_NAMESPACE}::ortools
         ${PROJECT_BINARY_DIR}/cpp/Doxyfile
         ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
         ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
