@@ -26,6 +26,7 @@
 // }
 //
 
+#include <cstddef>
 #include <iterator>
 
 #include "google/protobuf/descriptor.pb.h"

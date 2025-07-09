@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // An implementation of a cost-scaling push-relabel algorithm for the
 // assignment problem (minimum-cost perfect bipartite matching), from
 // the paper of Goldberg and Kennedy (1995).

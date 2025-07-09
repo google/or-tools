@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Storage classes for Linear Programs.
 //
 // LinearProgram stores the complete data for a Linear Program:

@@ -884,6 +884,9 @@ class SparseBitset {
 
   // A bit hacky for really hot loop.
   typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
+  typename Bitset64<IntegerType>::ConstView BitsetConstView() {
+    return bitset_.const_view();
+  }
   void SetUnsafe(typename Bitset64<IntegerType>::View view, IntegerType index) {
     view.Set(index);
     to_clear_.push_back(index);
