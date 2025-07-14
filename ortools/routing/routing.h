@@ -1092,10 +1092,8 @@ class OR_DLL RoutingModel {
   /// Set the node visit types and incompatibilities/requirements between the
   /// types (see below).
   ///
-  /// NOTE: Before adding any incompatibilities and/or requirements on types:
-  ///       1) All corresponding node types must have been set.
-  ///       2) CloseVisitTypes() must be called so all containers are resized
-  ///          accordingly.
+  /// NOTE: Before adding any incompatibilities and/or requirements on types
+  /// all corresponding node types must have been set.
   ///
   /// The following enum is used to describe how a node with a given type 'T'
   /// impacts the number of types 'T' on the route when visited, and thus
