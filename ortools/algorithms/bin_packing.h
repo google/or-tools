@@ -33,7 +33,7 @@ class BinPackingModel {
  public:
   BinPackingModel() = default;
   BaseInt num_items() const { return weigths_.size(); }
-  Cost bin_capacity() const { return bin_capcaity_; }
+  Cost bin_capacity() const { return bin_capacity_; }
   void set_bin_capacity(Cost capacity);
   const ElementCostVector& weights() const { return weigths_; }
   void AddItem(Cost weight);
@@ -44,7 +44,7 @@ class BinPackingModel {
 
  private:
   bool is_sorted_ = false;
-  Cost bin_capcaity_ = .0;
+  Cost bin_capacity_ = .0;
   ElementCostVector weigths_ = {};
 };
 

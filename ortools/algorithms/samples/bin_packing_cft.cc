@@ -95,7 +95,7 @@ void KnapsackTest() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   // KnapsackTest();
   // return 0;
 
