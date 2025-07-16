@@ -30,7 +30,6 @@ import math
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _OUTPUT_PROTO = flags.DEFINE_string(
@@ -1982,7 +1981,7 @@ def bus_driver_scheduling(minimize_drivers: bool, max_num_drivers: int) -> int:
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
 
     status = solver.solve(model)
 

@@ -726,7 +726,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_use_shared_tree_search(true);
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_linearization_level(0);
 
     // These settings don't make sense with shared tree search, turn them off as
     // they can break things.

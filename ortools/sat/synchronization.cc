@@ -280,9 +280,9 @@ std::string ProgressMessage(absl::string_view event_or_solution_count,
                          obj_next, solution_info);
 }
 
-std::string SatProgressMessage(const std::string& event_or_solution_count,
+std::string SatProgressMessage(absl::string_view event_or_solution_count,
                                double time_in_seconds,
-                               const std::string& solution_info) {
+                               absl::string_view solution_info) {
   return absl::StrFormat("#%-5s %6.2fs %s", event_or_solution_count,
                          time_in_seconds, solution_info);
 }
@@ -766,7 +766,7 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
 
 std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
 SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
-                                   const std::string& solution_info,
+                                   absl::string_view solution_info,
                                    Model* model, int source_id) {
   absl::MutexLock mutex_lock(&mutex_);
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
@@ -849,7 +849,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   }
 
   if (logger_->LoggingIsEnabled()) {
-    std::string solution_message = solution_info;
+    std::string solution_message(solution_info);
     if (tmp_postsolved_response.num_booleans() > 0) {
       absl::StrAppend(&solution_message, " (fixed_bools=",
                       tmp_postsolved_response.num_fixed_booleans(), "/",

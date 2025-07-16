@@ -26,7 +26,6 @@ from typing import Dict, Sequence, Tuple
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _OUTPUT_PROTO = flags.DEFINE_string(
@@ -141,7 +140,7 @@ def escape_the_maze(params: str, output_proto: str) -> None:
     # Solve model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solver.parameters.log_search_progress = True
     result = solver.solve(model)
 

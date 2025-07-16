@@ -20,7 +20,6 @@ from typing import Sequence
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _NUM_NODES = flags.DEFINE_integer("num_nodes", 12, "Number of nodes to visit.")
@@ -99,7 +98,7 @@ def solve_with_cp_sat(x, y, profits) -> None:
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solver.parameters.log_search_progress = True
     solver.solve(model)
 

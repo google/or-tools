@@ -18,10 +18,10 @@ import sys
 
 from absl.testing import absltest
 
-from google.protobuf import text_format
-from ortools.sat import cp_model_pb2
-from ortools.sat import sat_parameters_pb2
+from ortools.sat.python import cp_model_builder
 from ortools.sat.python import cp_model_helper as cmh
+from ortools.sat.python import sat_parameters_builder
+from ortools.util.python import sorted_interval_list
 
 
 class Callback(cmh.SolutionCallback):
@@ -47,19 +47,6 @@ class BestBoundCallback:
         self.best_bound = bb
 
 
-class TestIntVar(cmh.BaseIntVar):
-
-    def __init__(self, index: int, name: str, is_boolean: bool = False) -> None:
-        cmh.BaseIntVar.__init__(self, index, is_boolean)
-        self._name = name
-
-    def __str__(self) -> str:
-        return self._name
-
-    def __repr__(self) -> str:
-        return self._name
-
-
 class CpModelHelperTest(absltest.TestCase):
 
     def tearDown(self) -> None:
@@ -71,8 +58,8 @@ class CpModelHelperTest(absltest.TestCase):
       variables { domain: [ -10, 10 ] }
       variables { domain: [ -5, -5, 3, 6 ] }
       """
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
 
         d0 = cmh.CpSatHelper.variable_domain(model.variables[0])
         d1 = cmh.CpSatHelper.variable_domain(model.variables[1])
@@ -112,13 +99,13 @@ class CpModelHelperTest(absltest.TestCase):
         coeffs: -1
         scaling_factor: -1
       }"""
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
 
         solve_wrapper = cmh.SolveWrapper()
         response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
-        self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cp_model_builder.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
 
     def test_simple_solve_with_core(self):
@@ -153,20 +140,21 @@ class CpModelHelperTest(absltest.TestCase):
         coeffs: -1
         scaling_factor: -1
       }"""
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
 
-        parameters = sat_parameters_pb2.SatParameters(optimize_with_core=True)
+        parameters = sat_parameters_builder.SatParameters()
+        parameters.optimize_with_core = True
 
         solve_wrapper = cmh.SolveWrapper()
         solve_wrapper.set_parameters(parameters)
         response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
-        self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cp_model_builder.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
 
     def test_simple_solve_with_proto_api(self):
-        model = cp_model_pb2.CpModelProto()
+        model = cp_model_builder.CpModelProto()
         x = model.variables.add()
         x.domain.extend([-10, 10])
         y = model.variables.add()
@@ -184,7 +172,7 @@ class CpModelHelperTest(absltest.TestCase):
         solve_wrapper = cmh.SolveWrapper()
         response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
-        self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cp_model_builder.OPTIMAL, response_wrapper.status())
         self.assertEqual(30.0, response_wrapper.objective_value())
         self.assertEqual(30.0, response_wrapper.best_objective_bound())
         self.assertRaises(TypeError, response_wrapper.value, None)
@@ -198,19 +186,19 @@ class CpModelHelperTest(absltest.TestCase):
       constraints {
         linear { vars: 0 vars: 1 coeffs: 1 coeffs: 1 domain: 6 domain: 6 } }
       """
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
 
         solve_wrapper = cmh.SolveWrapper()
         callback = Callback()
         solve_wrapper.add_solution_callback(callback)
-        params = sat_parameters_pb2.SatParameters()
+        params = sat_parameters_builder.SatParameters()
         params.enumerate_all_solutions = True
         solve_wrapper.set_parameters(params)
         response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(5, callback.solution_count())
-        self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cp_model_builder.OPTIMAL, response_wrapper.status())
 
     def test_best_bound_callback(self):
         model_string = """
@@ -225,13 +213,13 @@ class CpModelHelperTest(absltest.TestCase):
         offset: 0.6
       }
       """
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
 
         solve_wrapper = cmh.SolveWrapper()
         best_bound_callback = BestBoundCallback()
         solve_wrapper.add_best_bound_callback(best_bound_callback.new_best_bound)
-        params = sat_parameters_pb2.SatParameters()
+        params = sat_parameters_builder.SatParameters()
         params.num_workers = 1
         params.linearization_level = 2
         params.log_search_progress = True
@@ -239,7 +227,7 @@ class CpModelHelperTest(absltest.TestCase):
         response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
 
         self.assertEqual(2.6, best_bound_callback.best_bound)
-        self.assertEqual(cp_model_pb2.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cp_model_builder.OPTIMAL, response_wrapper.status())
 
     def test_model_stats(self):
         model_string = """
@@ -275,15 +263,16 @@ class CpModelHelperTest(absltest.TestCase):
       }
       name: 'testModelStats'
       """
-        model = cp_model_pb2.CpModelProto()
-        self.assertTrue(text_format.Parse(model_string, model))
+        model = cp_model_builder.CpModelProto()
+        self.assertTrue(model.parse_text_format(model_string))
         stats = cmh.CpSatHelper.model_stats(model)
         self.assertTrue(stats)
 
     def test_int_lin_expr(self):
-        x = TestIntVar(0, "x")
+        model = cp_model_builder.CpModelProto()
+        x = cmh.IntVar(model).with_name("x")
         self.assertTrue(x.is_integer())
-        self.assertIsInstance(x, cmh.BaseIntVar)
+        self.assertIsInstance(x, cmh.IntVar)
         self.assertIsInstance(x, cmh.LinearExpr)
         e1 = x + 2
         self.assertTrue(e1.is_integer())
@@ -291,7 +280,7 @@ class CpModelHelperTest(absltest.TestCase):
         e2 = 3 + x
         self.assertTrue(e2.is_integer())
         self.assertEqual(str(e2), "(x + 3)")
-        y = TestIntVar(1, "y")
+        y = cmh.IntVar(model).with_name("y")
         e3 = y * 5
         self.assertTrue(e3.is_integer())
         self.assertEqual(str(e3), "(5 * y)")
@@ -304,7 +293,8 @@ class CpModelHelperTest(absltest.TestCase):
         e6 = x - 2 * y
         self.assertTrue(e6.is_integer())
         self.assertEqual(str(e6), "(x + (-2 * y))")
-        z = TestIntVar(2, "z", True)
+        z = cmh.IntVar(model).with_name("z")
+        z.domain = sorted_interval_list.Domain.from_values([0, 1])
         e7 = -z
         self.assertTrue(e7.is_integer())
         self.assertEqual(str(e7), "(-z)")
@@ -326,9 +316,10 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertEqual(str(e12), "(x + (-y) + (-2 * z))")
 
     def test_float_lin_expr(self):
-        x = TestIntVar(0, "x")
+        model = cp_model_builder.CpModelProto()
+        x = cmh.IntVar(model).with_name("x")
         self.assertTrue(x.is_integer())
-        self.assertIsInstance(x, TestIntVar)
+        self.assertIsInstance(x, cmh.IntVar)
         self.assertIsInstance(x, cmh.LinearExpr)
         e1 = x + 2.5
         self.assertFalse(e1.is_integer())
@@ -336,7 +327,7 @@ class CpModelHelperTest(absltest.TestCase):
         e2 = 3.1 + x
         self.assertFalse(e2.is_integer())
         self.assertEqual(str(e2), "(x + 3.1)")
-        y = TestIntVar(1, "y")
+        y = cmh.IntVar(model).with_name("y")
         e3 = y * 5.2
         self.assertFalse(e3.is_integer())
         self.assertEqual(str(e3), "(5.2 * y)")
@@ -353,7 +344,7 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertFalse(e7.is_integer())
         self.assertEqual(str(e7), "(x + (-(2.4 * y)))")
 
-        z = TestIntVar(2, "z")
+        z = cmh.IntVar(model).with_name("z")
         e8 = cmh.LinearExpr.sum([x, y, z, -2])
         self.assertTrue(e8.is_integer())
         self.assertEqual(str(e8), "(x + y + z - 2)")

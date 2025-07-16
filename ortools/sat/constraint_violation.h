@@ -313,7 +313,7 @@ class LsEvaluator {
               TimeLimit* time_limit);
   LsEvaluator(const CpModelProto& cp_model, const SatParameters& params,
               const std::vector<bool>& ignored_constraints,
-              const std::vector<ConstraintProto>& additional_constraints,
+              absl::Span<const ConstraintProto> additional_constraints,
               TimeLimit* time_limit);
 
   // Intersects the domain of the objective with [lb..ub].

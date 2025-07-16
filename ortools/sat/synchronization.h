@@ -476,7 +476,7 @@ class SharedResponseManager {
   // stored in the repository.
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
   NewSolution(absl::Span<const int64_t> solution_values,
-              const std::string& solution_info, Model* model = nullptr,
+              absl::string_view solution_info, Model* model = nullptr,
               int source_id = -1);
 
   // Changes the solution to reflect the fact that the "improving" problem is

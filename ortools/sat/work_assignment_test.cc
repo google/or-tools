@@ -576,6 +576,9 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   shared_tree_manager->ReplaceTree(trail1);
   shared_tree_manager->ReplaceTree(trail2);
 
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 3);
+  EXPECT_EQ(trail1.MaxLevel(), 1);
+  EXPECT_EQ(trail2.MaxLevel(), 1);
   EXPECT_EQ(trail2.Implications(1).size(), 1);
   EXPECT_EQ(trail2.TargetPhase().size(), 1);
   EXPECT_TRUE(trail1.Implications(1).empty());

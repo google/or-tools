@@ -68,8 +68,12 @@ def solve_sudoku() -> None:
             if initial_grid[i][j]:
                 model.add(grid[(i, j)] == initial_grid[i][j])
 
+    model.export_to_file('/tmp/sudoku_sat.pb.txt')
+
     # Solves and prints out the solution.
     solver = cp_model.CpSolver()
+    solver.parameters.num_workers = 1
+    solver.parameters.log_search_progress = True
     status = solver.solve(model)
     if status == cp_model.OPTIMAL:
         for i in line:

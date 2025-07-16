@@ -28,7 +28,6 @@ from typing import Sequence
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _ORDER = flags.DEFINE_integer("order", 8, "Order of the ruler.")
@@ -71,7 +70,7 @@ def solve_golomb_ruler(order: int, params: str) -> None:
     # Solve the model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     print(f"Golomb ruler(order={order})")
     status = solver.solve(model, solution_printer)

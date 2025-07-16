@@ -281,7 +281,7 @@ class SharedTreeManager {
 
   // Stores the nodes in the search tree.
   std::deque<Node> nodes_ ABSL_GUARDED_BY(mu_);
-  std::vector<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
+  std::deque<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
 
   // How many splits we should generate now to keep the desired number of
   // leaves.
@@ -291,7 +291,7 @@ class SharedTreeManager {
   // communication overhead. If we exceed this, workers become portfolio
   // workers when no unassigned leaves are available.
   const int max_nodes_;
-  int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
+  int num_leaves_assigned_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Temporary vectors used to maintain the state of the tree when nodes are
   // closed and/or children are updated.
@@ -299,7 +299,6 @@ class SharedTreeManager {
   std::vector<Node*> to_update_ ABSL_GUARDED_BY(mu_);
 
   int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
-  int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
   int num_closed_nodes_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
@@ -359,6 +358,7 @@ class SharedTreeWorker {
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
+  double next_split_dtime_ = 0;
 
   // True if the last decision may split the assigned tree and has not yet been
   // proposed to the SharedTreeManager.

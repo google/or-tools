@@ -18,7 +18,6 @@ import math
 from typing import Sequence
 from absl import app
 from absl import flags
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _NUM_ROBOTS = flags.DEFINE_integer("num_robots", 8, "Number of robots to place.")
@@ -93,7 +92,7 @@ def spread_robots(num_robots: int, room_size: int, params: str) -> None:
     # Creates a solver and solves the model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solver.parameters.log_search_progress = True
     status = solver.solve(model)
 

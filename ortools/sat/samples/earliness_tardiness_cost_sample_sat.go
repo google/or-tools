@@ -20,9 +20,10 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+	"google.golang.org/protobuf/proto"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 const (

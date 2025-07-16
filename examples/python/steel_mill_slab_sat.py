@@ -22,7 +22,6 @@ import time
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 
@@ -294,7 +293,7 @@ def steel_mill_slab(problem_id: int, break_symmetries: bool) -> None:
     ### Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     objective_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.solve(model, objective_printer)
 
@@ -478,7 +477,7 @@ def steel_mill_slab_with_valid_slabs(problem_id: int, break_symmetries: bool) ->
     ### Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
 
     solution_printer = SteelMillSlabSolutionPrinter(orders, assign, loads, losses)
     status = solver.solve(model, solution_printer)
@@ -548,7 +547,7 @@ def steel_mill_slab_with_column_generation(problem_id: int) -> None:
     ### Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.solve(model, solution_printer)
 

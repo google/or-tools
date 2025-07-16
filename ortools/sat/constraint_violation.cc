@@ -1500,7 +1500,7 @@ LsEvaluator::LsEvaluator(const CpModelProto& cp_model,
 LsEvaluator::LsEvaluator(
     const CpModelProto& cp_model, const SatParameters& params,
     const std::vector<bool>& ignored_constraints,
-    const std::vector<ConstraintProto>& additional_constraints,
+    absl::Span<const ConstraintProto> additional_constraints,
     TimeLimit* time_limit)
     : cp_model_(cp_model), params_(params), time_limit_(time_limit) {
   var_to_constraints_.resize(cp_model_.variables_size());

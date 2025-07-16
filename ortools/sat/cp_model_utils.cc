@@ -37,7 +37,7 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_FLAG(bool, cp_model_dump_models, false,
+ABSL_FLAG(bool, cp_model_dump_models, true,
           "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
           "protos (original model, presolved model, mapping model) in text "
           "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
@@ -955,6 +955,7 @@ void RegisterFieldPrinters(
     if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
       if (field->message_type() == IntegerVariableProto::descriptor() ||
           field->message_type() == LinearExpressionProto::descriptor()) {
+            LOG(INFO) << "########### Register printer";
         printer->RegisterFieldValuePrinter(field, new InlineFieldPrinter());
       } else {
         RegisterFieldPrinters(field->message_type(), descriptors, printer);

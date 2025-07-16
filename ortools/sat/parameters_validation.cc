@@ -141,6 +141,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
   TEST_POSITIVE(shared_tree_open_leaves_per_worker);
+  TEST_NON_NEGATIVE(shared_tree_split_min_dtime);
+  TEST_IS_FINITE(shared_tree_split_min_dtime);
   TEST_POSITIVE(mip_var_scaling);
 
   // Test LP tolerances.
