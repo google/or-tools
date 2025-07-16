@@ -20,10 +20,13 @@
 #include <variant>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -31,6 +34,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
 
@@ -44,6 +48,7 @@ Precedences2DPropagator::Precedences2DPropagator(
       linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       lin2_indices_(model->GetOrCreate<Linear2Indices>()),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {
   model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
 }
@@ -72,12 +77,25 @@ void Precedences2DPropagator::AddOrUpdateDataForPairOfBoxes(int box1,
   if (box1 > box2) std::swap(box1, box2);
   const auto [it, inserted] = non_trivial_pairs_index_.insert(
       {std::make_pair(box1, box2), static_cast<int>(pair_data_.size())});
+  absl::InlinedVector<Literal, 4> presence_literals;
+  for (int dim = 0; dim < 2; ++dim) {
+    const SchedulingConstraintHelper& dim_helper =
+        dim == 0 ? helper_.x_helper() : helper_.y_helper();
+    for (const int box : {box1, box2}) {
+      if (dim_helper.IsOptional(box)) {
+        presence_literals.push_back(dim_helper.PresenceLiteral(box));
+      }
+    }
+  }
+  gtl::STLSortAndRemoveDuplicates(&presence_literals);
   if (inserted) {
-    pair_data_.emplace_back();
+    pair_data_.emplace_back(
+        PairData{.pair_presence_literals = {presence_literals.begin(),
+                                            presence_literals.end()},
+                 .box1 = box1,
+                 .box2 = box2});
   }
   PairData& pair_data = pair_data_[it->second];
-  pair_data.box1 = box1;
-  pair_data.box2 = box2;
   for (int dim = 0; dim < 2; ++dim) {
     const SchedulingConstraintHelper& dim_helper =
         dim == 0 ? helper_.x_helper() : helper_.y_helper();
@@ -146,8 +164,8 @@ IntegerValue Precedences2DPropagator::UpperBound(
 }
 
 bool Precedences2DPropagator::Propagate() {
-  if (!helper_.SynchronizeAndSetDirection()) return false;
   if (last_helper_inprocessing_count_ != helper_.InProcessingCount()) {
+    if (!helper_.SynchronizeAndSetDirection()) return false;
     last_helper_inprocessing_count_ = helper_.InProcessingCount();
     UpdateVarLookups();
     num_known_linear2_ = 0;
@@ -162,12 +180,10 @@ bool Precedences2DPropagator::Propagate() {
                                             &helper_.y_helper()};
 
   for (const PairData& pair_data : pair_data_) {
-    const int box1 = pair_data.box1;
-    const int box2 = pair_data.box2;
-    DCHECK(box1 < helper_.NumBoxes());
-    DCHECK(box2 < helper_.NumBoxes());
-    DCHECK_NE(box1, box2);
-    if (!helper_.IsPresent(box1) || !helper_.IsPresent(box2)) {
+    if (!absl::c_all_of(pair_data.pair_presence_literals,
+                        [this](const Literal& literal) {
+                          return trail_->Assignment().LiteralIsTrue(literal);
+                        })) {
       continue;
     }
 
@@ -186,7 +202,10 @@ bool Precedences2DPropagator::Propagate() {
     if (!is_unfeasible) continue;
 
     // We have a mandatory overlap on both x and y! Explain and propagate.
+    if (!helper_.SynchronizeAndSetDirection()) return false;
 
+    const int box1 = pair_data.box1;
+    const int box2 = pair_data.box2;
     helper_.ClearReason();
     num_conflicts_++;
 

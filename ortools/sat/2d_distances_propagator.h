@@ -19,12 +19,14 @@
 #include <variant>
 #include <vector>
 
+#include "absl/container/fixed_array.h"
 #include "absl/container/flat_hash_map.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
 
 namespace operations_research {
@@ -61,6 +63,7 @@ class Precedences2DPropagator : public PropagatorInterface {
       IntegerValue ub;
     };
 
+    absl::FixedArray<Literal, 4> pair_presence_literals;
     int box1;
     int box2;
     // start1_before_end2[0==x, 1==y][0=start_1_end_2, 1=start_2_end_1]
@@ -80,6 +83,7 @@ class Precedences2DPropagator : public PropagatorInterface {
   Linear2Watcher* linear2_watcher_;
   SharedStatistics* shared_stats_;
   Linear2Indices* lin2_indices_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
 
   int last_helper_inprocessing_count_ = -1;

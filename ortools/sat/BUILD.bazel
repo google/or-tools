@@ -17,7 +17,7 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test", "cc_shared_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -126,10 +126,14 @@ cc_library(
         ":model",
         ":no_overlap_2d_helper",
         ":precedences",
+        ":sat_base",
         ":scheduling_helpers",
         ":synchronization",
         "//ortools/base:stl_util",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:fixed_array",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -220,7 +224,6 @@ cc_test(
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
-    linkshared = True,
 )
 
 py_proto_library(
