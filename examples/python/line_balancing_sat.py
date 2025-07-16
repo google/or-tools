@@ -34,8 +34,8 @@ from typing import Dict, Sequence
 from absl import app
 from absl import flags
 
-from ortools.sat.python import cp_model
 
+from ortools.sat.python import cp_model
 
 _INPUT = flags.DEFINE_string("input", "", "Input file to parse and solve.")
 _PARAMS = flags.DEFINE_string("params", "", "Sat solver parameters.")

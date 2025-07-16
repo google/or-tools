@@ -26,9 +26,9 @@ import collections
 from absl import app
 from absl import flags
 
+from ortools.sat.python import cp_model
 from ortools.scheduling import rcpsp_pb2
 from ortools.scheduling.python import rcpsp
-from ortools.sat.python import cp_model
 
 _INPUT = flags.DEFINE_string("input", "", "Input file to parse and solve.")
 _OUTPUT_PROTO = flags.DEFINE_string(
