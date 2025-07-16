@@ -18,10 +18,10 @@
 #include <cstdlib>
 #include <random>
 
-#include "ortools/algorithms/bin_packing.h"
 #include "ortools/base/init_google.h"
 #include "ortools/set_cover/base_types.h"
 #include "ortools/set_cover/set_cover_cft.h"
+#include "ortools/set_cover/samples/bin_packing.h"
 
 using namespace operations_research;
 ABSL_FLAG(std::string, instance, "", "BPP instance int RAIL format.");
