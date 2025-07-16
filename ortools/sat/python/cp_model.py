@@ -64,8 +64,13 @@ import warnings
 import numpy as np
 import pandas as pd
 
+# Make sure the generated cp_model_helper is imported before the builder
+# modules as the import duplicates versions of the protobufs.
+from ortools.sat.python import (
+    cp_model_helper as cmh,
+)  # pylint: disable=g-bad-import-order
+
 from ortools.sat.python import cp_model_builder as cmb
-from ortools.sat.python import cp_model_helper as cmh
 from ortools.sat.python import sat_parameters_builder as spb
 from ortools.util.python import sorted_interval_list
 

@@ -26,7 +26,7 @@ target_link_libraries(${WRAPPERS_NAME} PUBLIC
   protobuf::libprotobuf)
 add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})  
 
-# gen_cp_model_builder_pybind
+# gen_cp_model_builder_pybind code generator.
 add_executable(gen_cp_model_builder_pybind)
 target_sources(gen_cp_model_builder_pybind PRIVATE "gen_cp_model_builder_pybind.cc")
 target_include_directories(gen_cp_model_builder_pybind PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -58,32 +58,10 @@ install(TARGETS gen_cp_model_builder_pybind)
 add_custom_command(
      OUTPUT cp_model_builder_pybind.cc
      COMMAND gen_cp_model_builder_pybind > cp_model_builder_pybind.cc
-     # DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
+     COMMENT "Generate C++ cp_model_builder_pybind.cc"
      VERBATIM)
 
-
-pybind11_add_module(cp_model_builder_pybind MODULE cp_model_builder_pybind.cc)
-set_target_properties(cp_model_builder_pybind PROPERTIES
-  LIBRARY_OUTPUT_NAME "cp_model_builder")
-
-# note: macOS is APPLE and also UNIX !
-if(APPLE)
-  set_target_properties(cp_model_builder_pybind PROPERTIES
-    SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
-elseif(UNIX)
-  set_target_properties(cp_model_builder_pybind PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
-endif()
-target_link_libraries(cp_model_builder_pybind PRIVATE
-  ${PROJECT_NAMESPACE}::ortools
-  protobuf::libprotobuf)
-
-target_include_directories(cp_model_builder_pybind PRIVATE ${protobuf_SOURCE_DIR})
-add_library(${PROJECT_NAMESPACE}::cp_model_builder_pybind ALIAS cp_model_builder_pybind)
-
-# gen_sat_parameters_builder_pybind
+# gen_sat_parameters_builder_pybind code generator.
 add_executable(gen_sat_parameters_builder_pybind)
 target_sources(gen_sat_parameters_builder_pybind PRIVATE "gen_sat_parameters_builder_pybind.cc")
 target_include_directories(gen_sat_parameters_builder_pybind PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -115,10 +93,29 @@ install(TARGETS gen_sat_parameters_builder_pybind)
 add_custom_command(
      OUTPUT sat_parameters_builder_pybind.cc
      COMMAND gen_sat_parameters_builder_pybind > sat_parameters_builder_pybind.cc
-     # DEPENDS ${PROTO_FILE} ${PROTOC_PRG}
-     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
+     COMMENT "Generate C++ sat_parameters_builder_pybind.cc"
      VERBATIM)
 
+# Generate both pybind extensins (cp_model_builder and sat_parameters_builder).
+pybind11_add_module(cp_model_builder_pybind MODULE cp_model_builder_pybind.cc)
+set_target_properties(cp_model_builder_pybind PROPERTIES
+  LIBRARY_OUTPUT_NAME "cp_model_builder")
+
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(cp_model_builder_pybind PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
+elseif(UNIX)
+  set_target_properties(cp_model_builder_pybind PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
+endif()
+target_link_libraries(cp_model_builder_pybind PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  protobuf::libprotobuf)
+
+target_include_directories(cp_model_builder_pybind PRIVATE ${protobuf_SOURCE_DIR})
+add_library(${PROJECT_NAMESPACE}::cp_model_builder_pybind ALIAS cp_model_builder_pybind)
 
 pybind11_add_module(sat_parameters_builder_pybind MODULE sat_parameters_builder_pybind.cc)
 set_target_properties(sat_parameters_builder_pybind PROPERTIES
