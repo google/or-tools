@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/algorithms/bin_packing.h"
+#include "ortools/set_cover/samples/bin_packing.h"
 
 #include <absl/algorithm/container.h>
 #include <absl/container/flat_hash_set.h>
@@ -37,10 +37,10 @@ void BinPackingModel::set_bin_capacity(Cost capacity) {
     LOG(WARNING) << "Bin capacity must be positive.";
     return;
   }
-  bin_capcaity_ = capacity;
+  bin_capacity_ = capacity;
 }
 void BinPackingModel::AddItem(Cost weight) {
-  if (weight > bin_capcaity_) {
+  if (weight > bin_capacity_) {
     LOG(WARNING) << "Element weight exceeds bin capacity.";
     return;
   }
@@ -259,7 +259,7 @@ void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
       items.push_back(n);
 
       if (unique_bin_num == scp_model.full_model().num_subsets()) {
-        VLOG(1) << "No new bins generated.";
+        LOG(INFO) << "No new bins generated.";
         break;
       }
     }

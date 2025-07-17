@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H
-#define OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H
+#ifndef OR_TOOLS_ORTOOLS_SET_COVER_SAMPLES_BIN_PACKING_H
+#define OR_TOOLS_ORTOOLS_SET_COVER_SAMPLES_BIN_PACKING_H
 
 #include <absl/algorithm/container.h>
 #include <absl/container/flat_hash_set.h>
@@ -33,7 +33,7 @@ class BinPackingModel {
  public:
   BinPackingModel() = default;
   BaseInt num_items() const { return weigths_.size(); }
-  Cost bin_capacity() const { return bin_capcaity_; }
+  Cost bin_capacity() const { return bin_capacity_; }
   void set_bin_capacity(Cost capacity);
   const ElementCostVector& weights() const { return weigths_; }
   void AddItem(Cost weight);
@@ -44,7 +44,7 @@ class BinPackingModel {
 
  private:
   bool is_sorted_ = false;
-  Cost bin_capcaity_ = .0;
+  Cost bin_capacity_ = .0;
   ElementCostVector weigths_ = {};
 };
 
@@ -177,4 +177,4 @@ void AddRandomizedBins(const BinPackingModel& model, BaseInt num_bins,
                        BinPackingSetCoverModel& scp_model, std::mt19937& rnd);
 
 }  // namespace operations_research
-#endif /* OR_TOOLS_ORTOOLS_ALGORITHMS_BIN_PACKING_H */
+#endif /* OR_TOOLS_ORTOOLS_SET_COVER_SAMPLES_BIN_PACKING_H */
