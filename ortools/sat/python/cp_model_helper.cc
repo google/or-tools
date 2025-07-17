@@ -413,6 +413,40 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
   }
 }
 
+void LinearExprToProto(const py::handle& arg, int64_t multiplier,
+                       LinearExpressionProto* proto) {
+  proto->Clear();
+  if (py::isinstance<LinearExpr>(arg)) {
+    std::shared_ptr<LinearExpr> expr = arg.cast<std::shared_ptr<LinearExpr>>();
+    IntExprVisitor visitor;
+    visitor.AddToProcess(expr, multiplier);
+    std::vector<std::shared_ptr<IntVar>> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset = 0;
+    if (!visitor.Process(&vars, &coeffs, &offset)) {
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Failed to convert integer linear expression: ",
+                              expr->DebugString()));
+    }
+    for (const auto& var : vars) {
+      proto->add_vars(var->index());
+    }
+    for (const int64_t coeff : coeffs) {
+      proto->add_coeffs(coeff);
+    }
+    proto->set_offset(offset);
+  } else if (py::isinstance<py::int_>(arg)) {
+    int64_t value = arg.cast<int64_t>();
+    proto->set_offset(value * multiplier);
+  } else {
+    py::type objtype = py::type::of(arg);
+    const std::string type_name = objtype.attr("__name__").cast<std::string>();
+    ThrowError(PyExc_TypeError,
+               absl::StrCat("Cannot convert '", absl::CEscape(type_name),
+                            "' to a linear expression."));
+  }
+}
+
 int AddBoundedLinearExpressionToModel(
     BoundedLinearExpression* ble, std::shared_ptr<CpModelProto> model_proto) {
   const int index = model_proto->constraints_size();
@@ -479,6 +513,50 @@ int AddExactlyOne(const std::vector<int>& literals,
   ct->mutable_exactly_one()->mutable_literals()->Add(literals.begin(),
                                                      literals.end());
   return index;
+}
+
+int AddElement(const py::handle& index, py::sequence exprs,
+               const py::handle& target,
+               std::shared_ptr<CpModelProto> model_proto) {
+  const int ct_index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  LinearExprToProto(index, 1, ct->mutable_element()->mutable_linear_index());
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, 1, ct->mutable_element()->add_exprs());
+  }
+  LinearExprToProto(target, 1, ct->mutable_element()->mutable_linear_target());
+  return ct_index;
+}
+
+int AddLinearArgumentConstraint(const std::string& name,
+                                const py::handle& target, py::sequence exprs,
+                                std::shared_ptr<CpModelProto> model_proto) {
+  const int ct_index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  LinearArgumentProto* proto;
+  int64_t multiplier = 1;
+  if (name == "min") {
+    proto = ct->mutable_lin_max();
+    multiplier = -1;
+  } else if (name == "max") {
+    proto = ct->mutable_lin_max();
+  } else if (name == "prod") {
+    proto = ct->mutable_int_prod();
+  } else if (name == "div") {
+    proto = ct->mutable_int_div();
+  } else if (name == "mod") {
+    proto = ct->mutable_int_mod();
+  } else {
+    ThrowError(PyExc_ValueError,
+               absl::StrCat("Unknown integer argument constraint: ", name));
+  }
+
+  LinearExprToProto(target, multiplier, proto->mutable_target());
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, multiplier, proto->add_exprs());
+  }
+
+  return ct_index;
 }
 
 void AddEnforcementLiterals(int index, const std::vector<int>& literals,
@@ -707,6 +785,13 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_static("add_at_most_one", &AddAtMostOne, py::arg("literals"),
                   py::arg("model_proto").none(false))
       .def_static("add_exactly_one", &AddExactlyOne, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_element", &AddElement, py::arg("index").none(false),
+                  py::arg("expressions"), py::arg("target").none(false),
+                  py::arg("model_proto").none(false))
+      .def_static("add_linear_argument_constraint",
+                  &AddLinearArgumentConstraint, py::arg("name").none(false),
+                  py::arg("target").none(false), py::arg("exprs"),
                   py::arg("model_proto").none(false))
       .def_static("add_enforcement_literals", &AddEnforcementLiterals,
                   py::arg("index"), py::arg("literals"),

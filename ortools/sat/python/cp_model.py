@@ -68,16 +68,16 @@ from ortools.sat.python import cp_model_helper as cmh
 from ortools.util.python import sorted_interval_list
 
 # Import external types.
-Domain = sorted_interval_list.Domain
 BoundedLinearExpression = cmh.BoundedLinearExpression
+CpModelProto = cmh.CpModelProto
+CpSolverResponse = cmh.CpSolverResponse
+CpSolverStatus = cmh.CpSolverStatus
+Domain = sorted_interval_list.Domain
 FlatFloatExpr = cmh.FlatFloatExpr
 FlatIntExpr = cmh.FlatIntExpr
-LinearExpr = cmh.LinearExpr
 IntVar = cmh.IntVar
+LinearExpr = cmh.LinearExpr
 NotBooleanVariable = cmh.NotBooleanVariable
-CpModelProto = cmh.CpModelProto
-CpSolverStatus = cmh.CpSolverStatus
-CpSolverResponse = cmh.CpSolverResponse
 SatParameters = cmh.SatParameters
 
 
@@ -253,20 +253,6 @@ def rebuild_from_linear_expression_proto(
             return LinearExpr.weighted_sum(variables, coeffs)
         else:
             return LinearExpr.weighted_sum(variables, proto.coeffs)
-
-
-def expand_literals_generator_or_tuple(
-    args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]],
-) -> Union[Iterable[LiteralT], LiteralT]:
-    if hasattr(args, "__len__"):  # Tuple
-        print("Tuple")
-        if len(args) != 1:
-            return args
-        if isinstance(args[0], (NumberTypes, cmh.Literal)):
-            return args
-    # Generator
-    print(f"Generator {args[0]} {type(args[0])}")
-    return args[0]
 
 
 class Constraint:
@@ -821,14 +807,10 @@ class CpModel:
             expression: LinearExprT = list(expressions)[int(index)]
             return self.add(expression == target)
 
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.element.linear_index.copy_from(self.parse_linear_expression(index))
-        model_ct.element.exprs.extend(
-            [self.parse_linear_expression(e) for e in expressions]
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_element(index, expressions, target, self.__model),
         )
-        model_ct.element.linear_target.copy_from(self.parse_linear_expression(target))
-        return ct
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
         """Adds Circuit(arcs).
@@ -1292,13 +1274,11 @@ class CpModel:
         """Same as `add_bool_or`: `sum(literals) >= 1`."""
         return self.add_bool_or(*literals)
 
-    # @overload
-    # def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint:
-    #   ...
+    @overload
+    def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
 
-    # @overload
-    # def add_at_most_one(self, *literals: LiteralT) -> Constraint:
-    #   ...
+    @overload
+    def add_at_most_one(self, *literals: LiteralT) -> Constraint: ...
 
     def add_at_most_one(self, *literals) -> Constraint:
         """Adds `AtMostOne(literals)`: `sum(literals) <= 1`."""
@@ -1352,47 +1332,71 @@ class CpModel:
         index: int = cmh.CpSatHelper.add_bool_xor(lits, self.__model)
         return Constraint(self, index)
 
+    @overload
     def add_min_equality(
-        self, target: LinearExprT, exprs: Iterable[LinearExprT]
-    ) -> Constraint:
-        """Adds `target == Min(exprs)`."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.lin_max.exprs.extend(
-            [self.parse_linear_expression(x, True) for x in exprs]
-        )
-        model_ct.lin_max.target.copy_from(self.parse_linear_expression(target, True))
-        return ct
+        self, target: LinearExprT, expressions: Iterable[LinearExprT]
+    ) -> Constraint: ...
 
+    @overload
+    def add_min_equality(
+        self, target: LinearExprT, *expressions: LinearExprT
+    ) -> Constraint: ...
+
+    def add_min_equality(self, target, *expressions) -> Constraint:
+        """Adds `target == Min(expressions)`."""
+        exprs = [e for e in expand_exprs_generator_or_tuple(expressions)]
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "min",
+                target,
+                exprs,
+                self.__model,
+            ),
+        )
+
+    @overload
     def add_max_equality(
-        self, target: LinearExprT, exprs: Iterable[LinearExprT]
-    ) -> Constraint:
-        """Adds `target == Max(exprs)`."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.lin_max.exprs.extend([self.parse_linear_expression(x) for x in exprs])
-        model_ct.lin_max.target.copy_from(self.parse_linear_expression(target))
-        return ct
+        self, target: LinearExprT, expressions: Iterable[LinearExprT]
+    ) -> Constraint: ...
+
+    @overload
+    def add_max_equality(
+        self, target: LinearExprT, *expressions: LinearExprT
+    ) -> Constraint: ...
+
+    def add_max_equality(self, target, *expressions) -> Constraint:
+        """Adds `target == Max(expressions)`."""
+        exprs = [e for e in expand_exprs_generator_or_tuple(expressions)]
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "max",
+                target,
+                exprs,
+                self.__model,
+            ),
+        )
 
     def add_division_equality(
         self, target: LinearExprT, num: LinearExprT, denom: LinearExprT
     ) -> Constraint:
         """Adds `target == num // denom` (integer division rounded towards 0)."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.int_div.exprs.append(self.parse_linear_expression(num))
-        model_ct.int_div.exprs.append(self.parse_linear_expression(denom))
-        model_ct.int_div.target.copy_from(self.parse_linear_expression(target))
-        return ct
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "div", target, [num, denom], self.__model
+            ),
+        )
 
     def add_abs_equality(self, target: LinearExprT, expr: LinearExprT) -> Constraint:
         """Adds `target == Abs(expr)`."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.lin_max.exprs.append(self.parse_linear_expression(expr))
-        model_ct.lin_max.exprs.append(self.parse_linear_expression(expr, True))
-        model_ct.lin_max.target.copy_from(self.parse_linear_expression(target))
-        return ct
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "max", target, [expr, -expr], self.__model
+            ),
+        )
 
     def add_modulo_equality(
         self, target: LinearExprT, expr: LinearExprT, mod: LinearExprT
@@ -1416,12 +1420,12 @@ class CpModel:
         Returns:
           A `Constraint` object.
         """
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.int_mod.exprs.append(self.parse_linear_expression(expr))
-        model_ct.int_mod.exprs.append(self.parse_linear_expression(mod))
-        model_ct.int_mod.target.copy_from(self.parse_linear_expression(target))
-        return ct
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "mod", target, [expr, mod], self.__model
+            ),
+        )
 
     def add_multiplication_equality(
         self,
@@ -1429,16 +1433,15 @@ class CpModel:
         *expressions: Union[Iterable[LinearExprT], LinearExprT],
     ) -> Constraint:
         """Adds `target == expressions[0] * .. * expressions[n]`."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.int_prod.exprs.extend(
-            [
-                self.parse_linear_expression(expr)
-                for expr in expand_exprs_generator_or_tuple(expressions)
-            ]
+        return Constraint(
+            self,
+            cmh.CpSatHelper.add_linear_argument_constraint(
+                "prod",
+                target,
+                expand_exprs_generator_or_tuple(expressions),
+                self.__model,
+            ),
         )
-        model_ct.int_prod.target.copy_from(self.parse_linear_expression(target))
-        return ct
 
     # Scheduling support
 
@@ -2190,7 +2193,7 @@ class CpModel:
                 f"TypeError: {type(x).__name__!r}  is not a boolean variable"
             )
 
-    def expand_literals_enerator_or_tuple(
+    def expand_literals_generator_or_tuple(
         self, args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]]
     ):
         if hasattr(args, "__len__"):  # Tuple
@@ -2208,7 +2211,7 @@ class CpModel:
         """Expands a tuple or generator of literals to a list of indices."""
         return [
             self.get_or_make_boolean_index(lit)
-            for lit in self.expand_literals_enerator_or_tuple(literals)
+            for lit in self.expand_literals_generator_or_tuple(literals)
         ]
 
     # Compatibility with pre PEP8
@@ -2287,15 +2290,15 @@ class CpModel:
 
 
 def expand_exprs_generator_or_tuple(
-    args: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]],
+    expressions: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]],
 ) -> Union[Iterable[LinearExprT], LinearExprT]:
-    if hasattr(args, "__len__"):  # Tuple
-        if len(args) != 1:
-            return args
-        if isinstance(args[0], (NumberTypes, LinearExpr)):
-            return args
+    if hasattr(expressions, "__len__"):  # Tuple
+        if len(expressions) != 1:
+            return expressions
+        if isinstance(expressions[0], (NumberTypes, LinearExpr)):
+            return expressions
     # Generator
-    return args[0]
+    return expressions[0]
 
 
 class CpSolver:

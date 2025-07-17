@@ -1014,6 +1014,62 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
+    def test_max_equality_list(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_max_equality(x, [y[0], y[2], y[1], y[3]])
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints[0].lin_max.exprs, 4)
+        self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
+
+    def test_max_equality_tuple(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_max_equality(x, (y[0], y[2], y[1], y[3]))
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints[0].lin_max.exprs, 4)
+        self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
+
+    def test_max_equality_generator(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_max_equality(x, (z for z in y))
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints[0].lin_max.exprs, 5)
+        self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
+
+    def test_max_equality_args(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_max_equality(x, y[2], y[4])
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints[0].lin_max.exprs, 2)
+        self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
+        self.assertEqual(1, model.proto.constraints[0].lin_max.target.coeffs[0])
+
+    def test_max_equality_with_constant(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = model.new_int_var(0, 4, "y")
+        model.add_max_equality(x, [y, 3])
+        self.assertLen(model.proto.variables, 2)
+        self.assertLen(model.proto.constraints, 1)
+        lin_max = model.proto.constraints[0].lin_max
+        self.assertLen(lin_max.exprs, 2)
+        self.assertLen(lin_max.exprs[0].vars, 1)
+        self.assertEqual(1, lin_max.exprs[0].vars[0])
+        self.assertEqual(1, lin_max.exprs[0].coeffs[0])
+        self.assertEqual(0, lin_max.exprs[0].offset)
+        self.assertEmpty(lin_max.exprs[1].vars)
+        self.assertEqual(3, lin_max.exprs[1].offset)
+
     def test_min_equality(self) -> None:
         model = cp_model.CpModel()
         x = model.new_int_var(0, 4, "x")
@@ -1051,6 +1107,16 @@ class CpModelTest(absltest.TestCase):
         model.add_min_equality(x, (z for z in y))
         self.assertLen(model.proto.variables, 6)
         self.assertLen(model.proto.constraints[0].lin_max.exprs, 5)
+        self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
+        self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
+
+    def test_min_equality_args(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_min_equality(x, y[2], y[4])
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints[0].lin_max.exprs, 2)
         self.assertEqual(0, model.proto.constraints[0].lin_max.target.vars[0])
         self.assertEqual(-1, model.proto.constraints[0].lin_max.target.coeffs[0])
 
@@ -1169,6 +1235,16 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.variables, 6)
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].int_prod.exprs, 5)
+        self.assertEqual(0, model.proto.constraints[0].int_prod.target.vars[0])
+
+    def test_multiplication_equality_generator(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(0, 4, "x")
+        y = [model.new_int_var(0, 4, f"y{i}") for i in range(5)]
+        model.add_multiplication_equality(x, y[2], y[3])
+        self.assertLen(model.proto.variables, 6)
+        self.assertLen(model.proto.constraints, 1)
+        self.assertLen(model.proto.constraints[0].int_prod.exprs, 2)
         self.assertEqual(0, model.proto.constraints[0].int_prod.target.vars[0])
 
     def test_implication(self) -> None:
