@@ -126,8 +126,6 @@ setup(
         '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
         '@PYTHON_PROJECT@.sat.python':[
             '$<TARGET_FILE_NAME:cp_model_helper_pybind11>',
-            '$<TARGET_FILE_NAME:cp_model_builder_pybind>',
-            '$<TARGET_FILE_NAME:sat_parameters_builder_pybind>',
             '*.pyi',
             'py.typed'
         ],

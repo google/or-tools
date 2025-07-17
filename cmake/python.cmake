@@ -699,10 +699,6 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:cp_model_helper_pybind11> ${PYTHON_PROJECT}/sat/python
   COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:cp_model_builder_pybind> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy
-   $<TARGET_FILE:sat_parameters_builder_pybind> ${PYTHON_PROJECT}/sat/python
-  COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:rcpsp_pybind11> ${PYTHON_PROJECT}/scheduling/python
    COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
@@ -727,9 +723,7 @@ add_custom_command(
     $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_elemental_pybind11>
     $<$<BOOL:${BUILD_MATH_OPT}>:math_opt_io_pybind11>
     $<TARGET_NAME_IF_EXISTS:pdlp_pybind11>
-    cp_model_builder_pybind
     cp_model_helper_pybind11
-    sat_parameters_builder_pybind
     rcpsp_pybind11
     set_cover_pybind11
     sorted_interval_list_pybind11

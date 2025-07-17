@@ -64,14 +64,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-# Make sure the generated cp_model_helper is imported before the builder
-# modules as the import duplicates versions of the protobufs.
-from ortools.sat.python import (
-    cp_model_helper as cmh,
-)  # pylint: disable=g-bad-import-order
-
-from ortools.sat.python import cp_model_builder as cmb
-from ortools.sat.python import sat_parameters_builder as spb
+from ortools.sat.python import cp_model_helper as cmh
 from ortools.util.python import sorted_interval_list
 
 # Import external types.
@@ -82,6 +75,10 @@ FlatIntExpr = cmh.FlatIntExpr
 LinearExpr = cmh.LinearExpr
 IntVar = cmh.IntVar
 NotBooleanVariable = cmh.NotBooleanVariable
+CpModelProto = cmh.CpModelProto
+CpSolverStatus = cmh.CpSolverStatus
+CpSolverResponse = cmh.CpSolverResponse
+SatParameters = cmh.SatParameters
 
 
 # The classes below allow linear expressions to be expressed naturally with the
@@ -94,52 +91,52 @@ INT32_MIN = -(2**31)
 INT32_MAX = 2**31 - 1
 
 # CpSolver status (exported to avoid importing cp_model_cp2).
-UNKNOWN = cmb.CpSolverStatus.UNKNOWN
-UNKNOWN = cmb.CpSolverStatus.UNKNOWN
-MODEL_INVALID = cmb.CpSolverStatus.MODEL_INVALID
-FEASIBLE = cmb.CpSolverStatus.FEASIBLE
-INFEASIBLE = cmb.CpSolverStatus.INFEASIBLE
-OPTIMAL = cmb.CpSolverStatus.OPTIMAL
+UNKNOWN = cmh.CpSolverStatus.UNKNOWN
+UNKNOWN = cmh.CpSolverStatus.UNKNOWN
+MODEL_INVALID = cmh.CpSolverStatus.MODEL_INVALID
+FEASIBLE = cmh.CpSolverStatus.FEASIBLE
+INFEASIBLE = cmh.CpSolverStatus.INFEASIBLE
+OPTIMAL = cmh.CpSolverStatus.OPTIMAL
 
 # Variable selection strategy
-CHOOSE_FIRST = cmb.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST
+CHOOSE_FIRST = cmh.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST
 CHOOSE_LOWEST_MIN = (
-    cmb.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_LOWEST_MIN
+    cmh.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_LOWEST_MIN
 )
 CHOOSE_HIGHEST_MAX = (
-    cmb.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_HIGHEST_MAX
+    cmh.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_HIGHEST_MAX
 )
 CHOOSE_MIN_DOMAIN_SIZE = (
-    cmb.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_MIN_DOMAIN_SIZE
+    cmh.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_MIN_DOMAIN_SIZE
 )
 CHOOSE_MAX_DOMAIN_SIZE = (
-    cmb.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_MAX_DOMAIN_SIZE
+    cmh.DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_MAX_DOMAIN_SIZE
 )
 
 # Domain reduction strategy
-SELECT_MIN_VALUE = cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE
-SELECT_MAX_VALUE = cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_MAX_VALUE
-SELECT_LOWER_HALF = cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_LOWER_HALF
-SELECT_UPPER_HALF = cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_UPPER_HALF
+SELECT_MIN_VALUE = cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE
+SELECT_MAX_VALUE = cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_MAX_VALUE
+SELECT_LOWER_HALF = cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_LOWER_HALF
+SELECT_UPPER_HALF = cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_UPPER_HALF
 SELECT_MEDIAN_VALUE = (
-    cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_MEDIAN_VALUE
+    cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_MEDIAN_VALUE
 )
 SELECT_RANDOM_HALF = (
-    cmb.DecisionStrategyProto.DomainReductionStrategy.SELECT_RANDOM_HALF
+    cmh.DecisionStrategyProto.DomainReductionStrategy.SELECT_RANDOM_HALF
 )
 
 # Search branching
-AUTOMATIC_SEARCH = spb.SatParameters.SearchBranching.AUTOMATIC_SEARCH
-FIXED_SEARCH = spb.SatParameters.SearchBranching.FIXED_SEARCH
-PORTFOLIO_SEARCH = spb.SatParameters.SearchBranching.PORTFOLIO_SEARCH
-LP_SEARCH = spb.SatParameters.SearchBranching.LP_SEARCH
-PSEUDO_COST_SEARCH = spb.SatParameters.SearchBranching.PSEUDO_COST_SEARCH
+AUTOMATIC_SEARCH = cmh.SatParameters.SearchBranching.AUTOMATIC_SEARCH
+FIXED_SEARCH = cmh.SatParameters.SearchBranching.FIXED_SEARCH
+PORTFOLIO_SEARCH = cmh.SatParameters.SearchBranching.PORTFOLIO_SEARCH
+LP_SEARCH = cmh.SatParameters.SearchBranching.LP_SEARCH
+PSEUDO_COST_SEARCH = cmh.SatParameters.SearchBranching.PSEUDO_COST_SEARCH
 PORTFOLIO_WITH_QUICK_RESTART_SEARCH = (
-    spb.SatParameters.SearchBranching.PORTFOLIO_WITH_QUICK_RESTART_SEARCH
+    cmh.SatParameters.SearchBranching.PORTFOLIO_WITH_QUICK_RESTART_SEARCH
 )
-HINT_SEARCH = spb.SatParameters.SearchBranching.HINT_SEARCH
-PARTIAL_FIXED_SEARCH = spb.SatParameters.SearchBranching.PARTIAL_FIXED_SEARCH
-RANDOMIZED_SEARCH = spb.SatParameters.SearchBranching.RANDOMIZED_SEARCH
+HINT_SEARCH = cmh.SatParameters.SearchBranching.HINT_SEARCH
+PARTIAL_FIXED_SEARCH = cmh.SatParameters.SearchBranching.PARTIAL_FIXED_SEARCH
+RANDOMIZED_SEARCH = cmh.SatParameters.SearchBranching.RANDOMIZED_SEARCH
 
 # Type aliases
 IntegralT = Union[int, np.int8, np.uint8, np.int32, np.uint32, np.int64, np.uint64]
@@ -187,7 +184,7 @@ ArcT = Tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
-def short_name(model: cmb.CpModelProto, i: int) -> str:
+def short_name(model: cmh.CpModelProto, i: int) -> str:
     """Returns a short name of an integer variable, or its negation."""
     if i >= 0:
         return str(IntVar(model, i))
@@ -196,8 +193,8 @@ def short_name(model: cmb.CpModelProto, i: int) -> str:
 
 
 def short_expr_name(
-    model: cmb.CpModelProto,
-    e: cmb.LinearExpressionProto,
+    model: cmh.CpModelProto,
+    e: cmh.LinearExpressionProto,
 ) -> str:
     """Pretty-print LinearExpressionProto instances."""
     if not e.vars:
@@ -231,8 +228,8 @@ def arg_is_boolean(x: Any) -> bool:
 
 
 def rebuild_from_linear_expression_proto(
-    proto: cmb.LinearExpressionProto,
-    model_proto: cmb.CpModelProto,
+    proto: cmh.LinearExpressionProto,
+    model_proto: cmh.CpModelProto,
 ) -> LinearExprT:
     """Recreate a LinearExpr from a LinearExpressionProto."""
     num_elements = len(proto.vars)
@@ -344,7 +341,7 @@ class Constraint:
         return self.__index
 
     @property
-    def proto(self) -> cmb.ConstraintProto:
+    def proto(self) -> cmh.ConstraintProto:
         """Returns the constraint protobuf."""
         return self.__cp_model.proto.constraints[self.__index]
 
@@ -365,7 +362,7 @@ class Constraint:
     def Index(self) -> int:
         return self.index
 
-    def Proto(self) -> cmb.ConstraintProto:
+    def Proto(self) -> cmh.ConstraintProto:
         return self.proto
 
     # pylint: enable=invalid-name
@@ -394,16 +391,16 @@ class IntervalVar:
 
     def __init__(
         self,
-        model: cmb.CpModelProto,
-        start: Union[cmb.LinearExpressionProto, int],
-        size: Optional[cmb.LinearExpressionProto],
-        end: Optional[cmb.LinearExpressionProto],
+        model: cmh.CpModelProto,
+        start: Union[cmh.LinearExpressionProto, int],
+        size: Optional[cmh.LinearExpressionProto],
+        end: Optional[cmh.LinearExpressionProto],
         is_present_index: Optional[int],
         name: Optional[str],
     ) -> None:
-        self.__model: cmb.CpModelProto = model
+        self.__model: cmh.CpModelProto = model
         self.__index: int
-        self.__ct: cmb.ConstraintProto
+        self.__ct: cmh.ConstraintProto
         # As with the IntVar::__init__ method, we hack the __init__ method to
         # support two use cases:
         #   case 1: called when creating a new interval variable.
@@ -443,12 +440,12 @@ class IntervalVar:
         return self.__index
 
     @property
-    def proto(self) -> cmb.ConstraintProto:
+    def proto(self) -> cmh.ConstraintProto:
         """Returns the interval protobuf."""
         return self.__model.constraints[self.__index]
 
     @property
-    def model_proto(self) -> cmb.CpModelProto:
+    def model_proto(self) -> cmh.CpModelProto:
         """Returns the model protobuf."""
         return self.__model
 
@@ -502,7 +499,7 @@ class IntervalVar:
     def Index(self) -> int:
         return self.index
 
-    def Proto(self) -> cmb.ConstraintProto:
+    def Proto(self) -> cmh.ConstraintProto:
         return self.proto
 
     StartExpr = start_expr
@@ -548,7 +545,7 @@ class CpModel:
     """
 
     def __init__(self) -> None:
-        self.__model: cmb.CpModelProto = cmb.CpModelProto()
+        self.__model: cmh.CpModelProto = cmh.CpModelProto()
         self.__constant_map: Dict[IntegralT, int] = {}
 
     # Naming.
@@ -1966,7 +1963,7 @@ class CpModel:
         return str(self.__model)
 
     @property
-    def proto(self) -> cmb.CpModelProto:
+    def proto(self) -> cmh.CpModelProto:
         """Returns the underlying CpModelProto."""
         return self.__model
 
@@ -2022,9 +2019,9 @@ class CpModel:
 
     def parse_linear_expression(
         self, linear_expr: LinearExprT, negate: bool = False
-    ) -> cmb.LinearExpressionProto:
+    ) -> cmh.LinearExpressionProto:
         """Returns a LinearExpressionProto built from a LinearExpr instance."""
-        result: cmb.LinearExpressionProto = cmb.LinearExpressionProto()
+        result: cmh.LinearExpressionProto = cmh.LinearExpressionProto()
         mult = -1 if negate else 1
         if isinstance(linear_expr, IntegralTypes):
             result.offset = int(linear_expr) * mult
@@ -2091,8 +2088,8 @@ class CpModel:
     def add_decision_strategy(
         self,
         variables: Sequence[IntVar],
-        var_strategy: cmb.DecisionStrategyProto.VariableSelectionStrategy,
-        domain_strategy: cmb.DecisionStrategyProto.DomainReductionStrategy,
+        var_strategy: cmh.DecisionStrategyProto.VariableSelectionStrategy,
+        domain_strategy: cmh.DecisionStrategyProto.DomainReductionStrategy,
     ) -> None:
         """Adds a search strategy to the model.
 
@@ -2105,7 +2102,7 @@ class CpModel:
             solve() will fail.
         """
 
-        strategy: cmb.DecisionStrategyProto = self.__model.search_strategy.add()
+        strategy: cmh.DecisionStrategyProto = self.__model.search_strategy.add()
         for v in variables:
             expr = strategy.exprs.add()
             if v.index >= 0:
@@ -2223,7 +2220,7 @@ class CpModel:
     def SetName(self, name: str) -> None:
         self.name = name
 
-    def Proto(self) -> cmb.CpModelProto:
+    def Proto(self) -> cmh.CpModelProto:
         return self.proto
 
     NewIntVar = new_int_var
@@ -2314,7 +2311,7 @@ class CpSolver:
 
     def __init__(self) -> None:
         self.__response_wrapper: Optional[cmh.ResponseWrapper] = None
-        self.parameters: spb.SatParameters = spb.SatParameters()
+        self.parameters: cmh.SatParameters = cmh.SatParameters()
         self.log_callback: Optional[Callable[[str], None]] = None
         self.best_bound_callback: Optional[Callable[[float], None]] = None
         self.__solve_wrapper: Optional[cmh.SolveWrapper] = None
@@ -2324,7 +2321,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cmb.CpSolverStatus:
+    ) -> cmh.CpSolverStatus:
         """Solves a problem and passes each solution to the callback if not null."""
         with self.__lock:
             self.__solve_wrapper = cmh.SolveWrapper()
@@ -2497,7 +2494,7 @@ class CpSolver:
         return self._checked_response.user_time()
 
     @property
-    def response_proto(self) -> cmb.CpSolverResponse:
+    def response_proto(self) -> cmh.CpSolverResponse:
         """Returns the response object."""
         return self._checked_response.response()
 
@@ -2557,7 +2554,7 @@ class CpSolver:
     def ObjectiveValue(self) -> float:
         return self.objective_value
 
-    def ResponseProto(self) -> cmb.CpSolverResponse:
+    def ResponseProto(self) -> cmh.CpSolverResponse:
         return self.response_proto
 
     def ResponseStats(self) -> str:
@@ -2567,7 +2564,7 @@ class CpSolver:
         self,
         model: CpModel,
         solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cmb.CpSolverStatus:
+    ) -> cmh.CpSolverStatus:
         return self.solve(model, solution_callback)
 
     def SolutionInfo(self) -> str:
@@ -2596,7 +2593,7 @@ class CpSolver:
 
     def SolveWithSolutionCallback(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cmb.CpSolverStatus:
+    ) -> cmh.CpSolverStatus:
         """DEPRECATED Use solve() with the callback argument."""
         warnings.warn(
             "solve_with_solution_callback is deprecated; use solve() with"
@@ -2607,7 +2604,7 @@ class CpSolver:
 
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cmb.CpSolverStatus:
+    ) -> cmh.CpSolverStatus:
         """DEPRECATED Use solve() with the right parameter.
 
         Search for all solutions of a satisfiability problem.
@@ -2641,7 +2638,7 @@ class CpSolver:
         enumerate_all = self.parameters.enumerate_all_solutions
         self.parameters.enumerate_all_solutions = True
 
-        status: cmb.CpSolverStatus = self.solve(model, callback)
+        status: cmh.CpSolverStatus = self.solve(model, callback)
 
         # Restore parameter.
         self.parameters.enumerate_all_solutions = enumerate_all
@@ -2802,7 +2799,7 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.UserTime()
 
     @property
-    def response_proto(self) -> cmb.CpSolverResponse:
+    def response_proto(self) -> cmh.CpSolverResponse:
         """Returns the response object."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")

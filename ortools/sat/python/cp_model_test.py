@@ -22,7 +22,6 @@ import numpy as np
 import pandas as pd
 
 from ortools.sat.python import cp_model
-from ortools.sat.python import cp_model_builder
 from ortools.sat.python import cp_model_helper as cmh
 
 
@@ -585,7 +584,7 @@ class CpModelTest(absltest.TestCase):
         model.add(3 <= -1)
         model.minimize(x)
         solver = cp_model.CpSolver()
-        status: cp_model_builder.CpSolverStatus = solver.solve(model)
+        status: cmh.CpSolverStatus = solver.solve(model)
         self.assertEqual("INFEASIBLE", status.name)
 
     def test_sum(self) -> None:
@@ -1308,7 +1307,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(~i.size_expr(), ~y)
         self.assertRaises(TypeError, i.start_expr().negated)
 
-        proto = cp_model_builder.LinearExpressionProto()
+        proto = cmh.LinearExpressionProto()
         proto.vars.append(x.index)
         proto.coeffs.append(1)
         proto.vars.append(y.index)

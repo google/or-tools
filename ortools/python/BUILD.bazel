@@ -23,9 +23,7 @@ py_binary(
         "//ortools/graph/python:linear_sum_assignment.so",
         "//ortools/graph/python:max_flow.so",
         "//ortools/graph/python:min_cost_flow.so",
-        "//ortools/sat/python:cp_model_builder_pybind.so",
         "//ortools/sat/python:cp_model_helper.so",
-        "//ortools/sat/python:sat_parameters_builder_pybind.so",
     ],
     tags = ["manual"],
     deps = [

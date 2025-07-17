@@ -57,55 +57,12 @@ cc_library(
 )
 
 cc_binary(
-    name = "gen_cp_model_builder_pybind",
-    srcs = ["gen_cp_model_builder_pybind.cc"],
+    name = "gen_proto_builder_pybind11",
+    srcs = ["gen_proto_builder_pybind11.cc"],
     deps = [
         ":wrappers",
         "//ortools/base",
         "//ortools/sat:cp_model_cc_proto",
-        "@abseil-cpp//absl/log:die_if_null",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-genrule(
-    name = "run_gen_cp_model_builder_pybind",
-    outs = ["cp_model_builder_pybind.cc"],
-    cmd = "$(location :gen_cp_model_builder_pybind) > $@",
-    tools = [":gen_cp_model_builder_pybind"],
-)
-
-pybind_extension(
-    name = "cp_model_builder",
-    srcs = [
-        "cp_model_builder_pybind.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/port:proto_utils",
-        "//ortools/sat:cp_model_cc_proto",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/strings",
-        "@protobuf",
-    ],
-)
-
-py_test(
-    name = "cp_model_builder_test",
-    srcs = ["cp_model_builder_test.py"],
-    deps = [
-        ":cp_model_builder",
-        requirement("absl-py"),
-        "//ortools/sat:cp_model_py_pb2",
-    ],
-)
-
-cc_binary(
-    name = "gen_sat_parameters_builder_pybind",
-    srcs = ["gen_sat_parameters_builder_pybind.cc"],
-    deps = [
-        ":wrappers",
-        "//ortools/base",
         "//ortools/sat:sat_parameters_cc_proto",
         "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/strings:str_format",
@@ -113,34 +70,15 @@ cc_binary(
 )
 
 genrule(
-    name = "run_gen_sat_parameters_builder_pybind",
-    outs = ["sat_parameters_builder_pybind.cc"],
-    cmd = "$(location :gen_sat_parameters_builder_pybind) > $@",
-    tools = [":gen_sat_parameters_builder_pybind"],
+    name = "run_gen_proto_builder_pybind11",
+    outs = ["proto_builder_pybind11.h"],
+    cmd = "$(location :gen_proto_builder_pybind11) > $@",
+    tools = [":gen_proto_builder_pybind11"],
 )
 
-pybind_extension(
-    name = "sat_parameters_builder",
-    srcs = [
-        "sat_parameters_builder_pybind.cc",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/port:proto_utils",
-        "//ortools/sat:sat_parameters_cc_proto",
-        "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/strings",
-        "@protobuf",
-    ],
-)
-
-py_test(
-    name = "sat_parameters_builder_test",
-    srcs = ["sat_parameters_builder_test.py"],
-    deps = [
-        ":sat_parameters_builder",
-        requirement("absl-py"),
-    ],
+cc_library(
+    name = "proto_builder_pybind11",
+    hdrs = ["proto_builder_pybind11.h"],
 )
 
 pybind_extension(
@@ -150,6 +88,7 @@ pybind_extension(
     deps = [
         ":linear_expr",
         ":linear_expr_doc",
+        ":proto_builder_pybind11",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",
@@ -162,9 +101,7 @@ py_test(
     name = "cp_model_helper_test",
     srcs = ["cp_model_helper_test.py"],
     deps = [
-        ":cp_model_builder",
         ":cp_model_helper",
-        ":sat_parameters_builder",
         "//ortools/util/python:sorted_interval_list",
         requirement("absl-py"),
     ],
@@ -175,9 +112,7 @@ py_library(
     srcs = ["cp_model.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cp_model_builder",
         ":cp_model_helper",
-        ":sat_parameters_builder",
         requirement("numpy"),
         requirement("pandas"),
         "//ortools/util/python:sorted_interval_list",

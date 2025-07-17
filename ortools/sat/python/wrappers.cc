@@ -232,7 +232,7 @@ class Generator {
   // ptr.
   void GenerateRepeatedPtrDecl(const google::protobuf::Descriptor& msg) {
     absl::SubstituteAndAppend(&out_, R"(
-  py::class_<google::protobuf::RepeatedPtrField<$0>>(py_module, "repeated_$1")
+  py::class_<google::protobuf::RepeatedPtrField<$0>>(m, "repeated_$1")
     .def("add",
          [](google::protobuf::RepeatedPtrField<$0>* self) {
             return self->Add();
@@ -265,7 +265,7 @@ class Generator {
   void GenerateRepeatedScalarDecl(absl::string_view scalar_type) {
     if (scalar_type == "std::string") {
       absl::StrAppend(&out_, R"(
-  py::class_<google::protobuf::RepeatedPtrField<std::string>>(py_module, "repeated_scalar_std_string")
+  py::class_<google::protobuf::RepeatedPtrField<std::string>>(m, "repeated_scalar_std_string")
     .def("append",
          [](google::protobuf::RepeatedPtrField<std::string>* self, std::string str) {
             self->Add(std::move(str));
@@ -299,7 +299,7 @@ class Generator {
     } else {
       absl::SubstituteAndAppend(
           &out_, R"(
-  py::class_<google::protobuf::RepeatedField<$0>>(py_module, "repeated_scalar_$1")
+  py::class_<google::protobuf::RepeatedField<$0>>(m, "repeated_scalar_$1")
     .def("append", [](google::protobuf::RepeatedField<$0>* self, $0 value) {
           self->Add(value);
         })
@@ -404,13 +404,13 @@ class Generator {
     }
   }
 
-  // Returns the wrapper name for a message (or "py_module" if `msg` is null).
+  // Returns the wrapper name for a message (or "m" if `msg` is null).
   // Dies if the scope is not found.
   std::string GetWrapperName(const google::protobuf::Descriptor* msg) {
     const auto it = wrapper_id_.find(msg);
     CHECK(it != wrapper_id_.end())
         << "wrapper id not found: " << msg->full_name();
-    if (msg == nullptr) return "py_module";
+    if (msg == nullptr) return "m";
     return absl::StrCat("gen_", it->second);
   }
 

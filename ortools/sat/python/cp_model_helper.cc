@@ -25,6 +25,7 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
@@ -500,8 +501,6 @@ void ClearCtName(int index, std::shared_ptr<CpModelProto> model_proto) {
 }
 
 PYBIND11_MODULE(cp_model_helper, m) {
-  py::module::import("ortools.sat.python.cp_model_builder");
-  py::module::import("ortools.sat.python.sat_parameters_builder");
   py::module::import("ortools.util.python.sorted_interval_list");
 
   // We keep the CamelCase name for the SolutionCallback class to be
@@ -1303,6 +1302,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
                                 "not supported."));
         return false;
       });
+#define IMPORT_PROTO_WRAPPER_CODE
+#include "ortools/sat/python/proto_builder_pybind11.h"
+#undef IMPORT_PROTO_WRAPPER_CODE
 }  // NOLINT(readability/fn_size)
 
 }  // namespace operations_research::sat::python

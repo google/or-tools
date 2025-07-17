@@ -18,6 +18,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/python/wrappers.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research::sat::python {
 
@@ -26,28 +27,13 @@ void ParseAndGenerate() {
       R"(
 
 // This is a generated file, do not edit.
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
-#include "google/protobuf/text_format.h"
-#include "pybind11/numpy.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/pytypes.h"
-#include "pybind11/stl.h"
-#include "ortools/port/proto_utils.h"
-#include "ortools/sat/cp_model.pb.h"
-
-namespace py = ::pybind11;
-
-namespace operations_research::sat::python {
-
-PYBIND11_MODULE(cp_model_builder, py_module) {
+#if defined(IMPORT_PROTO_WRAPPER_CODE)
 %s
-}  // PYBIND11_MODULE
-
-}  // namespace operations_research::sat::python
+#endif  // defined(IMPORT_PROTO_WRAPPER_CODE)
 )",
       GeneratePybindCode({ABSL_DIE_IF_NULL(CpModelProto::descriptor()),
-                          ABSL_DIE_IF_NULL(CpSolverResponse::descriptor())}));
+                          ABSL_DIE_IF_NULL(CpSolverResponse::descriptor()),
+                          ABSL_DIE_IF_NULL(SatParameters::descriptor())}));
 }
 
 }  // namespace operations_research::sat::python
