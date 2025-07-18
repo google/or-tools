@@ -13,6 +13,8 @@
 
 #include "ortools/base/recordio.h"
 
+#include <zlib.h>
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -20,7 +22,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "ortools/base/file.h"
-#include "zlib.h"
 
 namespace recordio {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;

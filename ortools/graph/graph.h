@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-//
 // This file defines a generic graph interface on which most algorithms can be
 // built and provides a few efficient implementations with a fast construction
 // time. Its design is based on the experience acquired by the Operations

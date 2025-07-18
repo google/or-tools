@@ -306,10 +306,10 @@ if(BUILD_Boost)
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   FetchContent_Declare(
     Boost
-    GIT_REPOSITORY "https://github.com/boostorg/boost.git"
-    GIT_TAG "boost-1.87.0"
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES_RECURSE TRUE
+    URL
+    https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.gz
+    USES_TERMINAL_DOWNLOAD TRUE
+    DOWNLOAD_NO_EXTRACT FALSE
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
   )
   set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)

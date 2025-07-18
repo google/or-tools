@@ -11,10 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Reading and parsing the data of Frequency Assignment Problem
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
-//
 
 #ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 #define OR_TOOLS_EXAMPLES_FAP_PARSER_H_

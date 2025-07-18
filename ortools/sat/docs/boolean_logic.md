@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Boolean logic recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
@@ -8,8 +8,8 @@ https://developers.google.com/optimization/
 
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean
 variable** is an integer variable constrained to be either 0 or 1. A **literal**
-is either a Boolean variable or its negation: 0 negated is 1, and vice versa.
-See
+is either a Boolean variable or its negation: 0 negated is 1, and 1 negated is
+0. See
 https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_and_terminology.
 
 ## Boolean variables and literals

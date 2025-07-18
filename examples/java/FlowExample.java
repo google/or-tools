@@ -19,7 +19,6 @@ import com.google.ortools.graph.MinCostFlow;
 
 /**
  * Sample showing how to model using the flow solver.
- *
  */
 public class FlowExample {
   private static void solveMinCostFlow() {

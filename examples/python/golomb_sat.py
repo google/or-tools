@@ -70,7 +70,7 @@ def solve_golomb_ruler(order: int, params: str) -> None:
     # Solve the model.
     solver = cp_model.CpSolver()
     if params:
-        solver.parameters.parse_text_format(_PARAMS.value)
+        solver.parameters.parse_text_format(params)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     print(f"Golomb ruler(order={order})")
     status = solver.solve(model, solution_printer)

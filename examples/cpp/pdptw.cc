@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Pickup and Delivery Problem with Time Windows.
 // The overall objective is to minimize the length of the routes delivering
 // quantities of goods between pickup and delivery locations, taking into
