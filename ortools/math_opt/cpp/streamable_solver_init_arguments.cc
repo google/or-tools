@@ -16,6 +16,7 @@
 #include <optional>
 
 #include "absl/status/statusor.h"
+#include "ortools/base/string_view_migration.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 
@@ -34,10 +35,11 @@ GurobiInitializerProto::ISVKey GurobiISVKey::Proto() const {
 GurobiISVKey GurobiISVKey::FromProto(
     const GurobiInitializerProto::ISVKey& key_proto) {
   return GurobiISVKey{
-      .name = std::string(key_proto.name()),
-      .application_name = std::string(key_proto.application_name()),
+      .name = google::protobuf::StringCopy(key_proto.name()),
+      .application_name =
+          google::protobuf::StringCopy(key_proto.application_name()),
       .expiration = key_proto.expiration(),
-      .key = std::string(key_proto.key()),
+      .key = google::protobuf::StringCopy(key_proto.key()),
   };
 }
 

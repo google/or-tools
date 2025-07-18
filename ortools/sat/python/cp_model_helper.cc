@@ -25,6 +25,7 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/string_view_migration.h"
 #include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -131,7 +132,7 @@ class ResponseWrapper {
   }
 
   std::string SolutionInfo() const {
-    return std::string(response_.solution_info());
+    return google::protobuf::StringCopy(response_.solution_info());
   }
 
   std::vector<int> SufficientAssumptionsForInfeasibility() const {

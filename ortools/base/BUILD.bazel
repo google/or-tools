@@ -70,6 +70,7 @@ cc_library(
         "commandlineflags.h",
         "init_google.h",
         "stl_logging.h",
+        "string_view_migration.h",
         "types.h",
         "version.h",
     ],
