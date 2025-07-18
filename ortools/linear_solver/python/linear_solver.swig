@@ -12,8 +12,7 @@
 // limitations under the License.
 
 // This .swig file exposes the linear programming and integer programming
-// solver. See the C++/Python codelab: .
-//
+// solver.
 // The python API is enriched by custom code defined here, making it
 // extremely intuitive, like:
 //   solver = pywraplp.Solver(

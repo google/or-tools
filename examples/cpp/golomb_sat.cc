@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Golomb ruler problem
 //
 //  find minimal ruler so that the differences between ticks are unique.

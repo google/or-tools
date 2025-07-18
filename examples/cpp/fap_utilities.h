@@ -11,9 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Utilities used by frequency_assignment_problem.cc.
-//
 
 #ifndef OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
 #define OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
