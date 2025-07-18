@@ -196,6 +196,7 @@ cc_library(
         ":variable_and_expressions",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
+        "//ortools/base:string_view_migration",
         "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
@@ -386,6 +387,7 @@ cc_library(
     srcs = ["streamable_solver_init_arguments.cc"],
     hdrs = ["streamable_solver_init_arguments.h"],
     deps = [
+        "//ortools/base:string_view_migration",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@abseil-cpp//absl/status:statusor",

@@ -25,11 +25,14 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "ortools/base/string_view_migration.h"
+#include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
 #include "ortools/sat/python/linear_expr_doc.h"
 #include "ortools/sat/swig_helper.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/attr.h"
 #include "pybind11/cast.h"
@@ -39,7 +42,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
-#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
@@ -80,28 +82,6 @@ class PySolutionCallback : public SolutionCallback {
       }
       StopSearch();
     }
-  }
-};
-
-// A trampoline class to override the __str__ and __repr__ methods.
-class PyBaseIntVar : public BaseIntVar {
- public:
-  using BaseIntVar::BaseIntVar; /* Inherit constructors */
-
-  std::string ToString() const override {
-    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
-                                BaseIntVar,   // Parent class (cname)
-                                "__str__",    // Name of method in Python (name)
-                                ToString,     // Name of function in C++ (fn)
-    );
-  }
-
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
-                                BaseIntVar,   // Parent class (cname)
-                                "__repr__",   // Name of method in Python (name)
-                                DebugString,  // Name of function in C++ (fn)
-    );
   }
 };
 
@@ -151,7 +131,9 @@ class ResponseWrapper {
     return CpSatHelper::SolverResponseStats(response_);
   }
 
-  std::string SolutionInfo() const { return response_.solution_info(); }
+  std::string SolutionInfo() const {
+    return google::protobuf::StringCopy(response_.solution_info());
+  }
 
   std::vector<int> SufficientAssumptionsForInfeasibility() const {
     return std::vector<int>(
@@ -432,8 +414,172 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
   }
 }
 
+void LinearExprToProto(const py::handle& arg, int64_t multiplier,
+                       LinearExpressionProto* proto) {
+  proto->Clear();
+  if (py::isinstance<LinearExpr>(arg)) {
+    std::shared_ptr<LinearExpr> expr = arg.cast<std::shared_ptr<LinearExpr>>();
+    IntExprVisitor visitor;
+    visitor.AddToProcess(expr, multiplier);
+    std::vector<std::shared_ptr<IntVar>> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset = 0;
+    if (!visitor.Process(&vars, &coeffs, &offset)) {
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Failed to convert integer linear expression: ",
+                              expr->DebugString()));
+    }
+    for (const auto& var : vars) {
+      proto->add_vars(var->index());
+    }
+    for (const int64_t coeff : coeffs) {
+      proto->add_coeffs(coeff);
+    }
+    proto->set_offset(offset);
+  } else if (py::isinstance<py::int_>(arg)) {
+    int64_t value = arg.cast<int64_t>();
+    proto->set_offset(value * multiplier);
+  } else {
+    py::type objtype = py::type::of(arg);
+    const std::string type_name = objtype.attr("__name__").cast<std::string>();
+    ThrowError(PyExc_TypeError,
+               absl::StrCat("Cannot convert '", absl::CEscape(type_name),
+                            "' to a linear expression."));
+  }
+}
+
+int AddBoundedLinearExpressionToModel(
+    BoundedLinearExpression* ble, std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  for (const auto& var : ble->vars()) {
+    ct->mutable_linear()->add_vars(var->index());
+  }
+  for (const int64_t coeff : ble->coeffs()) {
+    ct->mutable_linear()->add_coeffs(coeff);
+  }
+  const int64_t offset = ble->offset();
+  const Domain& bounds = ble->bounds();
+  for (const int64_t bound : bounds.FlattenedIntervals()) {
+    if (bound == std::numeric_limits<int64_t>::min() ||
+        bound == std::numeric_limits<int64_t>::max()) {
+      ct->mutable_linear()->add_domain(bound);
+    } else {
+      ct->mutable_linear()->add_domain(CapSub(bound, offset));
+    }
+  }
+  return index;
+}
+
+int AddBoolOr(const std::vector<int>& literals,
+              std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  ct->mutable_bool_or()->mutable_literals()->Add(literals.begin(),
+                                                 literals.end());
+  return index;
+}
+
+int AddBoolAnd(const std::vector<int>& literals,
+               std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  ct->mutable_bool_and()->mutable_literals()->Add(literals.begin(),
+                                                  literals.end());
+  return index;
+}
+
+int AddBoolXOr(const std::vector<int>& literals,
+               std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  ct->mutable_bool_xor()->mutable_literals()->Add(literals.begin(),
+                                                  literals.end());
+  return index;
+}
+
+int AddAtMostOne(const std::vector<int>& literals,
+                 std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  ct->mutable_at_most_one()->mutable_literals()->Add(literals.begin(),
+                                                     literals.end());
+  return index;
+}
+
+int AddExactlyOne(const std::vector<int>& literals,
+                  std::shared_ptr<CpModelProto> model_proto) {
+  const int index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  ct->mutable_exactly_one()->mutable_literals()->Add(literals.begin(),
+                                                     literals.end());
+  return index;
+}
+
+int AddElement(const py::handle& index, py::sequence exprs,
+               const py::handle& target,
+               std::shared_ptr<CpModelProto> model_proto) {
+  const int ct_index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  LinearExprToProto(index, 1, ct->mutable_element()->mutable_linear_index());
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, 1, ct->mutable_element()->add_exprs());
+  }
+  LinearExprToProto(target, 1, ct->mutable_element()->mutable_linear_target());
+  return ct_index;
+}
+
+int AddLinearArgumentConstraint(const std::string& name,
+                                const py::handle& target, py::sequence exprs,
+                                std::shared_ptr<CpModelProto> model_proto) {
+  const int ct_index = model_proto->constraints_size();
+  ConstraintProto* ct = model_proto->add_constraints();
+  LinearArgumentProto* proto;
+  int64_t multiplier = 1;
+  if (name == "min") {
+    proto = ct->mutable_lin_max();
+    multiplier = -1;
+  } else if (name == "max") {
+    proto = ct->mutable_lin_max();
+  } else if (name == "prod") {
+    proto = ct->mutable_int_prod();
+  } else if (name == "div") {
+    proto = ct->mutable_int_div();
+  } else if (name == "mod") {
+    proto = ct->mutable_int_mod();
+  } else {
+    ThrowError(PyExc_ValueError,
+               absl::StrCat("Unknown integer argument constraint: ", name));
+  }
+
+  LinearExprToProto(target, multiplier, proto->mutable_target());
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, multiplier, proto->add_exprs());
+  }
+
+  return ct_index;
+}
+
+void AddEnforcementLiterals(int index, const std::vector<int>& literals,
+                            std::shared_ptr<CpModelProto> model_proto) {
+  ConstraintProto* ct = model_proto->mutable_constraints(index);
+  ct->mutable_enforcement_literal()->Add(literals.begin(), literals.end());
+}
+
+void SetCtName(int index, const std::string& name,
+               std::shared_ptr<CpModelProto> model_proto) {
+  model_proto->mutable_constraints(index)->set_name(name);
+}
+
+std::string GetCtName(int index, std::shared_ptr<CpModelProto> model_proto) {
+  return model_proto->constraints(index).name();
+}
+
+void ClearCtName(int index, std::shared_ptr<CpModelProto> model_proto) {
+  model_proto->mutable_constraints(index)->clear_name();
+}
+
 PYBIND11_MODULE(cp_model_helper, m) {
-  pybind11_protobuf::ImportNativeProtoCasters();
   py::module::import("ortools.util.python.sorted_interval_list");
 
   // We keep the CamelCase name for the SolutionCallback class to be
@@ -575,28 +721,35 @@ PYBIND11_MODULE(cp_model_helper, m) {
             solve_wrapper->AddBestBoundCallback(safe_best_bound_callback);
           },
           py::arg("best_bound_callback").none(false))
-      .def("set_parameters", &SolveWrapper::SetParameters,
-           py::arg("parameters"))
-      .def("solve",
-           [](ExtSolveWrapper* solve_wrapper,
-              const CpModelProto& model_proto) -> CpSolverResponse {
-             const auto result = [&]() -> CpSolverResponse {
-               ::py::gil_scoped_release release;
-               return solve_wrapper->Solve(model_proto);
-             }();
-             if (solve_wrapper->local_error_already_set_.has_value()) {
-               solve_wrapper->local_error_already_set_->restore();
-               solve_wrapper->local_error_already_set_.reset();
-               throw py::error_already_set();
-             }
-             return result;
-           })
+      .def(
+          "set_parameters",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::shared_ptr<SatParameters> parameters) {
+            solve_wrapper->SetParameters(*parameters);
+          },
+          py::arg("parameters").none(false))
+      .def(
+          "solve",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::shared_ptr<CpModelProto> model_proto) -> CpSolverResponse {
+            const auto result = [=]() -> CpSolverResponse {
+              ::py::gil_scoped_release release;
+              return solve_wrapper->Solve(*model_proto);
+            }();
+            if (solve_wrapper->local_error_already_set_.has_value()) {
+              solve_wrapper->local_error_already_set_->restore();
+              solve_wrapper->local_error_already_set_.reset();
+              throw py::error_already_set();
+            }
+            return result;
+          },
+          py::arg("model_proto").none(false))
       .def("solve_and_return_response_wrapper",
            [](ExtSolveWrapper* solve_wrapper,
-              const CpModelProto& model_proto) -> ResponseWrapper {
-             const auto result = [&]() -> ResponseWrapper {
+              std::shared_ptr<CpModelProto> model_proto) -> ResponseWrapper {
+             const auto result = [=]() -> ResponseWrapper {
                ::py::gil_scoped_release release;
-               return ResponseWrapper(solve_wrapper->Solve(model_proto));
+               return ResponseWrapper(solve_wrapper->Solve(*model_proto));
              }();
              if (solve_wrapper->local_error_already_set_.has_value()) {
                solve_wrapper->local_error_already_set_->restore();
@@ -617,7 +770,36 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_static("variable_domain", &CpSatHelper::VariableDomain,
                   py::arg("variable_proto"))
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
-                  py::arg("model_proto"), py::arg("filename"));
+                  py::arg("model_proto"), py::arg("filename"))
+      .def_static("set_ct_name", &SetCtName, py::arg("index"), py::arg("name"),
+                  py::arg("model_proto"))
+      .def_static("ct_name", &GetCtName, py::arg("index"),
+                  py::arg("model_proto"))
+      .def_static("clear_ct_name", &ClearCtName, py::arg("index"),
+                  py::arg("model_proto"))
+      .def_static("add_bool_or", &AddBoolOr, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_bool_and", &AddBoolAnd, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_bool_xor", &AddBoolXOr, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_at_most_one", &AddAtMostOne, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_exactly_one", &AddExactlyOne, py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_element", &AddElement, py::arg("index").none(false),
+                  py::arg("expressions"), py::arg("target").none(false),
+                  py::arg("model_proto").none(false))
+      .def_static("add_linear_argument_constraint",
+                  &AddLinearArgumentConstraint, py::arg("name").none(false),
+                  py::arg("target").none(false), py::arg("exprs"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_enforcement_literals", &AddEnforcementLiterals,
+                  py::arg("index"), py::arg("literals"),
+                  py::arg("model_proto").none(false))
+      .def_static("add_bounded_linear_expression_to_model",
+                  &AddBoundedLinearExpressionToModel, py::arg("ble"),
+                  py::arg("model_proto"));
 
   py::class_<LinearExpr, std::shared_ptr<LinearExpr>>(
       m, "LinearExpr", DOC(operations_research, sat, python, LinearExpr))
@@ -892,31 +1074,27 @@ PYBIND11_MODULE(cp_model_helper, m) {
           py::init<std::vector<std::shared_ptr<LinearExpr>>, int64_t, double>())
       .def(
           "__add__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
       .def(
           "__add__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(cst)
                                    : expr->AddInt(cst);
           },
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__add__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(cst)
                                    : expr->AddFloat(cst);
           },
@@ -924,10 +1102,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__radd__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(cst)
                                    : expr->AddInt(cst);
           },
@@ -935,10 +1112,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__radd__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(cst)
                                    : expr->AddFloat(cst);
           },
@@ -969,11 +1145,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__sub__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddInPlace(other->Neg())
                                    : expr->Sub(other);
           },
@@ -981,10 +1155,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, Sub))
       .def(
           "__sub__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(-cst)
                                    : expr->SubInt(cst);
           },
@@ -992,10 +1165,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def(
           "__sub__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
                                    : expr->SubFloat(cst);
           },
@@ -1065,52 +1237,99 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("Not", &Literal::negated)
       .def("Index", &Literal::index);
 
-  // Memory management:
-  // - The BaseIntVar owns the NotBooleanVariable and keeps a shared_ptr to it.
-  // - The NotBooleanVariable is created on demand, and is deleted when the base
-  //   variable is deleted. It holds a weak_ptr to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, std::shared_ptr<BaseIntVar>, Literal>(
-      m, "BaseIntVar", DOC(operations_research, sat, python, BaseIntVar))
-      .def(py::init<int>())        // Integer variable.
-      .def(py::init<int, bool>())  // Potential Boolean variable.
+  // IntVar and NotBooleanVariable both hold a shared_ptr to the model_proto.
+  py::class_<IntVar, std::shared_ptr<IntVar>, Literal>(
+      m, "IntVar", DOC(operations_research, sat, python, IntVar))
+      .def(py::init<std::shared_ptr<CpModelProto>, int>())
+      .def(py::init<std::shared_ptr<CpModelProto>>())  // new variable.
       .def_property_readonly(
-          "index", &BaseIntVar::index,
-          DOC(operations_research, sat, python, BaseIntVar, index))
+          "proto", &IntVar::proto, py::return_value_policy::reference,
+          py::keep_alive<1, 0>()
+          // DOC(operations_research, sat, python, IntVar, proto)
+          )
       .def_property_readonly(
-          "is_boolean", &BaseIntVar::is_boolean,
-          DOC(operations_research, sat, python, BaseIntVar, is_boolean))
-      .def("__str__", &BaseIntVar::ToString)
-      .def("__repr__", &BaseIntVar::DebugString)
+          "model_proto", &IntVar::model_proto
+          // DOC(operations_research, sat, python, IntVar, model_proto)
+          )
+      .def_property_readonly(
+          "index", &IntVar::index, py::return_value_policy::reference,
+          DOC(operations_research, sat, python, IntVar, index))
+      .def_property_readonly(
+          "is_boolean", &IntVar::is_boolean,
+          DOC(operations_research, sat, python, IntVar, is_boolean))
+      .def_property(
+          "name", &IntVar::name, &IntVar::SetName  //, py::arg("name")
+                                                   // DOC(operations_research,
+                                                   // sat, python, IntVar, name)
+          )
+      .def(
+          "with_name",
+          [](std::shared_ptr<IntVar> self, const std::string& name) {
+            self->SetName(name);
+            return self;
+          },
+          py::arg("name"))
+      .def_property(
+          "domain", &IntVar::domain, &IntVar::SetDomain  //, py::arg("domain")
+          //    DOC(operations_research, sat, python, IntVar, domain)
+          )
+      .def(
+          "with_domain",
+          [](std::shared_ptr<IntVar> self, const Domain& domain) {
+            self->SetDomain(domain);
+            return self;
+          },
+          py::arg("domain"))
+      .def("__str__", &IntVar::ToString)
+      .def("__repr__", &IntVar::DebugString)
       .def(
           "negated",
-          [](std::shared_ptr<BaseIntVar> self) {
+          [](std::shared_ptr<IntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated))
+          DOC(operations_research, sat, python, IntVar, negated))
       .def(
           "__invert__",
-          [](std::shared_ptr<BaseIntVar> self) {
+          [](std::shared_ptr<IntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated))
+          DOC(operations_research, sat, python, IntVar, negated))
+      .def("__copy__",
+           [](const std::shared_ptr<IntVar>& self) {
+             return std::make_shared<IntVar>(self->model_proto(),
+                                             self->index());
+           })
+      .def(py::pickle(
+          [](std::shared_ptr<IntVar> p) {  // __getstate__
+            /* Return a tuple that fully encodes the state of the object */
+            return py::make_tuple(p->model_proto(), p->index());
+          },
+          [](py::tuple t) {  // __setstate__
+            if (t.size() != 2) throw std::runtime_error("Invalid state!");
+
+            return std::make_shared<IntVar>(
+                t[0].cast<std::shared_ptr<CpModelProto>>(), t[1].cast<int>());
+          }))
       // PEP8 Compatibility.
+      .def("Name", &IntVar::name)
+      .def("Proto", &IntVar::proto)
       .def("Not",
-           [](std::shared_ptr<BaseIntVar> self) {
+           [](std::shared_ptr<IntVar> self) {
              if (!self->is_boolean()) {
                ThrowError(PyExc_TypeError,
                           "negated() is only supported for Boolean variables.");
              }
              return self->negated();
            })
-      .def("Index", &BaseIntVar::index);
+      .def("Index", &IntVar::index);
 
   py::class_<NotBooleanVariable, std::shared_ptr<NotBooleanVariable>, Literal>(
       m, "NotBooleanVariable",
@@ -1118,61 +1337,32 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_property_readonly(
           "index",
           [](std::shared_ptr<NotBooleanVariable> not_var) -> int {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
             return not_var->index();
           },
           DOC(operations_research, sat, python, NotBooleanVariable, index))
       .def("__str__",
            [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
-             if (!not_var->ok()) {
-               ThrowError(PyExc_ReferenceError,
-                          "The base variable is not valid.");
-             }
              return not_var->ToString();
            })
       .def("__repr__",
            [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
-             if (!not_var->ok()) {
-               ThrowError(PyExc_ReferenceError,
-                          "The base variable is not valid.");
-             }
              return not_var->DebugString();
            })
       .def(
           "negated",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated))
       .def(
           "__invert__",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated))
+      // PEP8 Compatibility.
       .def(
           "Not",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated));
 
   py::class_<BoundedLinearExpression, std::shared_ptr<BoundedLinearExpression>>(
@@ -1198,6 +1388,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
                                 "not supported."));
         return false;
       });
+#define IMPORT_PROTO_WRAPPER_CODE
+#include "ortools/sat/python/proto_builder_pybind11.h"
+#undef IMPORT_PROTO_WRAPPER_CODE
 }  // NOLINT(readability/fn_size)
 
 }  // namespace operations_research::sat::python

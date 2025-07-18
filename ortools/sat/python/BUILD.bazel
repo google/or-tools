@@ -28,6 +28,7 @@ cc_library(
     hdrs = ["linear_expr.h"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:btree",
@@ -38,6 +39,48 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "wrappers",
+    srcs = ["wrappers.cc"],
+    hdrs = ["wrappers.h"],
+    deps = [
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_binary(
+    name = "gen_proto_builder_pybind11",
+    srcs = ["gen_proto_builder_pybind11.cc"],
+    deps = [
+        ":wrappers",
+        "//ortools/base",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_proto_builder_pybind11",
+    outs = ["proto_builder_pybind11.h"],
+    cmd = "$(location :gen_proto_builder_pybind11) > $@",
+    tools = [":gen_proto_builder_pybind11"],
+)
+
+cc_library(
+    name = "proto_builder_pybind11",
+    hdrs = ["proto_builder_pybind11.h"],
+)
+
 pybind_extension(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.cc"],
@@ -45,12 +88,12 @@ pybind_extension(
     deps = [
         ":linear_expr",
         ":linear_expr_doc",
+        ":proto_builder_pybind11",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:swig_helper",
         "@abseil-cpp//absl/strings",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
@@ -59,29 +102,7 @@ py_test(
     srcs = ["cp_model_helper_test.py"],
     deps = [
         ":cp_model_helper",
-        "//ortools/sat:cp_model_py_pb2",
-        "//ortools/sat:sat_parameters_py_pb2",
         "//ortools/util/python:sorted_interval_list",
-        requirement("absl-py"),
-    ],
-)
-
-py_library(
-    name = "cp_model_numbers",
-    srcs = ["cp_model_numbers.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cp_model_helper",
-        requirement("numpy"),
-        "@protobuf//:protobuf_python",
-    ],
-)
-
-py_test(
-    name = "cp_model_numbers_test",
-    srcs = ["cp_model_numbers_test.py"],
-    deps = [
-        ":cp_model_numbers",
         requirement("absl-py"),
     ],
 )
@@ -92,11 +113,8 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
-        ":cp_model_numbers",
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/sat:cp_model_py_pb2",
-        "//ortools/sat:sat_parameters_py_pb2",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
