@@ -70,7 +70,6 @@ cc_library(
         "commandlineflags.h",
         "init_google.h",
         "stl_logging.h",
-        "string_view_migration.h",
         "types.h",
         "version.h",
     ],
@@ -566,6 +565,12 @@ cc_library(
     name = "stl_util",
     hdrs = ["stl_util.h"],
     deps = [":base"],
+)
+
+cc_library(
+    name = "string_view_migration",
+    hdrs = ["string_view_migration.h"],
+    deps = ["@abseil-cpp//absl/strings"],
 )
 
 cc_library(
