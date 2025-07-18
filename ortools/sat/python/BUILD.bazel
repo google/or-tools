@@ -89,6 +89,7 @@ pybind_extension(
         ":linear_expr",
         ":linear_expr_doc",
         ":proto_builder_pybind11",
+        "//ortools/base:string_view_migration",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",

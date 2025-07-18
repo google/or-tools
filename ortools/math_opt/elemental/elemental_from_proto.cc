@@ -26,6 +26,7 @@
 #include "google/protobuf/repeated_ptr_field.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/string_view_migration.h"
 #include "ortools/math_opt/core/model_summary.h"
 #include "ortools/math_opt/elemental/attr_key.h"
 #include "ortools/math_opt/elemental/attributes.h"
@@ -253,8 +254,8 @@ absl::StatusOr<Elemental> ElementalFromModelProtoImpl(const ModelProto& proto) {
     return absl::UnimplementedError(
         "Elemental does not support sos2 constraints yet");
   }
-  Elemental elemental(std::string(proto.name()),
-                      std::string(proto.objective().name()));
+  Elemental elemental(google::protobuf::StringCopy(proto.name()),
+                      google::protobuf::StringCopy(proto.objective().name()));
   AddVariables(proto.variables(), elemental);
   {
     const ObjectiveProto& objective = proto.objective();

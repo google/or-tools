@@ -62,6 +62,7 @@ cc_library(
         ":symmetry",
         ":thread_safe_id_map",
         "//ortools/base:status_macros",
+        "//ortools/base:string_view_migration",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",

@@ -64,6 +64,7 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/base:string_view_migration",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
