@@ -22,14 +22,10 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/str_split.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/scheduling/course_scheduling.pb.h"
 

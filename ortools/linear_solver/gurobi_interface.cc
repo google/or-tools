@@ -38,7 +38,7 @@
 //
 // The above limitations are largely due MPSolver and this file, not Gurobi.
 //
-// Warning(rander): the interactions between callbacks and incrementalism are
+// TODO(user): the interactions between callbacks and incrementalism are
 // poorly tested, proceed with caution.
 
 #include <algorithm>

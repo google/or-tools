@@ -19,9 +19,11 @@
 // ./course_scheduling_run --input_file=testdata/my_input_proto.textproto
 
 #include <cstdlib>
+#include <string>
 
+#include "absl/flags/flag.h"
+#include "absl/log/log.h"
 #include "examples/cpp/course_scheduling.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/options.h"

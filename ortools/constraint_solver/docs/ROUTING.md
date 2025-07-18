@@ -4,12 +4,12 @@ https://developers.google.com/optimization/routing
 
 ## Documentation structure
 
-This document presents modeling recipes for the Vehicle routing solver.
-These are grouped by type:
+This document presents modeling recipes for the Vehicle routing solver. These
+are grouped by type:
 
-* [Travelling Salesman Problem](TSP.md)
-* [Vehicle Routing Problem](VRP.md)
-* [Pickup and Delivery Problem](PDP.md)
+*   [Travelling Salesman Problem](TSP.md)
+*   [Vehicle Routing Problem](VRP.md)
+*   [Pickup and Delivery Problem](PDP.md)
 
 OR-Tools comes with lots of vehicle routing samples given in C++, Python, Java
 and .Net. Each language have different requirements for the code samples.
@@ -290,5 +290,6 @@ public class SimpleRoutingProgram
 ```
 
 ## Misc
+
 Images have been generated using [routing_svg.py](routing_svg.py) through bash
- script [generate_svg.sh](generate_svg.sh).
+script [generate_svg.sh](generate_svg.sh).

@@ -130,8 +130,8 @@ void Tsp() {
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
-    // has the following signature: ResultCallback2<int64_t, int64_t, int64_t>.
-    // The two arguments are the from and to node indices.
+    // is of type `std::function<int64_t(int64_t, int64_t)>` and the two
+    // arguments are the from and to node indices.
     RandomMatrix matrix(absl::GetFlag(FLAGS_tsp_size));
     if (absl::GetFlag(FLAGS_tsp_use_random_matrix)) {
       matrix.Initialize();

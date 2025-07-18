@@ -1,5 +1,5 @@
 [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Troubleshooting](troubleshooting.md) | [Python API](https://or-tools.github.io/docs/pdoc/ortools/sat/python/cp_model.html)
------------------ | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------
+----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | ------------------------------------- | -----------------------------------------------------------------------------------
 # Integer arithmetic recipes for the CP-SAT solver.
 
 https://developers.google.com/optimization/
@@ -54,9 +54,9 @@ created is constrained to be 1, 2, 4, 5, or 6:
 
 ### Boolean variables
 
-To create a Boolean variable, use the `NewBoolVar` method. Please note that
-Boolean variables are typed differently than integer variables, and that this
-type is not uniform across languages.
+To create a Boolean variable, use the `NewBoolVar` method. Note that Boolean
+variables are typed differently than integer variables, and that this type is
+not uniform across languages.
 
 -   **C++**: `BoolVar x = model.NewBoolVar().WithName("x");`
 -   **Python**: `x = model.NewBoolVar('x')`
@@ -101,14 +101,14 @@ examples below.
 
 ### Limitations
 
--   Everything must be linear. Multiplying two variables is not supported
-    with this API; instead, `model.AddMultiplicationEquality()` must be used.
+-   Everything must be linear. Multiplying two variables is not supported with
+    this API; instead, `model.AddMultiplicationEquality()` must be used.
 
 -   In C++, there is a typing issue when using an array of Boolean variables in
     a sum or a scalar product. Use the `LinearExpr.BooleanSum()` method instead.
 
--   The Python construct `sum()` is supported, but `min()`, `max()`
-    or any `numpy` constructs like `np.unique()` are not.
+-   The Python construct `sum()` is supported, but `min()`, `max()` or any
+    `numpy` constructs like `np.unique()` are not.
 
 ## Rabbits and Pheasants examples
 
