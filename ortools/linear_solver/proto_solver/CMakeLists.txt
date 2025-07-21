@@ -27,6 +27,7 @@ if(NOT USE_PDLP)
 endif()
 if(NOT USE_SCIP)
   list(FILTER _SRCS EXCLUDE REGEX "/scip_proto_solver.")
+  list(FILTER _SRCS EXCLUDE REGEX "/scip_params.")
 endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver_proto_solver)
