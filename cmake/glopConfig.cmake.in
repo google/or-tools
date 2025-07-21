@@ -10,6 +10,10 @@ if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)
   find_dependency(ZLIB REQUIRED)
 endif()
 
+if(NOT TARGET BZip2::BZip2)
+  find_dependency(BZip2 REQUIRED)
+endif()
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.9.6")
   set(CONFIG_FLAG CONFIG)
 endif()
@@ -19,6 +23,11 @@ if(NOT absl_FOUND)
 endif()
 if(NOT Protobuf_FOUND AND NOT PROTOBUF_FOUND AND NOT TARGET protobuf::libprotobuf)
   find_dependency(Protobuf REQUIRED ${CONFIG_FLAG})
+endif()
+
+# re2 may not provide a CMake config files
+if(NOT TARGET re2::re2)
+  find_dependency(re2 REQUIRED)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/glopTargets.cmake")
