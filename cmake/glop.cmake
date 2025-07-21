@@ -249,6 +249,7 @@ add_dependencies(glop glop_proto)
 
 target_link_libraries(glop PUBLIC
   ZLIB::ZLIB
+  BZip2::BZip2
   absl::memory
   absl::hash
   absl::flags
@@ -264,6 +265,7 @@ target_link_libraries(glop PUBLIC
   absl::str_format
   absl::random_random
   protobuf::libprotobuf
+  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)
