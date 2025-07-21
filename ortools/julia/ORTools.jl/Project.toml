@@ -1,6 +1,6 @@
 name = "ORTools"
 uuid = "b7d69b34-a827-4671-8cfa-f7e1eec930c7"
-version = "1.0.0-DEV"
+version = "0.0.1"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -10,7 +10,9 @@ ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-julia = "1.10"
+julia = "1.9"
+ORTools_jll = "9.14.0"
+ORToolsGenerated = "0.0.2"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

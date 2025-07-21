@@ -6,6 +6,8 @@ const SolveResultProto = MathOpt.SolveResultProto
 const TerminationReasonProto = MathOpt.TerminationReasonProto
 const LimitProto = MathOpt.LimitProto
 const FeasibilityStatusProto = MathOpt.FeasibilityStatusProto
+const GScipOutput = OperationsResearch.GScipOutput
+const PdlpOutput = MathOpt.var"SolveResultProto.PdlpOutput"
 const PB = MathOpt.PB
 
 """

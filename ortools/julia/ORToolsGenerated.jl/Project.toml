@@ -1,13 +1,13 @@
 name = "ORToolsGenerated"
 uuid = "6b269722-41d3-11ee-be56-0242ac120002"
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 ORTools_jll = "717719f8-c30c-5086-8f3c-70cd6a1e3a46"
 ProtoBuf = "3349acd9-ac6a-5e09-bcdb-63829b23a429"
 
 [compat]
-ORTools_jll = "9.11.0"
+ORTools_jll = "9.14.0"
 ProtoBuf = "1.0.15"
 julia = "1.9"
 
