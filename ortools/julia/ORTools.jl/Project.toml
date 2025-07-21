@@ -13,6 +13,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 julia = "1.9"
 ORTools_jll = "9.14.0"
 ORToolsGenerated = "0.0.2"
+ProtoBuf = "1.0.15"
+MathOptInterface = "1.42.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
