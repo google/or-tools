@@ -25,6 +25,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/intervals.h"
+#include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -143,6 +144,9 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
   // using the fact that they are in disjunction.
   if (params.use_precedences_in_disjunctive_constraint() &&
       !params.use_combined_no_overlap()) {
+    // Lets try to exploit linear3 too.
+    model->GetOrCreate<LinearPropagator>()->SetPushAffineUbForBinaryRelation();
+
     for (const bool time_direction : {true, false}) {
       DisjunctivePrecedences* precedences =
           new DisjunctivePrecedences(time_direction, helper, model);
@@ -276,8 +280,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     helper_->ClearReason();
     helper_->AddPresenceReason(task_before);
     helper_->AddPresenceReason(task_after);
-    helper_->AddReasonForBeingBefore(task_before, task_after);
-    helper_->AddReasonForBeingBefore(task_after, task_before);
+    helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before, task_after);
+    helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_after, task_before);
     return helper_->ReportConflict();
   }
 
@@ -295,7 +299,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     if (helper_->StartMin(task_after) < end_min_before) {
       // Reason for precedences if both present.
       helper_->ClearReason();
-      helper_->AddReasonForBeingBefore(task_before, task_after);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
+                                                        task_after);
 
       // Reason for the bound push.
       helper_->AddPresenceReason(task_before);
@@ -311,7 +316,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
     if (helper_->EndMax(task_before) > start_max_after) {
       // Reason for precedences if both present.
       helper_->ClearReason();
-      helper_->AddReasonForBeingBefore(task_before, task_after);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
+                                                        task_after);
 
       // Reason for the bound push.
       helper_->AddPresenceReason(task_after);
@@ -527,7 +533,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       const int to_push = task_with_max_end_min.task_index;
       helper_->ClearReason();
       helper_->AddPresenceReason(task);
-      helper_->AddReasonForBeingBefore(task, to_push);
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task, to_push);
       helper_->AddEndMinReason(task, end_min);
 
       if (!helper_->IncreaseStartMin(to_push, end_min)) {
@@ -750,13 +756,18 @@ bool DisjunctiveSimplePrecedences::Propagate() {
 
 bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
   const int t_before = before.task_index;
+
   DCHECK_NE(t_before, t);
   helper_->ClearReason();
   helper_->AddPresenceReason(t_before);
-  helper_->AddReasonForBeingBefore(t_before, t);
+  helper_->AddReasonForBeingBeforeAssumingNoOverlap(t_before, t);
   helper_->AddEndMinReason(t_before, before.time);
   if (!helper_->IncreaseStartMin(t, before.time)) {
     return false;
+  }
+  if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t_before) &&
+      helper_->IsPresent(t)) {
+    if (!helper_->NotifyLevelZeroPrecedence(t_before, t)) return false;
   }
   ++stats_.num_propagations;
   return true;
@@ -818,8 +829,8 @@ bool DisjunctiveSimplePrecedences::PropagateOneDirection() {
         helper_->ClearReason();
         helper_->AddPresenceReason(blocking_task);
         helper_->AddPresenceReason(t);
-        helper_->AddReasonForBeingBefore(blocking_task, t);
-        helper_->AddReasonForBeingBefore(t, blocking_task);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(blocking_task, t);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(t, blocking_task);
         return helper_->ReportConflict();
       } else if (end_min > best_task_before.time) {
         best_task_before = {t, end_min};
@@ -927,9 +938,13 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
 
     // Heuristic, if some tasks are known to be after the first one,
     // we just add the min-size as a reason.
+    //
+    // TODO(user): ideally we don't want to do that if we don't have a level
+    // zero precedence...
     if (i > critical_index && helper_->GetCurrentMinDistanceBetweenTasks(
-                                  sorted_tasks[critical_index].task, ct,
-                                  /*add_reason_if_after=*/true) >= 0) {
+                                  sorted_tasks[critical_index].task, ct) >= 0) {
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(
+          sorted_tasks[critical_index].task, ct);
       helper_->AddSizeMinReason(ct);
     } else {
       helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min, window_start);
@@ -937,9 +952,9 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
 
     // We only need the reason for being before if we don't already have
     // a static precedence between the tasks.
-    const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
-        ct, t, /*add_reason_if_after=*/true);
+    const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(ct, t);
     if (dist >= 0) {
+      helper_->AddReasonForBeingBeforeAssumingNoOverlap(ct, t);
       energy_of_task_before += sorted_tasks[i].size_min;
       min_slack = std::min(min_slack, dist);
     } else {
@@ -969,7 +984,7 @@ bool DisjunctiveDetectablePrecedences::Push(IntegerValue task_set_end_min,
   // Process detected precedence.
   if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t)) {
     for (int i = critical_index; i < sorted_tasks.size(); ++i) {
-      if (!helper_->PropagatePrecedence(sorted_tasks[i].task, t)) {
+      if (!helper_->NotifyLevelZeroPrecedence(sorted_tasks[i].task, t)) {
         return false;
       }
     }
@@ -1047,8 +1062,8 @@ bool DisjunctiveDetectablePrecedences::PropagateWithRanks() {
         helper_->ClearReason();
         helper_->AddPresenceReason(blocking_task);
         helper_->AddPresenceReason(t);
-        helper_->AddReasonForBeingBefore(blocking_task, t);
-        helper_->AddReasonForBeingBefore(t, blocking_task);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(blocking_task, t);
+        helper_->AddReasonForBeingBeforeAssumingNoOverlap(t, blocking_task);
         return helper_->ReportConflict();
       } else {
         if (!some_propagation && rank > highest_rank) {
@@ -1207,18 +1222,16 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // Note that like in Propagate() we split this set of task into critical
     // subpart as there is no point considering them together.
     //
-    // TODO(user): we should probably change the api to return a Span.
-    //
     // TODO(user): If more than one set of task push the same variable, we
-    // probabaly only want to keep the best push? Maybe we want to process them
+    // probably only want to keep the best push? Maybe we want to process them
     // in reverse order of what we do here?
     indices_before_.clear();
     IntegerValue local_start;
     IntegerValue local_end;
     for (; global_i < size; ++global_i) {
-      const PrecedenceRelations::PrecedenceData& data = before_[global_i];
+      const EnforcedLinear2Bounds::PrecedenceData& data = before_[global_i];
       if (data.var != var) break;
-      const int index = data.index;
+      const int index = data.var_index;
       const auto [t, start_of_t] = window_[index];
       if (global_i == global_start_i) {  // First loop.
         local_start = start_of_t;
@@ -1227,7 +1240,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         if (start_of_t >= local_end) break;
         local_end += helper_->SizeMin(t);
       }
-      indices_before_.push_back(index);
+      indices_before_.push_back({index, data.lin2_index});
     }
 
     // No need to consider if we don't have at least two tasks before var.
@@ -1249,18 +1262,18 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     int best_index = -1;
     const IntegerValue current_var_lb = integer_trail_->LowerBound(var);
     IntegerValue best_new_lb = current_var_lb;
+    IntegerValue min_offset_at_best = kMinIntegerValue;
     IntegerValue min_offset = kMaxIntegerValue;
     IntegerValue sum_of_duration = 0;
     for (int i = num_before; --i >= 0;) {
-      const TaskTime task_time = window_[indices_before_[i]];
+      const auto [task_index, lin2_index] = indices_before_[i];
+      const TaskTime task_time = window_[task_index];
       const AffineExpression& end_exp = helper_->Ends()[task_time.task_index];
 
-      // TODO(user): The hash lookup here is a bit slow, so we avoid fetching
-      // the offset as much as possible. Note that the alternative of storing it
-      // in PrecedenceData is not necessarily better and harder to update as we
-      // dive/backtrack.
-      const IntegerValue inner_offset = -precedence_relations_->UpperBound(
-          LinearExpression2::Difference(end_exp.var, var));
+      // TODO(user): The lookup here is a bit slow, so we avoid fetching
+      // the offset as much as possible.
+      const IntegerValue inner_offset =
+          -linear2_bounds_->NonTrivialUpperBound(lin2_index);
       DCHECK_NE(inner_offset, kMinIntegerValue);
 
       // We have var >= end_exp.var + inner_offset, so
@@ -1275,7 +1288,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
         // This is true if we skipped all task so far in this block.
         if (min_offset == kMaxIntegerValue) {
           // If only one task is left, we can abort.
-          // This avoid a GetConditionalOffset() lookup.
+          // This avoid a linear2_bounds_ lookup.
           if (i == 1) break;
 
           // Lower the end_min_when_all_present for better filtering later.
@@ -1292,6 +1305,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       const IntegerValue start = task_time.time;
       const IntegerValue new_lb = start + sum_of_duration + min_offset;
       if (new_lb > best_new_lb) {
+        min_offset_at_best = min_offset;
         best_new_lb = new_lb;
         best_index = i;
       }
@@ -1302,21 +1316,20 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
       DCHECK_NE(best_index, -1);
       helper_->ClearReason();
       const IntegerValue window_start =
-          window_[indices_before_[best_index]].time;
+          window_[indices_before_[best_index].first].time;
       for (int i = best_index; i < num_before; ++i) {
         if (skip_[i]) continue;
-        const int ct = window_[indices_before_[i]].task_index;
+        const int ct = window_[indices_before_[i].first].task_index;
         helper_->AddPresenceReason(ct);
         helper_->AddEnergyAfterReason(ct, helper_->SizeMin(ct), window_start);
 
-        // Fetch the explanation.
+        // Fetch the explanation of (var - end) >= min_offset
         // This is okay if a bit slow since we only do that when we push.
-        const AffineExpression& end_exp = helper_->Ends()[ct];
-        const LinearExpression2 expr =
-            LinearExpression2::Difference(end_exp.var, var);
-        precedence_relations_->AddReasonForUpperBoundLowerThan(
-            expr, precedence_relations_->UpperBound(expr),
-            helper_->MutableLiteralReason(), helper_->MutableIntegerReason());
+        const auto [expr, ub] = EncodeDifferenceLowerThan(
+            helper_->Ends()[ct], var, -min_offset_at_best);
+        linear2_bounds_->AddReasonForUpperBoundLowerThan(
+            expr, ub, helper_->MutableLiteralReason(),
+            helper_->MutableIntegerReason());
       }
       ++stats_.num_propagations;
       if (!helper_->PushIntegerLiteral(
@@ -1516,8 +1529,9 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
         helper_->AddPresenceReason(ct);
         helper_->AddEnergyAfterReason(ct, sorted_tasks[i].size_min,
                                       window_start);
-        if (helper_->GetCurrentMinDistanceBetweenTasks(
-                ct, t, /*add_reason_if_after=*/true) < 0) {
+        if (helper_->GetCurrentMinDistanceBetweenTasks(ct, t) >= 0) {
+          helper_->AddReasonForBeingBeforeAssumingNoOverlap(ct, t);
+        } else {
           helper_->AddStartMaxReason(ct, largest_ct_start_max);
         }
       }
@@ -1763,9 +1777,11 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
               task, event_size_[event],
               event >= second_event ? second_start : first_start);
 
-          const IntegerValue dist = helper_->GetCurrentMinDistanceBetweenTasks(
-              task, gray_task, /*add_reason_if_after=*/true);
-          if (dist < 0) {
+          const IntegerValue dist =
+              helper_->GetCurrentMinDistanceBetweenTasks(task, gray_task);
+          if (dist >= 0) {
+            helper_->AddReasonForBeingBeforeAssumingNoOverlap(task, gray_task);
+          } else {
             all_before = false;
             helper_->AddEndMaxReason(task, window_end);
           }
@@ -1788,7 +1804,7 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
           for (int i = first_event; i < window_size; ++i) {
             const int task = window_[i].task_index;
             if (!is_gray_[task]) {
-              if (!helper_->PropagatePrecedence(task, gray_task)) {
+              if (!helper_->NotifyLevelZeroPrecedence(task, gray_task)) {
                 return false;
               }
             }

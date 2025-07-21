@@ -510,7 +510,7 @@ class FeasibilityJumpSolver : public SubSolver {
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
 
-    return (shared_response_->SolutionsRepository().NumSolutions() > 0) ==
+    return shared_response_->HasFeasibleSolution() ==
            (type() == SubSolver::INCOMPLETE);
   }
 

@@ -834,8 +834,8 @@ TEST(SharedResponseManagerTest, Callback) {
 
 TEST(SharedClausesManagerTest, SyncApi) {
   SharedClausesManager manager(/*always_synchronize=*/true);
-  EXPECT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
-  EXPECT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  EXPECT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+  EXPECT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
 
   manager.AddBinaryClause(/*id=*/0, 1, 2);
   std::vector<std::pair<int, int>> new_clauses;
@@ -922,8 +922,8 @@ TEST(UniqueClauseStreamTest, DropsClauses) {
 
 TEST(SharedClausesManagerTest, NonSyncApi) {
   SharedClausesManager manager(/*always_synchronize=*/false);
-  EXPECT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
-  EXPECT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  EXPECT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+  EXPECT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
 
   manager.AddBinaryClause(/*id=*/0, 1, 2);
   std::vector<std::pair<int, int>> new_clauses;
@@ -971,8 +971,8 @@ TEST(SharedClausesManagerTest, NonSyncApi) {
 
 TEST(SharedClausesManagerTest, ShareGlueClauses) {
   SharedClausesManager manager(/*always_synchronize=*/true);
-  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
-  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
   UniqueClauseStream stream0;
   UniqueClauseStream stream1;
   // Add a bunch of clauses that will be skipped batch.
@@ -999,8 +999,8 @@ TEST(SharedClausesManagerTest, ShareGlueClauses) {
 
 TEST(SharedClausesManagerTest, LbdThresholdIncrease) {
   SharedClausesManager manager(/*always_synchronize=*/true);
-  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
-  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
   UniqueClauseStream stream0;
   UniqueClauseStream stream1;
   const int kExpectedClauses = UniqueClauseStream::kMaxLiteralsPerBatch / 5;
@@ -1027,8 +1027,8 @@ TEST(SharedClausesManagerTest, LbdThresholdIncrease) {
 
 TEST(SharedClausesManagerTest, LbdThresholdDecrease) {
   SharedClausesManager manager(/*always_synchronize=*/true);
-  ASSERT_EQ(0, manager.RegisterNewId(/*may_terminate_early=*/false));
-  ASSERT_EQ(1, manager.RegisterNewId(/*may_terminate_early=*/false));
+  ASSERT_EQ(0, manager.RegisterNewId("", /*may_terminate_early=*/false));
+  ASSERT_EQ(1, manager.RegisterNewId("", /*may_terminate_early=*/false));
   UniqueClauseStream stream0;
   UniqueClauseStream stream1;
 

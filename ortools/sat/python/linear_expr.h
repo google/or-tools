@@ -36,7 +36,7 @@ class FloatExprVisitor;
 class LinearExpr;
 class IntExprVisitor;
 class LinearExpr;
-class BaseIntVar;
+class IntVar;
 class NotBooleanVariable;
 
 /**
@@ -152,9 +152,9 @@ class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
 };
 
 /// Compare the indices of variables.
-struct BaseIntVarComparator {
-  bool operator()(std::shared_ptr<BaseIntVar> lhs,
-                  std::shared_ptr<BaseIntVar> rhs) const;
+struct IntVarComparator {
+  bool operator()(std::shared_ptr<IntVar> lhs,
+                  std::shared_ptr<IntVar> rhs) const;
 };
 
 /// A visitor class to process a floating point linear expression.
@@ -162,15 +162,15 @@ class FloatExprVisitor {
  public:
   void AddToProcess(std::shared_ptr<LinearExpr> expr, double coeff);
   void AddConstant(double constant);
-  void AddVarCoeff(std::shared_ptr<BaseIntVar> var, double coeff);
+  void AddVarCoeff(std::shared_ptr<IntVar> var, double coeff);
   void ProcessAll();
-  double Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+  double Process(std::vector<std::shared_ptr<IntVar>>* vars,
                  std::vector<double>* coeffs);
   double Evaluate(const CpSolverResponse& solution);
 
  private:
   std::vector<std::pair<std::shared_ptr<LinearExpr>, double>> to_process_;
-  absl::btree_map<std::shared_ptr<BaseIntVar>, double, BaseIntVarComparator>
+  absl::btree_map<std::shared_ptr<IntVar>, double, IntVarComparator>
       canonical_terms_;
   double offset_ = 0;
 };
@@ -188,7 +188,7 @@ class FlatFloatExpr : public LinearExpr {
   /// expression.
   explicit FlatFloatExpr(std::shared_ptr<LinearExpr> expr);
   /// Returns the array of variables of the flattened expression.
-  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const { return vars_; }
+  const std::vector<std::shared_ptr<IntVar>>& vars() const { return vars_; }
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<double>& coeffs() const { return coeffs_; }
   /// Returns the offset of the flattened expression.
@@ -202,7 +202,7 @@ class FlatFloatExpr : public LinearExpr {
   }
 
  private:
-  std::vector<std::shared_ptr<BaseIntVar>> vars_;
+  std::vector<std::shared_ptr<IntVar>> vars_;
   std::vector<double> coeffs_;
   double offset_ = 0;
 };
@@ -212,15 +212,15 @@ class IntExprVisitor {
  public:
   void AddToProcess(std::shared_ptr<LinearExpr> expr, int64_t coeff);
   void AddConstant(int64_t constant);
-  void AddVarCoeff(std::shared_ptr<BaseIntVar> var, int64_t coeff);
+  void AddVarCoeff(std::shared_ptr<IntVar> var, int64_t coeff);
   bool ProcessAll();
-  bool Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+  bool Process(std::vector<std::shared_ptr<IntVar>>* vars,
                std::vector<int64_t>* coeffs, int64_t* offset);
   bool Evaluate(const CpSolverResponse& solution, int64_t* value);
 
  private:
   std::vector<std::pair<std::shared_ptr<LinearExpr>, int64_t>> to_process_;
-  absl::btree_map<std::shared_ptr<BaseIntVar>, int64_t, BaseIntVarComparator>
+  absl::btree_map<std::shared_ptr<IntVar>, int64_t, IntVarComparator>
       canonical_terms_;
   int64_t offset_ = 0;
 };
@@ -238,7 +238,7 @@ class FlatIntExpr : public LinearExpr {
   /// expression.
   explicit FlatIntExpr(std::shared_ptr<LinearExpr> expr);
   /// Returns the array of variables of the flattened expression.
-  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const { return vars_; }
+  const std::vector<std::shared_ptr<IntVar>>& vars() const { return vars_; }
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const { return coeffs_; }
   /// Returns the offset of the flattened expression.
@@ -265,7 +265,7 @@ class FlatIntExpr : public LinearExpr {
   std::string DebugString() const override;
 
  private:
-  std::vector<std::shared_ptr<BaseIntVar>> vars_;
+  std::vector<std::shared_ptr<IntVar>> vars_;
   std::vector<int64_t> coeffs_;
   int64_t offset_ = 0;
   bool ok_ = true;
@@ -479,90 +479,115 @@ class Literal : public LinearExpr {
    * Returns:
    *   The negation of the current literal.
    */
-  virtual std::shared_ptr<Literal> negated() = 0;
+  virtual std::shared_ptr<Literal> negated() const = 0;
 
   /// Returns the hash of the current literal.
   int64_t Hash() const;
 };
 
 /**
- * A class to hold a variable index. It is the base class for Integer
- * variables.
+ * An integer variable.
+ *
+ * An IntVar is an object that can take on any integer value within defined
+ * ranges. Variables appear in constraint like:
+ *
+ *     x + y >= 5
+ *     AllDifferent([x, y, z])
+ *
+ * Solving a model is equivalent to finding, for each variable, a single value
+ * from the set of initial values (called the initial domain), such that the
+ * model is feasible, or optimal if you provided an objective function.
  */
-class BaseIntVar : public Literal {
+class IntVar : public Literal {
  public:
-  explicit BaseIntVar(int index) : index_(index), is_boolean_(false) {
+  IntVar(std::shared_ptr<CpModelProto> model, int index)
+      : model_proto_(model), index_(index) {
     DCHECK_GE(index, 0);
   }
-  BaseIntVar(int index, bool is_boolean);
 
-  ~BaseIntVar() override = default;
+  explicit IntVar(std::shared_ptr<CpModelProto> model)
+      : model_proto_(model), index_(model->variables_size()) {
+    model->add_variables();
+  }
 
+  ~IntVar() override = default;
+
+  /// Returns the index of the variable in the model.
   int index() const override { return index_; }
 
+  /// Returns the name of the variable.
+  std::string name() const;
+
+  /// Overwrite the name of the variable. If name is empty, this method clears
+  /// the name of the variable.
+  void SetName(const std::string& name);
+
+  /// Returns a copy of the domain of the variable.
+  Domain domain() const;
+
+  /// Overwrite the domain of the variable.
+  void SetDomain(const Domain& domain);
+
+  /// Returns the model proto.
+  std::shared_ptr<CpModelProto> model_proto() const;
+
+  /// Returns the proto of the variable.
+  IntegerVariableProto* proto() const;
+
+  /// Returns the negation of the current variable.
+  std::shared_ptr<Literal> negated() const override;
+
+  /// Returns true if the variable has a Boolean domain (0 or 1).
+  bool is_boolean() const;
+
+  /// Returns true if the variable is fixed.
+  bool is_fixed() const;
+
   bool VisitAsInt(IntExprVisitor& lin, int64_t c) override {
-    std::shared_ptr<BaseIntVar> var =
-        std::static_pointer_cast<BaseIntVar>(shared_from_this());
+    std::shared_ptr<IntVar> var =
+        std::static_pointer_cast<IntVar>(shared_from_this());
     lin.AddVarCoeff(var, c);
     return true;
   }
 
   void VisitAsFloat(FloatExprVisitor& lin, double c) override {
-    std::shared_ptr<BaseIntVar> var =
-        std::static_pointer_cast<BaseIntVar>(shared_from_this());
+    std::shared_ptr<IntVar> var =
+        std::static_pointer_cast<IntVar>(shared_from_this());
     lin.AddVarCoeff(var, c);
   }
 
-  std::string ToString() const override {
-    if (negated_ != nullptr) {
-      return absl::StrCat("BooleanBaseIntVar(", index_, ")");
-    } else {
-      return absl::StrCat("BaseIntVar(", index_, ")");
-    }
-  }
+  std::string ToString() const override;
 
-  std::string DebugString() const override {
-    return absl::StrCat("BaseIntVar(index=", index_,
-                        ", is_boolean=", negated_ != nullptr, ")");
-  }
+  std::string DebugString() const override;
 
-  /// Returns the negation of the current variable.
-  std::shared_ptr<Literal> negated() override;
+  bool operator<(const IntVar& other) const { return index_ < other.index_; }
 
-  /// Returns true if the variable has a Boolean domain (0 or 1).
-  bool is_boolean() const { return is_boolean_; }
-
-  bool operator<(const BaseIntVar& other) const {
-    return index_ < other.index_;
-  }
-
- protected:
+ private:
+  std::shared_ptr<CpModelProto> model_proto_;
   const int index_;
-  const bool is_boolean_;
-  std::shared_ptr<Literal> negated_;
 };
 
 template <typename H>
-H AbslHashValue(H h, std::shared_ptr<BaseIntVar> i) {
+H AbslHashValue(H h, std::shared_ptr<IntVar> i) {
   return H::combine(std::move(h), i->index());
 }
 
 /// A class to hold a negated variable index.
 class NotBooleanVariable : public Literal {
  public:
-  explicit NotBooleanVariable(std::shared_ptr<BaseIntVar> var) : var_(var) {}
+  explicit NotBooleanVariable(std::shared_ptr<CpModelProto> model_proto,
+                              int var_index)
+      : model_proto_(model_proto), var_index_(var_index) {}
   ~NotBooleanVariable() override = default;
 
   /// Returns the index of the current literal.
   int index() const override;
 
-  bool ok() const { return !var_.expired(); }
-
   /**
    * Returns the negation of the current literal, that is the original Boolean
    * variable.
    */
-  std::shared_ptr<Literal> negated() override;
+  std::shared_ptr<Literal> negated() const override;
 
   bool VisitAsInt(IntExprVisitor& lin, int64_t c) override;
 
@@ -573,11 +598,8 @@ class NotBooleanVariable : public Literal {
   std::string DebugString() const override;
 
  private:
-  // We keep a weak ptr to the base variable to avoid a circular dependency.
-  // The base variable holds a shared pointer to the negated variable.
-  // Any call to a risky method is checked at the pybind11 level to raise a
-  // python exception before the call is made.
-  std::weak_ptr<BaseIntVar> var_;
+  std::shared_ptr<CpModelProto> model_proto_;
+  const int var_index_;
 };
 
 /// A class to hold a linear expression with bounds.
@@ -597,7 +619,7 @@ class BoundedLinearExpression {
   /// Returns the bounds constraining the expression passed to the constructor.
   const Domain& bounds() const;
   /// Returns the array of variables of the flattened expression.
-  const std::vector<std::shared_ptr<BaseIntVar>>& vars() const;
+  const std::vector<std::shared_ptr<IntVar>>& vars() const;
   /// Returns the array of coefficients of the flattened expression.
   const std::vector<int64_t>& coeffs() const;
   /// Returns the offset of the flattened expression.
@@ -609,7 +631,7 @@ class BoundedLinearExpression {
   bool CastToBool(bool* result) const;
 
  private:
-  std::vector<std::shared_ptr<BaseIntVar>> vars_;
+  std::vector<std::shared_ptr<IntVar>> vars_;
   std::vector<int64_t> coeffs_;
   int64_t offset_;
   const Domain bounds_;

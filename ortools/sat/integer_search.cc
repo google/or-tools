@@ -394,7 +394,7 @@ std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
       value_selection_heuristics.push_back(
           [model, response_manager](IntegerVariable var) {
             return SplitUsingBestSolutionValueInRepository(
-                var, response_manager->SolutionsRepository(), model);
+                var, response_manager->SolutionPool().BestSolutions(), model);
           });
     }
   }
@@ -872,7 +872,6 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       // TODO(user): Add heuristic ordering for creating interesting precedence
       // first.
       bool found_precedence_to_add = false;
-      std::vector<Literal> conflict;
       helper->ClearReason();
       for (const int s : open_tasks) {
         for (const int t : open_tasks) {
@@ -897,13 +896,13 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             // fixed all literal, but if it is not, we can just return this
             // decision.
             if (trail->Assignment().LiteralIsFalse(Literal(existing))) {
-              conflict.push_back(Literal(existing));
+              helper->MutableLiteralReason()->push_back(Literal(existing));
               continue;
             }
           } else {
             // Make sure s could be before t.
             if (helper->EndMin(s) > helper->StartMax(t)) {
-              helper->AddReasonForBeingBefore(t, s);
+              helper->AddReasonForBeingBeforeAssumingNoOverlap(t, s);
               continue;
             }
 
@@ -929,24 +928,24 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       //
       // TODO(user): We need to add the reason for demand_min and capacity_max.
       // TODO(user): unfortunately we can't report it from here.
-      std::vector<IntegerLiteral> integer_reason =
-          *helper->MutableIntegerReason();
       if (!h.capacity.IsConstant()) {
-        integer_reason.push_back(
+        helper->MutableIntegerReason()->push_back(
             integer_trail->UpperBoundAsLiteral(h.capacity));
       }
       const auto& demands = h.demand_helper->Demands();
       for (const int t : open_tasks) {
         if (helper->IsOptional(t)) {
           CHECK(trail->Assignment().LiteralIsTrue(helper->PresenceLiteral(t)));
-          conflict.push_back(helper->PresenceLiteral(t).Negated());
+          helper->MutableLiteralReason()->push_back(
+              helper->PresenceLiteral(t).Negated());
         }
         const AffineExpression d = demands[t];
         if (!d.IsConstant()) {
-          integer_reason.push_back(integer_trail->LowerBoundAsLiteral(d));
+          helper->MutableIntegerReason()->push_back(
+              integer_trail->LowerBoundAsLiteral(d));
         }
       }
-      integer_trail->ReportConflict(conflict, integer_reason);
+      (void)helper->ReportConflict();
       search_helper->NotifyThatConflictWasFoundDuringGetDecision();
       if (VLOG_IS_ON(2)) {
         LOG(INFO) << "Conflict between precedences !";
@@ -1026,7 +1025,7 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     value_selection_heuristics.push_back(
         [model, response_manager](IntegerVariable var) {
           return SplitUsingBestSolutionValueInRepository(
-              var, response_manager->SolutionsRepository(), model);
+              var, response_manager->SolutionPool().BestSolutions(), model);
         });
     value_selection_weight.push_back(5);
   }

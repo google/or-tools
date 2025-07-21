@@ -135,10 +135,10 @@ class ProtoTrail {
   // the decision.
   absl::Span<const ProtoLiteral> Implications(int level) const;
   void AddImplication(int level, ProtoLiteral implication) {
-    auto it = implication_level_.find(implication);
-    if (it != implication_level_.end() && it->second <= level) return;
+    auto it = assigned_at_level_.find(implication);
+    if (it != assigned_at_level_.end() && it->second <= level) return;
     MutableImplications(level).push_back(implication);
-    implication_level_[implication] = level;
+    assigned_at_level_[implication] = level;
   }
 
   IntegerValue ObjectiveLb(int level) const {
@@ -153,7 +153,7 @@ class ProtoTrail {
   // Appends a literal to the target phase, returns false if the phase is full.
   bool AddPhase(const ProtoLiteral& lit) {
     if (target_phase_.size() >= kMaxPhaseSize) return false;
-    if (!implication_level_.contains(lit)) {
+    if (!IsAssigned(lit)) {
       target_phase_.push_back(lit);
     }
     return true;
@@ -163,6 +163,10 @@ class ProtoTrail {
     for (const ProtoLiteral& lit : phase) {
       if (!AddPhase(lit)) break;
     }
+  }
+  bool IsAssigned(const ProtoLiteral& lit) const {
+    return assigned_at_level_.contains(lit) ||
+           assigned_at_level_.contains(lit.Negated());
   }
 
  private:
@@ -179,7 +183,7 @@ class ProtoTrail {
   // Extra implications that can be propagated at each level but were never
   // branches in the shared tree.
   std::vector<std::vector<ProtoLiteral>> implications_;
-  absl::flat_hash_map<ProtoLiteral, int> implication_level_;
+  absl::flat_hash_map<ProtoLiteral, int> assigned_at_level_;
 
   // The index in the literals_/node_ids_ vectors for the start of each level.
   std::vector<int> decision_indexes_;
@@ -277,7 +281,7 @@ class SharedTreeManager {
 
   // Stores the nodes in the search tree.
   std::deque<Node> nodes_ ABSL_GUARDED_BY(mu_);
-  std::vector<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
+  std::deque<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
 
   // How many splits we should generate now to keep the desired number of
   // leaves.
@@ -287,7 +291,7 @@ class SharedTreeManager {
   // communication overhead. If we exceed this, workers become portfolio
   // workers when no unassigned leaves are available.
   const int max_nodes_;
-  int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
+  int num_leaves_assigned_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Temporary vectors used to maintain the state of the tree when nodes are
   // closed and/or children are updated.
@@ -295,7 +299,6 @@ class SharedTreeManager {
   std::vector<Node*> to_update_ ABSL_GUARDED_BY(mu_);
 
   int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
-  int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
   int num_closed_nodes_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
@@ -355,6 +358,7 @@ class SharedTreeWorker {
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
+  double next_split_dtime_ = 0;
 
   // True if the last decision may split the assigned tree and has not yet been
   // proposed to the SharedTreeManager.

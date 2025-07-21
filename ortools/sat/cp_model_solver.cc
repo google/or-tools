@@ -793,40 +793,6 @@ void LogSubsolverNames(absl::Span<const std::unique_ptr<SubSolver>> subsolvers,
   SOLVER_LOG(logger, "");
 }
 
-void LogFinalStatistics(SharedClasses* shared) {
-  if (!shared->logger->LoggingIsEnabled()) return;
-
-  shared->logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
-  SOLVER_LOG(shared->logger, "");
-
-  shared->stat_tables->Display(shared->logger);
-  shared->response->DisplayImprovementStatistics();
-
-  std::vector<std::vector<std::string>> table;
-  table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
-  table.push_back(shared->response->SolutionsRepository().TableLineStats());
-  table.push_back(shared->ls_hints->TableLineStats());
-  if (shared->lp_solutions != nullptr) {
-    table.push_back(shared->lp_solutions->TableLineStats());
-  }
-  if (shared->incomplete_solutions != nullptr) {
-    table.push_back(shared->incomplete_solutions->TableLineStats());
-  }
-  SOLVER_LOG(shared->logger, FormatTable(table));
-
-  if (shared->bounds) {
-    shared->bounds->LogStatistics(shared->logger);
-  }
-
-  if (shared->clauses) {
-    shared->clauses->LogStatistics(shared->logger);
-  }
-
-  // Extra logging if needed. Note that these are mainly activated on
-  // --vmodule *some_file*=1 and are here for development.
-  shared->stats->Log(shared->logger);
-}
-
 void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
                       std::vector<std::unique_ptr<SubSolver>>& subsolvers,
                       absl::Span<const std::string> ignored) {
@@ -868,7 +834,7 @@ void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
   for (int i = 0; i < subsolvers.size(); ++i) {
     subsolvers[i].reset();
   }
-  LogFinalStatistics(shared);
+  shared->LogFinalStatistics();
 }
 
 bool VarIsFixed(const CpModelProto& model_proto, int i) {
@@ -1124,13 +1090,18 @@ class FullProblemSolver : public SubSolver {
               shared_->model_proto, shared_->bounds.get(), &local_model_);
         }
 
+        if (shared_->linear2_bounds != nullptr) {
+          RegisterLinear2BoundsImport(shared_->linear2_bounds.get(),
+                                      &local_model_);
+        }
+
         // Note that this is done after the loading, so we will never export
         // problem clauses.
         if (shared_->clauses != nullptr) {
           const int id = shared_->clauses->RegisterNewId(
+              local_model_.Name(),
               /*may_terminate_early=*/stop_at_first_solution_ &&
-              local_model_.GetOrCreate<CpModelProto>()->has_objective());
-          shared_->clauses->SetWorkerNameForId(id, local_model_.Name());
+                  local_model_.GetOrCreate<CpModelProto>()->has_objective());
 
           RegisterClausesLevelZeroImport(id, shared_->clauses.get(),
                                          &local_model_);
@@ -1348,36 +1319,29 @@ class LnsSolver : public SubSolver {
       data.task_id = task_id;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
+      data.initial_best_objective =
+          shared_->response->GetBestSolutionObjective();
 
       // Choose a base solution for this neighborhood.
+      const auto base_solution =
+          shared_->response->SolutionPool().GetSolutionToImprove(random);
       CpSolverResponse base_response;
-      {
-        const SharedSolutionRepository<int64_t>& repo =
-            shared_->response->SolutionsRepository();
-        if (repo.NumSolutions() > 0) {
-          base_response.set_status(CpSolverStatus::FEASIBLE);
-          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-              solution = repo.GetRandomBiasedSolution(random);
-          base_response.mutable_solution()->Assign(
-              solution->variable_values.begin(),
-              solution->variable_values.end());
+      if (base_solution != nullptr) {
+        base_response.set_status(CpSolverStatus::FEASIBLE);
+        base_response.mutable_solution()->Assign(
+            base_solution->variable_values.begin(),
+            base_solution->variable_values.end());
 
-          // Note: We assume that the solution rank is the solution internal
-          // objective.
-          data.initial_best_objective = repo.GetSolution(0)->rank;
-          data.base_objective = solution->rank;
-        } else {
-          base_response.set_status(CpSolverStatus::UNKNOWN);
+        // Note: We assume that the solution rank is the solution internal
+        // objective.
+        data.base_objective = base_solution->rank;
+      } else {
+        base_response.set_status(CpSolverStatus::UNKNOWN);
 
-          // If we do not have a solution, we use the current objective upper
-          // bound so that our code that compute an "objective" improvement
-          // works.
-          //
-          // TODO(user): this is non-deterministic. Fix.
-          data.initial_best_objective =
-              shared_->response->GetInnerObjectiveUpperBound();
-          data.base_objective = data.initial_best_objective;
-        }
+        // If we do not have a solution, we use the current objective upper
+        // bound so that our code that compute an "objective" improvement
+        // works.
+        data.base_objective = data.initial_best_objective;
       }
 
       Neighborhood neighborhood =
@@ -1667,9 +1631,9 @@ class LnsSolver : public SubSolver {
           if (absl::MakeSpan(solution_values) !=
               absl::MakeSpan(base_response.solution())) {
             new_solution = true;
-            PushAndMaybeCombineSolution(
-                shared_->response, shared_->model_proto, solution_values,
-                solution_info, base_response.solution(), /*model=*/nullptr);
+            PushAndMaybeCombineSolution(shared_->response, shared_->model_proto,
+                                        solution_values, solution_info,
+                                        base_solution);
           }
         }
         if (!neighborhood.is_reduced &&
@@ -1782,7 +1746,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   subsolvers.push_back(std::make_unique<SynchronizationPoint>(
       "synchronization_agent", [shared]() {
         shared->response->Synchronize();
-        shared->response->MutableSolutionsRepository()->Synchronize();
         shared->ls_hints->Synchronize();
         if (shared->bounds != nullptr) {
           shared->bounds->Synchronize();

@@ -50,11 +50,9 @@
 
 namespace operations_research::sat {
 namespace {
-
-// We restart the shared tree 10 times after 2 restarts per worker. After that
-// we restart when the tree reaches the maximum allowable number of nodes, but
-// still at most once per 2 restarts per worker.
-const int kSyncsPerWorkerPerRestart = 2;
+// We restart the shared tree 10 times after (on average) 2 tree assignments per
+// worker.
+const int kAssignmentsPerWorkerPerRestart = 2;
 const int kNumInitialRestarts = 10;
 
 // If you build a tree by expanding the nodes with minimal depth+discrepancy,
@@ -149,6 +147,7 @@ ProtoTrail::ProtoTrail() { target_phase_.reserve(kMaxPhaseSize); }
 void ProtoTrail::PushLevel(const ProtoLiteral& decision,
                            IntegerValue objective_lb, int node_id) {
   CHECK_GT(node_id, 0);
+  assigned_at_level_[decision] = decision_indexes_.size();
   decision_indexes_.push_back(literals_.size());
   literals_.push_back(decision);
   node_ids_.push_back(node_id);
@@ -165,14 +164,14 @@ void ProtoTrail::SetLevelImplied(int level) {
   DCHECK_LE(level, implications_.size());
   SetObjectiveLb(level - 1, ObjectiveLb(level));
   const ProtoLiteral decision = Decision(level);
-  implication_level_[decision] = level - 1;
+  assigned_at_level_[decision] = level - 1;
   // We don't store implications for level 0, so only move implications up to
   // the parent if we are removing level 2 or greater.
   if (level >= 2) {
     MutableImplications(level - 1).push_back(decision);
   }
   for (const ProtoLiteral& implication : Implications(level)) {
-    implication_level_[implication] = level - 1;
+    assigned_at_level_[implication] = level - 1;
     if (level >= 2) {
       MutableImplications(level - 1).push_back(implication);
     }
@@ -190,7 +189,7 @@ void ProtoTrail::Clear() {
   level_to_objective_lbs_.clear();
   node_ids_.clear();
   target_phase_.clear();
-  implication_level_.clear();
+  assigned_at_level_.clear();
   implications_.clear();
 }
 
@@ -232,7 +231,6 @@ SharedTreeManager::SharedTreeManager(Model* model)
       {.literal = ProtoLiteral(),
        .objective_lb = shared_response_manager_->GetInnerObjectiveLowerBound(),
        .trail_info = std::make_unique<NodeTrailInfo>()});
-  unassigned_leaves_.reserve(num_workers_);
   unassigned_leaves_.push_back(&nodes_.back());
 }
 
@@ -278,7 +276,10 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
     return false;
   }
   // Restart after processing updates - we might learn a new objective bound.
-  if (++num_syncs_since_restart_ / num_workers_ > kSyncsPerWorkerPerRestart &&
+  // Do initial restarts once the tree has been split a reasonable number of
+  // times.
+  if (num_leaves_assigned_since_restart_ >
+          kAssignmentsPerWorkerPerRestart * num_workers_ &&
       num_restarts_ < kNumInitialRestarts) {
     RestartLockHeld();
     path.Clear();
@@ -370,11 +371,10 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
   }
   path.Clear();
   while (!unassigned_leaves_.empty()) {
-    const int i = num_leaves_assigned_++ % unassigned_leaves_.size();
-    std::swap(unassigned_leaves_[i], unassigned_leaves_.back());
-    Node* leaf = unassigned_leaves_.back();
-    unassigned_leaves_.pop_back();
+    Node* leaf = unassigned_leaves_.front();
+    unassigned_leaves_.pop_front();
     if (!leaf->closed && leaf->children[0] == nullptr) {
+      num_leaves_assigned_since_restart_ += 1;
       AssignLeaf(path, leaf);
       path.SetTargetPhase(GetTrailInfo(leaf)->phase);
       return;
@@ -470,8 +470,7 @@ void SharedTreeManager::ProcessNodeChanges() {
   }
   if (num_newly_closed > 0) {
     shared_response_manager_->LogMessageWithThrottling(
-        "Tree", absl::StrCat("nodes:", nodes_.size(), "/", max_nodes_,
-                             " closed:", num_closed_nodes_,
+        "Tree", absl::StrCat("closed:", num_closed_nodes_, "/", nodes_.size(),
                              " unassigned:", unassigned_leaves_.size(),
                              " restarts:", num_restarts_));
   }
@@ -581,7 +580,7 @@ void SharedTreeManager::RestartLockHeld() {
       num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1;
   num_closed_nodes_ = 0;
   num_restarts_ += 1;
-  num_syncs_since_restart_ = 0;
+  num_leaves_assigned_since_restart_ = 0;
 }
 
 std::string SharedTreeManager::ShortStatus() const {
@@ -728,8 +727,9 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const auto& decision_policy =
       heuristics_->decision_policies[heuristics_->policy_index];
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
-  new_split_available_ = next_level == assigned_tree_.MaxLevel() + 1;
-
+  if (next_level == assigned_tree_.MaxLevel() + 1) {
+    new_split_available_ = true;
+  }
   CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   if (next_level <= assigned_tree_.MaxLevel()) {
     VLOG(2) << "Following shared trail depth=" << next_level << " "
@@ -746,7 +746,8 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
 
 void SharedTreeWorker::MaybeProposeSplit() {
   if (!new_split_available_ ||
-      sat_solver_->CurrentDecisionLevel() != assigned_tree_.MaxLevel() + 1) {
+      sat_solver_->CurrentDecisionLevel() < assigned_tree_.MaxLevel() + 1 ||
+      time_limit_->GetElapsedDeterministicTime() < next_split_dtime_) {
     return;
   }
   new_split_available_ = false;
@@ -754,6 +755,8 @@ void SharedTreeWorker::MaybeProposeSplit() {
       sat_solver_->Decisions()[assigned_tree_.MaxLevel()].literal;
   const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
   if (encoded.has_value()) {
+    next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
+                        parameters_->shared_tree_split_min_dtime();
     CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
     manager_->ProposeSplit(assigned_tree_, *encoded);
     if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
@@ -778,6 +781,7 @@ bool SharedTreeWorker::ShouldReplaceSubtree() {
 }
 
 bool SharedTreeWorker::SyncWithSharedTree() {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   manager_->SyncTree(assigned_tree_);
   if (ShouldReplaceSubtree()) {
     ++num_trees_;
@@ -793,6 +797,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         !decision_policy_->GetBestPartialAssignment().empty()) {
       assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
+        // Skip saving the phase for anything assigned at the root.
+        if (trail_->Assignment().LiteralIsAssigned(lit)) continue;
         // Only set the phase for booleans to avoid creating literals on other
         // workers.
         auto encoded = ProtoLiteral::EncodeLiteral(lit, mapping_);
@@ -809,8 +815,9 @@ bool SharedTreeWorker::SyncWithSharedTree() {
               << assigned_tree_.TargetPhase().size();
       decision_policy_->ClearBestPartialAssignment();
       for (const ProtoLiteral& lit : assigned_tree_.TargetPhase()) {
-        decision_policy_->SetTargetPolarity(DecodeDecision(lit));
+        decision_policy_->SetTargetPolarityIfUnassigned(DecodeDecision(lit));
       }
+      decision_policy_->ResetActivitiesToFollowBestPartialAssignment();
     }
   }
   // If we commit to this subtree, keep it for at least 1s of dtime.

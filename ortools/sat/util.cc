@@ -25,6 +25,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
@@ -1004,6 +1005,49 @@ int64_t MaxBoundedSubsetSumExact::MaxSubsetSum(
     while (j >= 0 && span_a[i] + span_b[j] > bin_size) --j;
     result = std::max(result, span_a[i] + span_b[j]);
     if (result == bin_size) return bin_size;
+  }
+  return result;
+}
+
+std::vector<int> FindMostDiverseSubset(int k, int n,
+                                       absl::Span<const int64_t> distances,
+                                       std::vector<int64_t>& buffer,
+                                       int always_pick_mask) {
+  CHECK_LE(n, 20);
+  const int limit = 1 << n;
+  buffer.assign(limit, 0);
+  int best_mask;
+  int best_value = -1;
+  for (unsigned int mask = 1; mask < limit; ++mask) {
+    const int hamming_weight = absl::popcount(mask);
+
+    // TODO(user): Increase mask by more than one ? but counting to 1k is fast
+    // anyway.
+    if (hamming_weight > k) continue;
+    int low_bit = -1;
+    int64_t sum = 0;
+    for (int i = 0; i < n; ++i) {
+      if ((mask >> i) & 1) {
+        if (low_bit == -1) {
+          low_bit = i;
+        } else {
+          sum += distances[low_bit * n + i];
+        }
+      }
+    }
+    buffer[mask] = buffer[mask ^ (1 << low_bit)] + sum;
+    if (hamming_weight == k && buffer[mask] > best_value) {
+      if ((mask & always_pick_mask) != always_pick_mask) continue;
+      best_value = buffer[mask];
+      best_mask = mask;
+    }
+  }
+  std::vector<int> result;
+  result.reserve(k);
+  for (int i = 0; i < n; ++i) {
+    if ((best_mask >> i) & 1) {
+      result.push_back(i);
+    }
   }
   return result;
 }

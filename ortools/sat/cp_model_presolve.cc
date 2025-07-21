@@ -40,7 +40,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/distributions.h"
 #include "absl/status/statusor.h"
@@ -74,6 +73,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
@@ -7886,6 +7886,28 @@ void CpModelPresolver::Probe() {
   prober->ProbeBooleanVariables(
       context_->params().probing_deterministic_time_limit());
 
+  for (const auto& [expr, ub] : model.GetOrCreate<RootLevelLinear2Bounds>()
+                                    ->GetSortedNonTrivialUpperBounds()) {
+    if (expr.vars[0] == kNoIntegerVariable ||
+        expr.vars[1] == kNoIntegerVariable) {
+      continue;
+    }
+    const IntegerVariable var0 = PositiveVariable(expr.vars[0]);
+    const IntegerVariable var1 = PositiveVariable(expr.vars[1]);
+    const int proto_var0 = mapping->GetProtoVariableFromIntegerVariable(var0);
+    const int proto_var1 = mapping->GetProtoVariableFromIntegerVariable(var1);
+    if (proto_var0 < 0 || proto_var1 < 0) continue;
+    const int64_t coeff0 = VariableIsPositive(expr.vars[0])
+                               ? expr.coeffs[0].value()
+                               : -expr.coeffs[0].value();
+    const int64_t coeff1 = VariableIsPositive(expr.vars[1])
+                               ? expr.coeffs[1].value()
+                               : -expr.coeffs[1].value();
+    known_linear2_.Add(
+        GetLinearExpression2FromProto(proto_var0, coeff0, proto_var1, coeff1),
+        kMinIntegerValue, ub);
+  }
+
   probing_timer->AddCounter("probed", prober->num_decisions());
   probing_timer->AddToWork(
       model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
@@ -8798,6 +8820,7 @@ void CpModelPresolver::ExpandObjective() {
 }
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
+  PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
   if (context_->ModelIsUnsat()) return;
   if (time_limit_->LimitReached()) return;
 

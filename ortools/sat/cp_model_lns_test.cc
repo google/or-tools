@@ -201,8 +201,10 @@ TYPED_TEST(GeneratorTest, ReadyToGenerate) {
   EXPECT_FALSE(generator.ReadyToGenerate());
   shared_response_manager->NewSolution(solution.solution(),
                                        solution.solution_info(), &model);
-  shared_response_manager->MutableSolutionsRepository()->Synchronize();
-  EXPECT_EQ(1, shared_response_manager->SolutionsRepository().NumSolutions());
+  shared_response_manager->Synchronize();
+  EXPECT_EQ(
+      1,
+      shared_response_manager->SolutionPool().BestSolutions().NumSolutions());
   EXPECT_TRUE(generator.ReadyToGenerate());
 }
 
@@ -301,7 +303,7 @@ TEST(RelaxationInducedNeighborhoodGeneratorTest, NoNeighborhoodGeneratedRINS) {
   solution.add_solution(0);
   shared_response_manager->NewSolution(solution.solution(),
                                        solution.solution_info(), &model);
-  shared_response_manager->MutableSolutionsRepository()->Synchronize();
+  shared_response_manager->Synchronize();
   lp_solutions.NewLPSolution({0.0});
   lp_solutions.Synchronize();
 

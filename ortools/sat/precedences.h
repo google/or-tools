@@ -18,15 +18,20 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/graph.h"
+#include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -41,57 +46,264 @@
 namespace operations_research {
 namespace sat {
 
+DEFINE_STRONG_INDEX_TYPE(LinearExpression2Index);
+const LinearExpression2Index kNoLinearExpression2Index(-1);
+inline LinearExpression2Index NegationOf(LinearExpression2Index i) {
+  return LinearExpression2Index(i.value() ^ 1);
+}
+
+inline bool Linear2IsPositive(LinearExpression2Index i) {
+  return (i.value() & 1) == 0;
+}
+
+inline LinearExpression2Index PositiveLinear2(LinearExpression2Index i) {
+  return LinearExpression2Index(i.value() & (~1));
+}
+
+// Class to hold a list of LinearExpression2 that have (potentially) non-trivial
+// bounds. This class is overzealous, in the sense that if a linear2 is in the
+// list, it does not necessarily mean that it has a non-trivial bound, but the
+// converse is true: if a linear2 is not in the list,
+// Linear2Bounds::GetUpperBound() will return a trivial bound.
+class Linear2Indices {
+ public:
+  Linear2Indices() = default;
+
+  // Returns a never-changing index for the given linear expression.
+  // The expression must already be canonicalized and divided by its GCD.
+  LinearExpression2Index AddOrGet(LinearExpression2 expr);
+
+  // Returns a never-changing index for the given linear expression if it is
+  // potentially non-trivial, otherwise returns kNoLinearExpression2Index. The
+  // expression must already be canonicalized and divided by its GCD.
+  LinearExpression2Index GetIndex(LinearExpression2 expr) const;
+
+  LinearExpression2 GetExpression(LinearExpression2Index index) const;
+
+  // Return all positive linear2 expressions that have a potentially non-trivial
+  // bound. When calling this code it is often a good idea to check both the
+  // expression on the span and its negation. The order is fixed forever and
+  // this span can only grow by appending new expressions.
+  absl::Span<const LinearExpression2> GetStoredLinear2Indices() const {
+    return exprs_;
+  }
+
+  // Return a list of all potentially non-trivial LinearExpression2Indexes
+  // containing a given variable.
+  absl::Span<const LinearExpression2Index> GetAllLinear2ContainingVariable(
+      IntegerVariable var) const;
+
+  // Return a list of all potentially non-trivial LinearExpression2Indexes
+  // containing a given pair of variables.
+  absl::Span<const LinearExpression2Index> GetAllLinear2ContainingVariables(
+      IntegerVariable var1, IntegerVariable var2) const;
+
+ private:
+  std::vector<LinearExpression2> exprs_;
+  absl::flat_hash_map<LinearExpression2, int> expr_to_index_;
+
+  // Map to implement GetAllBoundsContainingVariable().
+  absl::flat_hash_map<IntegerVariable,
+                      absl::InlinedVector<LinearExpression2Index, 2>>
+      var_to_bounds_;
+  // Map to implement GetAllBoundsContainingVariables().
+  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
+                      absl::InlinedVector<LinearExpression2Index, 1>>
+      var_pair_to_bounds_;
+};
+
+// Simple "watcher" class that will be notified if a linear2 bound changed. It
+// can also be queried to see if LinearExpression2 involving a specific variable
+// changed since last time.
+class Linear2Watcher {
+ public:
+  explicit Linear2Watcher(Model* model)
+      : watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {}
+
+  // This assumes `expr` is canonicalized and divided by its gcd.
+  void NotifyBoundChanged(LinearExpression2 expr);
+
+  // Register a GenericLiteralWatcher() id so that propagation is called as
+  // soon as a bound on a linear2 changed.
+  void WatchAllLinearExpressions2(int id) { propagator_ids_.insert(id); }
+
+  // Allow to know if some bounds changed since last query.
+  int64_t Timestamp() const { return timestamp_; }
+  int64_t VarTimestamp(IntegerVariable var);
+
+ private:
+  GenericLiteralWatcher* watcher_;
+
+  int64_t timestamp_ = 0;
+  util_intops::StrongVector<IntegerVariable, int64_t> var_timestamp_;
+  absl::btree_set<int> propagator_ids_;
+};
+
+// This holds all the relation lhs <= linear2 <= rhs that are true at level
+// zero. It is the source of truth across all the solver for such bounds.
+class RootLevelLinear2Bounds {
+ public:
+  explicit RootLevelLinear2Bounds(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        lin2_indices_(model->GetOrCreate<Linear2Indices>()),
+        cp_model_mapping_(model->GetOrCreate<CpModelMapping>()),
+        shared_linear2_bounds_(model->Mutable<SharedLinear2Bounds>()),
+        shared_linear2_bounds_id_(
+            shared_linear2_bounds_ == nullptr
+                ? 0
+                : shared_linear2_bounds_->RegisterNewId(model->Name())) {}
+
+  ~RootLevelLinear2Bounds();
+
+  // Add a relation lb <= expr <= ub. If expr is not a proper linear2 expression
+  // (e.g. 0*x + y, y + y, y - y) it will be ignored.
+  // Returns a pair saying whether the lower/upper bounds for this expr became
+  // more restricted than what was currently stored.
+  std::pair<bool, bool> Add(LinearExpression2 expr, IntegerValue lb,
+                            IntegerValue ub) {
+    if (integer_trail_->LevelZeroUpperBound(expr) <= ub &&
+        integer_trail_->LevelZeroLowerBound(expr) >= lb) {
+      return {false, false};
+    }
+    const bool negated = expr.CanonicalizeAndUpdateBounds(lb, ub);
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return {false, false};
+    const LinearExpression2Index index = lin2_indices_->AddOrGet(expr);
+    bool ub_changed = AddUpperBound(index, ub);
+    bool lb_changed = AddUpperBound(NegationOf(index), -lb);
+    if (negated) {
+      std::swap(lb_changed, ub_changed);
+    }
+    return {lb_changed, ub_changed};
+  }
+
+  // Same as above, but only update the upper bound.
+  bool AddUpperBound(LinearExpression2 expr, IntegerValue ub) {
+    if (integer_trail_->LevelZeroUpperBound(expr) <= ub) return false;
+    expr.SimpleCanonicalization();
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return false;
+    const IntegerValue gcd = expr.DivideByGcd();
+    ub = FloorRatio(ub, gcd);
+    return AddUpperBound(lin2_indices_->AddOrGet(expr), ub);
+  }
+
+  // All modifications go through this function.
+  bool AddUpperBound(LinearExpression2Index index, IntegerValue ub);
+
+  IntegerValue LevelZeroUpperBound(LinearExpression2 expr) const {
+    expr.SimpleCanonicalization();
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
+      return integer_trail_->LevelZeroUpperBound(expr);
+    }
+    const IntegerValue gcd = expr.DivideByGcd();
+    const LinearExpression2Index index = lin2_indices_->GetIndex(expr);
+    if (index == kNoLinearExpression2Index) {
+      return integer_trail_->LevelZeroUpperBound(expr);
+    }
+    return CapProdI(gcd, LevelZeroUpperBound(index));
+  }
+
+  IntegerValue LevelZeroUpperBound(LinearExpression2Index index) const {
+    const LinearExpression2 expr = lin2_indices_->GetExpression(index);
+    // TODO(user): Remove the expression from the root_level_relations_ if
+    // the zero-level bound got more restrictive.
+    return std::min(integer_trail_->LevelZeroUpperBound(expr),
+                    GetUpperBoundNoTrail(index));
+  }
+
+  // Return a list of (expr <= ub) sorted by expr. They are guaranteed to be
+  // better than the trivial upper bound.
+  std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialUpperBounds() const;
+
+  // Return a list of (lb <= expr <= ub), with expr.vars[0] = var, where at
+  // least one of the bounds is non-trivial and the potential other non-trivial
+  // bound is tight.
+  //
+  // As the class name indicates, all bounds are level zero ones.
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+  GetAllBoundsContainingVariable(IntegerVariable var) const;
+
+  // Return a list of (lb <= expr <= ub), with expr.vars = {var1, var2}, where
+  // at least one of the bounds is non-trivial and the potential other
+  // non-trivial bound is tight.
+  //
+  // As the class name indicates, all bounds are level zero ones.
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+  GetAllBoundsContainingVariables(IntegerVariable var1,
+                                  IntegerVariable var2) const;
+
+  // For a given variable `var`, return all variables `other` so that
+  // LinearExpression2(var, other, 1, 1) has a non trivial upper bound.
+  // Note that using negation one can also recover x + y >= lb and x - y <= ub.
+  absl::Span<const std::pair<IntegerVariable, LinearExpression2Index>>
+  GetVariablesInSimpleRelation(IntegerVariable var) const;
+
+  // For all pairs of relation 'a + var <= x' and 'neg(var) + b <= y' try to add
+  // 'a + b <= x + y' if that relation is better.
+  //
+  // This can be quadratic. Returns the amount of "work" done, and abort if
+  // we reach the limit. This uses GetVariablesInSimpleRelation().
+  int AugmentSimpleRelations(IntegerVariable var, int work_limit);
+
+  RelationStatus GetLevelZeroStatus(LinearExpression2 expr, IntegerValue lb,
+                                    IntegerValue ub) const;
+
+  // Low-level function that returns the zero-level upper bound if it is
+  // non-trivial. Otherwise returns kMaxIntegerValue. This is a different
+  // behavior from LevelZeroUpperBound() that would return the implied
+  // zero-level bound from the trail for trivial ones. `expr` must be
+  // canonicalized and gcd-reduced.
+  IntegerValue GetUpperBoundNoTrail(LinearExpression2Index index) const;
+
+  int64_t num_updates() const { return num_updates_; }
+
+ private:
+  IntegerTrail* integer_trail_;
+  Linear2Watcher* linear2_watcher_;
+  SharedStatistics* shared_stats_;
+  Linear2Indices* lin2_indices_;
+  CpModelMapping* cp_model_mapping_;
+  SharedLinear2Bounds* shared_linear2_bounds_;  // Might be nullptr.
+
+  const int shared_linear2_bounds_id_;
+
+  util_intops::StrongVector<LinearExpression2Index, IntegerValue>
+      best_upper_bounds_;
+
+  // coeff_one_var_lookup_[var] contains all the other_var such that we have a
+  // linear2 relation var + other_var <= ub. We also store that relation index.
+  util_intops::StrongVector<LinearExpression2Index, bool> in_coeff_one_lookup_;
+  util_intops::StrongVector<
+      IntegerVariable,
+      std::vector<std::pair<IntegerVariable, LinearExpression2Index>>>
+      coeff_one_var_lookup_;
+
+  int64_t num_updates_ = 0;
+};
+
 struct FullIntegerPrecedence {
   IntegerVariable var;
   std::vector<int> indices;
   std::vector<IntegerValue> offsets;
 };
 
-// Stores all the precedences relation of the form "a*x + b*y <= ub"
-// that we could extract from the linear constraint of the model. These are
-// stored in a directed graph.
+// This class is used to compute the transitive closure of the level-zero
+// precedence relations.
 //
-// TODO(user): Support conditional relation.
 // TODO(user): Support non-DAG like graph.
-// TODO(user): Support variable offset that can be updated as search progress.
-class PrecedenceRelations : public ReversibleInterface {
+class TransitivePrecedencesEvaluator {
  public:
-  explicit PrecedenceRelations(Model* model)
-      : params_(*model->GetOrCreate<SatParameters>()),
-        trail_(model->GetOrCreate<Trail>()),
-        integer_trail_(model->GetOrCreate<IntegerTrail>()) {
-    integer_trail_->RegisterReversibleClass(this);
+  explicit TransitivePrecedencesEvaluator(Model* model)
+      : params_(model->GetOrCreate<SatParameters>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
+    // Call Build() each time we go back to level zero.
+    model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+        [this]() { return Build(); });
   }
-
-  void Resize(int num_variables) {
-    graph_.ReserveNodes(num_variables);
-    graph_.AddNode(num_variables - 1);
-  }
-
-  // Add a relation lb <= expr <= ub. If expr is not a proper linear2 expression
-  // (e.g. 0*x + y, y + y, y - y) it will be ignored. Returns true if it was
-  // added and is considered "new".
-  bool AddBounds(LinearExpression2 expr, IntegerValue lb, IntegerValue ub);
-
-  // Same as above, but only for the upper bound.
-  bool AddUpperBound(LinearExpression2 expr, IntegerValue ub);
-
-  // Adds add relation (enf => expr <= rhs) that is assumed to be true at
-  // the current level.
-  //
-  // It will be automatically reverted via the SetLevel() functions that is
-  // called before any integer propagations trigger.
-  //
-  // This is assumed to be called when a relation becomes true (enforcement are
-  // assigned) and when it becomes false in reverse order (CHECKed).
-  //
-  // If expr is not a proper linear2 expression (e.g. 0*x + y, y + y, y - y) it
-  // will be ignored.
-  void PushConditionalRelation(absl::Span<const Literal> enforcements,
-                               LinearExpression2 expr, IntegerValue rhs);
-
-  // Called each time we change decision level.
-  void SetLevel(int level) final;
 
   // Returns a set of relations var >= max_i(vars[index[i]] + offsets[i]).
   //
@@ -112,121 +324,127 @@ class PrecedenceRelations : public ReversibleInterface {
   void ComputeFullPrecedences(absl::Span<const IntegerVariable> vars,
                               std::vector<FullIntegerPrecedence>* output);
 
-  // Returns a set of precedences (var, index) such that var is after
-  // vars[index]. All entries for the same variable will be contiguous and
-  // sorted by index. We only list variable with at least two entries. The
-  // offset can be retrieved via UpperBound(vars[index], var).
+  // The current code requires the internal data to be processed once all
+  // root-level relations are loaded.
   //
-  // For more efficiency, this method ignores all linear2 expressions with any
-  // coefficient different from 1.
+  // If we don't have too many variable, we compute the full transitive closure
+  // and then push back to RootLevelLinear2Bounds if there is a relation between
+  // two variables. This can be used to optimize some scheduling propagation and
+  // reasons.
+  //
+  // Warning: If there are too many, this will NOT push all relations.
+  bool Build();
+
+ private:
+  SatParameters* params_;
+  IntegerTrail* integer_trail_;
+  SharedStatistics* shared_stats_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+
+  int64_t build_timestamp_ = -1;
+  bool is_dag_ = false;
+  std::vector<IntegerVariable> topological_order_;
+};
+
+// Stores all the precedences relation of the form "{lits} => a*x + b*y <= ub"
+// that we could extract from the model.
+class EnforcedLinear2Bounds : public ReversibleInterface {
+ public:
+  explicit EnforcedLinear2Bounds(Model* model)
+      : params_(*model->GetOrCreate<SatParameters>()),
+        trail_(model->GetOrCreate<Trail>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        linear2_watcher_(model->GetOrCreate<Linear2Watcher>()),
+        root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        lin2_indices_(model->GetOrCreate<Linear2Indices>()) {
+    integer_trail_->RegisterReversibleClass(this);
+  }
+
+  ~EnforcedLinear2Bounds() override;
+
+  // Adds add relation (enf => expr <= rhs) that is assumed to be true at
+  // the current level.
+  //
+  // It will be automatically reverted via the SetLevel() functions that is
+  // called before any integer propagations trigger.
+  //
+  // This is assumed to be called when a relation becomes true (enforcement are
+  // assigned) and when it becomes false in reverse order (CHECKed).
+  //
+  // If expr is not a proper linear2 expression (e.g. 0*x + y, y + y, y - y) it
+  // will be ignored.
+  void PushConditionalRelation(absl::Span<const Literal> enforcements,
+                               LinearExpression2Index index, IntegerValue rhs);
+
+  void PushConditionalRelation(absl::Span<const Literal> enforcements,
+                               LinearExpression2 expr, IntegerValue rhs) {
+    expr.SimpleCanonicalization();
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return;
+    const IntegerValue gcd = expr.DivideByGcd();
+    rhs = FloorRatio(rhs, gcd);
+    return PushConditionalRelation(enforcements, lin2_indices_->AddOrGet(expr),
+                                   rhs);
+  }
+
+  // Called each time we change decision level.
+  void SetLevel(int level) final;
+
+  // Returns a set of precedences such that we have a relation
+  // of the form vars[index] <= var + offset.
+  //
+  // All entries for the same variable will be contiguous and sorted by index.
+  // We only list variable with at least two entries. The up to date offset can
+  // be retrieved later via Linear2Bounds::UpperBound(lin2_index).
+  //
+  // This method currently ignores all linear2 expressions with any coefficient
+  // different from 1.
+  //
+  // TODO(user): Ideally this should be moved to a new class and maybe augmented
+  // with other kind of precedences.
   struct PrecedenceData {
     IntegerVariable var;
-    int index;
+    int var_index;
+    LinearExpression2Index lin2_index;
   };
   void CollectPrecedences(absl::Span<const IntegerVariable> vars,
                           std::vector<PrecedenceData>* output);
 
-  // If we don't have too many variable, we compute the full transitive closure
-  // and can query in O(1) if there is a relation between two variables.
-  // This can be used to optimize some scheduling propagation and reasons.
-  //
-  // Warning: If there are too many, this will NOT contain all relations.
-  //
-  // Returns kMaxIntegerValue if there are none, otherwise return an upper bound
-  // such that expr <= ub.
-  IntegerValue LevelZeroUpperBound(LinearExpression2 expr) const;
-
-  // Returns the maximum value for expr, and the reason for it (all
-  // true). Note that we always check LevelZeroUpperBound() so if it is better,
-  // the returned literal reason will be empty.
-  //
-  // We separate the two because usually the reason is only needed when we push,
-  // which happen less often, so we don't mind doing two hash lookups, and we
-  // really want to optimize the UpperBound() instead.
-  //
-  // Important: This doesn't contains the transitive closure.
-  // Important: The span is only valid in a narrow scope.
-  IntegerValue UpperBound(LinearExpression2 expr) const;
+  // Low-level function that returns the upper bound if there is some enforced
+  // relations only. Otherwise always returns kMaxIntegerValue.
+  // `expr` must be canonicalized and gcd-reduced.
+  IntegerValue GetUpperBoundFromEnforced(LinearExpression2Index index) const;
 
   void AddReasonForUpperBoundLowerThan(
-      LinearExpression2 expr, IntegerValue ub,
+      LinearExpression2Index index, IntegerValue ub,
       std::vector<Literal>* literal_reason,
       std::vector<IntegerLiteral>* integer_reason) const;
-
-  // The current code requires the internal data to be processed once all
-  // relations are loaded.
-  //
-  // TODO(user): Be more dynamic as we start to add relations during search.
-  void Build();
 
  private:
   void CreateLevelEntryIfNeeded();
 
-  // expr <= ub.
-  bool AddInternal(LinearExpression2 expr, IntegerValue ub) {
-    expr.SimpleCanonicalization();
-    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
-      return false;
-    }
-    const auto [it, inserted] = root_relations_.insert({expr, ub});
-    UpdateBestRelationIfBetter(expr, ub);
-    if (inserted) {
-      if (expr.coeffs[0] != 1 || expr.coeffs[1] != 1) {
-        return true;
-      }
-      const int new_size =
-          std::max(expr.vars[0].value(), expr.vars[1].value()) + 1;
-      if (new_size > after_.size()) after_.resize(new_size);
-      after_[expr.vars[0]].push_back(NegationOf(expr.vars[1]));
-      after_[expr.vars[1]].push_back(NegationOf(expr.vars[0]));
-      return true;
-    }
-    it->second = std::min(it->second, ub);
-    return false;
-  }
-
-  void UpdateBestRelationIfBetter(LinearExpression2 expr, IntegerValue rhs) {
-    const auto [it, inserted] = best_relations_.insert({expr, rhs});
-    if (!inserted) {
-      it->second = std::min(it->second, rhs);
-    }
-  }
-
-  void UpdateBestRelation(LinearExpression2 expr, IntegerValue rhs) {
-    const auto it = root_relations_.find(expr);
-    if (it != root_relations_.end()) {
-      rhs = std::min(rhs, it->second);
-    }
-    if (rhs == kMaxIntegerValue) {
-      best_relations_.erase(expr);
-    } else {
-      best_relations_[expr] = rhs;
-    }
-  }
-
   const SatParameters& params_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  Linear2Watcher* linear2_watcher_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+  SharedStatistics* shared_stats_;
+  Linear2Indices* lin2_indices_;
 
-  util::StaticGraph<> graph_;
-  std::vector<IntegerValue> arc_offsets_;
-
-  bool is_built_ = false;
-  bool is_dag_ = false;
-  std::vector<IntegerVariable> topological_order_;
+  int64_t num_conditional_relation_updates_ = 0;
 
   // Conditional stack for push/pop of conditional relations.
   //
   // TODO(user): this kind of reversible hash_map is already implemented in
   // other part of the code. Consolidate.
   struct ConditionalEntry {
-    ConditionalEntry(int p, IntegerValue r, LinearExpression2 k,
+    ConditionalEntry(int p, IntegerValue r, LinearExpression2Index k,
                      absl::Span<const Literal> e)
         : prev_entry(p), rhs(r), key(k), enforcements(e.begin(), e.end()) {}
 
     int prev_entry;
     IntegerValue rhs;
-    LinearExpression2 key;
+    LinearExpression2Index key;
     absl::InlinedVector<Literal, 4> enforcements;
   };
   std::vector<ConditionalEntry> conditional_stack_;
@@ -234,21 +452,15 @@ class PrecedenceRelations : public ReversibleInterface {
 
   // This is always stored in the form (expr <= rhs).
   // The conditional relations contains indices in the conditional_stack_.
-  absl::flat_hash_map<LinearExpression2, IntegerValue> root_relations_;
-  absl::flat_hash_map<LinearExpression2, int> conditional_relations_;
-
-  // Contains std::min() of the offset from root_relations_ and
-  // conditional_relations_.
-  absl::flat_hash_map<LinearExpression2, IntegerValue> best_relations_;
+  util_intops::StrongVector<LinearExpression2Index, int> conditional_relations_;
 
   // Store for each variable x, the variables y that appears alongside it in
-  // LevelZeroUpperBound(expr) or UpperBound(expr). That is the variable
-  // that are after x with an offset. Note that conditional_after_ is updated on
+  // lit => x + y <= ub. Note that conditional_var_lookup_ is updated on
   // dive/backtrack.
-  util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
-      after_;
-  util_intops::StrongVector<IntegerVariable, std::vector<IntegerVariable>>
-      conditional_after_;
+  util_intops::StrongVector<
+      IntegerVariable,
+      std::vector<std::pair<IntegerVariable, LinearExpression2Index>>>
+      conditional_var_lookup_;
 
   // Temp data for CollectPrecedences.
   std::vector<IntegerVariable> var_with_positive_degree_;
@@ -256,6 +468,265 @@ class PrecedenceRelations : public ReversibleInterface {
   util_intops::StrongVector<IntegerVariable, int> var_to_last_index_;
   std::vector<PrecedenceData> tmp_precedences_;
 };
+
+// A relation of the form enforcement => expr \in [lhs, rhs].
+// Note that the [lhs, rhs] interval should always be within [min_activity,
+// max_activity] where the activity is the value of expr.
+struct Relation {
+  Literal enforcement;
+  LinearExpression2 expr;
+  IntegerValue lhs;
+  IntegerValue rhs;
+
+  bool operator==(const Relation& other) const {
+    return enforcement == other.enforcement && expr == other.expr &&
+           lhs == other.lhs && rhs == other.rhs;
+  }
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Relation& relation) {
+    absl::Format(&sink, "%s => %v in [%v, %v]",
+                 relation.enforcement.DebugString(), relation.expr,
+                 relation.lhs, relation.rhs);
+  }
+};
+
+// A repository of all the enforced linear constraints of size 1 or 2.
+//
+// TODO(user): This is not always needed, find a way to clean this once we
+// don't need it.
+class BinaryRelationRepository {
+ public:
+  int size() const { return relations_.size(); }
+
+  // The returned relation is guaranteed to only have positive variables.
+  const Relation& relation(int index) const { return relations_[index]; }
+
+  // Returns the indices of the relations that are enforced by the given
+  // literal.
+  absl::Span<const int> IndicesOfRelationsEnforcedBy(LiteralIndex lit) const {
+    if (lit >= lit_to_relations_.size()) return {};
+    return lit_to_relations_[lit];
+  }
+
+  // Adds a conditional relation lit => expr \in [lhs, rhs] (one of the coeffs
+  // can be zero).
+  void Add(Literal lit, LinearExpression2 expr, IntegerValue lhs,
+           IntegerValue rhs);
+
+  // Adds a partial conditional relation between two variables, with unspecified
+  // coefficients and bounds.
+  void AddPartialRelation(Literal lit, IntegerVariable a, IntegerVariable b);
+
+  // Builds the literal to relations mapping. This should be called once all the
+  // relations have been added.
+  void Build();
+
+  // Assuming level-zero bounds + any (var >= value) in the input map,
+  // fills "output" with a "propagated" set of bounds assuming lit is true (by
+  // using the relations enforced by lit, as well as the non-enforced ones).
+  // Note that we will only fill bounds > level-zero ones in output.
+  //
+  // Returns false if the new bounds are infeasible at level zero.
+  //
+  // Important: by default this does not call output->clear() so we can take
+  // the max with already inferred bounds.
+  bool PropagateLocalBounds(
+      const IntegerTrail& integer_trail,
+      const RootLevelLinear2Bounds& root_level_bounds, Literal lit,
+      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
+
+ private:
+  bool is_built_ = false;
+  int num_enforced_relations_ = 0;
+  std::vector<Relation> relations_;
+  CompactVectorVector<LiteralIndex, int> lit_to_relations_;
+};
+
+// Class that keeps the best upper bound for a*x + b*y by using all the linear3
+// relations of the form a*x + b*y + c*z <= d.
+class Linear2BoundsFromLinear3 {
+ public:
+  explicit Linear2BoundsFromLinear3(Model* model);
+  ~Linear2BoundsFromLinear3();
+
+  // If the given upper bound evaluate better than the current one we have, this
+  // will replace it and returns true, otherwise it returns false.
+  bool AddAffineUpperBound(LinearExpression2Index lin2_index,
+                           IntegerValue lin_expr_gcd,
+                           AffineExpression affine_ub);
+
+  bool AddAffineUpperBound(LinearExpression2 expr, AffineExpression affine_ub) {
+    expr.SimpleCanonicalization();
+    if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return false;
+    const IntegerValue gcd = expr.DivideByGcd();
+    return AddAffineUpperBound(lin2_indices_->AddOrGet(expr), gcd, affine_ub);
+  }
+
+  // Most users should just use Linear2Bounds::UpperBound() instead.
+  //
+  // Returns the upper bound only if there is some relations coming from a
+  // linear3. Otherwise always returns kMaxIntegerValue.
+  // `expr` must be canonicalized and gcd-reduced.
+  IntegerValue GetUpperBoundFromLinear3(
+      LinearExpression2Index lin2_index) const;
+
+  // Most users should use Linear2Bounds::AddReasonForUpperBoundLowerThan()
+  // instead.
+  //
+  // Adds the reason for GetUpperBoundFromLinear3() to be <= ub.
+  // `expr` must be canonicalized and gcd-reduced.
+  void AddReasonForUpperBoundLowerThan(
+      LinearExpression2Index lin2_index, IntegerValue ub,
+      std::vector<Literal>* literal_reason,
+      std::vector<IntegerLiteral>* integer_reason) const;
+
+ private:
+  IntegerTrail* integer_trail_;
+  Trail* trail_;
+  Linear2Watcher* linear2_watcher_;
+  GenericLiteralWatcher* watcher_;
+  SharedStatistics* shared_stats_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+  Linear2Indices* lin2_indices_;
+
+  int64_t num_affine_updates_ = 0;
+
+  // This stores linear2 <= AffineExpression / divisor.
+  //
+  // Note(user): This is a "cheap way" to not have to deal with backtracking, If
+  // we have many possible AffineExpression that bounds a LinearExpression2, we
+  // keep the best one during "search dive" but on backtrack we might have a
+  // sub-optimal relation.
+  util_intops::StrongVector<LinearExpression2Index,
+                            std::pair<AffineExpression, IntegerValue>>
+      best_affine_ub_;
+};
+
+// TODO(user): Merge with BinaryRelationRepository. Note that this one provides
+// different indexing though, so it could be kept separate.
+// TODO(user): Use LinearExpression2 instead of pairs of AffineExpression for
+// consistency with other classes.
+class ReifiedLinear2Bounds {
+ public:
+  explicit ReifiedLinear2Bounds(Model* model);
+
+  // Return the status of a <= b;
+  RelationStatus GetLevelZeroPrecedenceStatus(AffineExpression a,
+                                              AffineExpression b) const;
+
+  // Register the fact that l <=> ( a <= b ).
+  // These are considered equivalence relation.
+  void AddReifiedPrecedenceIfNonTrivial(Literal l, AffineExpression a,
+                                        AffineExpression b);
+
+  // Returns kNoLiteralIndex if we don't have a literal <=> ( a <= b ), or
+  // returns that literal if we have one. Note that we will return the
+  // true/false literal if the status is known at level zero.
+  LiteralIndex GetReifiedPrecedence(AffineExpression a, AffineExpression b);
+
+ private:
+  IntegerEncoder* integer_encoder_;
+  RootLevelLinear2Bounds* best_root_level_bounds_;
+
+  // This stores relations l <=> (linear2 <= rhs).
+  absl::flat_hash_map<std::pair<LinearExpression2, IntegerValue>, Literal>
+      relation_to_lit_;
+
+  // This is used to detect relations that become fixed at level zero and
+  // "upgrade" them to non-enforced relations. Because we only do that when
+  // we fix variable, a linear scan shouldn't be too bad and is relatively
+  // compact memory wise.
+  absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
+  std::vector<std::tuple<Literal, LinearExpression2, IntegerValue>>
+      all_reified_relations_;
+};
+
+// Simple wrapper around the different repositories for bounds of linear2.
+// This should provide the best bounds.
+class Linear2Bounds {
+ public:
+  explicit Linear2Bounds(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+        enforced_bounds_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+        linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
+        lin2_indices_(model->GetOrCreate<Linear2Indices>()) {}
+
+  // Returns the best known upper-bound of the given LinearExpression2 at the
+  // current decision level. If its explanation is needed, it can be queried
+  // with the second function.
+  IntegerValue UpperBound(LinearExpression2 expr) const;
+  IntegerValue UpperBound(LinearExpression2Index lin2_index) const;
+
+  void AddReasonForUpperBoundLowerThan(
+      LinearExpression2 expr, IntegerValue ub,
+      std::vector<Literal>* literal_reason,
+      std::vector<IntegerLiteral>* integer_reason) const;
+
+  // Like UpperBound() but do not consider the bounds coming from
+  // the individual variable bounds. This is faster.
+  IntegerValue NonTrivialUpperBound(LinearExpression2Index lin2_index) const;
+
+ private:
+  IntegerTrail* integer_trail_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+  EnforcedLinear2Bounds* enforced_bounds_;
+  Linear2BoundsFromLinear3* linear3_bounds_;
+  Linear2Indices* lin2_indices_;
+};
+
+// Detects if at least one of a subset of linear of size 2 or 1, touching the
+// same variable, must be true. When this is the case we add a new propagator to
+// propagate that fact.
+//
+// TODO(user): Shall we do that on the main thread before the workers are
+// spawned? note that the probing version need the model to be loaded though.
+class GreaterThanAtLeastOneOfDetector {
+ public:
+  explicit GreaterThanAtLeastOneOfDetector(Model* model)
+      : repository_(*model->GetOrCreate<BinaryRelationRepository>()) {}
+
+  // Advanced usage. To be called once all the constraints have been added to
+  // the model. This will detect GreaterThanAtLeastOneOfConstraint().
+  // Returns the number of added constraint.
+  //
+  // TODO(user): This can be quite slow, add some kind of deterministic limit
+  // so that we can use it all the time.
+  int AddGreaterThanAtLeastOneOfConstraints(Model* model,
+                                            bool auto_detect_clauses = false);
+
+ private:
+  // Given an existing clause, sees if it can be used to add "greater than at
+  // least one of" type of constraints. Returns the number of such constraint
+  // added.
+  int AddGreaterThanAtLeastOneOfConstraintsFromClause(
+      absl::Span<const Literal> clause, Model* model);
+
+  // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
+  // might be a bit slow as it relies on the propagation engine to detect
+  // clauses between incoming arcs presence literals.
+  // Returns the number of added constraints.
+  int AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(
+      Model* model);
+
+  // Once we identified a clause and relevant indices, this build the
+  // constraint. Returns true if we actually add it.
+  bool AddRelationFromIndices(IntegerVariable var,
+                              absl::Span<const Literal> clause,
+                              absl::Span<const int> indices, Model* model);
+
+  BinaryRelationRepository& repository_;
+};
+
+// =============================================================================
+// Old precedences propagator.
+//
+// This is superseded by the new LinearPropagator and should only be used if the
+// option 'new_linear_propagation' is false. We still keep it around to
+// benchmark and test the new code vs this one.
+// =============================================================================
 
 // This class implement a propagator on simple inequalities between integer
 // variables of the form (i1 + offset <= i2). The offset can be constant or
@@ -277,7 +748,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
   explicit PrecedencesPropagator(Model* model)
       : SatPropagator("PrecedencesPropagator"),
-        relations_(model->GetOrCreate<PrecedenceRelations>()),
+        relations_(model->GetOrCreate<EnforcedLinear2Bounds>()),
         trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->Mutable<SharedStatistics>()),
@@ -405,7 +876,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
   // External class needed to get the IntegerVariable lower bounds and Enqueue
   // new ones.
-  PrecedenceRelations* relations_;
+  EnforcedLinear2Bounds* relations_;
   Trail* trail_;
   IntegerTrail* integer_trail_;
   SharedStatistics* shared_stats_ = nullptr;
@@ -471,260 +942,16 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   int64_t num_enforcement_pushes_ = 0;
 };
 
-// Similar to AffineExpression, but with a zero constant.
-// If coeff is zero, then this is always zero and var is ignored.
-struct LinearTerm {
-  LinearTerm() = default;
-  LinearTerm(IntegerVariable v, IntegerValue c) : var(v), coeff(c) {}
-
-  void MakeCoeffPositive() {
-    if (coeff < 0) {
-      coeff = -coeff;
-      var = NegationOf(var);
-    }
-  }
-
-  bool operator==(const LinearTerm& other) const {
-    return var == other.var && coeff == other.coeff;
-  }
-
-  IntegerVariable var = kNoIntegerVariable;
-  IntegerValue coeff = IntegerValue(0);
-};
-
-// A relation of the form enforcement => a + b \in [lhs, rhs].
-// Note that the [lhs, rhs] interval should always be within [min_activity,
-// max_activity] where the activity is the value of a + b.
-struct Relation {
-  Literal enforcement;
-  LinearTerm a;
-  LinearTerm b;
-  IntegerValue lhs;
-  IntegerValue rhs;
-
-  bool operator==(const Relation& other) const {
-    return enforcement == other.enforcement && a == other.a && b == other.b &&
-           lhs == other.lhs && rhs == other.rhs;
-  }
-};
-
-// A repository of all the enforced linear constraints of size 1 or 2, and of
-// all the non-enforced linear constraints of size 2.
-//
-// TODO(user): This is not always needed, find a way to clean this once we
-// don't need it.
-class BinaryRelationRepository {
- public:
-  int size() const { return relations_.size(); }
-
-  // The returned relation is guaranteed to only have positive variables.
-  const Relation& relation(int index) const { return relations_[index]; }
-
-  // Returns the indices of the relations that are enforced by the given
-  // literal.
-  absl::Span<const int> IndicesOfRelationsEnforcedBy(LiteralIndex lit) const {
-    if (lit >= lit_to_relations_.size()) return {};
-    return lit_to_relations_[lit];
-  }
-
-  // Returns the indices of the non-enforced relations that contain the given
-  // (positive) variable.
-  absl::Span<const int> IndicesOfRelationsContaining(
-      IntegerVariable var) const {
-    if (var >= var_to_relations_.size()) return {};
-    return var_to_relations_[var];
-  }
-
-  // Returns the indices of the non-enforced relations that contain the given
-  // (positive) variables.
-  absl::Span<const int> IndicesOfRelationsBetween(IntegerVariable var1,
-                                                  IntegerVariable var2) const {
-    if (var1 > var2) std::swap(var1, var2);
-    const std::pair<IntegerVariable, IntegerVariable> key(var1, var2);
-    const auto it = var_pair_to_relations_.find(key);
-    if (it == var_pair_to_relations_.end()) return {};
-    return it->second;
-  }
-
-  // Adds a conditional relation lit => a + b \in [lhs, rhs] (one of the terms
-  // can be zero), or an always true binary relation a + b \in [lhs, rhs] (both
-  // terms must be non-zero).
-  void Add(Literal lit, LinearTerm a, LinearTerm b, IntegerValue lhs,
-           IntegerValue rhs);
-
-  // Adds a partial conditional relation between two variables, with unspecified
-  // coefficients and bounds.
-  void AddPartialRelation(Literal lit, IntegerVariable a, IntegerVariable b);
-
-  // Builds the literal to relations mapping. This should be called once all the
-  // relations have been added.
-  void Build();
-
-  // Assuming level-zero bounds + any (var >= value) in the input map,
-  // fills "output" with a "propagated" set of bounds assuming lit is true (by
-  // using the relations enforced by lit, as well as the non-enforced ones).
-  // Note that we will only fill bounds > level-zero ones in output.
-  //
-  // Returns false if the new bounds are infeasible at level zero.
-  //
-  // Important: by default this does not call output->clear() so we can take
-  // the max with already inferred bounds.
-  bool PropagateLocalBounds(
-      const IntegerTrail& integer_trail, Literal lit,
-      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
-      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
-
- private:
-  bool is_built_ = false;
-  int num_enforced_relations_ = 0;
-  std::vector<Relation> relations_;
-  CompactVectorVector<LiteralIndex, int> lit_to_relations_;
-  CompactVectorVector<IntegerVariable, int> var_to_relations_;
-  absl::flat_hash_map<std::pair<IntegerVariable, IntegerVariable>,
-                      std::vector<int>>
-      var_pair_to_relations_;
-};
-
-// TODO(user): Merge with BinaryRelationRepository. Note that this one provides
-// different indexing though, so it could be kept separate. The
-// LinearExpression2 data structure is also slightly more efficient.
-class BinaryRelationsMaps {
- public:
-  explicit BinaryRelationsMaps(Model* model);
-  ~BinaryRelationsMaps();
-
-  // This mainly wraps BestBinaryRelationBounds, but in addition it checks the
-  // current LevelZero variable bounds to detect trivially true or false
-  // relation.
-  void AddRelationBounds(LinearExpression2 expr, IntegerValue lb,
-                         IntegerValue ub);
-  RelationStatus GetLevelZeroStatus(LinearExpression2 expr, IntegerValue lb,
-                                    IntegerValue ub) const;
-
-  // Return the status of a <= b;
-  RelationStatus GetLevelZeroPrecedenceStatus(AffineExpression a,
-                                              AffineExpression b) const;
-
-  // Register the fact that l <=> ( a <= b ).
-  // These are considered equivalence relation.
-  void AddReifiedPrecedenceIfNonTrivial(Literal l, AffineExpression a,
-                                        AffineExpression b);
-
-  // Returns kNoLiteralIndex if we don't have a literal <=> ( a <= b ), or
-  // returns that literal if we have one. Note that we will return the
-  // true/false literal if the status is known at level zero.
-  LiteralIndex GetReifiedPrecedence(AffineExpression a, AffineExpression b);
-
-  // If the given upper bound evaluate better than the current one we have, this
-  // will replace it and returns true, otherwise it returns false.
-  //
-  // Note that we never store trivial upper bound (using the current variable
-  // domain).
-  bool AddAffineUpperBound(LinearExpression2 expr, AffineExpression affine_ub);
-
-  // Returns the best known upper-bound of the given LinearExpression2 at the
-  // current decision level. If its explanation is needed, it can be queried
-  // with the second function.
-  IntegerValue UpperBound(LinearExpression2 expr) const;
-  void AddReasonForUpperBoundLowerThan(
-      LinearExpression2 expr, IntegerValue ub,
-      std::vector<Literal>* literal_reason,
-      std::vector<IntegerLiteral>* integer_reason) const;
-
-  // Warning, the order will not be deterministic.
-  std::vector<LinearExpression2> GetAllExpressionsWithAffineBounds() const;
-
-  int NumExpressionsWithAffineBounds() const { return best_affine_ub_.size(); }
-
-  void WatchAllLinearExpressions2(int id) { propagator_ids_.insert(id); }
-
- private:
-  void NotifyWatchingPropagators() const;
-
-  // Return the pair (a - b) <= rhs.
-  std::pair<LinearExpression2, IntegerValue> FromDifference(
-      const AffineExpression& a, const AffineExpression& b) const;
-
-  IntegerValue GetImpliedUpperBound(const LinearExpression2& expr) const;
-  std::pair<IntegerValue, IntegerValue> GetImpliedLevelZeroBounds(
-      const LinearExpression2& expr) const;
-
-  IntegerTrail* integer_trail_;
-  IntegerEncoder* integer_encoder_;
-  GenericLiteralWatcher* watcher_;
-  SharedStatistics* shared_stats_;
-  BestBinaryRelationBounds best_root_level_bounds_;
-
-  int64_t num_updates_ = 0;
-  int64_t num_affine_updates_ = 0;
-
-  // This stores relations l <=> (linear2 <= rhs).
-  absl::flat_hash_map<std::pair<LinearExpression2, IntegerValue>, Literal>
-      relation_to_lit_;
-
-  // This is used to detect relations that become fixed at level zero and
-  // "upgrade" them to non-enforced relations. Because we only do that when
-  // we fix variable, a linear scan shouldn't be too bad and is relatively
-  // compact memory wise.
-  absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
-  std::vector<std::tuple<Literal, LinearExpression2, IntegerValue>>
-      all_reified_relations_;
-
-  // This stores linear2 <= AffineExpression / divisor.
-  //
-  // Note(user): This is a "cheap way" to not have to deal with backtracking, If
-  // we have many possible AffineExpression that bounds a LinearExpression2, we
-  // keep the best one during "search dive" but on backtrack we might have a
-  // sub-optimal relation.
-  absl::flat_hash_map<LinearExpression2,
-                      std::pair<AffineExpression, IntegerValue>>
-      best_affine_ub_;
-
-  absl::btree_set<int> propagator_ids_;
-};
-
-// Detects if at least one of a subset of linear of size 2 or 1, touching the
-// same variable, must be true. When this is the case we add a new propagator to
-// propagate that fact.
-//
-// TODO(user): Shall we do that on the main thread before the workers are
-// spawned? note that the probing version need the model to be loaded though.
-class GreaterThanAtLeastOneOfDetector {
- public:
-  explicit GreaterThanAtLeastOneOfDetector(Model* model)
-      : repository_(*model->GetOrCreate<BinaryRelationRepository>()) {}
-
-  // Advanced usage. To be called once all the constraints have been added to
-  // the model. This will detect GreaterThanAtLeastOneOfConstraint().
-  // Returns the number of added constraint.
-  //
-  // TODO(user): This can be quite slow, add some kind of deterministic limit
-  // so that we can use it all the time.
-  int AddGreaterThanAtLeastOneOfConstraints(Model* model,
-                                            bool auto_detect_clauses = false);
-
- private:
-  // Given an existing clause, sees if it can be used to add "greater than at
-  // least one of" type of constraints. Returns the number of such constraint
-  // added.
-  int AddGreaterThanAtLeastOneOfConstraintsFromClause(
-      absl::Span<const Literal> clause, Model* model);
-
-  // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
-  // might be a bit slow as it relies on the propagation engine to detect
-  // clauses between incoming arcs presence literals.
-  // Returns the number of added constraints.
-  int AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(
-      Model* model);
-
-  // Once we identified a clause and relevant indices, this build the
-  // constraint. Returns true if we actually add it.
-  bool AddRelationFromIndices(IntegerVariable var,
-                              absl::Span<const Literal> clause,
-                              absl::Span<const int> indices, Model* model);
-
-  BinaryRelationRepository& repository_;
-};
+// This can be in a hot-loop, so we want to inline it if possible.
+inline IntegerValue Linear2Bounds::NonTrivialUpperBound(
+    LinearExpression2Index lin2_index) const {
+  CHECK_NE(lin2_index, kNoLinearExpression2Index);
+  IntegerValue ub = kMaxIntegerValue;
+  ub = std::min(ub, root_level_bounds_->GetUpperBoundNoTrail(lin2_index));
+  ub = std::min(ub, enforced_bounds_->GetUpperBoundFromEnforced(lin2_index));
+  ub = std::min(ub, linear3_bounds_->GetUpperBoundFromLinear3(lin2_index));
+  return ub;
+}
 
 // =============================================================================
 // Implementation of the small API functions below.
@@ -768,43 +995,6 @@ inline void PrecedencesPropagator::AddPrecedenceWithAllOptions(
 // Model based functions.
 // =============================================================================
 
-// a <= b.
-inline std::function<void(Model*)> LowerOrEqual(IntegerVariable a,
-                                                IntegerVariable b) {
-  return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(a, b);
-  };
-}
-
-// a + offset <= b.
-inline std::function<void(Model*)> LowerOrEqualWithOffset(IntegerVariable a,
-                                                          IntegerVariable b,
-                                                          int64_t offset) {
-  return [=](Model* model) {
-    LinearExpression2 expr(a, b, 1, -1);
-    model->GetOrCreate<PrecedenceRelations>()->AddUpperBound(
-        expr, IntegerValue(-offset));
-    model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
-        a, b, IntegerValue(offset));
-  };
-}
-
-// a + offset <= b. (when a and b are of the form 1 * var + offset).
-inline std::function<void(Model*)> AffineCoeffOneLowerOrEqualWithOffset(
-    AffineExpression a, AffineExpression b, int64_t offset) {
-  CHECK_NE(a.var, kNoIntegerVariable);
-  CHECK_EQ(a.coeff, 1);
-  CHECK_NE(b.var, kNoIntegerVariable);
-  CHECK_EQ(b.coeff, 1);
-  return [=](Model* model) {
-    LinearExpression2 expr(a.var, b.var, 1, -1);
-    model->GetOrCreate<PrecedenceRelations>()->AddUpperBound(
-        expr, -a.constant + b.constant - offset);
-    model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
-        a.var, b.var, a.constant - b.constant + offset);
-  };
-}
-
 // l => (a + b <= ub).
 inline void AddConditionalSum2LowerOrEqual(
     absl::Span<const Literal> enforcement_literals, IntegerVariable a,
@@ -812,8 +1002,8 @@ inline void AddConditionalSum2LowerOrEqual(
   // TODO(user): Refactor to be sure we do not miss any level zero relations.
   if (enforcement_literals.empty()) {
     LinearExpression2 expr(a, b, 1, 1);
-    model->GetOrCreate<PrecedenceRelations>()->AddUpperBound(expr,
-                                                             IntegerValue(ub));
+    model->GetOrCreate<RootLevelLinear2Bounds>()->AddUpperBound(
+        expr, IntegerValue(ub));
   }
 
   PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
@@ -832,40 +1022,81 @@ inline void AddConditionalSum3LowerOrEqual(
                                  enforcement_literals);
 }
 
-// a >= b.
-inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable a,
-                                                  IntegerVariable b) {
-  return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(b, a);
-  };
-}
-
 // a == b.
+//
+// ABSL_DEPRECATED("Use linear constraint API instead")
 inline std::function<void(Model*)> Equality(IntegerVariable a,
                                             IntegerVariable b) {
   return [=](Model* model) {
-    model->Add(LowerOrEqual(a, b));
-    model->Add(LowerOrEqual(b, a));
-  };
-}
-
-// a + offset == b.
-inline std::function<void(Model*)> EqualityWithOffset(IntegerVariable a,
-                                                      IntegerVariable b,
-                                                      int64_t offset) {
-  return [=](Model* model) {
-    model->Add(LowerOrEqualWithOffset(a, b, offset));
-    model->Add(LowerOrEqualWithOffset(b, a, -offset));
+    auto* precedences = model->GetOrCreate<PrecedencesPropagator>();
+    precedences->AddPrecedence(a, b);
+    precedences->AddPrecedence(b, a);
   };
 }
 
 // is_le => (a + offset <= b).
+//
+// ABSL_DEPRECATED("Use linear constraint API instead")
 inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
     IntegerVariable a, IntegerVariable b, int64_t offset, Literal is_le) {
   return [=](Model* model) {
     PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
   };
+}
+
+inline LinearExpression2Index Linear2Indices::GetIndex(
+    LinearExpression2 expr) const {
+  if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) {
+    return kNoLinearExpression2Index;
+  }
+  DCHECK(expr.IsCanonicalized());
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  const bool negated = expr.NegateForCanonicalization();
+  auto it = expr_to_index_.find(expr);
+  if (it == expr_to_index_.end()) return kNoLinearExpression2Index;
+
+  const LinearExpression2Index positive_index(2 * it->second);
+  if (negated) {
+    return NegationOf(positive_index);
+  } else {
+    return positive_index;
+  }
+}
+
+inline LinearExpression2 Linear2Indices::GetExpression(
+    LinearExpression2Index index) const {
+  DCHECK_NE(index, kNoLinearExpression2Index);
+  const int lookup_index = index.value() / 2;
+  DCHECK_LT(lookup_index, exprs_.size());
+  if (Linear2IsPositive(index)) {
+    return exprs_[lookup_index];
+  } else {
+    LinearExpression2 result = exprs_[lookup_index];
+    result.Negate();
+    return result;
+  }
+}
+
+inline absl::Span<const LinearExpression2Index>
+Linear2Indices::GetAllLinear2ContainingVariable(IntegerVariable var) const {
+  const IntegerVariable positive_var = PositiveVariable(var);
+  auto it = var_to_bounds_.find(positive_var);
+  if (it == var_to_bounds_.end()) return {};
+  return it->second;
+}
+
+inline absl::Span<const LinearExpression2Index>
+Linear2Indices::GetAllLinear2ContainingVariables(IntegerVariable var1,
+                                                 IntegerVariable var2) const {
+  IntegerVariable positive_var1 = PositiveVariable(var1);
+  IntegerVariable positive_var2 = PositiveVariable(var2);
+  if (positive_var1 > positive_var2) {
+    std::swap(positive_var1, positive_var2);
+  }
+  auto it = var_pair_to_bounds_.find({positive_var1, positive_var2});
+  if (it == var_pair_to_bounds_.end()) return {};
+  return it->second;
 }
 
 }  // namespace sat

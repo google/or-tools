@@ -60,12 +60,15 @@ struct SharedClasses {
   std::unique_ptr<SharedLPSolutionRepository> lp_solutions;
   std::unique_ptr<SharedIncompleteSolutionManager> incomplete_solutions;
   std::unique_ptr<SharedClausesManager> clauses;
+  std::unique_ptr<SharedLinear2Bounds> linear2_bounds;
 
   // call local_model->Register() on most of the class here, this allow to
   // more easily depends on one of the shared class deep within the solver.
   void RegisterSharedClassesInLocalModel(Model* local_model);
 
   bool SearchIsDone();
+
+  void LogFinalStatistics();
 };
 
 // Loads a CpModelProto inside the given model.
@@ -118,6 +121,11 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
 int RegisterClausesLevelZeroImport(int id,
                                    SharedClausesManager* shared_clauses_manager,
                                    Model* model);
+
+// This will register a level zero callback to imports new linear2 from the
+// SharedLinear2Bounds.
+void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
+                                 Model* model);
 
 void PostsolveResponseWrapper(const SatParameters& params,
                               int num_variable_in_original_model,

@@ -384,8 +384,8 @@ LinearPropagator::LinearPropagator(Model* model)
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()),
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
-      precedences_(model->GetOrCreate<PrecedenceRelations>()),
-      binary_relations_(model->GetOrCreate<BinaryRelationsMaps>()),
+      precedences_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+      linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       watcher_id_(watcher_->Register(this)),
@@ -538,7 +538,8 @@ bool LinearPropagator::Propagate() {
   //  - Z + Y >= 6            ==>   Z >= 1
   //  - (1) again to push T <= 10  and reach the propagation fixed point.
   Bitset64<int>::View in_queue = in_queue_.view();
-  const bool push_affine_ub = push_affine_ub_for_binary_relations_;
+  const bool push_affine_ub = push_affine_ub_for_binary_relations_ ||
+                              trail_->CurrentDecisionLevel() == 0;
   while (true) {
     // We always process the whole queue in FIFO order.
     // Note that the order really only matter for infeasible constraint so it
@@ -612,7 +613,7 @@ bool LinearPropagator::Propagate() {
           // The rev_rhs was updated to: initial_rhs - lb(vars[2]) * coeffs[2].
           const IntegerValue initial_rhs =
               info.rev_rhs + coeffs[2] * integer_trail_->LowerBound(vars[2]);
-          binary_relations_->AddAffineUpperBound(
+          linear3_bounds_->AddAffineUpperBound(
               expr, AffineExpression(vars[2], -coeffs[2], initial_rhs));
         } else if (info.rev_size == 3) {
           for (int i = 0; i < 3; ++i) {
@@ -623,7 +624,7 @@ bool LinearPropagator::Propagate() {
             expr.vars[1] = vars[b];
             expr.coeffs[0] = coeffs[a];
             expr.coeffs[1] = coeffs[b];
-            binary_relations_->AddAffineUpperBound(
+            linear3_bounds_->AddAffineUpperBound(
                 expr, AffineExpression(vars[i], -coeffs[i], info.rev_rhs));
           }
         }

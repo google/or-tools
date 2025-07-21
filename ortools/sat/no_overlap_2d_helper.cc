@@ -97,8 +97,8 @@ void ClearAndAddMandatoryOverlapReason(int box1, int box2,
   y->ClearReason();
   y->AddPresenceReason(box1);
   y->AddPresenceReason(box2);
-  y->AddReasonForBeingBefore(box1, box2);
-  y->AddReasonForBeingBefore(box2, box1);
+  y->AddReasonForBeingBeforeAssumingNoOverlap(box1, box2);
+  y->AddReasonForBeingBeforeAssumingNoOverlap(box2, box1);
 }
 }  // namespace
 
@@ -162,7 +162,7 @@ bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
     x->ClearReason();
     x->AddPresenceReason(left);
     x->AddPresenceReason(right);
-    x->AddReasonForBeingBefore(left, right);
+    x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
     x->AddEndMinReason(left, left_end_min);
     // left and right must overlap on y.
     ClearAndAddMandatoryOverlapReason(left, right, y);
@@ -177,7 +177,7 @@ bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
     x->ClearReason();
     x->AddPresenceReason(left);
     x->AddPresenceReason(right);
-    x->AddReasonForBeingBefore(left, right);
+    x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
     x->AddStartMaxReason(right, right_start_max);
     // left and right must overlap on y.
     ClearAndAddMandatoryOverlapReason(left, right, y);

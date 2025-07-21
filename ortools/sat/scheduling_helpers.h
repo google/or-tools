@@ -205,18 +205,22 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   bool IsPresent(LiteralIndex lit) const;
   bool IsAbsent(LiteralIndex lit) const;
 
-  // Return a value so that End(a) + dist <= Start(b).
-  // Returns kMinInterValue if we don't have any such relation.
-  IntegerValue GetCurrentMinDistanceBetweenTasks(
-      int a, int b, bool add_reason_if_after = false);
+  // Returns a value so that End(a) + dist <= Start(b).
+  //
+  // TODO(user): we use this to optimize some reason, but ideally we only want
+  // to use linear2 bounds here, not bounds coming from trivial bounds. Make
+  // sure we have the best possible reason.
+  IntegerValue GetCurrentMinDistanceBetweenTasks(int a, int b);
 
-  // We detected a precedence between two tasks.
-  // If we are at level zero, we might want to add the constraint.
-  // If we are at positive level, we might want to propagate the associated
-  // precedence literal if it exists.
-  bool PropagatePrecedence(int a, int b);
+  // We detected a precedence between two tasks at level zero.
+  // This register a new constraint and notify the linear2 root level bounds
+  // repository. Returns false on conflict.
+  //
+  // TODO(user): We could also call this at positive decision level, but it is a
+  // bit harder to exploit as we will also need to store the reasons.
+  bool NotifyLevelZeroPrecedence(int a, int b);
 
-  // Return the minimum overlap of interval i with the time window [start..end].
+  // Return the minimum overlap of task t with the time window [start..end].
   //
   // Note: this is different from the mandatory part of an interval.
   IntegerValue GetMinOverlap(int t, IntegerValue start, IntegerValue end) const;
@@ -273,9 +277,22 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
   void AddEnergyMinInIntervalReason(int t, IntegerValue min, IntegerValue max);
 
-  // Adds the reason why task "before" must be before task "after".
-  // That is StartMax(before) < EndMin(after).
-  void AddReasonForBeingBefore(int before, int after);
+  // Adds the reason why the task "before" must be before task "after", in
+  // the sense that "after" can only start at the same time or later than the
+  // task "before" ends.
+  //
+  // Important: this assumes that the two task cannot overlap. So we can have
+  // a more relaxed reason than Start(after) >= Ends(before).
+  //
+  // There are actually many possibilities to explain such relation:
+  // - StartMax(before) < EndMin(after).
+  // - We have a linear2: Start(after) >= End(before) - SizeMin(before);
+  // - etc...
+  // We try to pick the best one.
+  //
+  // TODO(user): Refine the heuritic. Also consider other reason for the
+  // complex cases where Start() and End() do not use the same integer variable.
+  void AddReasonForBeingBeforeAssumingNoOverlap(int before, int after);
 
   // It is also possible to directly manipulates the underlying reason vectors
   // that will be used when pushing something.
@@ -397,7 +414,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   const VariablesAssignment& assignment_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
-  PrecedenceRelations* precedence_relations_;
+  Linear2Bounds* linear2_bounds_;
+  RootLevelLinear2Bounds* root_level_lin2_bounds_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;

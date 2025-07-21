@@ -633,9 +633,9 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
 
   // Use the current best solution as hint.
   {
-    auto sols = shared_->response->SolutionsRepository().GetBestNSolutions(1);
-    if (!sols.empty()) {
-      const std::vector<int64_t>& solution = sols[0]->variable_values;
+    auto sol = shared_->response->SolutionPool().BestSolutions().GetSolution(0);
+    if (sol != nullptr) {
+      const std::vector<int64_t>& solution = sol->variable_values;
       auto* hint = shaving_proto->mutable_solution_hint();
       hint->clear_vars();
       hint->clear_values();

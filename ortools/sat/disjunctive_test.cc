@@ -31,6 +31,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -238,8 +239,8 @@ TEST(DisjunctiveConstraintTest, Precedences) {
   Trail* trail = model.GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
-  auto* relations = model.GetOrCreate<PrecedenceRelations>();
   auto* intervals = model.GetOrCreate<IntervalsRepository>();
+  auto* lin2_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
 
   const auto add_affine_coeff_one_precedence = [&](const AffineExpression e1,
                                                    const AffineExpression& e2) {
@@ -249,8 +250,8 @@ TEST(DisjunctiveConstraintTest, Precedences) {
     CHECK_EQ(e2.coeff, 1);
     precedences->AddPrecedenceWithOffset(e1.var, e2.var,
                                          e1.constant - e2.constant);
-    relations->AddUpperBound(LinearExpression2::Difference(e1.var, e2.var),
-                             e2.constant - e1.constant);
+    lin2_bounds->AddUpperBound(LinearExpression2::Difference(e1.var, e2.var),
+                               e2.constant - e1.constant);
   };
 
   const int kStart(0);
@@ -483,6 +484,22 @@ TEST(DisjunctiveTest, TwoIntervalsTest) {
   EXPECT_EQ(12, CountAllSolutions(instance, AddDisjunctive));
 }
 
+namespace {
+
+void AddLowerOrEqualWithOffset(AffineExpression a, IntegerVariable b,
+                               int64_t offset, Model* model) {
+  const int64_t rhs = -a.constant.value() - offset;
+  std::vector<IntegerVariable> vars = {a.var, b};
+  std::vector<int64_t> coeffs = {a.coeff.value(), -1};
+  AddWeightedSumLowerOrEqual({}, vars, coeffs, rhs, model);
+
+  // We also need to register them.
+  model->GetOrCreate<RootLevelLinear2Bounds>()->AddUpperBound(
+      LinearExpression2::Difference(a.var, b), rhs);
+}
+
+}  // namespace
+
 TEST(DisjunctiveTest, Precedences) {
   Model model;
 
@@ -493,10 +510,9 @@ TEST(DisjunctiveTest, Precedences) {
 
   const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
   IntervalsRepository* intervals = model.GetOrCreate<IntervalsRepository>();
-  model.Add(
-      AffineCoeffOneLowerOrEqualWithOffset(intervals->End(ids[0]), var, 5));
-  model.Add(
-      AffineCoeffOneLowerOrEqualWithOffset(intervals->End(ids[1]), var, 4));
+
+  AddLowerOrEqualWithOffset(intervals->End(ids[0]), var, 5, &model);
+  AddLowerOrEqualWithOffset(intervals->End(ids[1]), var, 4, &model);
 
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_EQ(model.Get(LowerBound(var)), (3 + 2) + std::min(4, 5));

@@ -109,7 +109,7 @@ TEST(StopAfterFirstSolutionTest, BooleanLinearOptimizationProblem) {
 
   Model model;
   SatParameters params;
-  params.set_num_search_workers(8);
+  params.set_num_workers(8);
   params.set_stop_after_first_solution(true);
 
   int num_solutions = 0;
@@ -1070,10 +1070,12 @@ TEST(SolveCpModelTest, SolutionHintMinimizeL1DistanceTest) {
   // TODO(user): Instead, we might change the presolve to always try to keep the
   // given hint feasible.
   Model model;
-  model.Add(
-      NewSatParameters("repair_hint:true, stop_after_first_solution:true, "
-                       "keep_all_feasible_solutions_in_presolve:true "
-		       "num_workers:1"));
+  SatParameters params;
+  params.set_repair_hint(true);
+  params.set_stop_after_first_solution(true);
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  params.set_num_workers(1);
+  model.Add(NewSatParameters(params));
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_THAT(response.status(),
               AnyOf(Eq(CpSolverStatus::OPTIMAL), Eq(CpSolverStatus::FEASIBLE)));

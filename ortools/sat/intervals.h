@@ -28,6 +28,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -189,7 +190,7 @@ class IntervalsRepository {
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
-  BinaryRelationsMaps* relations_maps_;
+  ReifiedLinear2Bounds* reified_precedences_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.

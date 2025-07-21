@@ -1261,7 +1261,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   // Load precedences.
   if (!HasEnforcementLiteral(ct)) {
-    auto* precedences = m->GetOrCreate<PrecedenceRelations>();
+    auto* root_level_lin2_bounds = m->GetOrCreate<RootLevelLinear2Bounds>();
 
     // To avoid overflow in the code below, we tighten the bounds.
     // Note that we detect and do not add trivial relation.
@@ -1272,7 +1272,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
     if (vars.size() == 2) {
       LinearExpression2 expr(vars[0], vars[1], coeffs[0], coeffs[1]);
-      precedences->AddBounds(expr, rhs_min, rhs_max);
+      root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
     } else if (vars.size() == 3) {
       // TODO(user): This is a weaker duplication of the logic of
       // BinaryRelationsMaps, but is is useful for the transitive closure in
@@ -1293,7 +1293,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                   ? coeff * integer_trail->UpperBound(vars[other]).value()
                   : coeff * integer_trail->LowerBound(vars[other]).value();
           LinearExpression2 expr(vars[i], vars[j], coeffs[i], coeffs[j]);
-          precedences->AddBounds(expr, rhs_min - other_ub, rhs_max - other_lb);
+          root_level_lin2_bounds->Add(expr, rhs_min - other_ub,
+                                      rhs_max - other_lb);
         }
       }
     }

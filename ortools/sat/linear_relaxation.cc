@@ -699,8 +699,8 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
   }
 
   std::vector<FullIntegerPrecedence> output;
-  auto* precedences = model->GetOrCreate<PrecedenceRelations>();
-  precedences->ComputeFullPrecedences(end_vars, &output);
+  auto* evaluator = model->GetOrCreate<TransitivePrecedencesEvaluator>();
+  evaluator->ComputeFullPrecedences(end_vars, &output);
   for (const auto& p : output) {
     // TODO(user): What if we have more than one candidate makespan ?
     if (p.indices.size() != ends.size()) continue;

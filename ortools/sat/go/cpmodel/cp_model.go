@@ -29,6 +29,7 @@ import (
 	"sort"
 
 	log "github.com/golang/glog"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 

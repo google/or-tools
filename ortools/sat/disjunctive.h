@@ -353,7 +353,8 @@ class DisjunctivePrecedences : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
-        precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+        precedence_relations_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+        linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
         stats_("DisjunctivePrecedences", model) {
     window_.ClearAndReserve(helper->NumTasks());
     index_to_end_vars_.ClearAndReserve(helper->NumTasks());
@@ -369,20 +370,21 @@ class DisjunctivePrecedences : public PropagatorInterface {
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
-  PrecedenceRelations* precedence_relations_;
+  EnforcedLinear2Bounds* precedence_relations_;
+  Linear2Bounds* linear2_bounds_;
 
   FixedCapacityVector<TaskTime> window_;
   FixedCapacityVector<IntegerVariable> index_to_end_vars_;
 
-  FixedCapacityVector<int> indices_before_;
+  FixedCapacityVector<std::pair<int, LinearExpression2Index>> indices_before_;
   std::vector<bool> skip_;
-  std::vector<PrecedenceRelations::PrecedenceData> before_;
+  std::vector<EnforcedLinear2Bounds::PrecedenceData> before_;
 
   PropagationStatistics stats_;
 };
 
 // This is an optimization for the case when we have a big number of such
-// pairwise constraints. This should be roughtly equivalent to what the general
+// pairwise constraints. This should be roughly equivalent to what the general
 // disjunctive case is doing, but it dealt with variable size better and has a
 // lot less overhead.
 class DisjunctiveWithTwoItems : public PropagatorInterface {

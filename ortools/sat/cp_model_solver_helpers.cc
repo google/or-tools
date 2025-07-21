@@ -847,6 +847,63 @@ void RegisterVariableBoundsLevelZeroImport(
       import_level_zero_bounds);
 }
 
+void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
+                                 Model* model) {
+  CHECK(shared_linear2_bounds != nullptr);
+  auto* cp_model_mapping = model->GetOrCreate<CpModelMapping>();
+  auto* root_linear2 = model->GetOrCreate<RootLevelLinear2Bounds>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  const int import_id =
+      shared_linear2_bounds->RegisterNewImportId(model->Name());
+  const auto& import_function = [import_id, shared_linear2_bounds, root_linear2,
+                                 cp_model_mapping, sat_solver, model]() {
+    const auto new_bounds =
+        shared_linear2_bounds->NewlyUpdatedBounds(import_id);
+    int num_imported = 0;
+    for (const auto& [proto_expr, bounds] : new_bounds) {
+      // Lets create the corresponding LinearExpression2.
+      LinearExpression2 expr;
+      if (!cp_model_mapping->IsInteger(proto_expr.vars[0]) ||
+          !cp_model_mapping->IsInteger(proto_expr.vars[1])) {
+        continue;
+      }
+      for (const int i : {0, 1}) {
+        expr.vars[i] = cp_model_mapping->Integer(proto_expr.vars[i]);
+        expr.coeffs[i] = proto_expr.coeffs[i];
+      }
+      const auto [lb, ub] = bounds;
+      const auto [lb_added, ub_added] = root_linear2->Add(expr, lb, ub);
+      if (!lb_added && !ub_added) continue;
+      ++num_imported;
+
+      // TODO(user): Is it a good idea to add the linear constraint ?
+      // We might have many redundant linear2 relations that don't need
+      // propagation when we have chains of precedences. The root_linear2 should
+      // be up-to-date with transitive closure to avoid adding such relations
+      // (recompute it at level zero before this?).
+      //
+      // TODO(user): use IntegerValure directly in
+      // AddWeightedSumGreaterOrEqual() or use a lower-level API.
+      const std::vector<int64_t> coeffs = {expr.coeffs[0].value(),
+                                           expr.coeffs[1].value()};
+      if (lb_added) {
+        AddWeightedSumGreaterOrEqual({}, absl::MakeSpan(expr.vars, 2), coeffs,
+                                     lb.value(), model);
+        if (sat_solver->ModelIsUnsat()) return false;
+      }
+      if (ub_added) {
+        AddWeightedSumLowerOrEqual({}, absl::MakeSpan(expr.vars, 2), coeffs,
+                                   ub.value(), model);
+        if (sat_solver->ModelIsUnsat()) return false;
+      }
+    }
+    shared_linear2_bounds->NotifyNumImported(import_id, num_imported);
+    return true;
+  };
+  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
+      import_function);
+}
+
 // Registers a callback that will report improving objective best bound.
 // It will be called each time new objective bound are propagated at level zero.
 void RegisterObjectiveBestBoundExport(
@@ -1073,7 +1130,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* repository = model->GetOrCreate<BinaryRelationRepository>();
-  auto* relations_maps = model->GetOrCreate<BinaryRelationsMaps>();
+  auto* root_level_lin2_bounds = model->GetOrCreate<RootLevelLinear2Bounds>();
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // Load conditional precedences and always true binary relations.
@@ -1095,13 +1152,15 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
           // var1_min <= var1 - delta.var2 <= var1_max, which is equivalent to
           // the default bounds if var2 = 0, and gives implied_lb <= var1 <=
           // var1_max + delta otherwise.
-          repository->Add(enforcement_literal, {var1, 1}, {var2, -delta},
+          repository->Add(enforcement_literal,
+                          LinearExpression2(var1, var2, 1, -delta),
                           var1_domain.Min(), var1_domain.Max());
         } else if (negated_var2 != kNoIntegerVariable) {
           // var1_min + delta <= var1 + delta.neg_var2 <= var1_max + delta,
           // which is equivalent to the default bounds if neg_var2 = 1, and
           // gives implied_lb <= var1 <= var1_max + delta otherwise.
-          repository->Add(enforcement_literal, {var1, 1}, {negated_var2, delta},
+          repository->Add(enforcement_literal,
+                          LinearExpression2(var1, negated_var2, 1, delta),
                           var1_domain.Min() + delta, var1_domain.Max() + delta);
         }
       };
@@ -1137,23 +1196,19 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
 
     if (ct.enforcement_literal().empty()) {
       if (vars.size() == 2) {
-        repository->Add(Literal(kNoLiteralIndex), {vars[0], coeffs[0]},
-                        {vars[1], coeffs[1]}, rhs_min, rhs_max);
-
-        LinearExpression2 expr;
-        expr.vars[0] = vars[0];
-        expr.vars[1] = vars[1];
-        expr.coeffs[0] = coeffs[0];
-        expr.coeffs[1] = coeffs[1];
-        relations_maps->AddRelationBounds(expr, rhs_min, rhs_max);
+        const LinearExpression2 expr(vars[0], vars[1], coeffs[0], coeffs[1]);
+        root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
       }
     } else {
       const Literal lit = mapping->Literal(ct.enforcement_literal(0));
       if (vars.size() == 1) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {}, rhs_min, rhs_max);
+        repository->Add(
+            lit, LinearExpression2(vars[0], kNoIntegerVariable, coeffs[0], 0),
+            rhs_min, rhs_max);
       } else if (vars.size() == 2) {
-        repository->Add(lit, {vars[0], coeffs[0]}, {vars[1], coeffs[1]},
-                        rhs_min, rhs_max);
+        repository->Add(
+            lit, LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
+            rhs_min, rhs_max);
       }
     }
   }
@@ -1215,10 +1270,6 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   // Fully encode variables as needed by the search strategy.
   AddFullEncodingFromSearchBranching(model_proto, model);
   if (sat_solver->ModelIsUnsat()) return unsat();
-
-  // Reserve space for the precedence relations.
-  model->GetOrCreate<PrecedenceRelations>()->Resize(
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
 
   FillBinaryRelationRepository(model_proto, model);
 
@@ -1292,7 +1343,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
 
   model->GetOrCreate<ProductDetector>()->ProcessImplicationGraph(
       model->GetOrCreate<BinaryImplicationGraph>());
-  model->GetOrCreate<PrecedenceRelations>()->Build();
+  model->GetOrCreate<TransitivePrecedencesEvaluator>()->Build();
 }
 
 void LoadFeasibilityPump(const CpModelProto& model_proto, Model* model) {
@@ -1794,7 +1845,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   // Tricky: We can only test that if we don't already have a feasible solution
   // like we do if the hint is complete.
   if (parameters->debug_crash_on_bad_hint() &&
-      shared_response_manager->SolutionsRepository().NumSolutions() == 0 &&
+      shared_response_manager->HasFeasibleSolution() &&
       !model->GetOrCreate<TimeLimit>()->LimitReached() &&
       status != SatSolver::Status::FEASIBLE) {
     LOG(FATAL) << "QuickSolveWithHint() didn't find a feasible solution."
@@ -2092,6 +2143,10 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
     bounds->LoadDebugSolution(response->DebugSolution());
   }
 
+  if (params.share_linear2_bounds()) {
+    linear2_bounds = std::make_unique<SharedLinear2Bounds>();
+  }
+
   // Create extra shared classes if needed. Note that while these parameters
   // are true by default, we disable them if we don't have enough workers for
   // them in AdaptGlobalParameters().
@@ -2126,7 +2181,7 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   local_model->Register<SharedStatTables>(stat_tables);
 
   // TODO(user): Use parameters and not the presence/absence of these class
-  // to decide when to use them.
+  // to decide when to use them? this is not clear.
   if (lp_solutions != nullptr) {
     local_model->Register<SharedLPSolutionRepository>(lp_solutions.get());
   }
@@ -2140,6 +2195,9 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   if (clauses != nullptr) {
     local_model->Register<SharedClausesManager>(clauses.get());
   }
+  if (linear2_bounds != nullptr) {
+    local_model->Register<SharedLinear2Bounds>(linear2_bounds.get());
+  }
 }
 
 bool SharedClasses::SearchIsDone() {
@@ -2150,6 +2208,38 @@ bool SharedClasses::SearchIsDone() {
   }
   if (time_limit->LimitReached()) return true;
   return false;
+}
+
+void SharedClasses::LogFinalStatistics() {
+  if (!logger->LoggingIsEnabled()) return;
+
+  logger->FlushPendingThrottledLogs(/*ignore_rates=*/true);
+  SOLVER_LOG(logger, "");
+
+  stat_tables->Display(logger);
+  response->DisplayImprovementStatistics();
+
+  std::vector<std::vector<std::string>> table;
+  table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
+  response->SolutionPool().AddTableStats(&table);
+  table.push_back(ls_hints->TableLineStats());
+  if (lp_solutions != nullptr) {
+    table.push_back(lp_solutions->TableLineStats());
+  }
+  if (incomplete_solutions != nullptr) {
+    table.push_back(incomplete_solutions->TableLineStats());
+  }
+  SOLVER_LOG(logger, FormatTable(table));
+
+  // TODO(user): we can combine the "bounds table" into one for shorter logs.
+  if (bounds != nullptr) bounds->LogStatistics(logger);
+  if (linear2_bounds != nullptr) linear2_bounds->LogStatistics(logger);
+
+  if (clauses != nullptr) clauses->LogStatistics(logger);
+
+  // Extra logging if needed. Note that these are mainly activated on
+  // --vmodule *some_file*=1 and are here for development.
+  stats->Log(logger);
 }
 
 }  // namespace sat

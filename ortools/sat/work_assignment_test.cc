@@ -39,6 +39,9 @@ TEST(ProtoTrailTest, PushLevel) {
   EXPECT_EQ(p.MaxLevel(), 1);
   EXPECT_EQ(p.Decision(1), ProtoLiteral(0, 0));
   EXPECT_EQ(p.ObjectiveLb(1), 0);
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0).Negated()));
+  EXPECT_FALSE(p.IsAssigned(ProtoLiteral(1, 0)));
 }
 
 TEST(ProtoTrailTest, AddImplications) {
@@ -57,6 +60,12 @@ TEST(ProtoTrailTest, AddImplications) {
   EXPECT_THAT(p.Implications(2),
               testing::UnorderedElementsAre(
                   ProtoLiteral(5, 0), ProtoLiteral(2, 0), ProtoLiteral(6, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(1, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(2, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(3, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(5, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(6, 0)));
 }
 
 TEST(ProtoTrailTest, SetLevel1Implied) {
@@ -567,6 +576,9 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   shared_tree_manager->ReplaceTree(trail1);
   shared_tree_manager->ReplaceTree(trail2);
 
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 3);
+  EXPECT_EQ(trail1.MaxLevel(), 1);
+  EXPECT_EQ(trail2.MaxLevel(), 1);
   EXPECT_EQ(trail2.Implications(1).size(), 1);
   EXPECT_EQ(trail2.TargetPhase().size(), 1);
   EXPECT_TRUE(trail1.Implications(1).empty());

@@ -41,6 +41,11 @@ namespace sat {
 
 // Callbacks that will be called when the search goes back to level 0.
 // Callbacks should return false if the propagation fails.
+//
+// We will call this after propagation has reached a fixed point. Note however
+// that if any callbacks "propagate" something, the callbacks following it might
+// not see a state where the propagation have been called again.
+// TODO(user): maybe we should re-propagate before calling the next callback.
 struct LevelZeroCallbackHelper {
   std::vector<std::function<bool()>> callbacks;
 };
@@ -93,6 +98,13 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor > dividend);
   return result - adjust;
+}
+
+// When the case positive_divisor == 1 is frequent, this is faster.
+inline IntegerValue FloorRatioWithTest(IntegerValue dividend,
+                                       IntegerValue positive_divisor) {
+  if (positive_divisor == 1) return dividend;
+  return FloorRatio(dividend, positive_divisor);
 }
 
 // Overflows and saturated arithmetic.
@@ -369,25 +381,29 @@ struct LinearExpression2 {
   // This will not change any bounds on the LinearExpression2.
   // That is we will not potentially Negate() the expression like
   // CanonicalizeAndUpdateBounds() might do.
-  // Note that since kNoIntegerVariable=-1 and we sort the variables, if we any
+  // Note that since kNoIntegerVariable=-1 and we sort the variables, if we have
   // one zero and one non-zero we will always have the zero first.
   void SimpleCanonicalization();
 
   // Fully canonicalizes the expression and updates the given bounds
   // accordingly. This is the same as SimpleCanonicalization(), DivideByGcd()
   // and the NegateForCanonicalization() with a proper updates of the bounds.
-  void CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub,
-                                   bool allow_negation = false);
+  // Returns whether the expression was negated.
+  bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
 
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are
   // zero.
   IntegerValue DivideByGcd();
 
+  bool IsCanonicalized() const;
+
   // Makes sure expr and -expr have the same canonical representation by
   // negating the expression of it is in the non-canonical form. Returns true if
   // the expression was negated.
   bool NegateForCanonicalization();
+
+  void MakeVariablesPositive();
 
   absl::Span<const IntegerVariable> non_zero_vars() const {
     const int first = coeffs[0] == 0 ? 1 : 0;
@@ -413,13 +429,31 @@ struct LinearExpression2 {
 
   IntegerValue coeffs[2];
   IntegerVariable vars[2];
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const LinearExpression2& expr) {
+    absl::Format(&sink, "%d X%d + %d X%d", expr.coeffs[0].value(),
+                 expr.vars[0].value(), expr.coeffs[1].value(),
+                 expr.vars[1].value());
+  }
 };
 
-inline std::ostream& operator<<(std::ostream& os,
-                                const LinearExpression2& expr) {
-  os << absl::StrCat(expr.coeffs[0], " X", expr.vars[0], " + ", expr.coeffs[1],
-                     " X", expr.vars[1]);
-  return os;
+// Encodes (a - b <= ub) in (linear2 <= ub) format.
+// Note that the returned expression is canonicalized and divided by its GCD.
+inline std::pair<LinearExpression2, IntegerValue> EncodeDifferenceLowerThan(
+    AffineExpression a, AffineExpression b, IntegerValue ub) {
+  LinearExpression2 expr;
+  expr.vars[0] = a.var;
+  expr.coeffs[0] = a.coeff;
+  expr.vars[1] = b.var;
+  expr.coeffs[1] = -b.coeff;
+  IntegerValue rhs = ub + b.constant - a.constant;
+
+  // Canonicalize.
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  rhs = FloorRatio(rhs, gcd);
+  return {std::move(expr), rhs};
 }
 
 template <typename H>
@@ -437,9 +471,21 @@ class BestBinaryRelationBounds {
  public:
   // Register the fact that expr \in [lb, ub] is true.
   //
-  // Returns true if this fact is new, that is if the bounds are tighter than
-  // the current ones.
-  bool Add(LinearExpression2 expr, IntegerValue lb, IntegerValue ub);
+  // If lb==kMinIntegerValue it only register that expr <= ub (and symmetrically
+  // for ub==kMaxIntegerValue).
+  //
+  // Returns for each of the bound if it was restricted (added/updated), if it
+  // was ignored because a better or equal bound was already present, or if it
+  // was rejected because it was invalid (e.g. the expression was a degenerate
+  // linear2 or the bound was a min/max value).
+  enum class AddResult {
+    ADDED,
+    UPDATED,
+    NOT_BETTER,
+    INVALID,
+  };
+  std::pair<AddResult, AddResult> Add(LinearExpression2 expr, IntegerValue lb,
+                                      IntegerValue ub);
 
   // Returns the known status of expr <= bound.
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
@@ -449,6 +495,18 @@ class BestBinaryRelationBounds {
   // assume kMaxIntegerValue is always valid and returns it if we don't have an
   // entry in the hash-map.
   IntegerValue GetUpperBound(LinearExpression2 expr) const;
+
+  // Same as GetUpperBound() but assume the expression is already canonicalized.
+  // This is slightly faster.
+  IntegerValue UpperBoundWhenCanonicalized(LinearExpression2 expr) const;
+
+  int64_t num_bounds() const { return best_bounds_.size(); }
+
+  std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialUpperBounds() const;
+
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+  GetSortedNonTrivialBounds() const;
 
  private:
   // The best bound on the given "canonicalized" expression.
@@ -512,6 +570,28 @@ std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
+// This functions appears in hot spot, and so it is important to inline it.
+//
+// TODO(user): Maybe introduce a CanonicalizedLinear2 class so we automatically
+// get the better function, and it documents when we have canonicalized
+// expression.
+inline IntegerValue BestBinaryRelationBounds::UpperBoundWhenCanonicalized(
+    LinearExpression2 expr) const {
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  DCHECK(expr.IsCanonicalized());
+  const bool negated = expr.NegateForCanonicalization();
+  const auto it = best_bounds_.find(expr);
+  if (it != best_bounds_.end()) {
+    const auto [known_lb, known_ub] = it->second;
+    if (negated) {
+      return -known_lb;
+    } else {
+      return known_ub;
+    }
+  }
+  return kMaxIntegerValue;
+}
+
 // ============================================================================
 // Implementation.
 // ============================================================================
@@ -552,8 +632,8 @@ inline IntegerLiteral AffineExpression::GreaterOrEqual(
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::GreaterOrEqual(var,
-                                        CeilRatio(bound - constant, coeff));
+  return IntegerLiteral::GreaterOrEqual(
+      var, coeff == 1 ? bound - constant : CeilRatio(bound - constant, coeff));
 }
 
 // var * coeff + constant <= bound.
@@ -563,7 +643,8 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
+  return IntegerLiteral::LowerOrEqual(
+      var, coeff == 1 ? bound - constant : FloorRatio(bound - constant, coeff));
 }
 
 }  // namespace sat
