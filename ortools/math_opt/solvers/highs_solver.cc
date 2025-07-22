@@ -925,6 +925,22 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     return absl::OkStatus();
   };
 
+  if (model_parameters.solution_hints_size() > 0) {
+    // Take the first solution hint and set the solution.
+    const SolutionHintProto& hint = model_parameters.solution_hints(0);
+    const int num_vars = highs_->getModel().lp_.num_col_;
+    // Highs accepts only full solutions, on partial solutions it will
+    // return an error.
+    if (hint.variable_values().ids_size() == num_vars) {
+      HighsSolution sol = HighsSolution();
+      sol.col_value.resize(num_vars);
+      for (const auto [id, val] : MakeView(hint.variable_values())) {
+        sol.col_value[variable_data_.at(id).index] = val;
+      }
+      RETURN_IF_ERROR(ToStatus(highs_->setSolution(sol)));
+    }
+  }
+
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   // TODO(b/271595607): delete this code once we upgrade HiGHS, if HiGHS does
   // return a proper infeasibility status for models with empty integer bounds.

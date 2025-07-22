@@ -164,8 +164,8 @@ INSTANTIATE_TEST_SUITE_P(HighsLpModelSolveParametersTest,
                              /*supports_duals=*/true,
                              /*supports_primal_only_warm_starts=*/false)));
 
-// MIP hint appears to be supported by Highs::setSolution, this is not yet
-// implemented.
+// Highs::setSolution is implemented, but it only accepts complete solutions.
+// The test below generates partial solutuions, so we skip it.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MipSolutionHintTest);
 
 // HiGHS does not support branching priority.
