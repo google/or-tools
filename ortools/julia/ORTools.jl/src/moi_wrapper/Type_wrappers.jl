@@ -6,6 +6,7 @@ const SolveResultProto = MathOpt.SolveResultProto
 const TerminationReasonProto = MathOpt.TerminationReasonProto
 const LimitProto = MathOpt.LimitProto
 const FeasibilityStatusProto = MathOpt.FeasibilityStatusProto
+const BasisStatusProto = MathOpt.BasisStatusProto
 const GScipOutput = OperationsResearch.GScipOutput
 const PdlpOutput = MathOpt.var"SolveResultProto.PdlpOutput"
 const PB = MathOpt.PB
@@ -73,7 +74,6 @@ const GlopParameters_InitialBasisHeuristic =
     OperationsResearch.glop.var"GlopParameters.InitialBasisHeuristic"
 
 ## Sat parameter types.
-const AbstractSatParameters = OperationsResearch.sat.var"##AbstractSatParameters"
 const SatParameters_VariableOrder = OperationsResearch.sat.var"SatParameters.VariableOrder"
 const SatParameters_Polarity = OperationsResearch.sat.var"SatParameters.Polarity"
 const SatParameters_ConflictMinimizationAlgorithm =
@@ -781,7 +781,7 @@ end
 """
   Mutable wrapper struct for the SatParameters struct.
 """
-mutable struct SatParameters <: AbstractSatParameters
+mutable struct SatParameters
     name::String
     preferred_variable_order::SatParameters_VariableOrder.T
     initial_polarity::SatParameters_Polarity.T
