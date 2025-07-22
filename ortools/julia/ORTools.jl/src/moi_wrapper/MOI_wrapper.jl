@@ -2781,16 +2781,16 @@ end
 """
 Attibute that returns the `GScipOutput` as part of the solve result.
 """
-struct GScipOutput <: MOI.AbstractOptimizerAttribute end
-MOI.attribute_value_type(::GScipOutput) = Union{Nothing,GScipOutput}
+struct GScipOutputAttribute <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::GScipOutputAttribute) = Union{Nothing,GScipOutput}
 
-function MOI.get(model::Optimizer, attr::GScipOutput)
+function MOI.get(model::Optimizer, attr::GScipOutputAttribute)
     if isnothing(model) || isnothing(model.solve_result)
         throw(MOI.GetAttributeNotAllowed(attr))
     end
 
-    if(model.solver_type != SolverType.SOLVER_TYPE_GSCIP)
-        throw(error("GScipOutput is only supported for the GSCIP solver"))
+    if (model.solver_type != SolverType.SOLVER_TYPE_GSCIP)
+        throw(error("GScipOutputAttribute is only supported for the GSCIP solver"))
     end
 
     solver_specific_output = model.solve_result.solver_specific_output
@@ -2807,10 +2807,10 @@ end
 """
 Attribute that returns the `PdlpOutput` as part of the solve result.
 """
-struct PdlpOutput <: MOI.AbstractOptimizerAttribute end
-MOI.attribute_value_type(::PdlpOutput) = Union{Nothing,PdlpOutput}
+struct PdlpOutputAttribute <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::PdlpOutputAttribute) = Union{Nothing,PdlpOutput}
 
-function MOI.get(model::Optimizer, attr::PdlpOutput)
+function MOI.get(model::Optimizer, attr::PdlpOutputAttribute)
     if isnothing(model) || isnothing(model.solve_result)
         throw(MOI.GetAttributeNotAllowed(attr))
     end
