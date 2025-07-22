@@ -162,7 +162,7 @@ INSTANTIATE_TEST_SUITE_P(HighsLpModelSolveParametersTest,
                          Values(LpModelSolveParametersTestParameters(
                              SolverType::kHighs, /*exact_zeros=*/true,
                              /*supports_duals=*/true,
-                             /*supports_primal_only_warm_starts=*/false)));
+                             /*supports_primal_only_warm_starts=*/true)));
 
 // Highs::setSolution is implemented, but it only accepts complete solutions.
 // The test below generates partial solutuions, so we skip it.
