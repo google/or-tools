@@ -13,7 +13,8 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 def code_sample_cc(name):
     cc_binary(

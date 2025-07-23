@@ -14,7 +14,7 @@
 """Build definitions for SWIG Java."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_java//java/common:java_common.bzl", "java_common")
 
