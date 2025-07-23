@@ -27,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <queue>
+#include <random>
 #include <set>
 #include <string>
 #include <tuple>
@@ -43,6 +44,7 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_heuristic_parameters.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
 #include "ortools/constraint_solver/routing_utils.h"
@@ -641,6 +643,13 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// case nodes are inserted based on the topological order of their type,
   /// given by the routing model's GetTopologicallySortedVisitTypes() method.
   bool InsertPairsAndNodesByRequirementTopologicalOrder();
+  /// Inserts non-inserted single nodes or pickup/delivery pairs which are in
+  /// precedence constraints.
+  /// These nodes are inserted iff the precedence graph is acyclic, in which
+  /// case nodes are inserted based on the topological order of the precedence
+  /// graph, given by the routing model's
+  /// GetTopologicallySortedNodePrecedences() method.
+  bool InsertPairsAndNodesByPrecedenceTopologicalOrder();
 
   /// Inserts non-inserted pickup and delivery pairs. Maintains a priority
   /// queue of possible pair insertions, which is incrementally updated when a
@@ -759,12 +768,10 @@ class GlobalCheapestInsertionFilteredHeuristic
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
-  /// Updates all existing pair entries inserting a node after nodes of the
-  /// chain starting at 'insert_after_start' and ending before
-  /// 'insert_after_end', and updates the priority queue accordingly.
-  bool UpdateExistingPairEntriesOnChain(
-      int64_t insert_after_start, int64_t insert_after_end,
-      AdjustablePriorityQueue<PairEntry>* priority_queue,
+  /// Updates all existing pair entries inserting a node after 'insert_after'
+  /// and updates the priority queue accordingly.
+  bool UpdateExistingPairEntriesAfter(
+      int64_t insert_after, AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
   /// Adds pair entries inserting either a pickup or a delivery after
@@ -848,14 +855,6 @@ class GlobalCheapestInsertionFilteredHeuristic
   bool UpdateAfterNodeInsertion(const SparseBitset<int>& nodes, int vehicle,
                                 int64_t node, int64_t insert_after,
                                 bool all_vehicles, NodeEntryQueue* queue);
-  /// Updates all existing node entries inserting a node after nodes of the
-  /// chain starting at 'insert_after_start' and ending before
-  /// 'insert_after_end', and updates the priority queue accordingly.
-  bool UpdateExistingNodeEntriesOnChain(const SparseBitset<int>& nodes,
-                                        int vehicle, int64_t insert_after_start,
-                                        int64_t insert_after_end,
-                                        bool all_vehicles,
-                                        NodeEntryQueue* queue);
   /// Adds node entries inserting a node after "insert_after" and updates the
   /// priority queue accordingly.
   bool AddNodeEntriesAfter(const SparseBitset<int>& nodes, int vehicle,
@@ -920,6 +919,9 @@ class GlobalCheapestInsertionFilteredHeuristic
       node_index_to_neighbors_by_cost_class_;
 
   std::unique_ptr<VehicleTypeCurator> empty_vehicle_type_curator_;
+
+  // Temporary member used to keep track of node insertions wherever needed.
+  SparseBitset<int> temp_inserted_nodes_;
 
   mutable EntryAllocator<PairEntry> pair_entry_allocator_;
 };
@@ -1138,9 +1140,7 @@ class LocalCheapestInsertionFilteredHeuristic
   LocalCheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
-      RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy,
-      std::vector<RoutingSearchParameters::InsertionSortingProperty>
-          insertion_sorting_properties,
+      LocalCheapestInsertionParameters lci_params,
       LocalSearchFilterManager* filter_manager, bool use_first_solution_hint,
       BinCapacities* bin_capacities = nullptr,
       std::function<bool(const std::vector<RoutingModel::VariableValuePair>&,
@@ -1221,8 +1221,9 @@ class LocalCheapestInsertionFilteredHeuristic
   }
 
   std::vector<Seed> insertion_order_;
-  const RoutingSearchParameters::PairInsertionStrategy pair_insertion_strategy_;
-  std::vector<RoutingSearchParameters::InsertionSortingProperty>
+  const LocalCheapestInsertionParameters::PairInsertionStrategy
+      pair_insertion_strategy_;
+  std::vector<LocalCheapestInsertionParameters::InsertionSortingProperty>
       insertion_sorting_properties_;
   InsertionSequenceContainer insertion_container_;
   InsertionSequenceGenerator insertion_generator_;
@@ -1341,21 +1342,6 @@ class ComparatorCheapestAdditionFilteredHeuristic
 /// and cost classes are taken into account.
 class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  struct SavingsParameters {
-    /// If neighbors_ratio < 1 then for each node only this ratio of its
-    /// neighbors leading to the smallest arc costs are considered.
-    double neighbors_ratio = 1.0;
-    /// The number of neighbors considered for each node is also adapted so that
-    /// the stored Savings don't use up more than max_memory_usage_bytes bytes.
-    double max_memory_usage_bytes = 6e9;
-    /// If add_reverse_arcs is true, the neighborhood relationships are
-    /// considered symmetrically.
-    bool add_reverse_arcs = false;
-    /// arc_coefficient is a strictly positive parameter indicating the
-    /// coefficient of the arc being considered in the Saving formula.
-    double arc_coefficient = 1.0;
-  };
-
   SavingsFilteredHeuristic(RoutingModel* model,
                            std::function<bool()> stop_search,
                            SavingsParameters parameters,

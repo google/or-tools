@@ -31,7 +31,6 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/memory/memory.h"
-#include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/escaping.h"
@@ -2756,9 +2755,7 @@ absl::StatusOr<bool> GurobiSolver::Update(
 
 absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
     const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
-  if (!GurobiIsCorrectlyInstalled()) {
-    return absl::InvalidArgumentError("Gurobi is not correctly installed.");
-  }
+  // TODO(user): Correctly load the gurobi library in open source.
   RETURN_IF_ERROR(
       ModelIsSupported(input_model, kGurobiSupportedStructures, "Gurobi"));
   if (!input_model.auxiliary_objectives().empty() &&

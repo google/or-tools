@@ -76,11 +76,12 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/time/time.h"
-#include "absl/types/span.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/map_filter.h"
+#include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
 
@@ -142,6 +143,13 @@ MATH_OPT_DEFINE_ENUM(CallbackEvent, CALLBACK_EVENT_UNSPECIFIED);
 //   * what information the callback needs,
 //   * how the callback might alter the solve process.
 struct CallbackRegistration {
+  // Returns the CallbackRegistration equivalent to the proto.
+  //
+  // Returns an error if filters indices don't match existing variables or if
+  // events have incorrect values.
+  static absl::StatusOr<CallbackRegistration> FromProto(
+      const Model& model, const CallbackRegistrationProto& registration_proto);
+
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).
   absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
@@ -190,6 +198,16 @@ struct CallbackData {
   // Users will typically not need this function.
   // Will CHECK fail if proto is not valid.
   CallbackData(ModelStorageCPtr storage, const CallbackDataProto& proto);
+
+  // Returns a failure if the referenced variables don't belong to the input
+  // expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
+
+  // Returns the proto equivalent of this object.
+  //
+  // The caller should use CheckModelStorage() as this function does not check
+  // internal consistency of the referenced variables.
+  absl::StatusOr<CallbackDataProto> Proto() const;
 
   // The current state of the underlying solver.
   CallbackEvent event;
@@ -246,6 +264,13 @@ struct CallbackResult {
   void AddLazyConstraint(BoundedLinearExpression linear_constraint) {
     new_constraints.push_back({std::move(linear_constraint), true});
   }
+
+  // Returns the CallbackResult equivalent to the proto.
+  //
+  // Returns an error if constraints or solutions indices don't match existing
+  // variables.
+  static absl::StatusOr<CallbackResult> FromProto(
+      const Model& model, const CallbackResultProto& result_proto);
 
   // Returns a failure if the referenced variables don't belong to the input
   // expected_storage (which must not be nullptr).

@@ -23,6 +23,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -378,7 +379,6 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/errors.py
     ortools/math_opt/python/expressions.py
     ortools/math_opt/python/from_model.py
-    ortools/math_opt/python/hash_model_storage.py
     ortools/math_opt/python/indicator_constraints.py
     ortools/math_opt/python/init_arguments.py
     ortools/math_opt/python/linear_constraints.py
@@ -386,7 +386,6 @@ if(BUILD_MATH_OPT)
     ortools/math_opt/python/message_callback.py
     ortools/math_opt/python/model.py
     ortools/math_opt/python/model_parameters.py
-    ortools/math_opt/python/model_storage.py
     ortools/math_opt/python/normalized_inequality.py
     ortools/math_opt/python/normalize.py
     ortools/math_opt/python/objectives.py
@@ -414,7 +413,6 @@ if(BUILD_MATH_OPT)
 endif()
 file(COPY
   ortools/sat/python/cp_model.py
-  ortools/sat/python/cp_model_numbers.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/python)
 file(COPY
   ortools/sat/colab/flags.py

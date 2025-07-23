@@ -24,7 +24,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
-#include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -120,7 +119,7 @@ bool RoutingModel::IsMatchingModel() const {
   return false;
 }
 
-// Solve matching model using a min-cost flow. Here is the underlyihg flow:
+// Solve matching model using a min-cost flow. Here is the underlying flow:
 //
 //                     ---------- Source -------------
 //                    | (1,0)                         | (N,0)
@@ -167,8 +166,8 @@ bool RoutingModel::SolveMatchingModel(
   std::vector<LocalDimensionCumulOptimizer> optimizers;
   optimizers.reserve(dimensions.size());
   for (RoutingDimension* dimension : dimensions) {
-    optimizers.emplace_back(dimension,
-                            parameters.continuous_scheduling_solver());
+    optimizers.emplace_back(
+        dimension, parameters.continuous_scheduling_solver(), &search_stats_);
   }
 
   int num_flow_nodes = 0;
@@ -389,6 +388,7 @@ bool RoutingModel::SolveMatchingModel(
   flow.SetNodeSupply(sink, -flow_supply);
 
   // TODO(user): Take time limit into account.
+  search_stats_.num_min_cost_flow_calls++;
   if (flow.Solve() != SimpleMinCostFlow::OPTIMAL) {
     return false;
   }

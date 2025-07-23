@@ -89,10 +89,22 @@ message ConstraintSolverStatistics {
   double duration_seconds = 5;
 }
 
+// Statistics on sub-solvers.
+message SubSolverStatistics {
+  // Number of calls to Glop in LP scheduling.
+  int64 num_glop_calls_in_lp_scheduling = 1;
+  // Number of calls to CP-SAT in LP scheduling.
+  int64 num_cp_sat_calls_in_lp_scheduling = 2;
+  // Number of calls to min cost flow.
+  int64 num_min_cost_flow_calls = 3;
+}
+
 // Search statistics.
 message SearchStatistics {
   // Local search statistics for each solver context.
   repeated LocalSearchStatistics local_search_statistics = 1;
   // Constraint solver statistics.
   repeated ConstraintSolverStatistics constraint_solver_statistics = 2;
+  // Sub-solver statistics.
+  repeated SubSolverStatistics sub_solver_statistics = 3;
 }

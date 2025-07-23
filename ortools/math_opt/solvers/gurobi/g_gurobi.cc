@@ -32,9 +32,9 @@
 #include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/gurobi/isv_public/gurobi_isv.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research::math_opt {
 
@@ -46,6 +46,12 @@ struct UserCallbackData {
   absl::Status status = absl::OkStatus();
   Gurobi* gurobi = nullptr;
 };
+
+#if defined(_MSC_VER)
+#define GUROBI_STDCALL __stdcall
+#else
+#define GUROBI_STDCALL
+#endif
 
 int GUROBI_STDCALL GurobiCallback(GRBmodel* const model, void* const cbdata,
                                   const int where, void* const usrdata) {

@@ -72,6 +72,7 @@ cc_library(
     srcs = ["sat_solver_utils.cc"],
     hdrs = ["sat_solver_utils.h"],
     deps = [
+        ":preprocessor",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:preprocessor",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -111,6 +112,19 @@ cc_library(
 )
 
 cc_library(
+    name = "scip_params",
+    srcs = ["scip_params.cc"],
+    hdrs = ["scip_params.h"],
+    deps = [
+        "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@scip",
+    ],
+)
+
+cc_library(
     name = "scip_proto_solver",
     srcs = ["scip_proto_solver.cc"],
     hdrs = ["scip_proto_solver.h"],
@@ -121,10 +135,10 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
-        "//ortools/gscip:legacy_scip_params",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver/proto_solver:scip_params",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
@@ -146,9 +160,10 @@ cc_library(
     hdrs = ["gurobi_proto_solver.h"],
     deps = [
         "//ortools/base:timer",
-        "//ortools/gurobi:environment",
+        "//ortools/linear_solver:gurobi_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
+        "//ortools/third_party_solvers:gurobi_environment",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/cleanup",
@@ -183,24 +198,20 @@ cc_library(
 )
 
 cc_library(
-    name = "xpress_proto_solver",
-    srcs = ["xpress_proto_solver.cc"],
-    hdrs = ["xpress_proto_solver.h"],
+    name = "preprocessor",
+    srcs = ["preprocessor.cc"],
+    hdrs = ["preprocessor.h"],
     deps = [
-        "//ortools/base:timer",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver:model_validator",
-        "//ortools/util:lazy_mutable_copy",
-        "//ortools/xpress:environment",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/cleanup",
+        "//ortools/glop:preprocessor",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "//ortools/util:return_macros",
+        "//ortools/util:stats",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/time",
-        "@abseil-cpp//absl/types:optional",
     ],
 )

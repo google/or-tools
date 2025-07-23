@@ -32,7 +32,7 @@
 //    CP-SAT parameters:
 //
 // solve --solver=sat \
-//       --params="max_time_in_seconds:600, num_search_workers:8"
+//       --params="max_time_in_seconds:600, num_workers:8"
 //       --stderrthreshold=0 \
 //       --input=/tmp/foo.mps \
 //       2>/tmp/foo.err

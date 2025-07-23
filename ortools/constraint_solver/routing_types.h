@@ -18,8 +18,8 @@
 #include <functional>
 #include <vector>
 
-#include "ortools/base/int_type.h"
 #include "ortools/util/piecewise_linear_function.h"
+#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 
@@ -32,12 +32,12 @@ namespace operations_research {
 ///
 /// Users that depend on routing.{h,cc} should just use the
 /// RoutingModel:: equivalent, eg. RoutingModel::NodeIndex.
-DEFINE_INT_TYPE(RoutingNodeIndex, int);
-DEFINE_INT_TYPE(RoutingCostClassIndex, int);
-DEFINE_INT_TYPE(RoutingDimensionIndex, int);
-DEFINE_INT_TYPE(RoutingDisjunctionIndex, int);
-DEFINE_INT_TYPE(RoutingVehicleClassIndex, int);
-DEFINE_INT_TYPE(RoutingResourceClassIndex, int);
+DEFINE_STRONG_INDEX_TYPE(RoutingNodeIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingCostClassIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingDimensionIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingDisjunctionIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingVehicleClassIndex);
+DEFINE_STRONG_INDEX_TYPE(RoutingResourceClassIndex);
 
 /// Pickup and delivery pair representation, including alternatives for pickups
 /// and deliveries respectively.

@@ -20,9 +20,9 @@
 #include "absl/log/globals.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
 void CppBridge::InitLogging(absl::string_view usage) {

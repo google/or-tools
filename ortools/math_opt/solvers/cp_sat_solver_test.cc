@@ -225,7 +225,7 @@ SolutionHintTestParams MakeCpsatSolutionHintParams() {
   solve_params.cuts = Emphasis::kOff;
   solve_params.presolve = Emphasis::kOff;
   solve_params.cp_sat.set_stop_after_first_solution(true);
-  solve_params.cp_sat.set_num_search_workers(1);
+  solve_params.cp_sat.set_num_workers(1);
   // Matches "best:", "next:" and "hint" appearing in the same line
   std::string hint_message_regex = "best:.*next:.*hint";
   return SolutionHintTestParams(SolverType::kCpSat, solve_params, std::nullopt,

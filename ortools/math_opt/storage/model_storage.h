@@ -177,7 +177,7 @@ class ModelStorage {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorage> > >
+  static absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorage> >
   FromModelProto(const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
@@ -192,7 +192,7 @@ class ModelStorage {
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  absl::Nonnull<std::unique_ptr<ModelStorage> > Clone(
+  absl_nonnull std::unique_ptr<ModelStorage> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return copyable_data_.name; }
@@ -1311,10 +1311,10 @@ namespace operations_research::math_opt {
 
 // Aliases for non-nullable and nullable pointers to a `ModelStorage`.
 // We should mostly be using the former, but in some cases we need the latter.
-using ModelStoragePtr = absl::Nonnull<ModelStorage*>;
-using NullableModelStoragePtr = absl::Nullable<ModelStorage*>;
-using ModelStorageCPtr = absl::Nonnull<const ModelStorage*>;
-using NullableModelStorageCPtr = absl::Nullable<const ModelStorage*>;
+using ModelStoragePtr = ModelStorage* absl_nonnull;
+using NullableModelStoragePtr = ModelStorage* absl_nullable;
+using ModelStorageCPtr = const ModelStorage* absl_nonnull;
+using NullableModelStorageCPtr = const ModelStorage* absl_nullable;
 
 }  // namespace operations_research::math_opt
 

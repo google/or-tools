@@ -238,6 +238,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPConstraint::SetBounds;
 %rename (Index) operations_research::MPConstraint::index;
 %rename (SetIsLazy) operations_research::MPConstraint::set_is_lazy;
+%unignore operations_research::MPConstraint::Clear;
 
 // MPConstraint: reader API.
 %unignore operations_research::MPConstraint::GetCoefficient;

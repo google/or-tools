@@ -11,16 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywrapcp)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE routing.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE routing.swig PROPERTY SWIG_MODULE_NAME pywrapcp)
+set_property(SOURCE routing.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
+set_property(SOURCE routing.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
   TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
-  SOURCES routing.i)
+  SOURCES routing.swig)
 
 target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywrapcp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)

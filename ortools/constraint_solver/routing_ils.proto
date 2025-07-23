@@ -26,6 +26,7 @@ option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 import "ortools/constraint_solver/routing_enums.proto";
+import "ortools/constraint_solver/routing_heuristic_parameters.proto";
 
 package operations_research;
 
@@ -146,6 +147,21 @@ message RuinStrategy {
   }
 }
 
+// Parameters to customize a recreate strategy.
+message RecreateParameters {
+  oneof parameters {
+    LocalCheapestInsertionParameters local_cheapest_insertion = 1;
+  }
+}
+
+// Strategy defining how a solution is recreated.
+message RecreateStrategy {
+  optional FirstSolutionStrategy.Value heuristic = 1;
+  // The selected parameters should match the chosen recreate heuristic.
+  // If not set, the default parameters from the RoutingModel are used.
+  optional RecreateParameters parameters = 2;
+}
+
 // The ruin composition strategies specifies how ruin are selected at every ILS
 // iteration.
 message RuinCompositionStrategy {
@@ -175,7 +191,7 @@ message RuinRecreateParameters {
   RuinCompositionStrategy.Value ruin_composition_strategy = 2;
 
   // Strategy defining how a reference solution is recreated.
-  FirstSolutionStrategy.Value recreate_strategy = 3;
+  RecreateStrategy recreate_strategy = 3;
 
   // Ratio in [0, 1] of non start/end nodes to consider as neighbors for the
   // identification of routes spatially close to a non start/end seed node.

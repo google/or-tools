@@ -26,16 +26,15 @@
 
 #include "absl/functional/bind_front.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
-#include "ortools/constraint_solver/routing_parameters_utils.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/constraint_solver/routing_types.h"
 
@@ -65,20 +64,15 @@ MakeGlobalCheapestInsertionParameters(
   return gci_parameters;
 }
 
-// Returns savings parameters based on the given search parameters.
-// TODO(user): consider having an ILS specific set of parameters.
-SavingsFilteredHeuristic::SavingsParameters MakeSavingsParameters(
-    const RoutingSearchParameters& search_parameters) {
-  SavingsFilteredHeuristic::SavingsParameters savings_parameters;
-  savings_parameters.neighbors_ratio =
-      search_parameters.savings_neighbors_ratio();
-  savings_parameters.max_memory_usage_bytes =
-      search_parameters.savings_max_memory_usage_bytes();
-  savings_parameters.add_reverse_arcs =
-      search_parameters.savings_add_reverse_arcs();
-  savings_parameters.arc_coefficient =
-      search_parameters.savings_arc_coefficient();
-  return savings_parameters;
+// Returns local cheapest insertion parameters based on the given recreate
+// strategy if available. Returns default parameters otherwise.
+LocalCheapestInsertionParameters GetLocalCheapestInsertionParameters(
+    const RecreateStrategy& recreate_strategy,
+    const LocalCheapestInsertionParameters& default_parameters) {
+  return recreate_strategy.has_parameters() &&
+                 recreate_strategy.parameters().has_local_cheapest_insertion()
+             ? recreate_strategy.parameters().local_cheapest_insertion()
+             : default_parameters;
 }
 
 // Returns a ruin procedure based on the given ruin strategy.
@@ -226,25 +220,29 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
     const RoutingSearchParameters& parameters, RoutingModel* model,
     std::function<bool()> stop_search,
     LocalSearchFilterManager* filter_manager) {
-  switch (parameters.iterated_local_search_parameters()
-              .ruin_recreate_parameters()
-              .recreate_strategy()) {
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
+  const RecreateStrategy& recreate_strategy =
+      parameters.iterated_local_search_parameters()
+          .ruin_recreate_parameters()
+          .recreate_strategy();
+  switch (recreate_strategy.heuristic()) {
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION: {
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
-          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          GetLocalCheapestInsertionSortingProperties(
-              parameters.local_cheapest_insertion_sorting_properties()),
+          GetLocalCheapestInsertionParameters(
+              recreate_strategy,
+              parameters.local_cheapest_insertion_parameters()),
           filter_manager, model->GetBinCapacities());
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
+    }
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION: {
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           /*evaluator=*/nullptr,
-          parameters.local_cheapest_cost_insertion_pickup_delivery_strategy(),
-          GetLocalCheapestInsertionSortingProperties(
-              parameters.local_cheapest_insertion_sorting_properties()),
+          GetLocalCheapestInsertionParameters(
+              recreate_strategy,
+              parameters.local_cheapest_cost_insertion_parameters()),
           filter_manager, model->GetBinCapacities());
+    }
     case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
       GlobalCheapestInsertionFilteredHeuristic::
           GlobalCheapestInsertionParameters gci_parameters =
@@ -268,13 +266,15 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           filter_manager, gci_parameters);
     }
     case FirstSolutionStrategy::SAVINGS: {
+      // TODO(user): support ILS-specific savings parameters.
       return std::make_unique<SequentialSavingsFilteredHeuristic>(
-          model, std::move(stop_search), MakeSavingsParameters(parameters),
+          model, std::move(stop_search), parameters.savings_parameters(),
           filter_manager);
     }
     case FirstSolutionStrategy::PARALLEL_SAVINGS: {
+      // TODO(user): support ILS-specific savings parameters.
       return std::make_unique<ParallelSavingsFilteredHeuristic>(
-          model, std::move(stop_search), MakeSavingsParameters(parameters),
+          model, std::move(stop_search), parameters.savings_parameters(),
           filter_manager);
     }
     default:

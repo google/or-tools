@@ -20,6 +20,7 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing_types.h"
 

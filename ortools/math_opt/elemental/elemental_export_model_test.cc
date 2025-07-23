@@ -419,6 +419,22 @@ TEST(ExportModelProtoTest, IndicatorConstraintNoneSet) {
   EXPECT_THAT(elemental.ExportModel(), IsOkAndHolds(EqualsProto(expected)));
 }
 
+TEST(ExportModelProtoTest, IndicatorConstraintDeleteIndicator) {
+  Elemental elemental;
+  const IndicatorConstraintId c =
+      elemental.AddElement<ElementType::kIndicatorConstraint>("");
+  const VariableId x = elemental.AddElement<ElementType::kVariable>("");
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(c), x);
+  elemental.DeleteElement(x);
+
+  ModelProto expected;
+  IndicatorConstraintProto& ind_con =
+      (*expected.mutable_indicator_constraints())[c.value()];
+  ind_con.set_lower_bound(-kInf);
+  ind_con.set_upper_bound(kInf);
+  EXPECT_THAT(elemental.ExportModel(), IsOkAndHolds(EqualsProto(expected)));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Larger tests
 ////////////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,6 @@
 #include "ortools/math_opt/solvers/gurobi_callback.h"
 
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <string>
@@ -32,7 +31,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gurobi/environment.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -40,6 +38,7 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/message_callback_data.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {

@@ -87,8 +87,7 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
   // it uses an absl::Mutex that is not.
   const auto impl =
       std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
-  return
-      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+  return [=](absl::Span<const std::string> messages) { impl->Call(messages); };
 }
 
 MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,

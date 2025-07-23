@@ -32,7 +32,6 @@ py_binary(
         "//ortools/sat/colab:flags",
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/sat/python:cp_model_numbers",
         requirement("notebook"),
         requirement("svgwrite"),
         requirement("plotly"),

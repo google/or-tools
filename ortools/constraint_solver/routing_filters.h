@@ -18,9 +18,11 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
@@ -51,8 +53,10 @@ bool FillDimensionValuesFromRoutingDimension(
 
 void FillPrePostVisitValues(
     int path, const DimensionValues& dimension_values,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> pre_travel_evaluator,
-    absl::AnyInvocable<int64_t(int64_t, int64_t) const> post_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        pre_travel_evaluator,
+    std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>>
+        post_travel_evaluator,
     PrePostVisitValues& visit_values);
 
 // Propagates vehicle break constraints in dimension_values.
@@ -83,6 +87,10 @@ IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
 
 /// Returns a filter computing vehicle amortized costs.
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
+    const RoutingModel& routing_model);
+
+/// Returns a filter computing same vehicle costs.
+IntVarLocalSearchFilter* MakeSameVehicleCostFilter(
     const RoutingModel& routing_model);
 
 /// Returns a filter ensuring type regulation constraints are enforced.
@@ -477,7 +485,7 @@ LocalSearchFilter* MakeVehicleVarFilter(const RoutingModel& routing_model,
 /// pair of nodes and given policies.
 LocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const PathState* path_state,
-    const std::vector<PickupDeliveryPair>& pairs,
+    absl::Span<const PickupDeliveryPair> pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);
 
 // This checker enforces dimension requirements.

@@ -12,7 +12,6 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
@@ -171,6 +170,7 @@ cc_library(
     name = "linear_solver",
     srcs = [
         "gurobi_interface.cc",
+        "gurobi_util.cc",
         "linear_expr.cc",
         "linear_solver.cc",
         "linear_solver_callback.cc",
@@ -211,6 +211,7 @@ cc_library(
         "//conditions:default": [],
     }),
     hdrs = [
+        "gurobi_util.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
@@ -258,15 +259,12 @@ cc_library(
         ":model_validator",
         "//ortools/base",
         "//ortools/base:accurate_sum",
-        "//ortools/base:dynamic_library",
         "//ortools/base:hash",
         "//ortools/base:logging",
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",
         "//ortools/base:timer",
-        "//ortools/gurobi:environment",
-        "//ortools/gurobi:gurobi_util",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/port:file",
@@ -274,9 +272,10 @@ cc_library(
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:lp_utils",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "//ortools/third_party_solvers:xpress_environment",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
-        "//ortools/xpress:environment",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
@@ -311,7 +310,7 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            "//ortools/gscip:legacy_scip_params",
+            "//ortools/linear_solver/proto_solver:scip_params",
             "//ortools/linear_solver/proto_solver:scip_proto_solver",
             "@scip",
         ],
@@ -340,6 +339,21 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "gurobi_util",
+    srcs = ["gurobi_util.cc"],
+    hdrs = ["gurobi_util.h"],
+    deps = [
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 

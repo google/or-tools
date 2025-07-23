@@ -22,12 +22,18 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
+#include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_breaks.h"
+#include "ortools/constraint_solver/routing_filter_committables.h"
+#include "ortools/constraint_solver/routing_filters.h"
 #include "ortools/constraint_solver/routing_lp_scheduling.h"
 #include "ortools/constraint_solver/routing_search.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -793,6 +799,351 @@ Constraint* MakeRouteConstraint(
         route_evaluator) {
   return model->solver()->RevAlloc(new RouteConstraint(
       model, std::move(route_cost_vars), std::move(route_evaluator)));
+}
+
+namespace {
+
+/// GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on
+/// all vehicles in the dimension passed to its constructor.
+/// It is intended to be used for dimensions representing time.
+/// A break constraint ensures break intervals fit on the route of a vehicle.
+/// For a given vehicle, it forces break intervals to be disjoint from visit
+/// intervals, where visit intervals start at CumulVar(node) and last for
+/// node_visit_transit[node]. Moreover, it ensures that there is enough time
+/// between two consecutive nodes of a route to do transit and vehicle breaks,
+/// i.e. if Next(nodeA) = nodeB, CumulVar(nodeA) = tA and CumulVar(nodeB) = tB,
+/// then SlackVar(nodeA) >= sum_{breaks \subseteq [tA, tB)} duration(break).
+class GlobalVehicleBreaksConstraint : public Constraint {
+ public:
+  explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
+  std::string DebugString() const override {
+    return "GlobalVehicleBreaksConstraint";
+  }
+
+  void Post() override;
+  void InitialPropagate() override;
+
+ private:
+  void PropagateNode(int node);
+  void PropagateVehicle(int vehicle);
+
+  const RoutingModel* model_;
+  const RoutingDimension* const dimension_;
+  std::vector<Demon*> vehicle_demons_;
+
+  DimensionValues dimension_values_;
+  PrePostVisitValues visits_;
+  std::vector<DimensionValues::Interval> cumul_intervals_;
+  std::vector<DimensionValues::Interval> slack_intervals_;
+  BreakPropagator break_propagator_;
+};
+
+GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(
+    const RoutingDimension* dimension)
+    : Constraint(dimension->model()->solver()),
+      model_(dimension->model()),
+      dimension_(dimension),
+      dimension_values_(dimension->model()->vehicles(),
+                        dimension->cumuls().size()),
+      visits_(dimension->model()->vehicles(), dimension->cumuls().size()),
+      cumul_intervals_(dimension->cumuls().size()),
+      slack_intervals_(dimension->cumuls().size()),
+      break_propagator_(dimension->cumuls().size()) {
+  vehicle_demons_.resize(model_->vehicles());
+}
+
+void GlobalVehicleBreaksConstraint::Post() {
+  for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
+    if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty() &&
+        dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
+      continue;
+    }
+    vehicle_demons_[vehicle] = MakeDelayedConstraintDemon1(
+        solver(), this, &GlobalVehicleBreaksConstraint::PropagateVehicle,
+        "PropagateVehicle", vehicle);
+    for (IntervalVar* interval :
+         dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
+      interval->WhenAnything(vehicle_demons_[vehicle]);
+    }
+  }
+  const int num_cumuls = dimension_->cumuls().size();
+  const int num_nexts = model_->Nexts().size();
+  for (int node = 0; node < num_cumuls; node++) {
+    Demon* dimension_demon = MakeConstraintDemon1(
+        solver(), this, &GlobalVehicleBreaksConstraint::PropagateNode,
+        "PropagateNode", node);
+    if (node < num_nexts) {
+      model_->NextVar(node)->WhenBound(dimension_demon);
+      dimension_->SlackVar(node)->WhenRange(dimension_demon);
+    }
+    model_->VehicleVar(node)->WhenBound(dimension_demon);
+    dimension_->CumulVar(node)->WhenRange(dimension_demon);
+  }
+}
+
+void GlobalVehicleBreaksConstraint::InitialPropagate() {
+  for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
+    if (!dimension_->GetBreakIntervalsOfVehicle(vehicle).empty() ||
+        !dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
+      PropagateVehicle(vehicle);
+    }
+  }
+}
+
+// This dispatches node events to the right vehicle propagator.
+// It also filters out a part of uninteresting events, on which the vehicle
+// propagator will not find anything new.
+void GlobalVehicleBreaksConstraint::PropagateNode(int node) {
+  if (!model_->VehicleVar(node)->Bound()) return;
+  const int vehicle = model_->VehicleVar(node)->Min();
+  if (vehicle < 0 || vehicle_demons_[vehicle] == nullptr) return;
+  EnqueueDelayedDemon(vehicle_demons_[vehicle]);
+}
+
+// First, perform energy-based reasoning on intervals and cumul variables.
+// Then, perform reasoning on slack variables.
+void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
+  dimension_values_.Revert();
+  visits_.Revert();
+
+  // Fill dimension_values_ from the path.
+  // If the path is not a complete start -> end, return.
+  // This leverages travel caching in FillDimensionValuesFromRoutingDimension().
+  int node = model_->Start(vehicle);
+  while (!model_->IsEnd(node)) {
+    dimension_values_.PushNode(node);
+    if (model_->NextVar(node)->Bound()) {
+      node = model_->NextVar(node)->Min();
+    } else {
+      return;
+    }
+  }
+  dimension_values_.PushNode(node);
+  dimension_values_.MakePathFromNewNodes(vehicle);
+  // Translate CP variables to Intervals, and fill dimension_values_.
+  const auto& cp_cumuls = dimension_->cumuls();
+  const auto& cp_slacks = dimension_->slacks();
+  for (const int node : dimension_values_.Nodes(vehicle)) {
+    cumul_intervals_[node] = {.min = cp_cumuls[node]->Min(),
+                              .max = cp_cumuls[node]->Max()};
+    if (dimension_->model()->IsEnd(node)) {
+      slack_intervals_[node] = {.min = 0, .max = 0};
+    } else {
+      slack_intervals_[node] = {.min = cp_slacks[node]->Min(),
+                                .max = cp_slacks[node]->Max()};
+    }
+  }
+  if (!FillDimensionValuesFromRoutingDimension(
+          vehicle, dimension_->vehicle_capacities()[vehicle],
+          dimension_->vehicle_span_upper_bounds()[vehicle], cumul_intervals_,
+          slack_intervals_, dimension_->transit_evaluator(vehicle),
+          dimension_values_)) {
+    solver()->Fail();
+  }
+  if (!PropagateTransitAndSpan(vehicle, dimension_values_)) {
+    solver()->Fail();
+  }
+  // Extract pre/post visit data.
+  auto any_invocable = [this](int evaluator_index)
+      -> std::optional<absl::AnyInvocable<int64_t(int64_t, int64_t) const>> {
+    const auto& evaluator =
+        evaluator_index == -1
+            ? nullptr
+            : dimension_->model()->TransitCallback(evaluator_index);
+    if (evaluator == nullptr) return std::nullopt;
+    return evaluator;
+  };
+  FillPrePostVisitValues(
+      vehicle, dimension_values_,
+      any_invocable(dimension_->GetPreTravelEvaluatorOfVehicle(vehicle)),
+      any_invocable(dimension_->GetPostTravelEvaluatorOfVehicle(vehicle)),
+      visits_);
+  // Copy break data into dimension_values_.
+  using VehicleBreak = DimensionValues::VehicleBreak;
+  const std::vector<IntervalVar*>& cp_breaks =
+      dimension_->GetBreakIntervalsOfVehicle(vehicle);
+  std::vector<VehicleBreak>& dv_breaks =
+      dimension_values_.MutableVehicleBreaks(vehicle);
+  dv_breaks.clear();
+  for (const IntervalVar* cp_break : cp_breaks) {
+    if (cp_break->MayBePerformed()) {
+      dv_breaks.push_back(
+          {.start = {.min = cp_break->StartMin(), .max = cp_break->StartMax()},
+           .end = {.min = cp_break->EndMin(), .max = cp_break->EndMax()},
+           .duration = {.min = cp_break->DurationMin(),
+                        .max = cp_break->DurationMax()},
+           .is_performed = {.min = cp_break->MustBePerformed(), .max = 1}});
+    } else {
+      dv_breaks.push_back({.start = {.min = 0, .max = 0},
+                           .end = {.min = 0, .max = 0},
+                           .duration = {.min = 0, .max = 0},
+                           .is_performed = {.min = 0, .max = 0}});
+    }
+  }
+  // Propagate inside dimension_values_, fail if infeasible.
+  if (break_propagator_.FastPropagations(vehicle, dimension_values_, visits_) ==
+      BreakPropagator::kInfeasible) {
+    solver()->Fail();
+  }
+  const auto& interbreaks =
+      dimension_->GetBreakDistanceDurationOfVehicle(vehicle);
+  if (break_propagator_.PropagateInterbreak(vehicle, dimension_values_,
+                                            interbreaks) ==
+      BreakPropagator::kInfeasible) {
+    solver()->Fail();
+  }
+  if (!PropagateTransitAndSpan(vehicle, dimension_values_)) {
+    solver()->Fail();
+  }
+  // Copy changes back to CP variables.
+  using Interval = DimensionValues::Interval;
+  const int num_nodes = dimension_values_.NumNodes(vehicle);
+  const absl::Span<const int> nodes = dimension_values_.Nodes(vehicle);
+  const absl::Span<const Interval> dv_cumuls =
+      dimension_values_.Cumuls(vehicle);
+  for (int r = 0; r < num_nodes; ++r) {
+    const int node = nodes[r];
+    cp_cumuls[node]->SetRange(dv_cumuls[r].min, dv_cumuls[r].max);
+  }
+  const int num_breaks = cp_breaks.size();
+  for (int b = 0; b < num_breaks; ++b) {
+    IntervalVar* cp_break = cp_breaks[b];
+    if (!cp_break->MayBePerformed()) continue;
+    const VehicleBreak& dv_break = dv_breaks[b];
+    cp_break->SetStartRange(dv_break.start.min, dv_break.start.max);
+    cp_break->SetEndRange(dv_break.end.min, dv_break.end.max);
+    cp_break->SetDurationRange(dv_break.duration.min, dv_break.duration.max);
+    if (dv_break.is_performed.min == 1) {
+      cp_break->SetPerformed(true);
+    } else if (dv_break.is_performed.max == 0) {
+      cp_break->SetPerformed(false);
+    }
+  }
+  // If everything went fine, we can save dimension state.
+  // Saving is only done for caching reasons, this allows subsequent calls to
+  // FillDimensionValuesFromRoutingDimension() to re-use travel evaluations.
+  dimension_values_.Commit();
+  visits_.Commit();
+}
+
+}  // namespace
+
+Constraint* MakeGlobalVehicleBreaksConstraint(
+    Solver* solver, const RoutingDimension* dimension) {
+  return solver->RevAlloc(new GlobalVehicleBreaksConstraint(dimension));
+}
+
+namespace {
+
+// TODO(user): Make this a real constraint with demons on transit and active
+// variables.
+class NumActiveVehiclesCapacityConstraint : public Constraint {
+ public:
+  NumActiveVehiclesCapacityConstraint(Solver* solver,
+                                      std::vector<IntVar*> transit_vars,
+                                      std::vector<IntVar*> active_vars,
+                                      std::vector<IntVar*> vehicle_active_vars,
+                                      std::vector<int64_t> vehicle_capacities,
+                                      int max_active_vehicles,
+                                      bool enforce_active_vehicles)
+      : Constraint(solver),
+        transit_vars_(std::move(transit_vars)),
+        active_vars_(std::move(active_vars)),
+        vehicle_active_vars_(std::move(vehicle_active_vars)),
+        vehicle_capacities_(std::move(vehicle_capacities)),
+        max_active_vehicles_(
+            std::min(max_active_vehicles,
+                     static_cast<int>(vehicle_active_vars_.size()))),
+        enforce_active_vehicles_(enforce_active_vehicles) {
+    DCHECK_EQ(transit_vars_.size(), active_vars_.size());
+    DCHECK_EQ(vehicle_capacities_.size(), vehicle_active_vars_.size());
+  }
+  std::string DebugString() const override {
+    return "NumActiveVehiclesCapacityConstraint";
+  }
+  void Post() override {
+    int64_t remaining_demand = 0;
+    for (int i = 0; i < transit_vars_.size(); ++i) {
+      if (active_vars_[i]->Min() == 1) {
+        CapAddTo(transit_vars_[i]->Min(), &remaining_demand);
+      }
+    }
+    sorted_by_capacity_vehicles_.clear();
+    sorted_by_capacity_vehicles_.reserve(vehicle_capacities_.size());
+    for (int v = 0; v < vehicle_active_vars_.size(); ++v) {
+      if (vehicle_active_vars_[v]->Max() == 0) continue;
+      sorted_by_capacity_vehicles_.push_back(v);
+    }
+    const int updated_max_active_vehicles = std::min<int>(
+        max_active_vehicles_, sorted_by_capacity_vehicles_.size());
+    absl::c_sort(sorted_by_capacity_vehicles_, [this](int a, int b) {
+      return vehicle_capacities_[a] > vehicle_capacities_[b];
+    });
+    for (int i = 0; i < updated_max_active_vehicles; ++i) {
+      CapSubFrom(vehicle_capacities_[sorted_by_capacity_vehicles_[i]],
+                 &remaining_demand);
+    }
+    if (remaining_demand > 0) solver()->Fail();
+
+    // Check vehicles that need to be forced to be active.
+    if (enforce_active_vehicles_) {
+      int64_t extended_capacity = 0;
+      if (updated_max_active_vehicles < sorted_by_capacity_vehicles_.size()) {
+        extended_capacity = vehicle_capacities_
+            [sorted_by_capacity_vehicles_[updated_max_active_vehicles]];
+      }
+      for (int i = 0; i < updated_max_active_vehicles; ++i) {
+        const int vehicle = sorted_by_capacity_vehicles_[i];
+        if (CapAdd(remaining_demand, vehicle_capacities_[vehicle]) >
+            extended_capacity) {
+          vehicle_active_vars_[vehicle]->SetValue(1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Check remaining vehicles and make inactive the ones which do not have
+    // enough capacity.
+    if (updated_max_active_vehicles > 0 &&
+        updated_max_active_vehicles - 1 < sorted_by_capacity_vehicles_.size()) {
+      CapAddTo(
+          vehicle_capacities_
+              [sorted_by_capacity_vehicles_[updated_max_active_vehicles - 1]],
+          &remaining_demand);
+    }
+    for (int i = updated_max_active_vehicles;
+         i < sorted_by_capacity_vehicles_.size(); ++i) {
+      const int vehicle = sorted_by_capacity_vehicles_[i];
+      if (vehicle_capacities_[vehicle] < remaining_demand ||
+          updated_max_active_vehicles == 0) {
+        vehicle_active_vars_[vehicle]->SetValue(0);
+      }
+    }
+  }
+  void InitialPropagate() override {}
+
+ private:
+  const std::vector<IntVar*> transit_vars_;
+  const std::vector<IntVar*> active_vars_;
+  const std::vector<IntVar*> vehicle_active_vars_;
+  const std::vector<int64_t> vehicle_capacities_;
+  const int max_active_vehicles_;
+  const bool enforce_active_vehicles_;
+  std::vector<int> sorted_by_capacity_vehicles_;
+};
+
+}  // namespace
+
+Constraint* MakeNumActiveVehiclesCapacityConstraint(
+    Solver* solver, std::vector<IntVar*> transit_vars,
+    std::vector<IntVar*> active_vars, std::vector<IntVar*> vehicle_active_vars,
+    std::vector<int64_t> vehicle_capacities, int max_active_vehicles,
+    bool enforce_active_vehicles) {
+  return solver->RevAlloc(new NumActiveVehiclesCapacityConstraint(
+      solver, std::move(transit_vars), std::move(active_vars),
+      std::move(vehicle_active_vars), std::move(vehicle_capacities),
+      max_active_vehicles, enforce_active_vehicles));
 }
 
 }  // namespace operations_research

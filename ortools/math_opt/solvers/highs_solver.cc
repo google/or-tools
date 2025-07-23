@@ -544,30 +544,35 @@ absl::StatusOr<TerminationProto> HighsSolver::MakeTermination(
                                    optional_finite_primal_objective,
                                    optional_dual_objective);
     case HighsModelStatus::kIterationLimit: {
-      if (is_integer) {
-        if (had_node_limit && had_solution_limit) {
-          return LimitTerminationProto(
-              is_maximize, LIMIT_UNDETERMINED, optional_finite_primal_objective,
-              optional_dual_objective,
-              "Both node limit and solution limit were requested, cannot "
-              "determine reason for termination");
-        } else if (had_node_limit) {
-          return LimitTerminationProto(is_maximize, LIMIT_NODE,
-                                       optional_finite_primal_objective,
-                                       optional_dual_objective);
-        } else if (had_solution_limit) {
-          return LimitTerminationProto(is_maximize, LIMIT_SOLUTION,
-                                       optional_finite_primal_objective,
-                                       optional_dual_objective);
-        }
-      } else {
-        // For LP, only the MathOpt iteration limit can cause highs to return
-        // HighsModelStatus::kIterationLimit.
-        return LimitTerminationProto(is_maximize, LIMIT_ITERATION,
+      return LimitTerminationProto(is_maximize, LIMIT_ITERATION,
+                                   optional_finite_primal_objective,
+                                   optional_dual_objective);
+    }
+    case HighsModelStatus::kSolutionLimit: {
+      if (had_node_limit && !had_solution_limit) {
+        return LimitTerminationProto(is_maximize, LIMIT_NODE,
                                      optional_finite_primal_objective,
                                      optional_dual_objective);
+      } else if (had_solution_limit && !had_node_limit) {
+        return LimitTerminationProto(is_maximize, LIMIT_SOLUTION,
+                                     optional_finite_primal_objective,
+                                     optional_dual_objective);
+      } else {
+        return LimitTerminationProto(
+            is_maximize, LIMIT_UNDETERMINED, optional_finite_primal_objective,
+            optional_dual_objective,
+            "HighsModelStatus was kSolutionLimit but cannot infer a MathOpt "
+            "Limit, could be NODE_LIMIT or SOLUTION_LIMIT");
       }
     }
+    case HighsModelStatus::kInterrupt:
+      return LimitTerminationProto(is_maximize, LIMIT_INTERRUPTED,
+                                   optional_finite_primal_objective,
+                                   optional_dual_objective);
+    case HighsModelStatus::kMemoryLimit:
+      return LimitTerminationProto(
+          is_maximize, LIMIT_OTHER, optional_finite_primal_objective,
+          optional_dual_objective, "Highs hit kMemoryLimit");
   }
   return util::InternalErrorBuilder() << "HighsModelStatus unimplemented: "
                                       << static_cast<int>(highs_model_status);

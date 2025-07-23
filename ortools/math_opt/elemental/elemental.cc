@@ -106,7 +106,13 @@ bool Elemental::DeleteElementUntyped(const ElementType e, int64_t id) {
         const auto keys = element_ref_trackers_[a].GetKeysReferencing(
             ValueTypeFor<AttrType>(id));
         for (const auto key : keys) {
-          SetAttr(a, key, ValueTypeFor<AttrType>());
+          // Don't use SetAttr here, we do not want to track this change, it is
+          // already implied by the deletion of the element. But still clean up
+          // the diff trackers for all keys and zero out the value.
+          for (auto& [unused, diff] : diffs_->UpdateAndGetAll()) {
+            diff->EraseKeysForAttr(a, {key});
+          }
+          attrs_[a].Erase(key);
         }
       }
     }

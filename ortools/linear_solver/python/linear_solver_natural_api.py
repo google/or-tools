@@ -13,7 +13,7 @@
 
 """Patch to the python wrapper of ../linear_solver.h providing an algebraic API.
 
-This is directly imported, and use exclusively in ./linear_solver.i. See that
+This is directly imported, and use exclusively in ./linear_solver.swig. See that
 file.
 For examples leveraging the code defined here, see ./pywraplp_test.py and
 ../../../python/linear_programming.py.

@@ -3145,6 +3145,7 @@ class Solver {
   void SetSearchContext(Search* search, absl::string_view search_context);
   std::string SearchContext() const;
   std::string SearchContext(const Search* search) const;
+  bool AcceptSolution(Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
   // TODO(user): Investigate if this should be moved to Search.
   Assignment* GetOrCreateLocalSearchState();
@@ -3975,9 +3976,9 @@ class SearchMonitor : public BaseObject {
   /// When the search tree is finished.
   virtual void NoMoreSolutions();
 
-  /// When a local optimum is reached. If 'true' is returned, the last solution
-  /// is discarded and the search proceeds with the next one.
-  virtual bool LocalOptimum();
+  /// Called when a local optimum is reached. If 'true' is returned, the last
+  /// solution is discarded and the search proceeds with the next one.
+  virtual bool AtLocalOptimum();
 
   ///
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);

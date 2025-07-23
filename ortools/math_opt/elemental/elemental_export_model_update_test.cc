@@ -1246,6 +1246,33 @@ TEST(ExportModelUpdateTest, ModifyIndicatorConstraintActiveOnZeroUnsupported) {
                        HasSubstr("indicator_constraint_activate_on_zero")));
 }
 
+TEST(ExportModelUpdateTest, DeleteIndicatorVariable) {
+  Elemental elemental;
+  const IndicatorConstraintId c =
+      elemental.AddElement<ElementType::kIndicatorConstraint>("c");
+  const VariableId x = elemental.AddElement<ElementType::kVariable>("x");
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(c), x);
+
+  const Elemental::DiffHandle d = elemental.AddDiff();
+
+  elemental.DeleteElement(x);
+
+  // Modifying the indicator variable of an indicator constraint (not what is
+  // happening in this test) is not supported up the stack in mathopt.
+  //
+  // Instead here, we are deleting the variable that is the indicator in the
+  // constraint from the model entirely. MathOpt does support this, and can
+  // generate a ModelProto here, but solving this model will be an error at
+  // runtime unless the entire indicator constraint is deleted.
+  //
+  // This behavior may change in the future, e.g., we may support modification
+  // of indicator constraints.
+  ModelUpdateProto expected;
+  expected.add_deleted_variable_ids(0);
+  EXPECT_THAT(elemental.ExportModelUpdate(d),
+              IsOkAndHolds(Optional(EqualsProto(expected))));
+}
+
 }  // namespace
 
 }  // namespace operations_research::math_opt

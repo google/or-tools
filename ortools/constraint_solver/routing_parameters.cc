@@ -19,11 +19,14 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/duration.pb.h"
+#include "google/protobuf/extension_set.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/proto_enum_utils.h"
@@ -31,6 +34,7 @@
 #include "ortools/base/types.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_heuristic_parameters.pb.h"
 #include "ortools/constraint_solver/routing_ils.pb.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -67,7 +71,8 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   //     ->mutable_spatially_close_routes()
   //     ->set_num_ruined_routes(2);
   rr->set_ruin_composition_strategy(RuinCompositionStrategy::UNSET);
-  rr->set_recreate_strategy(FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
+  rr->mutable_recreate_strategy()->set_heuristic(
+      FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION);
   rr->set_route_selection_neighbors_ratio(1.0);
   rr->set_route_selection_min_neighbors(10);
   rr->set_route_selection_max_neighbors(100);
@@ -86,10 +91,10 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   RoutingSearchParameters p;
   p.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
   p.set_use_unfiltered_first_solution_strategy(false);
-  p.set_savings_neighbors_ratio(1);
-  p.set_savings_max_memory_usage_bytes(6e9);
-  p.set_savings_add_reverse_arcs(false);
-  p.set_savings_arc_coefficient(1);
+  p.mutable_savings_parameters()->set_neighbors_ratio(1);
+  p.mutable_savings_parameters()->set_max_memory_usage_bytes(6e9);
+  p.mutable_savings_parameters()->set_add_reverse_arcs(false);
+  p.mutable_savings_parameters()->set_arc_coefficient(1);
   p.set_cheapest_insertion_farthest_seeds_ratio(0);
   p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
   p.set_cheapest_insertion_first_solution_min_neighbors(1);
@@ -98,10 +103,11 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization(  // NOLINT
       false);
   p.set_cheapest_insertion_add_unperformed_entries(false);
-  p.set_local_cheapest_insertion_pickup_delivery_strategy(
-      RoutingSearchParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
-  p.set_local_cheapest_cost_insertion_pickup_delivery_strategy(
-      RoutingSearchParameters::BEST_PICKUP_DELIVERY_PAIR);
+  p.mutable_local_cheapest_insertion_parameters()->set_pickup_delivery_strategy(
+      LocalCheapestInsertionParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
+  p.mutable_local_cheapest_cost_insertion_parameters()
+      ->set_pickup_delivery_strategy(
+          LocalCheapestInsertionParameters::BEST_PICKUP_DELIVERY_PAIR);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* o =
       p.mutable_local_search_operators();
   o->set_use_relocate(BOOL_TRUE);
@@ -143,6 +149,8 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   o->set_use_local_cheapest_insertion_expensive_chain_lns(BOOL_FALSE);
   o->set_use_global_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
   o->set_use_local_cheapest_insertion_close_nodes_lns(BOOL_FALSE);
+  o->set_use_global_cheapest_insertion_visit_types_lns(BOOL_TRUE);
+  o->set_use_local_cheapest_insertion_visit_types_lns(BOOL_TRUE);
   p.set_ls_operator_neighbors_ratio(1);
   p.set_ls_operator_min_neighbors(1);
   p.set_use_multi_armed_bandit_concatenate_operators(false);
@@ -161,7 +169,7 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.set_use_cp_sat(BOOL_FALSE);
   p.set_use_generalized_cp_sat(BOOL_FALSE);
   p.mutable_sat_parameters()->set_linearization_level(2);
-  p.mutable_sat_parameters()->set_num_search_workers(1);
+  p.mutable_sat_parameters()->set_num_workers(1);
   p.set_report_intermediate_cp_sat_solutions(false);
   p.set_fallback_to_cp_sat_size_threshold(20);
   p.set_continuous_scheduling_solver(RoutingSearchParameters::SCHEDULING_GLOP);
@@ -256,6 +264,72 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
   const auto status_or_duration = util_time::DecodeGoogleApiProto(d);
   return status_or_duration.ok() &&
          status_or_duration.value() >= absl::ZeroDuration();
+}
+
+// Searches for errors in LocalCheapestInsertionParameters and appends them to
+// the given `errors` vector.
+void FindErrorsInLocalCheapestInsertionParameters(
+    absl::string_view prefix,
+    const LocalCheapestInsertionParameters& parameters,
+    std::vector<std::string>& errors) {
+  using absl::StrCat;
+
+  absl::flat_hash_map<
+      LocalCheapestInsertionParameters::InsertionSortingProperty, int>
+      sorting_properties_map;
+  for (const LocalCheapestInsertionParameters::InsertionSortingProperty
+           property :
+       REPEATED_ENUM_ADAPTER(parameters, insertion_sorting_properties)) {
+    if (property ==
+        LocalCheapestInsertionParameters::SORTING_PROPERTY_UNSPECIFIED) {
+      errors.emplace_back(StrCat(
+          prefix, " - Invalid insertion sorting property: ",
+          LocalCheapestInsertionParameters::InsertionSortingProperty_Name(
+              LocalCheapestInsertionParameters::SORTING_PROPERTY_UNSPECIFIED)));
+    }
+    const int occurrences = sorting_properties_map[property]++;
+    if (occurrences == 2) {
+      errors.emplace_back(StrCat(
+          prefix, " - Duplicate insertion sorting property: ",
+          LocalCheapestInsertionParameters::InsertionSortingProperty_Name(
+              property)));
+    }
+    if (property == LocalCheapestInsertionParameters::SORTING_PROPERTY_RANDOM &&
+        parameters.insertion_sorting_properties().size() > 1) {
+      errors.emplace_back(
+          StrCat(prefix,
+                 " - SORTING_PROPERTY_RANDOM cannot be used in conjunction "
+                 "with other properties."));
+    }
+  }
+}
+
+void FindErrorsInRecreateParameters(
+    const FirstSolutionStrategy::Value heuristic,
+    const RecreateParameters& parameters, std::vector<std::string>& errors) {
+  switch (parameters.parameters_case()) {
+    case RecreateParameters::kLocalCheapestInsertion: {
+      const std::string prefix =
+          heuristic == FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION
+              ? "Local cheapest insertion (recreate heuristic)"
+              : "Local cheapest cost insertion (recreate heuristic)";
+      FindErrorsInLocalCheapestInsertionParameters(
+          prefix, parameters.local_cheapest_insertion(), errors);
+      break;
+    }
+    default:
+      LOG(DFATAL) << "Unsupported unset recreate parameters.";
+      break;
+  }
+}
+
+std::string GetRecreateParametersName(const RecreateParameters& parameters) {
+  switch (parameters.parameters_case()) {
+    case RecreateParameters::kLocalCheapestInsertion:
+      return "local_cheapest_insertion";
+    case RecreateParameters::PARAMETERS_NOT_SET:
+      return "PARAMETERS_NOT_SET";
+  }
 }
 
 // Searches for errors in ILS parameters and appends them to the given `errors`
@@ -373,12 +447,52 @@ void FindErrorsInIteratedLocalSearchParameters(
                  "route_selection_max_neighbors"));
     }
 
-    if (rr.recreate_strategy() == FirstSolutionStrategy::UNSET) {
+    const FirstSolutionStrategy::Value recreate_heuristic =
+        rr.recreate_strategy().heuristic();
+    if (recreate_heuristic == FirstSolutionStrategy::UNSET) {
       errors.emplace_back(
           StrCat("Invalid value for "
                  "iterated_local_search_parameters.ruin_recreate_parameters."
-                 "recreate_strategy: ",
-                 rr.recreate_strategy()));
+                 "recreate_strategy.heuristic: ",
+                 FirstSolutionStrategy::Value_Name(recreate_heuristic)));
+    }
+
+    if (rr.recreate_strategy().has_parameters()) {
+      const RecreateParameters& recreate_params =
+          rr.recreate_strategy().parameters();
+      if (recreate_params.parameters_case() ==
+          RecreateParameters::PARAMETERS_NOT_SET) {
+        errors.emplace_back(
+            StrCat("Invalid value for "
+                   "iterated_local_search_parameters.ruin_recreate_parameters."
+                   "recreate_strategy.parameters: ",
+                   GetRecreateParametersName(recreate_params)));
+      } else {
+        const absl::flat_hash_map<FirstSolutionStrategy::Value,
+                                  RecreateParameters::ParametersCase>
+            strategy_to_parameters_case_map = {
+                {FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION,
+                 RecreateParameters::kLocalCheapestInsertion},
+                {FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION,
+                 RecreateParameters::kLocalCheapestInsertion}};
+
+        const RecreateParameters& recreate_params =
+            rr.recreate_strategy().parameters();
+
+        if (const auto params =
+                strategy_to_parameters_case_map.find(recreate_heuristic);
+            params == strategy_to_parameters_case_map.end() ||
+            recreate_params.parameters_case() != params->second) {
+          errors.emplace_back(
+              StrCat("recreate_strategy.heuristic is set to ",
+                     FirstSolutionStrategy::Value_Name(recreate_heuristic),
+                     " but recreate_strategy.parameters define ",
+                     GetRecreateParametersName(recreate_params)));
+        } else {
+          FindErrorsInRecreateParameters(recreate_heuristic, recreate_params,
+                                         errors);
+        }
+      }
     }
   }
 
@@ -484,20 +598,23 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     }
   }
 #endif  // !__ANDROID__ && !__wasm__
-  if (const double ratio = search_parameters.savings_neighbors_ratio();
+  if (const double ratio =
+          search_parameters.savings_parameters().neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(StrCat("Invalid savings_neighbors_ratio: ", ratio));
+    errors.emplace_back(
+        StrCat("Invalid savings_parameters.neighbors_ratio: ", ratio));
   }
   if (const double max_memory =
-          search_parameters.savings_max_memory_usage_bytes();
+          search_parameters.savings_parameters().max_memory_usage_bytes();
       std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
-    errors.emplace_back(
-        StrCat("Invalid savings_max_memory_usage_bytes: ", max_memory));
+    errors.emplace_back(StrCat(
+        "Invalid savings_parameters.max_memory_usage_bytes: ", max_memory));
   }
-  if (const double coefficient = search_parameters.savings_arc_coefficient();
+  if (const double coefficient =
+          search_parameters.savings_parameters().arc_coefficient();
       std::isnan(coefficient) || coefficient <= 0 || std::isinf(coefficient)) {
     errors.emplace_back(
-        StrCat("Invalid savings_arc_coefficient: ", coefficient));
+        StrCat("Invalid savings_parameters.arc_coefficient: ", coefficient));
   }
   if (const double ratio =
           search_parameters.cheapest_insertion_farthest_seeds_ratio();
@@ -531,33 +648,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
         "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
         ". Must be greater or equal to 1."));
   }
-  {
-    absl::flat_hash_map<RoutingSearchParameters::InsertionSortingProperty, int>
-        sorting_properties_map;
-    for (const RoutingSearchParameters::InsertionSortingProperty property :
-         REPEATED_ENUM_ADAPTER(search_parameters,
-                               local_cheapest_insertion_sorting_properties)) {
-      if (property == RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED) {
-        errors.emplace_back(
-            StrCat("Invalid local cheapest insertion sorting property: ",
-                   RoutingSearchParameters::InsertionSortingProperty_Name(
-                       RoutingSearchParameters::SORTING_PROPERTY_UNSPECIFIED)));
-      }
-      const int occurrences = sorting_properties_map[property]++;
-      if (occurrences == 2) {
-        errors.emplace_back(StrCat(
-            "Duplicate local cheapest insertion sorting property: ",
-            RoutingSearchParameters::InsertionSortingProperty_Name(property)));
-      }
-      if (property == RoutingSearchParameters::SORTING_PROPERTY_RANDOM &&
-          search_parameters.local_cheapest_insertion_sorting_properties()
-                  .size() > 1) {
-        errors.emplace_back(
-            StrCat("SORTING_PROPERTY_RANDOM cannot be used in conjunction "
-                   "with other properties."));
-      }
-    }
-  }
+
+  FindErrorsInLocalCheapestInsertionParameters(
+      "Local cheapest insertion (first solution heuristic)",
+      search_parameters.local_cheapest_insertion_parameters(), errors);
+  FindErrorsInLocalCheapestInsertionParameters(
+      "Local cheapest cost insertion (first solution heuristic)",
+      search_parameters.local_cheapest_cost_insertion_parameters(), errors);
+
   if (const double ratio = search_parameters.ls_operator_neighbors_ratio();
       std::isnan(ratio) || ratio <= 0 || ratio > 1) {
     errors.emplace_back(StrCat("Invalid ls_operator_neighbors_ratio: ", ratio));
@@ -738,7 +836,7 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
   if (const sat::SatParameters& sat_parameters =
           search_parameters.sat_parameters();
       sat_parameters.enumerate_all_solutions() &&
-      (sat_parameters.num_search_workers() > 1 ||
+      (sat_parameters.num_workers() > 1 ||
        sat_parameters.interleave_search())) {
     errors.emplace_back(
         "sat_parameters.enumerate_all_solutions cannot be true in parallel"
