@@ -21,7 +21,6 @@ from absl import app
 from absl import flags
 import numpy as np
 
-from google.protobuf import text_format
 from ortools.linear_solver.python import model_builder as mb
 from ortools.sat.python import cp_model
 
@@ -319,7 +318,7 @@ def solve_cutting_stock_with_arc_flow_and_sat(output_proto_file: str, params: st
     # Solve model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solver.parameters.log_search_progress = True
     solver.Solve(model)
 

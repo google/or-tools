@@ -25,8 +25,6 @@ from absl import flags
 import numpy as np
 import pandas as pd
 
-from google.protobuf import text_format
-
 from ortools.sat.python import cp_model
 
 
@@ -159,7 +157,7 @@ def solve_with_duplicate_items(
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
 
     status = solver.solve(model)
 
@@ -261,7 +259,7 @@ def solve_with_duplicate_optional_items(
     # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
 
     status = solver.solve(model)
 
@@ -382,7 +380,7 @@ def solve_with_rotations(data: pd.Series, max_height: int, max_width: int):
     # solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
 
     status = solver.solve(model)
 

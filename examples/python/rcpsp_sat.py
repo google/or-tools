@@ -26,7 +26,6 @@ import collections
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 from ortools.scheduling import rcpsp_pb2
 from ortools.scheduling.python import rcpsp
@@ -361,7 +360,7 @@ def solve_rcpsp(
 
     # Parse user specified parameters.
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
 
     # Favor objective_shaving over objective_lb_search.
     if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:

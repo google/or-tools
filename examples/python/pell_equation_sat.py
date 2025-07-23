@@ -18,6 +18,7 @@ from collections.abc import Sequence
 
 from absl import app
 from absl import flags
+
 from ortools.sat.python import cp_model
 
 

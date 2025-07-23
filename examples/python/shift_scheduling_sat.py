@@ -17,7 +17,6 @@
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _OUTPUT_PROTO = flags.DEFINE_string(
@@ -410,7 +409,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
     # Solve the model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.solve(model, solution_printer)
 

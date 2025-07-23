@@ -23,6 +23,8 @@ code_sample_py("balance_group_sat")
 
 code_sample_py("bus_driver_scheduling_sat")
 
+code_sample_py("car_sequencing_optimization_sat")
+
 code_sample_py("chemical_balance_sat")
 
 code_sample_py("clustering_sat")
