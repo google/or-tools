@@ -14,7 +14,8 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 PYTHON_DEPS = [
     "//ortools/init/python:init",
