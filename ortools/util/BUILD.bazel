@@ -405,7 +405,6 @@ cc_library(
 cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
-    deps = [],
 )
 
 cc_library(
