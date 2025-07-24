@@ -14,7 +14,6 @@
 # Notebook utilities for OR-Tools.
 
 load("@ortools_notebook_deps//:requirements.bzl", "requirement")
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
