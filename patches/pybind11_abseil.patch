@@ -91,6 +91,7 @@ index 791c245..33e614a 100644
      name = "ok_status_singleton_lib",
      srcs = ["ok_status_singleton_lib.cc"],
      hdrs = ["ok_status_singleton_lib.h"],
+     visibility = ["//visibility:public"],
      deps = [
          "@com_google_absl//absl/status",
 -        "@rules_python//python/cc:current_py_cc_headers",  # buildcleaner: keep
