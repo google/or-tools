@@ -60,6 +60,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1038,8 +1039,8 @@ void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(LiteralXorIs(mapping->Literals(ct.bool_xor().literals()), true));
+  m->Add(LiteralXorIs(mapping->Literals(ct.enforcement_literal()),
+                      mapping->Literals(ct.bool_xor().literals()), true));
 }
 
 namespace {
@@ -1130,8 +1131,6 @@ bool IsPartOfProductEncoding(const ConstraintProto& ct) {
 
 }  // namespace
 
-// TODO(user): We could use a smarter way to determine buckets, like putting
-// everyone with the same coeff together if possible and the split is ok.
 void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
                                          std::vector<int64_t>* coeffs,
@@ -1143,25 +1142,61 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     ub_required = true;
   }
 
+  // We sort by absolute value of coefficients. The separate - from +, and then
+  // by variable order, usually variable with the same "meaning" are defined
+  // together in a model.
+  const int num_terms = vars->size();
+  std::vector<std::pair<IntegerVariable, int64_t>> terms;
+  {
+    terms.reserve(num_terms);
+    for (int i = 0; i < num_terms; ++i) {
+      terms.push_back({(*vars)[i], (*coeffs)[i]});
+    }
+    std::sort(terms.begin(), terms.end(),
+              [](const std::pair<IntegerVariable, int64_t> a,
+                 const std::pair<IntegerVariable, int64_t> b) {
+                const int64_t abs_coeff_a = std::abs(a.second);
+                const int64_t abs_coeff_b = std::abs(b.second);
+                if (abs_coeff_a != abs_coeff_b) {
+                  return abs_coeff_a < abs_coeff_b;
+                }
+                if (a.second != b.second) {
+                  return a.second < b.second;
+                }
+                return a.first < b.first;
+              });
+  }
+  std::vector<int64_t> sorted_coeffs;
+  sorted_coeffs.resize(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    sorted_coeffs[i] = terms[i].second;
+  }
+  const std::vector<std::pair<int, int>> buckets =
+      HeuristicallySplitLongLinear(sorted_coeffs);
+
   std::vector<IntegerVariable> bucket_sum_vars;
   std::vector<int64_t> bucket_sum_coeffs;
   std::vector<IntegerVariable> local_vars;
   std::vector<int64_t> local_coeffs;
 
-  int64_t i = 0;
-  const int64_t num_vars = vars->size();
-  const int64_t num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  for (int64_t b = 0; b < num_buckets; ++b) {
+  for (const auto [start, size] : buckets) {
+    // Just keep the same variable if the size of that bucket is one.
+    if (size == 1) {
+      const auto [var, coeff] = terms[start];
+      bucket_sum_vars.push_back(var);
+      bucket_sum_coeffs.push_back(coeff);
+      continue;
+    }
+
     local_vars.clear();
     local_coeffs.clear();
     int64_t bucket_lb = 0;
     int64_t bucket_ub = 0;
     int64_t gcd = 0;
-    const int64_t limit = num_vars * (b + 1);
-    for (; i * num_buckets < limit; ++i) {
-      const IntegerVariable var = (*vars)[i];
-      const int64_t coeff = (*coeffs)[i];
+
+    for (int i = 0; i < size; ++i) {
+      const auto [var, coeff] = terms[start + i];
       gcd = std::gcd(gcd, std::abs(coeff));
       local_vars.push_back(var);
       local_coeffs.push_back(coeff);
@@ -1170,6 +1205,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
       bucket_lb += std::min(term1, term2);
       bucket_ub += std::max(term1, term2);
     }
+
     if (gcd == 0) continue;
     if (gcd > 1) {
       // Everything should be exactly divisible!
@@ -1194,6 +1230,8 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
       m->Add(WeightedSumLowerOrEqual(local_vars, local_coeffs, 0));
     }
   }
+
+  // Rewrite the constraint.
   *vars = bucket_sum_vars;
   *coeffs = bucket_sum_coeffs;
 }
@@ -1479,8 +1517,22 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(AllDifferentOnBounds(expressions));
 }
 
+void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.enforcement_literal().empty()) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
+  ConstraintProto new_ct = ct;
+  BoolArgumentProto& bool_or = *new_ct.mutable_bool_or();
+  for (const int literal : ct.enforcement_literal()) {
+    bool_or.add_literals(NegatedRef(literal));
+  }
+  LoadBoolOrConstraint(new_ct, m);
+}
+
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression prod = mapping->Affine(ct.int_prod().target());
   std::vector<AffineExpression> terms;
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
@@ -1489,15 +1541,14 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   switch (terms.size()) {
     case 0: {
       auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-      auto* sat_solver = m->GetOrCreate<SatSolver>();
       if (prod.IsConstant()) {
         if (prod.constant.value() != 1) {
-          sat_solver->NotifyThatModelIsUnsat();
+          LoadAlwaysFalseConstraint(ct, m);
         }
       } else {
         if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
             !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
-          sat_solver->NotifyThatModelIsUnsat();
+          LoadAlwaysFalseConstraint(ct, m);
         }
       }
       break;
@@ -1506,11 +1557,11 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
       LinearConstraintBuilder builder(m, /*lb=*/0, /*ub=*/0);
       builder.AddTerm(prod, 1);
       builder.AddTerm(terms[0], -1);
-      LoadLinearConstraint(builder.Build(), m);
+      LoadConditionalLinearConstraint(enforcement_literals, builder.Build(), m);
       break;
     }
     case 2: {
-      m->Add(ProductConstraint(terms[0], terms[1], prod));
+      m->Add(ProductConstraint(enforcement_literals, terms[0], terms[1], prod));
       break;
     }
     default: {

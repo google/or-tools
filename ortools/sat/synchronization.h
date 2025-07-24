@@ -485,7 +485,7 @@ class SharedResponseManager {
   //
   // Note that this shouldn't be called before the solution is actually
   // reported. We check for this case in NewSolution().
-  void NotifyThatImprovingProblemIsInfeasible(const std::string& worker_info);
+  void NotifyThatImprovingProblemIsInfeasible(absl::string_view worker_info);
 
   // Adds to the shared response a subset of assumptions that are enough to
   // make the problem infeasible.

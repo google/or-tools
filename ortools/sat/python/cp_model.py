@@ -45,18 +45,13 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
+from collections.abc import Callable, Iterable, Sequence
 import threading
 import time
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
     Optional,
-    Sequence,
-    Tuple,
     Union,
-    cast,
     overload,
 )
 import warnings
@@ -69,12 +64,14 @@ from ortools.util.python import sorted_interval_list
 
 # Import external types.
 BoundedLinearExpression = cmh.BoundedLinearExpression
+Constraint = cmh.Constraint
 CpModelProto = cmh.CpModelProto
 CpSolverResponse = cmh.CpSolverResponse
 CpSolverStatus = cmh.CpSolverStatus
 Domain = sorted_interval_list.Domain
 FlatFloatExpr = cmh.FlatFloatExpr
 FlatIntExpr = cmh.FlatIntExpr
+IntervalVar = cmh.IntervalVar
 IntVar = cmh.IntVar
 LinearExpr = cmh.LinearExpr
 NotBooleanVariable = cmh.NotBooleanVariable
@@ -180,44 +177,11 @@ VariableT = Union["IntVar", IntegralT]
 LinearExprT = Union[LinearExpr, "IntVar", IntegralT]
 ObjLinearExprT = Union[LinearExpr, NumberT]
 
-ArcT = Tuple[IntegralT, IntegralT, LiteralT]
+ArcT = tuple[IntegralT, IntegralT, LiteralT]
 _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
-def short_name(model: cmh.CpModelProto, i: int) -> str:
-    """Returns a short name of an integer variable, or its negation."""
-    if i >= 0:
-        return str(IntVar(model, i))
-    else:
-        return f"not({IntVar(model, -i - 1)})"
-
-
-def short_expr_name(
-    model: cmh.CpModelProto,
-    e: cmh.LinearExpressionProto,
-) -> str:
-    """Pretty-print LinearExpressionProto instances."""
-    if not e.vars:
-        return str(e.offset)
-    if len(e.vars) == 1:
-        var_name = short_name(model, e.vars[0])
-        coeff = e.coeffs[0]
-        result = ""
-        if coeff == 1:
-            result = var_name
-        elif coeff == -1:
-            result = f"-{var_name}"
-        elif coeff != 0:
-            result = f"{coeff} * {var_name}"
-        if e.offset > 0:
-            result = f"{result} + {e.offset}"
-        elif e.offset < 0:
-            result = f"{result} - {-e.offset}"
-        return result
-    # TODO(user): Support more than affine expressions.
-    return str(e)
-
-
+# Helper functions.
 def arg_is_boolean(x: Any) -> bool:
     """Checks if the x is a boolean."""
     if isinstance(x, bool):
@@ -225,274 +189,6 @@ def arg_is_boolean(x: Any) -> bool:
     if isinstance(x, np.bool_):
         return True
     return False
-
-
-def rebuild_from_linear_expression_proto(
-    proto: cmh.LinearExpressionProto,
-    model_proto: cmh.CpModelProto,
-) -> LinearExprT:
-    """Recreate a LinearExpr from a LinearExpressionProto."""
-    num_elements = len(proto.vars)
-    if num_elements == 0:
-        return proto.offset
-    elif num_elements == 1:
-        var = IntVar(model_proto, proto.vars[0])
-        return LinearExpr.affine(
-            var, proto.coeffs[0], proto.offset
-        )  # pytype: disable=bad-return-type
-    else:
-        variables = []
-        for var_index in range(len(proto.vars)):
-            var = IntVar(model_proto, var_index)
-            variables.append(var)
-        if proto.offset != 0:
-            coeffs = []
-            coeffs.extend(proto.coeffs)
-            coeffs.append(1)
-            variables.append(proto.offset)
-            return LinearExpr.weighted_sum(variables, coeffs)
-        else:
-            return LinearExpr.weighted_sum(variables, proto.coeffs)
-
-
-class Constraint:
-    """Base class for constraints.
-
-    Constraints are built by the CpModel through the add<XXX> methods.
-    Once created by the CpModel class, they are automatically added to the model.
-    The purpose of this class is to allow specification of enforcement literals
-    for this constraint.
-
-        b = model.new_bool_var('b')
-        x = model.new_int_var(0, 10, 'x')
-        y = model.new_int_var(0, 10, 'y')
-
-        model.add(x + 2 * y == 5).only_enforce_if(b.negated())
-    """
-
-    def __init__(self, cp_model: "CpModel", index: Optional[int] = None) -> None:
-        self.__cp_model: "CpModel" = cp_model
-        if index is None:
-            self.__index: int = len(cp_model.proto.constraints)
-            cp_model.proto.constraints.add()
-        else:
-            self.__index: int = index
-
-    @overload
-    def only_enforce_if(self, literals: Iterable[LiteralT]) -> "Constraint": ...
-
-    @overload
-    def only_enforce_if(self, *literals: LiteralT) -> "Constraint": ...
-
-    def only_enforce_if(self, *literals) -> "Constraint":
-        """Adds one or more enforcement literals to the constraint.
-
-        This method adds one or more literals (that is, a boolean variable or its
-        negation) as enforcement literals. The conjunction of all these literals
-        determines whether the constraint is active or not. It acts as an
-        implication, so if the conjunction is true, it implies that the constraint
-        must be enforced. If it is false, then the constraint is ignored.
-
-        BoolOr, BoolAnd, and linear constraints all support enforcement literals.
-
-        Args:
-          *literals: One or more Boolean literals.
-
-        Returns:
-          self.
-        """
-        cmh.CpSatHelper.add_enforcement_literals(
-            self.__index,
-            self.__cp_model.expand_literals_to_index_list(literals),
-            self.__cp_model.proto,
-        )
-        return self
-
-    def with_name(self, name: str) -> "Constraint":
-        """Sets the name of the constraint."""
-        if name:
-            cmh.CpSatHelper.set_ct_name(self.__index, name, self.__cp_model.proto)
-        else:
-            cmh.CpSatHelper.clear_ct_name(self.__index, self.__cp_model.proto)
-        return self
-
-    @property
-    def name(self) -> str:
-        """Returns the name of the constraint."""
-        return cmh.CpSatHelper.ct_name(self.__index, self.__cp_model.proto)
-
-    @property
-    def index(self) -> int:
-        """Returns the index of the constraint in the model."""
-        return self.__index
-
-    @property
-    def proto(self) -> cmh.ConstraintProto:
-        """Returns the constraint protobuf."""
-        return self.__cp_model.proto.constraints[self.__index]
-
-    def __str__(self) -> str:
-        return (
-            f"Constraint({self.__index},"
-            f" {self.__cp_model.proto.constraints[self.__index]})"
-        )
-
-    # Pre PEP8 compatibility.
-    # pylint: disable=invalid-name
-    OnlyEnforceIf = only_enforce_if
-    WithName = with_name
-
-    def Name(self) -> str:
-        return self.name
-
-    def Index(self) -> int:
-        return self.index
-
-    def Proto(self) -> cmh.ConstraintProto:
-        return self.proto
-
-    # pylint: enable=invalid-name
-
-
-class IntervalVar:
-    """Represents an Interval variable.
-
-    An interval variable is both a constraint and a variable. It is defined by
-    three integer variables: start, size, and end.
-
-    It is a constraint because, internally, it enforces that start + size == end.
-
-    It is also a variable as it can appear in specific scheduling constraints:
-    NoOverlap, NoOverlap2D, Cumulative.
-
-    Optionally, an enforcement literal can be added to this constraint, in which
-    case these scheduling constraints will ignore interval variables with
-    enforcement literals assigned to false. Conversely, these constraints will
-    also set these enforcement literals to false if they cannot fit these
-    intervals into the schedule.
-
-    Raises:
-      ValueError: if start, size, end are not defined, or have the wrong type.
-    """
-
-    def __init__(
-        self,
-        model: cmh.CpModelProto,
-        start: Union[cmh.LinearExpressionProto, int],
-        size: Optional[cmh.LinearExpressionProto],
-        end: Optional[cmh.LinearExpressionProto],
-        is_present_index: Optional[int],
-        name: Optional[str],
-    ) -> None:
-        self.__model: cmh.CpModelProto = model
-        self.__index: int
-        self.__ct: cmh.ConstraintProto
-        # As with the IntVar::__init__ method, we hack the __init__ method to
-        # support two use cases:
-        #   case 1: called when creating a new interval variable.
-        #      {start|size|end} are linear expressions, is_present_index is either
-        #      None or the index of a Boolean literal. name is a string
-        #   case 2: called when querying an existing interval variable.
-        #      start_index is an int, all parameters after are None.
-        if isinstance(start, int):
-            if size is not None:
-                raise ValueError("size should be None")
-            if end is not None:
-                raise ValueError("end should be None")
-            if is_present_index is not None:
-                raise ValueError("is_present_index should be None")
-            self.__index = cast(int, start)
-            self.__ct = model.constraints[self.__index]
-        else:
-            self.__index = len(model.constraints)
-            self.__ct = self.__model.constraints.add()
-            if start is None:
-                raise TypeError("start is not defined")
-            self.__ct.interval.start.copy_from(start)
-            if size is None:
-                raise TypeError("size is not defined")
-            self.__ct.interval.size.copy_from(size)
-            if end is None:
-                raise TypeError("end is not defined")
-            self.__ct.interval.end.copy_from(end)
-            if is_present_index is not None:
-                self.__ct.enforcement_literal.append(is_present_index)
-            if name:
-                self.__ct.name = name
-
-    @property
-    def index(self) -> int:
-        """Returns the index of the interval constraint in the model."""
-        return self.__index
-
-    @property
-    def proto(self) -> cmh.ConstraintProto:
-        """Returns the interval protobuf."""
-        return self.__model.constraints[self.__index]
-
-    @property
-    def model_proto(self) -> cmh.CpModelProto:
-        """Returns the model protobuf."""
-        return self.__model
-
-    def __str__(self):
-        return self.proto.name
-
-    def __repr__(self):
-        interval = self.proto.interval
-        if self.proto.enforcement_literal:
-            return (
-                f"{self.proto.name}(start ="
-                f" {short_expr_name(self.__model, interval.start)}, size ="
-                f" {short_expr_name(self.__model, interval.size)}, end ="
-                f" {short_expr_name(self.__model, interval.end)}, is_present ="
-                f" {short_name(self.__model, self.proto.enforcement_literal[0])})"
-            )
-        else:
-            return (
-                f"{self.proto.name}(start ="
-                f" {short_expr_name(self.__model, interval.start)}, size ="
-                f" {short_expr_name(self.__model, interval.size)}, end ="
-                f" {short_expr_name(self.__model, interval.end)})"
-            )
-
-    @property
-    def name(self) -> str:
-        if not self.proto or not self.proto.name:
-            return ""
-        return self.proto.name
-
-    def start_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.proto.interval.start, self.__model
-        )
-
-    def size_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.proto.interval.size, self.__model
-        )
-
-    def end_expr(self) -> LinearExprT:
-        return rebuild_from_linear_expression_proto(
-            self.proto.interval.end, self.__model
-        )
-
-    # Pre PEP8 compatibility.
-    # pylint: disable=invalid-name
-    def Name(self) -> str:
-        return self.name
-
-    def Index(self) -> int:
-        return self.index
-
-    def Proto(self) -> cmh.ConstraintProto:
-        return self.proto
-
-    StartExpr = start_expr
-    SizeExpr = size_expr
-    EndExpr = end_expr
-
-    # pylint: enable=invalid-name
 
 
 def object_is_a_true_literal(literal: LiteralT) -> bool:
@@ -521,7 +217,68 @@ def object_is_a_false_literal(literal: LiteralT) -> bool:
     return False
 
 
-class CpModel:
+def expand_exprs_generator_or_tuple(
+    expressions: Union[tuple[LinearExprT, ...], Iterable[LinearExprT]],
+) -> Union[Iterable[LinearExprT], LinearExprT]:
+    if hasattr(expressions, "__len__"):  # Tuple
+        if len(expressions) != 1:
+            return expressions
+        if isinstance(expressions[0], (NumberTypes, LinearExpr)):
+            return expressions
+    # The `expressions` is a tuple. If it contains a single element which is
+    # itself an iterable (e.g. a generator), unpack it.
+    return expressions[0]
+
+
+def expand_literals_generator_or_tuple(
+    literals: Union[tuple[LiteralT, ...], Iterable[LiteralT]],
+) -> Union[Iterable[LiteralT], LiteralT]:
+    if hasattr(literals, "__len__"):  # Tuple
+        if len(literals) != 1:
+            return literals
+        if isinstance(literals[0], (NumberTypes, bool, cmh.Literal)):
+            return literals
+    # The `expressions` is a tuple. If it contains a single element which is
+    # itself an iterable (e.g. a generator), unpack it.
+    return literals[0]
+
+
+def _get_index(obj: _IndexOrSeries) -> pd.Index:
+    """Returns the indices of `obj` as a `pd.Index`."""
+    if isinstance(obj, pd.Series):
+        return obj.index
+    return obj
+
+
+@overload
+def _convert_to_series_and_validate_index(
+    value_or_series: Union[LinearExprT, pd.Series], index: pd.Index
+) -> pd.Series: ...
+
+
+@overload
+def _convert_to_series_and_validate_index(
+    value_or_series: Union[LiteralT, pd.Series], index: pd.Index
+) -> pd.Series: ...
+
+
+@overload
+def _convert_to_series_and_validate_index(
+    value_or_series: Union[IntegralT, pd.Series], index: pd.Index
+) -> pd.Series: ...
+
+
+def _convert_to_series_and_validate_index(value_or_series, index):
+    """Returns a pd.Series of the given index with the corresponding values."""
+    if isinstance(value_or_series, pd.Series):
+        if value_or_series.index.equals(index):
+            return value_or_series
+        else:
+            raise ValueError("index does not match")
+    return pd.Series(data=value_or_series, index=index)
+
+
+class CpModel(cmh.CpBaseModel):
     """Methods for building a CP model.
 
     Methods beginning with:
@@ -531,21 +288,20 @@ class CpModel:
     """
 
     def __init__(self) -> None:
-        self.__model: cmh.CpModelProto = cmh.CpModelProto()
-        self.__constant_map: Dict[IntegralT, int] = {}
+        cmh.CpBaseModel.__init__(self)
 
     # Naming.
     @property
     def name(self) -> str:
         """Returns the name of the model."""
-        if not self.__model or not self.__model.name:
+        if not self.model_proto or not self.model_proto.name:
             return ""
-        return self.__model.name
+        return self.model_proto.name
 
     @name.setter
     def name(self, name: str):
         """Sets the name of the model."""
-        self.__model.name = name
+        self.model_proto.name = name
 
     # Integer variable.
     def new_int_var(self, lb: IntegralT, ub: IntegralT, name: str) -> IntVar:
@@ -564,7 +320,7 @@ class CpModel:
           a variable whose domain is [lb, ub].
         """
         return (
-            IntVar(self.__model)
+            IntVar(self.model_proto)
             .with_name(name)
             .with_domain(sorted_interval_list.Domain(lb, ub))
         )
@@ -585,20 +341,19 @@ class CpModel:
         Returns:
             a variable whose domain is the given domain.
         """
-        return IntVar(self.__model).with_name(name).with_domain(domain)
+        return IntVar(self.model_proto).with_name(name).with_domain(domain)
 
     def new_bool_var(self, name: str) -> IntVar:
         """Creates a 0-1 variable with the given name."""
         return (
-            IntVar(self.__model)
+            IntVar(self.model_proto)
             .with_name(name)
             .with_domain(sorted_interval_list.Domain(0, 1))
         )
 
     def new_constant(self, value: IntegralT) -> IntVar:
         """Declares a constant integer."""
-        index: int = self.get_or_make_index_from_constant(value)
-        return IntVar(self.__model, index)
+        return IntVar(self.model_proto, self.get_or_make_index_from_constant(value))
 
     def new_int_var_series(
         self,
@@ -643,17 +398,13 @@ class CpModel:
                 f" upper_bound={upper_bounds} for variable set={name}"
             )
 
-        lower_bounds = _convert_to_integral_series_and_validate_index(
-            lower_bounds, index
-        )
-        upper_bounds = _convert_to_integral_series_and_validate_index(
-            upper_bounds, index
-        )
+        lower_bounds = _convert_to_series_and_validate_index(lower_bounds, index)
+        upper_bounds = _convert_to_series_and_validate_index(upper_bounds, index)
         return pd.Series(
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                IntVar(self.__model)
+                IntVar(self.model_proto)
                 .with_name(f"{name}[{i}]")
                 .with_domain(
                     sorted_interval_list.Domain(lower_bounds[i], upper_bounds[i])
@@ -688,7 +439,7 @@ class CpModel:
             index=index,
             data=[
                 # pylint: disable=g-complex-comprehension
-                IntVar(self.__model)
+                IntVar(self.model_proto)
                 .with_name(f"{name}[{i}]")
                 .with_domain(sorted_interval_list.Domain(0, 1))
                 for i in index
@@ -718,7 +469,7 @@ class CpModel:
                     "Cannot add a linear expression containing floating point"
                     f" coefficients or constants: {type(linear_expr).__name__!r}"
                 )
-            return self.add(ble)
+            return self.add_bounded_linear_expression_internal(ble)
         if isinstance(linear_expr, IntegralTypes):
             if not domain.contains(int(linear_expr)):
                 return self.add_bool_or([])  # Evaluate to false.
@@ -742,12 +493,7 @@ class CpModel:
           TypeError: If the `ct` is not a `BoundedLinearExpression` or a Boolean.
         """
         if isinstance(ct, BoundedLinearExpression):
-            return Constraint(
-                self,
-                cmh.CpSatHelper.add_bounded_linear_expression_to_model(
-                    ct, self.__model
-                ),
-            )
+            return self.add_bounded_linear_expression_internal(ct)
         if ct and arg_is_boolean(ct):
             return self.add_bool_or([True])
         if not ct and arg_is_boolean(ct):
@@ -773,13 +519,9 @@ class CpModel:
         Returns:
           An instance of the `Constraint` class.
         """
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        expanded = expand_exprs_generator_or_tuple(expressions)
-        model_ct.all_diff.exprs.extend(
-            self.parse_linear_expression(x) for x in expanded
+        return self.add_all_different_internal(
+            list(expand_exprs_generator_or_tuple(expressions))
         )
-        return ct
 
     def add_element(
         self,
@@ -807,10 +549,7 @@ class CpModel:
             expression: LinearExprT = list(expressions)[int(index)]
             return self.add(expression == target)
 
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_element(index, expressions, target, self.__model),
-        )
+        return self.add_element_internal(index, expressions, target)
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
         """Adds Circuit(arcs).
@@ -836,13 +575,7 @@ class CpModel:
         """
         if not arcs:
             raise ValueError("add_circuit expects a non-empty array of arcs")
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        for arc in arcs:
-            model_ct.circuit.tails.append(arc[0])
-            model_ct.circuit.heads.append(arc[1])
-            model_ct.circuit.literals.append(self.get_or_make_boolean_index(arc[2]))
-        return ct
+        return self.add_circuit_internal(arcs)
 
     def add_multiple_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
         """Adds a multiple circuit constraint, aka the 'VRP' constraint.
@@ -870,13 +603,7 @@ class CpModel:
         """
         if not arcs:
             raise ValueError("add_multiple_circuit expects a non-empty array of arcs")
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        for arc in arcs:
-            model_ct.routes.tails.append(arc[0])
-            model_ct.routes.heads.append(arc[1])
-            model_ct.routes.literals.append(self.get_or_make_boolean_index(arc[2]))
-        return ct
+        return self.add_routes_internal(arcs)
 
     def add_allowed_assignments(
         self,
@@ -910,27 +637,7 @@ class CpModel:
                 "add_allowed_assignments expects a non-empty expressions array"
             )
 
-        ct: Constraint = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.table.exprs.extend(
-            [self.parse_linear_expression(e) for e in expressions]
-        )
-        arity: int = len(expressions)
-        for one_tuple in tuples_list:
-            if len(one_tuple) != arity:
-                raise TypeError(f"Tuple {one_tuple!r} has the wrong arity")
-
-        # duck-typing (no explicit type checks here)
-        try:
-            for one_tuple in tuples_list:
-                model_ct.table.values.extend(one_tuple)
-        except ValueError as ex:
-            raise TypeError(
-                "add_xxx_assignment: Not an integer or does not fit in an int64_t:"
-                f" {type(ex.args).__name__!r}"
-            ) from ex
-
-        return ct
+        return self.add_table_internal(expressions, tuples_list, False)
 
     def add_forbidden_assignments(
         self,
@@ -963,17 +670,14 @@ class CpModel:
                 "add_forbidden_assignments expects a non-empty expressions array"
             )
 
-        index: int = len(self.__model.constraints)
-        ct: Constraint = self.add_allowed_assignments(expressions, tuples_list)
-        self.__model.constraints[index].table.negated = True
-        return ct
+        return self.add_table_internal(expressions, tuples_list, True)
 
     def add_automaton(
         self,
         transition_expressions: Sequence[LinearExprT],
         starting_state: IntegralT,
         final_states: Sequence[IntegralT],
-        transition_triples: Sequence[Tuple[IntegralT, IntegralT, IntegralT]],
+        transition_triples: Sequence[tuple[IntegralT, IntegralT, IntegralT]],
     ) -> Constraint:
         """Adds an automaton constraint.
 
@@ -1028,21 +732,12 @@ class CpModel:
         if not transition_triples:
             raise ValueError("add_automaton expects some transition triples")
 
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.automaton.exprs.extend(
-            [self.parse_linear_expression(e) for e in transition_expressions]
+        return self.add_automaton_internal(
+            transition_expressions,
+            starting_state,
+            final_states,
+            transition_triples,
         )
-        model_ct.automaton.starting_state = starting_state
-        for v in final_states:
-            model_ct.automaton.final_states.append(v)
-        for t in transition_triples:
-            if len(t) != 3:
-                raise TypeError(f"Tuple {t!r} has the wrong arity (!= 3)")
-            model_ct.automaton.transition_tail.append(t[0])
-            model_ct.automaton.transition_label.append(t[1])
-            model_ct.automaton.transition_head.append(t[2])
-        return ct
 
     def add_inverse(
         self,
@@ -1073,18 +768,12 @@ class CpModel:
                 "In the inverse constraint, the two array variables and"
                 " inverse_variables must have the same length."
             )
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.inverse.f_direct.extend([self.get_or_make_index(x) for x in variables])
-        model_ct.inverse.f_inverse.extend(
-            [self.get_or_make_index(x) for x in inverse_variables]
-        )
-        return ct
+        return self.add_inverse_internal(variables, inverse_variables)
 
     def add_reservoir_constraint(
         self,
-        times: Iterable[LinearExprT],
-        level_changes: Iterable[LinearExprT],
+        times: Sequence[LinearExprT],
+        level_changes: Sequence[LinearExprT],
         min_level: int,
         max_level: int,
     ) -> Constraint:
@@ -1123,32 +812,19 @@ class CpModel:
           ValueError: if min_level > 0
         """
 
-        if max_level < min_level:
-            raise ValueError("Reservoir constraint must have a max_level >= min_level")
-
-        if max_level < 0:
-            raise ValueError("Reservoir constraint must have a max_level >= 0")
-
-        if min_level > 0:
-            raise ValueError("Reservoir constraint must have a min_level <= 0")
-
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.reservoir.time_exprs.extend(
-            [self.parse_linear_expression(x) for x in times]
+        return self.add_reservoir_internal(
+            times,
+            level_changes,
+            [],
+            min_level,
+            max_level,
         )
-        model_ct.reservoir.level_changes.extend(
-            [self.parse_linear_expression(x) for x in level_changes]
-        )
-        model_ct.reservoir.min_level = min_level
-        model_ct.reservoir.max_level = max_level
-        return ct
 
     def add_reservoir_constraint_with_active(
         self,
-        times: Iterable[LinearExprT],
-        level_changes: Iterable[LinearExprT],
-        actives: Iterable[LiteralT],
+        times: Sequence[LinearExprT],
+        level_changes: Sequence[LinearExprT],
+        actives: Sequence[LiteralT],
         min_level: int,
         max_level: int,
     ) -> Constraint:
@@ -1205,52 +881,28 @@ class CpModel:
         if min_level > 0:
             raise ValueError("Reservoir constraint must have a min_level <= 0")
 
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.reservoir.time_exprs.extend(
-            [self.parse_linear_expression(x) for x in times]
+        if not times:
+            raise ValueError("Reservoir constraint must have a non-empty times array")
+
+        return self.add_reservoir_internal(
+            times,
+            level_changes,
+            actives,
+            min_level,
+            max_level,
         )
-        model_ct.reservoir.level_changes.extend(
-            [self.parse_linear_expression(x) for x in level_changes]
-        )
-        model_ct.reservoir.active_literals.extend(
-            [self.get_or_make_boolean_index(x) for x in actives]
-        )
-        model_ct.reservoir.min_level = min_level
-        model_ct.reservoir.max_level = max_level
-        return ct
 
     def add_map_domain(
         self, var: IntVar, bool_var_array: Iterable[IntVar], offset: IntegralT = 0
     ):
         """Adds `var == i + offset <=> bool_var_array[i] == true for all i`."""
-
         for i, bool_var in enumerate(bool_var_array):
-            b_index = bool_var.index
-            var_index = var.index
-            model_ct = self.__model.constraints.add()
-            model_ct.linear.vars.append(var_index)
-            model_ct.linear.coeffs.append(1)
-            offset_as_int = int(offset)
-            model_ct.linear.domain.extend([offset_as_int + i, offset_as_int + i])
-            model_ct.enforcement_literal.append(b_index)
-
-            model_ct = self.__model.constraints.add()
-            model_ct.linear.vars.append(var_index)
-            model_ct.linear.coeffs.append(1)
-            model_ct.enforcement_literal.append(-b_index - 1)
-            if offset + i - 1 >= INT_MIN:
-                model_ct.linear.domain.extend([INT_MIN, offset_as_int + i - 1])
-            if offset + i + 1 <= INT_MAX:
-                model_ct.linear.domain.extend([offset_as_int + i + 1, INT_MAX])
+            self.add(var == i + offset).only_enforce_if(bool_var)
+            self.add(var != i + offset).only_enforce_if(~bool_var)
 
     def add_implication(self, a: LiteralT, b: LiteralT) -> Constraint:
         """Adds `a => b` (`a` implies `b`)."""
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.bool_or.literals.append(self.get_or_make_boolean_index(b))
-        model_ct.enforcement_literal.append(self.get_or_make_boolean_index(a))
-        return ct
+        return self.add_bool_and(b).only_enforce_if(a)
 
     @overload
     def add_bool_or(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -1260,9 +912,9 @@ class CpModel:
 
     def add_bool_or(self, *literals):
         """Adds `Or(literals) == true`: sum(literals) >= 1."""
-        lits = self.expand_literals_to_index_list(literals)
-        index: int = cmh.CpSatHelper.add_bool_or(lits, self.__model)
-        return Constraint(self, index)
+        return self.add_bool_or_internal(
+            list(expand_literals_generator_or_tuple(literals))
+        )
 
     @overload
     def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -1282,9 +934,9 @@ class CpModel:
 
     def add_at_most_one(self, *literals) -> Constraint:
         """Adds `AtMostOne(literals)`: `sum(literals) <= 1`."""
-        lits = self.expand_literals_to_index_list(literals)
-        index: int = cmh.CpSatHelper.add_at_most_one(lits, self.__model)
-        return Constraint(self, index)
+        return self.add_at_most_one_internal(
+            list(expand_literals_generator_or_tuple(literals))
+        )
 
     @overload
     def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -1294,9 +946,9 @@ class CpModel:
 
     def add_exactly_one(self, *literals):
         """Adds `ExactlyOne(literals)`: `sum(literals) == 1`."""
-        lits = self.expand_literals_to_index_list(literals)
-        index: int = cmh.CpSatHelper.add_exactly_one(lits, self.__model)
-        return Constraint(self, index)
+        return self.add_exactly_one_internal(
+            list(expand_literals_generator_or_tuple(literals))
+        )
 
     @overload
     def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -1306,9 +958,9 @@ class CpModel:
 
     def add_bool_and(self, *literals):
         """Adds `And(literals) == true`."""
-        lits = self.expand_literals_to_index_list(literals)
-        index: int = cmh.CpSatHelper.add_bool_and(lits, self.__model)
-        return Constraint(self, index)
+        return self.add_bool_and_internal(
+            list(expand_literals_generator_or_tuple(literals))
+        )
 
     @overload
     def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -1328,9 +980,9 @@ class CpModel:
         Returns:
           An `Constraint` object.
         """
-        lits = self.expand_literals_to_index_list(literals)
-        index: int = cmh.CpSatHelper.add_bool_xor(lits, self.__model)
-        return Constraint(self, index)
+        return self.add_bool_xor_internal(
+            list(expand_literals_generator_or_tuple(literals))
+        )
 
     @overload
     def add_min_equality(
@@ -1344,15 +996,10 @@ class CpModel:
 
     def add_min_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Min(expressions)`."""
-        exprs = [e for e in expand_exprs_generator_or_tuple(expressions)]
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
-                "min",
-                target,
-                exprs,
-                self.__model,
-            ),
+        return self.add_linear_argument_constraint_internal(
+            "min",
+            target,
+            list(expand_exprs_generator_or_tuple(expressions)),
         )
 
     @overload
@@ -1367,35 +1014,22 @@ class CpModel:
 
     def add_max_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Max(expressions)`."""
-        exprs = [e for e in expand_exprs_generator_or_tuple(expressions)]
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
-                "max",
-                target,
-                exprs,
-                self.__model,
-            ),
+        return self.add_linear_argument_constraint_internal(
+            "max",
+            target,
+            list(expand_exprs_generator_or_tuple(expressions)),
         )
 
     def add_division_equality(
         self, target: LinearExprT, num: LinearExprT, denom: LinearExprT
     ) -> Constraint:
         """Adds `target == num // denom` (integer division rounded towards 0)."""
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
-                "div", target, [num, denom], self.__model
-            ),
-        )
+        return self.add_linear_argument_constraint_internal("div", target, [num, denom])
 
     def add_abs_equality(self, target: LinearExprT, expr: LinearExprT) -> Constraint:
         """Adds `target == Abs(expr)`."""
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
-                "max", target, [expr, -expr], self.__model
-            ),
+        return self.add_linear_argument_constraint_internal(
+            "max", target, [expr, -expr]
         )
 
     def add_modulo_equality(
@@ -1420,12 +1054,7 @@ class CpModel:
         Returns:
           A `Constraint` object.
         """
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
-                "mod", target, [expr, mod], self.__model
-            ),
-        )
+        return self.add_linear_argument_constraint_internal("mod", target, [expr, mod])
 
     def add_multiplication_equality(
         self,
@@ -1433,13 +1062,11 @@ class CpModel:
         *expressions: Union[Iterable[LinearExprT], LinearExprT],
     ) -> Constraint:
         """Adds `target == expressions[0] * .. * expressions[n]`."""
-        return Constraint(
-            self,
-            cmh.CpSatHelper.add_linear_argument_constraint(
+        return (
+            self.add_linear_argument_constraint_internal(
                 "prod",
                 target,
-                expand_exprs_generator_or_tuple(expressions),
-                self.__model,
+                list(expand_exprs_generator_or_tuple(expressions)),
             ),
         )
 
@@ -1464,30 +1091,7 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-
-        start_expr = self.parse_linear_expression(start)
-        size_expr = self.parse_linear_expression(size)
-        end_expr = self.parse_linear_expression(end)
-        if len(start_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: start must be 1-var affine or constant."
-            )
-        if len(size_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: size must be 1-var affine or constant."
-            )
-        if len(end_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: end must be 1-var affine or constant."
-            )
-        return IntervalVar(
-            self.__model,
-            start_expr,
-            size_expr,
-            end_expr,
-            None,
-            name,
-        )
+        return self.new_interval_var_internal(name, start, size, end, [])
 
     def new_interval_var_series(
         self,
@@ -1526,9 +1130,9 @@ class CpModel:
         if not name.isidentifier():
             raise ValueError(f"name={name!r} is not a valid identifier")
 
-        starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
-        sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
-        ends = _convert_to_linear_expr_series_and_validate_index(ends, index)
+        starts = _convert_to_series_and_validate_index(starts, index)
+        sizes = _convert_to_series_and_validate_index(sizes, index)
+        ends = _convert_to_series_and_validate_index(ends, index)
         interval_array = []
         for i in index:
             interval_array.append(
@@ -1557,21 +1161,7 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-        start_expr = self.parse_linear_expression(start)
-        size_expr = self.parse_linear_expression(size)
-        end_expr = self.parse_linear_expression(start + size)
-        if len(start_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: start must be affine or constant."
-            )
-        return IntervalVar(
-            self.__model,
-            start_expr,
-            size_expr,
-            end_expr,
-            None,
-            name,
-        )
+        return self.new_interval_var_internal(name, start, size, start + size, [])
 
     def new_fixed_size_interval_var_series(
         self,
@@ -1606,8 +1196,8 @@ class CpModel:
         if not name.isidentifier():
             raise ValueError(f"name={name!r} is not a valid identifier")
 
-        starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
-        sizes = _convert_to_integral_series_and_validate_index(sizes, index)
+        starts = _convert_to_series_and_validate_index(starts, index)
+        sizes = _convert_to_series_and_validate_index(sizes, index)
         interval_array = []
         for i in index:
             interval_array.append(
@@ -1647,31 +1237,12 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-
-        # Creates the IntervalConstraintProto object.
-        is_present_index = self.get_or_make_boolean_index(is_present)
-        start_expr = self.parse_linear_expression(start)
-        size_expr = self.parse_linear_expression(size)
-        end_expr = self.parse_linear_expression(end)
-        if len(start_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: start must be affine or constant."
-            )
-        if len(size_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: size must be affine or constant."
-            )
-        if len(end_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: end must be affine or constant."
-            )
-        return IntervalVar(
-            self.__model,
-            start_expr,
-            size_expr,
-            end_expr,
-            is_present_index,
+        return self.new_interval_var_internal(
             name,
+            start,
+            size,
+            end,
+            [is_present],
         )
 
     def new_optional_interval_var_series(
@@ -1715,10 +1286,10 @@ class CpModel:
         if not name.isidentifier():
             raise ValueError(f"name={name!r} is not a valid identifier")
 
-        starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
-        sizes = _convert_to_linear_expr_series_and_validate_index(sizes, index)
-        ends = _convert_to_linear_expr_series_and_validate_index(ends, index)
-        are_present = _convert_to_literal_series_and_validate_index(are_present, index)
+        starts = _convert_to_series_and_validate_index(starts, index)
+        sizes = _convert_to_series_and_validate_index(sizes, index)
+        ends = _convert_to_series_and_validate_index(ends, index)
+        are_present = _convert_to_series_and_validate_index(are_present, index)
 
         interval_array = []
         for i in index:
@@ -1755,21 +1326,12 @@ class CpModel:
         Returns:
           An `IntervalVar` object.
         """
-        start_expr = self.parse_linear_expression(start)
-        size_expr = self.parse_linear_expression(size)
-        end_expr = self.parse_linear_expression(start + size)
-        if len(start_expr.vars) > 1:
-            raise TypeError(
-                "cp_model.new_interval_var: start must be affine or constant."
-            )
-        is_present_index = self.get_or_make_boolean_index(is_present)
-        return IntervalVar(
-            self.__model,
-            start_expr,
-            size_expr,
-            end_expr,
-            is_present_index,
+        return self.new_interval_var_internal(
             name,
+            start,
+            size,
+            start + size,
+            [is_present],
         )
 
     def new_optional_fixed_size_interval_var_series(
@@ -1809,9 +1371,9 @@ class CpModel:
         if not name.isidentifier():
             raise ValueError(f"name={name!r} is not a valid identifier")
 
-        starts = _convert_to_linear_expr_series_and_validate_index(starts, index)
-        sizes = _convert_to_integral_series_and_validate_index(sizes, index)
-        are_present = _convert_to_literal_series_and_validate_index(are_present, index)
+        starts = _convert_to_series_and_validate_index(starts, index)
+        sizes = _convert_to_series_and_validate_index(sizes, index)
+        are_present = _convert_to_series_and_validate_index(are_present, index)
         interval_array = []
         for i in index:
             interval_array.append(
@@ -1824,24 +1386,19 @@ class CpModel:
             )
         return pd.Series(index=index, data=interval_array)
 
-    def add_no_overlap(self, interval_vars: Iterable[IntervalVar]) -> Constraint:
+    def add_no_overlap(self, intervals: Iterable[IntervalVar]) -> Constraint:
         """Adds NoOverlap(interval_vars).
 
         A NoOverlap constraint ensures that all present intervals do not overlap
         in time.
 
         Args:
-          interval_vars: The list of interval variables to constrain.
+          intervals: The list of interval variables to constrain.
 
         Returns:
           An instance of the `Constraint` class.
         """
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.no_overlap.intervals.extend(
-            [self.get_interval_index(x) for x in interval_vars]
-        )
-        return ct
+        return self.add_no_overlap_internal(intervals)
 
     def add_no_overlap_2d(
         self,
@@ -1864,15 +1421,7 @@ class CpModel:
         Returns:
           An instance of the `Constraint` class.
         """
-        ct = Constraint(self)
-        model_ct = self.__model.constraints[ct.index]
-        model_ct.no_overlap_2d.x_intervals.extend(
-            [self.get_interval_index(x) for x in x_intervals]
-        )
-        model_ct.no_overlap_2d.y_intervals.extend(
-            [self.get_interval_index(x) for x in y_intervals]
-        )
-        return ct
+        return self.add_no_overlap_2d_internal(x_intervals, y_intervals)
 
     def add_cumulative(
         self,
@@ -1899,15 +1448,7 @@ class CpModel:
         Returns:
           An instance of the `Constraint` class.
         """
-        cumulative = Constraint(self)
-        model_ct = self.__model.constraints[cumulative.index]
-        model_ct.cumulative.intervals.extend(
-            [self.get_interval_index(x) for x in intervals]
-        )
-        for d in demands:
-            model_ct.cumulative.demands.append(self.parse_linear_expression(d))
-        model_ct.cumulative.capacity.copy_from(self.parse_linear_expression(capacity))
-        return cumulative
+        return self.add_cumulative_internal(intervals, demands, capacity)
 
     # Support for model cloning.
     def clone(self) -> "CpModel":
@@ -1917,19 +1458,13 @@ class CpModel:
         clone.rebuild_constant_map()
         return clone
 
-    def rebuild_constant_map(self):
-        """Internal method used during model cloning."""
-        for i, var in enumerate(self.__model.variables):
-            if len(var.domain) == 2 and var.domain[0] == var.domain[1]:
-                self.__constant_map[var.domain[0]] = i
-
     def get_bool_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created Boolean variable from its index."""
-        if index < 0 or index >= len(self.__model.variables):
+        if index < 0 or index >= len(self.model_proto.variables):
             raise ValueError(
                 f"get_bool_var_from_proto_index: out of bound index {index}"
             )
-        result = IntVar(self.__model, index)
+        result = IntVar(self.model_proto, index)
         if not result.is_boolean:
             raise TypeError(
                 f"get_bool_var_from_proto_index: index {index} does not reference a"
@@ -1939,133 +1474,67 @@ class CpModel:
 
     def get_int_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created integer variable from its index."""
-        if index < 0 or index >= len(self.__model.variables):
+        if index < 0 or index >= len(self.model_proto.variables):
             raise ValueError(
                 f"get_int_var_from_proto_index: out of bound index {index}"
             )
-        return IntVar(self.__model, index)
+        return IntVar(self.model_proto, index)
 
     def get_interval_var_from_proto_index(self, index: int) -> IntervalVar:
         """Returns an already created interval variable from its index."""
-        if index < 0 or index >= len(self.__model.constraints):
+        if index < 0 or index >= len(self.model_proto.constraints):
             raise ValueError(
                 f"get_interval_var_from_proto_index: out of bound index {index}"
             )
-        ct = self.__model.constraints[index]
+        ct = self.model_proto.constraints[index]
         if not ct.has_interval():
             raise ValueError(
                 f"get_interval_var_from_proto_index: index {index} does not"
                 " reference an" + " interval variable"
             )
 
-        return IntervalVar(self.__model, index, None, None, None, None)
-
-    # Helpers.
+        return IntervalVar(self.model_proto, index)
 
     def __str__(self) -> str:
-        return str(self.__model)
+        return str(self.model_proto)
 
     @property
     def proto(self) -> cmh.CpModelProto:
         """Returns the underlying CpModelProto."""
-        return self.__model
+        return self.model_proto
 
     def negated(self, index: int) -> int:
         return -index - 1
 
-    def get_or_make_index(self, arg: VariableT) -> int:
-        """Returns the index of a variable, its negation, or a number."""
-        if isinstance(arg, IntVar):
-            return arg.index
-        if isinstance(arg, IntegralTypes):
-            return self.get_or_make_index_from_constant(arg)
-        raise TypeError(
-            f"NotSupported: model.get_or_make_index({type(arg).__name__!r})"
-        )
-
-    def get_or_make_boolean_index(self, arg: LiteralT) -> int:
-        """Returns an index from a boolean expression."""
-        if isinstance(arg, IntVar):
-            self.assert_is_boolean_variable(arg)
-            return arg.index
-        if isinstance(arg, cmh.NotBooleanVariable):
-            self.assert_is_boolean_variable(arg.negated())
-            return arg.index
-        if isinstance(arg, IntegralTypes):
-            if arg == ~int(False):
-                return self.get_or_make_index_from_constant(1)
-            if arg == ~int(True):
-                return self.get_or_make_index_from_constant(0)
-            arg_as_int: int = int(arg)
-            if arg_as_int < 0 or arg_as_int > 1:
-                raise TypeError(f"Not a boolean: {arg}")
-            return self.get_or_make_index_from_constant(arg_as_int)
-        if arg_is_boolean(arg):
-            return self.get_or_make_index_from_constant(int(arg))
-        raise TypeError(
-            "not supported:" f" model.get_or_make_boolean_index({type(arg).__name__!r})"
-        )
-
-    def get_interval_index(self, arg: IntervalVar) -> int:
-        if not isinstance(arg, IntervalVar):
-            raise TypeError(
-                f"NotSupported: model.get_interval_index({type(arg).__name__!r})"
-            )
-        return arg.index
-
-    def get_or_make_index_from_constant(self, value: IntegralT) -> int:
-        if value in self.__constant_map:
-            return self.__constant_map[value]
-        constant_var = self.new_int_var(value, value, "")
-        self.__constant_map[value] = constant_var.index
-        return constant_var.index
-
-    def parse_linear_expression(
-        self, linear_expr: LinearExprT, negate: bool = False
-    ) -> cmh.LinearExpressionProto:
-        """Returns a LinearExpressionProto built from a LinearExpr instance."""
-        result: cmh.LinearExpressionProto = cmh.LinearExpressionProto()
-        mult = -1 if negate else 1
-        if isinstance(linear_expr, IntegralTypes):
-            result.offset = int(linear_expr) * mult
-            return result
-
-        # Raises TypeError if linear_expr is not an integer.
-        flat_expr = cmh.FlatIntExpr(linear_expr)
-        result.offset = flat_expr.offset * mult
-        for var in flat_expr.vars:
-            result.vars.append(var.index)
-        for coeff in flat_expr.coeffs:
-            result.coeffs.append(coeff * mult)
-        return result
-
-    def _set_objective(self, obj: ObjLinearExprT, minimize: bool):
+    def _set_objective(self, obj: ObjLinearExprT, maximize: bool):
         """Sets the objective of the model."""
         self.clear_objective()
         if isinstance(obj, IntegralTypes):
-            self.__model.objective.offset = int(obj)
-            self.__model.objective.scaling_factor = 1.0
+            self.model_proto.objective.offset = int(obj)
+            self.model_proto.objective.scaling_factor = 1.0
         elif isinstance(obj, LinearExpr):
             if obj.is_integer():
                 int_obj = cmh.FlatIntExpr(obj)
                 for var in int_obj.vars:
-                    self.__model.objective.vars.append(var.index)
-                if minimize:
-                    self.__model.objective.scaling_factor = 1.0
-                    self.__model.objective.offset = int_obj.offset
-                    self.__model.objective.coeffs.extend(int_obj.coeffs)
-                else:
-                    self.__model.objective.scaling_factor = -1.0
-                    self.__model.objective.offset = -int_obj.offset
+                    self.model_proto.objective.vars.append(var.index)
+                if maximize:
+                    self.model_proto.objective.scaling_factor = -1.0
+                    self.model_proto.objective.offset = -int_obj.offset
                     for c in int_obj.coeffs:
-                        self.__model.objective.coeffs.append(-c)
+                        self.model_proto.objective.coeffs.append(-c)
+                else:
+                    self.model_proto.objective.scaling_factor = 1.0
+                    self.model_proto.objective.offset = int_obj.offset
+                    self.model_proto.objective.coeffs.extend(int_obj.coeffs)
             else:
                 float_obj = cmh.FlatFloatExpr(obj)
                 for var in float_obj.vars:
-                    self.__model.floating_point_objective.vars.append(var.index)
-                self.__model.floating_point_objective.coeffs.extend(float_obj.coeffs)
-                self.__model.floating_point_objective.maximize = not minimize
-                self.__model.floating_point_objective.offset = float_obj.offset
+                    self.model_proto.floating_point_objective.vars.append(var.index)
+                self.model_proto.floating_point_objective.coeffs.extend(
+                    float_obj.coeffs
+                )
+                self.model_proto.floating_point_objective.maximize = maximize
+                self.model_proto.floating_point_objective.offset = float_obj.offset
         else:
             raise TypeError(
                 f"TypeError: {type(obj).__name__!r} is not a valid objective"
@@ -2073,20 +1542,21 @@ class CpModel:
 
     def minimize(self, obj: ObjLinearExprT):
         """Sets the objective of the model to minimize(obj)."""
-        self._set_objective(obj, minimize=True)
+        self._set_objective(obj, maximize=False)
 
     def maximize(self, obj: ObjLinearExprT):
         """Sets the objective of the model to maximize(obj)."""
-        self._set_objective(obj, minimize=False)
+        self._set_objective(obj, maximize=True)
 
     def has_objective(self) -> bool:
         return (
-            self.__model.has_objective() or self.__model.has_floating_point_objective()
+            self.model_proto.has_objective()
+            or self.model_proto.has_floating_point_objective()
         )
 
     def clear_objective(self):
-        self.__model.clear_objective()
-        self.__model.clear_floating_point_objective()
+        self.model_proto.clear_objective()
+        self.model_proto.clear_floating_point_objective()
 
     def add_decision_strategy(
         self,
@@ -2105,7 +1575,7 @@ class CpModel:
             solve() will fail.
         """
 
-        strategy: cmh.DecisionStrategyProto = self.__model.search_strategy.add()
+        strategy: cmh.DecisionStrategyProto = self.model_proto.search_strategy.add()
         for v in variables:
             expr = strategy.exprs.add()
             if v.index >= 0:
@@ -2121,11 +1591,11 @@ class CpModel:
 
     def model_stats(self) -> str:
         """Returns a string containing some model statistics."""
-        return cmh.CpSatHelper.model_stats(self.__model)
+        return cmh.CpSatHelper.model_stats(self.model_proto)
 
     def validate(self) -> str:
         """Returns a string indicating that the model is invalid."""
-        return cmh.CpSatHelper.validate_model(self.__model)
+        return cmh.CpSatHelper.validate_model(self.model_proto)
 
     def export_to_file(self, file: str) -> bool:
         """Write the model as a protocol buffer to 'file'.
@@ -2138,14 +1608,14 @@ class CpModel:
         Returns:
           True if the model was correctly written.
         """
-        return cmh.CpSatHelper.write_model_to_file(self.__model, file)
+        return cmh.CpSatHelper.write_model_to_file(self.model_proto, file)
 
     def remove_all_names(self) -> None:
         """Removes all names from the model."""
-        self.__model.clear_name()
-        for v in self.__model.variables:
+        self.model_proto.clear_name()
+        for v in self.model_proto.variables:
             v.clear_name()
-        for c in self.__model.constraints:
+        for c in self.model_proto.constraints:
             c.clear_name()
 
     @overload
@@ -2157,19 +1627,19 @@ class CpModel:
     def add_hint(self, var, value) -> None:
         """Adds 'var == value' as a hint to the solver."""
         if var.index >= 0:
-            self.__model.solution_hint.vars.append(self.get_or_make_index(var))
-            self.__model.solution_hint.values.append(int(value))
+            self.model_proto.solution_hint.vars.append(var.index)
+            self.model_proto.solution_hint.values.append(int(value))
         else:
-            self.__model.solution_hint.vars.append(self.negated(var.index))
-            self.__model.solution_hint.values.append(int(not value))
+            self.model_proto.solution_hint.vars.append(self.negated(var.index))
+            self.model_proto.solution_hint.values.append(int(not value))
 
     def clear_hints(self):
         """Removes any solution hint from the model."""
-        self.__model.clear_solution_hint()
+        self.model_proto.clear_solution_hint()
 
     def add_assumption(self, lit: LiteralT) -> None:
         """Adds the literal to the model as assumptions."""
-        self.__model.assumptions.append(self.get_or_make_boolean_index(lit))
+        self.model_proto.assumptions.append(self.get_or_make_boolean_index(lit))
 
     def add_assumptions(self, literals: Iterable[LiteralT]) -> None:
         """Adds the literals to the model as assumptions."""
@@ -2178,41 +1648,7 @@ class CpModel:
 
     def clear_assumptions(self) -> None:
         """Removes all assumptions from the model."""
-        self.__model.clear_assumptions()
-
-    # Helpers.
-    def assert_is_boolean_variable(self, x: LiteralT) -> None:
-        if isinstance(x, IntVar):
-            var = self.__model.variables[x.index]
-            if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
-                raise TypeError(
-                    f"TypeError: {type(x).__name__!r} is not a boolean variable"
-                )
-        elif not isinstance(x, cmh.NotBooleanVariable):
-            raise TypeError(
-                f"TypeError: {type(x).__name__!r}  is not a boolean variable"
-            )
-
-    def expand_literals_generator_or_tuple(
-        self, args: Union[Tuple[LiteralT, ...], Iterable[LiteralT]]
-    ):
-        if hasattr(args, "__len__"):  # Tuple
-            if len(args) != 1:
-                return args
-            if isinstance(args[0], (NumberTypes, cmh.Literal)):
-                return args
-        # Generator
-        return args[0]
-
-    def expand_literals_to_index_list(
-        self,
-        literals: Union[Tuple[LiteralT, ...], Iterable[LiteralT]],
-    ) -> list[int]:
-        """Expands a tuple or generator of literals to a list of indices."""
-        return [
-            self.get_or_make_boolean_index(lit)
-            for lit in self.expand_literals_generator_or_tuple(literals)
-        ]
+        self.model_proto.clear_assumptions()
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
@@ -2287,18 +1723,6 @@ class CpModel:
     ClearAssumptions = clear_assumptions
 
     # pylint: enable=invalid-name
-
-
-def expand_exprs_generator_or_tuple(
-    expressions: Union[Tuple[LinearExprT, ...], Iterable[LinearExprT]],
-) -> Union[Iterable[LinearExprT], LinearExprT]:
-    if hasattr(expressions, "__len__"):  # Tuple
-        if len(expressions) != 1:
-            return expressions
-        if isinstance(expressions[0], (NumberTypes, LinearExpr)):
-            return expressions
-    # Generator
-    return expressions[0]
 
 
 class CpSolver:
@@ -2886,91 +2310,3 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
     def solution_count(self) -> int:
         """Returns the number of solutions found."""
         return self.__solution_count
-
-
-def _get_index(obj: _IndexOrSeries) -> pd.Index:
-    """Returns the indices of `obj` as a `pd.Index`."""
-    if isinstance(obj, pd.Series):
-        return obj.index
-    return obj
-
-
-def _convert_to_integral_series_and_validate_index(
-    value_or_series: Union[IntegralT, pd.Series], index: pd.Index
-) -> pd.Series:
-    """Returns a pd.Series of the given index with the corresponding values.
-
-    Args:
-      value_or_series: the values to be converted (if applicable).
-      index: the index of the resulting pd.Series.
-
-    Returns:
-      pd.Series: The set of values with the given index.
-
-    Raises:
-      TypeError: If the type of `value_or_series` is not recognized.
-      ValueError: If the index does not match.
-    """
-    if isinstance(value_or_series, IntegralTypes):
-        return pd.Series(data=value_or_series, index=index)
-    elif isinstance(value_or_series, pd.Series):
-        if value_or_series.index.equals(index):
-            return value_or_series
-        else:
-            raise ValueError("index does not match")
-    else:
-        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")
-
-
-def _convert_to_linear_expr_series_and_validate_index(
-    value_or_series: Union[LinearExprT, pd.Series], index: pd.Index
-) -> pd.Series:
-    """Returns a pd.Series of the given index with the corresponding values.
-
-    Args:
-      value_or_series: the values to be converted (if applicable).
-      index: the index of the resulting pd.Series.
-
-    Returns:
-      pd.Series: The set of values with the given index.
-
-    Raises:
-      TypeError: If the type of `value_or_series` is not recognized.
-      ValueError: If the index does not match.
-    """
-    if isinstance(value_or_series, IntegralTypes):
-        return pd.Series(data=value_or_series, index=index)
-    elif isinstance(value_or_series, pd.Series):
-        if value_or_series.index.equals(index):
-            return value_or_series
-        else:
-            raise ValueError("index does not match")
-    else:
-        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")
-
-
-def _convert_to_literal_series_and_validate_index(
-    value_or_series: Union[LiteralT, pd.Series], index: pd.Index
-) -> pd.Series:
-    """Returns a pd.Series of the given index with the corresponding values.
-
-    Args:
-      value_or_series: the values to be converted (if applicable).
-      index: the index of the resulting pd.Series.
-
-    Returns:
-      pd.Series: The set of values with the given index.
-
-    Raises:
-      TypeError: If the type of `value_or_series` is not recognized.
-      ValueError: If the index does not match.
-    """
-    if isinstance(value_or_series, IntegralTypes):
-        return pd.Series(data=value_or_series, index=index)
-    elif isinstance(value_or_series, pd.Series):
-        if value_or_series.index.equals(index):
-            return value_or_series
-        else:
-            raise ValueError("index does not match")
-    else:
-        raise TypeError(f"invalid type={type(value_or_series).__name__!r}")

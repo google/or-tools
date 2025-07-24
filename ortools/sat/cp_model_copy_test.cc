@@ -209,6 +209,52 @@ TEST(ModelCopyTest, RemoveDuplicateFromEnforcementLiterals) {
   EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
 }
 
+TEST(ModelCopyTest, ChangeEnforcedAtMostOrExactlyOneToLinear) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      at_most_one { literals: [ 2, -4 ] }
+    }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      exactly_one { literals: [ 2, 3 ] }
+    }
+  )pb");
+  const CpModelProto expected_moded = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, -1 ]
+        domain: [ -1, 0 ]
+      }
+    }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      linear {
+        vars: [ 2, 3 ]
+        coeffs: [ 1, 1 ]
+        domain: [ 1, 1 ]
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  model.GetOrCreate<SatParameters>()
+      ->set_keep_all_feasible_solutions_in_presolve(true);
+  PresolveContext context(&model, &new_cp_model, nullptr);
+  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research

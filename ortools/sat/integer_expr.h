@@ -22,9 +22,11 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -283,8 +285,10 @@ class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
 // the bounds on p as this require more complex arithmetics.
 class ProductPropagator : public PropagatorInterface {
  public:
-  ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
-                    IntegerTrail* integer_trail);
+  ProductPropagator(absl::Span<const Literal> enforcement_literals,
+                    AffineExpression a, AffineExpression b, AffineExpression p,
+                    IntegerTrail* integer_trail,
+                    EnforcementPropagator* enforcement_propagator);
 
   // This type is neither copyable nor movable.
   ProductPropagator(const ProductPropagator&) = delete;
@@ -305,6 +309,9 @@ class ProductPropagator : public PropagatorInterface {
   bool PropagateMaxOnPositiveProduct(AffineExpression a, AffineExpression b,
                                      IntegerValue min_p, IntegerValue max_p);
 
+  ABSL_MUST_USE_RESULT bool SafeEnqueue(
+      IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason);
+
   // Note that we might negate any two terms in CanonicalizeCases() during
   // each propagation. This is fine.
   AffineExpression a_;
@@ -312,6 +319,9 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression p_;
 
   IntegerTrail* integer_trail_;
+  EnforcementPropagator* enforcement_propagator_;
+  EnforcementId enforcement_id_;
+  std::vector<Literal> tmp_literal_reason_;
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -410,8 +420,10 @@ class FixedModuloPropagator : public PropagatorInterface {
 // TODO(user): Only works for x nonnegative.
 class SquarePropagator : public PropagatorInterface {
  public:
-  SquarePropagator(AffineExpression x, AffineExpression s,
-                   IntegerTrail* integer_trail);
+  SquarePropagator(absl::Span<const Literal> enforcement_literals,
+                   AffineExpression x, AffineExpression s,
+                   IntegerTrail* integer_trail,
+                   EnforcementPropagator* enforcement_propagator);
 
   // This type is neither copyable nor movable.
   SquarePropagator(const SquarePropagator&) = delete;
@@ -421,9 +433,14 @@ class SquarePropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool Propagate(EnforcementId enforcement_id, EnforcementStatus status);
+
   const AffineExpression x_;
   const AffineExpression s_;
   IntegerTrail* integer_trail_;
+  EnforcementPropagator* enforcement_propagator_;
+  EnforcementId enforcement_id_;
+  std::vector<Literal> tmp_literal_reason_;
 };
 
 // =============================================================================
@@ -763,25 +780,30 @@ void RegisterAndTransferOwnership(Model* model, T* ct) {
   model->TakeOwnership(ct);
 }
 // Adds the constraint: a * b = p.
-inline std::function<void(Model*)> ProductConstraint(AffineExpression a,
-                                                     AffineExpression b,
-                                                     AffineExpression p) {
+inline std::function<void(Model*)> ProductConstraint(
+    absl::Span<const Literal> enforcement_literals, AffineExpression a,
+    AffineExpression b, AffineExpression p) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    EnforcementPropagator* enforcement_propagator =
+        model->GetOrCreate<EnforcementPropagator>();
     if (a == b) {
       if (integer_trail->LowerBound(a) >= 0) {
-        RegisterAndTransferOwnership(model,
-                                     new SquarePropagator(a, p, integer_trail));
+        RegisterAndTransferOwnership(
+            model, new SquarePropagator(enforcement_literals, a, p,
+                                        integer_trail, enforcement_propagator));
         return;
       }
       if (integer_trail->UpperBound(a) <= 0) {
         RegisterAndTransferOwnership(
-            model, new SquarePropagator(a.Negated(), p, integer_trail));
+            model, new SquarePropagator(enforcement_literals, a.Negated(), p,
+                                        integer_trail, enforcement_propagator));
         return;
       }
     }
-    RegisterAndTransferOwnership(model,
-                                 new ProductPropagator(a, b, p, integer_trail));
+    RegisterAndTransferOwnership(
+        model, new ProductPropagator(enforcement_literals, a, b, p,
+                                     integer_trail, enforcement_propagator));
   };
 }
 

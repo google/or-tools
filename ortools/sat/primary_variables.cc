@@ -56,12 +56,12 @@ void GetRelationshipForConstraint(const ConstraintProto& ct,
   deducible_vars->clear();
   input_vars->clear();
   *preferred_to_deduce = -1;
+  if (!ct.enforcement_literal().empty()) {
+    return;
+  }
   switch (ct.constraint_case()) {
     case ConstraintProto::kLinear: {
       if (ReadDomainFromProto(ct.linear()).Size() != 1) {
-        return;
-      }
-      if (!ct.enforcement_literal().empty()) {
         return;
       }
       for (int i = 0; i < ct.linear().vars_size(); ++i) {

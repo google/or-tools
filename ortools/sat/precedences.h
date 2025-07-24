@@ -188,6 +188,11 @@ class RootLevelLinear2Bounds {
     return AddUpperBound(lin2_indices_->AddOrGet(expr), ub);
   }
 
+  bool AddLowerBound(LinearExpression2 expr, IntegerValue lb) {
+    expr.Negate();
+    return AddUpperBound(expr, -lb);
+  }
+
   // All modifications go through this function.
   bool AddUpperBound(LinearExpression2Index index, IntegerValue ub);
 

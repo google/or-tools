@@ -523,7 +523,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       // propagation would have been done by the linear propagator, but if we
       // didn't add such relations yet, it is beneficial to detect that here!
       //
-      // TODO(user): Actually, we just infered a "not last" so we could check
+      // TODO(user): Actually, we just inferred a "not last" so we could check
       // for relevant_size > 2 potential propagation?
       //
       // TODO(user): Can we detect and propagate all such relations easily and
@@ -575,6 +575,12 @@ bool DisjunctiveOverloadChecker::Propagate() {
     if (relevant_size > 0 && !PropagateSubwindow(relevant_size, relevant_end)) {
       ++stats_.num_conflicts;
       return false;
+    }
+
+    // Subwindow propagation might have propagated that the
+    // task_with_max_end_min must be absent.
+    if (helper_->IsAbsent(task_with_max_end_min.task_index)) {
+      task_with_max_end_min = {0, kMinIntegerValue};
     }
 
     // Start of the next window.

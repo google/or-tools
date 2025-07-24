@@ -26,6 +26,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
+#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -848,10 +849,23 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   }
 }
 
-ProductPropagator::ProductPropagator(AffineExpression a, AffineExpression b,
-                                     AffineExpression p,
-                                     IntegerTrail* integer_trail)
-    : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {}
+ProductPropagator::ProductPropagator(
+    absl::Span<const Literal> enforcement_literals, AffineExpression a,
+    AffineExpression b, AffineExpression p, IntegerTrail* integer_trail,
+    EnforcementPropagator* enforcement_propagator)
+    : a_(a),
+      b_(b),
+      p_(p),
+      integer_trail_(integer_trail),
+      enforcement_propagator_(enforcement_propagator) {
+  enforcement_id_ = enforcement_propagator->Register(
+      enforcement_literals, [this](EnforcementId id, EnforcementStatus) {
+        // Register() can call this callback before returning, and Propagate()
+        // needs the enforcement id to be set.
+        enforcement_id_ = id;
+        Propagate();
+      });
+}
 
 // We want all affine expression to be either non-negative or across zero.
 bool ProductPropagator::CanonicalizeCases() {
@@ -867,8 +881,8 @@ bool ProductPropagator::CanonicalizeCases() {
   // If both a and b positive, p must be too.
   if (integer_trail_->LowerBound(a_) >= 0 &&
       integer_trail_->LowerBound(b_) >= 0) {
-    return integer_trail_->SafeEnqueue(
-        p_.GreaterOrEqual(0), {a_.GreaterOrEqual(0), b_.GreaterOrEqual(0)});
+    return SafeEnqueue(p_.GreaterOrEqual(0),
+                       {a_.GreaterOrEqual(0), b_.GreaterOrEqual(0)});
   }
 
   // Otherwise, make sure p is non-negative or across zero.
@@ -900,11 +914,10 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue max_b = integer_trail_->UpperBound(b_);
     const IntegerValue new_max = CapProdI(max_a, max_b);
     if (new_max < integer_trail_->UpperBound(p_)) {
-      if (!integer_trail_->SafeEnqueue(
-              p_.LowerOrEqual(new_max),
-              {integer_trail_->UpperBoundAsLiteral(a_),
-               integer_trail_->UpperBoundAsLiteral(b_), a_.GreaterOrEqual(0),
-               b_.GreaterOrEqual(0)})) {
+      if (!SafeEnqueue(p_.LowerOrEqual(new_max),
+                       {integer_trail_->UpperBoundAsLiteral(a_),
+                        integer_trail_->UpperBoundAsLiteral(b_),
+                        a_.GreaterOrEqual(0), b_.GreaterOrEqual(0)})) {
         return false;
       }
     }
@@ -924,10 +937,9 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
            integer_trail_->LowerBoundAsLiteral(b_)});
     }
     if (new_min > integer_trail_->LowerBound(p_)) {
-      if (!integer_trail_->SafeEnqueue(
-              p_.GreaterOrEqual(new_min),
-              {integer_trail_->LowerBoundAsLiteral(a_),
-               integer_trail_->LowerBoundAsLiteral(b_)})) {
+      if (!SafeEnqueue(p_.GreaterOrEqual(new_min),
+                       {integer_trail_->LowerBoundAsLiteral(a_),
+                        integer_trail_->LowerBoundAsLiteral(b_)})) {
         return false;
       }
     }
@@ -942,14 +954,14 @@ bool ProductPropagator::PropagateWhenAllNonNegative() {
     const IntegerValue max_p = integer_trail_->UpperBound(p_);
     const IntegerValue prod = CapProdI(max_a, min_b);
     if (prod > max_p) {
-      if (!integer_trail_->SafeEnqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)),
-                                       {integer_trail_->LowerBoundAsLiteral(b),
-                                        integer_trail_->UpperBoundAsLiteral(p_),
-                                        p_.GreaterOrEqual(0)})) {
+      if (!SafeEnqueue(a.LowerOrEqual(FloorRatio(max_p, min_b)),
+                       {integer_trail_->LowerBoundAsLiteral(b),
+                        integer_trail_->UpperBoundAsLiteral(p_),
+                        p_.GreaterOrEqual(0)})) {
         return false;
       }
     } else if (prod < min_p && max_a != 0) {
-      if (!integer_trail_->SafeEnqueue(
+      if (!SafeEnqueue(
               b.GreaterOrEqual(CeilRatio(min_p, max_a)),
               {integer_trail_->UpperBoundAsLiteral(a),
                integer_trail_->LowerBoundAsLiteral(p_), a.GreaterOrEqual(0)})) {
@@ -975,9 +987,8 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
 
   if (max_a >= min_p) {
     if (max_p < max_a) {
-      if (!integer_trail_->SafeEnqueue(
-              a.LowerOrEqual(max_p),
-              {p_.LowerOrEqual(max_p), p_.GreaterOrEqual(1)})) {
+      if (!SafeEnqueue(a.LowerOrEqual(max_p),
+                       {p_.LowerOrEqual(max_p), p_.GreaterOrEqual(1)})) {
         return false;
       }
     }
@@ -986,10 +997,10 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
 
   const IntegerValue min_pos_b = CeilRatio(min_p, max_a);
   if (min_pos_b > integer_trail_->UpperBound(b)) {
-    if (!integer_trail_->SafeEnqueue(
-            b.LowerOrEqual(0), {integer_trail_->LowerBoundAsLiteral(p_),
-                                integer_trail_->UpperBoundAsLiteral(a),
-                                integer_trail_->UpperBoundAsLiteral(b)})) {
+    if (!SafeEnqueue(b.LowerOrEqual(0),
+                     {integer_trail_->LowerBoundAsLiteral(p_),
+                      integer_trail_->UpperBoundAsLiteral(a),
+                      integer_trail_->UpperBoundAsLiteral(b)})) {
       return false;
     }
     return true;
@@ -997,11 +1008,10 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
 
   const IntegerValue new_max_a = FloorRatio(max_p, min_pos_b);
   if (new_max_a < integer_trail_->UpperBound(a)) {
-    if (!integer_trail_->SafeEnqueue(
-            a.LowerOrEqual(new_max_a),
-            {integer_trail_->LowerBoundAsLiteral(p_),
-             integer_trail_->UpperBoundAsLiteral(a),
-             integer_trail_->UpperBoundAsLiteral(p_)})) {
+    if (!SafeEnqueue(a.LowerOrEqual(new_max_a),
+                     {integer_trail_->LowerBoundAsLiteral(p_),
+                      integer_trail_->UpperBoundAsLiteral(a),
+                      integer_trail_->UpperBoundAsLiteral(p_)})) {
       return false;
     }
   }
@@ -1009,6 +1019,46 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
 }
 
 bool ProductPropagator::Propagate() {
+  const EnforcementStatus status =
+      enforcement_id_ < 0 ? EnforcementStatus::IS_ENFORCED
+                          : enforcement_propagator_->Status(enforcement_id_);
+  if (status == EnforcementStatus::IS_FALSE ||
+      status == EnforcementStatus::CANNOT_PROPAGATE) {
+    return true;
+  }
+  if (status == EnforcementStatus::CAN_PROPAGATE) {
+    const int64_t min_a = integer_trail_->LowerBound(a_).value();
+    const int64_t max_a = integer_trail_->UpperBound(a_).value();
+    const int64_t min_b = integer_trail_->LowerBound(b_).value();
+    const int64_t max_b = integer_trail_->UpperBound(b_).value();
+    const int64_t min_p = integer_trail_->LowerBound(p_).value();
+    const int64_t max_p = integer_trail_->UpperBound(p_).value();
+    const int64_t p1 = CapProdI(max_a, max_b).value();
+    const int64_t p2 = CapProdI(max_a, min_b).value();
+    const int64_t p3 = CapProdI(min_a, max_b).value();
+    const int64_t p4 = CapProdI(min_a, min_b).value();
+    const int64_t min_ab = std::min({p1, p2, p3, p4});
+    const int64_t max_ab = std::max({p1, p2, p3, p4});
+    // If the bounds of a * b and p are disjoint, the enforcement must be false.
+    // TODO(user): relax the reason in a better way.
+    if (min_ab > max_p) {
+      return enforcement_propagator_->PropagateWhenFalse(
+          enforcement_id_, /*literal_reason=*/{},
+          {a_.GreaterOrEqual(min_a), a_.LowerOrEqual(max_a),
+           b_.GreaterOrEqual(min_b), b_.LowerOrEqual(max_b),
+           p_.LowerOrEqual(max_p)});
+    }
+    if (min_p > max_ab) {
+      return enforcement_propagator_->PropagateWhenFalse(
+          enforcement_id_, /*literal_reason=*/{},
+          {a_.GreaterOrEqual(min_a), a_.LowerOrEqual(max_a),
+           b_.GreaterOrEqual(min_b), b_.LowerOrEqual(max_b),
+           p_.GreaterOrEqual(min_p)});
+    }
+    // Otherwise we cannot propagate anything since the enforcement is unknown.
+    return true;
+  }
+  DCHECK_EQ(status, EnforcementStatus::IS_ENFORCED);
   if (!CanonicalizeCases()) return false;
 
   // In the most common case, we use better reasons even though the code
@@ -1035,23 +1085,21 @@ bool ProductPropagator::Propagate() {
   const IntegerValue p4 = CapProdI(min_a, min_b);
   const IntegerValue new_max_p = std::max({p1, p2, p3, p4});
   if (new_max_p < integer_trail_->UpperBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.LowerOrEqual(new_max_p),
-            {integer_trail_->LowerBoundAsLiteral(a_),
-             integer_trail_->LowerBoundAsLiteral(b_),
-             integer_trail_->UpperBoundAsLiteral(a_),
-             integer_trail_->UpperBoundAsLiteral(b_)})) {
+    if (!SafeEnqueue(p_.LowerOrEqual(new_max_p),
+                     {integer_trail_->LowerBoundAsLiteral(a_),
+                      integer_trail_->LowerBoundAsLiteral(b_),
+                      integer_trail_->UpperBoundAsLiteral(a_),
+                      integer_trail_->UpperBoundAsLiteral(b_)})) {
       return false;
     }
   }
   const IntegerValue new_min_p = std::min({p1, p2, p3, p4});
   if (new_min_p > integer_trail_->LowerBound(p_)) {
-    if (!integer_trail_->SafeEnqueue(
-            p_.GreaterOrEqual(new_min_p),
-            {integer_trail_->LowerBoundAsLiteral(a_),
-             integer_trail_->LowerBoundAsLiteral(b_),
-             integer_trail_->UpperBoundAsLiteral(a_),
-             integer_trail_->UpperBoundAsLiteral(b_)})) {
+    if (!SafeEnqueue(p_.GreaterOrEqual(new_min_p),
+                     {integer_trail_->LowerBoundAsLiteral(a_),
+                      integer_trail_->LowerBoundAsLiteral(b_),
+                      integer_trail_->UpperBoundAsLiteral(a_),
+                      integer_trail_->UpperBoundAsLiteral(b_)})) {
       return false;
     }
   }
@@ -1064,28 +1112,26 @@ bool ProductPropagator::Propagate() {
   const bool zero_is_possible = min_p <= 0;
   if (!zero_is_possible) {
     if (integer_trail_->LowerBound(a_) == 0) {
-      if (!integer_trail_->SafeEnqueue(
-              a_.GreaterOrEqual(1),
-              {p_.GreaterOrEqual(1), a_.GreaterOrEqual(0)})) {
+      if (!SafeEnqueue(a_.GreaterOrEqual(1),
+                       {p_.GreaterOrEqual(1), a_.GreaterOrEqual(0)})) {
         return false;
       }
     }
     if (integer_trail_->LowerBound(b_) == 0) {
-      if (!integer_trail_->SafeEnqueue(
-              b_.GreaterOrEqual(1),
-              {p_.GreaterOrEqual(1), b_.GreaterOrEqual(0)})) {
+      if (!SafeEnqueue(b_.GreaterOrEqual(1),
+                       {p_.GreaterOrEqual(1), b_.GreaterOrEqual(0)})) {
         return false;
       }
     }
     if (integer_trail_->LowerBound(a_) >= 0 &&
         integer_trail_->LowerBound(b_) <= 0) {
-      return integer_trail_->SafeEnqueue(
-          b_.GreaterOrEqual(1), {a_.GreaterOrEqual(0), p_.GreaterOrEqual(1)});
+      return SafeEnqueue(b_.GreaterOrEqual(1),
+                         {a_.GreaterOrEqual(0), p_.GreaterOrEqual(1)});
     }
     if (integer_trail_->LowerBound(b_) >= 0 &&
         integer_trail_->LowerBound(a_) <= 0) {
-      return integer_trail_->SafeEnqueue(
-          a_.GreaterOrEqual(1), {b_.GreaterOrEqual(0), p_.GreaterOrEqual(1)});
+      return SafeEnqueue(a_.GreaterOrEqual(1),
+                         {b_.GreaterOrEqual(0), p_.GreaterOrEqual(1)});
     }
   }
 
@@ -1120,30 +1166,28 @@ bool ProductPropagator::Propagate() {
     // If it does, we should reach the fixed point on the next iteration.
     if (min_b <= 0) continue;
     if (min_p >= 0) {
-      return integer_trail_->SafeEnqueue(
-          a.GreaterOrEqual(0), {p_.GreaterOrEqual(0), b.GreaterOrEqual(1)});
+      return SafeEnqueue(a.GreaterOrEqual(0),
+                         {p_.GreaterOrEqual(0), b.GreaterOrEqual(1)});
     }
     if (max_p <= 0) {
-      return integer_trail_->SafeEnqueue(
-          a.LowerOrEqual(0), {p_.LowerOrEqual(0), b.GreaterOrEqual(1)});
+      return SafeEnqueue(a.LowerOrEqual(0),
+                         {p_.LowerOrEqual(0), b.GreaterOrEqual(1)});
     }
 
     // So min_b > 0 and p is across zero: min_p < 0 and max_p > 0.
     const IntegerValue new_max_a = FloorRatio(max_p, min_b);
     if (new_max_a < integer_trail_->UpperBound(a)) {
-      if (!integer_trail_->SafeEnqueue(
-              a.LowerOrEqual(new_max_a),
-              {integer_trail_->UpperBoundAsLiteral(p_),
-               integer_trail_->LowerBoundAsLiteral(b)})) {
+      if (!SafeEnqueue(a.LowerOrEqual(new_max_a),
+                       {integer_trail_->UpperBoundAsLiteral(p_),
+                        integer_trail_->LowerBoundAsLiteral(b)})) {
         return false;
       }
     }
     const IntegerValue new_min_a = CeilRatio(min_p, min_b);
     if (new_min_a > integer_trail_->LowerBound(a)) {
-      if (!integer_trail_->SafeEnqueue(
-              a.GreaterOrEqual(new_min_a),
-              {integer_trail_->LowerBoundAsLiteral(p_),
-               integer_trail_->LowerBoundAsLiteral(b)})) {
+      if (!SafeEnqueue(a.GreaterOrEqual(new_min_a),
+                       {integer_trail_->LowerBoundAsLiteral(p_),
+                        integer_trail_->LowerBoundAsLiteral(b)})) {
         return false;
       }
     }
@@ -1160,43 +1204,99 @@ void ProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-SquarePropagator::SquarePropagator(AffineExpression x, AffineExpression s,
-                                   IntegerTrail* integer_trail)
-    : x_(x), s_(s), integer_trail_(integer_trail) {
+bool ProductPropagator::SafeEnqueue(
+    IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason) {
+  tmp_literal_reason_.clear();
+  enforcement_propagator_->AddEnforcementReason(enforcement_id_,
+                                                &tmp_literal_reason_);
+  return integer_trail_->SafeEnqueue(i_lit, tmp_literal_reason_,
+                                     integer_reason);
+}
+
+SquarePropagator::SquarePropagator(
+    absl::Span<const Literal> enforcement_literals, AffineExpression x,
+    AffineExpression s, IntegerTrail* integer_trail,
+    EnforcementPropagator* enforcement_propagator)
+    : x_(x),
+      s_(s),
+      integer_trail_(integer_trail),
+      enforcement_propagator_(enforcement_propagator) {
   CHECK_GE(integer_trail->LevelZeroLowerBound(x), 0);
+  enforcement_id_ = enforcement_propagator->Register(
+      enforcement_literals, [this](EnforcementId id, EnforcementStatus status) {
+        // We cannot call Propagate() because enforcement_id_ is not
+        // set yet, and because Register() can call this callback
+        // before returning.
+        Propagate(id, status);
+      });
+}
+
+bool SquarePropagator::Propagate() {
+  const EnforcementStatus status =
+      enforcement_id_ < 0 ? EnforcementStatus::IS_ENFORCED
+                          : enforcement_propagator_->Status(enforcement_id_);
+  return Propagate(enforcement_id_, status);
 }
 
 // Propagation from x to s: s in [min_x * min_x, max_x * max_x].
 // Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
-bool SquarePropagator::Propagate() {
+bool SquarePropagator::Propagate(EnforcementId id, EnforcementStatus status) {
+  if (status == EnforcementStatus::IS_FALSE ||
+      status == EnforcementStatus::CANNOT_PROPAGATE) {
+    return true;
+  }
   const IntegerValue min_x = integer_trail_->LowerBound(x_);
   const IntegerValue min_s = integer_trail_->LowerBound(s_);
   const IntegerValue min_x_square = CapProdI(min_x, min_x);
+  const IntegerValue max_x = integer_trail_->UpperBound(x_);
+  const IntegerValue max_s = integer_trail_->UpperBound(s_);
+  const IntegerValue max_x_square = CapProdI(max_x, max_x);
+  if (status == EnforcementStatus::CAN_PROPAGATE) {
+    // If the bounds of x * x and s are disjoint, the enforcement must be false.
+    // TODO(user): relax the reason in a better way.
+    if (min_x_square > max_s) {
+      return enforcement_propagator_->PropagateWhenFalse(
+          id, /*literal_reason=*/{},
+          {x_.GreaterOrEqual(min_x), s_.LowerOrEqual(min_x - 1)});
+    }
+    if (min_s > max_x_square) {
+      return enforcement_propagator_->PropagateWhenFalse(
+          id, /*literal_reason=*/{},
+          {s_.GreaterOrEqual(min_s), x_.LowerOrEqual(min_s - 1)});
+    }
+    // Otherwise we cannot propagate anything since the enforcement is unknown.
+    return true;
+  }
+
+  auto safe_enqueue = [this, id](
+                          IntegerLiteral i_lit,
+                          absl::Span<const IntegerLiteral> integer_reason) {
+    tmp_literal_reason_.clear();
+    enforcement_propagator_->AddEnforcementReason(id, &tmp_literal_reason_);
+    return integer_trail_->SafeEnqueue(i_lit, tmp_literal_reason_,
+                                       integer_reason);
+  };
+  DCHECK_EQ(status, EnforcementStatus::IS_ENFORCED);
   if (min_x_square > min_s) {
-    if (!integer_trail_->SafeEnqueue(s_.GreaterOrEqual(min_x_square),
-                                     {x_.GreaterOrEqual(min_x)})) {
+    if (!safe_enqueue(s_.GreaterOrEqual(min_x_square),
+                      {x_.GreaterOrEqual(min_x)})) {
       return false;
     }
   } else if (min_x_square < min_s) {
     const IntegerValue new_min(CeilSquareRoot(min_s.value()));
-    if (!integer_trail_->SafeEnqueue(
-            x_.GreaterOrEqual(new_min),
-            {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
+    if (!safe_enqueue(x_.GreaterOrEqual(new_min),
+                      {s_.GreaterOrEqual((new_min - 1) * (new_min - 1) + 1)})) {
       return false;
     }
   }
-
-  const IntegerValue max_x = integer_trail_->UpperBound(x_);
-  const IntegerValue max_s = integer_trail_->UpperBound(s_);
-  const IntegerValue max_x_square = CapProdI(max_x, max_x);
   if (max_x_square < max_s) {
-    if (!integer_trail_->SafeEnqueue(s_.LowerOrEqual(max_x_square),
-                                     {x_.LowerOrEqual(max_x)})) {
+    if (!safe_enqueue(s_.LowerOrEqual(max_x_square),
+                      {x_.LowerOrEqual(max_x)})) {
       return false;
     }
   } else if (max_x_square > max_s) {
     const IntegerValue new_max(FloorSquareRoot(max_s.value()));
-    if (!integer_trail_->SafeEnqueue(
+    if (!safe_enqueue(
             x_.LowerOrEqual(new_max),
             {s_.LowerOrEqual(CapProdI(new_max + 1, new_max + 1) - 1)})) {
       return false;

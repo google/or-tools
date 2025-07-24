@@ -942,6 +942,42 @@ CompiledConstraintWithProto::CompiledConstraintWithProto(
     const ConstraintProto& ct_proto)
     : ct_proto_(ct_proto) {}
 
+int64_t CompiledConstraintWithProto::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  for (const int lit : ct_proto_.enforcement_literal()) {
+    if (!LiteralValue(lit, solution)) return 0;
+  }
+  return ComputeViolationWhenEnforced(solution);
+}
+
+int64_t CompiledConstraintWithProto::ViolationDelta(
+    int var, int64_t old_value,
+    absl::Span<const int64_t> solution_with_new_value) {
+  bool becomes_enforced = false;
+  bool becomes_unenforced = false;
+  for (const int lit : ct_proto().enforcement_literal()) {
+    if (var == PositiveRef(lit)) {
+      if (LiteralValue(lit, solution_with_new_value) == 1) {
+        becomes_enforced = true;
+      } else {
+        becomes_unenforced = true;
+      }
+    } else if (!LiteralValue(lit, solution_with_new_value)) {
+      // If an enforcement literal stays false, the violation stays 0.
+      return 0;
+    }
+  }
+  if (becomes_enforced) {
+    // New violation (ComputeViolationWhenEnforced()) minus old violation (0).
+    return ComputeViolationWhenEnforced(solution_with_new_value);
+  }
+  if (becomes_unenforced) {
+    // New violation (0) minus old violation (violation()).
+    return -violation();
+  }
+  return ViolationDeltaWhenEnforced(var, old_value, solution_with_new_value);
+}
+
 std::vector<int> CompiledConstraintWithProto::UsedVariables(
     const CpModelProto& model_proto) const {
   std::vector<int> result = sat::UsedVariables(ct_proto_);
@@ -956,13 +992,19 @@ std::vector<int> CompiledConstraintWithProto::UsedVariables(
   return result;
 }
 
+int64_t CompiledConstraintWithProto::ViolationDeltaWhenEnforced(
+    int /*var*/, int64_t /*old_value*/,
+    absl::Span<const int64_t> solution_with_new_value) {
+  return ComputeViolationWhenEnforced(solution_with_new_value) - violation();
+}
+
 // ----- CompiledBoolXorConstraint -----
 
 CompiledBoolXorConstraint::CompiledBoolXorConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledBoolXorConstraint::ComputeViolation(
+int64_t CompiledBoolXorConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   int64_t sum_of_literals = 0;
   for (const int lit : ct_proto().bool_xor().literals()) {
@@ -971,7 +1013,7 @@ int64_t CompiledBoolXorConstraint::ComputeViolation(
   return 1 - (sum_of_literals % 2);
 }
 
-int64_t CompiledBoolXorConstraint::ViolationDelta(
+int64_t CompiledBoolXorConstraint::ViolationDeltaWhenEnforced(
     int /*var*/, int64_t /*old_value*/,
     absl::Span<const int64_t> /*solution_with_new_value*/) {
   return violation() == 0 ? 1 : -1;
@@ -983,7 +1025,7 @@ CompiledLinMaxConstraint::CompiledLinMaxConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledLinMaxConstraint::ComputeViolation(
+int64_t CompiledLinMaxConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().lin_max().target(), solution);
@@ -1001,7 +1043,7 @@ CompiledIntProdConstraint::CompiledIntProdConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntProdConstraint::ComputeViolation(
+int64_t CompiledIntProdConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_prod().target(), solution);
@@ -1018,7 +1060,7 @@ CompiledIntDivConstraint::CompiledIntDivConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntDivConstraint::ComputeViolation(
+int64_t CompiledIntDivConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_div().target(), solution);
@@ -1034,7 +1076,7 @@ CompiledIntModConstraint::CompiledIntModConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledIntModConstraint::ComputeViolation(
+int64_t CompiledIntModConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   const int64_t target_value =
       ExprValue(ct_proto().int_mod().target(), solution);
@@ -1063,7 +1105,7 @@ CompiledAllDiffConstraint::CompiledAllDiffConstraint(
     const ConstraintProto& ct_proto)
     : CompiledConstraintWithProto(ct_proto) {}
 
-int64_t CompiledAllDiffConstraint::ComputeViolation(
+int64_t CompiledAllDiffConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   values_.clear();
   for (const LinearExpressionProto& expr : ct_proto().all_diff().exprs()) {
@@ -1175,7 +1217,7 @@ CompiledNoOverlap2dConstraint::CompiledNoOverlap2dConstraint(
     const ConstraintProto& ct_proto, const CpModelProto& cp_model)
     : CompiledConstraintWithProto(ct_proto), cp_model_(cp_model) {}
 
-int64_t CompiledNoOverlap2dConstraint::ComputeViolation(
+int64_t CompiledNoOverlap2dConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   DCHECK_GE(ct_proto().no_overlap_2d().x_intervals_size(), 2);
   const int size = ct_proto().no_overlap_2d().x_intervals_size();
@@ -1277,10 +1319,11 @@ class CompiledCircuitConstraint : public CompiledConstraintWithProto {
   explicit CompiledCircuitConstraint(const ConstraintProto& ct_proto);
   ~CompiledCircuitConstraint() override = default;
 
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) override;
+  int64_t ComputeViolationWhenEnforced(
+      absl::Span<const int64_t> solution) override;
   void PerformMove(int var, int64_t old_value,
                    absl::Span<const int64_t> new_solution) override;
-  int64_t ViolationDelta(
+  int64_t ViolationDeltaWhenEnforced(
       int var, int64_t old_value,
       absl::Span<const int64_t> solution_with_new_value) override;
 
@@ -1385,7 +1428,7 @@ void CompiledCircuitConstraint::PerformMove(
   std::swap(committed_sccs_, sccs_);
 }
 
-int64_t CompiledCircuitConstraint::ComputeViolation(
+int64_t CompiledCircuitConstraint::ComputeViolationWhenEnforced(
     absl::Span<const int64_t> solution) {
   InitGraph(solution);
   int64_t result = ViolationForCurrentGraph();
@@ -1393,7 +1436,7 @@ int64_t CompiledCircuitConstraint::ComputeViolation(
   return result;
 }
 
-int64_t CompiledCircuitConstraint::ViolationDelta(
+int64_t CompiledCircuitConstraint::ViolationDeltaWhenEnforced(
     int var, int64_t old_value,
     absl::Span<const int64_t> solution_with_new_value) {
   int64_t result = 0;

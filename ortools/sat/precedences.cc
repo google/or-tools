@@ -1723,11 +1723,11 @@ ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
         // Linear scan.
         for (const auto [l, expr, ub] : all_reified_relations_) {
           if (relevant_true_literals.contains(l)) {
-            best_root_level_bounds_->Add(expr, kMinIntegerValue, ub);
+            best_root_level_bounds_->AddUpperBound(expr, ub);
             VLOG(2) << "New fixed precedence: " << expr << " <= " << ub
                     << " (was reified by " << l << ")";
           } else if (relevant_true_literals.contains(l.Negated())) {
-            best_root_level_bounds_->Add(expr, ub + 1, kMaxIntegerValue);
+            best_root_level_bounds_->AddLowerBound(expr, ub + 1);
             VLOG(2) << "New fixed precedence: " << expr << " > " << ub
                     << " (was reified by not(" << l << "))";
           }

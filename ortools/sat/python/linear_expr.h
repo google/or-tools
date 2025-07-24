@@ -24,6 +24,7 @@
 #include "absl/container/fixed_array.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -520,7 +521,7 @@ class IntVar : public Literal {
 
   /// Overwrite the name of the variable. If name is empty, this method clears
   /// the name of the variable.
-  void SetName(const std::string& name);
+  void SetName(absl::string_view name);
 
   /// Returns a copy of the domain of the variable.
   Domain domain() const;

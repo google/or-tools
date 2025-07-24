@@ -22,6 +22,7 @@ import pandas as pd
 from ortools.sat.python import cp_model
 
 
+# [START data_model]
 def create_data_model() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Creates the dataframes that describes the model."""
 

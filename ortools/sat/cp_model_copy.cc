@@ -676,7 +676,33 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   return true;
 }
 
+namespace {
+void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
+                      LinearConstraintProto* linear) {
+  for (const int lit : literals) {
+    if (RefIsPositive(lit)) {
+      linear->add_vars(lit);
+      linear->add_coeffs(1);
+    } else {
+      linear->add_vars(NegatedRef(lit));
+      linear->add_coeffs(-1);
+      lb -= 1;
+      ub -= 1;
+    }
+  }
+  linear->add_domain(lb);
+  linear->add_domain(ub);
+}
+}  // namespace
+
 bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
+  if (!ct.enforcement_literal().empty()) {
+    ConstraintProto new_ct;
+    FinishEnforcementCopy(&new_ct);
+    LiteralsToLinear(ct.at_most_one().literals(), /*lb=*/0, /*ub=*/1,
+                     new_ct.mutable_linear());
+    return CopyLinear(new_ct, true);
+  }
   int num_true = 0;
   temp_literals_.clear();
   for (const int lit : ct.at_most_one().literals()) {
@@ -690,13 +716,19 @@ bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
 
   // TODO(user): presolve if num_true == 1.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
-  FinishEnforcementCopy(new_ct);
   new_ct->mutable_at_most_one()->mutable_literals()->Add(temp_literals_.begin(),
                                                          temp_literals_.end());
   return true;
 }
 
 bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
+  if (!ct.enforcement_literal().empty()) {
+    ConstraintProto new_ct;
+    FinishEnforcementCopy(&new_ct);
+    LiteralsToLinear(ct.exactly_one().literals(), /*lb=*/1, /*ub=*/1,
+                     new_ct.mutable_linear());
+    return CopyLinear(new_ct, true);
+  }
   int num_true = 0;
   temp_literals_.clear();
   for (const int lit : ct.exactly_one().literals()) {
@@ -710,7 +742,6 @@ bool ModelCopy::CopyExactlyOne(const ConstraintProto& ct) {
 
   // TODO(user): presolve if num_true == 1 and not everything is false.
   ConstraintProto* new_ct = context_->working_model->add_constraints();
-  FinishEnforcementCopy(new_ct);
   new_ct->mutable_exactly_one()->mutable_literals()->Add(temp_literals_.begin(),
                                                          temp_literals_.end());
   return true;
@@ -744,6 +775,7 @@ bool ModelCopy::CopyIntProd(const ConstraintProto& ct, bool ignore_names) {
   if (!ignore_names) {
     new_ct->set_name(ct.name());
   }
+  FinishEnforcementCopy(new_ct);
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
     CopyLinearExpression(expr, new_ct->mutable_int_prod()->add_exprs());
   }

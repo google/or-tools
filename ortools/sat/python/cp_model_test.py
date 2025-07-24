@@ -475,6 +475,18 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 3)
         self.assertEqual(-4, model.proto.constraints[2].enforcement_literal[0])
         self.assertEqual(2, model.proto.constraints[2].enforcement_literal[1])
+        model.add_linear_constraint(x + 4 * y, 0, 10).only_enforce_if([b, c, False])
+        self.assertLen(model.proto.constraints, 4)
+        self.assertEqual(2, model.proto.constraints[3].enforcement_literal[0])
+        self.assertEqual(3, model.proto.constraints[3].enforcement_literal[1])
+        self.assertEqual(4, model.proto.constraints[3].enforcement_literal[2])
+        model.add_linear_constraint(x + 5 * y, 0, 10).only_enforce_if(
+            c.negated(), b, np.True_
+        )
+        self.assertLen(model.proto.constraints, 5)
+        self.assertEqual(-4, model.proto.constraints[4].enforcement_literal[0])
+        self.assertEqual(2, model.proto.constraints[4].enforcement_literal[1])
+        self.assertEqual(5, model.proto.constraints[4].enforcement_literal[2])
 
     def test_names(self) -> None:
         model = cp_model.CpModel()
@@ -922,7 +934,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].table.exprs, 5)
         self.assertLen(model.proto.constraints[0].table.values, 15)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             model.add_allowed_assignments(
                 x,
                 [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
@@ -945,7 +957,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].table.values, 15)
         self.assertTrue(model.proto.constraints[0].table.negated)
         self.assertRaises(
-            TypeError,
+            ValueError,
             model.add_forbidden_assignments,
             x,
             [(0, 1, 2, 3, 4), (4, 3, 2, 1, 1), (0, 0, 0, 0)],
@@ -969,7 +981,7 @@ class CpModelTest(absltest.TestCase):
         self.assertLen(model.proto.constraints[0].automaton.transition_label, 4)
         self.assertLen(model.proto.constraints[0].automaton.final_states, 2)
         self.assertEqual(0, model.proto.constraints[0].automaton.starting_state)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             model.add_automaton(
                 x,
                 0,
@@ -1254,10 +1266,10 @@ class CpModelTest(absltest.TestCase):
         model.add_implication(x, y)
         self.assertLen(model.proto.variables, 2)
         self.assertLen(model.proto.constraints, 1)
-        self.assertLen(model.proto.constraints[0].bool_or.literals, 1)
+        self.assertLen(model.proto.constraints[0].bool_and.literals, 1)
         self.assertLen(model.proto.constraints[0].enforcement_literal, 1)
         self.assertEqual(x.index, model.proto.constraints[0].enforcement_literal[0])
-        self.assertEqual(y.index, model.proto.constraints[0].bool_or.literals[0])
+        self.assertEqual(y.index, model.proto.constraints[0].bool_and.literals[0])
 
     def test_bool_or(self) -> None:
         model = cp_model.CpModel()
@@ -1388,7 +1400,7 @@ class CpModelTest(absltest.TestCase):
         proto.coeffs.append(1)
         proto.vars.append(y.index)
         proto.coeffs.append(2)
-        expr1 = cp_model.rebuild_from_linear_expression_proto(proto, model.proto)
+        expr1 = cmh.rebuild_from_linear_expression_proto(proto, model.proto)
         canonical_expr1 = cmh.FlatIntExpr(expr1)
         self.assertEqual(canonical_expr1.vars[0], x)
         self.assertEqual(canonical_expr1.vars[1], y)
@@ -1399,7 +1411,7 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(TypeError, canonical_expr1.vars[0].negated)
 
         proto.offset = 2
-        expr2 = cp_model.rebuild_from_linear_expression_proto(proto, model.proto)
+        expr2 = cmh.rebuild_from_linear_expression_proto(proto, model.proto)
         canonical_expr2 = cmh.FlatIntExpr(expr2)
         self.assertEqual(canonical_expr2.vars[0], x)
         self.assertEqual(canonical_expr2.vars[1], y)
@@ -1606,7 +1618,7 @@ class CpModelTest(absltest.TestCase):
     def test_model_errors(self) -> None:
         model = cp_model.CpModel()
         self.assertRaises(TypeError, model.add, "dummy")
-        self.assertRaises(TypeError, model.get_or_make_index, "dummy")
+        self.assertRaises(TypeError, model.get_or_make_variable_index, "dummy")
         self.assertRaises(TypeError, model.minimize, "dummy")
 
     def test_solver_errors(self) -> None:

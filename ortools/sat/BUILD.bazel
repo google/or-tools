@@ -17,9 +17,7 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -2144,6 +2142,7 @@ cc_library(
     srcs = ["integer_expr.cc"],
     hdrs = ["integer_expr.h"],
     deps = [
+        ":cp_constraints",
         ":integer",
         ":integer_base",
         ":linear_constraint",
@@ -2158,6 +2157,7 @@ cc_library(
         "//ortools/base:mathutil",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -2203,15 +2203,14 @@ cc_library(
     srcs = ["linear_propagation.cc"],
     hdrs = ["linear_propagation.h"],
     deps = [
+        ":cp_constraints",
         ":integer",
         ":integer_base",
         ":model",
         ":precedences",
         ":sat_base",
-        ":sat_solver",
         ":synchronization",
         ":util",
-        "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:rev",
@@ -2220,7 +2219,6 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/cleanup",
-        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
@@ -2255,11 +2253,13 @@ cc_library(
     srcs = ["all_different.cc"],
     hdrs = ["all_different.h"],
     deps = [
+        ":cp_constraints",
         ":integer",
         ":integer_base",
         ":model",
         ":sat_base",
         ":sat_solver",
+        ":util",
         "//ortools/base",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:bitset",
@@ -3291,8 +3291,13 @@ cc_library(
         ":integer_base",
         ":model",
         ":sat_base",
+        ":sat_solver",
         "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -4286,7 +4291,6 @@ cc_library(
         "//ortools/util:running_stat",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
