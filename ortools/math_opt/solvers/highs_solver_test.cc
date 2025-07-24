@@ -162,11 +162,20 @@ INSTANTIATE_TEST_SUITE_P(HighsLpModelSolveParametersTest,
                          Values(LpModelSolveParametersTestParameters(
                              SolverType::kHighs, /*exact_zeros=*/true,
                              /*supports_duals=*/true,
-                             /*supports_primal_only_warm_starts=*/false)));
+                             /*supports_primal_only_warm_starts=*/true)));
 
-// MIP hint appears to be supported by Highs::setSolution, this is not yet
-// implemented.
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MipSolutionHintTest);
+SolutionHintTestParams MakeHighsSolutionHintParams() {
+  SolveParameters solve_params;
+  solve_params.presolve = Emphasis::kOff;
+  (*solve_params.highs.mutable_int_options())["mip_max_nodes"] = 0;
+  std::string hint_message_regex =
+      "Attempting to find feasible solution by "
+      "solving MIP for user-supplied values of";
+  return SolutionHintTestParams(SolverType::kHighs, solve_params, std::nullopt,
+                                hint_message_regex);
+}
+INSTANTIATE_TEST_SUITE_P(HighsSolutionHintTest, MipSolutionHintTest,
+                         Values(MakeHighsSolutionHintParams()));
 
 // HiGHS does not support branching priority.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(BranchPrioritiesTest);

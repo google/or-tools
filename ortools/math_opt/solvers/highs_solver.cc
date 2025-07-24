@@ -14,7 +14,6 @@
 // Unimplemented features:
 //  * Quadratic objective
 //  * TODO(b/272767311): initial basis, more precise returned basis.
-//  * Starting solution
 //  * TODO(b/271104776): Returning rays
 
 #include "ortools/math_opt/solvers/highs_solver.h"
@@ -924,6 +923,21 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
                          _ << "error encoding solve_stats.solve_time");
     return absl::OkStatus();
   };
+
+  if (model_parameters.solution_hints_size() > 0) {
+    // Take the first solution hint and set the solution.
+    const SolutionHintProto& hint = model_parameters.solution_hints(0);
+    HighsInt num_entries = hint.variable_values().ids_size();
+    std::vector<HighsInt> index(num_entries);
+    std::vector<double> value(num_entries);
+    size_t i = 0;
+    for (const auto [id, val] : MakeView(hint.variable_values())) {
+      index[i] = variable_data_.at(id).index;
+      value[i] = val;
+      ++i;
+    }
+    RETURN_IF_ERROR(ToStatus(highs_->setSolution(num_entries, index.data(), value.data())));
+  }
 
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());
   // TODO(b/271595607): delete this code once we upgrade HiGHS, if HiGHS does
