@@ -21,13 +21,11 @@ load("@rules_python//python:py_test.bzl", "py_test")
 cc_library(
     name = "init_doc",
     hdrs = ["init_doc.h"],
-    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
     name = "init",
     srcs = ["init.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":init_doc",
         "//ortools/init",

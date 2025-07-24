@@ -33,7 +33,6 @@ filegroup(
     srcs = [
         "base.i",
     ],
-    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -146,7 +145,6 @@ cc_library(
     name = "constant_divisor",
     srcs = ["constant_divisor.cc"],
     hdrs = ["constant_divisor.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",

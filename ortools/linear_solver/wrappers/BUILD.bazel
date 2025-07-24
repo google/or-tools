@@ -34,7 +34,6 @@ cc_library(
         "-DUSE_PDLP",
         "-DUSE_SCIP",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:file",
         "//ortools/base:string_view_migration",

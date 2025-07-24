@@ -20,7 +20,6 @@ load("@rules_python//python:py_test.bzl", "py_test")
 pybind_extension(
     name = "set_cover",
     srcs = ["set_cover.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/set_cover:set_cover_cc_proto",
         "//ortools/set_cover:set_cover_heuristics",

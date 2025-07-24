@@ -35,7 +35,6 @@ filegroup(
     srcs = [
         "vector.swig",
     ],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -43,7 +42,6 @@ filegroup(
     srcs = [
         "proto.i",
     ],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -51,7 +49,6 @@ filegroup(
     srcs = [
         "absl_string_view.swig",
     ],
-    visibility = ["//visibility:public"],
 )
 
 filegroup(
@@ -59,7 +56,6 @@ filegroup(
     srcs = [
         "sorted_interval_list.swig",
     ],
-    visibility = ["//visibility:public"],
 )
 
 ortools_java_wrap_cc(
@@ -74,7 +70,6 @@ ortools_java_wrap_cc(
         "on_linux": "-DSWIGWORDSIZE64",
         "//conditions:default": "",
     }),
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:sorted_interval_list",
     ],

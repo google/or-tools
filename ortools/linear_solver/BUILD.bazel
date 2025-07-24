@@ -156,7 +156,6 @@ cc_proto_library(
 
 py_proto_library(
     name = "linear_solver_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":linear_solver_proto"],
 )
 
@@ -322,7 +321,6 @@ cc_library(
     name = "model_validator",
     srcs = ["model_validator.cc"],
     hdrs = ["model_validator.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_solver_cc_proto",
         "//ortools/base",
@@ -410,7 +408,6 @@ cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],
     hdrs = ["solve_mp_model.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",

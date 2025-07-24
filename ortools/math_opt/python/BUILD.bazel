@@ -22,7 +22,6 @@ package(default_visibility = ["//visibility:private"])
 py_library(
     name = "mathopt",
     srcs = ["mathopt.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":callback",
         ":compute_infeasible_subsystem_result",

@@ -21,13 +21,11 @@ load("@rules_python//python:py_test.bzl", "py_test")
 cc_library(
     name = "sorted_interval_list_doc",
     hdrs = ["sorted_interval_list_doc.h"],
-    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
     name = "sorted_interval_list",
     srcs = ["sorted_interval_list.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":sorted_interval_list_doc",
         "//ortools/util:sorted_interval_list",

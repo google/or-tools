@@ -64,7 +64,6 @@ cc_library(
     name = "rcpsp_parser",
     srcs = ["rcpsp_parser.cc"],
     hdrs = ["rcpsp_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":rcpsp_cc_proto",
         "//ortools/base",
@@ -82,6 +81,5 @@ proto_library(
 
 cc_proto_library(
     name = "course_scheduling_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":course_scheduling_proto"],
 )

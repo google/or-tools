@@ -18,11 +18,9 @@ load("@rules_python//python:py_library.bzl", "py_library")
 py_library(
     name = "flags",
     srcs = ["flags.py"],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "visualization",
     srcs = ["visualization.py"],
-    visibility = ["//visibility:public"],
 )

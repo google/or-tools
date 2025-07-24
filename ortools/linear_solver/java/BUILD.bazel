@@ -26,7 +26,6 @@ ortools_java_wrap_cc(
         "//ortools/base:base_swig",
         "//ortools/util/java:vector_swig",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver/wrappers:model_builder_helper",
     ],

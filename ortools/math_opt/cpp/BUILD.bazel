@@ -20,7 +20,6 @@ package(default_visibility = [
 cc_library(
     name = "math_opt",
     hdrs = ["math_opt.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":model",
         ":solve",
@@ -426,7 +425,6 @@ cc_library(
     testonly = 1,
     srcs = ["matchers.cc"],
     hdrs = ["matchers.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_constraint",
         ":math_opt",
@@ -458,7 +456,6 @@ cc_library(
     name = "statistics",
     srcs = ["statistics.cc"],
     hdrs = ["statistics.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":model",
         "//ortools/math_opt/storage:model_storage",

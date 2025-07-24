@@ -54,12 +54,10 @@ cc_library(
 proto_library(
     name = "vector_bin_packing_proto",
     srcs = ["vector_bin_packing.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "vector_bin_packing_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":vector_bin_packing_proto"],
 )
 
@@ -67,7 +65,6 @@ cc_library(
     name = "vector_bin_packing_parser",
     srcs = ["vector_bin_packing_parser.cc"],
     hdrs = ["vector_bin_packing_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":vector_bin_packing_cc_proto",
         "//ortools/base",
@@ -120,12 +117,10 @@ cc_test(
 proto_library(
     name = "multiple_dimensions_bin_packing_proto",
     srcs = ["multiple_dimensions_bin_packing.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "multiple_dimensions_bin_packing_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":multiple_dimensions_bin_packing_proto"],
 )
 
@@ -133,7 +128,6 @@ cc_library(
     name = "binpacking_2d_parser",
     srcs = ["binpacking_2d_parser.cc"],
     hdrs = ["binpacking_2d_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":multiple_dimensions_bin_packing_cc_proto",
         "//ortools/base",

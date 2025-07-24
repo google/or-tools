@@ -21,7 +21,6 @@ load("@rules_python//python:py_test.bzl", "py_test")
 pybind_extension(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
@@ -52,7 +51,6 @@ py_test(
 py_library(
     name = "model_builder_numbers",
     srcs = ["model_builder_numbers.py"],
-    visibility = ["//visibility:public"],
     deps = [
         requirement("numpy"),
     ],
@@ -61,7 +59,6 @@ py_library(
 py_library(
     name = "model_builder",
     srcs = ["model_builder.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":model_builder_helper",
         ":model_builder_numbers",

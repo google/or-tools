@@ -23,7 +23,6 @@ go_library(
     cdeps = ["//ortools/sat/c_api:cp_solver_c"],
     cgo = True,
     importpath = "github.com/google/or-tools/ortools/sat/go/cpmodel",
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/sat:cp_model_go_proto",
         "//ortools/sat:sat_parameters_go_proto",

@@ -19,7 +19,6 @@ cc_binary(
         "@platforms//os:linux": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
@@ -37,7 +36,6 @@ cc_binary(
         "@platforms//os:osx": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
@@ -55,7 +53,6 @@ cc_binary(
         "@platforms//os:windows": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/algorithms/java:knapsacksolver_cc",
         "//ortools/graph/java:graph_cc",
@@ -69,7 +66,6 @@ cc_binary(
 java_library(
     name = "Loader",
     srcs = ["Loader.java"],
-    visibility = ["//visibility:public"],
     runtime_deps = select({
         "@platforms//os:linux": ["//ortools/java/com/google/ortools:libjniortools.so"],
         "@platforms//os:osx": ["//ortools/java/com/google/ortools:libjniortools.dylib"],

@@ -41,7 +41,6 @@ java_library(
         "TableConstraint.java",
         "WeightedSumExpression.java",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/sat:cp_model_java_proto",

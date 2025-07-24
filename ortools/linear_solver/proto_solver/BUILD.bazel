@@ -16,7 +16,6 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "proto_utils",
     hdrs = ["proto_utils.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/port:proto_utils",
         "@abseil-cpp//absl/log:check",

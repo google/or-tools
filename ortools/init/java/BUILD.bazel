@@ -24,7 +24,6 @@ ortools_java_wrap_cc(
         "//ortools/base:base_swig",
         "//ortools/util/java:absl_string_view_swig",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/init",
     ],

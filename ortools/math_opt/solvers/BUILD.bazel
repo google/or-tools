@@ -25,7 +25,6 @@ cc_library(
         "gscip_solver.cc",
         "gscip_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":message_callback_data",
         "//ortools/base:linked_hash_map",
@@ -143,7 +142,6 @@ cc_library(
     hdrs = [
         "gurobi_init_arguments.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":gurobi_callback",
         ":gurobi_cc_proto",
@@ -198,7 +196,6 @@ cc_library(
         "glop_solver.cc",
         "glop_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
@@ -248,7 +245,6 @@ cc_library(
         "cp_sat_solver.cc",
         "cp_sat_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
@@ -394,7 +390,6 @@ cc_library(
         "pdlp_solver.cc",
         "pdlp_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":pdlp_bridge",
         "//ortools/base:protoutil",
@@ -467,7 +462,6 @@ cc_library(
         "glpk_solver.cc",
         "glpk_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":glpk_cc_proto",
         ":message_callback_data",
@@ -569,7 +563,6 @@ cc_library(
         "highs_solver.cc",
         "highs_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":highs_cc_proto",
         ":message_callback_data",
@@ -640,13 +633,11 @@ proto_library(
 
 cc_proto_library(
     name = "gurobi_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":gurobi_proto"],
 )
 
 py_proto_library(
     name = "gurobi_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":gurobi_proto"],
 )
 
@@ -668,12 +659,10 @@ py_proto_library(
 proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
-    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "highs_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":highs_proto"],
 )
 
@@ -688,7 +677,6 @@ cc_library(
         "xpress_solver.cc",
         "xpress_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:linked_hash_map",
         "//ortools/base:map_util",

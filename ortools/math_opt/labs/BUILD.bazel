@@ -17,7 +17,6 @@ cc_library(
     name = "general_constraint_to_mip",
     srcs = ["general_constraint_to_mip.cc"],
     hdrs = ["general_constraint_to_mip.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_expr_util",
         "//ortools/math_opt/cpp:math_opt",
@@ -30,7 +29,6 @@ cc_library(
     name = "linear_expr_util",
     srcs = ["linear_expr_util.cc"],
     hdrs = ["linear_expr_util.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/math_opt/cpp:math_opt",
         "@abseil-cpp//absl/algorithm:container",
@@ -41,7 +39,6 @@ cc_library(
     name = "solution_feasibility_checker",
     srcs = ["solution_feasibility_checker.cc"],
     hdrs = ["solution_feasibility_checker.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:mathutil",
         "//ortools/base:status_macros",
@@ -59,7 +56,6 @@ cc_library(
     name = "solution_improvement",
     srcs = ["solution_improvement.cc"],
     hdrs = ["solution_improvement.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_macros",
         "//ortools/math_opt/core:math_opt_proto_utils",
@@ -79,7 +75,6 @@ cc_library(
         "dualizer.cc",
     ],
     hdrs = ["dualizer.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:map_util",
         "//ortools/math_opt/cpp:math_opt",

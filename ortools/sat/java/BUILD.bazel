@@ -34,7 +34,6 @@ ortools_java_wrap_cc(
         "//ortools/util/java:vector_swig",
     ],
     use_directors = True,
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/sat:swig_helper",
         "//ortools/util:sorted_interval_list",

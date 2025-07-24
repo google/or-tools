@@ -192,7 +192,6 @@ cc_library(
     name = "pdtsp_parser",
     srcs = ["pdtsp_parser.cc"],
     hdrs = ["pdtsp_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -226,7 +225,6 @@ cc_library(
     name = "tsplib_parser",
     srcs = ["tsplib_parser.cc"],
     hdrs = ["tsplib_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":simple_graph",
         "//ortools/base",
@@ -274,7 +272,6 @@ cc_library(
     name = "tsptw_parser",
     srcs = ["tsptw_parser.cc"],
     hdrs = ["tsptw_parser.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":simple_graph",
         "//ortools/base",

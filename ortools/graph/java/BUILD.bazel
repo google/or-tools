@@ -25,7 +25,6 @@ ortools_java_wrap_cc(
     swig_includes = [
         "//ortools/base:base_swig",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/graph:assignment",
         "//ortools/graph:max_flow",

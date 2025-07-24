@@ -85,7 +85,6 @@ cc_library(
 pybind_extension(
     name = "cp_model_helper",
     srcs = ["cp_model_helper.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_expr",
         ":linear_expr_doc",
@@ -112,7 +111,6 @@ py_test(
 py_library(
     name = "cp_model",
     srcs = ["cp_model.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
         requirement("numpy"),

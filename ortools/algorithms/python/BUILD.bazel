@@ -48,7 +48,6 @@ config_setting(
 cc_library(
     name = "knapsack_solver_doc",
     hdrs = ["knapsack_solver_doc.h"],
-    visibility = ["//visibility:public"],
 )
 
 pybind_extension(
@@ -61,7 +60,6 @@ pybind_extension(
         ":use_scip": ["-DUSE_SCIP"],
         "//conditions:default": [],
     }),
-    visibility = ["//visibility:public"],
     deps = [
         ":knapsack_solver_doc",
         "//ortools/algorithms:knapsack_solver_lib",
