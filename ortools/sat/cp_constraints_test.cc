@@ -163,8 +163,7 @@ TEST(LiteralXorIsTest, OneEnforcedVariable) {
   model.Add(LiteralXorIs({Literal(e, true)}, {}, true));
   model.Add(LiteralXorIs({Literal(f, false)}, {}, true));
   SatSolver* solver = model.GetOrCreate<SatSolver>();
-  // Propagation happens when the constraints are registered with the
-  // EnforcementPropagator.
+  EXPECT_TRUE(solver->Propagate());
   EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(e, true)));
   EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(f, false)));
 }

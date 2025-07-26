@@ -789,6 +789,7 @@ bool ModelCopy::CopyIntDiv(const ConstraintProto& ct, bool ignore_names) {
   if (!ignore_names) {
     new_ct->set_name(ct.name());
   }
+  FinishEnforcementCopy(new_ct);
   for (const LinearExpressionProto& expr : ct.int_div().exprs()) {
     CopyLinearExpression(expr, new_ct->mutable_int_div()->add_exprs());
   }
@@ -802,6 +803,7 @@ bool ModelCopy::CopyIntMod(const ConstraintProto& ct, bool ignore_names) {
   if (!ignore_names) {
     new_ct->set_name(ct.name());
   }
+  FinishEnforcementCopy(new_ct);
   for (const LinearExpressionProto& expr : ct.int_mod().exprs()) {
     CopyLinearExpression(expr, new_ct->mutable_int_mod()->add_exprs());
   }

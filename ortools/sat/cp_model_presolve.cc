@@ -1980,6 +1980,8 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveIntDiv(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   const LinearExpressionProto target = ct->int_div().target();
   const LinearExpressionProto expr = ct->int_div().exprs(0);
@@ -2123,6 +2125,8 @@ bool CpModelPresolver::PresolveIntDiv(int c, ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveIntMod(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   // TODO(user): Presolve f(X) = g(X) % fixed_mod.
   const LinearExpressionProto target = ct->int_mod().target();

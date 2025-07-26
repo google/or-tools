@@ -1531,7 +1531,7 @@ void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  std::vector<Literal> enforcement_literals =
+  const std::vector<Literal> enforcement_literals =
       mapping->Literals(ct.enforcement_literal());
   const AffineExpression prod = mapping->Affine(ct.int_prod().target());
   std::vector<AffineExpression> terms;
@@ -1574,11 +1574,14 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
 void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression div = mapping->Affine(ct.int_div().target());
   const AffineExpression num = mapping->Affine(ct.int_div().exprs(0));
   const AffineExpression denom = mapping->Affine(ct.int_div().exprs(1));
   if (integer_trail->IsFixed(denom)) {
-    m->Add(FixedDivisionConstraint(num, integer_trail->FixedValue(denom), div));
+    m->Add(FixedDivisionConstraint(enforcement_literals, num,
+                                   integer_trail->FixedValue(denom), div));
   } else {
     if (VLOG_IS_ON(1)) {
       LinearConstraintBuilder builder(m);
@@ -1587,7 +1590,7 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
         VLOG(1) << "Division " << ct << " can be linearized";
       }
     }
-    m->Add(DivisionConstraint(num, denom, div));
+    m->Add(DivisionConstraint(enforcement_literals, num, denom, div));
   }
 }
 
@@ -1595,12 +1598,15 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
 
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression target = mapping->Affine(ct.int_mod().target());
   const AffineExpression expr = mapping->Affine(ct.int_mod().exprs(0));
   const AffineExpression mod = mapping->Affine(ct.int_mod().exprs(1));
   CHECK(integer_trail->IsFixed(mod));
   const IntegerValue fixed_modulo = integer_trail->FixedValue(mod);
-  m->Add(FixedModuloConstraint(expr, fixed_modulo, target));
+  m->Add(
+      FixedModuloConstraint(enforcement_literals, expr, fixed_modulo, target));
 }
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {

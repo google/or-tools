@@ -804,8 +804,50 @@ TEST(SolveCpModelTest, BoolXorWithEnforcementLiteralPresolved) {
   EXPECT_THAT(response.solution(), ::testing::ElementsAre(1, 0));
 }
 
+TEST(SolveCpModelTest, IntDivWithEnforcementLiteral) {
+  // not(b) => 7x / 3y = 17, x in [0, 10], y in [1, 2]
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 1, 2 ] }
+    constraints {
+      enforcement_literal: -1
+      int_prod {
+        target { offset: 17 }
+        exprs { vars: 1 coeffs: 7 }
+        exprs { vars: 2 coeffs: 3 }
+      }
+    })pb");
+  Model model;
+  model.Add(NewSatParameters("cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(0), 1);
+}
+
+TEST(SolveCpModelTest, IntModWithEnforcementLiteral) {
+  // not(b) => x % 10 = y, x in [8, 11], y in [2, 7]
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 2, 7 ] }
+    variables { domain: [ 8, 11 ] }
+    constraints {
+      enforcement_literal: -1
+      int_prod {
+        target { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { offset: 10 }
+      }
+    })pb");
+  Model model;
+  model.Add(NewSatParameters("cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(0), 1);
+}
+
 TEST(SolveCpModelTest, IntProdWithEnforcementLiteral) {
-  // b => x.y.z = 17
+  // not(b) => x.y.z = 17
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 2, 20 ] }
@@ -828,7 +870,7 @@ TEST(SolveCpModelTest, IntProdWithEnforcementLiteral) {
 }
 
 TEST(SolveCpModelTest, SquareIntProdWithEnforcementLiteral) {
-  // b => x.y.z = 17
+  // not(b) => x.y.z = 17
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 2, 20 ] }

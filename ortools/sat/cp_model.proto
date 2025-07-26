@@ -331,8 +331,8 @@ message ConstraintProto {
   // l).
   //
   // Important: as of July 2025, only a few constraint support enforcement:
-  // - bool_or, bool_and, at_most_one, exactly_one, bool_xor, int_prod, linear,
-  // table: fully supported.
+  // - bool_or, bool_and, at_most_one, exactly_one, bool_xor, int_div, int_mod,
+  // int_prod, linear, table: fully supported.
   // - interval: only support a single enforcement literal.
   // - other: no support (but can be added on a per-demand basis).
   repeated int32 enforcement_literal = 2;

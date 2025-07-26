@@ -1171,9 +1171,11 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateIntProdConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kIntDiv:
+        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntDivConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
+        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInverse:

@@ -72,6 +72,13 @@ class EnforcementPropagator : public SatPropagator {
       absl::Span<const Literal> enforcement,
       std::function<void(EnforcementId, EnforcementStatus)> callback = nullptr);
 
+  // Calls `Register` with a callback calling
+  // `watcher->CallOnNextPropagate(literal_watcher_id)` if a propagation might
+  // be possible.
+  EnforcementId Register(absl::Span<const Literal> enforcement_literals,
+                         GenericLiteralWatcher* watcher,
+                         int literal_watcher_id);
+
   // Add the enforcement reason to the given vector.
   void AddEnforcementReason(EnforcementId id,
                             std::vector<Literal>* reason) const;
@@ -82,7 +89,17 @@ class EnforcementPropagator : public SatPropagator {
       EnforcementId id, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason);
 
-  EnforcementStatus Status(EnforcementId id) const { return statuses_[id]; }
+  ABSL_MUST_USE_RESULT bool SafeEnqueue(
+      EnforcementId id, IntegerLiteral i_lit,
+      absl::Span<const IntegerLiteral> integer_reason);
+
+  bool ReportConflict(EnforcementId id,
+                      absl::Span<const IntegerLiteral> integer_reason);
+
+  EnforcementStatus Status(EnforcementId id) const {
+    if (id < 0) return EnforcementStatus::IS_ENFORCED;
+    return statuses_[id];
+  }
 
   // Recompute the status from the current assignment.
   // This should only used in DCHECK().
@@ -144,18 +161,16 @@ class BooleanXorPropagator : public PropagatorInterface {
  public:
   BooleanXorPropagator(const std::vector<Literal>& enforcement_literals,
                        const std::vector<Literal>& literals, bool value,
-                       Trail* trail, IntegerTrail* integer_trail,
-                       EnforcementPropagator* enforcement_propagator);
+                       Model* model);
 
   // This type is neither copyable nor movable.
   BooleanXorPropagator(const BooleanXorPropagator&) = delete;
   BooleanXorPropagator& operator=(const BooleanXorPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool Propagate(EnforcementId id, EnforcementStatus status);
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
   const std::vector<Literal> literals_;
   const bool value_;
@@ -230,15 +245,8 @@ inline std::function<void(Model*)> LiteralXorIs(
     const std::vector<Literal>& enforcement_literals,
     const std::vector<Literal>& literals, bool value) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    EnforcementPropagator* enforcement_propagator =
-        model->GetOrCreate<EnforcementPropagator>();
-    BooleanXorPropagator* constraint =
-        new BooleanXorPropagator(enforcement_literals, literals, value, trail,
-                                 integer_trail, enforcement_propagator);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    model->TakeOwnership(
+        new BooleanXorPropagator(enforcement_literals, literals, value, model));
   };
 }
 
