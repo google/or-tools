@@ -46,6 +46,7 @@ rather than for solving specific optimization problems.
 """
 
 from collections.abc import Callable, Iterable, Sequence
+import copy
 import threading
 import time
 from typing import (
@@ -182,13 +183,14 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
 # Helper functions.
-def arg_is_boolean(x: Any) -> bool:
-    """Checks if the x is a boolean."""
-    if isinstance(x, bool):
-        return True
-    if isinstance(x, np.bool_):
-        return True
-    return False
+def snake_case_to_camel_case(name: str) -> str:
+    """Converts a snake_case name to camelCase."""
+    words = name.split("_")
+    return (
+        "".join(word.capitalize() for word in words)
+        .replace("2d", "2D")
+        .replace("Xor", "XOr")
+    )
 
 
 def object_is_a_true_literal(literal: LiteralT) -> bool:
@@ -215,32 +217,6 @@ def object_is_a_false_literal(literal: LiteralT) -> bool:
     if isinstance(literal, IntegralTypes):
         return int(literal) == 0
     return False
-
-
-def expand_exprs_generator_or_tuple(
-    expressions: Union[tuple[LinearExprT, ...], Iterable[LinearExprT]],
-) -> Union[Iterable[LinearExprT], LinearExprT]:
-    if hasattr(expressions, "__len__"):  # Tuple
-        if len(expressions) != 1:
-            return expressions
-        if isinstance(expressions[0], (NumberTypes, LinearExpr)):
-            return expressions
-    # The `expressions` is a tuple. If it contains a single element which is
-    # itself an iterable (e.g. a generator), unpack it.
-    return expressions[0]
-
-
-def expand_literals_generator_or_tuple(
-    literals: Union[tuple[LiteralT, ...], Iterable[LiteralT]],
-) -> Union[Iterable[LiteralT], LiteralT]:
-    if hasattr(literals, "__len__"):  # Tuple
-        if len(literals) != 1:
-            return literals
-        if isinstance(literals[0], (NumberTypes, bool, cmh.Literal)):
-            return literals
-    # The `expressions` is a tuple. If it contains a single element which is
-    # itself an iterable (e.g. a generator), unpack it.
-    return literals[0]
 
 
 def _get_index(obj: _IndexOrSeries) -> pd.Index:
@@ -287,8 +263,22 @@ class CpModel(cmh.CpBaseModel):
     * ```add_``` create new constraints and add them to the model.
     """
 
-    def __init__(self) -> None:
-        cmh.CpBaseModel.__init__(self)
+    def __init__(self, model_proto: Optional[cmh.CpModelProto] = None) -> None:
+        if model_proto is None:
+            cmh.CpBaseModel.__init__(self)
+        else:
+            cmh.CpBaseModel.__init__(self, model_proto)
+        self._add_pre_pep8_methods()
+
+    def _add_pre_pep8_methods(self) -> None:
+        for method_name in dir(self):
+            if callable(getattr(self, method_name)) and (
+                method_name.startswith("add_")
+                or method_name.startswith("new_")
+                or method_name.startswith("clear_")
+            ):
+                pre_pep8_name = snake_case_to_camel_case(method_name)
+                setattr(self, pre_pep8_name, getattr(self, method_name))
 
     # Naming.
     @property
@@ -469,7 +459,7 @@ class CpModel(cmh.CpBaseModel):
                     "Cannot add a linear expression containing floating point"
                     f" coefficients or constants: {type(linear_expr).__name__!r}"
                 )
-            return self.add_bounded_linear_expression_internal(ble)
+            return self._add_bounded_linear_expression(ble)
         if isinstance(linear_expr, IntegralTypes):
             if not domain.contains(int(linear_expr)):
                 return self.add_bool_or([])  # Evaluate to false.
@@ -493,10 +483,10 @@ class CpModel(cmh.CpBaseModel):
           TypeError: If the `ct` is not a `BoundedLinearExpression` or a Boolean.
         """
         if isinstance(ct, BoundedLinearExpression):
-            return self.add_bounded_linear_expression_internal(ct)
-        if ct and arg_is_boolean(ct):
+            return self._add_bounded_linear_expression(ct)
+        if ct and self.is_boolean_value(ct):
             return self.add_bool_or([True])
-        if not ct and arg_is_boolean(ct):
+        if not ct and self.is_boolean_value(ct):
             return self.add_bool_or([])  # Evaluate to false.
         raise TypeError(f"not supported: CpModel.add({type(ct).__name__!r})")
 
@@ -519,9 +509,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An instance of the `Constraint` class.
         """
-        return self.add_all_different_internal(
-            list(expand_exprs_generator_or_tuple(expressions))
-        )
+        return self._add_all_different(*expressions)
 
     def add_element(
         self,
@@ -549,7 +537,7 @@ class CpModel(cmh.CpBaseModel):
             expression: LinearExprT = list(expressions)[int(index)]
             return self.add(expression == target)
 
-        return self.add_element_internal(index, expressions, target)
+        return self._add_element(index, expressions, target)
 
     def add_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
         """Adds Circuit(arcs).
@@ -575,7 +563,7 @@ class CpModel(cmh.CpBaseModel):
         """
         if not arcs:
             raise ValueError("add_circuit expects a non-empty array of arcs")
-        return self.add_circuit_internal(arcs)
+        return self._add_circuit(arcs)
 
     def add_multiple_circuit(self, arcs: Sequence[ArcT]) -> Constraint:
         """Adds a multiple circuit constraint, aka the 'VRP' constraint.
@@ -603,7 +591,7 @@ class CpModel(cmh.CpBaseModel):
         """
         if not arcs:
             raise ValueError("add_multiple_circuit expects a non-empty array of arcs")
-        return self.add_routes_internal(arcs)
+        return self._add_routes(arcs)
 
     def add_allowed_assignments(
         self,
@@ -637,7 +625,7 @@ class CpModel(cmh.CpBaseModel):
                 "add_allowed_assignments expects a non-empty expressions array"
             )
 
-        return self.add_table_internal(expressions, tuples_list, False)
+        return self._add_table(expressions, tuples_list, False)
 
     def add_forbidden_assignments(
         self,
@@ -670,7 +658,7 @@ class CpModel(cmh.CpBaseModel):
                 "add_forbidden_assignments expects a non-empty expressions array"
             )
 
-        return self.add_table_internal(expressions, tuples_list, True)
+        return self._add_table(expressions, tuples_list, True)
 
     def add_automaton(
         self,
@@ -732,7 +720,7 @@ class CpModel(cmh.CpBaseModel):
         if not transition_triples:
             raise ValueError("add_automaton expects some transition triples")
 
-        return self.add_automaton_internal(
+        return self._add_automaton(
             transition_expressions,
             starting_state,
             final_states,
@@ -768,7 +756,7 @@ class CpModel(cmh.CpBaseModel):
                 "In the inverse constraint, the two array variables and"
                 " inverse_variables must have the same length."
             )
-        return self.add_inverse_internal(variables, inverse_variables)
+        return self._add_inverse(variables, inverse_variables)
 
     def add_reservoir_constraint(
         self,
@@ -812,7 +800,7 @@ class CpModel(cmh.CpBaseModel):
           ValueError: if min_level > 0
         """
 
-        return self.add_reservoir_internal(
+        return self._add_reservoir(
             times,
             level_changes,
             [],
@@ -884,7 +872,7 @@ class CpModel(cmh.CpBaseModel):
         if not times:
             raise ValueError("Reservoir constraint must have a non-empty times array")
 
-        return self.add_reservoir_internal(
+        return self._add_reservoir(
             times,
             level_changes,
             actives,
@@ -912,9 +900,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_bool_or(self, *literals):
         """Adds `Or(literals) == true`: sum(literals) >= 1."""
-        return self.add_bool_or_internal(
-            list(expand_literals_generator_or_tuple(literals))
-        )
+        return self._add_bool_argument_constraint("or", *literals)
 
     @overload
     def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -924,7 +910,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_at_least_one(self, *literals):
         """Same as `add_bool_or`: `sum(literals) >= 1`."""
-        return self.add_bool_or(*literals)
+        return self._add_bool_argument_constraint("or", *literals)
 
     @overload
     def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -934,9 +920,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_at_most_one(self, *literals) -> Constraint:
         """Adds `AtMostOne(literals)`: `sum(literals) <= 1`."""
-        return self.add_at_most_one_internal(
-            list(expand_literals_generator_or_tuple(literals))
-        )
+        return self._add_bool_argument_constraint("at_most_one", *literals)
 
     @overload
     def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -946,9 +930,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_exactly_one(self, *literals):
         """Adds `ExactlyOne(literals)`: `sum(literals) == 1`."""
-        return self.add_exactly_one_internal(
-            list(expand_literals_generator_or_tuple(literals))
-        )
+        return self._add_bool_argument_constraint("exactly_one", *literals)
 
     @overload
     def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -958,9 +940,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_bool_and(self, *literals):
         """Adds `And(literals) == true`."""
-        return self.add_bool_and_internal(
-            list(expand_literals_generator_or_tuple(literals))
-        )
+        return self._add_bool_argument_constraint("and", *literals)
 
     @overload
     def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -980,9 +960,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `Constraint` object.
         """
-        return self.add_bool_xor_internal(
-            list(expand_literals_generator_or_tuple(literals))
-        )
+        return self._add_bool_argument_constraint("xor", *literals)
 
     @overload
     def add_min_equality(
@@ -996,11 +974,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_min_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Min(expressions)`."""
-        return self.add_linear_argument_constraint_internal(
-            "min",
-            target,
-            list(expand_exprs_generator_or_tuple(expressions)),
-        )
+        return self._add_linear_argument_constraint("min", target, *expressions)
 
     @overload
     def add_max_equality(
@@ -1014,23 +988,17 @@ class CpModel(cmh.CpBaseModel):
 
     def add_max_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Max(expressions)`."""
-        return self.add_linear_argument_constraint_internal(
-            "max",
-            target,
-            list(expand_exprs_generator_or_tuple(expressions)),
-        )
+        return self._add_linear_argument_constraint("max", target, *expressions)
 
     def add_division_equality(
         self, target: LinearExprT, num: LinearExprT, denom: LinearExprT
     ) -> Constraint:
         """Adds `target == num // denom` (integer division rounded towards 0)."""
-        return self.add_linear_argument_constraint_internal("div", target, [num, denom])
+        return self._add_linear_argument_constraint("div", target, [num, denom])
 
     def add_abs_equality(self, target: LinearExprT, expr: LinearExprT) -> Constraint:
         """Adds `target == Abs(expr)`."""
-        return self.add_linear_argument_constraint_internal(
-            "max", target, [expr, -expr]
-        )
+        return self._add_linear_argument_constraint("max", target, [expr, -expr])
 
     def add_modulo_equality(
         self, target: LinearExprT, expr: LinearExprT, mod: LinearExprT
@@ -1054,7 +1022,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           A `Constraint` object.
         """
-        return self.add_linear_argument_constraint_internal("mod", target, [expr, mod])
+        return self._add_linear_argument_constraint("mod", target, [expr, mod])
 
     def add_multiplication_equality(
         self,
@@ -1062,13 +1030,7 @@ class CpModel(cmh.CpBaseModel):
         *expressions: Union[Iterable[LinearExprT], LinearExprT],
     ) -> Constraint:
         """Adds `target == expressions[0] * .. * expressions[n]`."""
-        return (
-            self.add_linear_argument_constraint_internal(
-                "prod",
-                target,
-                list(expand_exprs_generator_or_tuple(expressions)),
-            ),
-        )
+        return self._add_linear_argument_constraint("prod", target, *expressions)
 
     # Scheduling support
 
@@ -1091,7 +1053,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `IntervalVar` object.
         """
-        return self.new_interval_var_internal(name, start, size, end, [])
+        return self._new_interval_var(name, start, size, end, [])
 
     def new_interval_var_series(
         self,
@@ -1161,7 +1123,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `IntervalVar` object.
         """
-        return self.new_interval_var_internal(name, start, size, start + size, [])
+        return self._new_interval_var(name, start, size, start + size, [])
 
     def new_fixed_size_interval_var_series(
         self,
@@ -1237,7 +1199,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `IntervalVar` object.
         """
-        return self.new_interval_var_internal(
+        return self._new_interval_var(
             name,
             start,
             size,
@@ -1326,7 +1288,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `IntervalVar` object.
         """
-        return self.new_interval_var_internal(
+        return self._new_interval_var(
             name,
             start,
             size,
@@ -1398,7 +1360,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An instance of the `Constraint` class.
         """
-        return self.add_no_overlap_internal(intervals)
+        return self._add_no_overlap(intervals)
 
     def add_no_overlap_2d(
         self,
@@ -1421,7 +1383,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An instance of the `Constraint` class.
         """
-        return self.add_no_overlap_2d_internal(x_intervals, y_intervals)
+        return self._add_no_overlap_2d(x_intervals, y_intervals)
 
     def add_cumulative(
         self,
@@ -1448,7 +1410,7 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An instance of the `Constraint` class.
         """
-        return self.add_cumulative_internal(intervals, demands, capacity)
+        return self._add_cumulative(intervals, demands, capacity)
 
     # Support for model cloning.
     def clone(self) -> "CpModel":
@@ -1457,6 +1419,12 @@ class CpModel(cmh.CpBaseModel):
         clone.proto.copy_from(self.proto)
         clone.rebuild_constant_map()
         return clone
+
+    def __copy__(self):
+        return CpModel(self.model_proto)
+
+    def __deepcopy__(self, memo):
+        return CpModel(copy.deepcopy(self.model_proto, memo))
 
     def get_bool_var_from_proto_index(self, index: int) -> IntVar:
         """Returns an already created Boolean variable from its index."""
@@ -1662,48 +1630,7 @@ class CpModel(cmh.CpBaseModel):
     def Proto(self) -> cmh.CpModelProto:
         return self.proto
 
-    NewIntVar = new_int_var
-    NewIntVarFromDomain = new_int_var_from_domain
-    NewBoolVar = new_bool_var
-    NewConstant = new_constant
-    NewIntVarSeries = new_int_var_series
-    NewBoolVarSeries = new_bool_var_series
-    AddLinearConstraint = add_linear_constraint
-    AddLinearExpressionInDomain = add_linear_expression_in_domain
     Add = add
-    AddAllDifferent = add_all_different
-    AddElement = add_element
-    AddCircuit = add_circuit
-    AddMultipleCircuit = add_multiple_circuit
-    AddAllowedAssignments = add_allowed_assignments
-    AddForbiddenAssignments = add_forbidden_assignments
-    AddAutomaton = add_automaton
-    AddInverse = add_inverse
-    AddReservoirConstraint = add_reservoir_constraint
-    AddReservoirConstraintWithActive = add_reservoir_constraint_with_active
-    AddImplication = add_implication
-    AddBoolOr = add_bool_or
-    AddAtLeastOne = add_at_least_one
-    AddAtMostOne = add_at_most_one
-    AddExactlyOne = add_exactly_one
-    AddBoolAnd = add_bool_and
-    AddBoolXOr = add_bool_xor
-    AddMinEquality = add_min_equality
-    AddMaxEquality = add_max_equality
-    AddDivisionEquality = add_division_equality
-    AddAbsEquality = add_abs_equality
-    AddModuloEquality = add_modulo_equality
-    AddMultiplicationEquality = add_multiplication_equality
-    NewIntervalVar = new_interval_var
-    NewIntervalVarSeries = new_interval_var_series
-    NewFixedSizeIntervalVar = new_fixed_size_interval_var
-    NewOptionalIntervalVar = new_optional_interval_var
-    NewOptionalIntervalVarSeries = new_optional_interval_var_series
-    NewOptionalFixedSizeIntervalVar = new_optional_fixed_size_interval_var
-    NewOptionalFixedSizeIntervalVarSeries = new_optional_fixed_size_interval_var_series
-    AddNoOverlap = add_no_overlap
-    AddNoOverlap2D = add_no_overlap_2d
-    AddCumulative = add_cumulative
     Clone = clone
     GetBoolVarFromProtoIndex = get_bool_var_from_proto_index
     GetIntVarFromProtoIndex = get_int_var_from_proto_index
@@ -1711,16 +1638,12 @@ class CpModel(cmh.CpBaseModel):
     Minimize = minimize
     Maximize = maximize
     HasObjective = has_objective
-    ClearObjective = clear_objective
-    AddDecisionStrategy = add_decision_strategy
     ModelStats = model_stats
     Validate = validate
     ExportToFile = export_to_file
-    AddHint = add_hint
-    ClearHints = clear_hints
-    AddAssumption = add_assumption
-    AddAssumptions = add_assumptions
-    ClearAssumptions = clear_assumptions
+
+    # add_XXX, new_XXX, and clear_XXX methods are already duplicated
+    # automatically.
 
     # pylint: enable=invalid-name
 
@@ -2092,9 +2015,12 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
     def __init__(self) -> None:
         cmh.SolutionCallback.__init__(self)
 
+    # pylint: disable=invalid-name
     def OnSolutionCallback(self) -> None:
         """Proxy for the same method in snake case."""
         self.on_solution_callback()
+
+    # pylint: enable=invalid-name
 
     def boolean_value(self, lit: LiteralT) -> bool:
         """Returns the boolean value of a boolean literal.

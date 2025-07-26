@@ -464,9 +464,12 @@ class IntervalVar;
 
 class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  public:
-  CpBaseModel() : model_proto_(std::make_shared<CpModelProto>()) {}
+  CpBaseModel()
+      : model_proto_(std::make_shared<CpModelProto>()),
+        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {}
   explicit CpBaseModel(std::shared_ptr<CpModelProto> model_proto)
-      : model_proto_(model_proto) {}
+      : model_proto_(model_proto),
+        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {}
 
   std::shared_ptr<CpModelProto> model_proto() const { return model_proto_; }
 
@@ -501,9 +504,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
           literal.cast<std::shared_ptr<NotBooleanVariable>>();
       AssertVariableIsBoolean(not_var);
       return not_var->index();
-    } else if (py::isinstance<py::bool_>(literal) ||
-               py::type::of(literal).attr("__name__").cast<std::string>() ==
-                   "bool") {
+    } else if (IsBooleanValue(literal)) {
       const bool value = literal.cast<py::bool_>();
       if (value) {
         return GetOrMakeIndexFromConstant(1);
@@ -559,20 +560,20 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
     }
   }
 
-  std::shared_ptr<Constraint> AddAllDifferentInternal(py::sequence exprs);
+  bool IsBooleanValue(py::handle value) {
+    return py::isinstance<py::bool_>(value) ||
+           py::isinstance(value, numpy_bool_type_);
+  }
 
-  std::shared_ptr<Constraint> AddAtMostOneInternal(py::sequence literals);
+  std::shared_ptr<Constraint> AddAllDifferentInternal(py::args exprs);
 
   std::shared_ptr<Constraint> AddAutomatonInternal(
       py::sequence transition_expressions, int64_t starting_state,
       const std::vector<int64_t>& final_states,
       const std::vector<std::vector<int64_t>>& transition_triples);
 
-  std::shared_ptr<Constraint> AddBoolAndInternal(py::sequence literals);
-
-  std::shared_ptr<Constraint> AddBoolOrInternal(py::sequence literals);
-
-  std::shared_ptr<Constraint> AddBoolXOrInternal(py::sequence literals);
+  std::shared_ptr<Constraint> AddBoolArgumentConstraintInternal(
+      const std::string& name, py::args literals);
 
   std::shared_ptr<Constraint> AddBoundedLinearExpressionInternal(
       BoundedLinearExpression* ble);
@@ -581,13 +582,11 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
                                                  py::sequence exprs,
                                                  const py::handle& target);
 
-  std::shared_ptr<Constraint> AddExactlyOneInternal(py::sequence literals);
-
   std::shared_ptr<Constraint> AddInverseInternal(py::sequence direct,
                                                  py::sequence inverse);
 
   std::shared_ptr<Constraint> AddLinearArgumentConstraintInternal(
-      const std::string& name, const py::handle& target, py::sequence exprs);
+      const std::string& name, const py::handle& target, py::args exprs);
 
   std::shared_ptr<Constraint> AddReservoirInternal(py::sequence times,
                                                    py::sequence level_changes,
@@ -625,6 +624,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  private:
   std::shared_ptr<CpModelProto> model_proto_;
   absl::flat_hash_map<int64_t, int> cache_;
+  py::type numpy_bool_type_;
 };
 
 class Constraint {
@@ -661,22 +661,17 @@ class Constraint {
 };
 
 std::shared_ptr<Constraint> CpBaseModel::AddAllDifferentInternal(
-    py::sequence exprs) {
+    py::args exprs) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
-  for (const auto& expr : exprs) {
-    LinearExprToProto(expr, 1, ct->mutable_all_diff()->add_exprs());
-  }
-  return std::make_shared<Constraint>(shared_from_this(), ct_index);
-}
-
-std::shared_ptr<Constraint> CpBaseModel::AddAtMostOneInternal(
-    py::sequence literals) {
-  const int ct_index = model_proto_->constraints_size();
-  ConstraintProto* ct = model_proto_->add_constraints();
-  ct->mutable_at_most_one();  // If literals is empty.
-  for (const auto& literal : literals) {
-    ct->mutable_at_most_one()->add_literals(GetOrMakeBooleanIndex(literal));
+  if (exprs.size() == 1 && py::isinstance<py::iterable>(exprs[0])) {
+    for (const auto& expr : exprs[0]) {
+      LinearExprToProto(expr, 1, ct->mutable_all_diff()->add_exprs());
+    }
+  } else {
+    for (const auto& expr : exprs) {
+      LinearExprToProto(expr, 1, ct->mutable_all_diff()->add_exprs());
+    }
   }
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
@@ -706,35 +701,33 @@ std::shared_ptr<Constraint> CpBaseModel::AddAutomatonInternal(
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
 
-std::shared_ptr<Constraint> CpBaseModel::AddBoolAndInternal(
-    py::sequence literals) {
+std::shared_ptr<Constraint> CpBaseModel::AddBoolArgumentConstraintInternal(
+    const std::string& name, py::args literals) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
-  ct->mutable_bool_and();  // If literals is empty.
-  for (const auto& literal : literals) {
-    ct->mutable_bool_and()->add_literals(GetOrMakeBooleanIndex(literal));
+  BoolArgumentProto* proto = nullptr;
+  if (name == "or") {
+    proto = ct->mutable_bool_or();
+  } else if (name == "and") {
+    proto = ct->mutable_bool_and();
+  } else if (name == "xor") {
+    proto = ct->mutable_bool_xor();
+  } else if (name == "at_most_one") {
+    proto = ct->mutable_at_most_one();
+  } else if (name == "exactly_one") {
+    proto = ct->mutable_exactly_one();
+  } else {
+    ThrowError(PyExc_ValueError,
+               absl::StrCat("Unknown boolean argument constraint: ", name));
   }
-  return std::make_shared<Constraint>(shared_from_this(), ct_index);
-}
-
-std::shared_ptr<Constraint> CpBaseModel::AddBoolOrInternal(
-    py::sequence literals) {
-  const int ct_index = model_proto_->constraints_size();
-  ConstraintProto* ct = model_proto_->add_constraints();
-  ct->mutable_bool_or();  // If literals is empty.
-  for (const auto& literal : literals) {
-    ct->mutable_bool_or()->add_literals(GetOrMakeBooleanIndex(literal));
-  }
-  return std::make_shared<Constraint>(shared_from_this(), ct_index);
-}
-
-std::shared_ptr<Constraint> CpBaseModel::AddBoolXOrInternal(
-    py::sequence literals) {
-  const int ct_index = model_proto_->constraints_size();
-  ConstraintProto* ct = model_proto_->add_constraints();
-  ct->mutable_bool_xor();  // If literals is empty.
-  for (const auto& literal : literals) {
-    ct->mutable_bool_xor()->add_literals(GetOrMakeBooleanIndex(literal));
+  if (literals.size() == 1 && py::isinstance<py::iterable>(literals[0])) {
+    for (const auto& literal : literals[0]) {
+      proto->add_literals(GetOrMakeBooleanIndex(literal));
+    }
+  } else {
+    for (const auto& literal : literals) {
+      proto->add_literals(GetOrMakeBooleanIndex(literal));
+    }
   }
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
@@ -774,17 +767,6 @@ std::shared_ptr<Constraint> CpBaseModel::AddElementInternal(
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
 
-std::shared_ptr<Constraint> CpBaseModel::AddExactlyOneInternal(
-    py::sequence literals) {
-  const int ct_index = model_proto_->constraints_size();
-  ConstraintProto* ct = model_proto_->add_constraints();
-  ct->mutable_exactly_one();  // If literals is empty.
-  for (const auto& literal : literals) {
-    ct->mutable_exactly_one()->add_literals(GetOrMakeBooleanIndex(literal));
-  }
-  return std::make_shared<Constraint>(shared_from_this(), ct_index);
-}
-
 std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
     py::sequence direct, py::sequence inverse) {
   const int ct_index = model_proto_->constraints_size();
@@ -799,7 +781,7 @@ std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
-    const std::string& name, const py::handle& target, py::sequence exprs) {
+    const std::string& name, const py::handle& target, py::args exprs) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   LinearArgumentProto* proto;
@@ -821,8 +803,15 @@ std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
   }
 
   LinearExprToProto(target, multiplier, proto->mutable_target());
-  for (const auto& expr : exprs) {
-    LinearExprToProto(expr, multiplier, proto->add_exprs());
+
+  if (exprs.size() == 1 && py::isinstance<py::iterable>(exprs[0])) {
+    for (const auto& expr : exprs[0]) {
+      LinearExprToProto(expr, multiplier, proto->add_exprs());
+    }
+  } else {
+    for (const auto& expr : exprs) {
+      LinearExprToProto(expr, multiplier, proto->add_exprs());
+    }
   }
 
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
@@ -1885,6 +1874,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
   py::class_<CpBaseModel, std::shared_ptr<CpBaseModel>>(
       m, "CpBaseModel", "Base class for the CP model.")
       .def(py::init<>())
+      .def(py::init<std::shared_ptr<CpModelProto>>())
       .def_property_readonly("model_proto", &CpBaseModel::model_proto,
                              "Returns the CP model protobuf")
       .def("get_or_make_index_from_constant",
@@ -1895,68 +1885,42 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("get_or_make_variable_index", &CpBaseModel::GetOrMakeVariableIndex,
            py::arg("arg"),
            "Returns the index of the given variable or constant variable.")
+      .def("is_boolean_value", &CpBaseModel::IsBooleanValue, py::arg("value"))
       .def("rebuild_constant_map", &CpBaseModel::RebuildConstantMap)
-      .def("add_all_different_internal", &CpBaseModel::AddAllDifferentInternal,
-           py::arg("expressions"))
-      .def("add_at_most_one_internal", &CpBaseModel::AddAtMostOneInternal,
-           py::arg("literals"))
-      .def("add_automaton_internal", &CpBaseModel::AddAutomatonInternal,
+      .def("_add_all_different", &CpBaseModel::AddAllDifferentInternal)
+      .def("_add_automaton", &CpBaseModel::AddAutomatonInternal,
            py::arg("transition_expressions"), py::arg("starting_state"),
            py::arg("final_states"), py::arg("transition_triples"))
-      .def("add_bool_and_internal", &CpBaseModel::AddBoolAndInternal,
-           py::arg("literals"))
-      .def("add_bool_or_internal", &CpBaseModel::AddBoolOrInternal,
-           py::arg("literals"))
-      .def("add_bool_xor_internal", &CpBaseModel::AddBoolXOrInternal,
-           py::arg("literals"))
-      .def("add_bounded_linear_expression_internal",
+      .def("_add_bool_argument_constraint",
+           &CpBaseModel::AddBoolArgumentConstraintInternal, py::arg("name"))
+      .def("_add_bounded_linear_expression",
            &CpBaseModel::AddBoundedLinearExpressionInternal, py::arg("ble"))
-      .def("add_element_internal", &CpBaseModel::AddElementInternal,
+      .def("_add_element", &CpBaseModel::AddElementInternal,
            py::arg("index").none(false), py::arg("expressions"),
            py::arg("target").none(false))
-      .def("add_exactly_one_internal", &CpBaseModel::AddExactlyOneInternal,
-           py::arg("literals"))
-      .def("add_linear_argument_constraint_internal",
+      .def("_add_linear_argument_constraint",
            &CpBaseModel::AddLinearArgumentConstraintInternal,
-           py::arg("name").none(false), py::arg("target").none(false),
-           py::arg("exprs"))
-      .def("add_inverse_internal", &CpBaseModel::AddInverseInternal,
-           py::arg("direct"), py::arg("inverse"))
-      .def("add_reservoir_internal", &CpBaseModel::AddReservoirInternal,
+           py::arg("name").none(false), py::arg("target").none(false))
+      .def("_add_inverse", &CpBaseModel::AddInverseInternal, py::arg("direct"),
+           py::arg("inverse"))
+      .def("_add_reservoir", &CpBaseModel::AddReservoirInternal,
            py::arg("times"), py::arg("level_changes"), py::arg("actives"),
            py::arg("min_level"), py::arg("max_level"))
-      .def("add_table_internal", &CpBaseModel::AddTableInternal,
-           py::arg("expressions"), py::arg("values"), py::arg("negated"))
+      .def("_add_table", &CpBaseModel::AddTableInternal, py::arg("expressions"),
+           py::arg("values"), py::arg("negated"))
       // Scheduling support.
-      .def("new_interval_var_internal", &CpBaseModel::NewIntervalVarInternal,
+      .def("_new_interval_var", &CpBaseModel::NewIntervalVarInternal,
            py::arg("name"), py::arg("start"), py::arg("size"), py::arg("end"),
            py::arg("Literals"))
-      .def("add_no_overlap_internal", &CpBaseModel::AddNoOverlapInternal,
+      .def("_add_no_overlap", &CpBaseModel::AddNoOverlapInternal,
            py::arg("intervals"))
-      .def("add_no_overlap_2d_internal", &CpBaseModel::AddNoOverlap2DInternal,
+      .def("_add_no_overlap_2d", &CpBaseModel::AddNoOverlap2DInternal,
            py::arg("x_intervals"), py::arg("y_intervals"))
-      .def("add_cumulative_internal", &CpBaseModel::AddCumulativeInternal,
+      .def("_add_cumulative", &CpBaseModel::AddCumulativeInternal,
            py::arg("intervals"), py::arg("demands"), py::arg("capacity"))
       // Routing support.
-      .def("add_circuit_internal", &CpBaseModel::AddCircuitInternal,
-           py::arg("arcs"))
-      .def("add_routes_internal", &CpBaseModel::AddRoutesInternal,
-           py::arg("arcs"))
-      // Misc support
-      .def(py::pickle(
-          [](std::shared_ptr<CpBaseModel> p) {  // __getstate__
-            /* Return a tuple that fully encodes the state of the object */
-            return py::make_tuple(p->model_proto());
-          },
-          [](py::tuple t) {  // __setstate__
-            if (t.size() != 1) throw std::runtime_error("Invalid state!");
-            std::shared_ptr<CpModelProto> model_proto =
-                t[0].cast<std::shared_ptr<CpModelProto>>();
-            if (model_proto == nullptr) {
-              throw std::runtime_error("Invalid state!");
-            }
-            return std::make_shared<CpBaseModel>(model_proto);
-          }));
+      .def("_add_circuit", &CpBaseModel::AddCircuitInternal, py::arg("arcs"))
+      .def("_add_routes", &CpBaseModel::AddRoutesInternal, py::arg("arcs"));
 
   static const char* kConstraintDoc = R"doc(
   Base class for constraints.
