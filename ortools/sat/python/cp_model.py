@@ -184,7 +184,7 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 # Helper functions.
 def snake_case_to_camel_case(name: str) -> str:
-    """Converts a snake_case name to camelCase."""
+    """Converts a snake_case name to CamelCase."""
     words = name.split("_")
     return (
         "".join(word.capitalize() for word in words)
@@ -900,7 +900,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_bool_or(self, *literals):
         """Adds `Or(literals) == true`: sum(literals) >= 1."""
-        return self._add_bool_argument_constraint("or", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.bool_or, *literals
+        )
 
     @overload
     def add_at_least_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -910,7 +912,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_at_least_one(self, *literals):
         """Same as `add_bool_or`: `sum(literals) >= 1`."""
-        return self._add_bool_argument_constraint("or", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.bool_or, *literals
+        )
 
     @overload
     def add_at_most_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -920,7 +924,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_at_most_one(self, *literals) -> Constraint:
         """Adds `AtMostOne(literals)`: `sum(literals) <= 1`."""
-        return self._add_bool_argument_constraint("at_most_one", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.at_most_one, *literals
+        )
 
     @overload
     def add_exactly_one(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -930,7 +936,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_exactly_one(self, *literals):
         """Adds `ExactlyOne(literals)`: `sum(literals) == 1`."""
-        return self._add_bool_argument_constraint("exactly_one", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.exactly_one, *literals
+        )
 
     @overload
     def add_bool_and(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -940,7 +948,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_bool_and(self, *literals):
         """Adds `And(literals) == true`."""
-        return self._add_bool_argument_constraint("and", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.bool_and, *literals
+        )
 
     @overload
     def add_bool_xor(self, literals: Iterable[LiteralT]) -> Constraint: ...
@@ -960,7 +970,9 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           An `Constraint` object.
         """
-        return self._add_bool_argument_constraint("xor", *literals)
+        return self._add_bool_argument_constraint(
+            cmh.BoolArgumentConstraint.bool_xor, *literals
+        )
 
     @overload
     def add_min_equality(
@@ -974,7 +986,9 @@ class CpModel(cmh.CpBaseModel):
 
     def add_min_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Min(expressions)`."""
-        return self._add_linear_argument_constraint("min", target, *expressions)
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.min, target, *expressions
+        )
 
     @overload
     def add_max_equality(
@@ -988,17 +1002,23 @@ class CpModel(cmh.CpBaseModel):
 
     def add_max_equality(self, target, *expressions) -> Constraint:
         """Adds `target == Max(expressions)`."""
-        return self._add_linear_argument_constraint("max", target, *expressions)
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.max, target, *expressions
+        )
 
     def add_division_equality(
         self, target: LinearExprT, num: LinearExprT, denom: LinearExprT
     ) -> Constraint:
         """Adds `target == num // denom` (integer division rounded towards 0)."""
-        return self._add_linear_argument_constraint("div", target, [num, denom])
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.div, target, [num, denom]
+        )
 
     def add_abs_equality(self, target: LinearExprT, expr: LinearExprT) -> Constraint:
         """Adds `target == Abs(expr)`."""
-        return self._add_linear_argument_constraint("max", target, [expr, -expr])
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.max, target, [expr, -expr]
+        )
 
     def add_modulo_equality(
         self, target: LinearExprT, expr: LinearExprT, mod: LinearExprT
@@ -1022,7 +1042,9 @@ class CpModel(cmh.CpBaseModel):
         Returns:
           A `Constraint` object.
         """
-        return self._add_linear_argument_constraint("mod", target, [expr, mod])
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.mod, target, [expr, mod]
+        )
 
     def add_multiplication_equality(
         self,
@@ -1030,7 +1052,9 @@ class CpModel(cmh.CpBaseModel):
         *expressions: Union[Iterable[LinearExprT], LinearExprT],
     ) -> Constraint:
         """Adds `target == expressions[0] * .. * expressions[n]`."""
-        return self._add_linear_argument_constraint("prod", target, *expressions)
+        return self._add_linear_argument_constraint(
+            cmh.LinearArgumentConstraint.prod, target, *expressions
+        )
 
     # Scheduling support
 

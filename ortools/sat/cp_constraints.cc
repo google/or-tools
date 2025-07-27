@@ -374,7 +374,7 @@ EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
 }
 
 BooleanXorPropagator::BooleanXorPropagator(
-    const std::vector<Literal>& enforcement_literals,
+    absl::Span<const Literal> enforcement_literals,
     const std::vector<Literal>& literals, bool value, Model* model)
     : literals_(literals),
       value_(value),

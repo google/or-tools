@@ -159,7 +159,7 @@ class EnforcementPropagator : public SatPropagator {
 // faster.
 class BooleanXorPropagator : public PropagatorInterface {
  public:
-  BooleanXorPropagator(const std::vector<Literal>& enforcement_literals,
+  BooleanXorPropagator(absl::Span<const Literal> enforcement_literals,
                        const std::vector<Literal>& literals, bool value,
                        Model* model);
 

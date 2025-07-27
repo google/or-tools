@@ -462,6 +462,22 @@ void LinearExprToProto(const py::handle& arg, int64_t multiplier,
 class Constraint;
 class IntervalVar;
 
+enum class BoolArgumentConstraint {
+  kAtMostOne,
+  kBoolAnd,
+  kBoolOr,
+  kBoolXor,
+  kExactlyOne,
+};
+
+enum class LinearArgumentConstraint {
+  kDiv,
+  kMax,
+  kMin,
+  kMod,
+  kProd,
+};
+
 class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  public:
   CpBaseModel()
@@ -573,7 +589,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
       const std::vector<std::vector<int64_t>>& transition_triples);
 
   std::shared_ptr<Constraint> AddBoolArgumentConstraintInternal(
-      const std::string& name, py::args literals);
+      BoolArgumentConstraint type, py::args literals);
 
   std::shared_ptr<Constraint> AddBoundedLinearExpressionInternal(
       BoundedLinearExpression* ble);
@@ -586,7 +602,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
                                                  py::sequence inverse);
 
   std::shared_ptr<Constraint> AddLinearArgumentConstraintInternal(
-      const std::string& name, const py::handle& target, py::args exprs);
+      LinearArgumentConstraint type, const py::handle& target, py::args exprs);
 
   std::shared_ptr<Constraint> AddReservoirInternal(py::sequence times,
                                                    py::sequence level_changes,
@@ -702,23 +718,29 @@ std::shared_ptr<Constraint> CpBaseModel::AddAutomatonInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddBoolArgumentConstraintInternal(
-    const std::string& name, py::args literals) {
+    BoolArgumentConstraint type, py::args literals) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   BoolArgumentProto* proto = nullptr;
-  if (name == "or") {
-    proto = ct->mutable_bool_or();
-  } else if (name == "and") {
-    proto = ct->mutable_bool_and();
-  } else if (name == "xor") {
-    proto = ct->mutable_bool_xor();
-  } else if (name == "at_most_one") {
-    proto = ct->mutable_at_most_one();
-  } else if (name == "exactly_one") {
-    proto = ct->mutable_exactly_one();
-  } else {
-    ThrowError(PyExc_ValueError,
-               absl::StrCat("Unknown boolean argument constraint: ", name));
+  switch (type) {
+    case BoolArgumentConstraint::kAtMostOne:
+      proto = ct->mutable_at_most_one();
+      break;
+    case BoolArgumentConstraint::kBoolAnd:
+      proto = ct->mutable_bool_and();
+      break;
+    case BoolArgumentConstraint::kBoolOr:
+      proto = ct->mutable_bool_or();
+      break;
+    case BoolArgumentConstraint::kBoolXor:
+      proto = ct->mutable_bool_xor();
+      break;
+    case BoolArgumentConstraint::kExactlyOne:
+      proto = ct->mutable_exactly_one();
+      break;
+    default:
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Unknown boolean argument constraint: ", type));
   }
   if (literals.size() == 1 && py::isinstance<py::iterable>(literals[0])) {
     for (const auto& literal : literals[0]) {
@@ -781,25 +803,31 @@ std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
 }
 
 std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
-    const std::string& name, const py::handle& target, py::args exprs) {
+    LinearArgumentConstraint type, const py::handle& target, py::args exprs) {
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   LinearArgumentProto* proto;
   int64_t multiplier = 1;
-  if (name == "min") {
-    proto = ct->mutable_lin_max();
-    multiplier = -1;
-  } else if (name == "max") {
-    proto = ct->mutable_lin_max();
-  } else if (name == "prod") {
-    proto = ct->mutable_int_prod();
-  } else if (name == "div") {
-    proto = ct->mutable_int_div();
-  } else if (name == "mod") {
-    proto = ct->mutable_int_mod();
-  } else {
-    ThrowError(PyExc_ValueError,
-               absl::StrCat("Unknown integer argument constraint: ", name));
+  switch (type) {
+    case LinearArgumentConstraint::kDiv:
+      proto = ct->mutable_int_div();
+      break;
+    case LinearArgumentConstraint::kMax:
+      proto = ct->mutable_lin_max();
+      break;
+    case LinearArgumentConstraint::kMin:
+      proto = ct->mutable_lin_max();
+      multiplier = -1;
+      break;
+    case LinearArgumentConstraint::kMod:
+      proto = ct->mutable_int_mod();
+      break;
+    case LinearArgumentConstraint::kProd:
+      proto = ct->mutable_int_prod();
+      break;
+    default:
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Unknown integer argument constraint: ", type));
   }
 
   LinearExprToProto(target, multiplier, proto->mutable_target());
@@ -1870,6 +1898,22 @@ PYBIND11_MODULE(cp_model_helper, m) {
                                 "not supported."));
         return false;
       });
+
+  py::enum_<BoolArgumentConstraint>(m, "BoolArgumentConstraint")
+      .value("at_most_one", BoolArgumentConstraint::kAtMostOne)
+      .value("bool_and", BoolArgumentConstraint::kBoolAnd)
+      .value("bool_or", BoolArgumentConstraint::kBoolOr)
+      .value("bool_xor", BoolArgumentConstraint::kBoolXor)
+      .value("exactly_one", BoolArgumentConstraint::kExactlyOne)
+      .export_values();
+
+  py::enum_<LinearArgumentConstraint>(m, "LinearArgumentConstraint")
+      .value("div", LinearArgumentConstraint::kDiv)
+      .value("max", LinearArgumentConstraint::kMax)
+      .value("min", LinearArgumentConstraint::kMin)
+      .value("mod", LinearArgumentConstraint::kMod)
+      .value("prod", LinearArgumentConstraint::kProd)
+      .export_values();
 
   py::class_<CpBaseModel, std::shared_ptr<CpBaseModel>>(
       m, "CpBaseModel", "Base class for the CP model.")
