@@ -1801,6 +1801,14 @@ class CpModelTest(absltest.TestCase):
         self.assertTrue(cp_model.object_is_a_false_literal(False))
         self.assertFalse(cp_model.object_is_a_true_literal(False))
         self.assertFalse(cp_model.object_is_a_false_literal(True))
+        self.assertFalse(cp_model.object_is_a_true_literal(~True))
+        self.assertFalse(cp_model.object_is_a_false_literal(~False))
+        self.assertTrue(cp_model.object_is_a_true_literal(~False))
+        self.assertTrue(cp_model.object_is_a_false_literal(~True))
+        self.assertTrue(cp_model.object_is_a_true_literal(np.True_))
+        self.assertTrue(cp_model.object_is_a_false_literal(np.False_))
+        self.assertFalse(cp_model.object_is_a_true_literal(np.False_))
+        self.assertFalse(cp_model.object_is_a_false_literal(np.True_))
 
     def test_solve_minimize_with_solution_callback(self) -> None:
         model = cp_model.CpModel()

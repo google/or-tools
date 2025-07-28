@@ -8896,31 +8896,42 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
       &cliques,
       SafeDoubleToInt64(context_->params().merge_no_overlap_work_limit()));
 
-  // Replace each no-overlap with an extended version, or remove if empty.
+  time_limit_->ResetHistory();
+
   int new_num_no_overlaps = 0;
   int new_num_intervals = 0;
   for (int i = 0; i < cliques.size(); ++i) {
+    new_num_no_overlaps++;
+    new_num_intervals += cliques[i].size();
+  }
+
+  if (old_num_intervals == new_num_intervals &&
+      old_num_no_overlaps == new_num_no_overlaps) {
+    return;
+  }
+
+  // Remove previous no_overlap constraints and add the new recomputed ones.
+  for (int i = 0; i < cliques.size(); ++i) {
     const int ct_index = disjunctive_index[i];
-    ConstraintProto* ct =
-        context_->working_model->mutable_constraints(ct_index);
-    ct->Clear();
+    if (RemoveConstraint(
+            context_->working_model->mutable_constraints(ct_index))) {
+      context_->UpdateConstraintVariableUsage(ct_index);
+    }
+  }
+  for (int i = 0; i < cliques.size(); ++i) {
     if (cliques[i].empty()) continue;
+    ConstraintProto* ct = context_->working_model->add_constraints();
     for (const Literal l : cliques[i]) {
       CHECK(l.IsPositive());
       ct->mutable_no_overlap()->add_intervals(l.Variable().value());
     }
-    new_num_no_overlaps++;
-    new_num_intervals += cliques[i].size();
   }
-  if (old_num_intervals != new_num_intervals ||
-      old_num_no_overlaps != new_num_no_overlaps) {
-    VLOG(1) << absl::StrCat("Merged ", old_num_no_overlaps, " no-overlaps (",
-                            old_num_intervals, " intervals) into ",
-                            new_num_no_overlaps, " no-overlaps (",
-                            new_num_intervals, " intervals).");
-    context_->UpdateRuleStats("no_overlap: merged constraints");
-  }
-  time_limit_->ResetHistory();
+  VLOG(1) << absl::StrCat("Merged ", old_num_no_overlaps, " no-overlaps (",
+                          old_num_intervals, " intervals) into ",
+                          new_num_no_overlaps, " no-overlaps (",
+                          new_num_intervals, " intervals).");
+  context_->UpdateRuleStats("no_overlap: merged constraints");
+  context_->UpdateNewConstraintsVariableUsage();
 }
 
 // TODO(user): Should we take into account the exactly_one constraints? note

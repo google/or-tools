@@ -222,6 +222,32 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "old_precedences_propagator",
+    srcs = ["old_precedences_propagator.cc"],
+    hdrs = ["old_precedences_propagator.h"],
+    deps = [
+        ":integer",
+        ":integer_base",
+        ":model",
+        ":precedences",
+        ":sat_base",
+        ":sat_solver",
+        ":synchronization",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     deps = [":cp_model_proto"],
@@ -2071,7 +2097,6 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph",
         "//ortools/graph:topologicalsorter",
@@ -2080,7 +2105,6 @@ cc_library(
         "//ortools/util:rev",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -2148,7 +2172,7 @@ cc_library(
         ":linear_constraint",
         ":linear_propagation",
         ":model",
-        ":precedences",
+        ":old_precedences_propagator",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",

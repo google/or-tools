@@ -181,10 +181,15 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
   // Also insert it in precedences.
   if (enforcement_literals.empty()) {
-    reified_precedences_->AddReifiedPrecedenceIfNonTrivial(a_before_b, a.end,
-                                                           b.start);
-    reified_precedences_->AddReifiedPrecedenceIfNonTrivial(a_before_b.Negated(),
-                                                           b.end, a.start);
+    const auto [expr_a_before_b, ub_a_before_b] =
+        EncodeDifferenceLowerThan(a.end, b.start, 0);
+    reified_precedences_->AddReifiedBoundIfNonTrivial(
+        a_before_b, expr_a_before_b, ub_a_before_b);
+
+    const auto [expr_b_before_a, ub_b_before_a] =
+        EncodeDifferenceLowerThan(b.end, a.start, 0);
+    reified_precedences_->AddReifiedBoundIfNonTrivial(
+        a_before_b.Negated(), expr_b_before_a, ub_b_before_a);
   }
 
   enforcement_literals.push_back(a_before_b);
@@ -212,7 +217,8 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
 bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
     AffineExpression x, AffineExpression y) {
-  const LiteralIndex index = reified_precedences_->GetReifiedPrecedence(x, y);
+  const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
+  const LiteralIndex index = reified_precedences_->GetReifiedBound(expr, ub);
   if (index != kNoLiteralIndex) return false;
 
   // We want l => x <= y and not(l) => x > y <=> y + 1 <= x
@@ -225,7 +231,7 @@ bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
   // Create a new literal.
   const BooleanVariable boolean_var = sat_solver_->NewBooleanVariable();
   const Literal x_before_y = Literal(boolean_var, true);
-  reified_precedences_->AddReifiedPrecedenceIfNonTrivial(x_before_y, x, y);
+  reified_precedences_->AddReifiedBoundIfNonTrivial(x_before_y, expr, ub);
 
   AffineExpression y_plus_one = y;
   y_plus_one.constant += 1;
@@ -236,7 +242,8 @@ bool IntervalsRepository::CreatePrecedenceLiteralIfNonTrivial(
 
 LiteralIndex IntervalsRepository::GetPrecedenceLiteral(
     AffineExpression x, AffineExpression y) const {
-  return reified_precedences_->GetReifiedPrecedence(x, y);
+  const auto [expr, ub] = EncodeDifferenceLowerThan(x, y, 0);
+  return reified_precedences_->GetReifiedBound(expr, ub);
 }
 
 Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
@@ -247,7 +254,7 @@ Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
   }
 
   CHECK(CreatePrecedenceLiteralIfNonTrivial(x, y));
-  const LiteralIndex index = reified_precedences_->GetReifiedPrecedence(x, y);
+  const LiteralIndex index = GetPrecedenceLiteral(x, y);
   CHECK_NE(index, kNoLiteralIndex);
   return Literal(index);
 }

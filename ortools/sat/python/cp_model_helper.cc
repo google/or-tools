@@ -91,79 +91,48 @@ class PySolutionCallback : public SolutionCallback {
   }
 };
 
-// A class to wrap a C++ CpSolverResponse in a Python object, avoid the proto
-// conversion back to python.
-class ResponseWrapper {
+class ResponseHelper {
  public:
-  explicit ResponseWrapper(const CpSolverResponse& response)
-      : response_(response) {}
-
-  double BestObjectiveBound() const { return response_.best_objective_bound(); }
-
-  bool BooleanValue(std::shared_ptr<Literal> lit) const {
+  static bool BooleanValue(std::shared_ptr<CpSolverResponse> response,
+                           std::shared_ptr<Literal> lit) {
     const int index = lit->index();
     if (index >= 0) {
-      return response_.solution(index) != 0;
+      return response->solution(index) != 0;
     } else {
-      return response_.solution(NegatedRef(index)) == 0;
+      return response->solution(NegatedRef(index)) == 0;
     }
   }
 
-  bool FixedBooleanValue(bool lit) const { return lit; }
-
-  double DeterministicTime() const { return response_.deterministic_time(); }
-
-  int64_t NumBinaryPropagations() const {
-    return response_.num_binary_propagations();
+  static bool FixedBooleanValue(std::shared_ptr<CpSolverResponse> response,
+                                bool lit) {
+    return lit;
   }
 
-  int64_t NumBooleans() const { return response_.num_booleans(); }
-
-  int64_t NumBranches() const { return response_.num_branches(); }
-
-  int64_t NumConflicts() const { return response_.num_conflicts(); }
-
-  int64_t NumIntegerPropagations() const {
-    return response_.num_integer_propagations();
-  }
-
-  int64_t NumRestarts() const { return response_.num_restarts(); }
-
-  double ObjectiveValue() const { return response_.objective_value(); }
-
-  const CpSolverResponse& Response() const { return response_; }
-
-  std::string ResponseStats() const {
-    return CpSatHelper::SolverResponseStats(response_);
-  }
-
-  std::string SolutionInfo() const {
-    return google::protobuf::StringCopy(response_.solution_info());
-  }
-
-  std::vector<int> SufficientAssumptionsForInfeasibility() const {
+  static std::vector<int> SufficientAssumptionsForInfeasibility(
+      std::shared_ptr<CpSolverResponse> response) {
     return std::vector<int>(
-        response_.sufficient_assumptions_for_infeasibility().begin(),
-        response_.sufficient_assumptions_for_infeasibility().end());
+        response->sufficient_assumptions_for_infeasibility().begin(),
+        response->sufficient_assumptions_for_infeasibility().end());
   }
 
-  CpSolverStatus Status() const { return response_.status(); }
-
-  double UserTime() const { return response_.user_time(); }
-
-  double FloatValue(std::shared_ptr<LinearExpr> expr) const {
+  static double FloatValue(std::shared_ptr<CpSolverResponse> response,
+                           std::shared_ptr<LinearExpr> expr) {
     FloatExprVisitor visitor;
     visitor.AddToProcess(expr, 1);
-    return visitor.Evaluate(response_);
+    return visitor.Evaluate(*response);
   }
 
-  double FixedFloatValue(double value) const { return value; }
+  static double FixedFloatValue(std::shared_ptr<CpSolverResponse> response,
+                                double value) {
+    return value;
+  }
 
-  int64_t Value(std::shared_ptr<LinearExpr> expr) const {
+  static int64_t Value(std::shared_ptr<CpSolverResponse> response,
+                       std::shared_ptr<LinearExpr> expr) {
     int64_t value;
     IntExprVisitor visitor;
     visitor.AddToProcess(expr, 1);
-    if (!visitor.Evaluate(response_, &value)) {
+    if (!visitor.Evaluate(*response, &value)) {
       ThrowError(PyExc_ValueError,
                  absl::StrCat("Failed to evaluate linear expression: ",
                               expr->DebugString()));
@@ -171,12 +140,10 @@ class ResponseWrapper {
     return value;
   }
 
-  int64_t FixedValue(int64_t value) const { return value; }
-
-  double WallTime() const { return response_.wall_time(); }
-
- private:
-  const CpSolverResponse response_;
+  static int64_t FixedValue(std::shared_ptr<CpSolverResponse> response,
+                            int64_t value) {
+    return value;
+  }
 };
 
 // Checks that the result is not null and throws an error if it is.
@@ -480,12 +447,12 @@ enum class LinearArgumentConstraint {
 
 class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
  public:
-  CpBaseModel()
-      : model_proto_(std::make_shared<CpModelProto>()),
-        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {}
   explicit CpBaseModel(std::shared_ptr<CpModelProto> model_proto)
-      : model_proto_(model_proto),
-        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {}
+      : model_proto_(model_proto == nullptr ? std::make_shared<CpModelProto>()
+                                            : model_proto),
+        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {
+    if (model_proto != nullptr) RebuildConstantMap();
+  }
 
   std::shared_ptr<CpModelProto> model_proto() const { return model_proto_; }
 
@@ -504,7 +471,8 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
     cache_.clear();
     for (int i = 0; i < model_proto_->variables_size(); ++i) {
       const IntegerVariableProto& var = model_proto_->variables(i);
-      if (var.domain_size() == 2 && var.domain(0) == var.domain(1)) {
+      if (var.domain_size() == 2 && var.domain(0) == var.domain(1) &&
+          var.name().empty()) {  // Constants do not have names.
         cache_[var.domain(0)] = i;
       }
     }
@@ -532,7 +500,7 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
       if (value == 1 || value == -1) {  // -1 = ~False.
         return GetOrMakeIndexFromConstant(1);
       }
-      if (value == 0 || value == -2) {  // -1 = ~True.
+      if (value == 0 || value == -2) {  // -2 = ~True.
         return GetOrMakeIndexFromConstant(0);
       }
       ThrowError(PyExc_TypeError, absl::StrCat("Invalid literal: ", value));
@@ -1141,7 +1109,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("NumConflicts", &SolutionCallback::NumConflicts)
       .def("NumIntegerPropagations", &SolutionCallback::NumIntegerPropagations)
       .def("ObjectiveValue", &SolutionCallback::ObjectiveValue)
-      .def("Response", &SolutionCallback::Response)
+      .def("Response", &SolutionCallback::SharedResponse)
       .def("SolutionBooleanValue", &SolutionCallback::SolutionBooleanValue,
            py::arg("index"))
       .def("SolutionIntegerValue", &SolutionCallback::SolutionIntegerValue,
@@ -1151,17 +1119,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("WallTime", &SolutionCallback::WallTime)
       .def(
           "Value",
-          [](const SolutionCallback& callback,
-             std::shared_ptr<LinearExpr> expr) {
-            int64_t value;
-            IntExprVisitor visitor;
-            visitor.AddToProcess(expr, 1);
-            if (!visitor.Evaluate(callback.Response(), &value)) {
-              ThrowError(PyExc_ValueError,
-                         absl::StrCat("Failed to evaluate linear expression: ",
-                                      expr->DebugString()));
-            }
-            return value;
+          [](const SolutionCallback& self, std::shared_ptr<LinearExpr> expr) {
+            return ResponseHelper::Value(self.SharedResponse(), expr);
           },
           "Returns the value of a linear expression after solve.")
       .def(
@@ -1169,11 +1128,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "Returns the value of a linear expression after solve.")
       .def(
           "FloatValue",
-          [](const SolutionCallback& callback,
-             std::shared_ptr<LinearExpr> expr) {
-            FloatExprVisitor visitor;
-            visitor.AddToProcess(expr, 1.0);
-            return visitor.Evaluate(callback.Response());
+          [](const SolutionCallback& self, std::shared_ptr<LinearExpr> expr) {
+            return ResponseHelper::FloatValue(self.SharedResponse(), expr);
           },
           "Returns the value of a floating point linear expression after "
           "solve.")
@@ -1184,42 +1140,31 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "solve.")
       .def(
           "BooleanValue",
-          [](const SolutionCallback& callback, std::shared_ptr<Literal> lit) {
-            return callback.SolutionBooleanValue(lit->index());
+          [](const SolutionCallback& self, std::shared_ptr<Literal> lit) {
+            return ResponseHelper::BooleanValue(self.SharedResponse(), lit);
           },
           "Returns the Boolean value of a literal after solve.")
       .def(
           "BooleanValue", [](const SolutionCallback&, bool lit) { return lit; },
           "Returns the Boolean value of a literal after solve.");
 
-  py::class_<ResponseWrapper>(m, "ResponseWrapper")
-      .def("best_objective_bound", &ResponseWrapper::BestObjectiveBound)
-      .def("boolean_value", &ResponseWrapper::BooleanValue,
-           py::arg("lit").none(false))
-      .def("boolean_value", &ResponseWrapper::FixedBooleanValue,
-           py::arg("lit").none(false))
-      .def("deterministic_time", &ResponseWrapper::DeterministicTime)
-      .def("num_binary_propagations", &ResponseWrapper::NumBinaryPropagations)
-      .def("num_booleans", &ResponseWrapper::NumBooleans)
-      .def("num_branches", &ResponseWrapper::NumBranches)
-      .def("num_conflicts", &ResponseWrapper::NumConflicts)
-      .def("num_integer_propagations", &ResponseWrapper::NumIntegerPropagations)
-      .def("num_restarts", &ResponseWrapper::NumRestarts)
-      .def("objective_value", &ResponseWrapper::ObjectiveValue)
-      .def("response", &ResponseWrapper::Response)
-      .def("response_stats", &ResponseWrapper::ResponseStats)
-      .def("solution_info", &ResponseWrapper::SolutionInfo)
-      .def("status", &ResponseWrapper::Status)
-      .def("sufficient_assumptions_for_infeasibility",
-           &ResponseWrapper::SufficientAssumptionsForInfeasibility)
-      .def("user_time", &ResponseWrapper::UserTime)
-      .def("float_value", &ResponseWrapper::FloatValue,
-           py::arg("expr").none(false))
-      .def("float_value", &ResponseWrapper::FixedFloatValue,
-           py::arg("value").none(false))
-      .def("value", &ResponseWrapper::Value, py::arg("expr").none(false))
-      .def("value", &ResponseWrapper::FixedValue, py::arg("value").none(false))
-      .def("wall_time", &ResponseWrapper::WallTime);
+  py::class_<ResponseHelper>(m, "ResponseHelper")
+      .def_static("boolean_value", &ResponseHelper::BooleanValue,
+                  py::arg("response").none(false), py::arg("lit").none(false))
+      .def_static("boolean_value", &ResponseHelper::FixedBooleanValue,
+                  py::arg("response").none(false), py::arg("lit").none(false))
+      .def_static("float_value", &ResponseHelper::FloatValue,
+                  py::arg("response").none(false), py::arg("expr").none(false))
+      .def_static("float_value", &ResponseHelper::FixedFloatValue,
+                  py::arg("response").none(false), py::arg("value").none(false))
+      .def_static("sufficient_assumptions_for_infeasibility",
+                  &ResponseHelper::SufficientAssumptionsForInfeasibility,
+                  py::arg("response").none(false))
+      .def_static("value", &ResponseHelper::Value,
+                  py::arg("response").none(false), py::arg("expr").none(false))
+      .def_static("value", &ResponseHelper::FixedValue,
+                  py::arg("response").none(false),
+                  py::arg("value").none(false));
 
   py::class_<ExtSolveWrapper>(m, "SolveWrapper")
       .def(py::init<>())
@@ -1289,20 +1234,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
             return result;
           },
           py::arg("model_proto").none(false))
-      .def("solve_and_return_response_wrapper",
-           [](ExtSolveWrapper* solve_wrapper,
-              std::shared_ptr<CpModelProto> model_proto) -> ResponseWrapper {
-             const auto result = [=]() -> ResponseWrapper {
-               ::py::gil_scoped_release release;
-               return ResponseWrapper(solve_wrapper->Solve(*model_proto));
-             }();
-             if (solve_wrapper->local_error_already_set_.has_value()) {
-               solve_wrapper->local_error_already_set_->restore();
-               solve_wrapper->local_error_already_set_.reset();
-               throw py::error_already_set();
-             }
-             return result;
-           })
       .def("stop_search", &SolveWrapper::StopSearch);
 
   py::class_<CpSatHelper>(m, "CpSatHelper")
@@ -1917,7 +1848,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
 
   py::class_<CpBaseModel, std::shared_ptr<CpBaseModel>>(
       m, "CpBaseModel", "Base class for the CP model.")
-      .def(py::init<>())
       .def(py::init<std::shared_ptr<CpModelProto>>())
       .def_property_readonly("model_proto", &CpBaseModel::model_proto,
                              "Returns the CP model protobuf")

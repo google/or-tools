@@ -201,8 +201,11 @@ def object_is_a_true_literal(literal: LiteralT) -> bool:
     if isinstance(literal, cmh.NotBooleanVariable):
         proto = literal.negated().proto
         return len(proto.domain) == 2 and proto.domain[0] == 0 and proto.domain[1] == 0
+    if isinstance(literal, (bool, np.bool_)):
+        return bool(literal)
     if isinstance(literal, IntegralTypes):
-        return int(literal) == 1
+        literal_as_int = int(literal)
+        return literal_as_int == 1 or literal_as_int == ~False
     return False
 
 
@@ -214,8 +217,11 @@ def object_is_a_false_literal(literal: LiteralT) -> bool:
     if isinstance(literal, cmh.NotBooleanVariable):
         proto = literal.negated().proto
         return len(proto.domain) == 2 and proto.domain[0] == 1 and proto.domain[1] == 1
+    if isinstance(literal, (bool, np.bool_)):
+        return not bool(literal)
     if isinstance(literal, IntegralTypes):
-        return int(literal) == 0
+        literal_as_int = int(literal)
+        return literal_as_int == 0 or literal_as_int == ~True
     return False
 
 
@@ -264,10 +270,7 @@ class CpModel(cmh.CpBaseModel):
     """
 
     def __init__(self, model_proto: Optional[cmh.CpModelProto] = None) -> None:
-        if model_proto is None:
-            cmh.CpBaseModel.__init__(self)
-        else:
-            cmh.CpBaseModel.__init__(self, model_proto)
+        cmh.CpBaseModel.__init__(self, model_proto)
         self._add_pre_pep8_methods()
 
     def _add_pre_pep8_methods(self) -> None:
@@ -1684,7 +1687,7 @@ class CpSolver:
     """
 
     def __init__(self) -> None:
-        self.__response_wrapper: Optional[cmh.ResponseWrapper] = None
+        self.__response: Optional[cmh.CpSolverResponse] = None
         self.parameters: cmh.SatParameters = cmh.SatParameters()
         self.log_callback: Optional[Callable[[str], None]] = None
         self.best_bound_callback: Optional[Callable[[float], None]] = None
@@ -1710,9 +1713,7 @@ class CpSolver:
         if self.best_bound_callback is not None:
             self.__solve_wrapper.add_best_bound_callback(self.best_bound_callback)
 
-        self.__response_wrapper = (
-            self.__solve_wrapper.solve_and_return_response_wrapper(model.proto)
-        )
+        self.__response = self.__solve_wrapper.solve(model.proto)
 
         if solution_callback is not None:
             self.__solve_wrapper.clear_solution_callback(solution_callback)
@@ -1720,7 +1721,7 @@ class CpSolver:
         with self.__lock:
             self.__solve_wrapper = None
 
-        return self.__response_wrapper.status()
+        return self.__response.status
 
     def stop_search(self) -> None:
         """Stops the current search asynchronously."""
@@ -1730,7 +1731,7 @@ class CpSolver:
 
     def value(self, expression: LinearExprT) -> int:
         """Returns the value of a linear expression after solve."""
-        return self._checked_response.value(expression)
+        return cmh.ResponseHelper.value(self._checked_response, expression)
 
     def values(self, variables: _IndexOrSeries) -> pd.Series:
         """Returns the values of the input variables.
@@ -1750,16 +1751,15 @@ class CpSolver:
         Raises:
           RuntimeError: if solve() has not been called.
         """
-        if self.__response_wrapper is None:
-            raise RuntimeError("solve() has not been called.")
+        response: cmh.CpSolverResponse = self._checked_response
         return pd.Series(
-            data=[self.__response_wrapper.value(var) for var in variables],
+            data=[cmh.ResponseHelper.value(response, var) for var in variables],
             index=_get_index(variables),
         )
 
     def float_value(self, expression: LinearExprT) -> float:
         """Returns the value of a linear expression after solve."""
-        return self._checked_response.float_value(expression)
+        return cmh.ResponseHelper.float_value(self._checked_response, expression)
 
     def float_values(self, expressions: _IndexOrSeries) -> pd.Series:
         """Returns the float values of the input linear expressions.
@@ -1779,16 +1779,17 @@ class CpSolver:
         Raises:
           RuntimeError: if solve() has not been called.
         """
-        if self.__response_wrapper is None:
-            raise RuntimeError("solve() has not been called.")
+        response: cmh.CpSolverResponse = self._checked_response
         return pd.Series(
-            data=[self.__response_wrapper.float_value(expr) for expr in expressions],
+            data=[
+                cmh.ResponseHelper.float_value(response, expr) for expr in expressions
+            ],
             index=_get_index(expressions),
         )
 
     def boolean_value(self, literal: LiteralT) -> bool:
         """Returns the boolean value of a literal after solve."""
-        return self._checked_response.boolean_value(literal)
+        return cmh.ResponseHelper.boolean_value(self._checked_response, literal)
 
     def boolean_values(self, variables: _IndexOrSeries) -> pd.Series:
         """Returns the values of the input variables.
@@ -1808,11 +1809,11 @@ class CpSolver:
         Raises:
           RuntimeError: if solve() has not been called.
         """
-        if self.__response_wrapper is None:
-            raise RuntimeError("solve() has not been called.")
+        response: cmh.CpSolverResponse = self._checked_response
         return pd.Series(
             data=[
-                self.__response_wrapper.boolean_value(literal) for literal in variables
+                cmh.ResponseHelper.boolean_value(response, literal)
+                for literal in variables
             ],
             index=_get_index(variables),
         )
@@ -1820,65 +1821,67 @@ class CpSolver:
     @property
     def objective_value(self) -> float:
         """Returns the value of the objective after solve."""
-        return self._checked_response.objective_value()
+        return self._checked_response.objective_value
 
     @property
     def best_objective_bound(self) -> float:
         """Returns the best lower (upper) bound found when min(max)imizing."""
-        return self._checked_response.best_objective_bound()
+        return self._checked_response.best_objective_bound
 
     @property
     def num_booleans(self) -> int:
         """Returns the number of boolean variables managed by the SAT solver."""
-        return self._checked_response.num_booleans()
+        return self._checked_response.num_booleans
 
     @property
     def num_conflicts(self) -> int:
         """Returns the number of conflicts since the creation of the solver."""
-        return self._checked_response.num_conflicts()
+        return self._checked_response.num_conflicts
 
     @property
     def num_branches(self) -> int:
         """Returns the number of search branches explored by the solver."""
-        return self._checked_response.num_branches()
+        return self._checked_response.num_branches
 
     @property
     def num_boolean_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
-        return self._checked_response.num_boolean_propagations()
+        return self._checked_response.num_boolean_propagations
 
     @property
     def num_integer_propagations(self) -> int:
         """Returns the number of integer propagations done by the solver."""
-        return self._checked_response.num_integer_propagations()
+        return self._checked_response.num_integer_propagations
 
     @property
     def deterministic_time(self) -> float:
         """Returns the deterministic time in seconds since the creation of the solver."""
-        return self._checked_response.deterministic_time()
+        return self._checked_response.deterministic_time
 
     @property
     def wall_time(self) -> float:
         """Returns the wall time in seconds since the creation of the solver."""
-        return self._checked_response.wall_time()
+        return self._checked_response.wall_time
 
     @property
     def user_time(self) -> float:
         """Returns the user time in seconds since the creation of the solver."""
-        return self._checked_response.user_time()
+        return self._checked_response.user_time
 
     @property
     def response_proto(self) -> cmh.CpSolverResponse:
         """Returns the response object."""
-        return self._checked_response.response()
+        return self._checked_response
 
     def response_stats(self) -> str:
         """Returns some statistics on the solution found as a string."""
-        return self._checked_response.response_stats()
+        return cmh.CpSatHelper.solver_response_stats(self._checked_response)
 
     def sufficient_assumptions_for_infeasibility(self) -> Sequence[int]:
         """Returns the indices of the infeasible assumptions."""
-        return self._checked_response.sufficient_assumptions_for_infeasibility()
+        return cmh.ResponseHelper.sufficient_assumptions_for_infeasibility(
+            self._checked_response
+        )
 
     def status_name(self, status: Optional[Any] = None) -> str:
         """Returns the name of the status returned by solve()."""
@@ -1895,14 +1898,14 @@ class CpSolver:
         Raises:
           RuntimeError: if solve() has not been called.
         """
-        return self._checked_response.solution_info()
+        return self._checked_response.solution_info
 
     @property
-    def _checked_response(self) -> cmh.ResponseWrapper:
+    def _checked_response(self) -> cmh.CpSolverResponse:
         """Checks solve() has been called, and returns a response wrapper."""
-        if self.__response_wrapper is None:
+        if self.__response is None:
             raise RuntimeError("solve() has not been called.")
-        return self.__response_wrapper
+        return self.__response
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
@@ -1910,11 +1913,8 @@ class CpSolver:
     def BestObjectiveBound(self) -> float:
         return self.best_objective_bound
 
-    def BooleanValue(self, literal: LiteralT) -> bool:
-        return self.boolean_value(literal)
-
-    def BooleanValues(self, variables: _IndexOrSeries) -> pd.Series:
-        return self.boolean_values(variables)
+    BooleanValue = boolean_value
+    BooleanValues = boolean_values
 
     def NumBooleans(self) -> int:
         return self.num_booleans
@@ -1931,36 +1931,18 @@ class CpSolver:
     def ResponseProto(self) -> cmh.CpSolverResponse:
         return self.response_proto
 
-    def ResponseStats(self) -> str:
-        return self.response_stats()
-
-    def Solve(
-        self,
-        model: CpModel,
-        solution_callback: Optional["CpSolverSolutionCallback"] = None,
-    ) -> cmh.CpSolverStatus:
-        return self.solve(model, solution_callback)
-
-    def SolutionInfo(self) -> str:
-        return self.solution_info()
-
-    def StatusName(self, status: Optional[Any] = None) -> str:
-        return self.status_name(status)
-
-    def StopSearch(self) -> None:
-        self.stop_search()
-
-    def SufficientAssumptionsForInfeasibility(self) -> Sequence[int]:
-        return self.sufficient_assumptions_for_infeasibility()
+    ResponseStats = response_stats
+    Solve = solve
+    SolutionInfo = solution_info
+    StatusName = status_name
+    StopSearch = stop_search
+    SufficientAssumptionsForInfeasibility = sufficient_assumptions_for_infeasibility
 
     def UserTime(self) -> float:
         return self.user_time
 
-    def Value(self, expression: LinearExprT) -> int:
-        return self.value(expression)
-
-    def Values(self, variables: _IndexOrSeries) -> pd.Series:
-        return self.values(variables)
+    Value = value
+    Values = values
 
     def WallTime(self) -> float:
         return self.wall_time

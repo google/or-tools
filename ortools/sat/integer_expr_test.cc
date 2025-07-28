@@ -1775,8 +1775,13 @@ TEST(ModuloConstraintTest,
   CpModelProto reference_model = initial_model;
   reference_model.mutable_constraints(0)->clear_enforcement_literal();
   absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = -10; x <= 10; ++x) {
+    for (int y = -3; y <= 3; ++y) {
+      reference_solutions.insert({0, x, y});
+    }
+  }
   const CpSolverResponse reference_response =
-      SolveAndCheck(initial_model, "", &reference_solutions);
+      SolveAndCheck(reference_model, "", &reference_solutions);
   EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(solutions, reference_solutions);
 }
