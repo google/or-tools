@@ -13,8 +13,9 @@
 
 """helpers methods for the cp_model_builder module on numbers."""
 
+from collections.abc import Sequence
 import numbers
-from typing import Any, Sequence, Union
+from typing import Any, Union
 import numpy as np
 import numpy.typing as npt
 
