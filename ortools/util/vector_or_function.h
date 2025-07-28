@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "ortools/base/logging.h"
+#include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
 
@@ -88,6 +89,20 @@ class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>,
 
  private:
   std::vector<std::vector<ScalarType>> matrix_;
+};
+
+// Specialization for FlatMatrix<>, which is faster than vector<vector<>>.
+template <typename ScalarType, bool square>
+class MatrixOrFunction<ScalarType, FlatMatrix<ScalarType>, square> {
+ public:
+  explicit MatrixOrFunction(FlatMatrix<ScalarType> matrix)
+      : matrix_(std::move(matrix)) {}
+  void Reset(FlatMatrix<ScalarType> matrix) { matrix_ = std::move(matrix); }
+  ScalarType operator()(int i, int j) const { return matrix_[i][j]; }
+  bool Check() const { return true; }
+
+ private:
+  FlatMatrix<ScalarType> matrix_;
 };
 
 }  // namespace operations_research
