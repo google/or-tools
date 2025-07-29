@@ -188,6 +188,10 @@ class RootLevelLinear2Bounds {
     return AddUpperBound(expr, -lb);
   }
 
+  bool AddLowerBound(LinearExpression2Index index, IntegerValue lb) {
+    return AddUpperBound(NegationOf(index), -lb);
+  }
+
   // All modifications go through this function.
   bool AddUpperBound(LinearExpression2Index index, IntegerValue ub);
 
@@ -615,21 +619,24 @@ class ReifiedLinear2Bounds {
                                               AffineExpression b) const;
 
   // Register the fact that l <=> ( expr <= ub ).
+  // `expr` must already be canonicalized and gcd-reduced.
   // These are considered equivalence relation.
-  void AddReifiedBoundIfNonTrivial(Literal l, LinearExpression2 expr,
-                                   IntegerValue ub);
+  void AddBoundEncodingIfNonTrivial(Literal l, LinearExpression2 expr,
+                                    IntegerValue ub);
 
   // Returns kNoLiteralIndex if we don't have a literal <=> ( expr <= ub ), or
   // returns that literal if we have one. Note that we will return the
   // true/false literal if the status is known at level zero.
-  LiteralIndex GetReifiedBound(LinearExpression2 expr, IntegerValue ub);
+  // `expr` must be canonicalized and gcd-reduced.
+  LiteralIndex GetEncodedBound(LinearExpression2 expr, IntegerValue ub);
 
  private:
   IntegerEncoder* integer_encoder_;
   RootLevelLinear2Bounds* best_root_level_bounds_;
+  Linear2Indices* lin2_indices_;
 
   // This stores relations l <=> (linear2 <= rhs).
-  absl::flat_hash_map<std::pair<LinearExpression2, IntegerValue>, Literal>
+  absl::flat_hash_map<std::pair<LinearExpression2Index, IntegerValue>, Literal>
       relation_to_lit_;
 
   // This is used to detect relations that become fixed at level zero and
@@ -637,7 +644,7 @@ class ReifiedLinear2Bounds {
   // we fix variable, a linear scan shouldn't be too bad and is relatively
   // compact memory wise.
   absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
-  std::vector<std::tuple<Literal, LinearExpression2, IntegerValue>>
+  std::vector<std::tuple<Literal, LinearExpression2Index, IntegerValue>>
       all_reified_relations_;
 };
 

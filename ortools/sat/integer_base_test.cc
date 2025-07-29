@@ -15,6 +15,7 @@
 
 #include <utility>
 
+#include "absl/log/check.h"
 #include "gtest/gtest.h"
 
 namespace operations_research::sat {
@@ -22,6 +23,7 @@ namespace {
 
 TEST(CanonicalizeAffinePrecedenceTest, Basic) {
   LinearExpression2 expr;
+  CHECK(expr.IsCanonicalized()) << expr;
   expr.vars[0] = IntegerVariable(0);
   expr.vars[1] = IntegerVariable(2);
   expr.coeffs[0] = IntegerValue(4);
@@ -30,6 +32,7 @@ TEST(CanonicalizeAffinePrecedenceTest, Basic) {
   IntegerValue lb(0);
   IntegerValue ub(11);
   expr.CanonicalizeAndUpdateBounds(lb, ub);
+  CHECK(expr.IsCanonicalized());
 
   EXPECT_EQ(expr.vars[0], IntegerVariable(0));
   EXPECT_EQ(expr.vars[1], IntegerVariable(2));
@@ -47,6 +50,7 @@ TEST(CanonicalizeAffinePrecedenceTest, OneSingleVariable) {
   expr.coeffs[1] = IntegerValue(2);
 
   expr.SimpleCanonicalization();
+  CHECK(expr.IsCanonicalized());
 
   EXPECT_EQ(expr.vars[0], kNoIntegerVariable);
   EXPECT_EQ(expr.vars[1], IntegerVariable(0));

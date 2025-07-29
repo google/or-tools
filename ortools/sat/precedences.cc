@@ -1093,7 +1093,8 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
 
 ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
     : integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
-      best_root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()) {
+      best_root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+      lin2_indices_(model->GetOrCreate<Linear2Indices>()) {
   int index = 0;
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
       [index = index, trail = model->GetOrCreate<Trail>(), this]() mutable {
@@ -1108,14 +1109,16 @@ ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
         if (relevant_true_literals.empty()) return true;
 
         // Linear scan.
-        for (const auto [l, expr, ub] : all_reified_relations_) {
+        for (const auto [l, expr_index, ub] : all_reified_relations_) {
           if (relevant_true_literals.contains(l)) {
-            best_root_level_bounds_->AddUpperBound(expr, ub);
-            VLOG(2) << "New fixed precedence: " << expr << " <= " << ub
+            best_root_level_bounds_->AddUpperBound(expr_index, ub);
+            VLOG(2) << "New fixed precedence: "
+                    << lin2_indices_->GetExpression(expr_index) << " <= " << ub
                     << " (was reified by " << l << ")";
           } else if (relevant_true_literals.contains(l.Negated())) {
-            best_root_level_bounds_->AddLowerBound(expr, ub + 1);
-            VLOG(2) << "New fixed precedence: " << expr << " > " << ub
+            best_root_level_bounds_->AddLowerBound(expr_index, ub + 1);
+            VLOG(2) << "New fixed precedence: "
+                    << lin2_indices_->GetExpression(expr_index) << " > " << ub
                     << " (was reified by not(" << l << "))";
           }
         }
@@ -1138,20 +1141,35 @@ RelationStatus ReifiedLinear2Bounds::GetLevelZeroPrecedenceStatus(
                                                      ub);
 }
 
-void ReifiedLinear2Bounds::AddReifiedBoundIfNonTrivial(Literal l,
-                                                       LinearExpression2 expr,
-                                                       IntegerValue ub) {
+void ReifiedLinear2Bounds::AddBoundEncodingIfNonTrivial(Literal l,
+                                                        LinearExpression2 expr,
+                                                        IntegerValue ub) {
+  DCHECK(expr.IsCanonicalized());
+  DCHECK_EQ(expr.DivideByGcd(), 1);
   const RelationStatus status =
       best_root_level_bounds_->GetLevelZeroStatus(expr, kMinIntegerValue, ub);
   if (status != RelationStatus::IS_UNKNOWN) return;
 
-  relation_to_lit_.insert({{expr, ub}, l});
+  if (expr.vars[0] == kNoIntegerVariable) {
+    // We checked for IS_UNKNOWN above, which is not possible for constant
+    // linear2.
+    DCHECK_NE(expr.vars[1], kNoIntegerVariable);
+
+    DCHECK_EQ(expr.coeffs[1], 1);
+    integer_encoder_->AssociateToIntegerLiteral(
+        l, IntegerLiteral::LowerOrEqual(expr.vars[1], ub));
+    return;
+  }
+  const LinearExpression2Index expr_index = lin2_indices_->AddOrGet(expr);
+  relation_to_lit_.insert({{expr_index, ub}, l});
   variable_appearing_in_reified_relations_.insert(l.Variable());
-  all_reified_relations_.push_back({l, expr, ub});
+  all_reified_relations_.push_back({l, expr_index, ub});
 }
 
-LiteralIndex ReifiedLinear2Bounds::GetReifiedBound(LinearExpression2 expr,
+LiteralIndex ReifiedLinear2Bounds::GetEncodedBound(LinearExpression2 expr,
                                                    IntegerValue ub) {
+  DCHECK(expr.IsCanonicalized());
+  DCHECK_EQ(expr.DivideByGcd(), 1);
   const RelationStatus status =
       best_root_level_bounds_->GetLevelZeroStatus(expr, kMinIntegerValue, ub);
   if (status == RelationStatus::IS_TRUE) {
@@ -1160,8 +1178,16 @@ LiteralIndex ReifiedLinear2Bounds::GetReifiedBound(LinearExpression2 expr,
   if (status == RelationStatus::IS_FALSE) {
     return integer_encoder_->GetFalseLiteral().Index();
   }
+  if (expr.vars[0] == kNoIntegerVariable) {
+    DCHECK_NE(expr.vars[1], kNoIntegerVariable);
+    DCHECK_EQ(expr.coeffs[1], 1);
+    return integer_encoder_->GetAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(expr.vars[1], ub));
+  }
 
-  const auto it = relation_to_lit_.find({expr, ub});
+  const LinearExpression2Index expr_index = lin2_indices_->GetIndex(expr);
+  if (expr_index == kNoLinearExpression2Index) return kNoLiteralIndex;
+  const auto it = relation_to_lit_.find({expr_index, ub});
   if (it == relation_to_lit_.end()) return kNoLiteralIndex;
   return it->second;
 }

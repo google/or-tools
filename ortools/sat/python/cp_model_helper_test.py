@@ -356,6 +356,27 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertFalse(e12.is_integer())
         self.assertEqual(str(e12), "(3.1 * (x + 2))")
 
+    def test_large_lin_expr(self):
+        model = cmh.CpModelProto()
+        all_records = range(4)
+        decision_var = []
+        for r in all_records:
+            decision_var.append(
+                [
+                    cmh.IntVar(model).with_name(f"x{r}0"),
+                    cmh.IntVar(model).with_name(f"x{r}1"),
+                    cmh.IntVar(model).with_name(f"x{r}2"),
+                ]
+            )
+
+        expr = sum(
+            (decision_var[r][1] + decision_var[r][2]) * 2
+            + (decision_var[r][0] + decision_var[r][2]) * 3
+            + (decision_var[r][0] + decision_var[r][1]) * 4
+            for r in all_records
+        )
+        print(expr, expr == 2)
+
 
 class CpModelBuilderTest(absltest.TestCase):
 

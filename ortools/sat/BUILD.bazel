@@ -1800,6 +1800,7 @@ cc_test(
     deps = [
         ":integer_base",
         "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -2098,9 +2099,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:strong_vector",
-        "//ortools/graph",
         "//ortools/graph:topologicalsorter",
-        "//ortools/util:bitset",
         "//ortools/util:logging",
         "//ortools/util:rev",
         "//ortools/util:strong_integers",
@@ -2335,6 +2334,7 @@ cc_library(
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -3614,6 +3614,7 @@ cc_library(
         ":synchronization",
         ":timetable",
         ":util",
+        "//ortools/base:stl_util",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",

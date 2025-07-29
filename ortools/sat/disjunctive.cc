@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -1195,6 +1196,13 @@ bool DisjunctivePrecedences::Propagate() {
 }
 
 bool DisjunctivePrecedences::PropagateSubwindow() {
+  // This function can be slow, so count it in the dtime.
+  int64_t num_hash_lookup = 0;
+  auto cleanup = ::absl::MakeCleanup([&num_hash_lookup, this]() {
+    time_limit_->AdvanceDeterministicTime(static_cast<double>(num_hash_lookup) *
+                                          5e-8);
+  });
+
   // TODO(user): We shouldn't consider ends for fixed intervals here. But
   // then we should do a better job of computing the min-end of a subset of
   // intervals from this disjunctive (like using fixed intervals even if there
@@ -1278,6 +1286,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 
       // TODO(user): The lookup here is a bit slow, so we avoid fetching
       // the offset as much as possible.
+      ++num_hash_lookup;
       const IntegerValue inner_offset =
           -linear2_bounds_->NonTrivialUpperBound(lin2_index);
       DCHECK_NE(inner_offset, kMinIntegerValue);

@@ -1076,7 +1076,9 @@ class FullProblemSolver : public SubSolver {
       previous_task_is_completed_ = false;
     }
     return [this]() {
+      auto* time_limit = local_model_.GetOrCreate<TimeLimit>();
       if (solving_first_chunk_) {
+        const double init_dtime = time_limit->GetElapsedDeterministicTime();
         LoadCpModel(shared_->model_proto, &local_model_);
 
         // Level zero variable bounds sharing. It is important to register
@@ -1127,15 +1129,18 @@ class FullProblemSolver : public SubSolver {
         // No need for mutex since we only run one task at the time.
         solving_first_chunk_ = false;
 
+        // Make sure we count the loading/hint dtime.
+        absl::MutexLock mutex_lock(&mutex_);
+        dtime_since_last_sync_ +=
+            time_limit->GetElapsedDeterministicTime() - init_dtime;
+
+        // Abort first chunk and allow to schedule the next.
         if (split_in_chunks_) {
-          // Abort first chunk and allow to schedule the next.
-          absl::MutexLock mutex_lock(&mutex_);
           previous_task_is_completed_ = true;
           return;
         }
       }
 
-      auto* time_limit = local_model_.GetOrCreate<TimeLimit>();
       if (split_in_chunks_) {
         // Configure time limit for chunk solving. Note that we do not want
         // to do that for the hint search for now.
