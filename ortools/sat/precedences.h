@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/container/btree_set.h"
@@ -613,10 +614,7 @@ class Linear2BoundsFromLinear3 {
 class ReifiedLinear2Bounds {
  public:
   explicit ReifiedLinear2Bounds(Model* model);
-
-  // Return the status of a <= b;
-  RelationStatus GetLevelZeroPrecedenceStatus(AffineExpression a,
-                                              AffineExpression b) const;
+  ~ReifiedLinear2Bounds();
 
   // Register the fact that l <=> ( expr <= ub ).
   // `expr` must already be canonicalized and gcd-reduced.
@@ -624,16 +622,35 @@ class ReifiedLinear2Bounds {
   void AddBoundEncodingIfNonTrivial(Literal l, LinearExpression2 expr,
                                     IntegerValue ub);
 
-  // Returns kNoLiteralIndex if we don't have a literal <=> ( expr <= ub ), or
-  // returns that literal if we have one. Note that we will return the
-  // true/false literal if the status is known at level zero.
-  // `expr` must be canonicalized and gcd-reduced.
-  LiteralIndex GetEncodedBound(LinearExpression2 expr, IntegerValue ub);
+  // Add a linear3 of the form vars[i]*coeffs[i] = activity that is not
+  // enforced and valid at level zero.
+  void AddLinear3(absl::Span<const IntegerVariable> vars,
+                  absl::Span<const int64_t> coeffs, int64_t activity);
+
+  // Returns ReifiedBoundType if we don't have a literal <=> ( expr <= ub ), or
+  // returns that literal if we have one. `expr` must be canonicalized and
+  // gcd-reduced.
+  enum class ReifiedBoundType {
+    kNoLiteralStored,
+    kAlwaysTrue,
+    kAlwaysFalse,
+  };
+  std::variant<ReifiedBoundType, Literal, IntegerLiteral> GetEncodedBound(
+      LinearExpression2 expr, IntegerValue ub);
 
  private:
-  IntegerEncoder* integer_encoder_;
   RootLevelLinear2Bounds* best_root_level_bounds_;
   Linear2Indices* lin2_indices_;
+  SharedStatistics* shared_stats_;
+
+  // This stores divisor * linear2 = AffineExpression similarly to
+  // Linear2BoundsFromLinear3. The difference here is that we only store linear3
+  // that are equality, but irrespective of whether it constraint any linear2 at
+  // the current level. If there is more than one expression for a given
+  // linear2, we will keep the one with the smallest divisor.
+  util_intops::StrongVector<LinearExpression2Index,
+                            std::pair<AffineExpression, IntegerValue>>
+      linear3_bounds_;
 
   // This stores relations l <=> (linear2 <= rhs).
   absl::flat_hash_map<std::pair<LinearExpression2Index, IntegerValue>, Literal>
@@ -646,6 +663,9 @@ class ReifiedLinear2Bounds {
   absl::flat_hash_set<BooleanVariable> variable_appearing_in_reified_relations_;
   std::vector<std::tuple<Literal, LinearExpression2Index, IntegerValue>>
       all_reified_relations_;
+
+  int64_t num_linear3_relations_ = 0;
+  int64_t num_relations_fixed_at_root_level_ = 0;
 };
 
 // Simple wrapper around the different repositories for bounds of linear2.
@@ -669,6 +689,9 @@ class Linear2Bounds {
       LinearExpression2 expr, IntegerValue ub,
       std::vector<Literal>* literal_reason,
       std::vector<IntegerLiteral>* integer_reason) const;
+
+  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
+                           IntegerValue ub) const;
 
   // Like UpperBound() but do not consider the bounds coming from
   // the individual variable bounds. This is faster.

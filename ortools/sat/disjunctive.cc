@@ -14,6 +14,7 @@
 #include "ortools/sat/disjunctive.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 

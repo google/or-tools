@@ -20,6 +20,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/container/btree_set.h"
@@ -1092,9 +1093,9 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
 }
 
 ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
-    : integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
-      best_root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
-      lin2_indices_(model->GetOrCreate<Linear2Indices>()) {
+    : best_root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+      lin2_indices_(model->GetOrCreate<Linear2Indices>()),
+      shared_stats_(model->GetOrCreate<SharedStatistics>()) {
   int index = 0;
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
       [index = index, trail = model->GetOrCreate<Trail>(), this]() mutable {
@@ -1111,11 +1112,13 @@ ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
         // Linear scan.
         for (const auto [l, expr_index, ub] : all_reified_relations_) {
           if (relevant_true_literals.contains(l)) {
+            ++num_relations_fixed_at_root_level_;
             best_root_level_bounds_->AddUpperBound(expr_index, ub);
             VLOG(2) << "New fixed precedence: "
                     << lin2_indices_->GetExpression(expr_index) << " <= " << ub
                     << " (was reified by " << l << ")";
           } else if (relevant_true_literals.contains(l.Negated())) {
+            ++num_relations_fixed_at_root_level_;
             best_root_level_bounds_->AddLowerBound(expr_index, ub + 1);
             VLOG(2) << "New fixed precedence: "
                     << lin2_indices_->GetExpression(expr_index) << " > " << ub
@@ -1126,19 +1129,16 @@ ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)
       });
 }
 
-Linear2BoundsFromLinear3::~Linear2BoundsFromLinear3() {
+ReifiedLinear2Bounds::~ReifiedLinear2Bounds() {
   if (!VLOG_IS_ON(1)) return;
   std::vector<std::pair<std::string, int64_t>> stats;
   stats.push_back(
-      {"Linear2BoundsFromLinear3/num_affine_updates", num_affine_updates_});
+      {"ReifiedLinear2Bounds/num_linear3_relations", num_linear3_relations_});
+  stats.push_back(
+      {"ReifiedLinear2Bounds/num_literal_relations", relation_to_lit_.size()});
+  stats.push_back({"ReifiedLinear2Bounds/num_relations_fixed_at_root_level",
+                   num_relations_fixed_at_root_level_});
   shared_stats_->AddStats(stats);
-}
-
-RelationStatus ReifiedLinear2Bounds::GetLevelZeroPrecedenceStatus(
-    AffineExpression a, AffineExpression b) const {
-  const auto [expr, ub] = EncodeDifferenceLowerThan(a, b, 0);
-  return best_root_level_bounds_->GetLevelZeroStatus(expr, kMinIntegerValue,
-                                                     ub);
 }
 
 void ReifiedLinear2Bounds::AddBoundEncodingIfNonTrivial(Literal l,
@@ -1151,13 +1151,8 @@ void ReifiedLinear2Bounds::AddBoundEncodingIfNonTrivial(Literal l,
   if (status != RelationStatus::IS_UNKNOWN) return;
 
   if (expr.vars[0] == kNoIntegerVariable) {
-    // We checked for IS_UNKNOWN above, which is not possible for constant
-    // linear2.
-    DCHECK_NE(expr.vars[1], kNoIntegerVariable);
-
-    DCHECK_EQ(expr.coeffs[1], 1);
-    integer_encoder_->AssociateToIntegerLiteral(
-        l, IntegerLiteral::LowerOrEqual(expr.vars[1], ub));
+    // For a single Affine GetEncodedBound() will return the IntegerLiteral
+    // without needing any indexing.
     return;
   }
   const LinearExpression2Index expr_index = lin2_indices_->AddOrGet(expr);
@@ -1166,30 +1161,66 @@ void ReifiedLinear2Bounds::AddBoundEncodingIfNonTrivial(Literal l,
   all_reified_relations_.push_back({l, expr_index, ub});
 }
 
-LiteralIndex ReifiedLinear2Bounds::GetEncodedBound(LinearExpression2 expr,
-                                                   IntegerValue ub) {
+std::variant<ReifiedLinear2Bounds::ReifiedBoundType, Literal, IntegerLiteral>
+ReifiedLinear2Bounds::GetEncodedBound(LinearExpression2 expr, IntegerValue ub) {
   DCHECK(expr.IsCanonicalized());
   DCHECK_EQ(expr.DivideByGcd(), 1);
   const RelationStatus status =
       best_root_level_bounds_->GetLevelZeroStatus(expr, kMinIntegerValue, ub);
   if (status == RelationStatus::IS_TRUE) {
-    return integer_encoder_->GetTrueLiteral().Index();
+    return ReifiedBoundType::kAlwaysTrue;
   }
   if (status == RelationStatus::IS_FALSE) {
-    return integer_encoder_->GetFalseLiteral().Index();
+    return ReifiedBoundType::kAlwaysFalse;
   }
   if (expr.vars[0] == kNoIntegerVariable) {
     DCHECK_NE(expr.vars[1], kNoIntegerVariable);
     DCHECK_EQ(expr.coeffs[1], 1);
-    return integer_encoder_->GetAssociatedLiteral(
-        IntegerLiteral::LowerOrEqual(expr.vars[1], ub));
+    return IntegerLiteral::LowerOrEqual(expr.vars[1], ub);
   }
 
   const LinearExpression2Index expr_index = lin2_indices_->GetIndex(expr);
-  if (expr_index == kNoLinearExpression2Index) return kNoLiteralIndex;
+  if (expr_index == kNoLinearExpression2Index) {
+    return ReifiedBoundType::kNoLiteralStored;
+  }
   const auto it = relation_to_lit_.find({expr_index, ub});
-  if (it == relation_to_lit_.end()) return kNoLiteralIndex;
-  return it->second;
+  if (it != relation_to_lit_.end()) return it->second;
+  if (linear3_bounds_.size() <= expr_index) {
+    return ReifiedBoundType::kNoLiteralStored;
+  }
+  const auto [affine_expr, divisor] = linear3_bounds_[expr_index];
+  if (divisor == 0) {
+    return ReifiedBoundType::kNoLiteralStored;
+  }
+  const IntegerValue affine_bound = CapProdI(ub, divisor);
+  if (affine_bound == kMaxIntegerValue) {
+    return ReifiedBoundType::kNoLiteralStored;
+  }
+  return affine_expr.LowerOrEqual(affine_bound);
+}
+
+void ReifiedLinear2Bounds::AddLinear3(absl::Span<const IntegerVariable> vars,
+                                      absl::Span<const int64_t> coeffs,
+                                      int64_t activity) {
+  DCHECK_EQ(vars.size(), 3);
+  DCHECK_EQ(coeffs.size(), 3);
+  for (int i = 0; i < vars.size(); ++i) {
+    LinearExpression2 expr(vars[i], vars[(i + 1) % 3], coeffs[i],
+                           coeffs[(i + 1) % 3]);
+    AffineExpression affine_expr(vars[(i + 2) % 3], -coeffs[(i + 2) % 3],
+                                 activity);
+    expr.SimpleCanonicalization();
+    const IntegerValue gcd = expr.DivideByGcd();
+    const LinearExpression2Index expr_index = lin2_indices_->AddOrGet(expr);
+    if (linear3_bounds_.size() <= expr_index) {
+      linear3_bounds_.resize(expr_index + 1, {AffineExpression(), 0});
+    }
+    auto& [old_affine_expr, old_divisor] = linear3_bounds_[expr_index];
+    if (old_divisor == 0 || old_divisor > gcd) {
+      linear3_bounds_[expr_index] = {affine_expr, gcd};
+      if (old_divisor == 0) ++num_linear3_relations_;
+    }
+  }
 }
 
 Linear2BoundsFromLinear3::Linear2BoundsFromLinear3(Model* model)
@@ -1200,6 +1231,14 @@ Linear2BoundsFromLinear3::Linear2BoundsFromLinear3(Model* model)
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
       root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
       lin2_indices_(model->GetOrCreate<Linear2Indices>()) {}
+
+Linear2BoundsFromLinear3::~Linear2BoundsFromLinear3() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back(
+      {"Linear2BoundsFromLinear3/num_affine_updates", num_affine_updates_});
+  shared_stats_->AddStats(stats);
+}
 
 // Note that for speed we do not compare to the trivial or root level bounds.
 //
@@ -1338,6 +1377,27 @@ void Linear2Bounds::AddReasonForUpperBoundLowerThan(
   absl::Span<const IntegerValue> coeffs = expr.non_zero_coeffs();
   integer_trail_->AppendRelaxedLinearReason(slack, coeffs, vars,
                                             integer_reason);
+}
+
+RelationStatus Linear2Bounds::GetStatus(LinearExpression2 expr, IntegerValue lb,
+                                        IntegerValue ub) const {
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  const LinearExpression2Index index = lin2_indices_->GetIndex(expr);
+  IntegerValue known_ub;
+  IntegerValue known_lb;
+  if (index == kNoLinearExpression2Index) {
+    known_ub = CapProdI(gcd, integer_trail_->UpperBound(expr));
+    expr.Negate();
+    known_lb = -CapProdI(gcd, integer_trail_->UpperBound(expr));
+  } else {
+    known_ub = CapProdI(gcd, UpperBound(index));
+    known_lb = -CapProdI(gcd, UpperBound(NegationOf(index)));
+  }
+  if (lb <= known_lb && ub >= known_ub) return RelationStatus::IS_TRUE;
+  if (lb > known_ub || ub < known_lb) return RelationStatus::IS_FALSE;
+
+  return RelationStatus::IS_UNKNOWN;
 }
 
 }  // namespace sat

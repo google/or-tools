@@ -71,6 +71,49 @@ double FindBestScalingAndComputeErrors(
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error);
 
+// Helper to scale MPConstraintProto to CpModelProto::ConstraintProto.
+// We use a class to reuse the temporary memory when we scale many constraints.
+//
+// Note that this can be used to scale any constraint, one just has to fill a
+// MPConstraintProto using variable indices that correspond to the given
+// CpModelProto variables.
+struct ConstraintScaler {
+  // Scales an individual constraint and add it to the given CpModelProto.
+  //
+  // We use the domain of the variables to derive error bounds and scale the
+  // constraint as best as we can within "wanted_precision" and
+  // "scaling_target". We usually scale with power of two scaling factor or
+  // a rational scaling factor if we detect a good one via FindRationalFactor().
+  //
+  // Returns an error if the given constraint contained huge coefficient or
+  // infinity. Note that we do not consider it an error if the wanted precision
+  // is not reached (best effort). One can check the error statistics field
+  // below and decide when there are too high and report an error separately.
+  absl::Status ScaleAndAddConstraint(const MPConstraintProto& mp_constraint,
+                                     CpModelProto* cp_model);
+
+  // Statistics over all scaled constraints. This can be inspected to know the
+  // final error produced by ScaleAndAddConstraint().
+  double max_relative_coeff_error = 0.0;
+  double max_absolute_rhs_error = 0.0;
+  double max_scaling_factor = 0.0;
+  double min_scaling_factor = std::numeric_limits<double>::infinity();
+
+  // Parameters. Whether we ignore or copy the mp_constraint.name() field.
+  bool keep_names = false;
+
+  // Parameters passed to FindBestScalingAndComputeErrors(), see documentation
+  // there to understand their meaning.
+  double wanted_precision = 1e-6;
+  int64_t scaling_target = int64_t{1} << 50;
+
+  // Private temporary field to reuse memory.
+  std::vector<int> var_indices;
+  std::vector<double> coefficients;
+  std::vector<double> lower_bounds;
+  std::vector<double> upper_bounds;
+};
+
 // Multiplies all continuous variable by the given scaling parameters and change
 // the rest of the model accordingly. The returned vector contains the scaling
 // of each variable (will always be 1.0 for integers) and can be used to recover

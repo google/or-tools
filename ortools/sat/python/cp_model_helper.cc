@@ -985,7 +985,6 @@ std::shared_ptr<IntervalVar> CpBaseModel::NewIntervalVarInternal(
   const int ct_index = model_proto_->constraints_size();
   ConstraintProto* ct = model_proto_->add_constraints();
   if (!name.empty()) ct->set_name(name);
-  ct->mutable_interval()->mutable_start()->set_offset(1);
   LinearExprToProto(start, 1, ct->mutable_interval()->mutable_start());
   LinearExprToProto(size, 1, ct->mutable_interval()->mutable_size());
   LinearExprToProto(end, 1, ct->mutable_interval()->mutable_end());
@@ -1243,8 +1242,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
                   py::arg("response"))
       .def_static("validate_model", &CpSatHelper::ValidateModel,
                   py::arg("model_proto"))
-      .def_static("variable_domain", &CpSatHelper::VariableDomain,
-                  py::arg("variable_proto"))
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
                   py::arg("model_proto"), py::arg("filename"));
 

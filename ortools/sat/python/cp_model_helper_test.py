@@ -51,20 +51,6 @@ class CpModelHelperTest(absltest.TestCase):
         super().tearDown()
         sys.stdout.flush()
 
-    def test_variable_domain(self):
-        model_string = """
-      variables { domain: [ -10, 10 ] }
-      variables { domain: [ -5, -5, 3, 6 ] }
-      """
-        model = cmh.CpModelProto()
-        self.assertTrue(model.parse_text_format(model_string))
-
-        d0 = cmh.CpSatHelper.variable_domain(model.variables[0])
-        d1 = cmh.CpSatHelper.variable_domain(model.variables[1])
-
-        self.assertEqual(d0.flattened_intervals(), [-10, 10])
-        self.assertEqual(d1.flattened_intervals(), [-5, -5, 3, 6])
-
     def test_simple_solve(self):
         model_string = """
       variables { domain: -10 domain: 10 }
@@ -355,27 +341,6 @@ class CpModelHelperTest(absltest.TestCase):
         e12 = (x + 2) * 3.1
         self.assertFalse(e12.is_integer())
         self.assertEqual(str(e12), "(3.1 * (x + 2))")
-
-    def test_large_lin_expr(self):
-        model = cmh.CpModelProto()
-        all_records = range(4)
-        decision_var = []
-        for r in all_records:
-            decision_var.append(
-                [
-                    cmh.IntVar(model).with_name(f"x{r}0"),
-                    cmh.IntVar(model).with_name(f"x{r}1"),
-                    cmh.IntVar(model).with_name(f"x{r}2"),
-                ]
-            )
-
-        expr = sum(
-            (decision_var[r][1] + decision_var[r][2]) * 2
-            + (decision_var[r][0] + decision_var[r][2]) * 3
-            + (decision_var[r][0] + decision_var[r][1]) * 4
-            for r in all_records
-        )
-        print(expr, expr == 2)
 
 
 class CpModelBuilderTest(absltest.TestCase):
