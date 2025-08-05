@@ -114,23 +114,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   Reset();
   ExtractModel();
 
-  SetParameters(param);
-  if (quiet_) {
-    // parameters_.set_verbosity_level(0);
-  } else {
-    // parameters_.set_verbosity_level(3);
-  }
-
-  solver_->SetSolverSpecificParametersAsString(
-      solver_->solver_specific_parameter_string_);
-
-  // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    // parameters_.mutable_termination_criteria()->set_time_sec_limit(
-    //     static_cast<double>(solver_->time_limit()) / 1000.0);
-  }
-
   // Mark variables and constraints as extracted.
   for (int i = 0; i < solver_->variables_.size(); ++i) {
     set_variable_as_extracted(i, true);
@@ -146,6 +129,15 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   request.set_solver_type(solve_as_a_mip_
                               ? MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
                               : MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
+
+  SetParameters(param);
+  request.set_enable_internal_solver_output(!quiet_);
+  request.set_solver_specific_parameters(
+      solver_->solver_specific_parameter_string_);
+  if (solver_->time_limit()) {
+    request.set_solver_time_limit_seconds(
+        static_cast<double>(solver_->time_limit()) / 1000.0);
+  }
 
   // Set parameters.
   absl::StatusOr<MPSolutionResponse> response =
