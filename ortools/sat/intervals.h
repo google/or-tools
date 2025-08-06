@@ -191,6 +191,9 @@ class IntervalsRepository {
   BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
   ReifiedLinear2Bounds* reified_precedences_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+  Linear2Bounds* linear2_bounds_;
+  IntegerEncoder* integer_encoder_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.

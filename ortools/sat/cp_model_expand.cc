@@ -507,8 +507,12 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
             context->DomainSuperSetOf(right));
     const int new_var = context->NewIntVar(new_domain);
     new_vars.push_back(new_var);
-    LinearArgumentProto* const int_prod =
-        context->working_model->add_constraints()->mutable_int_prod();
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    // TODO(user): since we copy the enforcement literals in the final int
+    // prod constraint below, this is not strictly necessary. Is it better with
+    // or without?
+    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+    LinearArgumentProto* const int_prod = new_ct->mutable_int_prod();
     *int_prod->add_exprs() = left;
     *int_prod->add_exprs() = right;
     int_prod->mutable_target()->add_vars(new_var);
@@ -517,8 +521,9 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
     terms.front() = int_prod->target();
   }
 
-  LinearArgumentProto* const final_int_prod =
-      context->working_model->add_constraints()->mutable_int_prod();
+  ConstraintProto* new_ct = context->working_model->add_constraints();
+  *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+  LinearArgumentProto* const final_int_prod = new_ct->mutable_int_prod();
   *final_int_prod->add_exprs() = terms[0];
   *final_int_prod->add_exprs() = terms[1];
   *final_int_prod->mutable_target() = ct->int_prod().target();

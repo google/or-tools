@@ -22,15 +22,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
+#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_propagation.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/precedences.h"
+#include "ortools/sat/old_precedences_propagator.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -283,17 +285,19 @@ class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
 // the bounds on p as this require more complex arithmetics.
 class ProductPropagator : public PropagatorInterface {
  public:
-  ProductPropagator(AffineExpression a, AffineExpression b, AffineExpression p,
-                    IntegerTrail* integer_trail);
+  ProductPropagator(absl::Span<const Literal> enforcement_literals,
+                    AffineExpression a, AffineExpression b, AffineExpression p,
+                    Model* model);
 
   // This type is neither copyable nor movable.
   ProductPropagator(const ProductPropagator&) = delete;
   ProductPropagator& operator=(const ProductPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   // Maybe replace a_, b_ or c_ by their negation to simplify the cases.
   bool CanonicalizeCases();
 
@@ -310,8 +314,9 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression a_;
   AffineExpression b_;
   AffineExpression p_;
-
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
 };
 
 // Propagates num / denom = div. Basic version, we don't extract any special
@@ -320,17 +325,19 @@ class ProductPropagator : public PropagatorInterface {
 // TODO(user): Deal with overflow.
 class DivisionPropagator : public PropagatorInterface {
  public:
-  DivisionPropagator(AffineExpression num, AffineExpression denom,
-                     AffineExpression div, IntegerTrail* integer_trail);
+  DivisionPropagator(absl::Span<const Literal> enforcement_literals,
+                     AffineExpression num, AffineExpression denom,
+                     AffineExpression div, Model* model);
 
   // This type is neither copyable nor movable.
   DivisionPropagator(const DivisionPropagator&) = delete;
   DivisionPropagator& operator=(const DivisionPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   // Propagates the fact that the signs of each domain, if fixed, are
   // compatible.
   bool PropagateSigns(AffineExpression num, AffineExpression denom,
@@ -353,49 +360,59 @@ class DivisionPropagator : public PropagatorInterface {
   const AffineExpression negated_denom_;
   const AffineExpression negated_num_;
   const AffineExpression negated_div_;
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
 };
 
 // Propagates var_a / cst_b = var_c. Basic version, we don't extract any special
 // cases, and we only propagates the bounds. cst_b must be > 0.
 class FixedDivisionPropagator : public PropagatorInterface {
  public:
-  FixedDivisionPropagator(AffineExpression a, IntegerValue b,
-                          AffineExpression c, IntegerTrail* integer_trail);
+  FixedDivisionPropagator(absl::Span<const Literal> enforcement_literals,
+                          AffineExpression a, IntegerValue b,
+                          AffineExpression c, Model* model);
 
   // This type is neither copyable nor movable.
   FixedDivisionPropagator(const FixedDivisionPropagator&) = delete;
   FixedDivisionPropagator& operator=(const FixedDivisionPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   const AffineExpression a_;
   const IntegerValue b_;
   const AffineExpression c_;
-
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
 };
 
 // Propagates target == expr % mod. Basic version, we don't extract any special
 // cases, and we only propagates the bounds. mod must be > 0.
 class FixedModuloPropagator : public PropagatorInterface {
  public:
-  FixedModuloPropagator(AffineExpression expr, IntegerValue mod,
-                        AffineExpression target, IntegerTrail* integer_trail);
+  FixedModuloPropagator(absl::Span<const Literal> enforcement_literals,
+                        AffineExpression expr, IntegerValue mod,
+                        AffineExpression target, Model* model);
 
   // This type is neither copyable nor movable.
   FixedModuloPropagator(const FixedModuloPropagator&) = delete;
   FixedModuloPropagator& operator=(const FixedModuloPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
+  bool PropagateWhenFalseAndTargetIsPositive(AffineExpression expr,
+                                             AffineExpression target);
+  bool PropagateWhenFalseAndTargetDomainContainsZero();
   bool PropagateSignsAndTargetRange();
-  bool PropagateBoundsWhenExprIsPositive(AffineExpression expr,
-                                         AffineExpression target);
+  bool PropagateBoundsWhenExprIsNonNegative(AffineExpression expr,
+                                            AffineExpression target);
   bool PropagateOuterBounds();
 
   const AffineExpression expr_;
@@ -403,27 +420,32 @@ class FixedModuloPropagator : public PropagatorInterface {
   const AffineExpression target_;
   const AffineExpression negated_expr_;
   const AffineExpression negated_target_;
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
 };
 
 // Propagates x * x = s.
 // TODO(user): Only works for x nonnegative.
 class SquarePropagator : public PropagatorInterface {
  public:
-  SquarePropagator(AffineExpression x, AffineExpression s,
-                   IntegerTrail* integer_trail);
+  SquarePropagator(absl::Span<const Literal> enforcement_literals,
+                   AffineExpression x, AffineExpression s, Model* model);
 
   // This type is neither copyable nor movable.
   SquarePropagator(const SquarePropagator&) = delete;
   SquarePropagator& operator=(const SquarePropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   const AffineExpression x_;
   const AffineExpression s_;
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
 };
 
 // =============================================================================
@@ -757,77 +779,71 @@ inline std::function<void(Model*)> IsEqualToMinOf(
   return [&](Model* model) { AddIsEqualToMinOf(min_expr, exprs, model); };
 }
 
-template <class T>
-void RegisterAndTransferOwnership(Model* model, T* ct) {
-  ct->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-  model->TakeOwnership(ct);
-}
 // Adds the constraint: a * b = p.
-inline std::function<void(Model*)> ProductConstraint(AffineExpression a,
-                                                     AffineExpression b,
-                                                     AffineExpression p) {
+inline std::function<void(Model*)> ProductConstraint(
+    absl::Span<const Literal> enforcement_literals, AffineExpression a,
+    AffineExpression b, AffineExpression p) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
+    // TODO(user): return early if constraint is never enforced.
     if (a == b) {
-      if (integer_trail->LowerBound(a) >= 0) {
-        RegisterAndTransferOwnership(model,
-                                     new SquarePropagator(a, p, integer_trail));
+      if (integer_trail.LowerBound(a) >= 0) {
+        model->TakeOwnership(
+            new SquarePropagator(enforcement_literals, a, p, model));
         return;
       }
-      if (integer_trail->UpperBound(a) <= 0) {
-        RegisterAndTransferOwnership(
-            model, new SquarePropagator(a.Negated(), p, integer_trail));
+      if (integer_trail.UpperBound(a) <= 0) {
+        model->TakeOwnership(
+            new SquarePropagator(enforcement_literals, a.Negated(), p, model));
         return;
       }
     }
-    RegisterAndTransferOwnership(model,
-                                 new ProductPropagator(a, b, p, integer_trail));
+    model->TakeOwnership(
+        new ProductPropagator(enforcement_literals, a, b, p, model));
   };
 }
 
 // Adds the constraint: num / denom = div. (denom > 0).
-inline std::function<void(Model*)> DivisionConstraint(AffineExpression num,
-                                                      AffineExpression denom,
-                                                      AffineExpression div) {
+inline std::function<void(Model*)> DivisionConstraint(
+    absl::Span<const Literal> enforcement_literals, AffineExpression num,
+    AffineExpression denom, AffineExpression div) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const IntegerTrail& integer_trail = *model->GetOrCreate<IntegerTrail>();
+    // TODO(user): return early if constraint is never enforced.
     DivisionPropagator* constraint;
-    if (integer_trail->UpperBound(denom) < 0) {
-      constraint = new DivisionPropagator(num.Negated(), denom.Negated(), div,
-                                          integer_trail);
-
+    if (integer_trail.UpperBound(denom) < 0) {
+      constraint = new DivisionPropagator(enforcement_literals, num.Negated(),
+                                          denom.Negated(), div, model);
     } else {
-      constraint = new DivisionPropagator(num, denom, div, integer_trail);
+      constraint =
+          new DivisionPropagator(enforcement_literals, num, denom, div, model);
     }
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
 // Adds the constraint: a / b = c where b is a constant.
-inline std::function<void(Model*)> FixedDivisionConstraint(AffineExpression a,
-                                                           IntegerValue b,
-                                                           AffineExpression c) {
+inline std::function<void(Model*)> FixedDivisionConstraint(
+    absl::Span<const Literal> enforcement_literals, AffineExpression a,
+    IntegerValue b, AffineExpression c) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    // TODO(user): return early if constraint is never enforced.
     FixedDivisionPropagator* constraint =
-        b > 0 ? new FixedDivisionPropagator(a, b, c, integer_trail)
-              : new FixedDivisionPropagator(a.Negated(), -b, c, integer_trail);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+        b > 0
+            ? new FixedDivisionPropagator(enforcement_literals, a, b, c, model)
+            : new FixedDivisionPropagator(enforcement_literals, a.Negated(), -b,
+                                          c, model);
     model->TakeOwnership(constraint);
   };
 }
 
 // Adds the constraint: a % b = c where b is a constant.
-inline std::function<void(Model*)> FixedModuloConstraint(AffineExpression a,
-                                                         IntegerValue b,
-                                                         AffineExpression c) {
+inline std::function<void(Model*)> FixedModuloConstraint(
+    absl::Span<const Literal> enforcement_literals, AffineExpression a,
+    IntegerValue b, AffineExpression c) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    FixedModuloPropagator* constraint =
-        new FixedModuloPropagator(a, b, c, integer_trail);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    model->TakeOwnership(
+        new FixedModuloPropagator(enforcement_literals, a, b, c, model));
   };
 }
 

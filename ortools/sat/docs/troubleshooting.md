@@ -96,59 +96,59 @@ parallelism. Therefore, the number of workers must be set to 1.
 ### Python code sample
 
 ```python
-#!/usr/bin/env python3
-"""Code sample that solves a model and gets the infeasibility assumptions."""
+# Snippet from ortools/sat/samples/assumptions_sample_sat.py
 from ortools.sat.python import cp_model
 
 
 def main() -> None:
-    """Showcases assumptions."""
-    # Creates the model.
-    model = cp_model.CpModel()
+  """Showcases assumptions."""
+  # Creates the model.
+  model = cp_model.CpModel()
 
-    # Creates the variables.
-    x = model.new_int_var(0, 10, "x")
-    y = model.new_int_var(0, 10, "y")
-    z = model.new_int_var(0, 10, "z")
-    a = model.new_bool_var("a")
-    b = model.new_bool_var("b")
-    c = model.new_bool_var("c")
+  # Creates the variables.
+  x = model.new_int_var(0, 10, 'x')
+  y = model.new_int_var(0, 10, 'y')
+  z = model.new_int_var(0, 10, 'z')
+  a = model.new_bool_var('a')
+  b = model.new_bool_var('b')
+  c = model.new_bool_var('c')
 
-    # Creates the constraints.
-    model.add(x > y).only_enforce_if(a)
-    model.add(y > z).only_enforce_if(b)
-    model.add(z > x).only_enforce_if(c)
+  # Creates the constraints.
+  model.add(x > y).only_enforce_if(a)
+  model.add(y > z).only_enforce_if(b)
+  model.add(z > x).only_enforce_if(c)
 
-    # Add assumptions
-    model.add_assumptions([a, b, c])
+  # Add assumptions
+  model.add_assumptions([a, b, c])
 
-    # Creates a solver and solves.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Creates a solver and solves.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    # Print solution.
-    print(f"Status = {solver.status_name(status)}")
-    if status == cp_model.INFEASIBLE:
-        print(
-            "sufficient_assumptions_for_infeasibility = "
-            f"{solver.sufficient_assumptions_for_infeasibility()}"
-        )
+  # Print solution.
+  print(f'Status = {solver.status_name(status)}')
+  if status == cp_model.INFEASIBLE:
+    print(
+        'sufficient_assumptions_for_infeasibility = '
+        f'{solver.sufficient_assumptions_for_infeasibility()}'
+    )
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+  main()
 ```
 
 ### C++ code samples
 
 ```cpp
+// Snippet from ortools/sat/samples/assumptions_sample_sat.cc
 #include <stdlib.h>
 
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -201,11 +201,12 @@ int main(int argc, char* argv[]) {
 ### Java code samples
 
 ```java
+// Snippet from ortools/sat/samples/AssumptionsSampleSat.java
 package com.google.ortools.sat.samples;
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
@@ -249,7 +250,8 @@ public class AssumptionsSampleSat {
 
 ### C\# code samples
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/AssumptionsSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 

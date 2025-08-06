@@ -547,6 +547,52 @@ TEST(IntModExpansionTest, ExpandIntModPreservesSolutionHint) {
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
+TEST(IntProdExpandTest, EnforcementLiterals) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'b' domain: 0 domain: 1 }
+    variables { name: 'x' domain: -100 domain: 100 }
+    variables { name: 'y' domain: -100 domain: 100 }
+    variables { name: 'z' domain: -100 domain: 100 }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { offset: 27 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    }
+  )pb");
+  Model model;
+  PresolveContext context(&model, &initial_model, nullptr);
+  ExpandCpModel(&context);
+
+  const CpModelProto expected_model = ParseTestProto(R"pb(
+    variables { name: "b" domain: 0 domain: 1 }
+    variables { name: "x" domain: -100 domain: 100 }
+    variables { name: "y" domain: -100 domain: 100 }
+    variables { name: "z" domain: -100 domain: 100 }
+    variables { domain: -10000 domain: 10000 }
+    constraints {}
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { vars: 4 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { offset: 27 }
+        exprs { vars: 4 coeffs: 1 }
+        exprs { vars: 3 coeffs: 1 }
+      }
+    })pb");
+  EXPECT_THAT(initial_model, testing::EqualsProto(expected_model));
+}
+
 TEST(IntProdExpandTest, LeftCase) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { name: 'x' domain: -50 domain: -40 domain: 10 domain: 20 }

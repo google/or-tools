@@ -119,7 +119,12 @@ bool LinearExpression2::IsCanonicalized() const {
       return false;
     }
   }
-  if (vars[0] >= vars[1]) return false;
+  if (vars[0] >= vars[1]) {
+    if (vars[0] == kNoIntegerVariable && vars[1] == kNoIntegerVariable) {
+      return true;
+    }
+    return false;
+  }
 
   if (vars[0] == kNoIntegerVariable) return true;
 

@@ -358,7 +358,9 @@ H AbslHashValue(H h, const AffineExpression& e) {
 // A linear expression with at most two variables (coeffs can be zero).
 // And some utility to canonicalize them.
 struct LinearExpression2 {
+  // Construct a zero expression.
   LinearExpression2() = default;
+
   LinearExpression2(IntegerVariable v1, IntegerVariable v2, IntegerValue c1,
                     IntegerValue c2) {
     vars[0] = v1;
@@ -428,7 +430,7 @@ struct LinearExpression2 {
   }
 
   IntegerValue coeffs[2];
-  IntegerVariable vars[2];
+  IntegerVariable vars[2] = {kNoIntegerVariable, kNoIntegerVariable};
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const LinearExpression2& expr) {

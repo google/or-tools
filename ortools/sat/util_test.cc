@@ -56,6 +56,7 @@ namespace {
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::Pair;
 
 TEST(CompactVectorVectorTest, EmptyCornerCases) {
   CompactVectorVector<int, int> storage;
@@ -1247,6 +1248,21 @@ TEST(FindMostDiverseSubsetTest, RandomButAlwaysPickZero) {
     best_seen = std::max(best_seen, value);
   }
   EXPECT_EQ(best_seen, result_value);
+}
+
+TEST(HeuristicallySplitLongLinearTest, BasicExamples) {
+  EXPECT_THAT(HeuristicallySplitLongLinear({1, 2, 3}),
+              ElementsAre(Pair(0, 1), Pair(1, 1), Pair(2, 1)));
+  EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 2, 3}),
+              ElementsAre(Pair(0, 2), Pair(2, 1), Pair(3, 1)));
+
+  // The number of part is not ideal here.
+  EXPECT_THAT(
+      HeuristicallySplitLongLinear({1, 1, 1, 1, 1, 2, 3}),
+      ElementsAre(Pair(0, 1), Pair(1, 2), Pair(3, 2), Pair(5, 1), Pair(6, 1)));
+
+  EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 1, 1, 3, 3, 3, 3, 3}),
+              ElementsAre(Pair(0, 2), Pair(2, 2), Pair(4, 2), Pair(6, 3)));
 }
 
 }  // namespace

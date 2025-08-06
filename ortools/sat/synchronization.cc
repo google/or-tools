@@ -503,7 +503,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 // UNKNOWN -> FEASIBLE -> OPTIMAL
 // UNKNOWN -> INFEASIBLE
 void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
-    const std::string& worker_info) {
+    absl::string_view worker_info) {
   absl::MutexLock mutex_lock(&mutex_);
   if (best_status_ == CpSolverStatus::FEASIBLE ||
       best_status_ == CpSolverStatus::OPTIMAL) {

@@ -496,7 +496,7 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolXorWithEnforcementLiteral) {
   CpModelProto model = ParseTestProto(absl::StrCat(kBooleanModel, R"pb(
     constraints {
       enforcement_literal: 0
-      bool_or { literals: [ 1, 2 ] }
+      bool_xor { literals: [ 1, 2 ] }
     }
   )pb"));
 

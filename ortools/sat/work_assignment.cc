@@ -50,27 +50,43 @@
 
 namespace operations_research::sat {
 namespace {
-// We restart the shared tree 10 times after (on average) 2 tree assignments per
-// worker.
-const int kAssignmentsPerWorkerPerRestart = 2;
 const int kNumInitialRestarts = 10;
 
 // If you build a tree by expanding the nodes with minimal depth+discrepancy,
-// the number of leaves when all nodes with a given value have been split
+// the number of leaves when all nodes less than a given value have been split
 // follows the fibonacci sequence:
-// num_leaves(0) := 2;
-// num_leaves(1) := 3;
+// num_leaves(0) := 1;
+// num_leaves(1) := 2;
 // num_leaves(n) := num_leaves(n-1) + num_leaves(n-2)
 // This function returns f(n) := min({i | num_leaves(i) >= n})
 int MaxAllowedDiscrepancyPlusDepth(int num_leaves) {
   int i = 0;
   int a = 1;
   int b = 2;
-  while (b < num_leaves) {
+  while (a < num_leaves) {
     std::tie(a, b) = std::make_pair(b, a + b);
     ++i;
   }
   return i;
+}
+
+// Returns the maximum depth of any leaf in the shared tree.
+// This is an upper bound that can be computed without needing a lock on the
+// shared tree.
+int MaxPossibleLeafDepth(const SatParameters& params) {
+  const int num_leaves = params.shared_tree_open_leaves_per_worker() *
+                         params.shared_tree_num_workers();
+  switch (params.shared_tree_split_strategy()) {
+    case SatParameters::SPLIT_STRATEGY_DISCREPANCY:
+    case SatParameters::SPLIT_STRATEGY_AUTO:
+      return MaxAllowedDiscrepancyPlusDepth(num_leaves) +
+             params.shared_tree_balance_tolerance();
+    case SatParameters::SPLIT_STRATEGY_BALANCED_TREE:
+      return std::ceil(std::log2(num_leaves)) +
+             params.shared_tree_balance_tolerance();
+    default:
+      return num_leaves;
+  }
 }
 }  // namespace
 
@@ -217,6 +233,7 @@ absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
 SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
       num_workers_(params_.shared_tree_num_workers()),
+      max_path_depth_(MaxPossibleLeafDepth(params_)),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       num_splits_wanted_(
           num_workers_ * params_.shared_tree_open_leaves_per_worker() - 1),
@@ -276,10 +293,9 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
     return false;
   }
   // Restart after processing updates - we might learn a new objective bound.
-  // Do initial restarts once the tree has been split a reasonable number of
-  // times.
-  if (num_leaves_assigned_since_restart_ >
-          kAssignmentsPerWorkerPerRestart * num_workers_ &&
+  // Do initial restarts once each worker has had the chance to be assigned a
+  // leaf.
+  if (num_leaves_assigned_since_restart_ >= num_workers_ &&
       num_restarts_ < kNumInitialRestarts) {
     RestartLockHeld();
     path.Clear();
@@ -290,30 +306,39 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   return true;
 }
 
-void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
-  absl::MutexLock mutex_lock(&mu_);
-  if (!IsValid(path)) return;
+int SharedTreeManager::TrySplitTree(absl::Span<const ProtoLiteral> decisions,
+                                    ProtoTrail& path) {
+  decisions = decisions.subspan(0, max_path_depth_ - path.MaxLevel());
+  if (decisions.empty()) return 0;
+  absl::MutexLock l(&mu_);
+  for (int i = 0; i < decisions.size(); ++i) {
+    if (!TrySplitTreeLockHeld(decisions[i], path)) return i;
+  }
+  return decisions.size();
+}
+
+bool SharedTreeManager::TrySplitTreeLockHeld(ProtoLiteral decision,
+                                             ProtoTrail& path) {
+  if (!IsValid(path)) return false;
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
   if (nodes.back().first->closed) {
     VLOG(2) << "Cannot split closed node";
-    return;
+    return false;
   }
   if (nodes.back().first->children[0] != nullptr) {
     LOG_IF(WARNING, nodes.size() > 1)
         << "Cannot resplit previously split node @ " << nodes.back().second
         << "/" << nodes.size();
-    return;
+    return false;
   }
   if (nodes_.size() + 2 > max_nodes_) {
     VLOG(2) << "Too many nodes to accept split";
-    return;
+    return false;
   }
   if (num_splits_wanted_ <= 0) {
     VLOG(2) << "Enough splits for now";
-    return;
+    return false;
   }
-  const int num_desired_leaves =
-      params_.shared_tree_open_leaves_per_worker() * num_workers_;
   if (params_.shared_tree_split_strategy() ==
           SatParameters::SPLIT_STRATEGY_DISCREPANCY ||
       params_.shared_tree_split_strategy() ==
@@ -328,11 +353,9 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
     }
     // TODO(user): Need to write up the shape this creates.
     // This rule will allow twice as many leaves in the preferred subtree.
-    if (discrepancy + path.MaxLevel() >
-        MaxAllowedDiscrepancyPlusDepth(num_desired_leaves) +
-            params_.shared_tree_balance_tolerance()) {
+    if (discrepancy + path.MaxLevel() >= max_path_depth_) {
       VLOG(2) << "Too high discrepancy to accept split";
-      return;
+      return false;
     }
   } else if (params_.shared_tree_split_strategy() ==
              SatParameters::SPLIT_STRATEGY_OBJECTIVE_LB) {
@@ -340,14 +363,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
       VLOG(2) << "Can only split nodes with minimum objective lb, "
               << nodes.back().first->objective_lb << " > "
               << nodes.front().first->objective_lb;
-      return;
-    }
-  } else if (params_.shared_tree_split_strategy() ==
-             SatParameters::SPLIT_STRATEGY_BALANCED_TREE) {
-    if (path.MaxLevel() + 1 >
-        log2(num_desired_leaves) + params_.shared_tree_balance_tolerance()) {
-      VLOG(2) << "Tree too unbalanced to accept split";
-      return;
+      return false;
     }
   }
   VLOG_EVERY_N(2, 10) << unassigned_leaves_.size() << " unassigned leaves, "
@@ -356,6 +372,7 @@ void SharedTreeManager::ProposeSplit(ProtoTrail& path, ProtoLiteral decision) {
   Split(nodes, decision);
   auto [new_leaf, level] = nodes.back();
   path.PushLevel(new_leaf->literal, new_leaf->objective_lb, new_leaf->id);
+  return true;
 }
 
 void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
@@ -727,9 +744,6 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   const auto& decision_policy =
       heuristics_->decision_policies[heuristics_->policy_index];
   const int next_level = sat_solver_->CurrentDecisionLevel() + 1;
-  if (next_level == assigned_tree_.MaxLevel() + 1) {
-    new_split_available_ = true;
-  }
   CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
   if (next_level <= assigned_tree_.MaxLevel()) {
     VLOG(2) << "Following shared trail depth=" << next_level << " "
@@ -744,26 +758,26 @@ bool SharedTreeWorker::NextDecision(LiteralIndex* decision_index) {
   return helper_->GetDecision(decision_policy, decision_index);
 }
 
-void SharedTreeWorker::MaybeProposeSplit() {
-  if (!new_split_available_ ||
-      sat_solver_->CurrentDecisionLevel() < assigned_tree_.MaxLevel() + 1 ||
-      time_limit_->GetElapsedDeterministicTime() < next_split_dtime_) {
+void SharedTreeWorker::MaybeProposeSplits() {
+  if (time_limit_->GetElapsedDeterministicTime() <= next_split_dtime_) {
     return;
   }
-  new_split_available_ = false;
-  const Literal split_decision =
-      sat_solver_->Decisions()[assigned_tree_.MaxLevel()].literal;
-  const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
-  if (encoded.has_value()) {
-    next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
-                        parameters_->shared_tree_split_min_dtime();
-    CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
-    manager_->ProposeSplit(assigned_tree_, *encoded);
-    if (assigned_tree_.MaxLevel() > assigned_tree_literals_.size()) {
-      assigned_tree_literals_.push_back(split_decision);
-      assigned_tree_implications_.push_back({});
-    }
-    CHECK_EQ(assigned_tree_literals_.size(), assigned_tree_.MaxLevel());
+  next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
+                      parameters_->shared_tree_split_min_dtime();
+  tmp_splits_.clear();
+  const int max_split_level =
+      std::min<int>(trail_->CurrentDecisionLevel(), manager_->MaxPathDepth());
+  for (int i = assigned_tree_.MaxLevel(); i < max_split_level; ++i) {
+    const Literal split_decision = sat_solver_->Decisions()[i].literal;
+    const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
+    if (!encoded.has_value()) break;
+    tmp_splits_.push_back(*encoded);
+  }
+  const int splits_accepted =
+      manager_->TrySplitTree(tmp_splits_, assigned_tree_);
+  for (int i = 0; i < splits_accepted; ++i) {
+    assigned_tree_literals_.push_back(DecodeDecision(tmp_splits_[i]));
+    assigned_tree_implications_.push_back({});
   }
 }
 
@@ -810,6 +824,10 @@ bool SharedTreeWorker::SyncWithSharedTree() {
     assigned_tree_lbds_.Add(restart_policy_->LbdAverageSinceReset());
     restart_policy_->Reset();
     earliest_replacement_dtime_ = 0;
+    if (assigned_tree_.MaxLevel() > 0) {
+      next_split_dtime_ = time_limit_->GetElapsedDeterministicTime() +
+                          parameters_->shared_tree_split_min_dtime();
+    }
     if (parameters_->shared_tree_worker_enable_phase_sharing()) {
       VLOG(2) << "Importing phase of length: "
               << assigned_tree_.TargetPhase().size();
@@ -893,7 +911,7 @@ SatSolver::Status SharedTreeWorker::Search(
     if (!helper_->TakeDecision(decision)) {
       return sat_solver_->UnsatStatus();
     }
-    MaybeProposeSplit();
+    MaybeProposeSplits();
   }
 
   return SatSolver::LIMIT_REACHED;

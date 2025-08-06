@@ -1145,6 +1145,15 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
       case ConstraintProto::ConstraintCase::kBoolAnd:
         support_enforcement = true;
         break;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+        support_enforcement = true;
+        break;
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+        support_enforcement = true;
+        break;
+      case ConstraintProto::ConstraintCase::kBoolXor:
+        support_enforcement = true;
+        break;
       case ConstraintProto::ConstraintCase::kLinear:
         support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
@@ -1158,12 +1167,15 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       }
       case ConstraintProto::ConstraintCase::kIntProd:
+        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntProdConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kIntDiv:
+        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntDivConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
+        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInverse:

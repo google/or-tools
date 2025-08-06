@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -725,37 +726,8 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
   return var_scaling;
 }
 
-namespace {
-
-// We use a class to reuse the temporary memory.
-struct ConstraintScaler {
-  // Scales an individual constraint.
-  ConstraintProto* AddConstraint(const MPModelProto& mp_model,
-                                 const MPConstraintProto& mp_constraint,
-                                 CpModelProto* cp_model);
-
-  bool keep_names = false;
-  double max_relative_coeff_error = 0.0;
-  double max_absolute_rhs_error = 0.0;
-  double max_scaling_factor = 0.0;
-  double min_scaling_factor = std::numeric_limits<double>::infinity();
-
-  double wanted_precision = 1e-6;
-  int64_t scaling_target = int64_t{1} << 50;
-  std::vector<int> var_indices;
-  std::vector<double> coefficients;
-  std::vector<double> lower_bounds;
-  std::vector<double> upper_bounds;
-};
-
-ConstraintProto* ConstraintScaler::AddConstraint(
-    const MPModelProto& mp_model, const MPConstraintProto& mp_constraint,
-    CpModelProto* cp_model) {
-  if (mp_constraint.lower_bound() == -kInfinity &&
-      mp_constraint.upper_bound() == kInfinity) {
-    return nullptr;
-  }
-
+absl::Status ConstraintScaler::ScaleAndAddConstraint(
+    const MPConstraintProto& mp_constraint, CpModelProto* cp_model) {
   auto* constraint = cp_model->add_constraints();
   if (keep_names) constraint->set_name(mp_constraint.name());
   auto* arg = constraint->mutable_linear();
@@ -788,12 +760,9 @@ ConstraintProto* ConstraintScaler::AddConstraint(
       coefficients, lower_bounds, upper_bounds, scaling_target,
       wanted_precision, &relative_coeff_error, &scaled_sum_error);
   if (scaling_factor == 0.0) {
-    // TODO(user): Report error properly instead of ignoring constraint. Note
-    // however that this likely indicate a coefficient of inf in the constraint,
-    // so we should probably abort before reaching here.
-    LOG(DFATAL) << "Scaling factor of zero while scaling constraint: "
-                << ProtobufShortDebugString(mp_constraint);
-    return nullptr;
+    return absl::InvalidArgumentError(
+        absl::StrCat("Scaling factor of zero while scaling constraint: ",
+                     ProtobufShortDebugString(mp_constraint)));
   }
 
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
@@ -853,7 +822,14 @@ ConstraintProto* ConstraintScaler::AddConstraint(
                         .value());
   }
 
-  return constraint;
+  return absl::OkStatus();
+}
+
+namespace {
+
+bool ConstraintIsAlwaysTrue(const MPConstraintProto& mp_constraint) {
+  return mp_constraint.lower_bound() == -kInfinity &&
+         mp_constraint.upper_bound() == kInfinity;
 }
 
 // TODO(user): unit test this.
@@ -1031,7 +1007,14 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
 
   // Add the constraints. We scale each of them individually.
   for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
-    scaler.AddConstraint(mp_model, mp_constraint, cp_model);
+    if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
+
+    const absl::Status status =
+        scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
+    if (!status.ok()) {
+      SOLVER_LOG(logger, "Error while scaling constraint. ", status.message());
+      return false;
+    }
   }
   for (const MPGeneralConstraintProto& general_constraint :
        mp_model.general_constraint()) {
@@ -1041,14 +1024,22 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
             general_constraint.indicator_constraint();
         const MPConstraintProto& mp_constraint =
             indicator_constraint.constraint();
-        ConstraintProto* ct =
-            scaler.AddConstraint(mp_model, mp_constraint, cp_model);
-        if (ct == nullptr) continue;
+        if (ConstraintIsAlwaysTrue(mp_constraint)) continue;
+
+        const int new_ct_index = cp_model->constraints().size();
+        const absl::Status status =
+            scaler.ScaleAndAddConstraint(mp_constraint, cp_model);
+        if (!status.ok()) {
+          SOLVER_LOG(logger, "Error while scaling constraint. ",
+                     status.message());
+          return false;
+        }
 
         // Add the indicator.
         const int var = indicator_constraint.var_index();
         const int value = indicator_constraint.var_value();
-        ct->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
+        cp_model->mutable_constraints(new_ct_index)
+            ->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
         break;
       }
       case MPGeneralConstraintProto::kAndConstraint: {

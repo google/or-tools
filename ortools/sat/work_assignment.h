@@ -208,6 +208,7 @@ class SharedTreeManager {
 
   int NumWorkers() const { return num_workers_; }
   int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
+  int MaxPathDepth() const { return max_path_depth_; }
 
   // Syncs the state of path with the shared search tree.
   // Clears `path` and returns false if the assigned subtree is closed or a
@@ -221,9 +222,12 @@ class SharedTreeManager {
   // solutions. Clears path.
   void CloseTree(ProtoTrail& path, int level);
 
-  // Called by workers in order to split the shared tree.
-  // `path` may or may not be extended by one level, branching on `decision`.
-  void ProposeSplit(ProtoTrail& path, ProtoLiteral decision);
+  // Attempts to split the tree repeatedly with the given decisions.
+  // `path` will be extended with the accepted splits, the opposite branches
+  // will be added as unassigned leaves.
+  // Returns the number of splits accepted.
+  int TrySplitTree(absl::Span<const ProtoLiteral> decisions, ProtoTrail& path)
+      ABSL_LOCKS_EXCLUDED(mu_);
 
   void Restart() {
     absl::MutexLock l(&mu_);
@@ -259,6 +263,8 @@ class SharedTreeManager {
   // Returns the NodeTrailInfo for `node` or it's closest non-closed,
   // non-implied ancestor. `node` must be valid, never returns nullptr.
   NodeTrailInfo* GetTrailInfo(Node* node);
+  bool TrySplitTreeLockHeld(ProtoLiteral decision, ProtoTrail& path)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void Split(std::vector<std::pair<Node*, int>>& nodes, ProtoLiteral lit)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* MakeSubtree(Node* parent, ProtoLiteral literal)
@@ -274,6 +280,7 @@ class SharedTreeManager {
   mutable absl::Mutex mu_;
   const SatParameters& params_;
   const int num_workers_;
+  const int max_path_depth_;
   SharedResponseManager* const shared_response_manager_;
 
   // Stores the node id of the root, this is used to handle global restarts.
@@ -320,7 +327,7 @@ class SharedTreeWorker {
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   bool NextDecision(LiteralIndex* decision_index);
-  void MaybeProposeSplit();
+  void MaybeProposeSplits();
   bool ShouldReplaceSubtree();
   bool FinishedMinRestarts() const {
     return assigned_tree_.MaxLevel() > 0 &&
@@ -360,12 +367,7 @@ class SharedTreeWorker {
   std::vector<std::vector<Literal>> assigned_tree_implications_;
   double next_split_dtime_ = 0;
 
-  // True if the last decision may split the assigned tree and has not yet been
-  // proposed to the SharedTreeManager.
-  // We propagate the decision before sharing with the SharedTreeManager so we
-  // don't share any decision that immediately leads to conflict.
-  bool new_split_available_ = false;
-
+  std::vector<ProtoLiteral> tmp_splits_;
   std::vector<Literal> reason_;
   // Stores the average LBD of learned clauses for each tree assigned since it
   // was assigned.

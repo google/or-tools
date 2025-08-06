@@ -482,17 +482,47 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
   AddOtherReason(before);
   AddOtherReason(after);
 
-  // Prefer the linear2 explanation as it is more likely this comes from
-  // level zero or a single enforcement literal.
-  // We need Start(after) >= End(before) - SizeMin(before).
-  // we rewrite as "End(before) - Start(after) <= SizeMin(before).
-  const auto [expr, ub] =
-      EncodeDifferenceLowerThan(ends_[before], starts_[after], SizeMin(before));
-  if (linear2_bounds_->UpperBound(expr) <= ub) {
-    AddSizeMinReason(before);
-    linear2_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, &literal_reason_,
-                                                     &integer_reason_);
-    return;
+  // We compute this as an optimization, since for fixed sizes all linear2
+  // options are equivalent.
+  const bool fixed_size = sizes_[before].var == kNoIntegerVariable &&
+                          sizes_[after].var == kNoIntegerVariable &&
+                          starts_[before].var == ends_[before].var &&
+                          starts_[after].var == ends_[after].var;
+
+  // Prefer the straightforward linear2 explanation as it is more likely this
+  // comes from level zero or a single enforcement literal. Also handle the
+  // fixed size case. This explains with at most two integer bounds.
+  {
+    const auto [expr, ub] =
+        EncodeDifferenceLowerThan(starts_[before], ends_[after], -1);
+    if (fixed_size || linear2_bounds_->UpperBound(expr) <= ub) {
+      linear2_bounds_->AddReasonForUpperBoundLowerThan(
+          expr, ub, &literal_reason_, &integer_reason_);
+      return;
+    }
+  }
+
+  // Another choice of Linear2. We need Start(before) < End(after). We rewrite
+  // as:
+  //    End(before) - Size(before) < Start(after) + Size(after)
+  //
+  // Note that the generic code below not based on linear2 will not work
+  // if we can only get a good bound for End(before)-Start(after), so we also
+  // handle it here even if the linear2 is not known.
+  //
+  // TODO(user): check also the linear2 constructed with (end_before,
+  // end_after) and (start_after, start_before). Or maybe keep a index of pair
+  // of intervals that have non-trivial linear2 bounds and use that instead.
+  {
+    const auto [expr, ub] = EncodeDifferenceLowerThan(
+        ends_[before], starts_[after], SizeMin(before) + SizeMin(after) - 1);
+    if (linear2_bounds_->UpperBound(expr) <= ub) {
+      AddSizeMinReason(before);
+      AddSizeMinReason(after);
+      linear2_bounds_->AddReasonForUpperBoundLowerThan(
+          expr, ub, &literal_reason_, &integer_reason_);
+      return;
+    }
   }
 
   // We will explain StartMax(before) < EndMin(after);

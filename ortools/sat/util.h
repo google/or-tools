@@ -406,6 +406,22 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
                                        std::vector<int64_t>& buffer,
                                        int always_pick_mask = 0);
 
+// HEURISTIC. Try to "cut" the list into roughly sqrt(size) equally sized parts.
+// We try to keep the same coefficients in the same buckets.
+// The list is assumed to be sorted.
+// Return a list of pair (start, size) for each part.
+//
+// Context: Currently when we load long linear constraint (more than 100 terms),
+// to keep the propagation and reason shorts, we always split them by adding
+// intermediate variable corresponding to the sum of a subpart. We just do that
+// in the CP-engine, not in the LP though. using sub-part with the same coeff
+// seems to help and kind of make sense.
+//
+// TODO(user): This sounds sub-optimal, we should also try to add variables for
+// common part between constraints, like what some of the presolve is doing.
+std::vector<std::pair<int, int>> HeuristicallySplitLongLinear(
+    absl::Span<const int64_t> coeffs);
+
 // Simple DP to compute the maximum reachable value of a "subset sum" under
 // a given bound (inclusive). Note that we abort as soon as the computation
 // become too important.

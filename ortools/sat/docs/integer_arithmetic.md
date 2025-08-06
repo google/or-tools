@@ -120,6 +120,7 @@ rabbits and pheasants are there?
 ### Python code
 
 ```python
+# Snippet from ortools/sat/samples/rabbits_and_pheasants_sat.py
 #!/usr/bin/env python3
 """Rabbits and Pheasants quizz."""
 
@@ -127,26 +128,27 @@ from ortools.sat.python import cp_model
 
 
 def rabbits_and_pheasants_sat():
-    """Solves the rabbits + pheasants problem."""
-    model = cp_model.CpModel()
+  """Solves the rabbits + pheasants problem."""
+  model = cp_model.CpModel()
 
-    r = model.new_int_var(0, 100, "r")
-    p = model.new_int_var(0, 100, "p")
+  r = model.new_int_var(0, 100, 'r')
+  p = model.new_int_var(0, 100, 'p')
 
-    # 20 heads.
-    model.add(r + p == 20)
-    # 56 legs.
-    model.add(4 * r + 2 * p == 56)
+  # 20 heads.
+  model.add(r + p == 20)
+  # 56 legs.
+  model.add(4 * r + 2 * p == 56)
 
-    # Solves and prints out the solution.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Solves and prints out the solution.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    if status == cp_model.OPTIMAL:
-        print(f"{solver.value(r)} rabbits and {solver.value(p)} pheasants")
+  if status == cp_model.OPTIMAL:
+    print(f'{solver.value(r)} rabbits and {solver.value(p)} pheasants')
 
 
 rabbits_and_pheasants_sat()
+
 ```
 
 ### C++ code
@@ -154,10 +156,10 @@ rabbits_and_pheasants_sat()
 ```cpp
 #include <stdlib.h>
 
-#include "absl/base/log_severity.h"
-#include "absl/log/globals.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -195,17 +197,19 @@ int main(int argc, char* argv[]) {
   operations_research::sat::RabbitsAndPheasantsSat();
   return EXIT_SUCCESS;
 }
+
 ```
 
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/RabbitsAndPheasantsSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
-import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
 
@@ -235,11 +239,12 @@ public class RabbitsAndPheasantsSat {
     }
   }
 }
+
 ```
 
 ### C\# code
 
-```cs
+```csharp
 using System;
 using Google.OrTools.Sat;
 
@@ -271,7 +276,7 @@ public class RabbitsAndPheasantsSat
 
 ### Go code
 
-```cs
+```go
 // The rabbits_and_pheasants_sat command is an example of a simple sat program that
 // solves the rabbits and pheasants problem.
 package main
@@ -281,6 +286,7 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 
@@ -322,6 +328,7 @@ func main() {
 		log.Exitf("rabbitsAndPheasants returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Earliness-Tardiness cost function.
@@ -336,31 +343,34 @@ the max of them to define the piecewise linear function.
 
 The following samples output:
 
-    x=0 expr=40
-    x=1 expr=32
-    x=2 expr=24
-    x=3 expr=16
-    x=4 expr=8
-    x=5 expr=0
-    x=6 expr=0
-    x=7 expr=0
-    x=8 expr=0
-    x=9 expr=0
-    x=10 expr=0
-    x=11 expr=0
-    x=12 expr=0
-    x=13 expr=0
-    x=14 expr=0
-    x=15 expr=0
-    x=16 expr=12
-    x=17 expr=24
-    x=18 expr=36
-    x=19 expr=48
-    x=20 expr=60
+```
+x=0 expr=40
+x=1 expr=32
+x=2 expr=24
+x=3 expr=16
+x=4 expr=8
+x=5 expr=0
+x=6 expr=0
+x=7 expr=0
+x=8 expr=0
+x=9 expr=0
+x=10 expr=0
+x=11 expr=0
+x=12 expr=0
+x=13 expr=0
+x=14 expr=0
+x=15 expr=0
+x=16 expr=12
+x=17 expr=24
+x=18 expr=36
+x=19 expr=48
+x=20 expr=60
+```
 
 ### Python code
 
 ```python
+# Snippet from ortools/sat/samples/earliness_tardiness_cost_sample_sat.py
 #!/usr/bin/env python3
 """Encodes a convex piecewise linear function."""
 
@@ -369,86 +379,90 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
 
-    def on_solution_callback(self) -> None:
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
 
 
 def earliness_tardiness_cost_sample_sat():
-    """Encode the piecewise linear expression."""
+  """Encode the piecewise linear expression."""
 
-    earliness_date = 5  # ed.
-    earliness_cost = 8
-    lateness_date = 15  # ld.
-    lateness_cost = 12
+  earliness_date = 5  # ed.
+  earliness_cost = 8
+  lateness_date = 15  # ld.
+  lateness_cost = 12
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Declare our primary variable.
-    x = model.new_int_var(0, 20, "x")
+  # Declare our primary variable.
+  x = model.new_int_var(0, 20, 'x')
 
-    # Create the expression variable and implement the piecewise linear function.
-    #
-    #  \        /
-    #   \______/
-    #   ed    ld
-    #
-    large_constant = 1000
-    expr = model.new_int_var(0, large_constant, "expr")
+  # Create the expression variable and implement the piecewise linear function.
+  #
+  #  \        /
+  #   \______/
+  #   ed    ld
+  #
+  large_constant = 1000
+  expr = model.new_int_var(0, large_constant, 'expr')
 
-    # First segment.
-    s1 = model.new_int_var(-large_constant, large_constant, "s1")
-    model.add(s1 == earliness_cost * (earliness_date - x))
+  # First segment.
+  s1 = model.new_int_var(-large_constant, large_constant, 's1')
+  model.add(s1 == earliness_cost * (earliness_date - x))
 
-    # Second segment.
-    s2 = 0
+  # Second segment.
+  s2 = 0
 
-    # Third segment.
-    s3 = model.new_int_var(-large_constant, large_constant, "s3")
-    model.add(s3 == lateness_cost * (x - lateness_date))
+  # Third segment.
+  s3 = model.new_int_var(-large_constant, large_constant, 's3')
+  model.add(s3 == lateness_cost * (x - lateness_date))
 
-    # Link together expr and x through s1, s2, and s3.
-    model.add_max_equality(expr, [s1, s2, s3])
+  # Link together expr and x through s1, s2, and s3.
+  model.add_max_equality(expr, [s1, s2, s3])
 
-    # Search for x values in increasing order.
-    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+  # Search for x values in increasing order.
+  model.add_decision_strategy(
+      [x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
-    # Search and print out all solutions.
-    solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter([x, expr])
+  solver.solve(model, solution_printer)
 
 
 earliness_tardiness_cost_sample_sat()
+
 ```
 
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/earliness_tardiness_cost_sample_sat.cc
 #include <stdlib.h>
 
 #include <cstdint>
 
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -509,22 +523,24 @@ int main(int argc, char* argv[]) {
   operations_research::sat::EarlinessTardinessCostSampleSat();
   return EXIT_SUCCESS;
 }
+
 ```
 
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/EarlinessTardinessCostSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
-import com.google.ortools.sat.SatParameters;
 
 /** Encode the piecewise linear expression. */
 public class EarlinessTardinessCostSampleSat {
@@ -554,19 +570,20 @@ public class EarlinessTardinessCostSampleSat {
     // First segment: y == earlinessCost * (earlinessDate - x).
     // Second segment: y = 0
     // Third segment: y == latenessCost * (x - latenessDate).
-    model.addMaxEquality(expr,
-        new LinearExpr[] {LinearExpr.newBuilder()
-                              .addTerm(x, -earlinessCost)
-                              .add(earlinessCost * earlinessDate)
-                              .build(),
-            LinearExpr.constant(0),
-            LinearExpr.newBuilder()
-                .addTerm(x, latenessCost)
-                .add(-latenessCost * latenessDate)
-                .build()});
+    model.addMaxEquality(
+        expr,
+        new LinearExpr[] {
+          LinearExpr.newBuilder()
+              .addTerm(x, -earlinessCost)
+              .add(earlinessCost * earlinessDate)
+              .build(),
+          LinearExpr.constant(0),
+          LinearExpr.newBuilder().addTerm(x, latenessCost).add(-latenessCost * latenessDate).build()
+        });
 
     // Search for x values in increasing order.
-    model.addDecisionStrategy(new IntVar[] {x},
+    model.addDecisionStrategy(
+        new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -579,29 +596,34 @@ public class EarlinessTardinessCostSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
-      public CpSolverSolutionCallback init(IntVar[] variables) {
-        variableArray = variables;
-        return this;
-      }
+    CpSolverStatus unusedStatus =
+        solver.solve(
+            model,
+            new CpSolverSolutionCallback() {
+              public CpSolverSolutionCallback init(IntVar[] variables) {
+                variableArray = variables;
+                return this;
+              }
 
-      @Override
-      public void onSolutionCallback() {
-        for (IntVar v : variableArray) {
-          System.out.printf("%s=%d ", v.getName(), value(v));
-        }
-        System.out.println();
-      }
+              @Override
+              public void onSolutionCallback() {
+                for (IntVar v : variableArray) {
+                  System.out.printf("%s=%d ", v.getName(), value(v));
+                }
+                System.out.println();
+              }
 
-      private IntVar[] variableArray;
-    }.init(new IntVar[] {x, expr}));
+              private IntVar[] variableArray;
+            }.init(new IntVar[] {x, expr}));
   }
 }
+
 ```
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/EarlinessTardinessCostSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
@@ -671,11 +693,13 @@ public class EarlinessTardinessCostSampleSat
         solver.Solve(model, cb);
     }
 }
+
 ```
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/earliness_tardiness_cost_sample_sat.go
 // The earliness_tardiness_cost_sample_sat command is an example of an implementation of a convex
 // piecewise linear function.
 package main
@@ -684,10 +708,11 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"google.golang.org/protobuf/proto"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -727,7 +752,7 @@ func earlinessTardinessCostSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(21),
@@ -753,6 +778,7 @@ func main() {
 		log.Exitf("earlinessTardinessCostSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Step function.
@@ -762,30 +788,33 @@ and filter the admissible domain of the input variable with this variable.
 
 The following samples output:
 
-    x=0 expr=2
-    x=1 expr=2
-    x=3 expr=2
-    x=4 expr=2
-    x=5 expr=0
-    x=6 expr=0
-    x=7 expr=3
-    x=8 expr=0
-    x=9 expr=0
-    x=10 expr=0
-    x=11 expr=2
-    x=12 expr=2
-    x=13 expr=2
-    x=14 expr=2
-    x=15 expr=2
-    x=16 expr=2
-    x=17 expr=2
-    x=18 expr=2
-    x=19 expr=2
-    x=20 expr=2
+```
+x=0 expr=2
+x=1 expr=2
+x=3 expr=2
+x=4 expr=2
+x=5 expr=0
+x=6 expr=0
+x=7 expr=3
+x=8 expr=0
+x=9 expr=0
+x=10 expr=0
+x=11 expr=2
+x=12 expr=2
+x=13 expr=2
+x=14 expr=2
+x=15 expr=2
+x=16 expr=2
+x=17 expr=2
+x=18 expr=2
+x=19 expr=2
+x=20 expr=2
+```
 
 ### Python code
 
 ```python
+# Snippet from ortools/sat/samples/step_function_sample_sat.py
 #!/usr/bin/env python3
 """Implements a step function."""
 
@@ -793,89 +822,93 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
 
-    def on_solution_callback(self) -> None:
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
 
 
 def step_function_sample_sat():
-    """Encode the step function."""
+  """Encode the step function."""
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Declare our primary variable.
-    x = model.new_int_var(0, 20, "x")
+  # Declare our primary variable.
+  x = model.new_int_var(0, 20, 'x')
 
-    # Create the expression variable and implement the step function
-    # Note it is not defined for x == 2.
-    #
-    #        -               3
-    # -- --      ---------   2
-    #                        1
-    #      -- ---            0
-    # 0 ================ 20
-    #
-    expr = model.new_int_var(0, 3, "expr")
+  # Create the expression variable and implement the step function
+  # Note it is not defined for x == 2.
+  #
+  #        -               3
+  # -- --      ---------   2
+  #                        1
+  #      -- ---            0
+  # 0 ================ 20
+  #
+  expr = model.new_int_var(0, 3, 'expr')
 
-    # expr == 0 on [5, 6] U [8, 10]
-    b0 = model.new_bool_var("b0")
-    model.add_linear_expression_in_domain(
-        x, cp_model.Domain.from_intervals([(5, 6), (8, 10)])
-    ).only_enforce_if(b0)
-    model.add(expr == 0).only_enforce_if(b0)
+  # expr == 0 on [5, 6] U [8, 10]
+  b0 = model.new_bool_var('b0')
+  model.add_linear_expression_in_domain(
+      x, cp_model.Domain.from_intervals([(5, 6), (8, 10)])
+  ).only_enforce_if(b0)
+  model.add(expr == 0).only_enforce_if(b0)
 
-    # expr == 2 on [0, 1] U [3, 4] U [11, 20]
-    b2 = model.new_bool_var("b2")
-    model.add_linear_expression_in_domain(
-        x, cp_model.Domain.from_intervals([(0, 1), (3, 4), (11, 20)])
-    ).only_enforce_if(b2)
-    model.add(expr == 2).only_enforce_if(b2)
+  # expr == 2 on [0, 1] U [3, 4] U [11, 20]
+  b2 = model.new_bool_var('b2')
+  model.add_linear_expression_in_domain(
+      x, cp_model.Domain.from_intervals([(0, 1), (3, 4), (11, 20)])
+  ).only_enforce_if(b2)
+  model.add(expr == 2).only_enforce_if(b2)
 
-    # expr == 3 when x == 7
-    b3 = model.new_bool_var("b3")
-    model.add(x == 7).only_enforce_if(b3)
-    model.add(expr == 3).only_enforce_if(b3)
+  # expr == 3 when x == 7
+  b3 = model.new_bool_var('b3')
+  model.add(x == 7).only_enforce_if(b3)
+  model.add(expr == 3).only_enforce_if(b3)
 
-    # At least one bi is true. (we could use an exactly one constraint).
-    model.add_bool_or(b0, b2, b3)
+  # At least one bi is true. (we could use an exactly one constraint).
+  model.add_bool_or(b0, b2, b3)
 
-    # Search for x values in increasing order.
-    model.add_decision_strategy([x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE)
+  # Search for x values in increasing order.
+  model.add_decision_strategy(
+      [x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve with a fixed search.
-    solver = cp_model.CpSolver()
+  # Create a solver and solve with a fixed search.
+  solver = cp_model.CpSolver()
 
-    # Force the solver to follow the decision strategy exactly.
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    # Enumerate all solutions.
-    solver.parameters.enumerate_all_solutions = True
+  # Force the solver to follow the decision strategy exactly.
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  # Enumerate all solutions.
+  solver.parameters.enumerate_all_solutions = True
 
-    # Search and print out all solutions.
-    solution_printer = VarArraySolutionPrinter([x, expr])
-    solver.solve(model, solution_printer)
+  # Search and print out all solutions.
+  solution_printer = VarArraySolutionPrinter([x, expr])
+  solver.solve(model, solution_printer)
 
 
 step_function_sample_sat()
+
 ```
 
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/step_function_sample_sat.cc
 #include <stdlib.h>
 
+#include "ortools/base/init_google.h"
+#include "ortools/base/logging.h"
 #include "absl/base/log_severity.h"
 #include "absl/log/globals.h"
 #include "absl/types/span.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -951,22 +984,24 @@ int main(int argc, char* argv[]) {
   operations_research::sat::StepFunctionSampleSat();
   return EXIT_SUCCESS;
 }
+
 ```
 
 ### Java code
 
 ```java
+// Snippet from ortools/sat/samples/StepFunctionSampleSat.java
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
+import com.google.ortools.sat.CpSolverStatus;
+import com.google.ortools.sat.DecisionStrategyProto;
+import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
-import com.google.ortools.sat.CpSolverStatus;
-import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
-import com.google.ortools.sat.SatParameters;
 import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
@@ -992,7 +1027,8 @@ public class StepFunctionSampleSat {
 
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
-    model.addLinearExpressionInDomain(x, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
+    model
+        .addLinearExpressionInDomain(x, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
         .onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
@@ -1013,7 +1049,8 @@ public class StepFunctionSampleSat {
     model.addBoolOr(new Literal[] {b0, b2, b3});
 
     // Search for x values in increasing order.
-    model.addDecisionStrategy(new IntVar[] {x},
+    model.addDecisionStrategy(
+        new IntVar[] {x},
         DecisionStrategyProto.VariableSelectionStrategy.CHOOSE_FIRST,
         DecisionStrategyProto.DomainReductionStrategy.SELECT_MIN_VALUE);
 
@@ -1026,29 +1063,33 @@ public class StepFunctionSampleSat {
     solver.getParameters().setEnumerateAllSolutions(true);
 
     // Solve the problem with the printer callback.
-    CpSolverStatus unusedStatus = solver.solve(model, new CpSolverSolutionCallback() {
-      public CpSolverSolutionCallback init(IntVar[] variables) {
-        variableArray = variables;
-        return this;
-      }
+    CpSolverStatus unusedStatus =
+        solver.solve(
+            model,
+            new CpSolverSolutionCallback() {
+              public CpSolverSolutionCallback init(IntVar[] variables) {
+                variableArray = variables;
+                return this;
+              }
 
-      @Override
-      public void onSolutionCallback() {
-        for (IntVar v : variableArray) {
-          System.out.printf("%s=%d ", v.getName(), value(v));
-        }
-        System.out.println();
-      }
+              @Override
+              public void onSolutionCallback() {
+                for (IntVar v : variableArray) {
+                  System.out.printf("%s=%d ", v.getName(), value(v));
+                }
+                System.out.println();
+              }
 
-      private IntVar[] variableArray;
-    }.init(new IntVar[] {x, expr}));
+              private IntVar[] variableArray;
+            }.init(new IntVar[] {x, expr}));
   }
 }
 ```
 
 ### C\# code
 
-```cs
+```csharp
+// Snippet from ortools/sat/samples/StepFunctionSampleSat.cs
 using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
@@ -1132,11 +1173,14 @@ public class StepFunctionSampleSat
         solver.Solve(model, cb);
     }
 }
+
 ```
 
 ### Go code
 
-```cs
+```go
+// Snippet from ortools/sat/samples/step_function_sample_sat.go
+
 // The step_function_sample_sat command is an example of an implementation of a step function.
 package main
 
@@ -1144,10 +1188,11 @@ import (
 	"fmt"
 
 	log "github.com/golang/glog"
+	"google.golang.org/protobuf/proto"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
-	"google.golang.org/protobuf/proto"
 )
 
 func stepFunctionSampleSat() error {
@@ -1197,7 +1242,7 @@ func stepFunctionSampleSat() error {
 	if err != nil {
 		return fmt.Errorf("failed to instantiate the CP model: %w", err)
 	}
-	params := &sppb.SatParameters{
+		params := &sppb.SatParameters{
 		FillAdditionalSolutionsInResponse: proto.Bool(true),
 		EnumerateAllSolutions:             proto.Bool(true),
 		SolutionPoolSize:                  proto.Int32(21),
@@ -1223,6 +1268,7 @@ func main() {
 		log.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }
+
 ```
 
 ## Product of a Boolean variable and an integer variable
@@ -1255,6 +1301,7 @@ x=10 b=1 p=10
 ### Python code
 
 ```python
+# Snippet from ortools/sat/samples/bool_and_int_var_product_sample_sat.py
 #!/usr/bin/env python3
 """Code sample that encodes the product of a Boolean and an integer variable."""
 
@@ -1262,59 +1309,60 @@ from ortools.sat.python import cp_model
 
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
+  """Print intermediate solutions."""
 
-    def __init__(self, variables: list[cp_model.IntVar]):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
+  def __init__(self, variables: list[cp_model.IntVar]):
+    cp_model.CpSolverSolutionCallback.__init__(self)
+    self.__variables = variables
 
-    def on_solution_callback(self) -> None:
-        for v in self.__variables:
-            print(f"{v}={self.value(v)}", end=" ")
-        print()
+  def on_solution_callback(self) -> None:
+    for v in self.__variables:
+      print(f'{v}={self.value(v)}', end=' ')
+    print()
 
 
 def build_product_var(
     model: cp_model.CpModel, b: cp_model.IntVar, x: cp_model.IntVar, name: str
 ) -> cp_model.IntVar:
-    """Builds the product of a Boolean variable and an integer variable."""
-    p = model.new_int_var_from_domain(
-        cp_model.Domain.from_flat_intervals(x.proto.domain).union_with(
-            cp_model.Domain(0, 0)
-        ),
-        name,
-    )
-    model.add(p == x).only_enforce_if(b)
-    model.add(p == 0).only_enforce_if(~b)
-    return p
+  """Builds the product of a Boolean variable and an integer variable."""
+  p = model.new_int_var_from_domain(
+      cp_model.Domain.from_flat_intervals(x.proto.domain).union_with(
+          cp_model.Domain(0, 0)
+      ),
+      name,
+  )
+  model.add(p == x).only_enforce_if(b)
+  model.add(p == 0).only_enforce_if(~b)
+  return p
 
 
 def bool_and_int_var_product_sample_sat():
-    """Encoding of the product of two Boolean variables.
+  """Encoding of the product of two Boolean variables.
 
-    p == x * y, which is the same as p <=> x and y
-    """
-    model = cp_model.CpModel()
-    b = model.new_bool_var("b")
-    x = model.new_int_var_from_domain(
-        cp_model.Domain.from_values([1, 2, 3, 5, 6, 7, 9, 10]), "x"
-    )
-    p = build_product_var(model, b, x, "p")
+  p == x * y, which is the same as p <=> x and y
+  """
+  model = cp_model.CpModel()
+  b = model.new_bool_var('b')
+  x = model.new_int_var_from_domain(
+      cp_model.Domain.from_values([1, 2, 3, 5, 6, 7, 9, 10]), 'x'
+  )
+  p = build_product_var(model, b, x, 'p')
 
-    # Search for x and b values in increasing order.
-    model.add_decision_strategy(
-        [b, x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
-    )
+  # Search for x and b values in increasing order.
+  model.add_decision_strategy(
+      [b, x], cp_model.CHOOSE_FIRST, cp_model.SELECT_MIN_VALUE
+  )
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    solution_printer = VarArraySolutionPrinter([x, b, p])
-    solver.parameters.enumerate_all_solutions = True
-    solver.parameters.search_branching = cp_model.FIXED_SEARCH
-    solver.solve(model, solution_printer)
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  solution_printer = VarArraySolutionPrinter([x, b, p])
+  solver.parameters.enumerate_all_solutions = True
+  solver.parameters.search_branching = cp_model.FIXED_SEARCH
+  solver.solve(model, solution_printer)
 
 
 bool_and_int_var_product_sample_sat()
+
 ```
 
 ## Scanning the domain of variables.
@@ -1331,6 +1379,7 @@ reading back the values from the model.
 ### Python code
 
 ```python
+# Snippet from ortools/sat/samples/all_different_except_zero_sample_sat.py
 #!/usr/bin/env python3
 """Implements AllDifferentExcept0 using atomic constraints."""
 
@@ -1340,66 +1389,67 @@ from ortools.sat.python import cp_model
 
 
 def all_different_except_0():
-    """Encode the AllDifferentExcept0 constraint."""
+  """Encode the AllDifferentExcept0 constraint."""
 
-    # Model.
-    model = cp_model.CpModel()
+  # Model.
+  model = cp_model.CpModel()
 
-    # Declare our primary variable.
-    x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+  # Declare our primary variable.
+  x = [model.new_int_var(0, 10, f'x{i}') for i in range(5)]
 
-    # Expand the AllDifferentExcept0 constraint.
-    variables_per_value = collections.defaultdict(list)
-    all_values = set()
+  # Expand the AllDifferentExcept0 constraint.
+  variables_per_value = collections.defaultdict(list)
+  all_values = set()
 
-    for var in x:
-        all_encoding_literals = []
-        # Domains of variables are represented by flat intervals.
-        for i in range(0, len(var.proto.domain), 2):
-            start = var.proto.domain[i]
-            end = var.proto.domain[i + 1]
-            for value in range(start, end + 1):  # Intervals are inclusive.
-                # Create the literal attached to var == value.
-                bool_var = model.new_bool_var(f"{var} == {value}")
-                model.add(var == value).only_enforce_if(bool_var)
+  for var in x:
+    all_encoding_literals = []
+    # Domains of variables are represented by flat intervals.
+    for i in range(0, len(var.proto.domain), 2):
+      start = var.proto.domain[i]
+      end = var.proto.domain[i + 1]
+      for value in range(start, end + 1):  # Intervals are inclusive.
+        # Create the literal attached to var == value.
+        bool_var = model.new_bool_var(f'{var} == {value}')
+        model.add(var == value).only_enforce_if(bool_var)
 
-                # Collect all encoding literals for a given variable.
-                all_encoding_literals.append(bool_var)
+        # Collect all encoding literals for a given variable.
+        all_encoding_literals.append(bool_var)
 
-                # Collect all encoding literals for a given value.
-                variables_per_value[value].append(bool_var)
+        # Collect all encoding literals for a given value.
+        variables_per_value[value].append(bool_var)
 
-                # Collect all different values.
-                all_values.add(value)
+        # Collect all different values.
+        all_values.add(value)
 
-        # One variable must have exactly one value.
-        model.add_exactly_one(all_encoding_literals)
+    # One variable must have exactly one value.
+    model.add_exactly_one(all_encoding_literals)
 
-    # Add the all_different constraints.
-    for value, literals in variables_per_value.items():
-        if value == 0:
-            continue
-        model.add_at_most_one(literals)
+  # Add the all_different constraints.
+  for value, literals in variables_per_value.items():
+    if value == 0:
+      continue
+    model.add_at_most_one(literals)
 
-    model.add(x[0] == 0)
-    model.add(x[1] == 0)
+  model.add(x[0] == 0)
+  model.add(x[1] == 0)
 
-    model.maximize(sum(x))
+  model.maximize(sum(x))
 
-    # Create a solver and solve.
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  status = solver.solve(model)
 
-    # Checks and prints the output.
-    if status == cp_model.OPTIMAL:
-        print(f"Optimal solution: {solver.objective_value}, expected: 27.0")
-    elif status == cp_model.FEASIBLE:
-        print(f"Feasible solution: {solver.objective_value}, optimal 27.0")
-    elif status == cp_model.INFEASIBLE:
-        print("The model is infeasible")
-    else:
-        print("Something went wrong. Please check the status and the log")
+  # Checks and prints the output.
+  if status == cp_model.OPTIMAL:
+    print(f'Optimal solution: {solver.objective_value}, expected: 27.0')
+  elif status == cp_model.FEASIBLE:
+    print(f'Feasible solution: {solver.objective_value}, optimal 27.0')
+  elif status == cp_model.INFEASIBLE:
+    print('The model is infeasible')
+  else:
+    print('Something went wrong. Please check the status and the log')
 
 
 all_different_except_0()
+
 ```

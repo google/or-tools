@@ -330,8 +330,9 @@ message ConstraintProto {
   // (controlled by a literal l) and its negation (controlled by the negation of
   // l).
   //
-  // Important: as of September 2018, only a few constraint support enforcement:
-  // - bool_or, bool_and, linear: fully supported.
+  // Important: as of July 2025, only a few constraint support enforcement:
+  // - bool_or, bool_and, at_most_one, exactly_one, bool_xor, int_div, int_mod,
+  // int_prod, linear, table: fully supported.
   // - interval: only support a single enforcement literal.
   // - other: no support (but can be added on a per-demand basis).
   repeated int32 enforcement_literal = 2;
@@ -355,10 +356,6 @@ message ConstraintProto {
     // bool_and constraint with n-1 term on the right hand side. So in a sense,
     // this constraint contribute directly to the "implication-graph" or the
     // 2-SAT part of the model.
-    //
-    // This constraint does not support enforcement_literal. Just use a linear
-    // constraint if you need to enforce it. You also do not need to use it
-    // directly, we will extract it from the model in most situations.
     BoolArgumentProto at_most_one = 26;
 
     // The exactly_one constraint force exactly one literal to true and no more.
@@ -369,10 +366,6 @@ message ConstraintProto {
     // So in this sense, this constraint is not really needed. it is just here
     // for a better description of the problem structure and to facilitate some
     // algorithm.
-    //
-    // This constraint does not support enforcement_literal. Just use a linear
-    // constraint if you need to enforce it. You also do not need to use it
-    // directly, we will extract it from the model in most situations.
     BoolArgumentProto exactly_one = 29;
 
     // The bool_xor constraint forces an odd number of the literals to be true.

@@ -629,6 +629,9 @@ class IntegerTrail final : public SatPropagator {
   // ReportConflict() or Enqueue().
   ABSL_MUST_USE_RESULT bool SafeEnqueue(
       IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool SafeEnqueue(
+      IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
 
   // Pushes the given integer literal assuming that the Boolean literal is true.
   // This can do a few things:

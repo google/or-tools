@@ -20,6 +20,7 @@
 #include <limits>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -1049,6 +1050,57 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
       result.push_back(i);
     }
   }
+  return result;
+}
+
+std::vector<std::pair<int, int>> HeuristicallySplitLongLinear(
+    absl::Span<const int64_t> coeffs) {
+  std::vector<std::pair<int, int>> result;
+  if (coeffs.empty()) return result;
+
+  // Split an interval [0, size) into num_parts mostly equal parts.
+  const auto append_splits = [&result](int offset, int size, int num_parts) {
+    int previous_start = 0;
+    for (int64_t b = 0; b < num_parts; ++b) {
+      const int next_start = static_cast<int64_t>(b + 1) * size / num_parts;
+      result.push_back({offset + previous_start, next_start - previous_start});
+      previous_start = next_start;
+    }
+  };
+
+  const int num_terms = coeffs.size();
+  const int num_buckets = static_cast<int>(std::round(std::sqrt(num_terms)));
+
+  int num_differents = 1;
+  for (int i = 1; i < num_terms; ++i) {
+    if (coeffs[i - 1] != coeffs[i]) ++num_differents;
+  }
+
+  // If we don't have many different coefficients, we always create parts
+  // with exactly the same coeffs. We split large part evenly into size /
+  // expected_part_size.
+  if (num_differents < 20) {
+    const int expected_part_size = num_terms / num_buckets;
+
+    for (int i = 0; i < num_terms;) {
+      int j = i + 1;
+      for (; j < num_terms; ++j) {
+        if (coeffs[j] != coeffs[i]) break;
+      }
+
+      const int local_size = j - i;
+      const int num_local_buckets =
+          MathUtil::CeilOfRatio(local_size, expected_part_size);
+      append_splits(i, local_size, num_local_buckets);
+
+      i = j;
+    }
+
+    return result;
+  }
+
+  // Otherwise we just split into num_buckets buckets.
+  append_splits(0, num_terms, num_buckets);
   return result;
 }
 

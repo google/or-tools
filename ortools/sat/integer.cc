@@ -1245,9 +1245,17 @@ bool IntegerTrail::RootLevelEnqueue(IntegerLiteral i_lit) {
 
 bool IntegerTrail::SafeEnqueue(
     IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason) {
+  return SafeEnqueue(i_lit, {}, integer_reason);
+}
+
+bool IntegerTrail::SafeEnqueue(
+    IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
   // Note that ReportConflict() deal correctly with constant literals.
   if (i_lit.IsAlwaysTrue()) return true;
-  if (i_lit.IsAlwaysFalse()) return ReportConflict({}, integer_reason);
+  if (i_lit.IsAlwaysFalse()) {
+    return ReportConflict(literal_reason, integer_reason);
+  }
 
   // Most of our propagation code do not use "constant" literal, so to not
   // have to test for them in Enqueue(), we clear them beforehand.
@@ -1257,7 +1265,7 @@ bool IntegerTrail::SafeEnqueue(
     if (lit.IsAlwaysTrue()) continue;
     tmp_cleaned_reason_.push_back(lit);
   }
-  return Enqueue(i_lit, {}, tmp_cleaned_reason_);
+  return Enqueue(i_lit, literal_reason, tmp_cleaned_reason_);
 }
 
 bool IntegerTrail::ConditionalEnqueue(

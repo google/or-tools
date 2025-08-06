@@ -51,20 +51,6 @@ class CpModelHelperTest(absltest.TestCase):
         super().tearDown()
         sys.stdout.flush()
 
-    def test_variable_domain(self):
-        model_string = """
-      variables { domain: [ -10, 10 ] }
-      variables { domain: [ -5, -5, 3, 6 ] }
-      """
-        model = cmh.CpModelProto()
-        self.assertTrue(model.parse_text_format(model_string))
-
-        d0 = cmh.CpSatHelper.variable_domain(model.variables[0])
-        d1 = cmh.CpSatHelper.variable_domain(model.variables[1])
-
-        self.assertEqual(d0.flattened_intervals(), [-10, 10])
-        self.assertEqual(d1.flattened_intervals(), [-5, -5, 3, 6])
-
     def test_simple_solve(self):
         model_string = """
       variables { domain: -10 domain: 10 }
@@ -101,10 +87,10 @@ class CpModelHelperTest(absltest.TestCase):
         self.assertTrue(model.parse_text_format(model_string))
 
         solve_wrapper = cmh.SolveWrapper()
-        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
+        response = solve_wrapper.solve(model)
 
-        self.assertEqual(cmh.OPTIMAL, response_wrapper.status())
-        self.assertEqual(30.0, response_wrapper.objective_value())
+        self.assertEqual(cmh.OPTIMAL, response.status)
+        self.assertEqual(30.0, response.objective_value)
 
     def test_simple_solve_with_core(self):
         model_string = """
@@ -146,10 +132,10 @@ class CpModelHelperTest(absltest.TestCase):
 
         solve_wrapper = cmh.SolveWrapper()
         solve_wrapper.set_parameters(parameters)
-        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
+        response = solve_wrapper.solve(model)
 
-        self.assertEqual(cmh.OPTIMAL, response_wrapper.status())
-        self.assertEqual(30.0, response_wrapper.objective_value())
+        self.assertEqual(cmh.OPTIMAL, response.status)
+        self.assertEqual(30.0, response.objective_value)
 
     def test_simple_solve_with_proto_api(self):
         model = cmh.CpModelProto()
@@ -168,14 +154,11 @@ class CpModelHelperTest(absltest.TestCase):
         model.objective.scaling_factor = -1
 
         solve_wrapper = cmh.SolveWrapper()
-        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
+        response = solve_wrapper.solve(model)
 
-        self.assertEqual(cmh.OPTIMAL, response_wrapper.status())
-        self.assertEqual(30.0, response_wrapper.objective_value())
-        self.assertEqual(30.0, response_wrapper.best_objective_bound())
-        self.assertRaises(TypeError, response_wrapper.value, None)
-        self.assertRaises(TypeError, response_wrapper.float_value, None)
-        self.assertRaises(TypeError, response_wrapper.boolean_value, None)
+        self.assertEqual(cmh.OPTIMAL, response.status)
+        self.assertEqual(30.0, response.objective_value)
+        self.assertEqual(30.0, response.best_objective_bound)
 
     def test_solution_callback(self):
         model_string = """
@@ -193,10 +176,10 @@ class CpModelHelperTest(absltest.TestCase):
         params = cmh.SatParameters()
         params.enumerate_all_solutions = True
         solve_wrapper.set_parameters(params)
-        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
+        response = solve_wrapper.solve(model)
 
         self.assertEqual(5, callback.solution_count())
-        self.assertEqual(cmh.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cmh.OPTIMAL, response.status)
 
     def test_best_bound_callback(self):
         model_string = """
@@ -222,10 +205,10 @@ class CpModelHelperTest(absltest.TestCase):
         params.linearization_level = 2
         params.log_search_progress = True
         solve_wrapper.set_parameters(params)
-        response_wrapper = solve_wrapper.solve_and_return_response_wrapper(model)
+        response = solve_wrapper.solve(model)
 
         self.assertEqual(2.6, best_bound_callback.best_bound)
-        self.assertEqual(cmh.OPTIMAL, response_wrapper.status())
+        self.assertEqual(cmh.OPTIMAL, response.status)
 
     def test_model_stats(self):
         model_string = """

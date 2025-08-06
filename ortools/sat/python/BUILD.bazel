@@ -16,7 +16,7 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 load("@rules_python//python:py_library.bzl", "py_library")
-load("@rules_python//python:py_test.bzl",  "py_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 cc_library(
     name = "linear_expr_doc",
@@ -28,6 +28,7 @@ cc_library(
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
     deps = [
+        "//ortools/base:string_view_migration",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",

@@ -355,6 +355,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         precedence_relations_(model->GetOrCreate<EnforcedLinear2Bounds>()),
         linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         stats_("DisjunctivePrecedences", model) {
     window_.ClearAndReserve(helper->NumTasks());
     index_to_end_vars_.ClearAndReserve(helper->NumTasks());
@@ -372,6 +373,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
   IntegerTrail* integer_trail_;
   EnforcedLinear2Bounds* precedence_relations_;
   Linear2Bounds* linear2_bounds_;
+  TimeLimit* time_limit_;
 
   FixedCapacityVector<TaskTime> window_;
   FixedCapacityVector<IntegerVariable> index_to_end_vars_;

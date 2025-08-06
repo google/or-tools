@@ -1131,6 +1131,7 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   auto* repository = model->GetOrCreate<BinaryRelationRepository>();
   auto* root_level_lin2_bounds = model->GetOrCreate<RootLevelLinear2Bounds>();
+  auto* reified_lin2_bounds = model->GetOrCreate<ReifiedLinear2Bounds>();
 
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // Load conditional precedences and always true binary relations.
@@ -1198,6 +1199,8 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
       if (vars.size() == 2) {
         const LinearExpression2 expr(vars[0], vars[1], coeffs[0], coeffs[1]);
         root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
+      } else if (vars.size() == 3 && rhs_min == rhs_max) {
+        reified_lin2_bounds->AddLinear3(vars, coeffs, rhs_min);
       }
     } else {
       const Literal lit = mapping->Literal(ct.enforcement_literal(0));
@@ -1866,10 +1869,9 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
 void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
   Model local_model;
 
-  // Forward some shared class.
-  local_model.Register<ModelSharedTimeLimit>(
-      model->GetOrCreate<ModelSharedTimeLimit>());
-  local_model.Register<WallTimer>(model->GetOrCreate<WallTimer>());
+  // Pass the time limit and stop boolean to local limit.
+  model->GetOrCreate<ModelSharedTimeLimit>()->UpdateLocalLimit(
+      local_model.GetOrCreate<TimeLimit>());
 
   if (!model_proto.has_solution_hint()) return;
 
@@ -1967,6 +1969,10 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
     shared_response_manager->NewSolution(
         solution, absl::StrCat(solution_info, " [repaired]"), &local_model);
   }
+
+  // Make sure we update the higher model with the timing info.
+  model->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
+      local_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
 }
 
 // TODO(user): If this ever shows up in the profile, we could avoid copying

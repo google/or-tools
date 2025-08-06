@@ -1138,8 +1138,8 @@ void CtExhaustiveHelper::BuildPredecessors(
   predecessors_.clear();
   if (events.size() > 100) return;
 
-  ReifiedLinear2Bounds* binary_relations =
-      model->GetOrCreate<ReifiedLinear2Bounds>();
+  RootLevelLinear2Bounds* root_level_bounds =
+      model->GetOrCreate<RootLevelLinear2Bounds>();
 
   std::vector<CompletionTimeEvent> sorted_events(events.begin(), events.end());
   std::sort(sorted_events.begin(), sorted_events.end(),
@@ -1151,7 +1151,8 @@ void CtExhaustiveHelper::BuildPredecessors(
   for (const auto& e1 : sorted_events) {
     for (const auto& e2 : sorted_events) {
       if (e2.task_index == e1.task_index) continue;
-      if (binary_relations->GetLevelZeroPrecedenceStatus(e2.end, e1.start) ==
+      const auto [expr, ub] = EncodeDifferenceLowerThan(e2.end, e1.start, 0);
+      if (root_level_bounds->GetLevelZeroStatus(expr, kMinIntegerValue, ub) ==
           RelationStatus::IS_TRUE) {
         while (predecessors_.size() <= e1.task_index) predecessors_.Add({});
         predecessors_.AppendToLastVector(e2.task_index);

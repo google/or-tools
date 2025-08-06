@@ -14,10 +14,12 @@
 #include "ortools/sat/disjunctive.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -523,7 +525,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
       // propagation would have been done by the linear propagator, but if we
       // didn't add such relations yet, it is beneficial to detect that here!
       //
-      // TODO(user): Actually, we just infered a "not last" so we could check
+      // TODO(user): Actually, we just inferred a "not last" so we could check
       // for relevant_size > 2 potential propagation?
       //
       // TODO(user): Can we detect and propagate all such relations easily and
@@ -575,6 +577,12 @@ bool DisjunctiveOverloadChecker::Propagate() {
     if (relevant_size > 0 && !PropagateSubwindow(relevant_size, relevant_end)) {
       ++stats_.num_conflicts;
       return false;
+    }
+
+    // Subwindow propagation might have propagated that the
+    // task_with_max_end_min must be absent.
+    if (helper_->IsAbsent(task_with_max_end_min.task_index)) {
+      task_with_max_end_min = {0, kMinIntegerValue};
     }
 
     // Start of the next window.
@@ -1189,6 +1197,13 @@ bool DisjunctivePrecedences::Propagate() {
 }
 
 bool DisjunctivePrecedences::PropagateSubwindow() {
+  // This function can be slow, so count it in the dtime.
+  int64_t num_hash_lookup = 0;
+  auto cleanup = ::absl::MakeCleanup([&num_hash_lookup, this]() {
+    time_limit_->AdvanceDeterministicTime(static_cast<double>(num_hash_lookup) *
+                                          5e-8);
+  });
+
   // TODO(user): We shouldn't consider ends for fixed intervals here. But
   // then we should do a better job of computing the min-end of a subset of
   // intervals from this disjunctive (like using fixed intervals even if there
@@ -1272,6 +1287,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
 
       // TODO(user): The lookup here is a bit slow, so we avoid fetching
       // the offset as much as possible.
+      ++num_hash_lookup;
       const IntegerValue inner_offset =
           -linear2_bounds_->NonTrivialUpperBound(lin2_index);
       DCHECK_NE(inner_offset, kMinIntegerValue);

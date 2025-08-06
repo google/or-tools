@@ -112,6 +112,7 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64_t, int64_t, long, Int64VectorVector);
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
+%unignore operations_research::sat::SolutionCallback::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::~SolutionCallback;
 %unignore operations_research::sat::SolutionCallback::BestObjectiveBound;
 %feature("nodirector") operations_research::sat::SolutionCallback::BestObjectiveBound;

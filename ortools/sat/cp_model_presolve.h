@@ -29,6 +29,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
@@ -346,7 +347,8 @@ class CpModelPresolver {
   bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
-  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(
+      ConstraintProto* ct, const std::string& reason = "");
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;

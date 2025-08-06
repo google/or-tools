@@ -1422,15 +1422,18 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntProd: {
-      const LinearArgumentProto& int_prod = ct.int_prod();
-      if (int_prod.exprs_size() == 2 &&
-          LinearExpressionProtosAreEqual(int_prod.exprs(0),
-                                         int_prod.exprs(1))) {
-        AppendSquareRelaxation(ct, model, relaxation);
-        AddSquareCutGenerator(ct, linearization_level, model, relaxation);
-      } else {
-        // No relaxation, just a cut generator .
-        AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+      // TODO(user): add support for enforcement literals?
+      if (!HasEnforcementLiteral(ct)) {
+        const LinearArgumentProto& int_prod = ct.int_prod();
+        if (int_prod.exprs_size() == 2 &&
+            LinearExpressionProtosAreEqual(int_prod.exprs(0),
+                                           int_prod.exprs(1))) {
+          AppendSquareRelaxation(ct, model, relaxation);
+          AddSquareCutGenerator(ct, linearization_level, model, relaxation);
+        } else {
+          // No relaxation, just a cut generator.
+          AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+        }
       }
       break;
     }
