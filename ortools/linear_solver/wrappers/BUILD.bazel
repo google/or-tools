@@ -13,6 +13,8 @@
 
 # ModelBuilder: a lightweight implementation of the linear_solver API
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 # Public exports.
 exports_files(
     [
