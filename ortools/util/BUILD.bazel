@@ -358,6 +358,7 @@ cc_library(
     name = "vector_or_function",
     hdrs = ["vector_or_function.h"],
     deps = [
+        ":flat_matrix",
         "//ortools/base",
     ],
 )
