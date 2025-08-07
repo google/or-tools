@@ -1379,9 +1379,6 @@ static const char*
         R"doc(Same as above taking search parameters (as of 10/2015 some the
 parameters have to be set when closing the model).)doc";
 
-static const char* __doc_operations_research_RoutingModel_CloseVisitTypes =
-    R"doc("close" types.)doc";
-
 static const char*
     __doc_operations_research_RoutingModel_CompactAndCheckAssignment =
         R"doc(Same as CompactAssignment() but also checks the validity of the final
