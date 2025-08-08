@@ -2481,7 +2481,7 @@ void GlobalCheapestInsertionFilteredHeuristic::AddNodeEntry(
 }
 
 void InsertionSequenceGenerator::AppendPickupDeliveryMultitourInsertions(
-    int pickup, int delivery, int vehicle, const std::vector<int>& path,
+    int pickup, int delivery, int vehicle, absl::Span<const int> path,
     const std::vector<bool>& path_node_is_pickup,
     const std::vector<bool>& path_node_is_delivery,
     InsertionSequenceContainer& insertions) {
@@ -2514,7 +2514,7 @@ void InsertionSequenceGenerator::AppendPickupDeliveryMultitourInsertions(
     }
   }
 
-  auto append = [pickup, delivery, vehicle, num_nodes, &path, &insertions](
+  auto append = [pickup, delivery, vehicle, num_nodes, path, &insertions](
                     int pickup_pos, int delivery_pos) {
     if (pickup_pos < 0 || num_nodes - 1 <= pickup_pos) return;
     if (delivery_pos < 0 || num_nodes - 1 <= delivery_pos) return;

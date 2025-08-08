@@ -316,7 +316,7 @@ cc_library(
             "@scip",
         ],
         "//conditions:default": [],
-    })+ select({
+    }) + select({
         ":use_highs": [
             "//ortools/linear_solver/proto_solver:highs_proto_solver",
             "@highs",
