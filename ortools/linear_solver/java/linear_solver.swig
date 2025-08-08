@@ -12,19 +12,11 @@
 // limitations under the License.
 
 // This .swig file exposes the linear programming and integer programming
-// solver. See the C++/Python codelab:  (there isn't
-// a java codelab yet, as of July 2014)
+// solver.
 //
 // The java API is pretty much identical to the C++ API, with methods
 // systematically renamed to the Java-style "lowerCamelCase", and using
 // the Java-style getProperty() instead of the C++ Property(), for getters.
-//
-// USAGE EXAMPLES (j/c/g and jt/c/g refer to java/com/google and javatests/...):
-// - j/c/g/ortools/samples/LinearProgramming.java
-// - j/c/g/ortools/samples/IntegerProgramming.java
-// - jt/c/g/ortools/linearsolver/LinearSolverTest.java
-//
-// TODO(user): unit test all the APIs that are currently marked with 'no test'.
 
 %include "enums.swg"  // For native Java enum support.
 %include "stdint.i"

@@ -1097,7 +1097,7 @@ class InsertionSequenceGenerator {
   ///   are made on the subpath of paired nodes, all extensions to the original
   ///   path that conserve order are equivalent.
   void AppendPickupDeliveryMultitourInsertions(
-      int pickup, int delivery, int vehicle, const std::vector<int>& path,
+      int pickup, int delivery, int vehicle, absl::Span<const int> path,
       const std::vector<bool>& path_node_is_pickup,
       const std::vector<bool>& path_node_is_delivery,
       InsertionSequenceContainer& insertions);

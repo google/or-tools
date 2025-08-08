@@ -41,4 +41,4 @@
 %rename (sortedLexicographically) operations_research::IntTupleSet::SortedLexicographically;
 %rename (value) operations_research::IntTupleSet::Value;
 
-%include ortools/util/tuple_set.h
+%include "ortools/util/tuple_set.h"
