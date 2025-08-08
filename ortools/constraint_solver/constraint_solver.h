@@ -5074,6 +5074,7 @@ class SequenceVar : public PropagationBaseObject {
 class AssignmentElement {
  public:
   AssignmentElement() : activated_(true) {}
+  AssignmentElement(const AssignmentElement&) = default;
 
   void Activate() { activated_ = true; }
   void Deactivate() { activated_ = false; }
@@ -5087,6 +5088,7 @@ class IntVarElement : public AssignmentElement {
  public:
   IntVarElement();
   explicit IntVarElement(IntVar* var);
+  IntVarElement(const IntVarElement& element) = default;
   void Reset(IntVar* var);
   IntVarElement* Clone();
   void Copy(const IntVarElement& element);
@@ -5351,9 +5353,8 @@ class AssignmentContainer {
   /// previous content.
   void Copy(const AssignmentContainer<V, E>& container) {
     Clear();
-    for (int i = 0; i < container.elements_.size(); ++i) {
-      const E& element = container.elements_[i];
-      FastAdd(element.Var())->Copy(element);
+    for (const E& element : container.elements_) {
+      elements_.emplace_back(element);
     }
   }
   bool Contains(const V* const var) const {
