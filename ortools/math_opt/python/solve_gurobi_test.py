@@ -275,6 +275,28 @@ class SolveTest(absltest.TestCase):
                 streamable_init_args=_init_args(_bad_isv_key),
             )
 
+    def test_compute_infeasible_subsystem_duplicated_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+        with self.assertRaisesRegex(ValueError, "duplicate name"):
+            solve.compute_infeasible_subsystem(
+                opt_model,
+                parameters.SolverType.GUROBI,
+            )
+
+    def test_compute_infeasible_subsystem_remove_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+        # We test that remove_names was taken into account by testing that no error
+        # is raised.
+        solve.compute_infeasible_subsystem(
+            opt_model,
+            parameters.SolverType.GUROBI,
+            remove_names=True,
+        )
+
 
 if __name__ == "__main__":
     absltest.main()

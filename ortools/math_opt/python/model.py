@@ -910,9 +910,16 @@ class Model:
     # Proto import/export
     ##############################################################################
 
-    def export_model(self) -> model_pb2.ModelProto:
-        """Returns a protocol buffer equivalent to this model."""
-        return self._elemental.export_model(remove_names=False)
+    def export_model(self, *, remove_names: bool = False) -> model_pb2.ModelProto:
+        """Returns a protocol buffer equivalent to this model.
+
+        Args:
+          remove_names: When true, remove all names for the ModelProto.
+
+        Returns:
+          The model proto.
+        """
+        return self._elemental.export_model(remove_names=remove_names)
 
     def add_update_tracker(self) -> UpdateTracker:
         """Creates an UpdateTracker registered on this model to view changes."""

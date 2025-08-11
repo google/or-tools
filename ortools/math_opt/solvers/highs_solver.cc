@@ -924,19 +924,20 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     return absl::OkStatus();
   };
 
-  if (model_parameters.solution_hints_size() > 0) {
+  if (!model_parameters.solution_hints().empty()) {
     // Take the first solution hint and set the solution.
     const SolutionHintProto& hint = model_parameters.solution_hints(0);
-    HighsInt num_entries = hint.variable_values().ids_size();
-    std::vector<HighsInt> index(num_entries);
-    std::vector<double> value(num_entries);
-    size_t i = 0;
+    int num_entries = hint.variable_values().ids_size();
+    std::vector<HighsInt> index;
+    index.reserve(num_entries);
+    std::vector<double> value;
+    value.reserve(num_entries);
     for (const auto [id, val] : MakeView(hint.variable_values())) {
-      index[i] = variable_data_.at(id).index;
-      value[i] = val;
-      ++i;
+      index.push_back(variable_data_.at(id).index);
+      value.push_back(val);
     }
-    RETURN_IF_ERROR(ToStatus(highs_->setSolution(num_entries, index.data(), value.data())));
+    RETURN_IF_ERROR(ToStatus(highs_->setSolution(
+        static_cast<HighsInt>(num_entries), index.data(), value.data())));
   }
 
   RETURN_IF_ERROR(ListInvertedBounds().ToStatus());

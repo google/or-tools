@@ -40,7 +40,7 @@ TEST(ElementIdTest, Valid) {
   VariableId var(42);
   EXPECT_TRUE(var.IsValid());
   EXPECT_EQ(var.value(), 42);
-  EXPECT_EQ(var.type(), ElementType::kVariable);
+  EXPECT_EQ(var.tag_value(), ElementType::kVariable);
   EXPECT_EQ(absl::StrCat(var), "variable{42}");
   EXPECT_EQ(StreamToString(var), "variable{42}");
 }
@@ -48,7 +48,7 @@ TEST(ElementIdTest, Valid) {
 TEST(ElementIdTest, Invalid) {
   VariableId var;
   EXPECT_FALSE(var.IsValid());
-  EXPECT_EQ(var.type(), ElementType::kVariable);
+  EXPECT_EQ(var.tag_value(), ElementType::kVariable);
   EXPECT_EQ(absl::StrCat(var), "variable{invalid}");
 }
 

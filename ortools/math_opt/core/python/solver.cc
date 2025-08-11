@@ -34,6 +34,7 @@
 #include "ortools/math_opt/model_update.pb.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/result.pb.h"
+#include "ortools/util/python/py_solve_interrupter.h"
 #include "ortools/util/solve_interrupter.h"
 #include "pybind11/attr.h"
 #include "pybind11/cast.h"
@@ -43,6 +44,21 @@
 #include "pybind11_protobuf/native_proto_caster.h"
 
 namespace operations_research::math_opt {
+namespace {
+
+// Returns the pointer on the underlying C++ SolveInterrupter.
+//
+// The returned pointer is valid as long as the (optional) input shared_ptr is
+// non null.
+const SolveInterrupter* absl_nullable CppSolveInterrupter(
+    const absl_nullable std::shared_ptr<PySolveInterrupter> interrupter) {
+  if (interrupter == nullptr) {
+    return nullptr;
+  }
+  return interrupter->interrupter();
+}
+
+}  // namespace
 
 namespace py = ::pybind11;
 
@@ -59,7 +75,8 @@ absl::StatusOr<SolveResultProto> PybindSolve(
     ModelSolveParametersProto model_parameters,
     PybindSolverMessageCallback message_callback,
     CallbackRegistrationProto callback_registration,
-    PybindSolverCallback user_cb, SolveInterrupter* const interrupter) {
+    PybindSolverCallback user_cb,
+    absl_nullable std::shared_ptr<PySolveInterrupter> interrupter) {
   return Solver::NonIncrementalSolve(
       model, solver_type, {.streamable = std::move(solver_initializer)},
       {.parameters = std::move(parameters),
@@ -67,22 +84,21 @@ absl::StatusOr<SolveResultProto> PybindSolve(
        .message_callback = std::move(message_callback),
        .callback_registration = std::move(callback_registration),
        .user_cb = std::move(user_cb),
-       .interrupter = interrupter});
+       .interrupter = CppSolveInterrupter(std::move(interrupter))});
 }
 
 // Wrapper for Solver::NonIncrementalComputeInfeasibleSubsystem
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-PybindComputeInfeasibleSubsystem(const ModelProto& model,
-                                 const SolverTypeProto solver_type,
-                                 SolverInitializerProto solver_initializer,
-                                 SolveParametersProto parameters,
-                                 PybindSolverMessageCallback message_callback,
-                                 SolveInterrupter* const interrupter) {
+PybindComputeInfeasibleSubsystem(
+    const ModelProto& model, const SolverTypeProto solver_type,
+    SolverInitializerProto solver_initializer, SolveParametersProto parameters,
+    PybindSolverMessageCallback message_callback,
+    absl_nullable std::shared_ptr<PySolveInterrupter> interrupter) {
   return Solver::NonIncrementalComputeInfeasibleSubsystem(
       model, solver_type, {.streamable = std::move(solver_initializer)},
       {.parameters = std::move(parameters),
        .message_callback = std::move(message_callback),
-       .interrupter = interrupter});
+       .interrupter = CppSolveInterrupter(std::move(interrupter))});
 }
 
 // Wrapper for the Solver class with flat arguments.
@@ -108,14 +124,15 @@ class PybindSolver {
       ModelSolveParametersProto model_parameters,
       PybindSolverMessageCallback message_callback,
       CallbackRegistrationProto callback_registration,
-      PybindSolverCallback user_cb, SolveInterrupter* const interrupter) {
+      PybindSolverCallback user_cb,
+      absl_nullable std::shared_ptr<PySolveInterrupter> interrupter) {
     return solver_->Solve(
         {.parameters = std::move(parameters),
          .model_parameters = std::move(model_parameters),
          .message_callback = std::move(message_callback),
          .callback_registration = std::move(callback_registration),
          .user_cb = std::move(user_cb),
-         .interrupter = interrupter});
+         .interrupter = CppSolveInterrupter(std::move(interrupter))});
   }
 
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) {
@@ -133,32 +150,35 @@ PYBIND11_MODULE(solver, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
   pybind11::google::ImportStatusModule();
 
+  // Make sure that the pybind solve interrupter module is loaded correctly
+  // whenever this module is loaded. Without it, pybind11 doesn't know about the
+  // type, and unless it is accidentally imported through some other way, it
+  // wouldn't be able to bind `None` to a nullptr.
+  pybind11::module::import("ortools.util.python.pybind_solve_interrupter");
+
   // The Global Interpreter Lock (GIL) is released with gil_scoped_release
   // during the solve to allow Python threads to run callbacks in parallel.
   m.def("solve", &PybindSolve, py::arg("model"), py::arg("solver_type"),
         py::arg("solver_initializer"), py::arg("parameters"),
-        py::arg("model_parameters"), py::arg("message_cb"),
+        py::arg("model_parameters"), py::arg("message_callback"),
         py::arg("callback_registration"), py::arg("user_cb"),
-        py::arg("interrupt"), py::call_guard<py::gil_scoped_release>());
+        py::arg("interrupter"), py::call_guard<py::gil_scoped_release>());
   m.def("compute_infeasible_subsystem", &PybindComputeInfeasibleSubsystem,
         py::arg("model"), py::arg("solver_type"), py::arg("solver_initializer"),
-        py::arg("parameters"), py::arg("message_cb"), py::arg("interrupt"),
-        py::call_guard<py::gil_scoped_release>());
+        py::arg("parameters"), py::arg("message_callback"),
+        py::arg("interrupter"), py::call_guard<py::gil_scoped_release>());
   m.def("new", &PybindSolver::New, py::arg("solver_type"), py::arg("model"),
         py::arg("solver_initializer"),
         py::call_guard<py::gil_scoped_release>());
   m.def("debug_num_solver", &PybindSolver::DebugNumSolver);
 
   py::class_<PybindSolver>(m, "Solver")
-      .def("solve", &PybindSolver::Solve,
-           py::call_guard<py::gil_scoped_release>())
-      .def("update", &PybindSolver::Update,
+      .def("solve", &PybindSolver::Solve, py::arg("parameters"),
+           py::arg("model_parameters"), py::arg("message_callback"),
+           py::arg("callback_registration"), py::arg("user_cb"),
+           py::arg("interrupter"), py::call_guard<py::gil_scoped_release>())
+      .def("update", &PybindSolver::Update, py::arg("model_update"),
            py::call_guard<py::gil_scoped_release>());
-
-  py::class_<SolveInterrupter>(m, "SolveInterrupter")
-      .def(py::init())
-      .def("interrupt", &SolveInterrupter::Interrupt)
-      .def("is_interrupted", &SolveInterrupter::IsInterrupted);
 }
 
 }  // namespace operations_research::math_opt

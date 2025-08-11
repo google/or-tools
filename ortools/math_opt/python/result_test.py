@@ -17,7 +17,6 @@ import math
 
 from absl.testing import absltest
 from ortools.pdlp import solve_log_pb2
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -26,6 +25,7 @@ from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 
 class TerminationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):

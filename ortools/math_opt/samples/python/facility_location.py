@@ -36,7 +36,6 @@ import os
 import queue
 import random
 import threading
-from typing import Dict, Tuple
 
 from absl import app
 from absl import flags
@@ -78,8 +77,8 @@ class FacilityLocationSolution:
       terminal: Is the last solution returned by _solve_facility_location.
     """
 
-    facility_open: Tuple[bool, ...]
-    customer_assignment: Tuple[int, ...]
+    facility_open: tuple[bool, ...]
+    customer_assignment: tuple[int, ...]
     terminal: bool
 
 
@@ -96,8 +95,8 @@ class FacilityLocationInstance:
       facility_limit: A limit on the number of facilities that can be opened.
     """
 
-    facilities: Tuple[Tuple[float, float], ...]
-    customers: Tuple[Tuple[float, float], ...]
+    facilities: tuple[tuple[float, float], ...]
+    customers: tuple[tuple[float, float], ...]
     facility_limit: int
 
     def distance(self, facility: int, customer: int) -> float:
@@ -218,7 +217,7 @@ def _solve_facility_location(
             model.add_linear_constraint(y[i][j] <= x[i])
 
     def extract_solution(
-        var_values: Dict[mathopt.Variable, float], terminal: bool
+        var_values: dict[mathopt.Variable, float], terminal: bool
     ) -> FacilityLocationSolution:
         is_open = tuple(var_values[x[i]] > 0.5 for i in range(m))
         customer_assignment = []

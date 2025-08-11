@@ -52,11 +52,14 @@ namespace operations_research {
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
-bool PortableTemporaryFile(const char* directory_prefix,
-                           std::string* filename_out) {
+absl::StatusOr<std::string> PortableTemporaryFile(
+    absl::string_view directory,
+    absl::string_view file_prefix) {
+  std::string filename;
 #if defined(__PORTABLE_PLATFORM__)
-  LOG(ERROR) << "Temporary files are not implemented for this platform.";
-  return false;
+  filename = "Temporary files are not implemented for this platform.";
+  LOG(ERROR) << filename;
+  return absl::UnavailableError(filename);
 #else  // defined(__PORTABLE_PLATFORM__)
 #if defined(__linux)
   int32_t tid = static_cast<int32_t>(pthread_self());
@@ -69,9 +72,9 @@ bool PortableTemporaryFile(const char* directory_prefix,
   int32_t pid = 456;
 #endif  // _MSC_VER
   int64_t now = absl::GetCurrentTimeNanos();
-  std::string filename =
-      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
-  return true;
+  filename = absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
+
+  return filename;
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 

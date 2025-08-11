@@ -13,9 +13,9 @@
 
 import requests_mock
 from absl.testing import absltest
-from ortools.gscip import gscip_pb2
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python.ipc import remote_http_solve
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 _MOCK_API_KEY = "1234"
 _ENDPOINT = "https://optimization.googleapis.com/v1/mathopt:solveMathOptModel"

@@ -11,15 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gscip/gscip_event_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
 
 #include <string>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "ortools/base/logging.h"
-#include "ortools/gscip/gscip.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "scip/def.h"
 #include "scip/scip.h"
 #include "scip/scip_event.h"

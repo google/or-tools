@@ -106,11 +106,11 @@ proto_library(
     srcs = ["parameters.proto"],
     deps = [
         "//ortools/glop:parameters_proto",
-        "//ortools/gscip:gscip_proto",
         "//ortools/math_opt/solvers:glpk_proto",
         "//ortools/math_opt/solvers:gurobi_proto",
         "//ortools/math_opt/solvers:highs_proto",
         "//ortools/math_opt/solvers:osqp_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_proto",
         "//ortools/pdlp:solvers_proto",
         "//ortools/sat:sat_parameters_proto",
         "@protobuf//:duration_proto",
@@ -134,8 +134,8 @@ proto_library(
     srcs = ["result.proto"],
     deps = [
         ":solution_proto",
-        "//ortools/gscip:gscip_proto",
         "//ortools/math_opt/solvers:osqp_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_proto",
         "//ortools/pdlp:solve_log_proto",
         "@protobuf//:duration_proto",
     ],

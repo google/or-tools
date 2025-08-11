@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_MATH_OPT_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_MATH_OPT_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_
 
 #include <cstdint>
 #include <utility>
@@ -22,11 +22,11 @@
 #include "absl/status/statusor.h"
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip_callback_result.h"
-#include "ortools/gscip/gscip_constraint_handler.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
+#include "ortools/math_opt/solvers/gscip/gscip_constraint_handler.h"
 #include "scip/type_var.h"
 
 namespace operations_research::math_opt {
@@ -97,4 +97,4 @@ class GScipSolverConstraintHandler
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_MATH_OPT_GSCIP_SOLVER_CONSTRAINT_HANDLER_H_

@@ -44,9 +44,9 @@ ensures that no two jobs overlap in when they are running, and constraint (3)
 enforces the release dates.
 """
 
+from collections.abc import Sequence
 import dataclasses
 import random
-from typing import Sequence, Tuple
 
 from absl import app
 from absl import flags
@@ -78,8 +78,8 @@ class Jobs:
       release_times: The earliest time at which each job can begin.
     """
 
-    processing_times: Tuple[int, ...]
-    release_times: Tuple[int, ...]
+    processing_times: tuple[int, ...]
+    release_times: tuple[int, ...]
 
 
 def random_jobs(num_jobs: int) -> Jobs:
@@ -90,10 +90,10 @@ def random_jobs(num_jobs: int) -> Jobs:
     # Release times are uniform in [0, release_time_ub].
     release_time_ub = num_jobs * processing_time_ub // 2
 
-    processing_times: Tuple[int, ...] = tuple(
+    processing_times: tuple[int, ...] = tuple(
         random.randrange(1, processing_time_ub) for _ in range(num_jobs)
     )
-    release_times: Tuple[int, ...] = tuple(
+    release_times: tuple[int, ...] = tuple(
         random.randrange(1, release_time_ub) for _ in range(num_jobs)
     )
 
@@ -131,7 +131,7 @@ class Schedule:
       sum_of_completion_times: The sum of times at which jobs complete.
     """
 
-    start_times: Tuple[int, ...] = ()
+    start_times: tuple[int, ...] = ()
     sum_of_completion_times: int = 0
 
 

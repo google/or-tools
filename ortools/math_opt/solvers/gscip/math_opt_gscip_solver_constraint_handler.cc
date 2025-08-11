@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/math_opt/solvers/gscip/gscip_solver_constraint_handler.h"
+#include "ortools/math_opt/solvers/gscip/math_opt_gscip_solver_constraint_handler.h"
 
 #include <utility>
 #include <vector>
@@ -22,11 +22,11 @@
 #include "absl/time/time.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip_callback_result.h"
-#include "ortools/gscip/gscip_constraint_handler.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
+#include "ortools/math_opt/solvers/gscip/gscip_constraint_handler.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "scip/type_var.h"

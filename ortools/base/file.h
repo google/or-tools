@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// emulates google3/file/base/file.h
 #ifndef OR_TOOLS_BASE_FILE_H_
 #define OR_TOOLS_BASE_FILE_H_
 

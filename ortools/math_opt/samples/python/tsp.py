@@ -55,7 +55,7 @@ possible.
 import itertools
 import math
 import random
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from absl import app
 from absl import flags
@@ -74,7 +74,7 @@ _SOLVE_LOGS = flags.DEFINE_boolean(
     "solve_logs", False, "Have the solver print logs to standard out."
 )
 
-Cities = List[Tuple[float, float]]
+Cities = list[tuple[float, float]]
 
 
 def _random_cities(num_cities: int) -> Cities:
@@ -95,7 +95,7 @@ def _test_instance() -> Cities:
     ]
 
 
-def _distance_matrix(cities: Cities) -> List[List[float]]:
+def _distance_matrix(cities: Cities) -> list[list[float]]:
     """Converts a list of (x,y) pairs into a a matrix of Eucledian distances."""
     n = len(cities)
     res = [[0.0] * n for _ in range(n)]
@@ -112,9 +112,9 @@ def _distance_matrix(cities: Cities) -> List[List[float]]:
 
 
 def _edge_values(
-    edge_vars: List[List[Optional[mathopt.Variable]]],
-    var_values: Dict[mathopt.Variable, float],
-) -> List[List[bool]]:
+    edge_vars: list[list[Optional[mathopt.Variable]]],
+    var_values: dict[mathopt.Variable, float],
+) -> list[list[bool]]:
     """Converts edge decision variables into an adjacency matrix."""
     n = len(edge_vars)
     res = [[False] * n for _ in range(n)]
@@ -125,7 +125,7 @@ def _edge_values(
     return res
 
 
-def _find_cycles(edges: List[List[bool]]) -> List[List[int]]:
+def _find_cycles(edges: list[list[bool]]) -> list[list[int]]:
     """Finds the cycle decomposition for a degree two graph as adjacenty matrix."""
     n = len(edges)
     cycles = []
@@ -161,7 +161,7 @@ def _find_cycles(edges: List[List[bool]]) -> List[List[int]]:
     return cycles
 
 
-def solve_tsp(cities: Cities) -> List[int]:
+def solve_tsp(cities: Cities) -> list[int]:
     """Solves the traveling salesperson problem and returns the best route."""
     n = len(cities)
     dist = _distance_matrix(cities)
@@ -218,7 +218,7 @@ def solve_tsp(cities: Cities) -> List[int]:
     return route
 
 
-def route_svg(filename: str, cities: Cities, route: List[int]):
+def route_svg(filename: str, cities: Cities, route: list[int]):
     """Draws the route as an SVG and writes to disk (or prints if no filename)."""
     resolution = 1000
     r = 5

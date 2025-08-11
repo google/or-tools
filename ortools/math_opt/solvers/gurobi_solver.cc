@@ -431,8 +431,11 @@ absl::StatusOr<int64_t> SafeInt64FromDouble(const double d) {
 const absl::flat_hash_set<CallbackEventProto>& SupportedMIPEvents() {
   static const auto* const kEvents =
       new absl::flat_hash_set<CallbackEventProto>({
-          CALLBACK_EVENT_PRESOLVE, CALLBACK_EVENT_SIMPLEX, CALLBACK_EVENT_MIP,
-          CALLBACK_EVENT_MIP_SOLUTION, CALLBACK_EVENT_MIP_NODE,
+          CALLBACK_EVENT_PRESOLVE,
+          CALLBACK_EVENT_SIMPLEX,
+          CALLBACK_EVENT_MIP,
+          CALLBACK_EVENT_MIP_SOLUTION,
+          CALLBACK_EVENT_MIP_NODE,
           // CALLBACK_EVENT_BARRIER is not supported when solving MIPs; it turns
           // out that Gurobi uses a barrier algorithm to solve the root node
           // relaxation (from the traces) but does not call the associated

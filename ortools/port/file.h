@@ -17,6 +17,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 
 namespace operations_research {
@@ -30,8 +31,9 @@ namespace operations_research {
 ::absl::Status PortableDeleteFile(absl::string_view file_name);
 
 // Returns true if successful.  Outputs temp file to filename.
-bool PortableTemporaryFile(const char* directory_prefix,
-                           std::string* filename_out);
+absl::StatusOr<std::string> PortableTemporaryFile(
+    absl::string_view directory,
+    absl::string_view file_prefix);
 
 }  // namespace operations_research
 

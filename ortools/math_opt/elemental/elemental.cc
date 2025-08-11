@@ -102,7 +102,7 @@ bool Elemental::DeleteElementUntyped(const ElementType e, int64_t id) {
     // If `a` is element-valued, we need to remove all keys that refer to the
     // deleted element.
     if constexpr (is_element_id_v<ValueTypeFor<AttrType>>) {
-      if (e == ValueTypeFor<AttrType>::type()) {
+      if (e == ValueTypeFor<AttrType>::tag_value()) {
         const auto keys = element_ref_trackers_[a].GetKeysReferencing(
             ValueTypeFor<AttrType>(id));
         for (const auto key : keys) {

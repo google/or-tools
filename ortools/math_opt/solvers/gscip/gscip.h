@@ -54,8 +54,8 @@
 // NOTE(user): much of the API uses const std::string& instead of
 // absl::string_view because the underlying SCIP API needs a null terminated
 // char*.
-#ifndef OR_TOOLS_GSCIP_GSCIP_H_
-#define OR_TOOLS_GSCIP_GSCIP_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
 
 #include <atomic>
 #include <cstdint>
@@ -74,10 +74,10 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gscip/gscip.pb.h"
-#include "ortools/gscip/gscip_event_handler.h"
-#include "ortools/gscip/gscip_message_handler.h"  // IWYU pragma: export
 #include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
+#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_message_handler.h"  // IWYU pragma: export
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -690,4 +690,4 @@ absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GSCIP_GSCIP_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_

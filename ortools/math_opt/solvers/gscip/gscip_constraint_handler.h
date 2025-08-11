@@ -15,8 +15,8 @@
 // described at https://www.scipopt.org/doc/html/CONS.php. For instructions to
 // write a constraint handler, see the documentation of GScipConstraintHandler.
 // Examples can be found in gscip_constraint_handler_test.cc.
-#ifndef OR_TOOLS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
-#define OR_TOOLS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
 
 #include <cstdint>
 #include <memory>
@@ -26,8 +26,8 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip_callback_result.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
 #include "scip/type_cons.h"
 #include "scip/type_sol.h"
 #include "scip/type_var.h"
@@ -719,4 +719,4 @@ GScipConstraintHandler<ConstraintData>::CallSeparateSolution(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_

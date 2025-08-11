@@ -21,7 +21,6 @@
 #include "absl/status/statusor.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/gscip/gscip_parameters.h"
 #include "ortools/math_opt/cpp/matchers.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -38,6 +37,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
+#include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
 #include "ortools/math_opt/testing/param_name.h"
 #include "ortools/port/scoped_std_stream_capture.h"
 

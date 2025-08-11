@@ -23,8 +23,8 @@
 //
 // TODO(user): either implement with SCIP constraint handlers or use a solver
 // independent implementation.
-#ifndef OR_TOOLS_GSCIP_GSCIP_EXT_H_
-#define OR_TOOLS_GSCIP_GSCIP_EXT_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
 
 #include <string>
 #include <vector>
@@ -32,7 +32,7 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "scip/scip.h"
 #include "scip/scip_prob.h"
 #include "scip/type_cons.h"
@@ -107,4 +107,4 @@ absl::Status GScipAddQuadraticObjectiveTerm(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GSCIP_GSCIP_EXT_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
