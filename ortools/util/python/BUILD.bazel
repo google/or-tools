@@ -50,6 +50,7 @@ cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:core_headers",
@@ -75,6 +76,7 @@ pybind_extension(
     srcs = ["pybind_solve_interrupter.cc"],
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
+    visibility = ["//visibility:public"],
      deps = [":py_solve_interrupter_lib"],
 )
 
@@ -98,6 +100,7 @@ py_test(
 py_library(
     name = "solve_interrupter",
     srcs = ["solve_interrupter.py"],
+    visibility = ["//visibility:public"],
     deps = [
         ":py_solve_interrupter_lib",
         ":pybind_solve_interrupter",

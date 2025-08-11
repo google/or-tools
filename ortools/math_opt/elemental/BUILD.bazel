@@ -462,6 +462,7 @@ cc_library(
     hdrs = ["elements.h"],
     visibility = ["//ortools/math_opt:__subpackages__"],
     deps = [
+        ":tagged_id",
         "//ortools/base:array",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",

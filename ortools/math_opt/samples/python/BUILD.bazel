@@ -12,8 +12,7 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
-load("//social/boq/builddefs/testing:boq_functional_test.bzl", "boq_py_functional_test")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
     name = "tsp",
@@ -100,32 +99,18 @@ py_binary(
     ],
 )
 
-py_binary(
-    name = "stubby_remote_streaming_solve_example",
-    srcs = ["stubby_remote_streaming_solve_example.py"],
-    test_lib = True,
-    deps = [
-        requirement("absl-py"),
-        "//ortools/math_opt:rpc_stubby_pyclif",
-        "//ortools/math_opt/python:mathopt",
-        "//ortools/math_opt/python/ipc:solve_service_stubby_client",
-        "//ortools/math_opt/python/ipc:stubby_remote_streaming_solve",
-    ],
-)
-
-boq_py_functional_test(
-    name = "stubby_remote_streaming_solve_example_test",
-    srcs = ["stubby_remote_streaming_solve_example_test.py"],
-    replay_enabled = False,
-    system_under_test = "//ortools/solve_server/boq/math_opt:system_under_test",
-    deps = [
-        ":stubby_remote_streaming_solve_example.testonly_lib",
-        "//testing/integration/functional/python:functionaltest",
-        requirement("absl-py"),
-        "//ortools/math_opt:rpc_stubby_pyclif",
-        "//ortools/math_opt/python/ipc:solve_service_stubby_client",
-    ],
-)
+#py_binary(
+#    name = "stubby_remote_streaming_solve_example",
+#    srcs = ["stubby_remote_streaming_solve_example.py"],
+#    test_lib = True,
+#    deps = [
+#        requirement("absl-py"),
+#        "//ortools/math_opt:rpc_stubby_pyclif",
+#        "//ortools/math_opt/python:mathopt",
+#        "//ortools/math_opt/python/ipc:solve_service_stubby_client",
+#        "//ortools/math_opt/python/ipc:stubby_remote_streaming_solve",
+#    ],
+#)
 
 py_binary(
     name = "time_indexed_scheduling",
