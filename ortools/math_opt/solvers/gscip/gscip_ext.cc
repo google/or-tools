@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gscip/gscip_ext.h"
+#include "ortools/math_opt/solvers/gscip/gscip_ext.h"
 
 #include <cmath>
 #include <limits>

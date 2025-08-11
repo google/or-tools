@@ -13,7 +13,8 @@
 
 """An API for storing a MathOpt model and tracking model modifications."""
 
-from typing import Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Optional, Protocol
 
 import numpy as np
 

@@ -1,0 +1,4 @@
+This directory contains go/gscip, a standalone wrapper of SCIP (all the files
+starting with 'gscip'), and MathOpt specific files to connect it to MathOpt
+('math_opt_gscip_solver_constraint_handler.*').
+Gscip should not be used directly, and is not publicly visible for this reason.

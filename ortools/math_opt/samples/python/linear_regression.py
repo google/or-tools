@@ -43,8 +43,8 @@ learned model are printed.
 For an advanced version, see:
   ortools/math_opt/codelabs/regression/
 """
+from collections.abc import Sequence
 import dataclasses
-from typing import Sequence
 
 from absl import app
 from absl import flags

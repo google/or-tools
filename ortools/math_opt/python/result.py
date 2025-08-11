@@ -17,13 +17,13 @@ import datetime
 import enum
 from typing import Dict, Iterable, List, Optional, overload
 
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt.python import linear_constraints as linear_constraints_mod
 from ortools.math_opt.python import model
 from ortools.math_opt.python import solution
 from ortools.math_opt.python import variables as variables_mod
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 _NO_DUAL_SOLUTION_ERROR = (
     "Best solution does not have an associated dual feasible solution."

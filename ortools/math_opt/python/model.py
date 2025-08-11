@@ -44,6 +44,9 @@ Example use to model the optimization problem:
 import math
 from typing import Iterator, Optional, Tuple, Union
 
+# typing.Self is only in python 3.11+, for OR-tools supports down to 3.8.
+from typing_extensions import Self
+
 from ortools.math_opt import model_pb2
 from ortools.math_opt import model_update_pb2
 from ortools.math_opt.elemental.python import cpp_elemental
@@ -910,9 +913,23 @@ class Model:
     # Proto import/export
     ##############################################################################
 
-    def export_model(self) -> model_pb2.ModelProto:
-        """Returns a protocol buffer equivalent to this model."""
-        return self._elemental.export_model(remove_names=False)
+    @classmethod
+    def from_model_proto(cls, proto: model_pb2.ModelProto) -> Self:
+        """Returns a Model equivalent to the input model proto."""
+        model = cls()
+        model._elemental = cpp_elemental.CppElemental.from_model_proto(proto)
+        return model
+
+    def export_model(self, *, remove_names: bool = False) -> model_pb2.ModelProto:
+        """Returns a protocol buffer equivalent to this model.
+
+        Args:
+          remove_names: When true, remove all names for the ModelProto.
+
+        Returns:
+          The model proto.
+        """
+        return self._elemental.export_model(remove_names=remove_names)
 
     def add_update_tracker(self) -> UpdateTracker:
         """Creates an UpdateTracker registered on this model to view changes."""

@@ -13,8 +13,8 @@
 
 // Provides a safe C++ interface for SCIP event handlers, which are described at
 // https://www.scipopt.org/doc/html/EVENT.php.
-#ifndef OR_TOOLS_GSCIP_GSCIP_EVENT_HANDLER_H_
-#define OR_TOOLS_GSCIP_GSCIP_EVENT_HANDLER_H_
+#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EVENT_HANDLER_H_
+#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EVENT_HANDLER_H_
 
 #include <string>
 #include <vector>
@@ -196,4 +196,4 @@ class GScipEventHandler {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GSCIP_GSCIP_EVENT_HANDLER_H_
+#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EVENT_HANDLER_H_

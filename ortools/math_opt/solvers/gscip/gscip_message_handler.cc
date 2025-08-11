@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gscip/gscip_message_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_message_handler.h"
 
 #include <stdio.h>
 

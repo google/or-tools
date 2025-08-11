@@ -11,21 +11,307 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
 
+proto_library(
+    name = "gscip_proto",
+    srcs = ["gscip.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "gscip_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gscip_proto"],
+)
+
+py_proto_library(
+    name = "gscip_proto_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":gscip_proto"],
+)
+
+# NOTE(user): this file should ideally not have a compile time dependency on
+# SCIP, so it can be used in client code.
 cc_library(
-    name = "gscip_solver_constraint_handler",
-    srcs = ["gscip_solver_constraint_handler.cc"],
-    hdrs = ["gscip_solver_constraint_handler.h"],
+    name = "gscip_parameters",
+    srcs = ["gscip_parameters.cc"],
+    hdrs = ["gscip_parameters.h"],
     deps = [
+        ":gscip_cc_proto",
+        "//ortools/base",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "gscip_parameters_test",
+    srcs = ["gscip_parameters_test.cc"],
+    deps = [
+        ":gscip_cc_proto",
+        ":gscip_parameters",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_library(
+    name = "gscip",
+    srcs = [
+        "gscip.cc",
+        "gscip_event_handler.cc",
+    ],
+    hdrs = [
+        "gscip.h",
+        "gscip_event_handler.h",
+    ],
+    visibility = [
+        "//ortools/math_opt/io:__subpackages__",
+        "//ortools/math_opt/solvers:__subpackages__",
+    ],
+    deps = [
+        ":gscip_cc_proto",
+        ":gscip_message_handler",
+        ":gscip_parameters",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/port:proto_utils",
+        "//ortools/util:status_macros",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
+        "@scip",
+    ],
+)
+
+cc_library(
+    name = "gscip_testing",
+    testonly = 1,
+    srcs = ["gscip_testing.cc"],
+    hdrs = ["gscip_testing.h"],
+    deps = [
+        ":gscip",
+        ":gscip_cc_proto",
+        ":gscip_parameters",
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "gscip_test",
+    size = "small",
+    srcs = ["gscip_test.cc"],
+    deps = [
+        ":gscip",
+        ":gscip_cc_proto",
+        ":gscip_parameters",
+        ":gscip_testing",
+        "//ortools/base:file",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "//ortools/base:temp_file",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
+        "@scip",
+    ],
+)
+
+cc_test(
+    name = "gscip_io_test",
+    size = "medium",
+    srcs = ["gscip_io_test.cc"],
+    deps = [
+        ":gscip",
+        ":gscip_cc_proto",
+        ":gscip_testing",
+        "//ortools/base:file",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+        "@scip",
+    ],
+)
+
+cc_library(
+    name = "gscip_ext",
+    srcs = ["gscip_ext.cc"],
+    hdrs = ["gscip_ext.h"],
+    deps = [
+        ":gscip",
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@scip",
+    ],
+)
+
+cc_test(
+    name = "gscip_ext_test",
+    size = "small",
+    srcs = ["gscip_ext_test.cc"],
+    deps = [
+        ":gscip",
+        ":gscip_cc_proto",
+        ":gscip_ext",
+        ":gscip_parameters",
+        ":gscip_testing",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:map_util",
+        "@scip",
+    ],
+)
+
+cc_test(
+    name = "gscip_event_handler_test",
+    srcs = ["gscip_event_handler_test.cc"],
+    deps = [
+        ":gscip",
+        ":gscip_cc_proto",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@scip",
+    ],
+)
+
+cc_library(
+    name = "gscip_from_mp_model_proto",
+    srcs = ["gscip_from_mp_model_proto.cc"],
+    hdrs = ["gscip_from_mp_model_proto.h"],
+    deps = [
+        ":gscip",
+        ":gscip_ext",
+        "//ortools/base:status_macros",
+        "//ortools/base:stl_util",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@scip",
+    ],
+)
+
+#cc_test(
+#    name = "gscip_from_mp_model_proto_test",
+#    srcs = ["gscip_from_mp_model_proto_test.cc"],
+#    deps = [
+#        ":gscip",
+#        ":gscip_cc_proto",
+#        ":gscip_from_mp_model_proto",
+#        ":gscip_testing",
+#        "//net/proto2/contrib/parse_proto:testing",
+#        "//ortools/base:gmock",
+#        "//ortools/base:gmock_main",
+#        "//ortools/linear_solver:linear_solver_cc_proto",
+#    ],
+#)
+
+cc_library(
+    name = "gscip_message_handler",
+    srcs = ["gscip_message_handler.cc"],
+    hdrs = ["gscip_message_handler.h"],
+    deps = [
+        "//ortools/base:logging",
+        "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@scip",
+    ],
+)
+
+cc_library(
+    name = "gscip_callback_result",
+    srcs = ["gscip_callback_result.cc"],
+    hdrs = ["gscip_callback_result.h"],
+    deps = ["@scip"],
+)
+
+cc_library(
+    name = "gscip_constraint_handler",
+    srcs = ["gscip_constraint_handler.cc"],
+    hdrs = ["gscip_constraint_handler.h"],
+    deps = [
+        ":gscip",
+        ":gscip_callback_result",
+        "//ortools/base:status_macros",
+        "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/types:span",
+        "@scip",
+    ],
+)
+
+cc_test(
+    name = "gscip_constraint_handler_test",
+    srcs = ["gscip_constraint_handler_test.cc"],
+    deps = [
+        ":gscip",
+        ":gscip_callback_result",
+        ":gscip_cc_proto",
+        ":gscip_constraint_handler",
+        ":gscip_parameters",
+        ":gscip_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@scip",
+    ],
+)
+
+cc_library(
+    name = "math_opt_gscip_solver_constraint_handler",
+    srcs = ["math_opt_gscip_solver_constraint_handler.cc"],
+    hdrs = ["math_opt_gscip_solver_constraint_handler.h"],
+    deps = [
+        ":gscip",
+        ":gscip_callback_result",
+        ":gscip_constraint_handler",
         "//ortools/base:linked_hash_map",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gscip",
-        "//ortools/gscip:gscip_callback_result",
-        "//ortools/gscip:gscip_constraint_handler",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",

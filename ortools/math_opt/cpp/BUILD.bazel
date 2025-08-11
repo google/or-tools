@@ -199,10 +199,10 @@ cc_library(
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/base:string_view_migration",
-        "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:result_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_roundtrip_conv",
@@ -406,11 +406,11 @@ cc_library(
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
         "//ortools/glop:parameters_cc_proto",
-        "//ortools/gscip:gscip_cc_proto",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:glpk_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "//ortools/math_opt/solvers:highs_cc_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:status_macros",
@@ -574,4 +574,11 @@ cc_library(
         ":update_result",
         "@abseil-cpp//absl/status:statusor",
     ],
+)
+
+cc_library(
+    name = "remote_streaming_mode",
+    srcs = ["remote_streaming_mode.cc"],
+    hdrs = ["remote_streaming_mode.h"],
+    deps = ["@abseil-cpp//absl/strings:string_view"],
 )

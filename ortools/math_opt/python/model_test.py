@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import math
-
+from typing import Optional
 from absl.testing import absltest
+from absl.testing import parameterized
 from ortools.math_opt import model_pb2
 from ortools.math_opt import model_update_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -24,7 +25,7 @@ from ortools.math_opt.python import variables
 from ortools.math_opt.python.testing import compare_proto
 
 
-class ModelTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
+class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
 
     def test_name(self) -> None:
         mod = model.Model(name="test_model")
@@ -461,7 +462,18 @@ class ModelTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         with self.assertRaises(ValueError):
             c2.set_coefficient(x1, 1.0)
 
-    def test_export(self) -> None:
+    @parameterized.named_parameters(
+        {"testcase_name": "default", "remove_names": None},
+        {"testcase_name": "with_names", "remove_names": False},
+        {"testcase_name": "without_names", "remove_names": True},
+    )
+    def test_export(self, remove_names: Optional[bool]) -> None:
+        """Test the export_model() function.
+
+        Args:
+          remove_names: Optional value for the remove_names parameters. When None,
+            calls export_model() without the parameter to test the default value.
+        """
         mod = model.Model(name="test_model")
         mod.objective.offset = 2.0
         mod.objective.is_maximize = True
@@ -472,16 +484,19 @@ class ModelTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
         c.set_coefficient(y, 2.0)
         mod.objective.set_linear_coefficient(y, 3.0)
         expected = model_pb2.ModelProto(
-            name="test_model",
+            name="test_model" if not remove_names else "",
             variables=model_pb2.VariablesProto(
                 ids=[0, 1],
                 lower_bounds=[0.0, 0.0],
                 upper_bounds=[1.0, 1.0],
                 integers=[True, True],
-                names=["x", "y"],
+                names=["x", "y"] if not remove_names else [],
             ),
             linear_constraints=model_pb2.LinearConstraintsProto(
-                ids=[0], lower_bounds=[0.0], upper_bounds=[2.0], names=["c"]
+                ids=[0],
+                lower_bounds=[0.0],
+                upper_bounds=[2.0],
+                names=["c"] if not remove_names else [],
             ),
             objective=model_pb2.ObjectiveProto(
                 maximize=True,
@@ -494,7 +509,66 @@ class ModelTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
                 row_ids=[0, 0], column_ids=[0, 1], coefficients=[1.0, 2.0]
             ),
         )
-        self.assert_protos_equiv(expected, mod.export_model())
+        self.assert_protos_equiv(
+            expected,
+            (
+                mod.export_model()
+                if remove_names is None
+                else mod.export_model(remove_names=remove_names)
+            ),
+        )
+
+    def test_from_model_proto(self) -> None:
+        model_proto = model_pb2.ModelProto(
+            name="test_model",
+            variables=model_pb2.VariablesProto(
+                ids=[0, 1],
+                lower_bounds=[0.0, 1.0],
+                upper_bounds=[2.0, 3.0],
+                integers=[True, False],
+                names=["x", "y"],
+            ),
+            linear_constraints=model_pb2.LinearConstraintsProto(
+                ids=[0],
+                lower_bounds=[-1.0],
+                upper_bounds=[2.0],
+                names=["c"],
+            ),
+            objective=model_pb2.ObjectiveProto(
+                maximize=True,
+                offset=2.0,
+                linear_coefficients=sparse_containers_pb2.SparseDoubleVectorProto(
+                    ids=[1], values=[3.0]
+                ),
+            ),
+            linear_constraint_matrix=sparse_containers_pb2.SparseDoubleMatrixProto(
+                row_ids=[0, 0], column_ids=[0, 1], coefficients=[1.0, 2.0]
+            ),
+        )
+        mod = model.Model.from_model_proto(model_proto)
+        self.assertEqual(mod.name, "test_model")
+        self.assertEqual(mod.get_num_variables(), 2)
+        x = mod.get_variable(0)
+        y = mod.get_variable(1)
+        self.assertEqual(x.name, "x")
+        self.assertEqual(x.lower_bound, 0.0)
+        self.assertEqual(x.upper_bound, 2.0)
+        self.assertTrue(x.integer)
+        self.assertEqual(y.name, "y")
+        self.assertEqual(y.lower_bound, 1.0)
+        self.assertEqual(y.upper_bound, 3.0)
+        self.assertFalse(y.integer)
+        self.assertEqual(mod.get_num_linear_constraints(), 1)
+        c = mod.get_linear_constraint(0)
+        self.assertEqual(c.name, "c")
+        self.assertEqual(c.lower_bound, -1.0)
+        self.assertEqual(c.upper_bound, 2.0)
+        self.assertEqual(c.get_coefficient(x), 1.0)
+        self.assertEqual(c.get_coefficient(y), 2.0)
+        self.assertTrue(mod.objective.is_maximize)
+        self.assertEqual(mod.objective.offset, 2.0)
+        self.assertEqual(mod.objective.get_linear_coefficient(x), 0.0)
+        self.assertEqual(mod.objective.get_linear_coefficient(y), 3.0)
 
     def test_update_tracker_simple(self) -> None:
         mod = model.Model(name="test_model")

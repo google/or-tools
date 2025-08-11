@@ -12,8 +12,7 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:py_library.bzl", "py_library")
-load("@rules_python//python:py_test.bzl", "py_test")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 # External users should depend only on ":mathopt" and import "mathopt".
 # Hence other libraries are private.
@@ -63,6 +62,7 @@ py_library(
         ":objectives",
         ":quadratic_constraints",
         ":variables",
+        requirement("typing-extensions"),
         "//ortools/math_opt:model_py_pb2",
         "//ortools/math_opt:model_update_py_pb2",
         "//ortools/math_opt/elemental/python:cpp_elemental",
@@ -231,9 +231,9 @@ py_library(
         ":model",
         ":solution",
         ":variables",
-        "//ortools/gscip:gscip_proto_py_pb2",
         "//ortools/math_opt:result_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
     ],
 )
 
@@ -282,12 +282,12 @@ py_library(
     srcs = ["parameters.py"],
     deps = [
         "//ortools/glop:parameters_py_pb2",
-        "//ortools/gscip:gscip_proto_py_pb2",
         "//ortools/math_opt:parameters_py_pb2",
         "//ortools/math_opt/solvers:glpk_py_pb2",
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
     ],
@@ -301,13 +301,13 @@ py_test(
         ":parameters",
         requirement("absl-py"),
         "//ortools/glop:parameters_py_pb2",
-        "//ortools/gscip:gscip_proto_py_pb2",
         "//ortools/math_opt:parameters_py_pb2",
         "//ortools/math_opt/python/testing:compare_proto",
         "//ortools/math_opt/solvers:glpk_py_pb2",
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
     ],
@@ -414,6 +414,7 @@ py_library(
         "//ortools/math_opt:parameters_py_pb2",
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/core/python:solver",
+        "//ortools/util/python:solve_interrupter",
     ],
 )
 

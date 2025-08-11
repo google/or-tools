@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/gscip/gscip_constraint_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_constraint_handler.h"
 
 #include <functional>
 #include <memory>
@@ -23,9 +23,9 @@
 #include "absl/status/status.h"
 #include "absl/types/span.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/gscip/gscip.h"
-#include "ortools/gscip/gscip_callback_result.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.h"
+#include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
 #include "scip/def.h"
 #include "scip/pub_cons.h"
 #include "scip/pub_message.h"

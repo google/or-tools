@@ -192,6 +192,7 @@ cc_binary(
     srcs = ["tsp.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:gscip_solver",
