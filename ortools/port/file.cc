@@ -16,6 +16,7 @@
 #include <string>
 
 #include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -25,7 +26,6 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
-#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
