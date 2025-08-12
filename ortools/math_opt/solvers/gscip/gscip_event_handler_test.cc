@@ -219,6 +219,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByInit) {
         ASSERT_OK(handler.Register(gscip.get()));
 
         const absl::Status status = gscip->Solve().status();
+        LOG(ERROR) << "status: " << status;
         if (!status.ok() &&
             absl::StrContains(status.message(), "SCIP error code 0")) {
           // Write the expected marker only if we see the expected error.
