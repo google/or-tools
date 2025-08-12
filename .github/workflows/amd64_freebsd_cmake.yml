@@ -27,7 +27,7 @@ jobs:
     name: amd64•FreeBSD•CMake•${{matrix.lang}}
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: vagrant version
         run: Vagrant --version
       - name: VirtualBox version

@@ -20,7 +20,7 @@ jobs:
     name: amd64•MacOS•CMake(${{matrix.cmake.name}})•C++
     runs-on: macos-13 # last macos intel based runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check CMake
         run: cmake --version
       - name: Configure
@@ -54,4 +54,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
