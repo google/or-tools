@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THIRD_PARTY_ORTOOLS_ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_
-#define THIRD_PARTY_ORTOOLS_ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_
+#ifndef ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_
+#define ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_
 
 #include <string>
 
@@ -31,4 +31,4 @@ inline std::string StringCopy(const std::string& str) { return str; }
 
 }  // namespace google::protobuf
 
-#endif  // THIRD_PARTY_ORTOOLS_ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_
+#endif  // ORTOOLS_BASE_STRING_VIEW_MIGRATION_H_

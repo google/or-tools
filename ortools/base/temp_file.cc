@@ -13,25 +13,25 @@
 
 #include "ortools/base/temp_file.h"
 
+#include <cstdint>
 #include <string>
 
-#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "ortools/base/logging.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #if !defined(_MSC_VER)
 #include <unistd.h>
 #endif
-
-#include "absl/strings/str_format.h"
-#include "absl/time/clock.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
 namespace file {
 
-::absl::StatusOr<std::string> MakeTempFilename(
-    absl::string_view directory,
-    absl::string_view file_prefix) {
+::absl::StatusOr<std::string> MakeTempFilename(absl::string_view directory,
+                                               absl::string_view file_prefix) {
   std::string filename;
 #if defined(__PORTABLE_PLATFORM__)
   filename = "Temporary files are not implemented for this platform.";
@@ -59,7 +59,8 @@ namespace file {
     file_prefix = "tempfile";
   }
 
-  filename = absl::StrFormat("%s/%s-%x-%d-%llx", directory, file_prefix, tid, pid, now);
+  filename = absl::StrFormat("%s/%s-%x-%d-%llx", directory, file_prefix, tid,
+                             pid, now);
   return filename;
 }
 
