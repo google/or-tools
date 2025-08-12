@@ -22,7 +22,7 @@ jobs:
     name: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
     runs-on: macos-latest # macos arm64 based runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set Java to OpenJDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
@@ -63,4 +63,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
