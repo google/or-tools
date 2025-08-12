@@ -21,7 +21,7 @@ jobs:
     name: amd64•Linux•CMake(${{matrix.cmake.name}})•C++
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Ninja
         run: |
           sudo apt-get update
@@ -59,4 +59,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5

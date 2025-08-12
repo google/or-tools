@@ -28,7 +28,7 @@ jobs:
     name: amd64•${{matrix.distro}}•CMake•${{matrix.lang}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Virtualbox install
         run: |
           sudo apt update -q
