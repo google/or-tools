@@ -132,7 +132,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:logging",
         "//ortools/base:status_macros",
-        "//ortools/port:file",
+        "//ortools/base:temp_file",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",

@@ -36,12 +36,10 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/notification.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-//#include "file/util/temp_file.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/helpers.h"
@@ -50,7 +48,7 @@
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
 #include "ortools/math_opt/solvers/gscip/gscip_testing.h"
-#include "ortools/port/file.h"
+#include "ortools/base/temp_file.h"
 #include "scip/def.h"
 #include "scip/type_cons.h"
 #include "scip/type_var.h"
@@ -68,8 +66,8 @@ using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
-using testing::internal::CaptureStdout;
-using testing::internal::GetCapturedStdout;
+constexpr auto CaptureTestStdout = testing::internal::CaptureStdout;
+constexpr auto GetCapturedTestStdout = testing::internal::GetCapturedStdout;
 constexpr auto INVALID_ARGUMENT = absl::StatusCode::kInvalidArgument;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
@@ -1386,40 +1384,40 @@ TEST(GScipTest, SilenceOutput) {
   const std::string kExpectedNoise = "Gap";
 
   // First test with `silence_output` unset (using the default parameters).
-  CaptureStdout();
+  CaptureTestStdout();
   EXPECT_OK(gscip->Solve());
-  EXPECT_THAT(GetCapturedStdout(), HasSubstr(kExpectedNoise));
+  EXPECT_THAT(GetCapturedTestStdout(), HasSubstr(kExpectedNoise));
 
   // Then test with `silence_output` set to true.
   {
     GScipParameters parameters;
     parameters.set_silence_output(true);
-    CaptureStdout();
+    CaptureTestStdout();
     EXPECT_OK(gscip->Solve(parameters));
-    EXPECT_EQ(GetCapturedStdout(), "");
+    EXPECT_EQ(GetCapturedTestStdout(), "");
   }
 
   // Then call again the same GSCIP with `silence_output` unset (using the
   // default parameters). We expect GScip to have reset the value and not to
   // have kept the `true` value from last Solve().
-  CaptureStdout();
+  CaptureTestStdout();
   EXPECT_OK(gscip->Solve());
-  EXPECT_THAT(GetCapturedStdout(), HasSubstr(kExpectedNoise));
+  EXPECT_THAT(GetCapturedTestStdout(), HasSubstr(kExpectedNoise));
 
   // Then test with `silence_output` set to false.
   {
     GScipParameters parameters;
     parameters.set_silence_output(false);
-    CaptureStdout();
+    CaptureTestStdout();
     EXPECT_OK(gscip->Solve(parameters));
-    EXPECT_THAT(GetCapturedStdout(), HasSubstr(kExpectedNoise));
+    EXPECT_THAT(GetCapturedTestStdout(), HasSubstr(kExpectedNoise));
   }
 
   // Finally call again the same GSCIP with `silence_output` unset (using the
   // default parameters).
-  CaptureStdout();
+  CaptureTestStdout();
   EXPECT_OK(gscip->Solve());
-  EXPECT_THAT(GetCapturedStdout(), HasSubstr(kExpectedNoise));
+  EXPECT_THAT(GetCapturedTestStdout(), HasSubstr(kExpectedNoise));
 }
 
 TEST(GScipTest, LogFile) {
@@ -1428,7 +1426,7 @@ TEST(GScipTest, LogFile) {
 
   ASSERT_OK_AND_ASSIGN(
       const std::string temp_file_name,
-      PortableTemporaryFile(::testing::TempDir(), "search_logs"));
+      file::MakeTempFilename(::testing::TempDir(), "search_logs"));
 
   // Create the empty file.
   ASSERT_OK(file::SetContents(temp_file_name, "", file::Defaults()));
@@ -1486,9 +1484,9 @@ TEST(GScipTest, MessageHandler) {
         .Times(AtLeast(1));
 
     // We test that nothing is printed to stdout.
-    CaptureStdout();
+    CaptureTestStdout();
     EXPECT_OK(gscip->Solve(parameters, message_handler_mock.AsStdFunction()));
-    EXPECT_EQ(GetCapturedStdout(), "");
+    EXPECT_EQ(GetCapturedTestStdout(), "");
 
     // We call the same GScip without the message_handler. The previous message
     // handler should not be called.

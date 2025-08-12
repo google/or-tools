@@ -30,11 +30,6 @@ namespace operations_research {
 
 ::absl::Status PortableDeleteFile(absl::string_view file_name);
 
-// Returns true if successful.  Outputs temp file to filename.
-absl::StatusOr<std::string> PortableTemporaryFile(
-    absl::string_view directory,
-    absl::string_view file_prefix);
-
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_PORT_FILE_H_

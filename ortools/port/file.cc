@@ -52,32 +52,6 @@ namespace operations_research {
 #endif  // !defined(__PORTABLE_PLATFORM__)
 }
 
-absl::StatusOr<std::string> PortableTemporaryFile(
-    absl::string_view directory,
-    absl::string_view file_prefix) {
-  std::string filename;
-#if defined(__PORTABLE_PLATFORM__)
-  filename = "Temporary files are not implemented for this platform.";
-  LOG(ERROR) << filename;
-  return absl::UnavailableError(filename);
-#else  // defined(__PORTABLE_PLATFORM__)
-#if defined(__linux)
-  int32_t tid = static_cast<int32_t>(pthread_self());
-#else   // defined(__linux__)
-  int32_t tid = 123;
-#endif  // defined(__linux__)
-#if !defined(_MSC_VER)
-  int32_t pid = static_cast<int32_t>(getpid());
-#else   // _MSC_VER
-  int32_t pid = 456;
-#endif  // _MSC_VER
-  int64_t now = absl::GetCurrentTimeNanos();
-  filename = absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
-
-  return filename;
-#endif  // !defined(__PORTABLE_PLATFORM__)
-}
-
 ::absl::Status PortableDeleteFile(absl::string_view file_name) {
 #if defined(__PORTABLE_PLATFORM__)
   return absl::Status(absl::StatusCode::kUnimplemented,

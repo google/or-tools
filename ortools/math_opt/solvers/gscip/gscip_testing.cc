@@ -22,6 +22,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
+
 namespace operations_research {
 
 using ::testing::MakeMatcher;
