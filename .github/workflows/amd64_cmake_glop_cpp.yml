@@ -12,7 +12,7 @@ jobs:
     name: amd64•Docker•CMake•Glop
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build env image
         run: make --directory=cmake glop_env
       - name: Build devel image
@@ -76,7 +76,7 @@ jobs:
     name: ${{matrix.cmake.platform}}•${{matrix.cmake.runner}}•CMake•Glop
     runs-on: ${{matrix.cmake.runner}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check cmake
         run: cmake --version
       - name: Configure

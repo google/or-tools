@@ -27,7 +27,7 @@ jobs:
     name: amd64•MacOS•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
     runs-on: macos-13 # last macos intel based runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Swig install
         run: |
           brew install swig
@@ -74,4 +74,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
