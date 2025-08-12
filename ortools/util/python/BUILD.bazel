@@ -50,7 +50,12 @@ cc_library(
     name = "py_solve_interrupter_lib",
     srcs = ["py_solve_interrupter.cc"],
     hdrs = ["py_solve_interrupter.h"],
-    visibility = ["//visibility:public"],
+    # This library is not meant to be consumed end users; only by C++ code of
+    # Clif libraries that needs a SolverInterrupter.
+    visibility = [
+        "//ortools/math_opt/core/python:__subpackages__",
+        "//ortools/math_opt/python:__subpackages__",
+    ],
     deps = [
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/base:core_headers",
@@ -76,8 +81,10 @@ pybind_extension(
     srcs = ["pybind_solve_interrupter.cc"],
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
-    visibility = ["//visibility:public"],
-     deps = [":py_solve_interrupter_lib"],
+    visibility = [
+        "//ortools/math_opt/core/python:__subpackages__",
+    ],
+    deps = [":py_solve_interrupter_lib"],
 )
 
 pybind_extension(

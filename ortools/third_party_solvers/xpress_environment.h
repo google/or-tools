@@ -13,8 +13,8 @@
 
 // Initial version of this code was provided by RTE
 
-#ifndef THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
-#define THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
+#ifndef ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
+#define ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
 
 #include <functional>
 #include <string>
@@ -547,4 +547,4 @@ extern std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int
 
 }  // namespace operations_research
 
-#endif  // THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
+#endif  // ORTOOLS_THIRD_PARTY_SOLVERS_XPRESS_ENVIRONMENT_H_
