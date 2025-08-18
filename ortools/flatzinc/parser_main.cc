@@ -15,11 +15,11 @@
 // http://www.minizinc.org/), parses it, and spits out the model it
 // has built.
 
+#include <cstddef>
 #include <string>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"

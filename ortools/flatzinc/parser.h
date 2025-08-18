@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_PARSER_H_
-#define OR_TOOLS_FLATZINC_PARSER_H_
+#ifndef ORTOOLS_FLATZINC_PARSER_H_
+#define ORTOOLS_FLATZINC_PARSER_H_
 
 #include <string>
 
@@ -25,4 +25,4 @@ bool ParseFlatzincFile(const std::string& filename, Model* model);
 bool ParseFlatzincString(const std::string& input, Model* model);
 }  // namespace fz
 }  // namespace operations_research
-#endif  // OR_TOOLS_FLATZINC_PARSER_H_
+#endif  // ORTOOLS_FLATZINC_PARSER_H_

@@ -34,6 +34,8 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 // Code in the implementation file.
 %code {
+#include <cstdint>
+
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -257,10 +259,20 @@ variable_or_constant_declaration:
   Variable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
+    CHECK_EQ(var->domain.is_a_set, domain.is_a_set);
   } else if (assignment.variable == nullptr) {  // just an integer constant.
-    CHECK(domain.Contains(assignment.value));
-    var = model->AddVariable(
-        identifier, Domain::IntegerValue(assignment.value), introduced);
+    if (assignment.is_domain) {
+      // TODO(user): Check that the assignment is included in the domain.
+      // We force the set domain because we can have the following code:
+      //   var set of {0,18}: x = {0,18};
+      // where the second domain is not tagged as a set.
+      var = model->AddVariable(
+          identifier, assignment.domain, introduced, domain.is_a_set);
+    } else {
+      CHECK(domain.Contains(assignment.value));
+      var = model->AddVariable(
+          identifier, Domain::IntegerValue(assignment.value), introduced);
+    }
   } else {  // a variable.
     var = assignment.variable;
     var->Merge(identifier, domain, introduced);
@@ -374,6 +386,14 @@ var_or_value_array:  // Cannot be empty.
 var_or_value:
   IVALUE { $$ = VarRefOrValue::Value($1); }  // An integer value.
 | DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.
+| IVALUE DOTDOT IVALUE {
+   $$ = VarRefOrValue::DomainValue(Domain::Interval($1, $3));
+}
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = VarRefOrValue::DomainValue(Domain::IntegerList(std::move(*$2)));
+  delete $2;
+}
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;

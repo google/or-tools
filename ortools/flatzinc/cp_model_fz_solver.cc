@@ -30,6 +30,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
@@ -66,11 +67,23 @@ struct VarOrValue {
 int TrueLiteral(int var) { return var; }
 int FalseLiteral(int var) { return -var - 1; }
 
+struct SetVariable {
+  std::vector<int> var_indices;
+  std::vector<int64_t> sorted_values;
+  int card_var_index = kNoVar;
+};
+
 // Helper class to convert a flatzinc model to a CpModelProto.
 struct CpModelProtoWithMapping {
   CpModelProtoWithMapping()
       : arena(std::make_unique<google::protobuf::Arena>()),
         proto(*google::protobuf::Arena::Create<CpModelProto>(arena.get())) {}
+
+  ~CpModelProtoWithMapping() {
+    for (auto& [var, set_variable] : set_variables) {
+      delete set_variable;
+    }
+  }
 
   // Returns a constant CpModelProto variable created on-demand.
   int LookupConstant(int64_t value);
@@ -84,9 +97,16 @@ struct CpModelProtoWithMapping {
                                      bool negate = false);
   std::vector<int> LookupVars(const fz::Argument& argument);
   VarOrValue LookupVarOrValue(const fz::Argument& argument);
+
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
-  // Get or create a literal that is equivalent tovar == value.
+  // Set variables.
+  void ExtractSetConstraint(const fz::Constraint& fz_ct);
+  bool ConstraintContainsSetVariables(const fz::Constraint& constraint) const;
+  SetVariable* LookupSetVar(const fz::Argument& argument);
+  SetVariable* LookupSetVarAt(const fz::Argument& argument, int pos);
+
+  // Get or create a literal that is equivalent to var == value.
   int GetOrCreateLiteralForVarEqValue(int var, int64_t value);
 
   // Get or create a literal that is equivalent to var1 == var2.
@@ -155,6 +175,7 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
   absl::flat_hash_map<std::pair<int, int64_t>, int> var_eq_value_to_literal;
   absl::flat_hash_map<std::pair<int, int>, int> var_eq_var_to_literal;
+  absl::flat_hash_map<fz::Variable*, SetVariable*> set_variables;
 };
 
 int CpModelProtoWithMapping::LookupConstant(int64_t value) {
@@ -262,6 +283,30 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
     }
   }
   return result;
+}
+
+bool CpModelProtoWithMapping::ConstraintContainsSetVariables(
+    const fz::Constraint& constraint) const {
+  for (const fz::Argument& argument : constraint.arguments) {
+    for (fz::Variable* var : argument.variables) {
+      if (var != nullptr && var->domain.is_a_set) return true;
+    }
+  }
+  return false;
+}
+
+SetVariable* CpModelProtoWithMapping::LookupSetVar(
+    const fz::Argument& argument) {
+  CHECK_EQ(argument.type, fz::Argument::VAR_REF);
+  CHECK(argument.Var()->domain.is_a_set);
+  return set_variables[argument.Var()];
+}
+
+SetVariable* CpModelProtoWithMapping::LookupSetVarAt(
+    const fz::Argument& argument, int pos) {
+  CHECK_EQ(argument.type, fz::Argument::VAR_REF_ARRAY);
+  CHECK(argument.variables[pos]->domain.is_a_set);
+  return set_variables[argument.variables[pos]];
 }
 
 ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
@@ -407,6 +452,7 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(VarOrValue start,
 std::vector<int> CpModelProtoWithMapping::CreateIntervals(
     absl::Span<const VarOrValue> starts, absl::Span<const VarOrValue> sizes) {
   std::vector<int> intervals;
+  intervals.reserve(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     intervals.push_back(
         GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
@@ -1253,6 +1299,53 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   }
 }  // NOLINT(readability/fn_size)
 
+// array_set_element, array_var_set_element, set_diff, set_eq,
+// set_eq_reif, set_in, set_in_reif, set_intersect, set_le, set_le_reif,
+// set_lt, set_lt_reif, set_ne, set_ne_reif, set_subset, set_subset_reif,
+// set_superset, set_superset_reif, set_symdiff, set_union.
+void CpModelProtoWithMapping::ExtractSetConstraint(
+    const fz::Constraint& fz_ct) {
+  if (fz_ct.type == "set_card") {
+    SetVariable* set_var = LookupSetVar(fz_ct.arguments[0]);
+    VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[1]);
+    if (set_var->card_var_index == kNoVar) {
+      ConstraintProto* ct = proto.add_constraints();
+      for (const int bool_var : set_var->var_indices) {
+        ct->mutable_linear()->add_vars(bool_var);
+        ct->mutable_linear()->add_coeffs(1);
+      }
+
+      if (var_or_value.var == kNoVar) {
+        set_var->card_var_index = LookupConstant(var_or_value.value);
+        ct->mutable_linear()->add_domain(var_or_value.value);
+        ct->mutable_linear()->add_domain(var_or_value.value);
+      } else {
+        set_var->card_var_index = var_or_value.var;
+        ct->mutable_linear()->add_vars(var_or_value.var);
+        ct->mutable_linear()->add_coeffs(-1);
+        ct->mutable_linear()->add_domain(0);
+        ct->mutable_linear()->add_domain(0);
+      }
+    } else {
+      if (var_or_value.var == kNoVar) {
+        ConstraintProto* ct = proto.add_constraints();
+        ct->mutable_linear()->add_vars(set_var->card_var_index);
+        ct->mutable_linear()->add_coeffs(1);
+        ct->mutable_linear()->add_domain(var_or_value.value);
+        ct->mutable_linear()->add_domain(var_or_value.value);
+      } else {
+        ConstraintProto* ct = proto.add_constraints();
+        ct->mutable_linear()->add_vars(set_var->card_var_index);
+        ct->mutable_linear()->add_coeffs(1);
+        ct->mutable_linear()->add_vars(var_or_value.var);
+        ct->mutable_linear()->add_coeffs(-1);
+        ct->mutable_linear()->add_domain(0);
+        ct->mutable_linear()->add_domain(0);
+      }
+    }
+  }
+}  // NOLINT(readability/fn_size)
+
 void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
@@ -1433,8 +1526,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
 std::string SolutionString(
     const fz::SolutionOutputSpecs& output,
     const std::function<int64_t(fz::Variable*)>& value_func,
+    const std::function<std::vector<int64_t>(fz::Variable*)>& set_evaluator,
     double objective_value) {
-  if (output.variable != nullptr && !output.variable->domain.is_float) {
+  if (output.variable != nullptr && !output.variable->domain.is_float &&
+      !output.variable->domain.is_a_set) {
     const int64_t value = value_func(output.variable);
     if (output.display_as_boolean) {
       return absl::StrCat(output.name, " = ", value == 1 ? "true" : "false",
@@ -1442,6 +1537,9 @@ std::string SolutionString(
     } else {
       return absl::StrCat(output.name, " = ", value, ";");
     }
+  } else if (output.variable != nullptr && output.variable->domain.is_a_set) {
+    const std::vector<int64_t> values = set_evaluator(output.variable);
+    return absl::StrCat(output.name, " = {", absl::StrJoin(values, ","), "};");
   } else if (output.variable != nullptr && output.variable->domain.is_float) {
     return absl::StrCat(output.name, " = ", objective_value, ";");
   } else {
@@ -1477,11 +1575,12 @@ std::string SolutionString(
 std::string SolutionString(
     const fz::Model& model,
     const std::function<int64_t(fz::Variable*)>& value_func,
+    const std::function<std::vector<int64_t>(fz::Variable*)>& set_evaluator,
     double objective_value) {
   std::string solution_string;
   for (const auto& output_spec : model.output()) {
-    solution_string.append(
-        SolutionString(output_spec, value_func, objective_value));
+    solution_string.append(SolutionString(output_spec, value_func,
+                                          set_evaluator, objective_value));
     solution_string.append("\n");
   }
   return solution_string;
@@ -1581,41 +1680,79 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     CHECK(!fz_var->domain.is_float)
         << "CP-SAT does not support float variables";
 
-    m.fz_var_to_index[fz_var] = num_variables++;
-    IntegerVariableProto* var = m.proto.add_variables();
-    var->set_name(fz_var->name);
-    if (fz_var->domain.is_interval) {
-      if (fz_var->domain.values.empty()) {
-        // The CP-SAT solver checks that constraints cannot overflow during
-        // their propagation. Because of that, we trim undefined variable
-        // domains (i.e. int in minizinc) to something hopefully large enough.
-        LOG_FIRST_N(WARNING, 1)
-            << "Using flag --fz_int_max for unbounded integer variables.";
-        LOG_FIRST_N(WARNING, 1)
-            << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
-            << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
-        var->add_domain(-absl::GetFlag(FLAGS_fz_int_max));
-        var->add_domain(absl::GetFlag(FLAGS_fz_int_max));
+    if (fz_var->domain.is_a_set) {
+      SetVariable* set_var = new SetVariable();
+
+      // Fill values.
+      if (fz_var->domain.is_interval) {
+        set_var->sorted_values.reserve(fz_var->domain.values[1] -
+                                       fz_var->domain.values[0] + 1);
+        for (int64_t value = fz_var->domain.values[0];
+             value <= fz_var->domain.values[1]; ++value) {
+          set_var->sorted_values.push_back(value);
+        }
       } else {
-        var->add_domain(fz_var->domain.values[0]);
-        var->add_domain(fz_var->domain.values[1]);
+        set_var->sorted_values.reserve(fz_var->domain.values.size());
+        for (int64_t value : fz_var->domain.values) {
+          set_var->sorted_values.push_back(value);
+        }
       }
+
+      // Add Boolean variables.
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        if (fz_var->domain.is_fixed_set) {
+          set_var->var_indices.push_back(m.LookupConstant(1));
+        } else {
+          set_var->var_indices.push_back(num_variables++);
+          IntegerVariableProto* var = m.proto.add_variables();
+          var->add_domain(0);
+          var->add_domain(1);
+        }
+      }
+
+      // Pass ownership.
+      m.set_variables[fz_var] = set_var;
     } else {
-      FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
+      m.fz_var_to_index[fz_var] = num_variables++;
+      IntegerVariableProto* var = m.proto.add_variables();
+      var->set_name(fz_var->name);
+      if (fz_var->domain.is_interval) {
+        if (fz_var->domain.values.empty()) {
+          // The CP-SAT solver checks that constraints cannot overflow during
+          // their propagation. Because of that, we trim undefined variable
+          // domains (i.e. int in minizinc) to something hopefully large enough.
+          LOG_FIRST_N(WARNING, 1)
+              << "Using flag --fz_int_max for unbounded integer variables.";
+          LOG_FIRST_N(WARNING, 1)
+              << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
+              << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
+          var->add_domain(-absl::GetFlag(FLAGS_fz_int_max));
+          var->add_domain(absl::GetFlag(FLAGS_fz_int_max));
+        } else {
+          var->add_domain(fz_var->domain.values[0]);
+          var->add_domain(fz_var->domain.values[1]);
+        }
+      } else {
+        FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
+      }
     }
   }
 
   // Translate the constraints.
   for (fz::Constraint* fz_ct : fz_model.constraints()) {
     if (fz_ct == nullptr || !fz_ct->active) continue;
-    ConstraintProto* ct = m.proto.add_constraints();
-    ct->set_name(fz_ct->type);
-    if (absl::EndsWith(fz_ct->type, "_reif") ||
-        absl::EndsWith(fz_ct->type, "_imp") || fz_ct->type == "array_bool_or" ||
-        fz_ct->type == "array_bool_and") {
-      m.FillReifOrImpliedConstraint(*fz_ct, ct);
+    if (m.ConstraintContainsSetVariables(*fz_ct)) {
+      m.ExtractSetConstraint(*fz_ct);
     } else {
-      m.FillConstraint(*fz_ct, ct);
+      ConstraintProto* ct = m.proto.add_constraints();
+      ct->set_name(fz_ct->type);
+      if (absl::EndsWith(fz_ct->type, "_reif") ||
+          absl::EndsWith(fz_ct->type, "_imp") ||
+          fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
+        m.FillReifOrImpliedConstraint(*fz_ct, ct);
+      } else {
+        m.FillConstraint(*fz_ct, ct);
+      }
     }
   }
 
@@ -1728,6 +1865,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           [&m, &r](fz::Variable* v) {
             return r.solution(m.fz_var_to_index.at(v));
           },
+          [&m, &r](fz::Variable* v) {
+            std::vector<int64_t> values;
+            const SetVariable* set_var = m.set_variables.at(v);
+            for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+              if (r.solution(set_var->var_indices[i]) == 1) {
+                values.push_back(set_var->sorted_values[i]);
+              }
+            }
+            return values;
+          },
           r.objective_value());
       SOLVER_LOG(solution_logger, solution_string);
       if (p.display_statistics) {
@@ -1759,6 +1906,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         [&response, &m](fz::Variable* v) {
           return response.solution(m.fz_var_to_index.at(v));
         },
+        [&response, &m](fz::Variable* v) {
+          std::vector<int64_t> values;
+          const SetVariable* set_var = m.set_variables.at(v);
+          for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+            if (response.solution(set_var->var_indices[i]) == 1) {
+              values.push_back(set_var->sorted_values[i]);
+            }
+          }
+          return values;
+        },
         logger));
   }
 
@@ -1772,6 +1929,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             fz_model,
             [&response, &m](fz::Variable* v) {
               return response.solution(m.fz_var_to_index.at(v));
+            },
+            [&response, &m](fz::Variable* v) {
+              std::vector<int64_t> values;
+              const SetVariable* set_var = m.set_variables.at(v);
+              for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+                if (response.solution(set_var->var_indices[i]) == 1) {
+                  values.push_back(set_var->sorted_values[i]);
+                }
+              }
+              return values;
             },
             response.objective_value());
         SOLVER_LOG(solution_logger, solution_string);

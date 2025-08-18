@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1023,8 +1022,12 @@ Model::~Model() {
 }
 
 Variable* Model::AddVariable(absl::string_view name, const Domain& domain,
-                             bool defined) {
+                             bool defined, bool set_is_fixed) {
   Variable* const var = new Variable(name, domain, defined);
+  if (set_is_fixed) {
+    var->domain.is_a_set = true;
+    var->domain.is_fixed_set = true;
+  }
   variables_.push_back(var);
   return var;
 }
@@ -1133,6 +1136,32 @@ bool Model::IsInconsistent() const {
 
 void ModelStatistics::PrintStatistics() const {
   SOLVER_LOG(logger_, "Model ", model_.name());
+
+  // Variables.
+  int num_int_var = 0;
+  int num_float_var = 0;
+  int num_set_var = 0;
+  for (Variable* var : model_.variables()) {
+    if (var->domain.is_float) {
+      ++num_float_var;
+    } else if (var->domain.is_a_set) {
+      ++num_set_var;
+    } else {
+      ++num_int_var;
+    }
+  }
+  if (num_int_var > 0) {
+    SOLVER_LOG(logger_, "  - integer variables:", num_int_var);
+  }
+  if (num_float_var > 0) {
+    SOLVER_LOG(logger_, "  - float variables:", num_float_var);
+  }
+  if (num_set_var > 0) {
+    SOLVER_LOG(logger_, "  - set variables:", num_set_var);
+  }
+  SOLVER_LOG(logger_);
+
+  // Constraints.
   for (const auto& it : constraints_per_type_) {
     SOLVER_LOG(logger_, "  - ", it.first, ": ", it.second.size());
   }
