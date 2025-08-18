@@ -86,7 +86,6 @@ if(USE_PDLP)
 endif()
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
-  set(GSCIP_DIR gscip)
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
@@ -405,7 +404,6 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
-  "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
@@ -415,10 +413,6 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
 if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_FILES ${PDLP_PROTO_FILES})
-endif()
-if(USE_SCIP OR BUILD_MATH_OPT)
-  file(GLOB_RECURSE GSCIP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
-  list(APPEND OR_TOOLS_PROTO_FILES ${GSCIP_PROTO_FILES})
 endif()
 
 # ORTools proto
@@ -529,7 +523,6 @@ foreach(SUBPROJECT IN ITEMS
  bop
  glop
  ${GLPK_DIR}
- ${GSCIP_DIR}
  ${GUROBI_DIR}
  ${PDLP_DIR}
  sat
