@@ -424,6 +424,9 @@ file(COPY
   ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
+file(COPY
+  ortools/util/python/solve_interrupter.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
 file(TOUCH ${PYTHON_PROJECT_DIR}/linear_solver/python/py.typed)
@@ -704,6 +707,11 @@ add_custom_command(
    $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
+   $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -727,6 +735,8 @@ add_custom_command(
     rcpsp_pybind11
     set_cover_pybind11
     sorted_interval_list_pybind11
+    solve_interrupter_pybind11
+    $<TARGET_NAME_IF_EXISTS:solve_interrupter_testing_pybind11>
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 
@@ -767,6 +777,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.pybind_solve_interrupter --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
