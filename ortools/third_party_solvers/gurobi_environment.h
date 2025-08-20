@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
-#define THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
+#ifndef ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
+#define ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
 
 #include <functional>
 #include <vector>
@@ -732,4 +732,4 @@ extern std::function<char *(void)> GRBplatform;
 // clang-format on
 }  // namespace operations_research
 
-#endif  // THIRD_PARTY_ORTOOLS_ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
+#endif  // ORTOOLS_THIRD_PARTY_SOLVERS_GUROBI_ENVIRONMENT_H_
