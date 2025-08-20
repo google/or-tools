@@ -260,12 +260,19 @@ variable_or_constant_declaration:
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
     CHECK_EQ(var->domain.is_a_set, domain.is_a_set);
-  } else if (assignment.variable == nullptr) {  // just an integer constant.
-    if (assignment.is_domain) {
+  } else if (assignment.variable == nullptr) {  // A constant.
+    if (assignment.is_float) {
+      // Assigned to an float constant.
+      const double value = assignment.float_value;
+      var = model->AddVariable(
+          identifier, Domain::FloatValue(value), introduced);
+    } else if (assignment.is_domain) {
       // TODO(user): Check that the assignment is included in the domain.
       // We force the set domain because we can have the following code:
       //   var set of {0,18}: x = {0,18};
       // where the second domain is not tagged as a set.
+      //
+      // Assigned to a set constant.
       var = model->AddVariable(
           identifier, assignment.domain, introduced, domain.is_a_set);
     } else {
@@ -309,13 +316,21 @@ variable_or_constant_declaration:
     const std::string var_name = absl::StrFormat("%s[%d]", identifier, i + 1);
     if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
-    } else if ((*assignments)[i].variable == nullptr) {
+    } else if ((*assignments)[i].variable == nullptr) {  // A constant.
       if ((*assignments)[i].is_float) {
         // Assigned to an float constant.
         const double value = (*assignments)[i].float_value;
-        //CHECK(domain.Contains(value));
         vars[i] =
             model->AddVariable(var_name, Domain::FloatValue(value), introduced);
+      } else if ((*assignments)[i].is_domain) {
+        // TODO(user): Check that the assignment is included in the domain.
+        // We force the set domain because we can have the following code:
+        //   var set of {0,18}: x = {0,18};
+        // where the second domain is not tagged as a set.
+        //
+        // Assigned to a set constant.
+        vars[i] = model->AddVariable(
+            var_name, (*assignments)[i].domain, introduced, domain.is_a_set);
       } else {
         // Assigned to an integer constant.
         const int64_t value = (*assignments)[i].value;

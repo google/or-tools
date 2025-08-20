@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <iterator>
 #include <limits>
 #include <string>
 #include <utility>
@@ -91,6 +92,35 @@ std::vector<int64_t> SetEval(
     }
     case Argument::VAR_REF: {
       return set_evaluator(arg.Var());
+    }
+    default: {
+      LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
+      return {};
+    }
+  }
+}
+
+std::vector<int64_t> SetEvalAt(
+    const Argument& arg, int pos,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  switch (arg.type) {
+    case Argument::DOMAIN_LIST: {
+      const Domain& domain = arg.domains[pos];
+      if (domain.empty()) {
+        return {};
+      } else if (domain.is_interval) {
+        std::vector<int64_t> result;
+        result.reserve(domain.Max() - domain.Min() + 1);
+        for (int64_t i = domain.Min(); i <= domain.Max(); ++i) {
+          result.push_back(i);
+        }
+        return result;
+      } else {
+        return domain.values;
+      }
+    }
+    case Argument::VAR_REF_ARRAY: {
+      return set_evaluator(arg.variables[pos]);
     }
     default: {
       LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
@@ -1210,6 +1240,17 @@ bool CheckSetCard(
   return set_size == cardinality;
 }
 
+bool CheckArraySetElement(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t index = Eval(ct.arguments[0], evaluator);
+  const int64_t min_index = ct.arguments[0].Var()->domain.Min();
+  const std::vector<int64_t> element =
+      SetEvalAt(ct.arguments[1], index - min_index, set_evaluator);
+  const std::vector<int64_t> target = SetEval(ct.arguments[2], set_evaluator);
+  return element == target;
+}
+
 bool CheckSetIn(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1234,6 +1275,142 @@ bool CheckSetInReif(
   const bool contain = std::find(set.begin(), set.end(), value) != set.end();
   const int64_t status = Eval(ct.arguments[2], evaluator);
   return contain == (status == 1);
+}
+
+bool CheckSetIntersect(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
+  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
+  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
+  absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
+  absl::flat_hash_set<int64_t> computed_intersection;
+  std::set_intersection(
+      values_x.begin(), values_x.end(), values_y.begin(), values_y.end(),
+      std::inserter(computed_intersection, computed_intersection.begin()));
+  return computed_intersection == set_r;
+}
+
+bool CheckSetUnion(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
+  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
+  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
+  absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
+  absl::flat_hash_set<int64_t> computed_intersection;
+  std::set_union(
+      values_x.begin(), values_x.end(), values_y.begin(), values_y.end(),
+      std::inserter(computed_intersection, computed_intersection.begin()));
+  return computed_intersection == set_r;
+}
+
+bool CheckSetSubset(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  return std::includes(values_y.begin(), values_y.end(), values_x.begin(),
+                       values_x.end());
+}
+
+bool CheckSetSubsetReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return std::includes(values_y.begin(), values_y.end(), values_x.begin(),
+                       values_x.end()) == status;
+}
+
+bool CheckSetSuperset(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  return std::includes(values_x.begin(), values_x.end(), values_y.begin(),
+                       values_y.end());
+}
+
+bool CheckSetSupersetReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return std::includes(values_x.begin(), values_x.end(), values_y.begin(),
+                       values_y.end()) == status;
+}
+
+bool CheckSetDiff(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
+  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
+  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
+  absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
+  absl::flat_hash_set<int64_t> computed_diff;
+  std::set_difference(values_x.begin(), values_x.end(), values_y.begin(),
+                      values_y.end(),
+                      std::inserter(computed_diff, computed_diff.begin()));
+  return computed_diff == set_r;
+}
+
+bool CheckSetSymDiff(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
+  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
+  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
+  absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
+  absl::flat_hash_set<int64_t> computed_sym_diff;
+  std::set_symmetric_difference(
+      values_x.begin(), values_x.end(), values_y.begin(), values_y.end(),
+      std::inserter(computed_sym_diff, computed_sym_diff.begin()));
+  return computed_sym_diff == set_r;
+}
+
+bool CheckSetEq(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  return values_x == values_y;
+}
+
+bool CheckSetEqReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (values_x == values_y) == status;
+}
+
+bool CheckSetNe(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  return values_x != values_y;
+}
+
+bool CheckSetNeReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (values_x != values_y) == status;
 }
 
 bool CheckSlidingSum(
@@ -1361,8 +1538,10 @@ CallMap CreateCallMap() {
   m["array_int_element_nonshifted"] = CheckArrayIntElementNonShifted;
   m["array_int_maximum"] = CheckMaximumInt;
   m["array_int_minimum"] = CheckMinimumInt;
+  m["array_set_element"] = CheckArraySetElement;
   m["array_var_bool_element"] = CheckArrayVarIntElement;
   m["array_var_int_element"] = CheckArrayVarIntElement;
+  m["array_var_set_element"] = CheckArraySetElement;
   m["at_most_int"] = CheckAtMostInt;
   m["bool_and"] = CheckBoolAnd;
   m["bool_clause"] = CheckBoolClause;
@@ -1483,9 +1662,21 @@ CallMap CreateCallMap() {
   m["ortools_table_int"] = CheckTableInt;
   m["regular_nfa"] = CheckRegularNfa;
   m["set_card"] = CheckSetCard;
+  m["set_diff"] = CheckSetDiff;
+  m["set_eq_reif"] = CheckSetEqReif;
+  m["set_eq"] = CheckSetEq;
   m["set_in_reif"] = CheckSetInReif;
   m["set_in"] = CheckSetIn;
+  m["set_intersect"] = CheckSetIntersect;
+  m["set_ne_reif"] = CheckSetNeReif;
+  m["set_ne"] = CheckSetNe;
   m["set_not_in"] = CheckSetNotIn;
+  m["set_subset_reif"] = CheckSetSubsetReif;
+  m["set_subset"] = CheckSetSubset;
+  m["set_superset_reif"] = CheckSetSupersetReif;
+  m["set_superset"] = CheckSetSuperset;
+  m["set_symdiff"] = CheckSetSymDiff;
+  m["set_union"] = CheckSetUnion;
   m["sliding_sum"] = CheckSlidingSum;
   m["sort"] = CheckSort;
   m["symmetric_all_different"] = CheckSymmetricAllDifferent;

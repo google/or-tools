@@ -32,6 +32,7 @@ struct FlatzincSatParameters {
   int number_of_threads = 0;
   double max_time_in_seconds = 0.0;
   bool ortools_mode = false;
+  bool check_all_solutions = false;
 };
 
 }  // namespace fz

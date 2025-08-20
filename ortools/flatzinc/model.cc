@@ -465,14 +465,22 @@ bool Domain::RemoveValue(int64_t value) {
 }
 
 std::string Domain::DebugString() const {
+  std::string prefix = "";
+  if (is_fixed_set) {
+    prefix = "fixed_set of ";
+  } else if (is_a_set) {
+    prefix = "set of ";
+  }
+
   if (is_float) {
     switch (float_values.size()) {
       case 0:
         return "float";
       case 1:
-        return absl::StrCat(float_values[0]);
+        return absl::StrCat(prefix, float_values[0]);
       case 2:
-        return absl::StrCat("[", float_values[0], "..", float_values[1], "]");
+        return absl::StrCat(prefix, "[", float_values[0], "..", float_values[1],
+                            "]");
       default:
         LOG(DFATAL) << "Error with float domain";
         return "error_float";
@@ -480,14 +488,14 @@ std::string Domain::DebugString() const {
   }
   if (is_interval) {
     if (values.empty()) {
-      return "int";
+      return absl::StrCat(prefix, "int");
     } else {
-      return absl::StrFormat("[%d..%d]", values[0], values[1]);
+      return absl::StrCat(prefix, "[", values[0], "..", values[1], "]");
     }
   } else if (values.size() == 1) {
-    return absl::StrCat(values.back());
+    return absl::StrCat(prefix, values.back());
   } else {
-    return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
+    return absl::StrFormat("%s[%s]", prefix, absl::StrJoin(values, ", "));
   }
 }
 

@@ -23,7 +23,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
