@@ -404,7 +404,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/lp_data:lp_parser",
-        "//ortools/lp_data:model_reader",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:sol_reader",
         "@abseil-cpp//absl/status",
