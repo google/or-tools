@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -97,6 +98,14 @@ struct CpModelProtoWithMapping {
 
   // Returns a constant CpModelProto variable created on-demand.
   int LookupConstant(int64_t value);
+
+  void AddImplication(absl::Span<const int> e, int l) {
+    ConstraintProto* ct = proto.add_constraints();
+    for (int e_lit : e) {
+      ct->add_enforcement_literal(e_lit);
+    }
+    ct->mutable_bool_and()->add_literals(l);
+  }
 
   // Convert a flatzinc argument to a variable or a list of variable.
   // Note that we always encode a constant argument with a constant variable.
@@ -1382,7 +1391,7 @@ void CpModelProtoWithMapping::PutSetBooleansInCommonDomain(
     }
   }
 }
-// array_var_set_element, set_le, set_le_reif, set_lt, set_lt_reif.
+// set_le, set_le_reif, set_lt, set_lt_reif.
 void CpModelProtoWithMapping::ExtractSetConstraint(
     const fz::Constraint& fz_ct) {
   if (fz_ct.type == "array_set_element") {
@@ -1450,6 +1459,52 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
         false_range->mutable_linear()->add_coeffs(1);
         FillDomainInProto(true_indices.Complement(),
                           false_range->mutable_linear());
+      }
+    }
+  } else if (fz_ct.type == "array_var_set_element") {
+    const int index = LookupVar(fz_ct.arguments[0]);
+    const Domain index_domain = ReadDomainFromProto(proto.variables(index));
+    const int64_t min_index = index_domain.Min();
+
+    const std::shared_ptr<SetVariable> target_var =
+        LookupSetVar(fz_ct.arguments[2]);
+    absl::btree_map<int64_t, int> target_values_to_literals;
+    for (int i = 0; i < target_var->sorted_values.size(); ++i) {
+      target_values_to_literals[target_var->sorted_values[i]] =
+          TrueLiteral(target_var->var_indices[i]);
+    }
+
+    BoolArgumentProto* exactly_one =
+        proto.add_constraints()->mutable_exactly_one();
+    for (const int64_t value : index_domain.Values()) {
+      const int index_literal = GetOrCreateLiteralForVarEqValue(index, value);
+      exactly_one->add_literals(index_literal);
+
+      std::shared_ptr<SetVariable> set_var =
+          LookupSetVarAt(fz_ct.arguments[1], value - min_index);
+      absl::btree_map<int64_t, int> set_values_to_literals;
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        set_values_to_literals[set_var->sorted_values[i]] =
+            TrueLiteral(set_var->var_indices[i]);
+      }
+
+      for (const auto& [value, set_literal] : set_values_to_literals) {
+        const auto it = target_values_to_literals.find(value);
+        if (it == target_values_to_literals.end()) {
+          // index is selected => set_literal[value] is false.
+          AddImplication({index_literal}, FalseLiteral(set_literal));
+        } else {
+          // index is selected => set_literal[value] == target_literal[value].
+          AddImplication({index_literal, set_literal}, it->second);
+          AddImplication({index_literal, it->second}, set_literal);
+        }
+      }
+
+      // Properly handle the case where not all target literals are reached.
+      for (const auto& [value, target_literal] : target_values_to_literals) {
+        if (!set_values_to_literals.contains(value)) {
+          AddImplication({index_literal}, FalseLiteral(target_literal));
+        }
       }
     }
   } else if (fz_ct.type == "set_card") {
@@ -1553,8 +1608,8 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
       FillDomainInProto(set_domain, domain_reduction_ct->mutable_linear());
 
       // Then propagate any remove from the set domain to the variable domain.
-      // Note that the reif part is an equivalence. We do not want false implies
-      // var in set (which contains the value of the var).
+      // Note that the reif part is an equivalence. We do not want false
+      // implies var in set (which contains the value of the var).
       for (int i = 0; i < set_var->sorted_values.size(); ++i) {
         const int64_t value = set_var->sorted_values[i];
         const int set_value_literal = set_var->var_indices[i];
@@ -1652,25 +1707,17 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
         {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
         {&x_literals, &y_literals});
 
-    const auto add_implication = [&](absl::Span<const int> e, int l) {
-      ConstraintProto* ct = proto.add_constraints();
-      for (int e_lit : e) {
-        ct->add_enforcement_literal(e_lit);
-      }
-      ct->mutable_bool_and()->add_literals(l);
-    };
-
     // Implement the comparison logic.
     for (int i = 0; i < x_literals.size(); ++i) {
       const int x_lit = x_literals[i];
       const int y_lit = y_literals[i];
       if (fz_ct.type == "set_subset") {
-        add_implication({x_lit}, y_lit);
+        AddImplication({x_lit}, y_lit);
       } else if (fz_ct.type == "set_superset") {
-        add_implication({y_lit}, x_lit);
+        AddImplication({y_lit}, x_lit);
       } else if (fz_ct.type == "set_eq") {
-        add_implication({x_lit}, y_lit);
-        add_implication({y_lit}, x_lit);
+        AddImplication({x_lit}, y_lit);
+        AddImplication({y_lit}, x_lit);
       } else {
         LOG(FATAL) << "Unsupported " << fz_ct.type;
       }
