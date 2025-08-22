@@ -14,6 +14,7 @@
 #include "ortools/flatzinc/checker.h"
 
 #include <algorithm>
+#include <compare>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -1404,6 +1405,32 @@ bool CheckSetNe(
   return values_x != values_y;
 }
 
+bool CheckSetLe(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const int min_size = std::min(values_x.size(), values_y.size());
+  for (int i = 0; i < min_size; ++i) {
+    if (values_x[i] < values_y[i]) return true;
+    if (values_x[i] > values_y[i]) return false;
+  }
+  return values_y.size() >= values_x.size();
+}
+
+bool CheckSetLt(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const int min_size = std::min(values_x.size(), values_y.size());
+  for (int i = 0; i < min_size; ++i) {
+    if (values_x[i] < values_y[i]) return true;
+    if (values_x[i] > values_y[i]) return false;
+  }
+  return values_y.size() > values_x.size();
+}
+
 bool CheckSetNeReif(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1668,6 +1695,8 @@ CallMap CreateCallMap() {
   m["set_in_reif"] = CheckSetInReif;
   m["set_in"] = CheckSetIn;
   m["set_intersect"] = CheckSetIntersect;
+  m["set_le"] = CheckSetLe;
+  m["set_lt"] = CheckSetLt;
   m["set_ne_reif"] = CheckSetNeReif;
   m["set_ne"] = CheckSetNe;
   m["set_not_in"] = CheckSetNotIn;
