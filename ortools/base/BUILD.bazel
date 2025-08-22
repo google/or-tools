@@ -398,7 +398,6 @@ cc_library(
 cc_library(
     name = "memfile",
     hdrs = ["memfile.h"],
-    deps = [],
 )
 
 cc_library(
@@ -432,7 +431,6 @@ cc_library(
 cc_library(
     name = "mutable_memfile",
     hdrs = ["mutable_memfile.h"],
-    deps = [],
 )
 
 cc_library(
