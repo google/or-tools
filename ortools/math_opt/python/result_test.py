@@ -209,7 +209,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.variable_values([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.variable_values(20)  # pytype: disable=wrong-arg-types
+            res.variable_values(20)
 
     def test_primal_solution_no_feasible(self) -> None:
         mod = model.Model(name="test_model")

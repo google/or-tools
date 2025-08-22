@@ -92,7 +92,7 @@ struct GraphPathWithLength {
 
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
-// `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
+// `GraphType` can use one of the interfaces defined in `ortools/graph/graph.h`.
 template <class GraphType>
 class ConstrainedShortestPathsOnDagWrapper {
  public:

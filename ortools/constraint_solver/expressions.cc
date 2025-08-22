@@ -7412,9 +7412,6 @@ void IntVar::SetValues(const std::vector<int64_t>& values) {
     default: {
       // TODO(user): use a clean and safe SortedUniqueCopy() class
       // that uses a global, static shared (and locked) storage.
-      // TODO(user): [optional] consider porting
-      // STLSortAndRemoveDuplicates from ortools/base/stl_util.h to the
-      // existing base/stl_util.h and using it here.
       // TODO(user): We could filter out values not in the var.
       std::vector<int64_t>& tmp = solver()->tmp_vector_;
       tmp.clear();

@@ -66,7 +66,7 @@ std::pair<DistanceType, std::vector<NodeIndex>> SimpleOneToOneShortestPath(
 
 namespace internal {
 
-// TODO(user): We should move `is_strong_int` to util/intops/strong_int.h.
+// TODO(user): We should move `is_strong_int` to ortools/base/strong_int.h.
 template <typename T>
 struct is_strong_int : std::false_type {};
 

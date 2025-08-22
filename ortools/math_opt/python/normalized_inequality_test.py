@@ -60,9 +60,7 @@ class NormalizedLinearInequalityTest(absltest.TestCase):
         mod = model.Model()
         x = mod.add_variable()
         with self.assertRaises(TypeError):
-            normalized_inequality.NormalizedLinearInequality(
-                lb=1.0, expr=x * x, ub=2.0
-            )  # pytype: disable=wrong-arg-types
+            normalized_inequality.NormalizedLinearInequality(lb=1.0, expr=x * x, ub=2.0)
 
     def test_as_normalized_inequality_from_parts(self) -> None:
         mod = model.Model()

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -673,9 +674,7 @@ class Model:
 
     def new_bool_var(self, name: Optional[str] = None) -> Variable:
         """Creates a 0-1 variable with the given name."""
-        return self.new_var(
-            0, 1, True, name
-        )  # pytype: disable=wrong-arg-types  # numpy-scalars
+        return self.new_var(0, 1, True, name)  # numpy-scalars
 
     def new_constant(self, value: NumberT) -> Variable:
         """Declares a constant variable."""

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
@@ -23,6 +24,12 @@ proto_library(
     name = "gscip_proto",
     srcs = ["gscip.proto"],
     visibility = ["//visibility:public"],
+)
+
+java_proto_library(
+    name = "gscip_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gscip_proto"],
 )
 
 cc_proto_library(
@@ -236,9 +243,9 @@ cc_test(
         ":gscip_cc_proto",
         ":gscip_from_mp_model_proto",
         ":gscip_testing",
-        "//ortools/base:parse_test_proto",
         "//ortools/base:gmock",
         "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )

@@ -16,7 +16,6 @@
 #include <iterator>
 #include <memory>
 #include <ostream>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,10 +26,11 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/solvers/gscip/gscip.h"
 #include "ortools/math_opt/solvers/gscip/gscip.pb.h"
+#include "scip/def.h"
 #include "scip/type_event.h"
+#include "scip/type_retcode.h"
 #include "scip/type_var.h"
 
 namespace operations_research {
@@ -193,7 +193,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByInit) {
   struct FailingHandler : public GScipEventHandler {
     FailingHandler() : GScipEventHandler({.name = "failing handler"}) {}
 
-    SCIP_RETCODE Init(GScip* const gscip) override { return SCIP_ERROR; }
+    SCIP_RETCODE Init(GScip* const /*gscip*/) override { return SCIP_ERROR; }
   };
 
   // Returning an error in Init() will not only make the Solve() fail, but will
@@ -233,7 +233,7 @@ TEST(GScipEventHandlerDeathTest, ErrorReturnedByExit) {
   struct FailingHandler : public GScipEventHandler {
     FailingHandler() : GScipEventHandler({.name = "failing handler"}) {}
 
-    SCIP_RETCODE Exit(GScip* const gscip) override { return SCIP_ERROR; }
+    SCIP_RETCODE Exit(GScip* const /*gscip*/) override { return SCIP_ERROR; }
   };
 
   // See the comment in ErrorReturnedByInit test.

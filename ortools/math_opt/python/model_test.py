@@ -394,7 +394,7 @@ class ModelTest(compare_proto.MathOptProtoAssertions, parameterized.TestCase):
         with self.assertRaisesRegex(
             TypeError, "Unsupported type for expr argument.*str"
         ):
-            mod.add_linear_constraint(expr="string")  # pytype: disable=wrong-arg-types
+            mod.add_linear_constraint(expr="string")
 
         with self.assertRaisesRegex(ValueError, ".*infinite offset."):
             mod.add_linear_constraint(expr=math.inf, lb=0.0)
