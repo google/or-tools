@@ -457,12 +457,238 @@ int ApplyWithPotentialBump(const std::function<IntegerValue(IntegerValue)>& f,
   }
   if (bump_index >= 0) {
     cut->terms[bump_index].coeff = bump_coeff;
-    return 1;
   }
-  return 0;
+  return bump_index;
 }
 
 }  // namespace
+
+GUBHelper::~GUBHelper() {
+  if (!VLOG_IS_ON(1)) return;
+  if (shared_stats_ == nullptr) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"gub/num_improvements", num_improvements_});
+  stats.push_back(
+      {"gub/num_todo_both_complements", num_todo_both_complements_});
+  shared_stats_->AddStats(stats);
+}
+
+void GUBHelper::ApplyWithPotentialBumpAndGUB(
+    const std::function<IntegerValue(IntegerValue)>& f,
+    const IntegerValue divisor, CutData* cut) {
+  // Reset.
+  last_num_bumps_ = 0;
+  last_num_lifts_ = 0;
+  last_num_gubs_ = 0;
+
+  // Keep initial coeffs.
+  const absl::int128 original_rhs = cut->rhs;
+  const int num_terms = cut->terms.size();
+  initial_coeffs_.resize(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    const CutTerm& entry = cut->terms[i];
+    initial_coeffs_[i] = entry.coeff;
+  }
+
+  // Apply f().
+  const int bump_index = ApplyWithPotentialBump(f, divisor, cut);
+  last_num_bumps_ += (bump_index >= 0);
+
+  // We consider a positive coeff staying positive a lift.
+  // TODO(user): adjust as needed.
+  for (int i = 0; i < num_terms; ++i) {
+    if (initial_coeffs_[i] > 0 && cut->terms[i].coeff > 0) ++last_num_lifts_;
+  }
+
+  // Do not spend extra effort if we don't have a violated cut at this stage.
+  // TODO(user): also skip if there are no at most ones.
+  if (cut->ComputeViolation() <= 1e-6) return;
+
+  // Clear tmp data.
+  literals_.clear();
+  already_seen_.clear();
+  amo_count_.clear();
+
+  // Recover the LiteralIndex corresponding to the simple Boolean terms.
+  const int limit = integer_encoder_->NumVariables();
+  for (int i = 0; i < num_terms; ++i) {
+    const CutTerm& entry = cut->terms[i];
+    if (entry.bound_diff != 1) continue;
+    if (!entry.IsSimple()) continue;
+    if (!VariableIsPositive(entry.expr_vars[0])) continue;
+    if (entry.expr_vars[0] >= limit) continue;
+    if (integer_trail_->LevelZeroLowerBound(entry.expr_vars[0]) != 0) continue;
+    if (integer_trail_->LevelZeroUpperBound(entry.expr_vars[0]) != 1) continue;
+
+    bool complemented;
+    if (entry.expr_offset == 0 && entry.expr_coeffs[0] == 1) {
+      complemented = false;
+    } else if (entry.expr_offset == 1 && entry.expr_coeffs[0] == -1) {
+      complemented = true;
+    } else {
+      continue;
+    }
+
+    // TODO(user): Make this faster by keeping a vector in
+    // integer_encoder_.
+    const LiteralIndex literal_index = integer_encoder_->GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(entry.expr_vars[0], 1));
+    if (literal_index != -1) {
+      absl::Span<const int> indices =
+          implications_->AtMostOneIndices(Literal(literal_index));
+      if (!indices.empty()) {
+        if (!complemented) {
+          // Because currently we only "lift" not complemented term in an amo
+          // with one complemented term, as an heuristic we only count the
+          // non complemeted entries in each amo.
+          for (const int index : indices) amo_count_[index]++;
+        }
+        literals_.push_back(
+            {i, Literal(literal_index), initial_coeffs_[i], complemented});
+      }
+    }
+  }
+
+  // Sort.
+  // TODO(user): This is an heuristic for cover cut. Generalize?
+  std::sort(literals_.begin(), literals_.end(),
+            [](const LiteralInCut a, LiteralInCut b) {
+              if (a.complemented != b.complemented) return a.complemented;
+              return a.original_coeff > b.original_coeff;
+            });
+
+  // Partition the literals into AMO.
+  // The index is the one of the "representative", i.e. the first literal.
+  //
+  // The idea is that if X + Y <=1, then in the cut, we can complement both
+  // into 1 - (C = 1 - X + Y) and apply the cut on this formula since C >= 0.
+  // This is better than complementing both individually, or complementing
+  // just one. Note that if the coeff of X and Y are different, we can lower
+  // the higher one to try to apply this too.
+  //
+  // TODO(user): If a literal can go into more than one amo, choose in a wiser
+  // way :)
+  bool rhs_changed_once = false;
+  const int num_literals = literals_.size();
+  const IntegerValue f_divisor = f(divisor);
+  for (int i = 0; i < num_literals; ++i) {
+    int best = -1;
+    int64_t best_sum = 0;
+    bool was_lifted = false;
+    const LiteralInCut& curr = literals_[i];
+
+    // Corner case where sometimes we have a term and its complement.
+    // Ideally they should be merged as it should be always beneficial to do
+    // so ? Add a step for this.
+    if (already_seen_.contains(curr.literal)) continue;
+    already_seen_.insert(curr.literal);
+
+    for (const int amo_index : implications_->AtMostOneIndices(curr.literal)) {
+      const int64_t count_or_index = amo_count_[amo_index];
+
+      // Tricky/Optim: we use negative amo_count_ to indicate if this amo was
+      // already used and encode the index as -1 -count_or_index.
+      if (count_or_index < 0) {
+        // We have a potential simplification !
+        const int rep_index_in_literals = -count_or_index - 1;
+        CHECK_LT(rep_index_in_literals, i);
+        const LiteralInCut& rep = literals_[rep_index_in_literals];
+        if (rep.complemented && !curr.complemented) {
+          const IntegerValue f_rep = cut->terms[rep.index].coeff;
+
+          // We can spit the original term in "two", one go with the at most
+          // one in the term that is complemented, the rest get through f()
+          // normally.
+          //
+          // So this replace f(b) with -f(a) + f(a + b) which is always
+          // beneficial. It is unclear if there is more than one choice of a,
+          // which one is the best though.
+          //
+          // To avoid overflow when computing
+          // f(curr.original_coeff + rep.original_coeff), we use the fact that
+          // f(k * divisor + rest) = k * f(divisor) + f(rest)
+          const IntegerValue x_d = curr.original_coeff / divisor;
+          const IntegerValue x_r = curr.original_coeff % divisor;
+          DCHECK_EQ(curr.original_coeff, divisor * x_d + x_r);
+          IntegerValue y_d = rep.original_coeff / divisor;
+          IntegerValue y_r = rep.original_coeff % divisor;
+          // We never want to apply f() outside [-divisor, divisor].
+          if (x_r > 0 && y_r > 0) {
+            y_r -= divisor;
+            y_d += 1;
+          } else if (x_r < 0 && y_r < 0) {
+            y_r += divisor;
+            y_d -= 1;
+          }
+          DCHECK_EQ(rep.original_coeff, divisor * y_d + y_r);
+
+          const IntegerValue new_coeff =
+              -f_rep + (x_d + y_d) * f_divisor + f(x_r + y_r);
+
+          // Note that it is okay if we already lifted this term, we can
+          // lift it further by selecting a different at most one.
+          if (new_coeff > cut->terms[curr.index].coeff) {
+            was_lifted = true;
+            ++last_num_gubs_;
+            ++num_improvements_;
+            cut->terms[curr.index].coeff = new_coeff;  // Lifting
+          }
+        }
+
+        // Note that in practice this rarely trigger.
+        if (rep.original_coeff < 0 && rep.complemented &&
+            curr.original_coeff < 0 && curr.complemented) {
+          ++num_todo_both_complements_;
+
+          // TODO(user): Finish the demonstration when both coeff are different.
+          // Also it might be better to not merge such term and use the second
+          // one for lifting other terms? We seems to have some wrong cut too,
+          // Fix. Actually we cannot bump and then change the rhs since the
+          // bump value do depend on the rhs...
+          if (/* DISABLES CODE*/ (true)) continue;
+
+          // Lets start with both coeff equal to a > 0:
+          // The initial term aX + aY was rewriten as
+          //      -a(1-X)-a(1-Y) + a + a + ... <= ...
+          //      -a(1-X)-a(1-Y)         + ... <= rhs
+          //    f(-a)(1-X) + f(-a)(1-Y)  + ... <= rhs
+          // Alternatively, we could write:
+          //        -a(1 -(X+Y))         + ... <= rhs + a
+          // And because of the AMO, we can apply f() to this.
+          //      f(-a).(1-X) -f(-a).Y  <= f(rhs + a)
+          //      f(-a).(1-X) + f(-a) -f(-a).Y  <= f(rhs + a) + f(-a)
+          //        same here                   <=  f(rhs) here !
+          //
+          // TODO(user): We can do more than two changes, but then the original
+          // rhs is not the same! and we need to track the correction. fix.
+          if (!rhs_changed_once && rep.original_coeff == curr.original_coeff) {
+            const int64_t a = -rep.original_coeff.value();
+            const absl::int128 new_rhs =
+                ApplyToInt128(f, divisor, original_rhs + a) + f(-a).value();
+            CHECK_LE(new_rhs, cut->rhs);
+            if (new_rhs < cut->rhs) {
+              was_lifted = true;
+              cut->rhs = new_rhs;
+              rhs_changed_once = true;
+            }
+          }
+        }
+      } else {
+        if (count_or_index > best_sum) {
+          best_sum = count_or_index;
+          best = amo_index;
+        }
+      }
+    }
+    if (was_lifted) continue;
+
+    // Select a new AMO for this term.
+    // All future term will try "lifting" with this entry on that AMO.
+    if (curr.complemented && best != -1) {
+      amo_count_[best] = -i - 1;
+    }
+  }
+}
 
 // Compute the larger t <= max_t such that t * rhs_remainder >= divisor / 2.
 //
@@ -1038,7 +1264,8 @@ bool IntegerRoundingCutHelper::ComputeCut(
     if (total_num_final_complements_ == saved) break;
   }
 
-  total_num_bumps_ += ApplyWithPotentialBump(f, best_divisor, &cut_);
+  gub_helper_.ApplyWithPotentialBumpAndGUB(f, best_divisor, &cut_);
+  total_num_bumps_ += gub_helper_.last_num_bumps();
   return true;
 }
 
@@ -1055,6 +1282,7 @@ CoverCutHelper::~CoverCutHelper() {
     stats.push_back({absl::StrCat(name, "num_implied_lb"), s.num_lb_ibs});
     stats.push_back({absl::StrCat(name, "num_implied_ub"), s.num_ub_ibs});
     stats.push_back({absl::StrCat(name, "num_bumps"), s.num_bumps});
+    stats.push_back({absl::StrCat(name, "num_gubs"), s.num_gubs});
     stats.push_back({absl::StrCat(name, "num_cuts"), s.num_cuts});
     stats.push_back({absl::StrCat(name, "num_merges"), s.num_merges});
   };
@@ -1292,8 +1520,8 @@ int CoverCutHelper::GetCoverSizeForBooleans() {
 }
 
 void CoverCutHelper::InitializeCut(const CutData& input_ct) {
-  num_lifting_ = 0;
   cut_ = input_ct;
+  num_lifting_ = 0;
 
   // We should have dealt with an infeasible constraint before.
   // Note that because of our scaling, it is unlikely we will overflow int128.
@@ -1408,13 +1636,12 @@ bool CoverCutHelper::TrySimpleKnapsack(const CutData& input_ct,
     cover_stats_.num_merges += num_merges;
   }
 
-  cover_stats_.num_bumps += ApplyWithPotentialBump(f, best_coeff, &cut_);
-
-  // Update counters.
-  for (int i = cover_size; i < cut_.terms.size(); ++i) {
-    if (cut_.terms[i].coeff != 0) ++num_lifting_;
-  }
-  cover_stats_.num_lifting += num_lifting_;
+  // TODO(user): It might be better to merge terms in AMO before the cover
+  // heuristic rather than after the fact?
+  gub_helper_.ApplyWithPotentialBumpAndGUB(f, best_coeff, &cut_);
+  cover_stats_.num_bumps += gub_helper_.last_num_bumps();
+  cover_stats_.num_gubs += gub_helper_.last_num_gubs();
+  cover_stats_.num_lifting += num_lifting_ = gub_helper_.last_num_lifts();
   ++cover_stats_.num_cuts;
   return true;
 }
@@ -1489,8 +1716,8 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   }
 
   // Lifting.
+  IntegerValue period = positive_rhs;
   {
-    IntegerValue period = positive_rhs;
     for (const CutTerm& term : cut_.terms) {
       if (term.coeff > 0) continue;
       period = std::max(period, -term.coeff);
@@ -1513,12 +1740,10 @@ bool CoverCutHelper::TrySingleNodeFlow(const CutData& input_ct,
   }
 
   // Generate the cut.
-  cut_.rhs = absl::int128(f(-positive_rhs).value());
-  for (CutTerm& term : cut_.terms) {
-    const IntegerValue old_coeff = term.coeff;
-    term.coeff = f(term.coeff);
-    if (old_coeff > 0 && term.coeff != 0) ++flow_stats_.num_lifting;
-  }
+  gub_helper_.ApplyWithPotentialBumpAndGUB(f, period, &cut_);
+  flow_stats_.num_bumps += gub_helper_.last_num_bumps();
+  flow_stats_.num_gubs += gub_helper_.last_num_gubs();
+  flow_stats_.num_lifting += gub_helper_.last_num_lifts();
   ++flow_stats_.num_cuts;
   return true;
 }

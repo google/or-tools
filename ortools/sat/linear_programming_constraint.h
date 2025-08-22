@@ -330,11 +330,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // propagation.
   bool PropagateLpConstraint(LinearConstraint ct);
 
-  // Some routing cuts might use reduced costs in order to derive tighter bounds
-  // on the possible route. This stores the information inside the constraint
-  // manager so it can be used there.
-  void SetReducedCostsInConstraintManager(const LinearConstraint& ct);
-
   // Returns number of non basic variables with zero reduced costs.
   int64_t CalculateDegeneracy();
 
@@ -492,10 +487,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   glop::LpScalingHelper scaler_;
 
   // Temporary data for cuts.
-  ZeroHalfCutHelper zero_half_cut_helper_;
-  CoverCutHelper cover_cut_helper_;
-  IntegerRoundingCutHelper integer_rounding_cut_helper_;
-
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
 
@@ -540,7 +531,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerTrail* integer_trail_;
   Trail* trail_;
   GenericLiteralWatcher* watcher_;
-  IntegerEncoder* integer_encoder_;
   ProductDetector* product_detector_;
   ObjectiveDefinition* objective_definition_;
   SharedStatistics* shared_stats_;
@@ -551,6 +541,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   int watcher_id_;
 
+  // Cut helpers.
+  ZeroHalfCutHelper zero_half_cut_helper_;
+  CoverCutHelper cover_cut_helper_;
+  IntegerRoundingCutHelper integer_rounding_cut_helper_;
   BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.

@@ -1697,6 +1697,7 @@ bool FixedModuloPropagator::PropagateWhenFalseAndTargetIsPositive(
     AffineExpression expr, AffineExpression target) {
   const IntegerValue min_expr = integer_trail_.LowerBound(expr);
   const IntegerValue max_expr = integer_trail_.UpperBound(expr);
+
   // expr % mod_ must be in the target domain intersected with [0, mod_ - 1],
   // noted [min_expr_mod, max_expr_mod]. This interval is non-empty.
   const IntegerValue min_expr_mod =
@@ -1724,7 +1725,10 @@ bool FixedModuloPropagator::PropagateWhenFalseAndTargetIsPositive(
         {expr.GreaterOrEqual(max_expr_mod + k * mod_ + 1),
          expr.LowerOrEqual(min_expr_mod + (k + 1) * mod_ - 1),
          target.GreaterOrEqual(min_expr_mod),
-         target.LowerOrEqual(max_expr_mod)});
+         target.LowerOrEqual(
+             max_expr_mod < mod_ - 1
+                 ? max_expr_mod
+                 : integer_trail_.LevelZeroUpperBound(target))});
   }
   return true;
 }

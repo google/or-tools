@@ -117,6 +117,18 @@ struct LinearConstraint {
     return true;
   }
 
+  // We rarelly need to copy a LinearConstraint and it should almost always
+  // be moved instead, so we don't want a copy constructor. This can be used
+  // if one really need to copy it.
+  void CopyFrom(const LinearConstraint& other) {
+    const int n = other.num_terms;
+    resize(n);
+    lb = other.lb;
+    ub = other.ub;
+    std::memcpy(vars.get(), other.vars.get(), n * sizeof(IntegerVariable));
+    std::memcpy(coeffs.get(), other.coeffs.get(), n * sizeof(IntegerValue));
+  }
+
   bool operator==(const LinearConstraint& other) const {
     if (this->lb != other.lb) return false;
     if (this->ub != other.ub) return false;

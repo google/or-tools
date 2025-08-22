@@ -164,7 +164,8 @@ TEST(CoverCutHelperTest, SimpleExample) {
   data.FillFromParallelVectors(IntegerValue(9), vars, coeffs, lp_values, lbs,
                                ubs);
   data.ComplementForPositiveCoefficients();
-  CoverCutHelper helper;
+  Model model;
+  CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TrySimpleKnapsack(data));
   EXPECT_EQ(GetCutString(helper), "1*X0 1*X1 1*X2 <= 1");
   EXPECT_EQ(helper.Info(), "lift=1");
@@ -189,7 +190,8 @@ TEST(CoverCutHelperTest, WeirdExampleWithViolatedConstraint) {
   data.FillFromParallelVectors(IntegerValue(9), vars, coeffs, lp_values, lbs,
                                ubs);
   data.ComplementForPositiveCoefficients();
-  CoverCutHelper helper;
+  Model model;
+  CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TrySimpleKnapsack(data));
   EXPECT_EQ(GetCutString(helper), "1*X0 1*X1 <= 9");
   EXPECT_EQ(helper.Info(), "lift=1");
@@ -215,7 +217,8 @@ TEST(CoverCutHelperTest, LetchfordSouliLifting) {
   data.FillFromParallelVectors(rhs, vars, coeffs, lps, lbs, ubs);
   data.ComplementForPositiveCoefficients();
 
-  CoverCutHelper helper;
+  Model model;
+  CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TryWithLetchfordSouliLifting(data));
   EXPECT_EQ(GetCutString(helper),
             "1*X0 1*X1 1*X2 1*X3 3*X4 3*X5 2*X6 1*X7 1*X8 1*X9 <= 3");
@@ -230,10 +233,10 @@ LinearConstraint IntegerRoundingCutWithBoundsFromTrail(
     const RoundingOptions& options, IntegerValue rhs,
     absl::Span<const IntegerVariable> vars,
     absl::Span<const IntegerValue> coeffs, absl::Span<const double> lp_values,
-    const Model& model) {
+    Model* model) {
   std::vector<IntegerValue> lbs;
   std::vector<IntegerValue> ubs;
-  auto* integer_trail = model.Get<IntegerTrail>();
+  auto* integer_trail = model->Get<IntegerTrail>();
   for (int i = 0; i < vars.size(); ++i) {
     lbs.push_back(integer_trail->LowerBound(vars[i]));
     ubs.push_back(integer_trail->UpperBound(vars[i]));
@@ -243,7 +246,7 @@ LinearConstraint IntegerRoundingCutWithBoundsFromTrail(
   data.FillFromParallelVectors(rhs, vars, coeffs, lp_values, lbs, ubs);
   data.ComplementForSmallerLpValues();
 
-  IntegerRoundingCutHelper helper;
+  IntegerRoundingCutHelper helper(model);
   EXPECT_TRUE(helper.ComputeCut(options, data, nullptr));
 
   CutDataBuilder builder;
@@ -266,7 +269,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample1) {
   RoundingOptions options;
   options.max_scaling = 2;
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      options, rhs, vars, coeffs, lp_values, model);
+      options, rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "2*X0 1*X1 <= 2");
 }
 
@@ -286,7 +289,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample1Modified) {
 
   // Note that the cut is only valid because the bound of x1 is one here.
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "1*X0 1*X1 <= 1");
 }
 
@@ -302,7 +305,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample2) {
 
   std::vector<double> lp_values{0.0, 2.25};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "3*X0 2*X1 <= 4");
 }
 
@@ -318,7 +321,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample2WithNegatedCoeff) {
 
   std::vector<double> lp_values{0.0, -2.25};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
 
   // We actually do not return like in the example "3*X0 -2*X1 <= 4"
   // But the simpler X0 - X1 <= 2 which has the same violation (0.25) but a
@@ -344,7 +347,7 @@ TEST(IntegerRoundingCutTest, TestCaseUsedForDebugging) {
   // The constraint is tight under LP (-5 * 0.4 == -2).
   std::vector<double> lp_values{0.4, 0.0, -1e-16, 0.0, 0.0};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
 
   EXPECT_EQ(constraint.DebugString(), "-2*X0 -1*X1 -2*X2 -2*X3 2*X4 <= -2");
 }
@@ -369,7 +372,7 @@ TEST(IntegerRoundingCutTest, ZeroHalfCut) {
 
   std::vector<double> lp_values{0.25, 1.25, 0.3125, 0.0};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "3*X0 2*X1 4*X2 3*X3 <= 4");
 }
 
@@ -387,7 +390,7 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision) {
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.5, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "1*X0 <= 1");
 }
 
@@ -405,7 +408,7 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision2) {
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.49, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      RoundingOptions(), rhs, vars, coeffs, lp_values, model);
+      RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "1*X0 1*X1 <= 1");
 }
 
@@ -429,7 +432,7 @@ TEST(IntegerRoundingCutTest, MirOnLargerConstraint) {
   RoundingOptions options;
   options.max_scaling = 4;
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      options, rhs, vars, coeffs, lp_values, model);
+      options, rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(), "1*X6 2*X7 3*X8 4*X9 <= 4");
 }
 
@@ -452,7 +455,7 @@ TEST(IntegerRoundingCutTest, MirOnLargerConstraint2) {
   RoundingOptions options;
   options.max_scaling = 4;
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
-      options, rhs, vars, coeffs, lp_values, model);
+      options, rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(),
             "2*X1 3*X2 4*X3 6*X4 6*X5 8*X6 9*X7 10*X8 12*X9 <= 18");
 }
@@ -520,7 +523,8 @@ TEST(IntegerRoundingCutTest, RegressionTest) {
 
   CutData data;
   data.FillFromParallelVectors(rhs, vars, coeffs, lp_values, lbs, ubs);
-  IntegerRoundingCutHelper helper;
+  Model model;
+  IntegerRoundingCutHelper helper(&model);
 
   // TODO(user): Actually this fail, so we don't compute a cut here.
   EXPECT_FALSE(helper.ComputeCut(options, data, nullptr));

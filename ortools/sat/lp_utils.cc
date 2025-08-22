@@ -728,8 +728,27 @@ std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model,
 
 absl::Status ConstraintScaler::ScaleAndAddConstraint(
     const MPConstraintProto& mp_constraint, CpModelProto* cp_model) {
-  auto* constraint = cp_model->add_constraints();
-  if (keep_names) constraint->set_name(mp_constraint.name());
+  absl::Span<const IntegerVariableProto* const> var_domains =
+      absl::MakeSpan(cp_model->variables());
+  const absl::Status status = ScaleAndAddConstraint(
+      absl::MakeConstSpan(mp_constraint.var_index()),
+      absl::MakeConstSpan(mp_constraint.coefficient()),
+      mp_constraint.lower_bound(), mp_constraint.upper_bound(),
+      mp_constraint.name(), var_domains, cp_model->add_constraints());
+  if (!status.ok()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Scaling factor of zero while scaling constraint: ",
+                     ProtobufShortDebugString(mp_constraint)));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status ConstraintScaler::ScaleAndAddConstraint(
+    absl::Span<const int> vars, absl::Span<const double> coeffs,
+    double lower_bound, double upper_bound, absl::string_view name,
+    absl::Span<const IntegerVariableProto* const> var_domains,
+    ConstraintProto* constraint) {
+  if (keep_names && !name.empty()) constraint->set_name(name);
   auto* arg = constraint->mutable_linear();
 
   // First scale the coefficients of the constraints so that the constraint
@@ -738,17 +757,17 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   coefficients.clear();
   lower_bounds.clear();
   upper_bounds.clear();
-  const int num_coeffs = mp_constraint.coefficient_size();
+  const int num_coeffs = vars.size();
   for (int i = 0; i < num_coeffs; ++i) {
-    const auto& var_proto = cp_model->variables(mp_constraint.var_index(i));
-    const int64_t lb = var_proto.domain(0);
-    const int64_t ub = var_proto.domain(var_proto.domain_size() - 1);
+    const auto& var_proto = var_domains[vars[i]];
+    const int64_t lb = var_proto->domain(0);
+    const int64_t ub = var_proto->domain(var_proto->domain_size() - 1);
     if (lb == 0 && ub == 0) continue;
 
-    const double coeff = mp_constraint.coefficient(i);
+    const double coeff = coeffs[i];
     if (coeff == 0.0) continue;
 
-    var_indices.push_back(mp_constraint.var_index(i));
+    var_indices.push_back(vars[i]);
     coefficients.push_back(coeff);
     lower_bounds.push_back(lb);
     upper_bounds.push_back(ub);
@@ -761,8 +780,7 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
       wanted_precision, &relative_coeff_error, &scaled_sum_error);
   if (scaling_factor == 0.0) {
     return absl::InvalidArgumentError(
-        absl::StrCat("Scaling factor of zero while scaling constraint: ",
-                     ProtobufShortDebugString(mp_constraint)));
+        "Scaling factor of zero while scaling constraint");
   }
 
   const int64_t gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
@@ -790,8 +808,8 @@ absl::Status ConstraintScaler::ScaleAndAddConstraint(
   // but absolute is usually what is used in the MIP world. Also if the problem
   // was a pure integer problem, and a user asked for sum == 10k, we want to
   // stay exact here.
-  const Fractional lb = mp_constraint.lower_bound() - wanted_precision;
-  const Fractional ub = mp_constraint.upper_bound() + wanted_precision;
+  const Fractional lb = lower_bound - wanted_precision;
+  const Fractional ub = upper_bound + wanted_precision;
 
   // Add the constraint bounds. Because we are sure the scaled constraint fit
   // on an int64_t, if the scaled bounds are too large, the constraint is either

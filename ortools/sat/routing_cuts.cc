@@ -3183,6 +3183,7 @@ CutGenerator CreateCVRPCutGenerator(
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [helper = std::move(helper)](LinearConstraintManager* manager) {
+        manager->CacheReducedCostsInfo();
         helper->InitializeForNewLpSolution(manager);
         SeparateSubtourInequalities(*helper, manager);
         helper->TryInfeasiblePathCuts(manager);

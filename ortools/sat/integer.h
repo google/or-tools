@@ -194,13 +194,16 @@ class IntegerEncoder {
   //
   // Tricky: for domain with hole, like [0,1][5,6], we assume some equivalence
   // classes, like >=2, >=3, >=4 are all the same as >= 5.
+  //
+  // Note that GetAssociatedLiteral() should not be called with trivially true
+  // or trivially false literal. This is DCHECKed.
   bool IsFixedOrHasAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
                                             IntegerValue value) const;
 
   // Advanced usage. It is more efficient to create the associated literals in
-  // order, but it might be anoying to do so. Instead, you can first call
+  // order, but it might be annoying to do so. Instead, you can first call
   // DisableImplicationBetweenLiteral() and when you are done creating all the
   // associated literals, you can call (only at level zero)
   // AddAllImplicationsBetweenAssociatedLiterals() which will also turn back on
@@ -295,6 +298,10 @@ class IntegerEncoder {
   // Makes sure all element in the >= encoding are non-trivial and canonical.
   // The input variable must be positive.
   bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
+
+  // All IntegerVariable passed to the functions above must be in
+  // [0, NumVariables).
+  int NumVariables() const { return 2 * encoding_by_var_.size(); }
 
  private:
   // Adds the implications:

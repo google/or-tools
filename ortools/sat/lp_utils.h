@@ -18,9 +18,12 @@
 
 #include <stdint.h>
 
+#include <limits>
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -71,12 +74,13 @@ double FindBestScalingAndComputeErrors(
     double wanted_absolute_activity_precision, double* relative_coeff_error,
     double* scaled_sum_error);
 
-// Helper to scale MPConstraintProto to CpModelProto::ConstraintProto.
-// We use a class to reuse the temporary memory when we scale many constraints.
+// Helper to scale linear constraints with floating point coefficients to
+// CpModelProto::ConstraintProto. We use a class to reuse the temporary memory
+// when we scale many constraints.
 //
-// Note that this can be used to scale any constraint, one just has to fill a
-// MPConstraintProto using variable indices that correspond to the given
-// CpModelProto variables.
+// Note that this can be used to scale any constraint, it provides an API for
+// MPConstraintProto, but also directly from spans of CpModelProto variable
+// indices, coefficients and lower and upper bounds.
 struct ConstraintScaler {
   // Scales an individual constraint and add it to the given CpModelProto.
   //
@@ -89,6 +93,18 @@ struct ConstraintScaler {
   // infinity. Note that we do not consider it an error if the wanted precision
   // is not reached (best effort). One can check the error statistics field
   // below and decide when there are too high and report an error separately.
+  absl::Status ScaleAndAddConstraint(
+      absl::Span<const int> vars, absl::Span<const double> coeffs,
+      double lower_bound, double upper_bound, absl::string_view name,
+      absl::Span<const IntegerVariableProto* const> var_domains,
+      ConstraintProto* constraint);
+
+  // Scales an individual MPConstraintProto constraint and add it to the given
+  // CpModelProto.
+  //
+  // This is a wrapper around the other ScaleAndAddConstraint() that use the
+  // var_index, coefficient, lower_bound and upper_bound fields of the given
+  // mp_constraint.
   absl::Status ScaleAndAddConstraint(const MPConstraintProto& mp_constraint,
                                      CpModelProto* cp_model);
 

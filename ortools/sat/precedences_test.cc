@@ -556,15 +556,15 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(
       get_rel(all),
       UnorderedElementsAre(
-          Relation{lit_a, LinearExpression2(x, y, -1, 1), 2, 8},
-          Relation{lit_a, LinearExpression2(x, y, -3, -2), 1, 15},
+          Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1},
           Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
                    5},
           Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
   EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
               UnorderedElementsAre(
-                  Relation{lit_a, LinearExpression2(x, y, -1, 1), 2, 8},
-                  Relation{lit_a, LinearExpression2(x, y, -3, -2), 1, 15}));
+                  Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+                  Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
   EXPECT_THAT(
       get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
       UnorderedElementsAre(

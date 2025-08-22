@@ -470,7 +470,14 @@ IntegerValue EnforcedLinear2Bounds::GetUpperBoundFromEnforced(
         CHECK(trail_->Assignment().LiteralIsTrue(l));
       }
     }
-    DCHECK_LT(entry.rhs, root_level_bounds_->LevelZeroUpperBound(index));
+
+    // Note(user): We used to check
+    //   entry.rhs <= root_level_bounds_->LevelZeroUpperBound(index));
+    // But that assumed level zero bounds where only added at level zero, if we
+    // add them at an higher level, some of the enforced relations here might be
+    // worse than the fixed one we have. This is not a big deal, as we will not
+    // add then again on bactrack, and we should use the level-zero reason in
+    // that case.
     return entry.rhs;
   }
 }
@@ -731,7 +738,13 @@ void EnforcedLinear2Bounds::CollectPrecedences(
 
 void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
                                    IntegerValue lhs, IntegerValue rhs) {
+  expr.SimpleCanonicalization();
+  expr.CanonicalizeAndUpdateBounds(lhs, rhs);
+
+  // BinaryRelationRepository uses a different canonicalization than the rest of
+  // the code.
   expr.MakeVariablesPositive();
+
   CHECK_NE(lit.Index(), kNoLiteralIndex);
   num_enforced_relations_++;
   DCHECK(expr.coeffs[0] == 0 || expr.vars[0] != kNoIntegerVariable);
