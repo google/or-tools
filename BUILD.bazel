@@ -16,7 +16,9 @@ load("@rules_license//rules:license.bzl", "license")
 
 # Expose license for external usage through bazel.
 licenses(["notice"])
+
 exports_files(["LICENSE"])
+
 license(
     name = "license",
     package_name = "or-tools",
