@@ -19,7 +19,11 @@
 #include <string>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
+#include "absl/log/flags.h"
+#include "absl/log/initialize.h"
 #include "absl/strings/match.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"
@@ -75,7 +79,7 @@ int main(int argc, char** argv) {
       "human-readable format";
   absl::SetProgramUsageMessage(kUsage);
   absl::ParseCommandLine(argc, argv);
-  google::InitGoogleLogging(argv[0]);
+  absl::InitializeLog();
   operations_research::fz::ParseFile(absl::GetFlag(FLAGS_input));
   return 0;
 }

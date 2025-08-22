@@ -112,6 +112,21 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "parser",
+    srcs = ["parser_main.cc"],
+    deps = [
+        ":model",
+        ":parser_lib",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "checker",
     srcs = ["checker.cc"],

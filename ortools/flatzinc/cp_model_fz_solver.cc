@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -130,6 +131,9 @@ struct CpModelProtoWithMapping {
 
   // Get or create a literal that is equivalent to var1 == var2.
   int GetOrCreateLiteralForVarEqVar(int var1, int var2);
+
+  // Returns the list of literals corresponding to the domain of the variable.
+  absl::flat_hash_map<int64_t, int> FullyEncode(int var);
 
   // Create and return the indices of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
@@ -380,7 +384,16 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
   const std::pair<int, int64_t> key = {var, value};
   const auto it = var_eq_value_to_literal.find(key);
   if (it != var_eq_value_to_literal.end()) return it->second;
+  const IntegerVariableProto& var_proto = proto.variables(var);
+  if (var_proto.domain_size() == 2 &&
+      var_proto.domain(0) == var_proto.domain(1)) {
+    const int fixed_literal = LookupConstant(value == var_proto.domain(0));
+    var_eq_value_to_literal[key] = fixed_literal;
+    return fixed_literal;
+  }
+
   const int bool_var = NewBoolVar();
+  var_eq_value_to_literal[key] = bool_var;
 
   ConstraintProto* is_eq = AddEnforcedConstraint(bool_var);
   is_eq->mutable_linear()->add_vars(var);
@@ -396,8 +409,17 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
   is_not_eq->mutable_linear()->add_domain(value + 1);
   is_not_eq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
 
-  var_eq_value_to_literal[key] = bool_var;
   return bool_var;
+}
+
+absl::flat_hash_map<int64_t, int> CpModelProtoWithMapping::FullyEncode(
+    int var) {
+  absl::flat_hash_map<int64_t, int> result;
+  const Domain domain = ReadDomainFromProto(proto.variables(var));
+  for (int64_t value : domain.Values()) {
+    result[value] = GetOrCreateLiteralForVarEqValue(var, value);
+  }
+  return result;
 }
 
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
@@ -1358,6 +1380,118 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
       arg->add_vars(LookupVar(fz_ct.arguments[5]));
       arg->add_coeffs(-1);
+    }
+  } else if (fz_ct.type == "ortools_bin_packing") {
+    const int capacity = fz_ct.arguments[0].Value();
+    const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[2].values;
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    absl::btree_set<int64_t> all_bin_indices;
+    bin_encodings.reserve(positions.size());
+    for (int p = 0; p < positions.size(); ++p) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(positions[p]);
+      for (const auto& [value, literal] : encoding) {
+        all_bin_indices.insert(value);
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (const int b : all_bin_indices) {
+      LinearConstraintProto* lin = proto.add_constraints()->mutable_linear();
+      lin->add_domain(0);
+      lin->add_domain(capacity);
+      for (int p = 0; p < positions.size(); ++p) {
+        const auto it = bin_encodings[p].find(b);
+        if (it != bin_encodings[p].end()) {
+          lin->add_vars(it->second);
+          lin->add_coeffs(weights[p]);
+        }
+      }
+    }
+  } else if (fz_ct.type == "ortools_bin_packing_capa") {
+    const std::vector<int64_t>& capacities = fz_ct.arguments[0].values;
+    const std::vector<int> bins = LookupVars(fz_ct.arguments[1]);
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
+    const int first_bin = fz_ct.arguments[2].values[0];
+    const int last_bin = fz_ct.arguments[2].values[1];
+    CHECK_EQ(fz_ct.arguments[3].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[3].values;
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    bin_encodings.reserve(bins.size());
+    for (int bin = 0; bin < bins.size(); ++bin) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(bins[bin]);
+      for (const auto& [value, literal] : encoding) {
+        if (value < first_bin || value > last_bin) {
+          AddImplication({}, Not(literal));  // not a valid index.
+        }
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (int b = first_bin; b <= last_bin; ++b) {
+      LinearConstraintProto* lin = proto.add_constraints()->mutable_linear();
+      lin->add_domain(0);
+      lin->add_domain(capacities[b - first_bin]);
+      for (int bin = 0; bin < bins.size(); ++bin) {
+        const auto it = bin_encodings[bin].find(b);
+        if (it != bin_encodings[bin].end()) {
+          lin->add_vars(it->second);
+          lin->add_coeffs(weights[bin]);
+        }
+      }
+    }
+  } else if (fz_ct.type == "ortools_bin_packing_load") {
+    const std::vector<int>& loads = LookupVars(fz_ct.arguments[0]);
+    const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
+    const int first_bin = fz_ct.arguments[2].values[0];
+    const int last_bin = fz_ct.arguments[2].values[1];
+    CHECK_EQ(fz_ct.arguments[3].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[3].values;
+    CHECK_EQ(weights.size(), positions.size());
+    CHECK_EQ(loads.size(), last_bin - first_bin + 1);
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    bin_encodings.reserve(positions.size());
+    for (int p = 0; p < positions.size(); ++p) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(positions[p]);
+      for (const auto& [value, literal] : encoding) {
+        if (value < first_bin || value > last_bin) {
+          AddImplication({}, Not(literal));  // not a valid index.
+        }
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (int b = first_bin; b <= last_bin; ++b) {
+      LinearConstraintProto* lin = proto.add_constraints()->mutable_linear();
+      lin->add_domain(0);
+      lin->add_domain(0);
+      lin->add_vars(loads[b - first_bin]);
+      lin->add_coeffs(-1);
+      for (int p = 0; p < positions.size(); ++p) {
+        const auto it = bin_encodings[p].find(b);
+        if (it != bin_encodings[p].end()) {
+          lin->add_vars(it->second);
+          lin->add_coeffs(weights[p]);
+        }
+      }
+    }
+
+    // Redundant constraint.
+    int64_t total_load = 0;
+    for (int64_t weight : weights) {
+      total_load += weight;
+    }
+    LinearConstraintProto* lin = proto.add_constraints()->mutable_linear();
+    lin->add_domain(total_load);
+    lin->add_domain(total_load);
+    for (int i = 0; i < loads.size(); ++i) {
+      lin->add_vars(loads[i]);
+      lin->add_coeffs(1);
     }
   } else {
     LOG(FATAL) << " Not supported " << fz_ct.type;

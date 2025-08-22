@@ -14,7 +14,6 @@
 #include "ortools/flatzinc/checker.h"
 
 #include <algorithm>
-#include <compare>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -53,7 +52,7 @@ int64_t Eval(const Argument& arg,
   }
 }
 
-int Size(const Argument& arg) {
+int Length(const Argument& arg) {
   return std::max(arg.values.size(), arg.variables.size());
 }
 
@@ -159,7 +158,7 @@ bool CheckAllDifferentInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   absl::flat_hash_set<int64_t> visited;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     if (visited.contains(value)) {
       return false;
@@ -174,7 +173,7 @@ bool CheckAlldifferentExcept0(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   absl::flat_hash_set<int64_t> visited;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     if (value != 0 && visited.contains(value)) {
       return false;
@@ -190,7 +189,7 @@ bool CheckAmong(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t expected = Eval(ct.arguments[0], evaluator);
   int64_t count = 0;
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     count += ct.arguments[2].Contains(value);
   }
@@ -203,7 +202,7 @@ bool CheckArrayBoolAnd(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   int64_t result = 1;
 
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     result = std::min(result, value);
   }
@@ -216,7 +215,7 @@ bool CheckArrayBoolOr(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   int64_t result = 0;
 
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     result = std::max(result, value);
   }
@@ -229,7 +228,7 @@ bool CheckArrayBoolXor(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   int64_t result = 0;
 
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     result += EvalAt(ct.arguments[0], i, evaluator);
   }
 
@@ -283,7 +282,7 @@ bool CheckAtMostInt(
   const int64_t value = Eval(ct.arguments[2], evaluator);
 
   int64_t count = 0;
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     count += EvalAt(ct.arguments[1], i, evaluator) == value;
   }
   return count <= expected;
@@ -304,12 +303,12 @@ bool CheckBoolClause(
   int64_t result = 0;
 
   // Positive variables.
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     result = std::max(result, value);
   }
   // Negative variables.
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     const int64_t value = EvalAt(ct.arguments[1], i, evaluator);
     result = std::max(result, 1 - value);
   }
@@ -346,7 +345,7 @@ bool CheckBoolXor(
 bool CheckCircuit(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[0]);
+  const int size = Length(ct.arguments[0]);
   const int base = ct.arguments[1].Value();
 
   absl::flat_hash_set<int64_t> visited;
@@ -359,11 +358,73 @@ bool CheckCircuit(
   return visited.size() == size;
 }
 
+bool CheckOrtoolsBinPacking(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t capacity = ct.arguments[0].Value();
+  const int num_positions = Length(ct.arguments[1]);
+  const std::vector<int64_t>& weights = ct.arguments[2].values;
+  absl::flat_hash_map<int64_t, int64_t> loads;
+  for (int i = 0; i < num_positions; ++i) {
+    const int64_t selected_bin = EvalAt(ct.arguments[1], i, evaluator);
+    loads[selected_bin] += weights[i];
+  }
+  for (const auto& [pos, load] : loads) {
+    if (load > capacity) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckOrtoolsBinPackingCapa(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t>& capacities = ct.arguments[0].values;
+  const int num_positions = Length(ct.arguments[1]);
+  const int64_t first_bin = ct.arguments[2].values[0];
+  const int64_t last_bin = ct.arguments[2].values[1];
+  const std::vector<int64_t>& weights = ct.arguments[3].values;
+  std::vector<int64_t> actual_loads(last_bin - first_bin + 1, 0);
+  for (int i = 0; i < num_positions; ++i) {
+    const int64_t selected_bin = EvalAt(ct.arguments[1], i, evaluator);
+    actual_loads[selected_bin - first_bin] += weights[i];
+  }
+  for (int i = first_bin; i <= last_bin; ++i) {
+    if (actual_loads[i - first_bin] > capacities[i - first_bin]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CheckOrtoolsBinPackingLoad(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int num_positions = Length(ct.arguments[1]);
+  const int64_t first_bin = ct.arguments[2].values[0];
+  const int64_t last_bin = ct.arguments[2].values[1];
+  const std::vector<int64_t>& weights = ct.arguments[3].values;
+  std::vector<int64_t> actual_loads(last_bin - first_bin + 1, 0);
+  for (int p = 0; p < num_positions; ++p) {
+    const int64_t pos = EvalAt(ct.arguments[1], p, evaluator);
+    actual_loads[pos - first_bin] += weights[p];
+  }
+  for (int b = first_bin; b <= last_bin; ++b) {
+    const int64_t expected_load =
+        EvalAt(ct.arguments[0], b - first_bin, evaluator);
+    if (actual_loads[b - first_bin] != expected_load) {
+      return false;
+    }
+  }
+  return true;
+}
+
 int64_t ComputeCount(const Constraint& ct,
                      const std::function<int64_t(Variable*)>& evaluator) {
   int64_t result = 0;
   const int64_t value = Eval(ct.arguments[1], evaluator);
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     result += EvalAt(ct.arguments[0], i, evaluator) == value;
   }
   return result;
@@ -431,9 +492,9 @@ bool CheckCumulative(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   // TODO(user): Improve complexity for large durations.
   const int64_t capacity = Eval(ct.arguments[3], evaluator);
-  const int size = Size(ct.arguments[0]);
-  CHECK_EQ(size, Size(ct.arguments[1]));
-  CHECK_EQ(size, Size(ct.arguments[2]));
+  const int size = Length(ct.arguments[0]);
+  CHECK_EQ(size, Length(ct.arguments[1]));
+  CHECK_EQ(size, Length(ct.arguments[2]));
   absl::flat_hash_map<int64_t, int64_t> usage;
   for (int i = 0; i < size; ++i) {
     const int64_t start = EvalAt(ct.arguments[0], i, evaluator);
@@ -454,10 +515,10 @@ bool CheckCumulativeOpt(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   // TODO: Improve complexity for large durations.
   const int64_t capacity = Eval(ct.arguments[4], evaluator);
-  const int size = Size(ct.arguments[0]);
-  CHECK_EQ(size, Size(ct.arguments[1]));
-  CHECK_EQ(size, Size(ct.arguments[2]));
-  CHECK_EQ(size, Size(ct.arguments[3]));
+  const int size = Length(ct.arguments[0]);
+  CHECK_EQ(size, Length(ct.arguments[1]));
+  CHECK_EQ(size, Length(ct.arguments[2]));
+  CHECK_EQ(size, Length(ct.arguments[3]));
   absl::flat_hash_map<int64_t, int64_t> usage;
   for (int i = 0; i < size; ++i) {
     if (EvalAt(ct.arguments[0], i, evaluator) == 0) continue;
@@ -505,8 +566,8 @@ bool CheckDiffnNonStrictK(
 bool CheckDisjunctive(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[0]);
-  CHECK_EQ(size, Size(ct.arguments[1]));
+  const int size = Length(ct.arguments[0]);
+  CHECK_EQ(size, Length(ct.arguments[1]));
   std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
   start_durations_pairs.reserve(size);
   for (int i = 0; i + 1 < size; ++i) {
@@ -527,8 +588,8 @@ bool CheckDisjunctive(
 bool CheckDisjunctiveStrict(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[0]);
-  CHECK_EQ(size, Size(ct.arguments[1]));
+  const int size = Length(ct.arguments[0]);
+  CHECK_EQ(size, Length(ct.arguments[1]));
   std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
   start_durations_pairs.reserve(size);
   for (int i = 0; i + 1 < size; ++i) {
@@ -548,9 +609,9 @@ bool CheckDisjunctiveStrict(
 bool CheckDisjunctiveStrictOpt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[0]);
-  CHECK_EQ(size, Size(ct.arguments[1]));
-  CHECK_EQ(size, Size(ct.arguments[2]));
+  const int size = Length(ct.arguments[0]);
+  CHECK_EQ(size, Length(ct.arguments[1]));
+  CHECK_EQ(size, Length(ct.arguments[2]));
   std::vector<std::pair<int64_t, int64_t>> start_durations_pairs;
   start_durations_pairs.reserve(size);
   for (int i = 0; i + 1 < size; ++i) {
@@ -577,14 +638,14 @@ bool CheckFalseConstraint(
 
 std::vector<int64_t> ComputeGlobalCardinalityCards(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator) {
-  std::vector<int64_t> cards(Size(ct.arguments[1]), 0);
+  std::vector<int64_t> cards(Length(ct.arguments[1]), 0);
   absl::flat_hash_map<int64_t, int> positions;
   for (int i = 0; i < ct.arguments[1].values.size(); ++i) {
     const int64_t value = ct.arguments[1].values[i];
     CHECK(!positions.contains(value));
     positions[value] = i;
   }
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int value = EvalAt(ct.arguments[0], i, evaluator);
     if (positions.contains(value)) {
       cards[positions[value]]++;
@@ -598,8 +659,8 @@ bool CheckGlobalCardinality(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const std::vector<int64_t> cards =
       ComputeGlobalCardinalityCards(ct, evaluator);
-  CHECK_EQ(cards.size(), Size(ct.arguments[2]));
-  for (int i = 0; i < Size(ct.arguments[2]); ++i) {
+  CHECK_EQ(cards.size(), Length(ct.arguments[2]));
+  for (int i = 0; i < Length(ct.arguments[2]); ++i) {
     const int64_t card = EvalAt(ct.arguments[2], i, evaluator);
     if (card != cards[i]) {
       return false;
@@ -613,8 +674,8 @@ bool CheckGlobalCardinalityClosed(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const std::vector<int64_t> cards =
       ComputeGlobalCardinalityCards(ct, evaluator);
-  CHECK_EQ(cards.size(), Size(ct.arguments[2]));
-  for (int i = 0; i < Size(ct.arguments[2]); ++i) {
+  CHECK_EQ(cards.size(), Length(ct.arguments[2]));
+  for (int i = 0; i < Length(ct.arguments[2]); ++i) {
     const int64_t card = EvalAt(ct.arguments[2], i, evaluator);
     if (card != cards[i]) {
       return false;
@@ -624,7 +685,7 @@ bool CheckGlobalCardinalityClosed(
   for (int64_t card : cards) {
     sum_of_cards += card;
   }
-  return sum_of_cards == Size(ct.arguments[0]);
+  return sum_of_cards == Length(ct.arguments[0]);
 }
 
 bool CheckGlobalCardinalityLowUp(
@@ -660,15 +721,15 @@ bool CheckGlobalCardinalityLowUpClosed(
   for (int64_t card : cards) {
     sum_of_cards += card;
   }
-  return sum_of_cards == Size(ct.arguments[0]);
+  return sum_of_cards == Length(ct.arguments[0]);
 }
 
 bool CheckGlobalCardinalityOld(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[1]);
+  const int size = Length(ct.arguments[1]);
   std::vector<int64_t> cards(size, 0);
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
     if (value >= 0 && value < size) {
       cards[value]++;
@@ -833,7 +894,7 @@ bool CheckIntLtReif(
 int64_t ComputeIntLin(const Constraint& ct,
                       const std::function<int64_t(Variable*)>& evaluator) {
   int64_t result = 0;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     result += EvalAt(ct.arguments[0], i, evaluator) *
               EvalAt(ct.arguments[1], i, evaluator);
   }
@@ -1035,8 +1096,8 @@ bool CheckIntTimes(
 bool CheckInverse(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
-  const int size = Size(ct.arguments[0]);
+  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
+  const int size = Length(ct.arguments[0]);
   const int f_base = ct.arguments[2].Value();
   const int invf_base = ct.arguments[3].Value();
   // Check all bounds.
@@ -1063,8 +1124,8 @@ bool CheckInverse(
 bool CheckLexLessInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t x = EvalAt(ct.arguments[0], i, evaluator);
     const int64_t y = EvalAt(ct.arguments[1], i, evaluator);
     if (x < y) {
@@ -1081,8 +1142,8 @@ bool CheckLexLessInt(
 bool CheckLexLesseqInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t x = EvalAt(ct.arguments[0], i, evaluator);
     const int64_t y = EvalAt(ct.arguments[1], i, evaluator);
     if (x < y) {
@@ -1108,7 +1169,7 @@ bool CheckMaximumArgInt(
     }
   }
   // Checks that all value after max_index are <= max_value.
-  for (int i = max_index + 1; i < Size(ct.arguments[0]); i++) {
+  for (int i = max_index + 1; i < Length(ct.arguments[0]); i++) {
     if (EvalAt(ct.arguments[0], i, evaluator) > max_value) {
       return false;
     }
@@ -1121,7 +1182,7 @@ bool CheckMaximumInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   int64_t max_value = std::numeric_limits<int64_t>::min();
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     max_value = std::max(max_value, EvalAt(ct.arguments[1], i, evaluator));
   }
   return max_value == Eval(ct.arguments[0], evaluator);
@@ -1139,7 +1200,7 @@ bool CheckMinimumArgInt(
     }
   }
   // Checks that all value after min_index are >= min_value.
-  for (int i = min_index + 1; i < Size(ct.arguments[0]); i++) {
+  for (int i = min_index + 1; i < Length(ct.arguments[0]); i++) {
     if (EvalAt(ct.arguments[0], i, evaluator) < min_value) {
       return false;
     }
@@ -1152,7 +1213,7 @@ bool CheckMinimumInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   int64_t min_value = std::numeric_limits<int64_t>::max();
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     min_value = std::min(min_value, EvalAt(ct.arguments[1], i, evaluator));
   }
   return min_value == Eval(ct.arguments[0], evaluator);
@@ -1163,7 +1224,7 @@ bool CheckNetworkFlowConservation(
     const Argument& flow_vars,
     const std::function<int64_t(Variable*)>& evaluator) {
   std::vector<int64_t> balance(balance_input.values);
-  const int num_arcs = Size(arcs) / 2;
+  const int num_arcs = Length(arcs) / 2;
   for (int arc = 0; arc < num_arcs; arc++) {
     const int tail = arcs.values[arc * 2] - base_node;
     const int head = arcs.values[arc * 2 + 1] - base_node;
@@ -1197,7 +1258,7 @@ bool CheckNetworkFlowCost(
   }
 
   int64_t total_cost = 0;
-  const int num_arcs = Size(ct.arguments[3]);
+  const int num_arcs = Length(ct.arguments[3]);
   for (int arc = 0; arc < num_arcs; arc++) {
     const int64_t flow = EvalAt(ct.arguments[3], arc, evaluator);
     const int64_t unit_cost = ct.arguments[4].ValueAt(arc);
@@ -1212,7 +1273,7 @@ bool CheckNvalue(
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t count = Eval(ct.arguments[0], evaluator);
   absl::flat_hash_set<int64_t> all_values;
-  for (int i = 0; i < Size(ct.arguments[1]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]); ++i) {
     all_values.insert(EvalAt(ct.arguments[1], i, evaluator));
   }
 
@@ -1448,13 +1509,13 @@ bool CheckSlidingSum(
   const int64_t length = Eval(ct.arguments[2], evaluator);
   // Compute initial sum.
   int64_t sliding_sum = 0;
-  for (int i = 0; i < std::min<int64_t>(length, Size(ct.arguments[3])); ++i) {
+  for (int i = 0; i < std::min<int64_t>(length, Length(ct.arguments[3])); ++i) {
     sliding_sum += EvalAt(ct.arguments[3], i, evaluator);
   }
   if (sliding_sum < low || sliding_sum > up) {
     return false;
   }
-  for (int i = length; i < Size(ct.arguments[3]); ++i) {
+  for (int i = length; i < Length(ct.arguments[3]); ++i) {
     sliding_sum += EvalAt(ct.arguments[3], i, evaluator) -
                    EvalAt(ct.arguments[3], i - length, evaluator);
     if (sliding_sum < low || sliding_sum > up) {
@@ -1467,17 +1528,17 @@ bool CheckSlidingSum(
 bool CheckSort(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
+  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
   absl::flat_hash_map<int64_t, int> init_count;
   absl::flat_hash_map<int64_t, int> sorted_count;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     init_count[EvalAt(ct.arguments[0], i, evaluator)]++;
     sorted_count[EvalAt(ct.arguments[1], i, evaluator)]++;
   }
   if (init_count != sorted_count) {
     return false;
   }
-  for (int i = 0; i < Size(ct.arguments[1]) - 1; ++i) {
+  for (int i = 0; i < Length(ct.arguments[1]) - 1; ++i) {
     if (EvalAt(ct.arguments[1], i, evaluator) >
         EvalAt(ct.arguments[1], i, evaluator)) {
       return false;
@@ -1493,7 +1554,7 @@ bool CheckSubCircuit(
   const int base = ct.arguments[1].Value();
   // Find inactive nodes (pointing to themselves).
   int64_t current = -1;
-  for (int i = 0; i < Size(ct.arguments[0]); ++i) {
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
     const int64_t next = EvalAt(ct.arguments[0], i, evaluator) - base;
     if (next != i && current == -1) {
       current = next;
@@ -1503,7 +1564,7 @@ bool CheckSubCircuit(
   }
 
   // Try to find a path of length 'residual_size'.
-  const int residual_size = Size(ct.arguments[0]) - visited.size();
+  const int residual_size = Length(ct.arguments[0]) - visited.size();
   for (int i = 0; i < residual_size; ++i) {
     const int64_t next = EvalAt(ct.arguments[0], current, evaluator) - base;
     visited.insert(next);
@@ -1514,7 +1575,7 @@ bool CheckSubCircuit(
   }
 
   // Have we visited all nodes?
-  return visited.size() == Size(ct.arguments[0]);
+  return visited.size() == Length(ct.arguments[0]);
 }
 
 bool CheckTableInt(
@@ -1527,7 +1588,7 @@ bool CheckTableInt(
 bool CheckSymmetricAllDifferent(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Size(ct.arguments[0]);
+  const int size = Length(ct.arguments[0]);
   for (int i = 0; i < size; ++i) {
     const int64_t value = EvalAt(ct.arguments[0], i, evaluator) - 1;
     if (value < 0 || value >= size) {
@@ -1675,6 +1736,9 @@ CallMap CreateCallMap() {
   m["ortools_array_int_element"] = CheckOrtoolsArrayIntElement;
   m["ortools_array_var_bool_element"] = CheckOrtoolsArrayIntElement;
   m["ortools_array_var_int_element"] = CheckOrtoolsArrayIntElement;
+  m["ortools_bin_packing"] = CheckOrtoolsBinPacking;
+  m["ortools_bin_packing_capa"] = CheckOrtoolsBinPackingCapa;
+  m["ortools_bin_packing_load"] = CheckOrtoolsBinPackingLoad;
   m["ortools_circuit"] = CheckCircuit;
   m["ortools_count_eq"] = CheckCountEq;
   m["ortools_count_eq_cst"] = CheckCountEq;
