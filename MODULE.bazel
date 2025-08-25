@@ -82,8 +82,6 @@ git_override(
 git_override(
     module_name = "pybind11_protobuf",
     commit = "f02a2b7653bc50eb5119d125842a3870db95d251",
-    #patch_strip = 1,
-    #patches = ["//patches:pybind11_protobuf.patch"],
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
