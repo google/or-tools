@@ -835,6 +835,15 @@ class BinaryImplicationGraph : public SatPropagator {
   // Clean up implications list that might have duplicates.
   void RemoveDuplicates();
 
+  // Returns an at most one "index" for all the at_most_ones containing this
+  // literal. Warning: the indices are not necessarily super dense. This can be
+  // used to detect that two literals are in the same AMO (i.e. if they share
+  // the same index).
+  absl::Span<const int> AtMostOneIndices(Literal lit) const {
+    if (lit.Index() >= at_most_ones_.size()) return {};
+    return at_most_ones_[lit];
+  }
+
  private:
   // Mark implications_[a] for cleanup in RemoveDuplicates().
   void NotifyPossibleDuplicate(Literal a);

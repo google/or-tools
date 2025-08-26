@@ -66,6 +66,8 @@ ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
 ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
           "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, fz_check_all_solutions, DEBUG_MODE,
+          "Checks all solutions returned by the solver.");
 
 namespace operations_research {
 namespace fz {
@@ -235,6 +237,7 @@ int main(int argc, char** argv) {
   parameters.max_time_in_seconds =
       absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
   parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
+  parameters.check_all_solutions = absl::GetFlag(FLAGS_fz_check_all_solutions);
 
   operations_research::SolverLogger solution_logger;
   solution_logger.SetLogToStdOut(true);

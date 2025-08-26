@@ -52,6 +52,7 @@ pybind_extension(
             "//ortools/math_opt/core:solver",
             "//ortools/math_opt/core:solver_debug",
             "//ortools/util:solve_interrupter",
+            "//ortools/util/python:py_solve_interrupter_lib",
             "@abseil-cpp//absl/memory",
             "@abseil-cpp//absl/status:statusor",
             "@pybind11_abseil//pybind11_abseil:import_status_module",
@@ -76,6 +77,7 @@ py_test(
         "//ortools/math_opt/solvers:cp_sat_solver",
         "//ortools/math_opt/solvers:glop_solver",
         "//ortools/math_opt/solvers:gscip_solver",
+        "//ortools/util/python:pybind_solve_interrupter",
         "@pybind11_abseil//pybind11_abseil:status",
     ],
 )

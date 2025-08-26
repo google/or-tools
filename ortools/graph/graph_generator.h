@@ -22,11 +22,11 @@
 // If the chosen graph type requires a call to `Build()`, the user is expected
 // to perform this call, possibly after tweaking the graph.
 //
-// Consider using `CompleteGraph` (util/graph/graph.h) instead of this function
-// in production code, as it uses constant memory to store the graph. Instead,
-// this function explicitly creates the graph using the template type, which is
-// mostly useful for tests or when you have to tweak the graph after creation
-// (i.e. a complete graph is just the core of your final graph).
+// Consider using `CompleteGraph` (ortools/graph/graph.h) instead of this
+// function in production code, as it uses constant memory to store the graph.
+// Instead, this function explicitly creates the graph using the template type,
+// which is mostly useful for tests or when you have to tweak the graph after
+// creation (i.e. a complete graph is just the core of your final graph).
 //
 // Args:
 //   num_nodes: The number of nodes in the graph.
@@ -89,11 +89,11 @@ Graph GenerateCompleteUndirectedBipartiteGraph(
 // If the chosen graph type requires a call to `Build()`, the user is expected
 // to perform this call, possibly after tweaking the graph.
 //
-// Consider using `CompleteBipartiteGraph` (util/graph/graph.h) instead of this
-// function in production code, as it uses constant memory to store the graph.
-// Instead, this function explicitly creates the graph using the template type,
-// which is mostly useful for tests or when you have to tweak the graph after
-// creation (i.e. a complete graph is just the core of your final graph).
+// Consider using `CompleteBipartiteGraph` (ortools/graph/graph.h) instead of
+// this function in production code, as it uses constant memory to store the
+// graph. Instead, this function explicitly creates the graph using the template
+// type, which is mostly useful for tests or when you have to tweak the graph
+// after creation (i.e. a complete graph is just the core of your final graph).
 //
 // Args:
 //   num_nodes_1: The number of nodes in the first part of the graph.

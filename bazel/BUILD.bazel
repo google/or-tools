@@ -13,15 +13,6 @@
 
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
-exports_files([
-    "archive_helper.bzl",
-    "notebook_requirements.in",
-    "notebook_requirements.txt",
-    "ortools_requirements.in",
-    "ortools_requirements.txt",
-    "scip-v920.patch",
-])
-
 compile_pip_requirements(
     name = "ortools_requirements",
     extra_args = [

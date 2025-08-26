@@ -21,10 +21,10 @@ py_library(
     deps = [
         ":proto_converter",
         "//ortools/service/v1:optimization_py_pb2",
+        "@protobuf//:protobuf_python",
         requirement("requests"),
         "//ortools/math_opt:rpc_py_pb2",
         "//ortools/math_opt/python:mathopt",
-        "@protobuf//:protobuf_python",
     ],
 )
 

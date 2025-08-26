@@ -165,12 +165,12 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
       }
     }
   }
-
+  // COV_NF_START
   if (fclose(f) != 0) {
     return absl::Status(absl::StatusCode::kInternal,
                         "Could not close file '" + filename + "'");
   }
-
+  // COV_NF_END
   return ::absl::OkStatus();
 }
 

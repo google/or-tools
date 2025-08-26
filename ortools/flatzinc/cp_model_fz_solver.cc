@@ -23,6 +23,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -30,10 +32,12 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -49,6 +53,11 @@ ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
 ABSL_FLAG(bool, force_interleave_search, false,
           "If true, enable interleaved workers when num_workers is 1.");
+ABSL_FLAG(bool, fz_light_full_encoding, false,
+          "EXPERIMENTAL: Use the at_most_one encoding when fully encoding a "
+          "variable.");
+
+// TODO(user): SetIn forces card to be > 0.
 
 namespace operations_research {
 namespace sat {
@@ -62,9 +71,18 @@ struct VarOrValue {
   int64_t value = 0;
 };
 
-// Returns the true/false literal corresponding to a CpModelProto variable.
-int TrueLiteral(int var) { return var; }
-int FalseLiteral(int var) { return -var - 1; }
+struct SetVariable {
+  std::vector<int> var_indices;
+  std::vector<int64_t> sorted_values;
+  int card_var_index = kNoVar;
+
+  int find_value_index(int64_t value) const {
+    const auto it =
+        std::lower_bound(sorted_values.begin(), sorted_values.end(), value);
+    if (it == sorted_values.end() || *it != value) return -1;
+    return it - sorted_values.begin();
+  }
+};
 
 // Helper class to convert a flatzinc model to a CpModelProto.
 struct CpModelProtoWithMapping {
@@ -72,8 +90,22 @@ struct CpModelProtoWithMapping {
       : arena(std::make_unique<google::protobuf::Arena>()),
         proto(*google::protobuf::Arena::Create<CpModelProto>(arena.get())) {}
 
+  // Returns the index of a new boolean variable.
+  int NewBoolVar();
+
+  // Returns the index of a new integer variable.
+  int NewIntVar(int64_t min_value, int64_t max_value);
+
   // Returns a constant CpModelProto variable created on-demand.
   int LookupConstant(int64_t value);
+
+  void AddImplication(absl::Span<const int> e, int l) {
+    ConstraintProto* ct = proto.add_constraints();
+    for (int e_lit : e) {
+      ct->add_enforcement_literal(e_lit);
+    }
+    ct->mutable_bool_and()->add_literals(l);
+  }
 
   // Convert a flatzinc argument to a variable or a list of variable.
   // Note that we always encode a constant argument with a constant variable.
@@ -84,13 +116,24 @@ struct CpModelProtoWithMapping {
                                      bool negate = false);
   std::vector<int> LookupVars(const fz::Argument& argument);
   VarOrValue LookupVarOrValue(const fz::Argument& argument);
+
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
 
-  // Get or create a literal that is equivalent tovar == value.
+  // Set variables.
+  void ExtractSetConstraint(const fz::Constraint& fz_ct);
+  bool ConstraintContainsSetVariables(const fz::Constraint& constraint) const;
+  std::shared_ptr<SetVariable> LookupSetVar(const fz::Argument& argument);
+  std::shared_ptr<SetVariable> LookupSetVarAt(const fz::Argument& argument,
+                                              int pos);
+
+  // Get or create a literal that is equivalent to var == value.
   int GetOrCreateLiteralForVarEqValue(int var, int64_t value);
 
   // Get or create a literal that is equivalent to var1 == var2.
   int GetOrCreateLiteralForVarEqVar(int var1, int var2);
+
+  // Returns the list of literals corresponding to the domain of the variable.
+  absl::flat_hash_map<int64_t, int> FullyEncode(int var);
 
   // Create and return the indices of the IntervalConstraint corresponding
   // to the flatzinc "interval" specified by a start var and a size var.
@@ -124,7 +167,16 @@ struct CpModelProtoWithMapping {
   // different from kNoVar, and returns a ptr to the ConstraintProto.
   ConstraintProto* AddEnforcedConstraint(int literal);
 
+  // Adds a enforced linear constraint to the model with the given domain.
+  LinearConstraintProto* AddLinearConstraint(
+      absl::Span<const int> enforcement_literals, const Domain& domain,
+      absl::Span<const std::pair<int, int64_t>> terms = {});
+
   // Helpers to fill a ConstraintProto.
+
+  // This one must be called after the domain has been set.
+  void AddTermToLinearConstraint(int var, int64_t coeff,
+                                 LinearConstraintProto* ct);
   void FillAMinusBInDomain(const std::vector<int64_t>& domain,
                            const fz::Constraint& fz_ct, ConstraintProto* ct);
   void FillLinearConstraintWithGivenDomain(absl::Span<const int64_t> domain,
@@ -135,6 +187,13 @@ struct CpModelProtoWithMapping {
                                    ConstraintProto* ct);
   void BuildTableFromDomainIntLinEq(const fz::Constraint& fz_ct,
                                     ConstraintProto* ct);
+
+  // This function takes a list of set variables, normalize them to have all the
+  // same domain then fill var_booleans[i][j] with the booleans encoding the
+  // j-th possible value of the i-th set variable.
+  void PutSetBooleansInCommonDomain(
+      absl::Span<const std::shared_ptr<SetVariable>> set_vars,
+      absl::Span<std::vector<int>* const> var_booleans);
 
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
@@ -155,7 +214,17 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
   absl::flat_hash_map<std::pair<int, int64_t>, int> var_eq_value_to_literal;
   absl::flat_hash_map<std::pair<int, int>, int> var_eq_var_to_literal;
+  absl::flat_hash_map<fz::Variable*, std::shared_ptr<SetVariable>>
+      set_variables;
 };
+
+int CpModelProtoWithMapping::NewBoolVar() { return NewIntVar(0, 1); }
+
+int CpModelProtoWithMapping::NewIntVar(int64_t min_value, int64_t max_value) {
+  const int index = proto.variables_size();
+  FillDomainInProto({min_value, max_value}, proto.add_variables());
+  return index;
+}
 
 int CpModelProtoWithMapping::LookupConstant(int64_t value) {
   if (constant_value_to_index.contains(value)) {
@@ -163,10 +232,7 @@ int CpModelProtoWithMapping::LookupConstant(int64_t value) {
   }
 
   // Create the constant on the fly.
-  const int index = proto.variables_size();
-  IntegerVariableProto* var_proto = proto.add_variables();
-  var_proto->add_domain(value);
-  var_proto->add_domain(value);
+  const int index = NewIntVar(value, value);
   constant_value_to_index[value] = index;
   return index;
 }
@@ -264,6 +330,54 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
   return result;
 }
 
+bool CpModelProtoWithMapping::ConstraintContainsSetVariables(
+    const fz::Constraint& constraint) const {
+  for (const fz::Argument& argument : constraint.arguments) {
+    for (fz::Variable* var : argument.variables) {
+      if (var != nullptr && var->domain.is_a_set) return true;
+    }
+  }
+  return false;
+}
+
+std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVar(
+    const fz::Argument& argument) {
+  if (argument.type == fz::Argument::VAR_REF) {
+    CHECK(argument.Var()->domain.is_a_set);
+    return set_variables[argument.Var()];
+  } else {
+    std::shared_ptr<SetVariable> result = std::make_shared<SetVariable>();
+    const int true_literal = LookupConstant(1);
+    if (argument.type == fz::Argument::INT_INTERVAL) {
+      for (int64_t value = argument.values[0]; value <= argument.values[1];
+           ++value) {
+        result->sorted_values.push_back(value);
+        result->var_indices.push_back(true_literal);
+      }
+    } else if (argument.type == fz::Argument::INT_LIST) {
+      for (int64_t value : argument.values) {
+        result->sorted_values.push_back(value);
+        result->var_indices.push_back(true_literal);
+      }
+    } else {
+      LOG(FATAL) << "LookupSetVar:Unsupported argument type '" << argument.type
+                 << "'";
+    }
+    return result;
+  }
+}
+
+std::shared_ptr<SetVariable> CpModelProtoWithMapping::LookupSetVarAt(
+    const fz::Argument& argument, int pos) {
+  if (argument.type == fz::Argument::VAR_REF_ARRAY) {
+    CHECK(argument.variables[pos]->domain.is_a_set);
+    return set_variables[argument.variables[pos]];
+  } else {
+    LOG(FATAL) << "LookupSetVarAt:Unsupported argument type '" << argument.type
+               << "'";
+  }
+}
+
 ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
   ConstraintProto* result = proto.add_constraints();
   if (literal != kNoVar) {
@@ -272,32 +386,107 @@ ConstraintProto* CpModelProtoWithMapping::AddEnforcedConstraint(int literal) {
   return result;
 }
 
+LinearConstraintProto* CpModelProtoWithMapping::AddLinearConstraint(
+    absl::Span<const int> enforcement_literals, const Domain& domain,
+    absl::Span<const std::pair<int, int64_t>> terms) {
+  ConstraintProto* result = proto.add_constraints();
+  for (const int literal : enforcement_literals) {
+    result->add_enforcement_literal(literal);
+  }
+  FillDomainInProto(domain, result->mutable_linear());
+  for (const auto& [var, coeff] : terms) {
+    AddTermToLinearConstraint(var, coeff, result->mutable_linear());
+  }
+  return result->mutable_linear();
+}
+
+void CpModelProtoWithMapping::AddTermToLinearConstraint(
+    int var, int64_t coeff, LinearConstraintProto* ct) {
+  CHECK(!ct->domain().empty());
+  if (coeff == 0) return;
+  if (var >= 0) {
+    ct->add_vars(var);
+    ct->add_coeffs(coeff);
+  } else {
+    ct->add_vars(NegatedRef(var));
+    ct->add_coeffs(-coeff);
+    // We need to update the domain of the constraint.
+    for (int i = 0; i < ct->domain_size(); ++i) {
+      const int64_t b = ct->domain(i);
+      // We account for infinity like bounds being INT_MAX, INT_MIN, and
+      // -INT_MAX.
+      if (b <= -std::numeric_limits<int64_t>::max() ||
+          b == std::numeric_limits<int64_t>::max()) {
+        continue;
+      }
+      ct->set_domain(i, ct->domain(i) - coeff);
+    }
+  }
+}
+
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
                                                              int64_t value) {
   const std::pair<int, int64_t> key = {var, value};
   const auto it = var_eq_value_to_literal.find(key);
   if (it != var_eq_value_to_literal.end()) return it->second;
-  const int bool_var = proto.variables_size();
-  IntegerVariableProto* var_proto = proto.add_variables();
-  var_proto->add_domain(0);
-  var_proto->add_domain(1);
+  const IntegerVariableProto& var_proto = proto.variables(var);
+  if (var_proto.domain_size() == 2 &&
+      var_proto.domain(0) == var_proto.domain(1)) {
+    const int fixed_literal = LookupConstant(value == var_proto.domain(0));
+    var_eq_value_to_literal[key] = fixed_literal;
+    return fixed_literal;
+  }
 
-  ConstraintProto* is_eq = AddEnforcedConstraint(TrueLiteral(bool_var));
-  is_eq->mutable_linear()->add_vars(var);
-  is_eq->mutable_linear()->add_coeffs(1);
-  is_eq->mutable_linear()->add_domain(value);
-  is_eq->mutable_linear()->add_domain(value);
+  if (var_proto.domain_size() == 2 && var_proto.domain(0) == 0 &&
+      var_proto.domain(1) == 1) {
+    var_eq_value_to_literal[std::make_pair(var, 0)] = NegatedRef(var);
+    var_eq_value_to_literal[std::make_pair(var, 1)] = var;
+    return value == 1 ? var : NegatedRef(var);
+  }
 
-  ConstraintProto* is_not_eq = AddEnforcedConstraint(FalseLiteral(bool_var));
-  is_not_eq->mutable_linear()->add_vars(var);
-  is_not_eq->mutable_linear()->add_coeffs(1);
-  is_not_eq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
-  is_not_eq->mutable_linear()->add_domain(value - 1);
-  is_not_eq->mutable_linear()->add_domain(value + 1);
-  is_not_eq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
-
+  const int bool_var = NewBoolVar();
   var_eq_value_to_literal[key] = bool_var;
+
+  AddLinearConstraint({bool_var}, Domain(value), {{var, 1}});
+  AddLinearConstraint({NegatedRef(bool_var)}, Domain(value).Complement(),
+                      {{var, 1}});
+
   return bool_var;
+}
+
+absl::flat_hash_map<int64_t, int> CpModelProtoWithMapping::FullyEncode(
+    int var) {
+  absl::flat_hash_map<int64_t, int> result;
+  const Domain domain = ReadDomainFromProto(proto.variables(var));
+
+  bool use_normal_encoding = true;
+  if (absl::GetFlag(FLAGS_fz_light_full_encoding)) {
+    use_normal_encoding = false;
+    for (int64_t value : domain.Values()) {
+      if (var_eq_value_to_literal.contains({var, value})) {
+        use_normal_encoding = true;
+        break;
+      }
+    }
+  }
+
+  if (use_normal_encoding) {
+    for (int64_t value : domain.Values()) {
+      result[value] = GetOrCreateLiteralForVarEqValue(var, value);
+    }
+  } else {
+    BoolArgumentProto* ex1 = proto.add_constraints()->mutable_exactly_one();
+    for (int64_t value : domain.Values()) {
+      const int literal = NewBoolVar();
+      var_eq_value_to_literal[{var, value}] = literal;
+      ex1->add_literals(literal);
+      result[value] = literal;
+
+      AddLinearConstraint({literal}, Domain(value), {{var, 1}});
+    }
+  }
+
+  return result;
 }
 
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
@@ -310,28 +499,11 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
   const auto it = var_eq_var_to_literal.find(key);
   if (it != var_eq_var_to_literal.end()) return it->second;
 
-  const int bool_var = proto.variables_size();
-  IntegerVariableProto* var_proto = proto.add_variables();
-  var_proto->add_domain(0);
-  var_proto->add_domain(1);
+  const int bool_var = NewBoolVar();
 
-  ConstraintProto* is_eq = AddEnforcedConstraint(TrueLiteral(bool_var));
-  is_eq->mutable_linear()->add_vars(var1);
-  is_eq->mutable_linear()->add_coeffs(1);
-  is_eq->mutable_linear()->add_vars(var2);
-  is_eq->mutable_linear()->add_coeffs(-1);
-  is_eq->mutable_linear()->add_domain(0);
-  is_eq->mutable_linear()->add_domain(0);
-
-  ConstraintProto* is_not_eq = AddEnforcedConstraint(FalseLiteral(bool_var));
-  is_not_eq->mutable_linear()->add_vars(var1);
-  is_not_eq->mutable_linear()->add_coeffs(1);
-  is_not_eq->mutable_linear()->add_vars(var2);
-  is_not_eq->mutable_linear()->add_coeffs(-1);
-  is_not_eq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::min());
-  is_not_eq->mutable_linear()->add_domain(-1);
-  is_not_eq->mutable_linear()->add_domain(1);
-  is_not_eq->mutable_linear()->add_domain(std::numeric_limits<int64_t>::max());
+  AddLinearConstraint({bool_var}, Domain(0), {{var1, 1}, {var2, -1}});
+  AddLinearConstraint({NegatedRef(bool_var)}, Domain(0).Complement(),
+                      {{var1, 1}, {var2, -1}});
 
   var_eq_var_to_literal[key] = bool_var;
   return bool_var;
@@ -387,19 +559,6 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(VarOrValue start,
     interval->mutable_size()->add_coeffs(1);
     interval->mutable_end()->add_vars(end_var);
     interval->mutable_end()->add_coeffs(1);
-
-    // Add the linear constraint (after the interval constraint as we have
-    // stored its index).
-    auto* lin = AddEnforcedConstraint(opt_var)->mutable_linear();
-    lin->add_vars(start.var);
-    lin->add_coeffs(1);
-    lin->add_vars(size.var);
-    lin->add_coeffs(1);
-    lin->add_vars(end_var);
-    lin->add_coeffs(-1);
-    lin->add_domain(0);
-    lin->add_domain(0);
-
     return interval_index;
   }
 }
@@ -407,6 +566,7 @@ int CpModelProtoWithMapping::GetOrCreateOptionalInterval(VarOrValue start,
 std::vector<int> CpModelProtoWithMapping::CreateIntervals(
     absl::Span<const VarOrValue> starts, absl::Span<const VarOrValue> sizes) {
   std::vector<int> intervals;
+  intervals.reserve(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     intervals.push_back(
         GetOrCreateOptionalInterval(starts[i], sizes[i], kNoVar));
@@ -442,24 +602,13 @@ int CpModelProtoWithMapping::NonZeroLiteralFrom(VarOrValue size) {
     return LookupConstant(0);
   }
 
-  const int var_greater_than_zero_lit = proto.variables_size();
-  IntegerVariableProto* lit_proto = proto.add_variables();
-  lit_proto->add_domain(0);
-  lit_proto->add_domain(1);
+  const int var_greater_than_zero_lit = NewBoolVar();
 
-  ConstraintProto* is_greater =
-      AddEnforcedConstraint(TrueLiteral(var_greater_than_zero_lit));
-  is_greater->mutable_linear()->add_vars(size.var);
-  is_greater->mutable_linear()->add_coeffs(1);
-  const Domain positive = domain.IntersectionWith({1, domain.Max()});
-  FillDomainInProto(positive, is_greater->mutable_linear());
-
-  ConstraintProto* is_null =
-      AddEnforcedConstraint(FalseLiteral(var_greater_than_zero_lit));
-  is_null->mutable_linear()->add_vars(size.var);
-  is_null->mutable_linear()->add_coeffs(1);
-  is_null->mutable_linear()->add_domain(0);
-  is_null->mutable_linear()->add_domain(0);
+  AddLinearConstraint({var_greater_than_zero_lit},
+                      domain.IntersectionWith({1, domain.Max()}),
+                      {{size.var, 1}});
+  AddLinearConstraint({NegatedRef(var_greater_than_zero_lit)}, Domain(0),
+                      {{size.var, 1}});
 
   var_to_lit_implies_greater_than_zero[size.var] = var_greater_than_zero_lit;
   return var_greater_than_zero_lit;
@@ -480,8 +629,7 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
         arg->add_domain(domain_bound + value);
       }
     }
-    arg->add_vars(var_a);
-    arg->add_coeffs(1);
+    AddTermToLinearConstraint(var_a, 1, arg);
   } else if (fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
     const int64_t value = fz_ct.arguments[0].Value();
     const int var_b = LookupVar(fz_ct.arguments[1]);
@@ -494,14 +642,11 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
         arg->add_domain(value - domain_bound);
       }
     }
-    arg->add_vars(var_b);
-    arg->add_coeffs(1);
+    AddTermToLinearConstraint(var_b, 1, arg);
   } else {
     for (const int64_t domain_bound : domain) arg->add_domain(domain_bound);
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_coeffs(1);
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
-    arg->add_coeffs(-1);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), -1, arg);
   }
 }
 
@@ -512,8 +657,7 @@ void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
   for (const int64_t domain_bound : domain) arg->add_domain(domain_bound);
   std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
   for (int i = 0; i < vars.size(); ++i) {
-    arg->add_vars(vars[i]);
-    arg->add_coeffs(fz_ct.arguments[0].values[i]);
+    AddTermToLinearConstraint(vars[i], fz_ct.arguments[0].values[i], arg);
   }
 }
 
@@ -574,10 +718,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "bool_clause") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(TrueLiteral(var));
+      arg->add_literals(var);
     }
     for (const int var : LookupVars(fz_ct.arguments[1])) {
-      arg->add_literals(FalseLiteral(var));
+      arg->add_literals(NegatedRef(var));
     }
   } else if (fz_ct.type == "bool_xor") {
     // This is not the same semantics as the array_bool_xor as this constraint
@@ -589,45 +733,36 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     // not(x) => a == b
     ct->add_enforcement_literal(NegatedRef(x));
     auto* const refute = ct->mutable_linear();
-    refute->add_vars(a);
-    refute->add_coeffs(1);
-    refute->add_vars(b);
-    refute->add_coeffs(-1);
-    refute->add_domain(0);
-    refute->add_domain(0);
+    FillDomainInProto(Domain(0), refute);
+    AddTermToLinearConstraint(a, 1, refute);
+    AddTermToLinearConstraint(b, -1, refute);
 
     // x => a + b == 1
-    auto* enforce = AddEnforcedConstraint(x)->mutable_linear();
-    enforce->add_vars(a);
-    enforce->add_coeffs(1);
-    enforce->add_vars(b);
-    enforce->add_coeffs(1);
-    enforce->add_domain(1);
-    enforce->add_domain(1);
+    AddLinearConstraint({x}, Domain(1), {{a, 1}, {b, 1}});
   } else if (fz_ct.type == "array_bool_or") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(TrueLiteral(var));
+      arg->add_literals(var);
     }
   } else if (fz_ct.type == "array_bool_or_negated") {
     auto* arg = ct->mutable_bool_and();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(FalseLiteral(var));
+      arg->add_literals(NegatedRef(var));
     }
   } else if (fz_ct.type == "array_bool_and") {
     auto* arg = ct->mutable_bool_and();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(TrueLiteral(var));
+      arg->add_literals(var);
     }
   } else if (fz_ct.type == "array_bool_and_negated") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(FalseLiteral(var));
+      arg->add_literals(NegatedRef(var));
     }
   } else if (fz_ct.type == "array_bool_xor") {
     auto* arg = ct->mutable_bool_xor();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
-      arg->add_literals(TrueLiteral(var));
+      arg->add_literals(var);
     }
   } else if (fz_ct.type == "bool_le" || fz_ct.type == "int_le") {
     FillAMinusBInDomain({std::numeric_limits<int64_t>::min(), 0}, fz_ct, ct);
@@ -642,12 +777,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     FillAMinusBInDomain({0, 0}, fz_ct, ct);
   } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not") {
     auto* arg = ct->mutable_linear();
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_coeffs(1);
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
-    arg->add_coeffs(1);
-    arg->add_domain(1);
-    arg->add_domain(1);
+    FillDomainInProto(Domain(1), arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
   } else if (fz_ct.type == "int_ne") {
     FillAMinusBInDomain({std::numeric_limits<int64_t>::min(), -1, 1,
                          std::numeric_limits<int64_t>::max()},
@@ -665,20 +797,17 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   } else if (fz_ct.type == "bool_lin_eq") {
     auto* arg = ct->mutable_linear();
     const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
-    for (int i = 0; i < vars.size(); ++i) {
-      arg->add_vars(vars[i]);
-      arg->add_coeffs(fz_ct.arguments[0].values[i]);
-    }
     if (fz_ct.arguments[2].IsVariable()) {
-      arg->add_vars(LookupVar(fz_ct.arguments[2]));
-      arg->add_coeffs(-1);
-      arg->add_domain(0);
-      arg->add_domain(0);
+      FillDomainInProto(Domain(0), arg);
+      AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), -1, arg);
     } else {
       const int64_t v = fz_ct.arguments[2].Value();
-      arg->add_domain(v);
-      arg->add_domain(v);
+      FillDomainInProto(Domain(v), arg);
     }
+    for (int i = 0; i < vars.size(); ++i) {
+      AddTermToLinearConstraint(vars[i], fz_ct.arguments[0].values[i], arg);
+    }
+
   } else if (fz_ct.type == "int_lin_le" || fz_ct.type == "bool_lin_le") {
     const int64_t rhs = fz_ct.arguments[2].values[0];
     FillLinearConstraintWithGivenDomain(
@@ -701,6 +830,20 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         {std::numeric_limits<int64_t>::min(), rhs - 1, rhs + 1,
          std::numeric_limits<int64_t>::max()},
         fz_ct, ct);
+  } else if (fz_ct.type == "set_card") {
+    int64_t set_size = 0;
+    if (fz_ct.arguments[0].type == fz::Argument::INT_LIST) {
+      set_size = fz_ct.arguments[0].values.size();
+    } else if (fz_ct.arguments[0].type == fz::Argument::INT_INTERVAL) {
+      set_size =
+          fz_ct.arguments[0].values[1] - fz_ct.arguments[0].values[0] + 1;
+    } else {
+      LOG(FATAL) << "Wrong format" << fz_ct.DebugString();
+    }
+
+    auto* arg = ct->mutable_linear();
+    FillDomainInProto(Domain(set_size), arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
   } else if (fz_ct.type == "set_in") {
     auto* arg = ct->mutable_linear();
     arg->add_vars(LookupVar(fz_ct.arguments[0]));
@@ -719,8 +862,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "set_in_negated") {
     auto* arg = ct->mutable_linear();
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_coeffs(1);
     if (fz_ct.arguments[1].type == fz::Argument::INT_LIST) {
       FillDomainInProto(
           Domain::FromValues(
@@ -728,6 +869,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                                    fz_ct.arguments[1].values.end()})
               .Complement(),
           arg);
+      AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
       FillDomainInProto(
           Domain(fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1])
@@ -770,13 +912,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     *arg->mutable_target() = LookupExpr(fz_ct.arguments[1]);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
-    FillDomainInProto(Domain(0, 0), arg);
-    arg->add_vars(LookupVar(fz_ct.arguments[0]));
-    arg->add_coeffs(1);
-    arg->add_vars(LookupVar(fz_ct.arguments[1]));
-    arg->add_coeffs(1);
-    arg->add_vars(LookupVar(fz_ct.arguments[2]));
-    arg->add_coeffs(-1);
+    FillDomainInProto(Domain(0), arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), -1, arg);
   } else if (fz_ct.type == "int_div") {
     auto* arg = ct->mutable_int_div();
     *arg->add_exprs() = LookupExpr(fz_ct.arguments[0]);
@@ -910,21 +1049,21 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (const VarOrValue& count : counts) {
       if (count.var == kNoVar) {
         fixed_contributions += count.value == value ? 1 : 0;
-      } else {
-        const int boolvar = GetOrCreateLiteralForVarEqValue(count.var, value);
-        CHECK_GE(boolvar, 0);
-        arg->add_vars(boolvar);
-        arg->add_coeffs(1);
       }
     }
+
     if (target.var == kNoVar) {
-      arg->add_domain(target.value - fixed_contributions);
-      arg->add_domain(target.value - fixed_contributions);
+      FillDomainInProto(Domain(target.value - fixed_contributions), arg);
     } else {
-      arg->add_vars(target.var);
-      arg->add_coeffs(-1);
-      arg->add_domain(-fixed_contributions);
-      arg->add_domain(-fixed_contributions);
+      FillDomainInProto(Domain(-fixed_contributions), arg);
+      AddTermToLinearConstraint(target.var, -1, arg);
+    }
+
+    for (const VarOrValue& count : counts) {
+      if (count.var != kNoVar) {
+        AddTermToLinearConstraint(
+            GetOrCreateLiteralForVarEqValue(count.var, value), 1, arg);
+      }
     }
   } else if (fz_ct.type == "ortools_count_eq") {
     const std::vector<VarOrValue> counts =
@@ -932,27 +1071,18 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const int var = LookupVar(fz_ct.arguments[1]);
     const VarOrValue target = LookupVarOrValue(fz_ct.arguments[2]);
     LinearConstraintProto* arg = ct->mutable_linear();
-    for (const VarOrValue& count : counts) {
-      if (count.var == kNoVar) {
-        const int boolvar = GetOrCreateLiteralForVarEqValue(var, count.value);
-        CHECK_GE(boolvar, 0);
-        arg->add_vars(boolvar);
-        arg->add_coeffs(1);
-      } else {
-        const int boolvar = GetOrCreateLiteralForVarEqVar(var, count.var);
-        CHECK_GE(boolvar, 0);
-        arg->add_vars(boolvar);
-        arg->add_coeffs(1);
-      }
-    }
     if (target.var == kNoVar) {
-      arg->add_domain(target.value);
-      arg->add_domain(target.value);
+      FillDomainInProto(Domain(target.value), arg);
     } else {
-      arg->add_vars(target.var);
-      arg->add_coeffs(-1);
-      arg->add_domain(0);
-      arg->add_domain(0);
+      FillDomainInProto(Domain(0), arg);
+      AddTermToLinearConstraint(target.var, -1, arg);
+    }
+    for (const VarOrValue& count : counts) {
+      const int bool_var =
+          count.var == kNoVar
+              ? GetOrCreateLiteralForVarEqValue(var, count.value)
+              : GetOrCreateLiteralForVarEqVar(var, count.var);
+      AddTermToLinearConstraint(bool_var, 1, arg);
     }
   } else if (fz_ct.type == "ortools_circuit" ||
              fz_ct.type == "ortools_subcircuit") {
@@ -972,7 +1102,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       Domain domain = ReadDomainFromProto(proto.variables(var));
 
       // Restrict the domain of var to [min_index, max_index]
-      domain = domain.IntersectionWith(Domain(min_index, max_index));
+      domain = domain.IntersectionWith({min_index, max_index});
       if (is_circuit) {
         // We simply make sure that the variable cannot take the value index.
         domain = domain.IntersectionWith(Domain::FromIntervals(
@@ -987,8 +1117,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
           const int literal = proto.variables_size();
           {
             auto* new_var = proto.add_variables();
-            new_var->add_domain(0);
-            new_var->add_domain(1);
+            FillDomainInProto({0, 1}, new_var);
           }
 
           // Add the arc.
@@ -996,26 +1125,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
           circuit_arg->add_heads(value);
           circuit_arg->add_literals(literal);
 
-          // literal => var == value.
-          {
-            auto* lin = AddEnforcedConstraint(literal)->mutable_linear();
-            lin->add_coeffs(1);
-            lin->add_vars(var);
-            lin->add_domain(value);
-            lin->add_domain(value);
-          }
-
-          // not(literal) => var != value
-          {
-            auto* lin =
-                AddEnforcedConstraint(NegatedRef(literal))->mutable_linear();
-            lin->add_coeffs(1);
-            lin->add_vars(var);
-            lin->add_domain(std::numeric_limits<int64_t>::min());
-            lin->add_domain(value - 1);
-            lin->add_domain(value + 1);
-            lin->add_domain(std::numeric_limits<int64_t>::max());
-          }
+          AddLinearConstraint({literal}, Domain(value), {{var, 1}});
+          AddLinearConstraint({NegatedRef(literal)}, Domain(value).Complement(),
+                              {{var, 1}});
         }
       }
 
@@ -1225,31 +1337,636 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       coeffs_per_node[head].push_back(-1);
     }
     for (int node = 0; node < num_nodes; node++) {
-      auto* arg = proto.add_constraints()->mutable_linear();
-      arg->add_domain(fz_ct.arguments[1].values[node]);
-      arg->add_domain(fz_ct.arguments[1].values[node]);
+      auto* arg =
+          AddLinearConstraint({}, Domain(fz_ct.arguments[1].values[node]));
       for (int i = 0; i < flows_per_node[node].size(); ++i) {
-        arg->add_vars(flows_per_node[node][i]);
-        arg->add_coeffs(coeffs_per_node[node][i]);
+        AddTermToLinearConstraint(flows_per_node[node][i],
+                                  coeffs_per_node[node][i], arg);
       }
     }
 
     if (has_cost) {
-      auto* arg = proto.add_constraints()->mutable_linear();
-      arg->add_domain(0);
-      arg->add_domain(0);
+      auto* arg = AddLinearConstraint({}, Domain(0));
       for (int arc = 0; arc < num_arcs; arc++) {
-        const int64_t weight = fz_ct.arguments[4].values[arc];
-        if (weight != 0) {
-          arg->add_vars(flow[arc]);
-          arg->add_coeffs(weight);
+        AddTermToLinearConstraint(flow[arc], fz_ct.arguments[4].values[arc],
+                                  arg);
+      }
+      AddTermToLinearConstraint(LookupVar(fz_ct.arguments[5]), -1, arg);
+    }
+  } else if (fz_ct.type == "ortools_bin_packing") {
+    const int capacity = fz_ct.arguments[0].Value();
+    const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[2].values;
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    absl::btree_set<int64_t> all_bin_indices;
+    bin_encodings.reserve(positions.size());
+    for (int p = 0; p < positions.size(); ++p) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(positions[p]);
+      for (const auto& [value, literal] : encoding) {
+        all_bin_indices.insert(value);
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (const int b : all_bin_indices) {
+      LinearConstraintProto* lin = AddLinearConstraint({}, {0, capacity});
+      for (int p = 0; p < positions.size(); ++p) {
+        const auto it = bin_encodings[p].find(b);
+        if (it != bin_encodings[p].end()) {
+          AddTermToLinearConstraint(it->second, weights[p], lin);
         }
       }
-      arg->add_vars(LookupVar(fz_ct.arguments[5]));
-      arg->add_coeffs(-1);
+    }
+  } else if (fz_ct.type == "ortools_bin_packing_capa") {
+    const std::vector<int64_t>& capacities = fz_ct.arguments[0].values;
+    const std::vector<int> bins = LookupVars(fz_ct.arguments[1]);
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
+    const int first_bin = fz_ct.arguments[2].values[0];
+    const int last_bin = fz_ct.arguments[2].values[1];
+    CHECK_EQ(fz_ct.arguments[3].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[3].values;
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    bin_encodings.reserve(bins.size());
+    for (int bin = 0; bin < bins.size(); ++bin) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(bins[bin]);
+      for (const auto& [value, literal] : encoding) {
+        if (value < first_bin || value > last_bin) {
+          AddImplication({}, NegatedRef(literal));  // not a valid index.
+        }
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (int b = first_bin; b <= last_bin; ++b) {
+      LinearConstraintProto* lin =
+          AddLinearConstraint({}, {0, capacities[b - first_bin]});
+      for (int bin = 0; bin < bins.size(); ++bin) {
+        const auto it = bin_encodings[bin].find(b);
+        if (it != bin_encodings[bin].end()) {
+          AddTermToLinearConstraint(it->second, weights[bin], lin);
+        }
+      }
+    }
+  } else if (fz_ct.type == "ortools_bin_packing_load") {
+    const std::vector<int>& loads = LookupVars(fz_ct.arguments[0]);
+    const std::vector<int> positions = LookupVars(fz_ct.arguments[1]);
+    if (fz_ct.arguments[3].values.empty()) {  // No items.
+      for (const int load : loads) {
+        AddLinearConstraint({}, {0, 0}, {{load, 1}});
+      }
+      return;
+    }
+    CHECK_EQ(fz_ct.arguments[2].type, fz::Argument::INT_INTERVAL);
+    const int first_bin = fz_ct.arguments[2].values[0];
+    const int last_bin = fz_ct.arguments[2].values[1];
+    CHECK_EQ(fz_ct.arguments[3].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t> weights = fz_ct.arguments[3].values;
+    CHECK_EQ(weights.size(), positions.size());
+    CHECK_EQ(loads.size(), last_bin - first_bin + 1);
+
+    std::vector<absl::flat_hash_map<int64_t, int>> bin_encodings;
+    bin_encodings.reserve(positions.size());
+    for (int p = 0; p < positions.size(); ++p) {
+      absl::flat_hash_map<int64_t, int> encoding = FullyEncode(positions[p]);
+      for (const auto& [value, literal] : encoding) {
+        if (value < first_bin || value > last_bin) {
+          AddImplication({}, NegatedRef(literal));  // not a valid index.
+        }
+      }
+      bin_encodings.push_back(std::move(encoding));
+    }
+
+    for (int b = first_bin; b <= last_bin; ++b) {
+      LinearConstraintProto* lin = AddLinearConstraint({}, Domain(0));
+      AddTermToLinearConstraint(loads[b - first_bin], -1, lin);
+      for (int p = 0; p < positions.size(); ++p) {
+        const auto it = bin_encodings[p].find(b);
+        if (it != bin_encodings[p].end()) {
+          AddTermToLinearConstraint(it->second, weights[p], lin);
+        }
+      }
+    }
+
+    // Redundant constraint.
+    int64_t total_load = 0;
+    for (int64_t weight : weights) {
+      total_load += weight;
+    }
+    LinearConstraintProto* lin = AddLinearConstraint({}, Domain(total_load));
+    for (int i = 0; i < loads.size(); ++i) {
+      AddTermToLinearConstraint(loads[i], 1, lin);
+    }
+  } else if (fz_ct.type == "ortools_nvalue") {
+    const int card = LookupVar(fz_ct.arguments[0]);
+    const std::vector<int>& x = LookupVars(fz_ct.arguments[1]);
+
+    absl::btree_map<int64_t, std::vector<int>> value_to_literals;
+    for (int i = 0; i < x.size(); ++i) {
+      const absl::flat_hash_map<int64_t, int> encoding = FullyEncode(x[i]);
+      for (const auto& [value, literal] : encoding) {
+        value_to_literals[value].push_back(literal);
+      }
+    }
+
+    LinearConstraintProto* lin =
+        AddLinearConstraint({}, Domain(0), {{card, -1}});
+    for (const auto& [value, literals] : value_to_literals) {
+      const int is_present = NewBoolVar();
+      AddTermToLinearConstraint(is_present, 1, lin);
+
+      BoolArgumentProto* is_present_constraint =
+          AddEnforcedConstraint(is_present)->mutable_bool_or();
+      for (const int literal : literals) {
+        AddImplication({literal}, is_present);
+        is_present_constraint->add_literals(literal);
+      }
     }
   } else {
     LOG(FATAL) << " Not supported " << fz_ct.type;
+  }
+}  // NOLINT(readability/fn_size)
+
+void CpModelProtoWithMapping::PutSetBooleansInCommonDomain(
+    absl::Span<const std::shared_ptr<SetVariable>> set_vars,
+    absl::Span<std::vector<int>* const> var_booleans) {
+  CHECK_EQ(set_vars.size(), var_booleans.size());
+  std::vector<int64_t> all_values;
+  for (const std::shared_ptr<SetVariable>& set_var : set_vars) {
+    all_values.insert(all_values.end(), set_var->sorted_values.begin(),
+                      set_var->sorted_values.end());
+  }
+  gtl::STLSortAndRemoveDuplicates(&all_values);
+  absl::flat_hash_map<int64_t, int> value_to_index;
+  for (int i = 0; i < all_values.size(); ++i) {
+    value_to_index[all_values[i]] = i;
+  }
+  const int false_literal = LookupConstant(0);
+  for (int set_var_index = 0; set_var_index < var_booleans.size();
+       ++set_var_index) {
+    std::vector<int>* literals = var_booleans[set_var_index];
+    std::shared_ptr<SetVariable> set_var = set_vars[set_var_index];
+    *literals = std::vector<int>(all_values.size(), false_literal);
+    for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+      (*literals)[value_to_index[set_var->sorted_values[i]]] =
+          set_var->var_indices[i];
+    }
+  }
+}
+// set_le_reif, set_lt_reif + disjoint and partition_set.
+void CpModelProtoWithMapping::ExtractSetConstraint(
+    const fz::Constraint& fz_ct) {
+  if (fz_ct.type == "array_set_element") {
+    const int index = LookupVar(fz_ct.arguments[0]);
+    const Domain index_domain = ReadDomainFromProto(proto.variables(index));
+    const std::shared_ptr<SetVariable> target_var =
+        LookupSetVar(fz_ct.arguments[2]);
+    const absl::flat_hash_set<int64_t> target_values(
+        target_var->sorted_values.begin(), target_var->sorted_values.end());
+    absl::flat_hash_map<int64_t, std::vector<int64_t>> value_to_supports;
+    const int64_t min_index = index_domain.Min();
+    for (const int64_t value : index_domain.Values()) {
+      const int64_t offset = value - min_index;
+      bool index_is_valid = true;
+      const fz::Domain& set_domain = fz_ct.arguments[1].domains[offset];
+      if (set_domain.is_interval) {
+        for (int64_t v = set_domain.values[0]; v <= set_domain.values[1]; ++v) {
+          if (!target_values.contains(v)) {
+            index_is_valid = false;
+            break;
+          }
+        }
+        if (!index_is_valid) continue;
+
+        for (int64_t v = set_domain.values[0]; v <= set_domain.values[1]; ++v) {
+          value_to_supports[v].push_back(value);
+        }
+      } else {
+        for (const int64_t v : set_domain.values) {
+          if (!target_values.contains(v)) {
+            index_is_valid = false;
+            break;
+          }
+        }
+        if (!index_is_valid) continue;
+
+        for (const int64_t v : set_domain.values) {
+          value_to_supports[v].push_back(value);
+        }
+      }
+    }
+
+    for (int i = 0; i < target_var->sorted_values.size(); ++i) {
+      const int64_t target_value = target_var->sorted_values[i];
+      const int target_literal = target_var->var_indices[i];
+      const auto it = value_to_supports.find(target_value);
+      if (it == value_to_supports.end()) {
+        proto.add_constraints()->mutable_bool_and()->add_literals(
+            NegatedRef(target_literal));
+      } else if (it->second.size() == index_domain.Size()) {
+        proto.add_constraints()->mutable_bool_and()->add_literals(
+            target_literal);
+      } else {
+        const Domain true_indices = Domain::FromValues(it->second);
+        AddLinearConstraint({target_literal}, true_indices, {{index, 1}});
+        AddLinearConstraint({NegatedRef(target_literal)},
+                            true_indices.Complement(), {{index, 1}});
+      }
+    }
+  } else if (fz_ct.type == "array_var_set_element") {
+    const int index = LookupVar(fz_ct.arguments[0]);
+    const Domain index_domain = ReadDomainFromProto(proto.variables(index));
+    const int64_t min_index = index_domain.Min();
+
+    const std::shared_ptr<SetVariable> target_var =
+        LookupSetVar(fz_ct.arguments[2]);
+    absl::btree_map<int64_t, int> target_values_to_literals;
+    for (int i = 0; i < target_var->sorted_values.size(); ++i) {
+      target_values_to_literals[target_var->sorted_values[i]] =
+          target_var->var_indices[i];
+    }
+
+    BoolArgumentProto* exactly_one =
+        proto.add_constraints()->mutable_exactly_one();
+    for (const int64_t value : index_domain.Values()) {
+      const int index_literal = GetOrCreateLiteralForVarEqValue(index, value);
+      exactly_one->add_literals(index_literal);
+
+      std::shared_ptr<SetVariable> set_var =
+          LookupSetVarAt(fz_ct.arguments[1], value - min_index);
+      absl::btree_map<int64_t, int> set_values_to_literals;
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        set_values_to_literals[set_var->sorted_values[i]] =
+            set_var->var_indices[i];
+      }
+
+      for (const auto& [value, set_literal] : set_values_to_literals) {
+        const auto it = target_values_to_literals.find(value);
+        if (it == target_values_to_literals.end()) {
+          // index is selected => set_literal[value] is false.
+          AddImplication({index_literal}, NegatedRef(set_literal));
+        } else {
+          // index is selected => set_literal[value] == target_literal[value].
+          AddImplication({index_literal, set_literal}, it->second);
+          AddImplication({index_literal, it->second}, set_literal);
+        }
+      }
+
+      // Properly handle the case where not all target literals are reached.
+      for (const auto& [value, target_literal] : target_values_to_literals) {
+        if (!set_values_to_literals.contains(value)) {
+          AddImplication({index_literal}, NegatedRef(target_literal));
+        }
+      }
+    }
+  } else if (fz_ct.type == "set_card") {
+    std::shared_ptr<SetVariable> set_var = LookupSetVar(fz_ct.arguments[0]);
+    VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[1]);
+    if (set_var->card_var_index == kNoVar) {
+      ConstraintProto* ct = proto.add_constraints();
+      if (var_or_value.var == kNoVar) {
+        set_var->card_var_index = LookupConstant(var_or_value.value);
+        FillDomainInProto(Domain(var_or_value.value), ct->mutable_linear());
+      } else {
+        set_var->card_var_index = var_or_value.var;
+        FillDomainInProto(Domain(0), ct->mutable_linear());
+        AddTermToLinearConstraint(var_or_value.var, -1, ct->mutable_linear());
+      }
+      for (const int bool_var : set_var->var_indices) {
+        AddTermToLinearConstraint(bool_var, 1, ct->mutable_linear());
+      }
+
+    } else {
+      if (var_or_value.var == kNoVar) {
+        AddLinearConstraint({}, Domain(var_or_value.value),
+                            {{set_var->card_var_index, 1}});
+      } else {
+        AddLinearConstraint(
+            {}, Domain(0),
+            {{set_var->card_var_index, 1}, {var_or_value.var, -1}});
+      }
+    }
+  } else if (fz_ct.type == "set_in") {
+    const VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[0]);
+    std::shared_ptr<SetVariable> set_var = LookupSetVar(fz_ct.arguments[1]);
+    if (var_or_value.var == kNoVar) {
+      const int index = set_var->find_value_index(var_or_value.value);
+      // TODO(user): Improve me.
+      CHECK_NE(index, -1);
+      AddImplication({}, set_var->var_indices[index]);
+    } else {
+      // We express `v \in set({v_i}, {b_i})` by N+1 constraints:
+      // v \in {v_i}
+      // (v == v_i) => b_i
+      //
+      // Reduce the domain of the target variable.
+      AddLinearConstraint({}, Domain::FromValues(set_var->sorted_values),
+                          {{var_or_value.var, 1}});
+
+      // Then propagate any remove from the set domain to the variable domain.
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        AddLinearConstraint({NegatedRef(set_var->var_indices[i])},
+                            {Domain(set_var->sorted_values[i]).Complement()},
+                            {{var_or_value.var, 1}});
+      }
+    }
+  } else if (fz_ct.type == "set_in_reif") {
+    VarOrValue var_or_value = LookupVarOrValue(fz_ct.arguments[0]);
+    std::shared_ptr<const SetVariable> set_var =
+        LookupSetVar(fz_ct.arguments[1]);
+    const int enforcement_literal = LookupVar(fz_ct.arguments[2]);
+    if (var_or_value.var == kNoVar) {
+      const int index = set_var->find_value_index(var_or_value.value);
+      if (index == -1) {
+        AddImplication({}, NegatedRef(enforcement_literal));
+      } else {
+        const int set_literal = set_var->var_indices[index];
+        AddImplication({set_literal}, enforcement_literal);
+        AddImplication({enforcement_literal}, set_literal);
+      }
+    } else {
+      // Reduce the domain of the target variable.
+      Domain set_domain = Domain::FromValues(set_var->sorted_values);
+      AddLinearConstraint({enforcement_literal}, set_domain,
+                          {{var_or_value.var, 1}});
+
+      // Then propagate any remove from the set domain to the variable domain.
+      // Note that the reif part is an equivalence. We do not want false
+      // implies var in set (which contains the value of the var).
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        const int64_t value = set_var->sorted_values[i];
+        const int set_value_literal = set_var->var_indices[i];
+        // Let's create the literal as we are going to reuse it.
+        const int not_var_value_literal = NegatedRef(
+            GetOrCreateLiteralForVarEqValue(var_or_value.var, value));
+
+        AddImplication({enforcement_literal, NegatedRef(set_value_literal)},
+                       not_var_value_literal);
+        AddImplication({NegatedRef(enforcement_literal), set_value_literal},
+                       not_var_value_literal);
+      }
+    }
+  } else if (fz_ct.type == "set_intersect" || fz_ct.type == "set_union" ||
+             fz_ct.type == "set_symdiff" || fz_ct.type == "set_diff") {
+    std::vector<int> x_literals, y_literals, r_literals;
+    PutSetBooleansInCommonDomain(
+        {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1]),
+         LookupSetVar(fz_ct.arguments[2])},
+        {&x_literals, &y_literals, &r_literals});
+
+    if (fz_ct.type == "set_intersect") {
+      // Implement the intersection logic.
+      for (int i = 0; i < x_literals.size(); ++i) {
+        AddImplication({r_literals[i]}, x_literals[i]);
+        AddImplication({r_literals[i]}, y_literals[i]);
+        AddImplication({x_literals[i], y_literals[i]}, r_literals[i]);
+      }
+    } else if (fz_ct.type == "set_union") {
+      // Implement the union logic.
+      for (int i = 0; i < x_literals.size(); ++i) {
+        AddImplication({x_literals[i]}, r_literals[i]);
+        AddImplication({y_literals[i]}, r_literals[i]);
+        AddImplication({NegatedRef(x_literals[i]), NegatedRef(y_literals[i])},
+                       NegatedRef(r_literals[i]));
+      }
+    } else if (fz_ct.type == "set_symdiff") {
+      for (int i = 0; i < x_literals.size(); ++i) {
+        AddLinearConstraint({r_literals[i]}, Domain(1),
+                            {{x_literals[i], 1}, {y_literals[i], 1}});
+        AddLinearConstraint({NegatedRef(r_literals[i])}, Domain(0),
+                            {{x_literals[i], 1}, {y_literals[i], -1}});
+      }
+    } else if (fz_ct.type == "set_diff") {
+      for (int i = 0; i < x_literals.size(); ++i) {
+        AddImplication({r_literals[i]}, x_literals[i]);
+        AddImplication({r_literals[i]}, NegatedRef(y_literals[i]));
+        AddImplication({x_literals[i], NegatedRef(y_literals[i])},
+                       r_literals[i]);
+      }
+    }
+  } else if (fz_ct.type == "set_subset" || fz_ct.type == "set_superset" ||
+             fz_ct.type == "set_eq") {
+    std::vector<int> x_literals, y_literals;
+    PutSetBooleansInCommonDomain(
+        {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
+        {&x_literals, &y_literals});
+
+    // Implement the comparison logic.
+    for (int i = 0; i < x_literals.size(); ++i) {
+      const int x_lit = x_literals[i];
+      const int y_lit = y_literals[i];
+      if (fz_ct.type == "set_subset") {
+        AddImplication({x_lit}, y_lit);
+      } else if (fz_ct.type == "set_superset") {
+        AddImplication({y_lit}, x_lit);
+      } else if (fz_ct.type == "set_eq") {
+        AddImplication({x_lit}, y_lit);
+        AddImplication({y_lit}, x_lit);
+      } else {
+        LOG(FATAL) << "Unsupported " << fz_ct.type;
+      }
+    }
+  } else if (fz_ct.type == "set_ne") {
+    std::vector<int> x_literals, y_literals;
+    PutSetBooleansInCommonDomain(
+        {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
+        {&x_literals, &y_literals});
+
+    BoolArgumentProto* bool_or = proto.add_constraints()->mutable_bool_or();
+    for (int i = 0; i < x_literals.size(); ++i) {
+      const int lit = NewBoolVar();
+
+      bool_or->add_literals(NegatedRef(lit));
+
+      const int x_lit = x_literals[i];
+      const int y_lit = y_literals[i];
+
+      AddLinearConstraint({lit}, Domain(0), {{x_lit, 1}, {y_lit, -1}});
+      AddLinearConstraint({NegatedRef(lit)}, Domain(1),
+                          {{x_lit, 1}, {y_lit, 1}});
+    }
+  } else if (fz_ct.type == "set_eq_reif" || fz_ct.type == "set_ne_reif" ||
+             fz_ct.type == "set_subset_reif" ||
+             fz_ct.type == "set_superset_reif") {
+    std::vector<int> x_literals, y_literals;
+    PutSetBooleansInCommonDomain(
+        {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
+        {&x_literals, &y_literals});
+    const int enforcement_literal = LookupVar(fz_ct.arguments[2]);
+    const int num_values = x_literals.size();
+
+    const int card_var = NewIntVar(0, x_literals.size());
+    LinearConstraintProto* sum =
+        AddLinearConstraint({}, Domain(0), {{card_var, -1}});
+    for (int i = 0; i < num_values; ++i) {
+      const int lit = NewBoolVar();
+
+      AddTermToLinearConstraint(lit, 1, sum);
+
+      const int x_lit = x_literals[i];
+      const int y_lit = y_literals[i];
+
+      if (fz_ct.type == "set_eq_reif" || fz_ct.type == "set_ne_reif") {
+        AddLinearConstraint({lit}, Domain(0), {{x_lit, 1}, {y_lit, -1}});
+        AddLinearConstraint({NegatedRef(lit)}, Domain(1),
+                            {{x_lit, 1}, {y_lit, 1}});
+      } else if (fz_ct.type == "set_subset_reif") {
+        ConstraintProto* le_ct = AddEnforcedConstraint(lit);
+        le_ct->mutable_bool_or()->add_literals(NegatedRef(x_lit));
+        le_ct->mutable_bool_or()->add_literals(y_lit);
+
+        ConstraintProto* gt_ct = AddEnforcedConstraint(NegatedRef(lit));
+        gt_ct->mutable_bool_and()->add_literals(x_lit);
+        gt_ct->mutable_bool_and()->add_literals(NegatedRef(y_lit));
+      } else if (fz_ct.type == "set_superset_reif") {
+        ConstraintProto* ge_ct = AddEnforcedConstraint(lit);
+        ge_ct->mutable_bool_or()->add_literals(x_lit);
+        ge_ct->mutable_bool_or()->add_literals(NegatedRef(y_lit));
+
+        ConstraintProto* lt_ct = AddEnforcedConstraint(NegatedRef(lit));
+        lt_ct->mutable_bool_and()->add_literals(NegatedRef(x_lit));
+        lt_ct->mutable_bool_and()->add_literals(y_lit);
+      }
+    }
+
+    // Link the enforcement literal to the cardinality variable.
+    int e = enforcement_literal;
+    if (fz_ct.type == "set_ne_reif") {
+      e = NegatedRef(enforcement_literal);
+    }
+    AddLinearConstraint({e}, Domain(num_values), {{card_var, 1}});
+    AddLinearConstraint({NegatedRef(e)}, Domain(0, num_values - 1),
+                        {{card_var, 1}});
+  } else if (fz_ct.type == "set_le" || fz_ct.type == "set_lt") {
+    // set_le is tricky. Let's see all possible sets of size four in their
+    // lexicographical order and their bit representation:
+    // {}        0000
+    // {1}       1000
+    // {1,2}     1100
+    // {1,2,3}   1110
+    // {1,2,3,4} 1111
+    // {1,2,4}   1101
+    // {1,3}     1010
+    // {1,3,4}   1011
+    // {1,4}     1001
+    // {2}       0100
+    // {2,3}     0110
+    // {2,3,4}   0111
+    // {2,4}     0101
+    // {3}       0010
+    // {3,4}     0011
+    // {4}       0001
+    //
+    // The example above clearly show that we cannot simply force the bit
+    // representation to be in lexicographical order, which would be relatively
+    // easy to do. The underlying reason is that the empty (sub-)set compares
+    // before other sets. To work-around this, we define a larger bit
+    // representation where between each two bits we add a new bit saying
+    // whether all the bits to its right are zero or not. This way the empty set
+    // is mapped from 0000 to 10101010, since every time the bits to the right
+    // are zero. For the example above, we get:
+    // {}        10101010
+    // {1}       01101010
+    // {1,2}     01011010
+    // {1,2,3}   01010110
+    // {1,2,3,4} 01010101
+    // {1,2,4}   01010001
+    // {1,3}     01000110
+    // {1,3,4}   01000101
+    // {1,4}     01000001
+    // {2}       00011010
+    // {2,3}     00010110
+    // {2,3,4}   00010101
+    // {2,4}     00010001
+    // {3}       00000110
+    // {3,4}     00000101
+    // {4}       00000001
+    //
+    // After this trick, we can just apply the reverse lexicographic ordering
+    // on the bit representation.
+
+    std::vector<int> orig_x_literals, orig_y_literals;
+    PutSetBooleansInCommonDomain(
+        {LookupSetVar(fz_ct.arguments[0]), LookupSetVar(fz_ct.arguments[1])},
+        {&orig_x_literals, &orig_y_literals});
+
+    std::vector<int> x_literals, y_literals;
+    for (int set_idx = 0; set_idx < 2; ++set_idx) {
+      const std::vector<int>& orig_literals =
+          set_idx == 0 ? orig_x_literals : orig_y_literals;
+      std::vector<int>& literals = set_idx == 0 ? x_literals : y_literals;
+      literals.reserve(2 * orig_literals.size());
+
+      for (int i = 0; i < orig_literals.size(); ++i) {
+        const int empty_suffix_lit = NewBoolVar();
+        literals.push_back(empty_suffix_lit);
+        literals.push_back(orig_literals[i]);
+
+        ConstraintProto* empty_suffix_ct = proto.add_constraints();
+        ConstraintProto* empty_suffix_ct_rev = proto.add_constraints();
+        empty_suffix_ct->add_enforcement_literal(empty_suffix_lit);
+        empty_suffix_ct_rev->mutable_bool_and()->add_literals(empty_suffix_lit);
+        for (int j = i; j < orig_literals.size(); ++j) {
+          empty_suffix_ct->mutable_bool_and()->add_literals(
+              NegatedRef(orig_literals[j]));
+          empty_suffix_ct_rev->add_enforcement_literal(
+              NegatedRef(orig_literals[j]));
+        }
+      }
+    }
+
+    std::swap(x_literals, y_literals);  // Reverse the order.
+
+    const bool accept_equals = fz_ct.type == "set_le";
+
+    // Now compare the bit representation using the lexicographic ordering.
+    std::vector<int> eq_literals;
+    BoolArgumentProto* le_or_ct = proto.add_constraints()->mutable_bool_or();
+    for (int i = 0; i < x_literals.size(); ++i) {
+      const int lt_lit = NewBoolVar();
+      ConstraintProto* lt_ct = proto.add_constraints();
+      // (x < y) <=> (~x && y) <=> lt_lit
+      lt_ct->add_enforcement_literal(lt_lit);
+      lt_ct->mutable_bool_and()->add_literals(NegatedRef(x_literals[i]));
+      lt_ct->mutable_bool_and()->add_literals(y_literals[i]);
+      ConstraintProto* lt_ct_rev = proto.add_constraints();
+      lt_ct_rev->add_enforcement_literal(NegatedRef(x_literals[i]));
+      lt_ct_rev->add_enforcement_literal(y_literals[i]);
+      lt_ct_rev->mutable_bool_and()->add_literals(lt_lit);
+
+      // lt_for_index => eq[0] && eq[1] && ... && eq[i-1] && lt[i]
+      const int lt_for_index = NewBoolVar();
+      ConstraintProto* lt_for_index_ct = proto.add_constraints();
+      lt_for_index_ct->add_enforcement_literal(lt_for_index);
+      for (const int eq_lit : eq_literals) {
+        lt_for_index_ct->mutable_bool_and()->add_literals(eq_lit);
+      }
+      lt_for_index_ct->mutable_bool_and()->add_literals(lt_lit);
+
+      le_or_ct->add_literals(lt_for_index);
+
+      const int eq_lit = NewBoolVar();
+      AddLinearConstraint({eq_lit}, Domain(0),
+                          {{x_literals[i], 1}, {y_literals[i], -1}});
+      AddLinearConstraint({NegatedRef(eq_lit)}, Domain(1),
+                          {{x_literals[i], 1}, {y_literals[i], 1}});
+      eq_literals.push_back(eq_lit);
+    }
+    if (accept_equals) {
+      // eq_lit => eq[0] && eq[1] && ... && eq[i-1] && eq[i]
+      const int eq_lit = NewBoolVar();
+      ConstraintProto* eq_ct = proto.add_constraints();
+      eq_ct->add_enforcement_literal(eq_lit);
+      for (const int eq_lit : eq_literals) {
+        eq_ct->mutable_bool_and()->add_literals(eq_lit);
+      }
+
+      le_or_ct->add_literals(eq_lit);
+    }
+  } else {
+    LOG(FATAL) << "Not supported " << fz_ct.DebugString();
   }
 }  // NOLINT(readability/fn_size)
 
@@ -1280,49 +1997,49 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 
   // Fill enforcement_literal and set copy.type to the negated constraint.
   if (simplified_type == "array_bool_or") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
     negated_type = "array_bool_or_negated";
   } else if (simplified_type == "array_bool_and") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
     negated_type = "array_bool_and_negated";
   } else if (simplified_type == "set_in") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "set_in_negated";
   } else if (simplified_type == "bool_eq" || simplified_type == "int_eq") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_ne";
   } else if (simplified_type == "bool_ne" || simplified_type == "int_ne") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_eq";
   } else if (simplified_type == "bool_le" || simplified_type == "int_le") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_gt";
   } else if (simplified_type == "bool_lt" || simplified_type == "int_lt") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_ge";
   } else if (simplified_type == "bool_ge" || simplified_type == "int_ge") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_lt";
   } else if (simplified_type == "bool_gt" || simplified_type == "int_gt") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
     negated_type = "int_le";
   } else if (simplified_type == "int_lin_eq") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_ne";
   } else if (simplified_type == "int_lin_ne") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_eq";
   } else if (simplified_type == "int_lin_le") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_gt";
   } else if (simplified_type == "int_lin_ge") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_lt";
   } else if (simplified_type == "int_lin_lt") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_ge";
   } else if (simplified_type == "int_lin_gt") {
-    ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
+    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
     negated_type = "int_lin_le";
   } else {
     LOG(FATAL) << "Unsupported " << simplified_type;
@@ -1333,10 +2050,9 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
 
   // Add the other side of the reification because CpModelProto only support
   // half reification.
-  ConstraintProto* negated_ct = proto.add_constraints();
+  ConstraintProto* negated_ct =
+      AddEnforcedConstraint(NegatedRef(ct->enforcement_literal(0)));
   negated_ct->set_name(fz_ct.type + " (negated)");
-  negated_ct->add_enforcement_literal(
-      sat::NegatedRef(ct->enforcement_literal(0)));
   copy.type = negated_type;
   FillConstraint(copy, negated_ct);
 }
@@ -1425,6 +2141,42 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_MIN_VALUE);
       }
+    } else if (annotation.IsFunctionCallWithIdentifier("set_search")) {
+      const std::vector<fz::Annotation>& args = annotation.annotations;
+      std::vector<fz::Variable*> vars;
+      args[0].AppendAllVariables(&vars);
+
+      DecisionStrategyProto* strategy = proto.add_search_strategy();
+      for (fz::Variable* v : vars) {
+        std::shared_ptr<SetVariable> set_var = set_variables.at(v);
+        strategy->mutable_variables()->Add(set_var->var_indices.begin(),
+                                           set_var->var_indices.end());
+      }
+
+      const fz::Annotation& choose = args[1];
+      if (choose.id == "input_order") {
+        strategy->set_variable_selection_strategy(
+            DecisionStrategyProto::CHOOSE_FIRST);
+      } else {
+        SOLVER_LOG(logger, "Unsupported set variable selection strategy '",
+                   choose.id, "', falling back to 'input_order'");
+        strategy->set_variable_selection_strategy(
+            DecisionStrategyProto::CHOOSE_FIRST);
+      }
+
+      const fz::Annotation& select = args[2];
+      if (select.id == "indomain_min" || select.id == "indomain") {
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MIN_VALUE);
+      } else if (select.id == "indomain_max") {
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MAX_VALUE);
+      } else {
+        SOLVER_LOG(logger, "Unsupported value selection strategy '", select.id,
+                   "', falling back to 'indomain_min'");
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MIN_VALUE);
+      }
     }
   }
 }
@@ -1433,8 +2185,10 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
 std::string SolutionString(
     const fz::SolutionOutputSpecs& output,
     const std::function<int64_t(fz::Variable*)>& value_func,
+    const std::function<std::vector<int64_t>(fz::Variable*)>& set_evaluator,
     double objective_value) {
-  if (output.variable != nullptr && !output.variable->domain.is_float) {
+  if (output.variable != nullptr && !output.variable->domain.is_float &&
+      !output.variable->domain.is_a_set) {
     const int64_t value = value_func(output.variable);
     if (output.display_as_boolean) {
       return absl::StrCat(output.name, " = ", value == 1 ? "true" : "false",
@@ -1442,6 +2196,9 @@ std::string SolutionString(
     } else {
       return absl::StrCat(output.name, " = ", value, ";");
     }
+  } else if (output.variable != nullptr && output.variable->domain.is_a_set) {
+    const std::vector<int64_t> values = set_evaluator(output.variable);
+    return absl::StrCat(output.name, " = {", absl::StrJoin(values, ","), "};");
   } else if (output.variable != nullptr && output.variable->domain.is_float) {
     return absl::StrCat(output.name, " = ", objective_value, ";");
   } else {
@@ -1477,11 +2234,12 @@ std::string SolutionString(
 std::string SolutionString(
     const fz::Model& model,
     const std::function<int64_t(fz::Variable*)>& value_func,
+    const std::function<std::vector<int64_t>(fz::Variable*)>& set_evaluator,
     double objective_value) {
   std::string solution_string;
   for (const auto& output_spec : model.output()) {
-    solution_string.append(
-        SolutionString(output_spec, value_func, objective_value));
+    solution_string.append(SolutionString(output_spec, value_func,
+                                          set_evaluator, objective_value));
     solution_string.append("\n");
   }
   return solution_string;
@@ -1575,47 +2333,80 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // The translation is easy, we create one variable per flatzinc variable,
   // plus eventually a bunch of constant variables that will be created
   // lazily.
-  int num_variables = 0;
   for (fz::Variable* fz_var : fz_model.variables()) {
     if (!fz_var->active) continue;
     CHECK(!fz_var->domain.is_float)
         << "CP-SAT does not support float variables";
 
-    m.fz_var_to_index[fz_var] = num_variables++;
-    IntegerVariableProto* var = m.proto.add_variables();
-    var->set_name(fz_var->name);
-    if (fz_var->domain.is_interval) {
-      if (fz_var->domain.values.empty()) {
-        // The CP-SAT solver checks that constraints cannot overflow during
-        // their propagation. Because of that, we trim undefined variable
-        // domains (i.e. int in minizinc) to something hopefully large enough.
-        LOG_FIRST_N(WARNING, 1)
-            << "Using flag --fz_int_max for unbounded integer variables.";
-        LOG_FIRST_N(WARNING, 1)
-            << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
-            << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
-        var->add_domain(-absl::GetFlag(FLAGS_fz_int_max));
-        var->add_domain(absl::GetFlag(FLAGS_fz_int_max));
+    if (fz_var->domain.is_a_set) {
+      std::shared_ptr<SetVariable> set_var = std::make_shared<SetVariable>();
+
+      // Fill values.
+      if (fz_var->domain.is_interval) {
+        set_var->sorted_values.reserve(fz_var->domain.values[1] -
+                                       fz_var->domain.values[0] + 1);
+        for (int64_t value = fz_var->domain.values[0];
+             value <= fz_var->domain.values[1]; ++value) {
+          set_var->sorted_values.push_back(value);
+        }
       } else {
-        var->add_domain(fz_var->domain.values[0]);
-        var->add_domain(fz_var->domain.values[1]);
+        set_var->sorted_values.reserve(fz_var->domain.values.size());
+        for (int64_t value : fz_var->domain.values) {
+          set_var->sorted_values.push_back(value);
+        }
       }
+
+      // Add Boolean variables.
+      for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+        if (fz_var->domain.is_fixed_set) {
+          set_var->var_indices.push_back(m.LookupConstant(1));
+        } else {
+          set_var->var_indices.push_back(m.NewBoolVar());
+        }
+      }
+      m.set_variables[fz_var] = set_var;
     } else {
-      FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
+      m.fz_var_to_index[fz_var] = m.proto.variables_size();
+      IntegerVariableProto* var = m.proto.add_variables();
+      var->set_name(fz_var->name);
+      if (fz_var->domain.is_interval) {
+        if (fz_var->domain.values.empty()) {
+          // The CP-SAT solver checks that constraints cannot overflow during
+          // their propagation. Because of that, we trim undefined variable
+          // domains (i.e. int in minizinc) to something hopefully large enough.
+          LOG_FIRST_N(WARNING, 1)
+              << "Using flag --fz_int_max for unbounded integer variables.";
+          LOG_FIRST_N(WARNING, 1)
+              << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
+              << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
+          FillDomainInProto({-absl::GetFlag(FLAGS_fz_int_max),
+                             absl::GetFlag(FLAGS_fz_int_max)},
+                            var);
+        } else {
+          FillDomainInProto(
+              {fz_var->domain.values[0], fz_var->domain.values[1]}, var);
+        }
+      } else {
+        FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
+      }
     }
   }
 
   // Translate the constraints.
   for (fz::Constraint* fz_ct : fz_model.constraints()) {
     if (fz_ct == nullptr || !fz_ct->active) continue;
-    ConstraintProto* ct = m.proto.add_constraints();
-    ct->set_name(fz_ct->type);
-    if (absl::EndsWith(fz_ct->type, "_reif") ||
-        absl::EndsWith(fz_ct->type, "_imp") || fz_ct->type == "array_bool_or" ||
-        fz_ct->type == "array_bool_and") {
-      m.FillReifOrImpliedConstraint(*fz_ct, ct);
+    if (m.ConstraintContainsSetVariables(*fz_ct)) {
+      m.ExtractSetConstraint(*fz_ct);
     } else {
-      m.FillConstraint(*fz_ct, ct);
+      ConstraintProto* ct = m.proto.add_constraints();
+      ct->set_name(fz_ct->type);
+      if (absl::EndsWith(fz_ct->type, "_reif") ||
+          absl::EndsWith(fz_ct->type, "_imp") ||
+          fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
+        m.FillReifOrImpliedConstraint(*fz_ct, ct);
+      } else {
+        m.FillConstraint(*fz_ct, ct);
+      }
     }
   }
 
@@ -1728,8 +2519,37 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           [&m, &r](fz::Variable* v) {
             return r.solution(m.fz_var_to_index.at(v));
           },
+          [&m, &r](fz::Variable* v) {
+            std::vector<int64_t> values;
+            const std::shared_ptr<SetVariable> set_var = m.set_variables.at(v);
+            for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+              if (r.solution(set_var->var_indices[i]) == 1) {
+                values.push_back(set_var->sorted_values[i]);
+              }
+            }
+            return values;
+          },
           r.objective_value());
       SOLVER_LOG(solution_logger, solution_string);
+      if (p.check_all_solutions) {
+        CHECK(CheckSolution(
+            fz_model,
+            [&r, &m](fz::Variable* v) {
+              return r.solution(m.fz_var_to_index.at(v));
+            },
+            [&r, &m](fz::Variable* v) {
+              std::vector<int64_t> values;
+              const std::shared_ptr<SetVariable> set_var =
+                  m.set_variables.at(v);
+              for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+                if (r.solution(set_var->var_indices[i]) == 1) {
+                  values.push_back(set_var->sorted_values[i]);
+                }
+              }
+              return values;
+            },
+            solution_logger));
+      }
       if (p.display_statistics) {
         OutputFlatzincStats(r, solution_logger);
       }
@@ -1759,6 +2579,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         [&response, &m](fz::Variable* v) {
           return response.solution(m.fz_var_to_index.at(v));
         },
+        [&response, &m](fz::Variable* v) {
+          std::vector<int64_t> values;
+          const std::shared_ptr<SetVariable> set_var = m.set_variables.at(v);
+          for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+            if (response.solution(set_var->var_indices[i]) == 1) {
+              values.push_back(set_var->sorted_values[i]);
+            }
+          }
+          return values;
+        },
         logger));
   }
 
@@ -1772,6 +2602,17 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
             fz_model,
             [&response, &m](fz::Variable* v) {
               return response.solution(m.fz_var_to_index.at(v));
+            },
+            [&response, &m](fz::Variable* v) {
+              std::vector<int64_t> values;
+              const std::shared_ptr<SetVariable> set_var =
+                  m.set_variables.at(v);
+              for (int i = 0; i < set_var->sorted_values.size(); ++i) {
+                if (response.solution(set_var->var_indices[i]) == 1) {
+                  values.push_back(set_var->sorted_values[i]);
+                }
+              }
+              return values;
             },
             response.objective_value());
         SOLVER_LOG(solution_logger, solution_string);

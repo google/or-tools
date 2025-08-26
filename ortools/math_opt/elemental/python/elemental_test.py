@@ -127,7 +127,7 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_bad_element_type_raises(self):
         e = cpp_elemental.CppElemental()
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.add_elements(-42, 1)  # pytype: disable=wrong-arg-types
+            e.add_elements(-42, 1)
 
     def test_attr0(self):
         e = cpp_elemental.CppElemental()
@@ -294,14 +294,14 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
     def test_attr0_bad_attr_id_raises(self):
         e = cpp_elemental.CppElemental()
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.get_attrs(-42, np.array([1]))  # pytype: disable=wrong-arg-types
+            e.get_attrs(-42, np.array([1]))
         # Note: `assertRaisesRegex` does not seem to work with multiline regexps.
         with self.assertRaisesRegex(TypeError, "incompatible function arguments"):
-            e.get_attrs(_VARIABLE, ())  # pytype: disable=wrong-arg-types
+            e.get_attrs(_VARIABLE, ())
         with self.assertRaisesRegex(TypeError, "attr: BoolAttr0"):
-            e.get_attrs(_VARIABLE, ())  # pytype: disable=wrong-arg-types
+            e.get_attrs(_VARIABLE, ())
         with self.assertRaisesRegex(TypeError, "attr: DoubleAttr1"):
-            e.get_attrs(_VARIABLE, ())  # pytype: disable=wrong-arg-types
+            e.get_attrs(_VARIABLE, ())
 
     def test_attr1_bad_element_id_raises(self):
         e = cpp_elemental.CppElemental()
@@ -460,6 +460,36 @@ class BindingsTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
         expected.variables.names[:] = []
         self.assert_protos_equal(e.export_model(remove_names=True), expected)
+
+    def test_from_model_proto(self):
+        proto = model_pb2.ModelProto(
+            name="model",
+            variables=model_pb2.VariablesProto(
+                ids=[2],
+                lower_bounds=[4.0],
+                upper_bounds=[math.inf],
+                integers=[False],
+                names=["x"],
+            ),
+        )
+        e = cpp_elemental.CppElemental.from_model_proto(proto)
+        self.assertEqual(e.model_name, "model")
+        x = 2
+        np.testing.assert_array_equal(
+            e.get_elements(_VARIABLE), np.array([x], dtype=np.int64), strict=True
+        )
+        self.assertEqual(e.get_element_name(_VARIABLE, x), "x")
+        self.assertEqual(e.get_attr(_VARIABLE_LOWER_BOUND, (x,)), 4.0)
+        self.assertEqual(e.get_next_element_id(_VARIABLE), 3)
+        self.assert_protos_equal(e.export_model(), proto)
+
+    def test_from_model_proto_empty(self):
+        proto = model_pb2.ModelProto()
+        e = cpp_elemental.CppElemental.from_model_proto(proto)
+        self.assertEqual(e.model_name, "")
+        self.assertEqual(e.primary_objective_name, "")
+        for element_type in enums.ElementType:
+            self.assertEqual(e.get_num_elements(element_type), 0)
 
     def test_repr(self):
         e = cpp_elemental.CppElemental()

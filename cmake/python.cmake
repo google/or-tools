@@ -171,10 +171,6 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_PY_FILES ${PDLP_PROTO_PY_FILES})
 endif()
-if(USE_SCIP OR BUILD_MATH_OPT)
-  file(GLOB_RECURSE GSCIP_PROTO_PY_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
-  list(APPEND OR_TOOLS_PROTO_PY_FILES ${GSCIP_PROTO_PY_FILES})
-endif()
 
 foreach(PROTO_FILE IN LISTS OR_TOOLS_PROTO_PY_FILES)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
@@ -321,7 +317,6 @@ file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/constraint_solver/__init__.py CONTENT
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/glop/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/graph/python/__init__.py CONTENT "")
-file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/gscip/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/init/python/__init__.py CONTENT "")
 file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/linear_solver/__init__.py CONTENT "")
@@ -340,6 +335,7 @@ if(BUILD_MATH_OPT)
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/ipc/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/python/testing/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/__init__.py CONTENT "")
+  file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/math_opt/solvers/gscip/__init__.py CONTENT "")
 
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/__init__.py CONTENT "")
   file(GENERATE OUTPUT ${PYTHON_PROJECT_DIR}/service/v1/__init__.py CONTENT "")
@@ -418,6 +414,9 @@ file(COPY
   ortools/sat/colab/flags.py
   ortools/sat/colab/visualization.py
   DESTINATION ${PYTHON_PROJECT_DIR}/sat/colab)
+file(COPY
+  ortools/util/python/solve_interrupter.py
+  DESTINATION ${PYTHON_PROJECT_DIR}/util/python)
 
 # Adds py.typed to make typed packages.
 file(TOUCH ${PYTHON_PROJECT_DIR}/linear_solver/python/py.typed)
@@ -692,6 +691,11 @@ add_custom_command(
    $<TARGET_FILE:set_cover_pybind11> ${PYTHON_PROJECT}/set_cover/python
   COMMAND ${CMAKE_COMMAND} -E copy
    $<TARGET_FILE:sorted_interval_list_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E copy
+   $<TARGET_FILE:solve_interrupter_pybind11> ${PYTHON_PROJECT}/util/python
+  COMMAND ${CMAKE_COMMAND} -E
+   $<IF:$<BOOL:${BUILD_TESTING}>,copy,true>
+   $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:$<TARGET_FILE:solve_interrupter_testing_pybind11>> ${PYTHON_PROJECT}/util/python
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/pybind11_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
@@ -712,6 +716,8 @@ add_custom_command(
     rcpsp_pybind11
     set_cover_pybind11
     sorted_interval_list_pybind11
+    solve_interrupter_pybind11
+    $<TARGET_NAME_IF_EXISTS:solve_interrupter_testing_pybind11>
   WORKING_DIRECTORY python
   COMMAND_EXPAND_LISTS)
 
@@ -749,6 +755,7 @@ add_custom_command(
   COMMAND ${stubgen_EXECUTABLE} -p ortools.scheduling.python.rcpsp --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.set_cover.python.set_cover --output .
   COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.sorted_interval_list --output .
+  COMMAND ${stubgen_EXECUTABLE} -p ortools.util.python.pybind_solve_interrupter --output .
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/stub_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in

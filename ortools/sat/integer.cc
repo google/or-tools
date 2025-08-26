@@ -1402,7 +1402,7 @@ void IntegerTrail::EnqueueLiteralInternal(
     absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
   DCHECK(!trail_->Assignment().LiteralIsAssigned(literal));
-  DCHECK(!use_lazy_reason ||
+  DCHECK(use_lazy_reason ||
          ReasonIsValid(literal, literal_reason, integer_reason));
   if (integer_search_levels_.empty()) {
     // Level zero. We don't keep any reason.

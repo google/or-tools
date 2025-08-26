@@ -170,7 +170,7 @@ class LinearObjectiveTest(parameterized.TestCase):
         mod, obj = _model_and_objective(primary)
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, "Quadratic"):
-            obj.add_linear(x * x)  # pytype: disable=wrong-arg-types
+            obj.add_linear(x * x)
 
     def test_set_to_linear(self, primary: bool) -> None:
         mod, obj = _model_and_objective(primary)
@@ -188,7 +188,7 @@ class LinearObjectiveTest(parameterized.TestCase):
         mod, obj = _model_and_objective(primary)
         x = mod.add_variable()
         with self.assertRaisesRegex(TypeError, "Quadratic"):
-            obj.set_to_linear_expression(x * x)  # pytype: disable=wrong-arg-types
+            obj.set_to_linear_expression(x * x)
 
     def test_set_to_expression(self, primary: bool) -> None:
         mod, obj = _model_and_objective(primary)
@@ -453,9 +453,7 @@ class AuxiliaryObjectiveTest(absltest.TestCase):
     def test_invalid_id_type(self) -> None:
         elemental = cpp_elemental.CppElemental()
         with self.assertRaisesRegex(TypeError, "obj_id type"):
-            objectives.AuxiliaryObjective(
-                elemental, "dog"
-            )  # pytype: disable=wrong-arg-types
+            objectives.AuxiliaryObjective(elemental, "dog")
 
     def test_eq(self) -> None:
         mod1 = model.Model()

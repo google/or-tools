@@ -14,7 +14,7 @@
 
 """Simple linear programming example."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from absl import app
 

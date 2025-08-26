@@ -20,8 +20,6 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["model_exporter_swig_helper.h"])
-
 # OSS solvers
 bool_flag(
     name = "with_bop",
@@ -404,7 +402,6 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/lp_data:lp_parser",
-        "//ortools/lp_data:model_reader",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:sol_reader",
         "@abseil-cpp//absl/status",

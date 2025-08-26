@@ -181,6 +181,13 @@ TEST(RemoveZeroTermsTest, BasicBehavior) {
   EXPECT_EQ(ct, CreateUbConstraintForTest({2, 0, -8}, 11));
 }
 
+TEST(LinearConstraintCopyTest, BasicBehavior) {
+  LinearConstraint ct = CreateUbConstraintForTest({2, 4, -8}, 11);
+  LinearConstraint other;
+  other.CopyFrom(ct);
+  EXPECT_EQ(ct, other);
+}
+
 TEST(MakeAllCoefficientsPositiveTest, BasicBehavior) {
   // Note that this relies on the fact that the negation of an IntegerVariable
   // var is is the one with IntegerVariable(var.value() ^ 1);

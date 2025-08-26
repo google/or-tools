@@ -210,7 +210,6 @@ cc_library(
         "//ortools/base:map_util",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/functional:function_ref",
     ],
 )
 
@@ -398,6 +397,31 @@ cc_library(
 )
 
 cc_library(
+    name = "tagged_id",
+    hdrs = ["tagged_id.h"],
+    # This dependency is not ideal, we should consider moving this to ortools/util,
+    # see some discussion on b/430226871.
+    visibility = ["//ortools/apollo:__subpackages__"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "tagged_id_test",
+    srcs = ["tagged_id_test.cc"],
+    deps = [
+        ":tagged_id",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
     name = "symmetry",
     hdrs = ["symmetry.h"],
     deps = [
@@ -438,11 +462,9 @@ cc_library(
     hdrs = ["elements.h"],
     visibility = ["//ortools/math_opt:__subpackages__"],
     deps = [
+        ":tagged_id",
         "//ortools/base:array",
-        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )

@@ -29,6 +29,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -41,6 +42,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -972,6 +974,40 @@ bool LinearConstraintManager::DebugCheckConstraint(
     return false;
   }
   return true;
+}
+
+void LinearConstraintManager::CacheReducedCostsInfo() {
+  if (reduced_costs_is_cached_) return;
+  reduced_costs_is_cached_ = true;
+
+  absl::int128 ub = reduced_cost_constraint_.ub.value();
+  absl::int128 level_zero_lb = 0;
+  for (int i = 0; i < reduced_cost_constraint_.num_terms; ++i) {
+    IntegerVariable var = reduced_cost_constraint_.vars[i];
+    IntegerValue coeff = reduced_cost_constraint_.coeffs[i];
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+
+    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+    level_zero_lb += absl::int128(coeff.value()) * absl::int128(lb.value());
+
+    if (lb == integer_trail_.LevelZeroUpperBound(var)) continue;
+    const LiteralIndex lit = integer_encoder_.GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, lb + 1));
+    if (lit != kNoLiteralIndex) {
+      reduced_costs_map_[Literal(lit)] = coeff;
+    }
+  }
+  const absl::int128 gap =
+      absl::int128(reduced_cost_constraint_.ub.value()) - level_zero_lb;
+  if (gap > 0) {
+    reduced_costs_gap_ = gap;
+  } else {
+    reduced_costs_gap_ = 0;
+    reduced_costs_map_.clear();
+  }
 }
 
 void TopNCuts::AddCut(

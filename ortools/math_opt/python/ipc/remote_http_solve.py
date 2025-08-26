@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
 """Solve MathOpt models via HTTP request to the OR API."""
 
 import json
-from typing import List, Optional, Tuple
+from typing import Optional
 from google.protobuf import json_format
 import requests
 from ortools.service.v1 import optimization_pb2
@@ -40,7 +41,7 @@ def remote_http_solve(
     api_key: Optional[str] = None,
     deadline_sec: Optional[float] = _DEFAULT_DEADLINE_SEC,
     resources: Optional[mathopt.SolverResources] = None,
-) -> Tuple[mathopt.SolveResult, List[str]]:
+) -> tuple[mathopt.SolveResult, list[str]]:
     """Solves a MathOpt model via HTTP request to the OR API.
 
     Args:
@@ -155,7 +156,7 @@ def _build_json_payload(
 
 def _build_solve_result(
     json_response: bytes, model: mathopt.Model
-) -> Tuple[mathopt.SolveResult, List[str]]:
+) -> tuple[mathopt.SolveResult, list[str]]:
     """Parses a JSON representation of a response to a SolveResult object.
 
     Args:
