@@ -413,22 +413,22 @@ void CpModelProtoWithMapping::AddTermToLinearConstraint(
     // We need to update the domain of the constraint.
     for (int i = 0; i < ct->domain_size(); ++i) {
       const int64_t b = ct->domain(i);
-      // We account for infinity like bounds being INT_MAX, INT_MIN, and
-      // -INT_MAX.
-      if (b <= -std::numeric_limits<int64_t>::max() ||
+      if (b == std::numeric_limits<int64_t>::min() ||
           b == std::numeric_limits<int64_t>::max()) {
         continue;
       }
-      ct->set_domain(i, ct->domain(i) - coeff);
+      ct->set_domain(i, b - coeff);
     }
   }
 }
 
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
                                                              int64_t value) {
+  CHECK_GE(var, 0);
   const std::pair<int, int64_t> key = {var, value};
   const auto it = var_eq_value_to_literal.find(key);
   if (it != var_eq_value_to_literal.end()) return it->second;
+
   const IntegerVariableProto& var_proto = proto.variables(var);
   if (var_proto.domain_size() == 2 &&
       var_proto.domain(0) == var_proto.domain(1)) {
@@ -439,8 +439,8 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
 
   if (var_proto.domain_size() == 2 && var_proto.domain(0) == 0 &&
       var_proto.domain(1) == 1) {
-    var_eq_value_to_literal[std::make_pair(var, 0)] = NegatedRef(var);
-    var_eq_value_to_literal[std::make_pair(var, 1)] = var;
+    var_eq_value_to_literal[{var, 0}] = NegatedRef(var);
+    var_eq_value_to_literal[{var, 1}] = var;
     return value == 1 ? var : NegatedRef(var);
   }
 
@@ -869,7 +869,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                                    fz_ct.arguments[1].values.end()})
               .Complement(),
           arg);
-      AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
       FillDomainInProto(
           Domain(fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1])
@@ -878,6 +877,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     } else {
       LOG(FATAL) << "Wrong format";
     }
+    AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
   } else if (fz_ct.type == "int_min") {
     auto* arg = ct->mutable_lin_max();
     *arg->add_exprs() = LookupExpr(fz_ct.arguments[0], /*negate=*/true);
