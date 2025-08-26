@@ -53,6 +53,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/version.h"
+#include "ortools/port/os.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -91,10 +93,7 @@
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
-#if !defined(__EMBEDDED_PLATFORM__)
 #include "ortools/util/sigint.h"
-#endif  // __EMBEDDED_PLATFORM__
-#include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -1185,7 +1184,7 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-#if !defined(__EMBEDDED_PLATFORM__)
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 class FeasibilityPumpSolver : public SubSolver {
  public:
@@ -2191,7 +2190,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   LaunchSubsolvers(params, shared, subsolvers, name_filter.AllIgnored());
 }
 
-#endif  // !defined(__EMBEDDED_PLATFORM__)
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 // If the option use_sat_inprocessing is true, then before post-solving a
 // solution, we need to make sure we add any new clause required for postsolving
@@ -2439,13 +2438,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Initialize the time limit from the parameters.
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
 
-#if !defined(__EMBEDDED_PLATFORM__)
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
   // Register SIGINT handler if requested by the parameters.
   if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
         [shared_time_limit]() { shared_time_limit->Stop(); });
   }
-#endif  // __EMBEDDED_PLATFORM__
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
@@ -2940,15 +2939,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LoadDebugSolution(*new_cp_model_proto, model);
 
   if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
-#if defined(__EMBEDDED_PLATFORM__)
-    if (/* DISABLES CODE */ (false)) {
-      // We ignore the multithreading parameter in this case.
-#else   // __EMBEDDED_PLATFORM__
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
     if (params.num_workers() > 1 || params.interleave_search() ||
         !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
         params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
-#endif  // __EMBEDDED_PLATFORM__
+#else   // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+    if (/* DISABLES CODE */ (false)) {
+      // We ignore the multithreading parameter in this case.
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
     } else {
       shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
 

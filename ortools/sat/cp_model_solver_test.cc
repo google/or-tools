@@ -23,6 +23,7 @@
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/port/os.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_test_utils.h"
@@ -330,7 +331,8 @@ TEST(SolveCpModelTest, TrivialModelWithCore) {
                                         response.solution().end())));
 }
 
-#if !defined(__EMBEDDED_PLATFORM__)
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+
 TEST(SolveCpModelTest, TrivialLinearTranslatedModel) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: -10 domain: 10 }
@@ -4956,7 +4958,8 @@ TEST(PresolveCpModelTest, CumulativeBug4) {
   response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
-#endif  // !defined(__EMBEDDED_PLATFORM__)
+
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 }  // namespace
 }  // namespace sat

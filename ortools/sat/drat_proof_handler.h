@@ -51,11 +51,11 @@ class DratProofHandler {
   ~DratProofHandler() = default;
 
   // During the presolve step, variable get deleted and the set of non-deleted
-  // variable is remaped in a dense set. This allows to keep track of that and
+  // variable is remapped in a dense set. This allows to keep track of that and
   // always output the DRAT clauses in term of the original variables. Must be
   // called before adding or deleting clauses AddClause() or DeleteClause().
   //
-  // TODO(user): This is exactly the same mecanism as in the SatPostsolver
+  // TODO(user): This is exactly the same mechanism as in the SatPostsolver
   // class. Factor out the code.
   void ApplyMapping(const util_intops::StrongVector<BooleanVariable,
                                                     BooleanVariable>& mapping);
