@@ -16,6 +16,11 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "os",
+    hdrs = ["os.h"],
+)
+
+cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
