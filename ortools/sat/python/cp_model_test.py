@@ -2691,6 +2691,11 @@ TRFM"""
         self.assertEqual(-2, prod.coefficient)
         self.assertEqual(2, prod.offset)
 
+    def test_issue4759(self):
+        model = cp_model.CpModel()
+        a = model.new_bool_var("a")
+        self.assertNotEmpty(str(0 * a + sum([1 * a, 2 * a])))
+
     def test_pre_pep8(self):
         model = cp_model.CpModel()
         x = [model.NewBoolVar(f"x{i}") for i in range(5)]
