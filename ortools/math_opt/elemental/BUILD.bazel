@@ -399,9 +399,6 @@ cc_library(
 cc_library(
     name = "tagged_id",
     hdrs = ["tagged_id.h"],
-    # This dependency is not ideal, we should consider moving this to ortools/util,
-    # see some discussion on b/430226871.
-    visibility = ["//ortools/apollo:__subpackages__"],
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
