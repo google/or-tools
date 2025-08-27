@@ -132,6 +132,12 @@ struct CpModelProtoWithMapping {
   // Get or create a literal that is equivalent to var1 == var2.
   int GetOrCreateLiteralForVarEqVar(int var1, int var2);
 
+  // Get or create a literal that is equivalent to var1 < var2.
+  int GetOrCreateLiteralForVarLtVar(int var1, int var2);
+
+  // Get or create a literal that is equivalent to var1 <= var2.
+  int GetOrCreateLiteralForVarLeVar(int var1, int var2);
+
   // Returns the list of literals corresponding to the domain of the variable.
   absl::flat_hash_map<int64_t, int> FullyEncode(int var);
 
@@ -214,6 +220,8 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<int, int> var_to_lit_implies_greater_than_zero;
   absl::flat_hash_map<std::pair<int, int64_t>, int> var_eq_value_to_literal;
   absl::flat_hash_map<std::pair<int, int>, int> var_eq_var_to_literal;
+  absl::flat_hash_map<std::pair<int, int>, int> var_lt_var_to_literal;
+  absl::flat_hash_map<std::pair<int, int>, int> var_le_var_to_literal;
   absl::flat_hash_map<fz::Variable*, std::shared_ptr<SetVariable>>
       set_variables;
 };
@@ -506,6 +514,50 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
                       {{var1, 1}, {var2, -1}});
 
   var_eq_var_to_literal[key] = bool_var;
+  return bool_var;
+}
+
+int CpModelProtoWithMapping::GetOrCreateLiteralForVarLtVar(int var1, int var2) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) return LookupConstant(0);
+
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_lt_var_to_literal.find(key);
+  if (it != var_lt_var_to_literal.end()) return it->second;
+
+  const int bool_var = NewBoolVar();
+
+  AddLinearConstraint({bool_var},
+                      Domain(std::numeric_limits<int64_t>::min(), -1),
+                      {{var1, 1}, {var2, -1}});
+  AddLinearConstraint({NegatedRef(bool_var)},
+                      Domain(0, std::numeric_limits<int64_t>::max()),
+                      {{var1, 1}, {var2, -1}});
+
+  var_lt_var_to_literal[key] = bool_var;
+  return bool_var;
+}
+
+int CpModelProtoWithMapping::GetOrCreateLiteralForVarLeVar(int var1, int var2) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) return LookupConstant(1);
+
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_le_var_to_literal.find(key);
+  if (it != var_le_var_to_literal.end()) return it->second;
+
+  const int bool_var = NewBoolVar();
+
+  AddLinearConstraint({bool_var},
+                      Domain(std::numeric_limits<int64_t>::min(), 0),
+                      {{var1, 1}, {var2, -1}});
+  AddLinearConstraint({NegatedRef(bool_var)},
+                      Domain(1, std::numeric_limits<int64_t>::max()),
+                      {{var1, 1}, {var2, -1}});
+
+  var_le_var_to_literal[key] = bool_var;
   return bool_var;
 }
 
@@ -1192,6 +1244,86 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_f_inverse(inverse_variables[i - base_inverse]);
       } else {
         arg->add_f_inverse(LookupConstant(i - num_variables));
+      }
+    }
+  } else if (fz_ct.type == "ortools_lex_less_int" ||
+             fz_ct.type == "ortools_lex_less_bool") {
+    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
+    const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
+    const int min_size = std::min(x.size(), y.size());
+    std::vector<int> is_lt(min_size);
+    std::vector<int> is_le(min_size);
+    for (int i = 0; i < min_size; ++i) {
+      is_le[i] = GetOrCreateLiteralForVarLeVar(x[i], y[i]);
+      is_lt[i] = GetOrCreateLiteralForVarLtVar(x[i], y[i]);
+    }
+
+    std::vector<int> hold(min_size + 1);
+    for (int i = 0; i <= min_size; ++i) {
+      hold[i] = NewBoolVar();
+    }
+    AddImplication({}, hold[0]);  // Root condition.
+    if (x.size() > y.size()) {
+      AddImplication({}, hold[min_size]);  // true leaf condition.
+    } else {
+      AddImplication({}, NegatedRef(hold[min_size]));  // false leaf condition.
+    }
+
+    for (int i = 0; i < min_size; ++i) {
+      // hold[i] => x[i] <= y[i].
+      AddImplication({hold[i]}, is_le[i]);
+      // hold[i] => x[i] < y[i] || hold[i + 1]
+      ConstraintProto* chain = AddEnforcedConstraint(hold[i]);
+      chain->mutable_bool_or()->add_literals(is_lt[i]);
+      chain->mutable_bool_or()->add_literals(hold[i + 1]);
+
+      // Optimization.
+      if (i + 1 < min_size) {
+        // is_lt[i] => no need to look at further hold variables.
+        AddImplication({is_lt[i]}, NegatedRef(hold[i + 1]));
+        // Propagate the negation of hold[i] to hold[i + 1] to avoid unnecessary
+        // branching and disable the chain constraints.
+        AddImplication({NegatedRef(hold[i])}, NegatedRef(hold[i + 1]));
+      }
+    }
+  } else if (fz_ct.type == "ortools_lex_lesseq_int" ||
+             fz_ct.type == "ortools_lex_lesseq_bool") {
+    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
+    const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
+    const int min_size = std::min(x.size(), y.size());
+    std::vector<int> is_lt(min_size);
+    std::vector<int> is_le(min_size);
+    for (int i = 0; i < min_size; ++i) {
+      is_le[i] = GetOrCreateLiteralForVarLeVar(x[i], y[i]);
+      is_lt[i] = GetOrCreateLiteralForVarLtVar(x[i], y[i]);
+    }
+
+    std::vector<int> hold(min_size + 1);
+    for (int i = 0; i <= min_size; ++i) {
+      hold[i] = NewBoolVar();
+    }
+    AddImplication({}, hold[0]);  // Root condition.
+    if (x.size() >= y.size()) {
+      AddImplication({}, hold[min_size]);  // true leaf condition.
+    } else {
+      AddImplication({}, NegatedRef(hold[min_size]));  // false leaf condition.
+    }
+
+    for (int i = 0; i < min_size; ++i) {
+      // hold[i] => x[i] <= y[i].
+      AddImplication({hold[i]}, is_le[i]);
+      // hold[i] => x[i] < y[i] || hold[i + 1]
+      ConstraintProto* chain = AddEnforcedConstraint(hold[i]);
+      chain->mutable_bool_or()->add_literals(is_lt[i]);
+      chain->mutable_bool_or()->add_literals(hold[i + 1]);
+
+      // Optimization.
+      if (i + 1 < min_size) {
+        // is_lt[i] => no need to look at further hold variables.
+        AddImplication({is_lt[i]}, NegatedRef(hold[i + 1]));
+        // Propagate the negation of hold[i] to hold[i + 1] to avoid unnecessary
+        // branching and disable the chain constraints.
+        AddImplication({NegatedRef(hold[i])}, NegatedRef(hold[i + 1]));
       }
     }
   } else if (fz_ct.type == "fzn_disjunctive") {

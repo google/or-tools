@@ -1132,11 +1132,12 @@ bool CheckOrtoolsInverse(
   return true;
 }
 
-bool CheckLexLessInt(
+bool CheckOrtoolsLexLessInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
-  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+  const int min_size =
+      std::min(Length(ct.arguments[0]), Length(ct.arguments[1]));
+  for (int i = 0; i < min_size; ++i) {
     const int64_t x = EvalAt(ct.arguments[0], i, evaluator);
     const int64_t y = EvalAt(ct.arguments[1], i, evaluator);
     if (x < y) {
@@ -1146,15 +1147,16 @@ bool CheckLexLessInt(
       return false;
     }
   }
-  // We are at the end of the list. The two chains are equals.
-  return false;
+  // We are at the end of the common list. We compare the lengths of the lists.
+  return Length(ct.arguments[1]) > Length(ct.arguments[0]);
 }
 
-bool CheckLexLesseqInt(
+bool CheckOrtoolsLexLesseqInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
-  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+  const int min_size =
+      std::min(Length(ct.arguments[0]), Length(ct.arguments[1]));
+  for (int i = 0; i < min_size; ++i) {
     const int64_t x = EvalAt(ct.arguments[0], i, evaluator);
     const int64_t y = EvalAt(ct.arguments[1], i, evaluator);
     if (x < y) {
@@ -1164,8 +1166,8 @@ bool CheckLexLesseqInt(
       return false;
     }
   }
-  // We are at the end of the list. The two chains are equals.
-  return true;
+  // We are at the end of the common list. We compare the lengths of the lists.
+  return Length(ct.arguments[1]) >= Length(ct.arguments[0]);
 }
 
 bool CheckMaximumArgInt(
@@ -1722,10 +1724,6 @@ CallMap CreateCallMap() {
   m["int_not_in"] = CheckSetNotIn;
   m["int_plus"] = CheckIntPlus;
   m["int_times"] = CheckIntTimes;
-  m["lex_less_bool"] = CheckLexLessInt;
-  m["lex_less_int"] = CheckLexLessInt;
-  m["lex_lesseq_bool"] = CheckLexLesseqInt;
-  m["lex_lesseq_int"] = CheckLexLesseqInt;
   m["maximum_arg_int"] = CheckMaximumArgInt;
   m["maximum_int"] = CheckMaximumInt;
   m["minimum_arg_int"] = CheckMinimumArgInt;
@@ -1743,6 +1741,10 @@ CallMap CreateCallMap() {
   m["ortools_cumulative_opt"] = CheckOrtoolsCumulativeOpt;
   m["ortools_disjunctive_strict_opt"] = CheckOrtoolsDisjunctiveStrictOpt;
   m["ortools_inverse"] = CheckOrtoolsInverse;
+  m["ortools_lex_less_bool"] = CheckOrtoolsLexLessInt;
+  m["ortools_lex_less_int"] = CheckOrtoolsLexLessInt;
+  m["ortools_lex_lesseq_bools"] = CheckOrtoolsLexLesseqInt;
+  m["ortools_lex_lesseq_int"] = CheckOrtoolsLexLesseqInt;
   m["ortools_network_flow_cost"] = CheckOrtoolsNetworkFlowCost;
   m["ortools_network_flow"] = CheckOrtoolsNetworkFlow;
   m["ortools_nvalue"] = CheckOrtoolsNValue;
