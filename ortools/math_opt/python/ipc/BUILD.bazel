@@ -17,7 +17,10 @@ load("@rules_python//python:py_library.bzl", "py_library")
 py_library(
     name = "remote_http_solve",
     srcs = ["remote_http_solve.py"],
-    visibility = ["//ortools/service:__subpackages__"],
+    visibility = [
+        "//examples/service:__subpackages__",
+        "//ortools/service:__subpackages__",
+    ],
     deps = [
         ":proto_converter",
         "//ortools/service/v1:optimization_py_pb2",
