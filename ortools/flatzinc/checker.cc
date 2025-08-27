@@ -265,7 +265,7 @@ bool CheckArrayVarIntElement(
   return element == target;
 }
 
-bool CheckOrtoolsArrayIntElement(
+bool CheckOrToolsArrayIntElement(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t min_index = ct.arguments[1].values[0];
@@ -342,7 +342,7 @@ bool CheckBoolXor(
   return target == (left + right == 1);
 }
 
-bool CheckOrtoolsCircuit(
+bool CheckOrToolsCircuit(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int size = Length(ct.arguments[0]);
@@ -358,7 +358,7 @@ bool CheckOrtoolsCircuit(
   return visited.size() == size;
 }
 
-bool CheckOrtoolsBinPacking(
+bool CheckOrToolsBinPacking(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t capacity = ct.arguments[0].Value();
@@ -377,7 +377,7 @@ bool CheckOrtoolsBinPacking(
   return true;
 }
 
-bool CheckOrtoolsBinPackingCapa(
+bool CheckOrToolsBinPackingCapa(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const std::vector<int64_t>& capacities = ct.arguments[0].values;
@@ -398,7 +398,7 @@ bool CheckOrtoolsBinPackingCapa(
   return true;
 }
 
-bool CheckOrtoolsBinPackingLoad(
+bool CheckOrToolsBinPackingLoad(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int num_positions = Length(ct.arguments[1]);
@@ -420,7 +420,7 @@ bool CheckOrtoolsBinPackingLoad(
   return true;
 }
 
-bool CheckOrtoolsNValue(
+bool CheckOrToolsNValue(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t card = Eval(ct.arguments[0], evaluator);
@@ -441,7 +441,7 @@ int64_t ComputeCount(const Constraint& ct,
   return result;
 }
 
-bool CheckOrtoolsCountEq(
+bool CheckOrToolsCountEq(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int64_t count = ComputeCount(ct, evaluator);
@@ -521,7 +521,7 @@ bool CheckCumulative(
   return true;
 }
 
-bool CheckOrtoolsCumulativeOpt(
+bool CheckOrToolsCumulativeOpt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   // TODO: Improve complexity for large durations.
@@ -617,7 +617,7 @@ bool CheckDisjunctiveStrict(
   return true;
 }
 
-bool CheckOrtoolsDisjunctiveStrictOpt(
+bool CheckOrToolsDisjunctiveStrictOpt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int size = Length(ct.arguments[0]);
@@ -1104,7 +1104,7 @@ bool CheckIntTimes(
   return target == left * right;
 }
 
-bool CheckOrtoolsInverse(
+bool CheckOrToolsInverse(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   CHECK_EQ(Length(ct.arguments[0]), Length(ct.arguments[1]));
@@ -1132,7 +1132,7 @@ bool CheckOrtoolsInverse(
   return true;
 }
 
-bool CheckOrtoolsLexLessInt(
+bool CheckOrToolsLexLessInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int min_size =
@@ -1151,7 +1151,7 @@ bool CheckOrtoolsLexLessInt(
   return Length(ct.arguments[1]) > Length(ct.arguments[0]);
 }
 
-bool CheckOrtoolsLexLesseqInt(
+bool CheckOrToolsLexLesseqInt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const int min_size =
@@ -1253,7 +1253,7 @@ bool CheckNetworkFlowConservation(
   return true;
 }
 
-bool CheckOrtoolsNetworkFlow(
+bool CheckOrToolsNetworkFlow(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   return CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
@@ -1261,7 +1261,7 @@ bool CheckOrtoolsNetworkFlow(
                                       evaluator);
 }
 
-bool CheckOrtoolsNetworkFlowCost(
+bool CheckOrToolsNetworkFlowCost(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   if (!CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
@@ -1281,7 +1281,7 @@ bool CheckOrtoolsNetworkFlowCost(
   return total_cost == Eval(ct.arguments[5], evaluator);
 }
 
-bool CheckOrtoolsRegular(
+bool CheckOrToolsRegular(
     const Constraint& /*ct*/,
     const std::function<int64_t(Variable*)>& /*evaluator*/,
     const std::function<std::vector<int64_t>(Variable*)>& /*set_evaluator*/) {
@@ -1548,7 +1548,7 @@ bool CheckSort(
   return true;
 }
 
-bool CheckOrtoolsSubCircuit(
+bool CheckOrToolsSubCircuit(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   absl::flat_hash_set<int64_t> visited;
@@ -1579,7 +1579,7 @@ bool CheckOrtoolsSubCircuit(
   return visited.size() == Length(ct.arguments[0]);
 }
 
-bool CheckOrtoolsTableInt(
+bool CheckOrToolsTableInt(
     const Constraint& /*ct*/,
     const std::function<int64_t(Variable*)>& /*evaluator*/,
     const std::function<std::vector<int64_t>(Variable*)>& /*set_evaluator*/) {
@@ -1660,14 +1660,14 @@ CallMap CreateCallMap() {
   m["bool_right_imp"] = CheckIntGe;
   m["bool_xor"] = CheckBoolXor;
   m["bool2int"] = CheckIntEq;
-  m["count_eq"] = CheckOrtoolsCountEq;
+  m["count_eq"] = CheckOrToolsCountEq;
   m["count_geq"] = CheckCountGeq;
   m["count_gt"] = CheckCountGt;
   m["count_leq"] = CheckCountLeq;
   m["count_lt"] = CheckCountLt;
   m["count_neq"] = CheckCountNeq;
   m["count_reif"] = CheckCountReif;
-  m["count"] = CheckOrtoolsCountEq;
+  m["count"] = CheckOrToolsCountEq;
   m["diffn_k_with_sizes"] = CheckDiffnK;
   m["diffn_nonstrict_k_with_sizes"] = CheckDiffnNonStrictK;
   m["false_constraint"] = CheckFalseConstraint;
@@ -1728,30 +1728,30 @@ CallMap CreateCallMap() {
   m["maximum_int"] = CheckMaximumInt;
   m["minimum_arg_int"] = CheckMinimumArgInt;
   m["minimum_int"] = CheckMinimumInt;
-  m["ortools_array_bool_element"] = CheckOrtoolsArrayIntElement;
-  m["ortools_array_int_element"] = CheckOrtoolsArrayIntElement;
-  m["ortools_array_var_bool_element"] = CheckOrtoolsArrayIntElement;
-  m["ortools_array_var_int_element"] = CheckOrtoolsArrayIntElement;
-  m["ortools_bin_packing_capa"] = CheckOrtoolsBinPackingCapa;
-  m["ortools_bin_packing_load"] = CheckOrtoolsBinPackingLoad;
-  m["ortools_bin_packing"] = CheckOrtoolsBinPacking;
-  m["ortools_circuit"] = CheckOrtoolsCircuit;
-  m["ortools_count_eq_cst"] = CheckOrtoolsCountEq;
-  m["ortools_count_eq"] = CheckOrtoolsCountEq;
-  m["ortools_cumulative_opt"] = CheckOrtoolsCumulativeOpt;
-  m["ortools_disjunctive_strict_opt"] = CheckOrtoolsDisjunctiveStrictOpt;
-  m["ortools_inverse"] = CheckOrtoolsInverse;
-  m["ortools_lex_less_bool"] = CheckOrtoolsLexLessInt;
-  m["ortools_lex_less_int"] = CheckOrtoolsLexLessInt;
-  m["ortools_lex_lesseq_bools"] = CheckOrtoolsLexLesseqInt;
-  m["ortools_lex_lesseq_int"] = CheckOrtoolsLexLesseqInt;
-  m["ortools_network_flow_cost"] = CheckOrtoolsNetworkFlowCost;
-  m["ortools_network_flow"] = CheckOrtoolsNetworkFlow;
-  m["ortools_nvalue"] = CheckOrtoolsNValue;
-  m["ortools_regular"] = CheckOrtoolsRegular;
-  m["ortools_subcircuit"] = CheckOrtoolsSubCircuit;
-  m["ortools_table_bool"] = CheckOrtoolsTableInt;
-  m["ortools_table_int"] = CheckOrtoolsTableInt;
+  m["ortools_array_bool_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_array_int_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_array_var_bool_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_array_var_int_element"] = CheckOrToolsArrayIntElement;
+  m["ortools_bin_packing_capa"] = CheckOrToolsBinPackingCapa;
+  m["ortools_bin_packing_load"] = CheckOrToolsBinPackingLoad;
+  m["ortools_bin_packing"] = CheckOrToolsBinPacking;
+  m["ortools_circuit"] = CheckOrToolsCircuit;
+  m["ortools_count_eq_cst"] = CheckOrToolsCountEq;
+  m["ortools_count_eq"] = CheckOrToolsCountEq;
+  m["ortools_cumulative_opt"] = CheckOrToolsCumulativeOpt;
+  m["ortools_disjunctive_strict_opt"] = CheckOrToolsDisjunctiveStrictOpt;
+  m["ortools_inverse"] = CheckOrToolsInverse;
+  m["ortools_lex_less_bool"] = CheckOrToolsLexLessInt;
+  m["ortools_lex_less_int"] = CheckOrToolsLexLessInt;
+  m["ortools_lex_lesseq_bool"] = CheckOrToolsLexLesseqInt;
+  m["ortools_lex_lesseq_int"] = CheckOrToolsLexLesseqInt;
+  m["ortools_network_flow_cost"] = CheckOrToolsNetworkFlowCost;
+  m["ortools_network_flow"] = CheckOrToolsNetworkFlow;
+  m["ortools_nvalue"] = CheckOrToolsNValue;
+  m["ortools_regular"] = CheckOrToolsRegular;
+  m["ortools_subcircuit"] = CheckOrToolsSubCircuit;
+  m["ortools_table_bool"] = CheckOrToolsTableInt;
+  m["ortools_table_int"] = CheckOrToolsTableInt;
   m["regular_nfa"] = CheckRegularNfa;
   m["set_card"] = CheckSetCard;
   m["set_diff"] = CheckSetDiff;

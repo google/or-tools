@@ -116,8 +116,10 @@ struct CpModelProtoWithMapping {
                                      bool negate = false);
   std::vector<int> LookupVars(const fz::Argument& argument);
   VarOrValue LookupVarOrValue(const fz::Argument& argument);
-
   std::vector<VarOrValue> LookupVarsOrValues(const fz::Argument& argument);
+
+  // Checks is the domain of the variable is included in [0, 1].
+  bool VariableIsBoolean(int var) const;
 
   // Set variables.
   void ExtractSetConstraint(const fz::Constraint& fz_ct);
@@ -178,7 +180,9 @@ struct CpModelProtoWithMapping {
       absl::Span<const int> enforcement_literals, const Domain& domain,
       absl::Span<const std::pair<int, int64_t>> terms = {});
 
-  // Helpers to fill a ConstraintProto.
+  // Adds a lex_less{eq} constraint to the model.
+  void AddLexOrdering(absl::Span<const int> x, absl::Span<const int> y,
+                      bool accepts_equals);
 
   // This one must be called after the domain has been set.
   void AddTermToLinearConstraint(int var, int64_t coeff,
@@ -338,6 +342,13 @@ std::vector<VarOrValue> CpModelProtoWithMapping::LookupVarsOrValues(
   return result;
 }
 
+bool CpModelProtoWithMapping::VariableIsBoolean(int var) const {
+  if (var < 0) var = NegatedRef(var);
+  const IntegerVariableProto& var_proto = proto.variables(var);
+  return var_proto.domain_size() == 2 && var_proto.domain(0) >= 0 &&
+         var_proto.domain(1) <= 1;
+}
+
 bool CpModelProtoWithMapping::ConstraintContainsSetVariables(
     const fz::Constraint& constraint) const {
   for (const fz::Argument& argument : constraint.arguments) {
@@ -426,6 +437,47 @@ void CpModelProtoWithMapping::AddTermToLinearConstraint(
         continue;
       }
       ct->set_domain(i, b - coeff);
+    }
+  }
+}
+
+void CpModelProtoWithMapping::AddLexOrdering(absl::Span<const int> x,
+                                             absl::Span<const int> y,
+                                             bool accepts_equals) {
+  const int min_size = std::min(x.size(), y.size());
+  std::vector<int> is_lt(min_size);
+  std::vector<int> is_le(min_size);
+  for (int i = 0; i < min_size; ++i) {
+    is_le[i] = GetOrCreateLiteralForVarLeVar(x[i], y[i]);
+    is_lt[i] = GetOrCreateLiteralForVarLtVar(x[i], y[i]);
+  }
+
+  std::vector<int> hold(min_size + 1);
+  for (int i = 0; i < min_size; ++i) {
+    hold[i] = NewBoolVar();
+  }
+  AddImplication({}, hold[0]);  // Root condition.
+  const bool hold_sentinel_is_true =
+      x.size() > y.size() || (x.size() == y.size() && accepts_equals);
+  hold[min_size] = LookupConstant(hold_sentinel_is_true ? 1 : 0);
+
+  for (int i = 0; i < min_size; ++i) {
+    // hold[i] => x[i] <= y[i].
+    AddImplication({hold[i]}, is_le[i]);
+
+    // hold[i] => x[i] < y[i] || hold[i + 1]
+    ConstraintProto* chain = AddEnforcedConstraint(hold[i]);
+    chain->mutable_bool_or()->add_literals(is_lt[i]);
+    chain->mutable_bool_or()->add_literals(hold[i + 1]);
+
+    // Optimization.
+    if (i + 1 < min_size) {
+      // is_lt[i] => no need to look at further hold variables.
+      AddImplication({is_lt[i]}, NegatedRef(hold[i + 1]));
+
+      // Propagate the negation of hold[i] to hold[i + 1] to avoid unnecessary
+      // branching and disable the chain constraints.
+      AddImplication({NegatedRef(hold[i])}, NegatedRef(hold[i + 1]));
     }
   }
 }
@@ -527,15 +579,31 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarLtVar(int var1, int var2) {
   if (it != var_lt_var_to_literal.end()) return it->second;
 
   const int bool_var = NewBoolVar();
-
-  AddLinearConstraint({bool_var},
-                      Domain(std::numeric_limits<int64_t>::min(), -1),
-                      {{var1, 1}, {var2, -1}});
-  AddLinearConstraint({NegatedRef(bool_var)},
-                      Domain(0, std::numeric_limits<int64_t>::max()),
-                      {{var1, 1}, {var2, -1}});
-
   var_lt_var_to_literal[key] = bool_var;
+  var_le_var_to_literal[{var2, var1}] = NegatedRef(bool_var);
+
+  if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
+    // bool_var => var1 < var2 => !var1 && var2
+    BoolArgumentProto* is_lt =
+        AddEnforcedConstraint(bool_var)->mutable_bool_and();
+    is_lt->add_literals(NegatedRef(var1));
+    is_lt->add_literals(var2);
+
+    // !bool_var => var1 >= var2 => var1 || !var2
+    BoolArgumentProto* is_ge =
+        AddEnforcedConstraint(NegatedRef(bool_var))->mutable_bool_or();
+    is_ge->add_literals(var1);
+    is_ge->add_literals(NegatedRef(var2));
+
+  } else {
+    AddLinearConstraint({bool_var},
+                        Domain(std::numeric_limits<int64_t>::min(), -1),
+                        {{var1, 1}, {var2, -1}});
+    AddLinearConstraint({NegatedRef(bool_var)},
+                        Domain(0, std::numeric_limits<int64_t>::max()),
+                        {{var1, 1}, {var2, -1}});
+  }
+
   return bool_var;
 }
 
@@ -549,15 +617,30 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarLeVar(int var1, int var2) {
   if (it != var_le_var_to_literal.end()) return it->second;
 
   const int bool_var = NewBoolVar();
-
-  AddLinearConstraint({bool_var},
-                      Domain(std::numeric_limits<int64_t>::min(), 0),
-                      {{var1, 1}, {var2, -1}});
-  AddLinearConstraint({NegatedRef(bool_var)},
-                      Domain(1, std::numeric_limits<int64_t>::max()),
-                      {{var1, 1}, {var2, -1}});
-
   var_le_var_to_literal[key] = bool_var;
+  var_lt_var_to_literal[{var2, var1}] = NegatedRef(bool_var);
+
+  if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
+    // bool_var => var1 <= var2 <=> !var1 || var2
+    BoolArgumentProto* is_le =
+        AddEnforcedConstraint(bool_var)->mutable_bool_or();
+    is_le->add_literals(NegatedRef(var1));
+    is_le->add_literals(var2);
+
+    // !bool_var => var1 > var2 <=> var1 && !var2
+    BoolArgumentProto* is_gt =
+        AddEnforcedConstraint(NegatedRef(bool_var))->mutable_bool_and();
+    is_gt->add_literals(var1);
+    is_gt->add_literals(NegatedRef(var2));
+  } else {
+    AddLinearConstraint({bool_var},
+                        Domain(std::numeric_limits<int64_t>::min(), 0),
+                        {{var1, 1}, {var2, -1}});
+    AddLinearConstraint({NegatedRef(bool_var)},
+                        Domain(1, std::numeric_limits<int64_t>::max()),
+                        {{var1, 1}, {var2, -1}});
+  }
+
   return bool_var;
 }
 
@@ -1247,85 +1330,14 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
     }
   } else if (fz_ct.type == "ortools_lex_less_int" ||
-             fz_ct.type == "ortools_lex_less_bool") {
-    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
-    const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
-    const int min_size = std::min(x.size(), y.size());
-    std::vector<int> is_lt(min_size);
-    std::vector<int> is_le(min_size);
-    for (int i = 0; i < min_size; ++i) {
-      is_le[i] = GetOrCreateLiteralForVarLeVar(x[i], y[i]);
-      is_lt[i] = GetOrCreateLiteralForVarLtVar(x[i], y[i]);
-    }
-
-    std::vector<int> hold(min_size + 1);
-    for (int i = 0; i <= min_size; ++i) {
-      hold[i] = NewBoolVar();
-    }
-    AddImplication({}, hold[0]);  // Root condition.
-    if (x.size() > y.size()) {
-      AddImplication({}, hold[min_size]);  // true leaf condition.
-    } else {
-      AddImplication({}, NegatedRef(hold[min_size]));  // false leaf condition.
-    }
-
-    for (int i = 0; i < min_size; ++i) {
-      // hold[i] => x[i] <= y[i].
-      AddImplication({hold[i]}, is_le[i]);
-      // hold[i] => x[i] < y[i] || hold[i + 1]
-      ConstraintProto* chain = AddEnforcedConstraint(hold[i]);
-      chain->mutable_bool_or()->add_literals(is_lt[i]);
-      chain->mutable_bool_or()->add_literals(hold[i + 1]);
-
-      // Optimization.
-      if (i + 1 < min_size) {
-        // is_lt[i] => no need to look at further hold variables.
-        AddImplication({is_lt[i]}, NegatedRef(hold[i + 1]));
-        // Propagate the negation of hold[i] to hold[i + 1] to avoid unnecessary
-        // branching and disable the chain constraints.
-        AddImplication({NegatedRef(hold[i])}, NegatedRef(hold[i + 1]));
-      }
-    }
-  } else if (fz_ct.type == "ortools_lex_lesseq_int" ||
+             fz_ct.type == "ortools_lex_less_bool" ||
+             fz_ct.type == "ortools_lex_lesseq_int" ||
              fz_ct.type == "ortools_lex_lesseq_bool") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
-    const int min_size = std::min(x.size(), y.size());
-    std::vector<int> is_lt(min_size);
-    std::vector<int> is_le(min_size);
-    for (int i = 0; i < min_size; ++i) {
-      is_le[i] = GetOrCreateLiteralForVarLeVar(x[i], y[i]);
-      is_lt[i] = GetOrCreateLiteralForVarLtVar(x[i], y[i]);
-    }
-
-    std::vector<int> hold(min_size + 1);
-    for (int i = 0; i <= min_size; ++i) {
-      hold[i] = NewBoolVar();
-    }
-    AddImplication({}, hold[0]);  // Root condition.
-    if (x.size() >= y.size()) {
-      AddImplication({}, hold[min_size]);  // true leaf condition.
-    } else {
-      AddImplication({}, NegatedRef(hold[min_size]));  // false leaf condition.
-    }
-
-    for (int i = 0; i < min_size; ++i) {
-      // hold[i] => x[i] <= y[i].
-      AddImplication({hold[i]}, is_le[i]);
-      // hold[i] => x[i] < y[i] || hold[i + 1]
-      ConstraintProto* chain = AddEnforcedConstraint(hold[i]);
-      chain->mutable_bool_or()->add_literals(is_lt[i]);
-      chain->mutable_bool_or()->add_literals(hold[i + 1]);
-
-      // Optimization.
-      if (i + 1 < min_size) {
-        // is_lt[i] => no need to look at further hold variables.
-        AddImplication({is_lt[i]}, NegatedRef(hold[i + 1]));
-        // Propagate the negation of hold[i] to hold[i + 1] to avoid unnecessary
-        // branching and disable the chain constraints.
-        AddImplication({NegatedRef(hold[i])}, NegatedRef(hold[i + 1]));
-      }
-    }
+    const bool accepts_equals = fz_ct.type == "ortools_lex_lesseq_bool" ||
+                                fz_ct.type == "ortools_lex_lesseq_int";
+    AddLexOrdering(x, y, accepts_equals);
   } else if (fz_ct.type == "fzn_disjunctive") {
     const std::vector<VarOrValue> starts =
         LookupVarsOrValues(fz_ct.arguments[0]);
@@ -1595,13 +1607,21 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const int card = LookupVar(fz_ct.arguments[0]);
     const std::vector<int>& x = LookupVars(fz_ct.arguments[1]);
 
+    LinearConstraintProto* global_cardinality = ct->mutable_linear();
+    FillDomainInProto(Domain(x.size()), global_cardinality);
+
     absl::btree_map<int64_t, std::vector<int>> value_to_literals;
     for (int i = 0; i < x.size(); ++i) {
       const absl::flat_hash_map<int64_t, int> encoding = FullyEncode(x[i]);
       for (const auto& [value, literal] : encoding) {
         value_to_literals[value].push_back(literal);
+        AddTermToLinearConstraint(literal, 1, global_cardinality);
       }
     }
+
+    // Constrain the range of the card variable.
+    const int64_t max_size = std::min(x.size(), value_to_literals.size());
+    AddLinearConstraint({}, {1, max_size}, {{card, 1}});
 
     LinearConstraintProto* lin =
         AddLinearConstraint({}, Domain(0), {{card, -1}});
@@ -2049,54 +2069,8 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
       }
     }
 
-    std::swap(x_literals, y_literals);  // Reverse the order.
-
     const bool accept_equals = fz_ct.type == "set_le";
-
-    // Now compare the bit representation using the lexicographic ordering.
-    std::vector<int> eq_literals;
-    BoolArgumentProto* le_or_ct = proto.add_constraints()->mutable_bool_or();
-    for (int i = 0; i < x_literals.size(); ++i) {
-      const int lt_lit = NewBoolVar();
-      ConstraintProto* lt_ct = proto.add_constraints();
-      // (x < y) <=> (~x && y) <=> lt_lit
-      lt_ct->add_enforcement_literal(lt_lit);
-      lt_ct->mutable_bool_and()->add_literals(NegatedRef(x_literals[i]));
-      lt_ct->mutable_bool_and()->add_literals(y_literals[i]);
-      ConstraintProto* lt_ct_rev = proto.add_constraints();
-      lt_ct_rev->add_enforcement_literal(NegatedRef(x_literals[i]));
-      lt_ct_rev->add_enforcement_literal(y_literals[i]);
-      lt_ct_rev->mutable_bool_and()->add_literals(lt_lit);
-
-      // lt_for_index => eq[0] && eq[1] && ... && eq[i-1] && lt[i]
-      const int lt_for_index = NewBoolVar();
-      ConstraintProto* lt_for_index_ct = proto.add_constraints();
-      lt_for_index_ct->add_enforcement_literal(lt_for_index);
-      for (const int eq_lit : eq_literals) {
-        lt_for_index_ct->mutable_bool_and()->add_literals(eq_lit);
-      }
-      lt_for_index_ct->mutable_bool_and()->add_literals(lt_lit);
-
-      le_or_ct->add_literals(lt_for_index);
-
-      const int eq_lit = NewBoolVar();
-      AddLinearConstraint({eq_lit}, Domain(0),
-                          {{x_literals[i], 1}, {y_literals[i], -1}});
-      AddLinearConstraint({NegatedRef(eq_lit)}, Domain(1),
-                          {{x_literals[i], 1}, {y_literals[i], 1}});
-      eq_literals.push_back(eq_lit);
-    }
-    if (accept_equals) {
-      // eq_lit => eq[0] && eq[1] && ... && eq[i-1] && eq[i]
-      const int eq_lit = NewBoolVar();
-      ConstraintProto* eq_ct = proto.add_constraints();
-      eq_ct->add_enforcement_literal(eq_lit);
-      for (const int eq_lit : eq_literals) {
-        eq_ct->mutable_bool_and()->add_literals(eq_lit);
-      }
-
-      le_or_ct->add_literals(eq_lit);
-    }
+    AddLexOrdering(y_literals, x_literals, accept_equals);
   } else {
     LOG(FATAL) << "Not supported " << fz_ct.DebugString();
   }
@@ -2347,11 +2321,17 @@ std::string SolutionString(
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
-      const int64_t value = value_func(output.flat_variables[i]);
-      if (output.display_as_boolean) {
-        result.append(value ? "true" : "false");
+      if (output.flat_variables[i]->domain.is_a_set) {
+        const std::vector<int64_t> values =
+            set_evaluator(output.flat_variables[i]);
+        absl::StrAppend(&result, "{", absl::StrJoin(values, ","), "}");
       } else {
-        absl::StrAppend(&result, value);
+        const int64_t value = value_func(output.flat_variables[i]);
+        if (output.display_as_boolean) {
+          result.append(value ? "true" : "false");
+        } else {
+          absl::StrAppend(&result, value);
+        }
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
