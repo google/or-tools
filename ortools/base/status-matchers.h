@@ -11,17 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_STATUS_MATCHERS_H_
-#define OR_TOOLS_BASE_STATUS_MATCHERS_H_
+// emulates g3/testing/base/public/gmock_utils/status-matchers.h
+#ifndef ORTOOLS_BASE_STATUS_MATCHERS_H_
+#define ORTOOLS_BASE_STATUS_MATCHERS_H_
 
-#include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "gmock/gmock-matchers.h"
+#include "gtest/gtest.h"
 
 namespace testing::status {
 
@@ -159,7 +162,7 @@ class StatusIsMatcherCommonImpl {
  public:
   StatusIsMatcherCommonImpl(
       ::testing::Matcher<const absl::StatusCode> code_matcher,
-      ::testing::Matcher<const std::string&> message_matcher)
+      ::testing::Matcher<absl::string_view> message_matcher)
       : code_matcher_(std::move(code_matcher)),
         message_matcher_(std::move(message_matcher)) {}
 
@@ -200,7 +203,7 @@ class StatusIsMatcherCommonImpl {
 
  private:
   const ::testing::Matcher<const absl::StatusCode> code_matcher_;
-  const ::testing::Matcher<const std::string&> message_matcher_;
+  const ::testing::Matcher<absl::string_view> message_matcher_;
 };
 
 // Monomorphic implementation of matcher StatusIs() for a given type T. T can
@@ -234,10 +237,10 @@ class MonoStatusIsMatcherImpl : public ::testing::MatcherInterface<T> {
 class StatusIsMatcher {
  public:
   StatusIsMatcher(::testing::Matcher<const absl::StatusCode> code_matcher,
-                  ::testing::Matcher<const std::string&> message_matcher)
+                  ::testing::Matcher<absl::string_view> message_matcher)
       : common_impl_(
             ::testing::MatcherCast<const absl::StatusCode>(code_matcher),
-            ::testing::MatcherCast<const std::string&>(message_matcher)) {}
+            ::testing::MatcherCast<absl::string_view>(message_matcher)) {}
 
   // Converts this polymorphic matcher to a monomorphic matcher of the given
   // type. T can be StatusOr<>, Status, or a reference to either of them.
@@ -288,4 +291,4 @@ internal::StatusIsMatcher StatusIs(CodeMatcher code_matcher) {
   ASSERT_TRUE(statusor.ok()) << statusor.status();       \
   lhs = std::move(statusor.value())
 
-#endif  // OR_TOOLS_BASE_STATUS_MATCHERS_H_
+#endif  // ORTOOLS_BASE_STATUS_MATCHERS_H_
