@@ -1914,8 +1914,8 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
       } else if (fz_ct.type == "set_superset") {
         AddImplication({y_lit}, x_lit);
       } else if (fz_ct.type == "set_eq") {
-        AddImplication({x_lit}, y_lit);
-        AddImplication({y_lit}, x_lit);
+        // We use the linear as it is easier for the presolve.
+        AddLinearConstraint({}, Domain(0), {{x_lit, 1}, {y_lit, -1}});
       } else {
         LOG(FATAL) << "Unsupported " << fz_ct.type;
       }
