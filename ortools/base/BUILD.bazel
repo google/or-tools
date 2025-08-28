@@ -266,8 +266,8 @@ cc_library(
     name = "gmock",
     hdrs = ["gmock.h"],
     deps = [
-        ":message_matchers",
-        ":status_matchers",
+        ":protocol-buffer-matchers",
+        ":status-matchers",
         "@googletest//:gtest",
     ],
 )
@@ -398,7 +398,6 @@ cc_library(
 cc_library(
     name = "memfile",
     hdrs = ["memfile.h"],
-    deps = [],
 )
 
 cc_library(
@@ -406,16 +405,6 @@ cc_library(
     hdrs = ["memutil.h"],
     deps = [
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "message_matchers",
-    hdrs = ["message_matchers.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
-        "@protobuf",
     ],
 )
 
@@ -432,7 +421,6 @@ cc_library(
 cc_library(
     name = "mutable_memfile",
     hdrs = ["mutable_memfile.h"],
-    deps = [],
 )
 
 cc_library(
@@ -449,6 +437,7 @@ cc_library(
     name = "parse_text_proto",
     hdrs = ["parse_text_proto.h"],
     deps = [
+        "//ortools/base:status_macros",
         "@abseil-cpp//absl/log:check",
         "@protobuf",
     ],
@@ -477,6 +466,17 @@ cc_library(
 cc_library(
     name = "protobuf_util",
     hdrs = ["protobuf_util.h"],
+)
+
+cc_library(
+    name = "protocol-buffer-matchers",
+    hdrs = ["protocol-buffer-matchers.h"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest",
+        "@protobuf",
+    ],
 )
 
 cc_library(
@@ -542,8 +542,8 @@ cc_library(
 )
 
 cc_library(
-    name = "status_matchers",
-    hdrs = ["status_matchers.h"],
+    name = "status-matchers",
+    hdrs = ["status-matchers.h"],
     deps = [
         ":base",
         "@abseil-cpp//absl/status",

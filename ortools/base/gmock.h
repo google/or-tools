@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_GMOCK_H_
 
 #include "gmock/gmock.h"
-#include "ortools/base/message_matchers.h"
-#include "ortools/base/status_matchers.h"
+#include "ortools/base/protocol-buffer-matchers.h"  // IWYU pragma: export
+#include "ortools/base/status-matchers.h"           // IWYU pragma: export
 
 #endif  // OR_TOOLS_BASE_GMOCK_H_
