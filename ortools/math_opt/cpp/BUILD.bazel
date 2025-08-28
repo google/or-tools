@@ -43,6 +43,17 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "basis_status_test",
+    srcs = ["basis_status_test.cc"],
+    deps = [
+        ":basis_status",
+        ":enums_testing",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "sparse_containers",
     srcs = ["sparse_containers.cc"],
@@ -67,6 +78,21 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
         "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "sparse_containers_test",
+    srcs = ["sparse_containers_test.cc"],
+    deps = [
+        ":matchers",
+        ":math_opt",
+        ":sparse_containers",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -458,6 +484,21 @@ cc_library(
 )
 
 cc_library(
+    name = "enums_testing",
+    testonly = True,
+    hdrs = ["enums_testing.h"],
+    deps = [
+        ":enums",
+        "//ortools/base:gmock",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
+)
+
+cc_library(
     name = "statistics",
     srcs = ["statistics.cc"],
     hdrs = ["statistics.h"],
@@ -582,4 +623,15 @@ cc_library(
     srcs = ["remote_streaming_mode.cc"],
     hdrs = ["remote_streaming_mode.h"],
     deps = ["@abseil-cpp//absl/strings:string_view"],
+)
+
+cc_test(
+    name = "remote_streaming_mode_test",
+    srcs = ["remote_streaming_mode_test.cc"],
+    deps = [
+        ":remote_streaming_mode",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/flags:marshalling",
+        "@abseil-cpp//absl/strings",
+    ],
 )
