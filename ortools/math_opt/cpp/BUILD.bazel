@@ -133,6 +133,35 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "model_test",
+    srcs = ["model_test.cc"],
+    deps = [
+        ":key_types",
+        ":linear_constraint",
+        ":math_opt",
+        ":model",
+        ":update_tracker",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:indicator_constraint",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "//ortools/math_opt/constraints/second_order_cone:second_order_cone_constraint",
+        "//ortools/math_opt/constraints/sos:sos1_constraint",
+        "//ortools/math_opt/constraints/sos:sos2_constraint",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/math_opt/testing:stream",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "variable_and_expressions",
     srcs = ["variable_and_expressions.cc"],
