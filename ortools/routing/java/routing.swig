@@ -165,7 +165,6 @@ import java.util.function.LongUnaryOperator;
 %rename (checkLimit) RoutingModel::CheckLimit;
 %rename (closeModel) RoutingModel::CloseModel;
 %rename (closeModelWithParameters) RoutingModel::CloseModelWithParameters;
-%rename (closeVisitTypes) RoutingModel::CloseVisitTypes;
 %rename (compactAndCheckAssignment) RoutingModel::CompactAndCheckAssignment;
 %rename (compactAssignment) RoutingModel::CompactAssignment;
 %rename (computeLowerBound) RoutingModel::ComputeLowerBound;
