@@ -1,11 +1,29 @@
 using ORToolsGenerated
 const OperationsResearch = ORToolsGenerated.Proto.operations_research
 const MathOpt = OperationsResearch.math_opt
+const PDLP = OperationsResearch.pdlp
 const SolverType = MathOpt.SolverTypeProto
 const SolveResultProto = MathOpt.SolveResultProto
 const TerminationReasonProto = MathOpt.TerminationReasonProto
 const LimitProto = MathOpt.LimitProto
 const FeasibilityStatusProto = MathOpt.FeasibilityStatusProto
+const BasisStatusProto = MathOpt.BasisStatusProto
+const GScipOutput = OperationsResearch.GScipOutput
+const PdlpOutput = MathOpt.var"SolveResultProto.PdlpOutput"
+const PdlpTerminationCriteria_SimpleOptimalityCriteria =
+    PDLP.var"TerminationCriteria.SimpleOptimalityCriteria"
+const PdlpTerminationCriteria_DetailedOptimalityCriteria =
+    PDLP.var"TerminationCriteria.DetailedOptimalityCriteria"
+const PdlpHybridGradientParams_RestartStrategy =
+    PDLP.var"PrimalDualHybridGradientParams.RestartStrategy"
+const PdlpHybridGradientParams_PresolveOptions =
+    PDLP.var"PrimalDualHybridGradientParams.PresolveOptions"
+const PdlpHybridGradientParams_LinesearchRule =
+    PDLP.var"PrimalDualHybridGradientParams.LinesearchRule"
+const PdlpOptimalityNorm = PDLP.OptimalityNorm
+const PdlpSchedulerType = PDLP.SchedulerType
+const PdlpAdaptiveLinesearchParams = PDLP.AdaptiveLinesearchParams
+const PdlpMalitskyPockParams = PDLP.MalitskyPockParams
 const PB = MathOpt.PB
 
 """
@@ -71,7 +89,6 @@ const GlopParameters_InitialBasisHeuristic =
     OperationsResearch.glop.var"GlopParameters.InitialBasisHeuristic"
 
 ## Sat parameter types.
-const AbstractSatParameters = OperationsResearch.sat.var"##AbstractSatParameters"
 const SatParameters_VariableOrder = OperationsResearch.sat.var"SatParameters.VariableOrder"
 const SatParameters_Polarity = OperationsResearch.sat.var"SatParameters.Polarity"
 const SatParameters_ConflictMinimizationAlgorithm =
@@ -779,7 +796,7 @@ end
 """
   Mutable wrapper struct for the SatParameters struct.
 """
-mutable struct SatParameters <: AbstractSatParameters
+mutable struct SatParameters
     name::String
     preferred_variable_order::SatParameters_VariableOrder.T
     initial_polarity::SatParameters_Polarity.T
@@ -1716,6 +1733,227 @@ function to_proto_struct(highs_options::HighsOptions)::MathOpt.HighsOptionsProto
     )
 end
 
+mutable struct OsqpSettings
+    rho::Float64
+    sigma::Float64
+    scaling::Int64
+    adaptive_rho::Bool
+    adaptive_rho_interval::Int64
+    adaptive_rho_tolerance::Float64
+    adaptive_rho_fraction::Float64
+    max_iter::Int64
+    eps_abs::Float64
+    eps_rel::Float64
+    eps_prim_inf::Float64
+    eps_dual_inf::Float64
+    alpha::Float64
+    delta::Float64
+    polish::Bool
+    polish_refine_iter::Int64
+    verbose::Bool
+    scaled_termination::Bool
+    check_termination::Int64
+    warm_start::Bool
+    time_limit::Float64
+
+    function OsqpSettings(;
+        rho = zero(Float64),
+        sigma = zero(Float64),
+        scaling = zero(Int64),
+        adaptive_rho = false,
+        adaptive_rho_interval = zero(Int64),
+        adaptive_rho_tolerance = zero(Float64),
+        adaptive_rho_fraction = zero(Float64),
+        max_iter = zero(Int64),
+        eps_abs = zero(Float64),
+        eps_rel = zero(Float64),
+        eps_prim_inf = zero(Float64),
+        eps_dual_inf = zero(Float64),
+        alpha = zero(Float64),
+        delta = zero(Float64),
+        polish = false,
+        polish_refine_iter = zero(Int64),
+        verbose = false,
+        scaled_termination = false,
+        check_termination = 0,
+        warm_start = false,
+        time_limit = zero(Float64),
+    )
+
+        new(
+            rho,
+            sigma,
+            scaling,
+            adaptive_rho,
+            adaptive_rho_interval,
+            adaptive_rho_tolerance,
+            adaptive_rho_fraction,
+            max_iter,
+            eps_abs,
+            eps_rel,
+            eps_prim_inf,
+            eps_dual_inf,
+            alpha,
+            delta,
+            polish,
+            polish_refine_iter,
+            verbose,
+            scaled_termination,
+            check_termination,
+            warm_start,
+            time_limit,
+        )
+    end
+end
+
+function to_proto_struct(osqp_settings::OsqpSettings)::MathOpt.OsqpSettingsProto
+    return MathOpt.OsqpSettingsProto(
+        osqp_settings.rho,
+        osqp_settings.sigma,
+        osqp_settings.scaling,
+        osqp_settings.adaptive_rho,
+        osqp_settings.adaptive_rho_interval,
+        osqp_settings.adaptive_rho_tolerance,
+        osqp_settings.adaptive_rho_fraction,
+        osqp_settings.max_iter,
+        osqp_settings.eps_abs,
+        osqp_settings.eps_rel,
+        osqp_settings.eps_prim_inf,
+        osqp_settings.eps_dual_inf,
+        osqp_settings.alpha,
+        osqp_settings.delta,
+        osqp_settings.polish,
+        osqp_settings.polish_refine_iter,
+        osqp_settings.verbose,
+        osqp_settings.scaled_termination,
+        osqp_settings.check_termination,
+        osqp_settings.warm_start,
+        osqp_settings.time_limit,
+    )
+end
+
+mutable struct OsqpOutput
+    initialized_underlying_solver::Bool
+
+    function OsqpOutput(; initialized_underlying_solver = false)
+        new(initialized_underlying_solver)
+    end
+end
+
+function to_proto_struct(osqp_output::OsqpOutput)::MathOpt.OsqpOutput
+    return MathOpt.OsqpOutput(osqp_output.initialized_underlying_solver)
+end
+
+mutable struct PdlpTerminationCriteria
+    optimality_norm::PdlpOptimalityNorm.T
+    optimality_criteria::Union{
+        Nothing,
+        PB.OneOf{
+            <:Union{
+                PdlpTerminationCriteria_SimpleOptimalityCriteria,
+                PdlpTerminationCriteria_DetailedOptimalityCriteria,
+            },
+        },
+    }
+    eps_optimal_absolute::Float64
+    eps_optimal_relative::Float64
+    eps_primal_infeasible::Float64
+    eps_dual_infeasible::Float64
+    time_sec_limit::Float64
+    iteration_limit::Int32
+    kkt_matrix_pass_limit::Float64
+end
+
+function to_proto_struct(
+    pdlp_termination_criteria::PdlpTerminationCriteria,
+)::PDLP.TerminationCriteria
+    return PDLP.TerminationCriteria(
+        pdlp_termination_criteria.optimality_norm,
+        pdlp_termination_criteria.optimality_criteria,
+        pdlp_termination_criteria.eps_optimal_absolute,
+        pdlp_termination_criteria.eps_optimal_relative,
+        pdlp_termination_criteria.eps_primal_infeasible,
+        pdlp_termination_criteria.eps_dual_infeasible,
+        pdlp_termination_criteria.time_sec_limit,
+        pdlp_termination_criteria.iteration_limit,
+        pdlp_termination_criteria.kkt_matrix_pass_limit,
+    )
+end
+
+mutable struct PdlpHybridGradientParameters
+    termination_criteria::Union{Nothing,PdlpTerminationCriteria}
+    num_threads::Int32
+    num_shards::Int32
+    scheduler_type::PdlpSchedulerType.T
+    record_iteration_stats::Bool
+    verbosity_level::Int32
+    log_interval_seconds::Float64
+    major_iteration_frequency::Int32
+    termination_check_frequency::Int32
+    restart_strategy::PdlpHybridGradientParams_RestartStrategy.T
+    primal_weight_update_smoothing::Float64
+    initial_primal_weight::Float64
+    presolve_options::Union{Nothing,PdlpHybridGradientParams_PresolveOptions}
+    l_inf_ruiz_iterations::Int32
+    l2_norm_rescaling::Bool
+    sufficient_reduction_for_restart::Float64
+    necessary_reduction_for_restart::Float64
+    linesearch_rule::PdlpHybridGradientParams_LinesearchRule.T
+    adaptive_linesearch_parameters::Union{Nothing,PdlpAdaptiveLinesearchParams}
+    malitsky_pock_parameters::Union{Nothing,PdlpMalitskyPockParams}
+    initial_step_size_scaling::Float64
+    random_projection_seeds::Vector{Int32}
+    infinite_constraint_bound_threshold::Float64
+    handle_some_primal_gradients_on_finite_bounds_as_residuals::Bool
+    use_diagonal_qp_trust_region_solver::Bool
+    diagonal_qp_trust_region_solver_tolerance::Float64
+    use_feasibility_polishing::Bool
+    apply_feasibility_polishing_after_limits_reached::Bool
+    apply_feasibility_polishing_if_solver_is_interrupted::Bool
+end
+
+
+function to_proto_struct(
+    pdlp_hybrid_gradient_parameters::PdlpHybridGradientParameters,
+)::PDLP.PrimalDualHybridGradientParams
+    termination_criteria = nothing
+    if !isnothing(pdlp_hybrid_gradient_parameters.termination_criteria)
+        termination_criteria =
+            to_proto_struct(pdlp_hybrid_gradient_parameters.termination_criteria)
+    end
+
+    return PDLP.PrimalDualHybridGradientParams(
+        termination_criteria,
+        pdlp_hybrid_gradient_parameters.num_threads,
+        pdlp_hybrid_gradient_parameters.num_shards,
+        pdlp_hybrid_gradient_parameters.scheduler_type,
+        pdlp_hybrid_gradient_parameters.record_iteration_stats,
+        pdlp_hybrid_gradient_parameters.verbosity_level,
+        pdlp_hybrid_gradient_parameters.log_interval_seconds,
+        pdlp_hybrid_gradient_parameters.major_iteration_frequency,
+        pdlp_hybrid_gradient_parameters.termination_check_frequency,
+        pdlp_hybrid_gradient_parameters.restart_strategy,
+        pdlp_hybrid_gradient_parameters.primal_weight_update_smoothing,
+        pdlp_hybrid_gradient_parameters.initial_primal_weight,
+        pdlp_hybrid_gradient_parameters.presolve_options,
+        pdlp_hybrid_gradient_parameters.l_inf_ruiz_iterations,
+        pdlp_hybrid_gradient_parameters.l2_norm_rescaling,
+        pdlp_hybrid_gradient_parameters.sufficient_reduction_for_restart,
+        pdlp_hybrid_gradient_parameters.necessary_reduction_for_restart,
+        pdlp_hybrid_gradient_parameters.linesearch_rule,
+        pdlp_hybrid_gradient_parameters.adaptive_linesearch_parameters,
+        pdlp_hybrid_gradient_parameters.malitsky_pock_parameters,
+        pdlp_hybrid_gradient_parameters.initial_step_size_scaling,
+        pdlp_hybrid_gradient_parameters.random_projection_seeds,
+        pdlp_hybrid_gradient_parameters.infinite_constraint_bound_threshold,
+        pdlp_hybrid_gradient_parameters.handle_some_primal_gradients_on_finite_bounds_as_residuals,
+        pdlp_hybrid_gradient_parameters.use_diagonal_qp_trust_region_solver,
+        pdlp_hybrid_gradient_parameters.diagonal_qp_trust_region_solver_tolerance,
+        pdlp_hybrid_gradient_parameters.use_feasibility_polishing,
+        pdlp_hybrid_gradient_parameters.apply_feasibility_polishing_after_limits_reached,
+        pdlp_hybrid_gradient_parameters.apply_feasibility_polishing_if_solver_is_interrupted,
+    )
+end
 
 """
   Mutable wrapper struct for the SolveParametersProto struct.
@@ -1743,6 +1981,8 @@ mutable struct SolveParameters
     gurobi::Union{Nothing,GurobiParameters}
     glop::Union{Nothing,GlopParameters}
     cp_sat::Union{Nothing,SatParameters}
+    pdlp::Union{Nothing,PdlpHybridGradientParameters}
+    osqp::Union{Nothing,OsqpSettings}
     glpk::Union{Nothing,GlpkParameters}
     highs::Union{Nothing,HighsOptions}
 
@@ -1769,6 +2009,8 @@ mutable struct SolveParameters
         gurobi = nothing,
         glop = nothing,
         cp_sat = nothing,
+        pdlp = nothing,
+        osqp = nothing,
         glpk = nothing,
         highs = nothing,
     )
@@ -1795,6 +2037,8 @@ mutable struct SolveParameters
             gurobi,
             glop,
             cp_sat,
+            pdlp,
+            osqp,
             glpk,
             highs,
         )
@@ -1832,6 +2076,16 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         highs_parameters = to_proto_struct(solve_parameters.highs)
     end
 
+    pdlp_parameters = nothing
+    if !isnothing(solve_parameters.pdlp)
+        pdlp_parameters = to_proto_struct(solve_parameters.pdlp)
+    end
+
+    osqp_parameters = nothing
+    if !isnothing(solve_parameters.osqp)
+        osqp_parameters = to_proto_struct(solve_parameters.osqp)
+    end
+
     return MathOpt.SolveParametersProto(
         solve_parameters.time_limit,
         solve_parameters.iteration_limit,
@@ -1855,7 +2109,13 @@ function to_proto_struct(solve_parameters::SolveParameters)::MathOpt.SolveParame
         gurobi_parameters,
         glop_parameters,
         cp_sat_parameters,
+        pdlp_parameters,
+        osqp_parameters,
         glpk_parameters,
         highs_parameters,
     )
 end
+
+# The size of the encoded solve parameters proto.
+encoded_parameters_size(parameters::SolveParameters) =
+    PB._encoded_size(to_proto_struct(parameters))
