@@ -186,6 +186,71 @@ cc_library(
     ],
 )
 
+# Same as `variable_and_expressions` but activates the counters of instances of
+# LinearExpression. Only for tests.
+cc_library(
+    name = "variable_and_expressions_with_counters",
+    testonly = 1,
+    srcs = ["variable_and_expressions.cc"],
+    hdrs = ["variable_and_expressions.h"],
+    defines = ["MATH_OPT_USE_EXPRESSION_COUNTERS"],
+    deps = [
+        ":formatters",
+        ":key_types",
+        "//ortools/base",
+        "//ortools/base:intops",
+        "//ortools/base:map_util",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_item",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/util:fp_roundtrip_conv",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "variable_and_expressions_test",
+    srcs = ["variable_and_expressions_test.cc"],
+    deps = [
+        ":matchers",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/elemental:elements",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+# Same as `variable_and_expressions_test` but activates the counters of
+# instances of LinearExpression and the associated tests.
+cc_test(
+    name = "variable_and_expressions_with_counters_test",
+    srcs = ["variable_and_expressions_test.cc"],
+    defines = ["MATH_OPT_USE_EXPRESSION_COUNTERS"],
+    deps = [
+        ":matchers",
+        ":variable_and_expressions_with_counters",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/elemental:elements",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/util:fp_roundtrip_conv",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
 cc_library(
     name = "objective",
     srcs = ["objective.cc"],
@@ -197,6 +262,20 @@ cc_library(
         "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:model_storage_types",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "objective_test",
+    srcs = ["objective_test.cc"],
+    deps = [
+        ":objective",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -213,6 +292,24 @@ cc_library(
         "//ortools/math_opt/storage:model_storage_types",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "linear_constraint_test",
+    srcs = ["linear_constraint_test.cc"],
+    deps = [
+        ":linear_constraint",
+        ":matchers",
+        ":model",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/math_opt/constraints/util:model_util",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -245,6 +342,26 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "solution_test",
+    srcs = ["solution_test.cc"],
+    deps = [
+        ":enums_testing",
+        ":linear_constraint",
+        ":matchers",
+        ":math_opt",
+        ":objective",
+        ":solution",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
 cc_library(
     name = "solve_result",
     srcs = ["solve_result.cc"],
@@ -274,6 +391,34 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "solve_result_test",
+    srcs = ["solve_result_test.cc"],
+    deps = [
+        ":enums_testing",
+        ":linear_constraint",
+        ":matchers",
+        ":objective",
+        ":solve_result",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:protoutil",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/testing:stream",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
 cc_library(
     name = "map_filter",
     srcs = ["map_filter.cc"],
@@ -290,6 +435,21 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "map_filter_test",
+    srcs = ["map_filter_test.cc"],
+    deps = [
+        ":linear_constraint",
+        ":map_filter",
+        ":model",
+        ":variable_and_expressions",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -319,6 +479,27 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "callback_test",
+    srcs = ["callback_test.cc"],
+    deps = [
+        ":callback",
+        ":enums_testing",
+        ":map_filter",
+        ":model",
+        ":variable_and_expressions",
+        "//ortools/base:gmock_main",
+        "//ortools/base:protoutil",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/storage:model_storage",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/time",
+        "@protobuf",
+    ],
+)
+
 cc_library(
     name = "key_types",
     hdrs = ["key_types.h"],
@@ -330,6 +511,20 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "key_types_test",
+    srcs = ["key_types_test.cc"],
+    deps = [
+        ":key_types",
+        ":variable_and_expressions",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/storage:model_storage",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -361,6 +556,30 @@ cc_library(
     ],
 )
 
+#cc_test(
+#    name = "model_solve_parameters_test",
+#    srcs = ["model_solve_parameters_test.cc"],
+#    deps = [
+#        ":linear_constraint",
+#        ":math_opt",
+#        ":model",
+#        ":model_solve_parameters",
+#        ":solution",
+#        ":variable_and_expressions",
+#        "//ortools/base:gmock_main",
+#        "//ortools/base:map_util",
+#        "//ortools/math_opt:model_parameters_cc_proto",
+#        "//ortools/math_opt:solution_cc_proto",
+#        "//ortools/math_opt:sparse_containers_cc_proto",
+#        "//ortools/math_opt/storage:model_storage",
+#        #"//util/tuple:struct",
+#        "@abseil-cpp//absl/container:flat_hash_map",
+#        "@abseil-cpp//absl/status",
+#        "@abseil-cpp//absl/time",
+#        "@protobuf",
+#    ],
+#)
+
 cc_library(
     name = "update_tracker",
     srcs = ["update_tracker.cc"],
@@ -391,6 +610,28 @@ cc_library(
     ],
 )
 
+#cc_test(
+#    name = "message_callback_test",
+#    srcs = ["message_callback_test.cc"],
+#    deps = [
+#        ":math_opt",
+#        ":message_callback",
+#        "//ortools/base:gmock_main",
+#        "//ortools/base:logging",
+#        "//ortools/math_opt:callback_cc_proto",
+#        "//ortools/math_opt:model_parameters_cc_proto",
+#        "//ortools/math_opt:solution_cc_proto",
+#        "//ortools/math_opt:sparse_containers_cc_proto",
+#        "//ortools/math_opt/core:solver_interface",
+#        #"//ortools/math_opt/core:solver_interface_mock",
+#        "@abseil-cpp//absl/container:flat_hash_set",
+#        "@abseil-cpp//absl/flags:flag",
+#        "@abseil-cpp//absl/log",
+#        "@abseil-cpp//absl/status:statusor",
+#        "@protobuf",
+#    ],
+#)
+
 cc_library(
     name = "solver_init_arguments",
     hdrs = ["solver_init_arguments.h"],
@@ -413,6 +654,17 @@ cc_library(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+cc_test(
+    name = "solve_arguments_test",
+    srcs = ["solve_arguments_test.cc"],
+    deps = [
+        ":math_opt",
+        ":solve_arguments",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
     ],
 )
@@ -442,6 +694,35 @@ cc_library(
     ],
 )
 
+#cc_test(
+#    name = "solve_test",
+#    srcs = ["solve_test.cc"],
+#    deps = [
+#        ":callback",
+#        ":compute_infeasible_subsystem_result",
+#        ":enums",
+#        ":math_opt",
+#        ":solve",
+#        "//ortools/base:gmock_main",
+#        "//ortools/base:status_macros",
+#        "//ortools/math_opt:callback_cc_proto",
+#        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+#        "//ortools/math_opt:model_parameters_cc_proto",
+#        "//ortools/math_opt:solution_cc_proto",
+#        "//ortools/math_opt:sparse_containers_cc_proto",
+#        "//ortools/math_opt/core:math_opt_proto_utils",
+#        "//ortools/math_opt/core:solver_interface",
+#        #"//ortools/math_opt/core:solver_interface_mock",
+#        #"//ortools/math_opt/core:sparse_collection_matchers",
+#        "//ortools/math_opt/solvers:glop_solver",
+#        "@abseil-cpp//absl/container:flat_hash_set",
+#        "@abseil-cpp//absl/status",
+#        "@abseil-cpp//absl/status:statusor",
+#        "@abseil-cpp//absl/strings",
+#        "@abseil-cpp//absl/types:span",
+#    ],
+#)
+
 cc_library(
     name = "streamable_solver_init_arguments",
     srcs = ["streamable_solver_init_arguments.cc"],
@@ -451,6 +732,17 @@ cc_library(
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "streamable_solver_init_arguments_test",
+    srcs = ["streamable_solver_init_arguments_test.cc"],
+    deps = [
+        ":streamable_solver_init_arguments",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/solvers:gurobi_cc_proto",
     ],
 )
 
@@ -482,6 +774,24 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "parameters_test",
+    srcs = ["parameters_test.cc"],
+    deps = [
+        ":enums_testing",
+        ":parameters",
+        "//ortools/base:gmock_main",
+        "//ortools/base:linked_hash_map",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt/solvers:glpk_cc_proto",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
+        "@protobuf",
+    ],
+)
+
 cc_library(
     name = "matchers",
     testonly = 1,
@@ -505,11 +815,52 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "matchers_test",
+    srcs = ["matchers_test.cc"],
+    deps = [
+        ":matchers",
+        ":math_opt",
+        ":model",
+        ":solution",
+        ":solve_result",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "enums",
     hdrs = ["enums.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+proto_library(
+    name = "enums_test_proto",
+    srcs = ["enums_test.proto"],
+)
+
+cc_proto_library(
+    name = "enums_test_cc_proto",
+    deps = [":enums_test_proto"],
+)
+
+cc_test(
+    name = "enums_test",
+    srcs = ["enums_test.cc"],
+    deps = [
+        ":enums",
+        ":enums_test_cc_proto",
+        ":enums_testing",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "//ortools/math_opt/testing:stream",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -541,11 +892,35 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "statistics_test",
+    srcs = ["statistics_test.cc"],
+    deps = [
+        ":model",
+        ":statistics",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "formatters",
     hdrs = ["formatters.h"],
     deps = ["//ortools/util:fp_roundtrip_conv"],
 )
+
+#cc_test(
+#    name = "formatters_test",
+#    srcs = ["formatters_test.cc"],
+#    deps = [
+#        ":formatters",
+#        "//ortools/base:gmock_main",
+#        "//ortools/math_opt/testing:stream",
+#        "//ortools/util:fp_roundtrip_conv_testing",
+#        #"//util/gtl/extend",
+#        #"//util/gtl/extend:debug_printing",
+#        #"//util/gtl/extend:equality",
+#    ],
+#)
 
 cc_library(
     name = "update_result",
@@ -585,6 +960,35 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "compute_infeasible_subsystem_result_test",
+    srcs = ["compute_infeasible_subsystem_result_test.cc"],
+    deps = [
+        ":compute_infeasible_subsystem_result",
+        ":enums",
+        ":linear_constraint",
+        ":matchers",
+        ":model",
+        ":solve_result",
+        ":variable_and_expressions",
+        "//ortools/base:gmock_main",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt/constraints/indicator:indicator_constraint",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "//ortools/math_opt/constraints/second_order_cone:second_order_cone_constraint",
+        "//ortools/math_opt/constraints/sos:sos1_constraint",
+        "//ortools/math_opt/constraints/sos:sos2_constraint",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
 cc_library(
     name = "compute_infeasible_subsystem_arguments",
     hdrs = ["compute_infeasible_subsystem_arguments.h"],
@@ -605,6 +1009,15 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "solver_resources_test",
+    srcs = ["solver_resources_test.cc"],
+    deps = [
+        ":solver_resources",
+        "//ortools/base:gmock_main",
     ],
 )
 
@@ -635,6 +1048,37 @@ cc_library(
         "@abseil-cpp//absl/synchronization",
     ],
 )
+
+#cc_test(
+#    name = "solve_impl_test",
+#    srcs = ["solve_impl_test.cc"],
+#    deps = [
+#        ":callback",
+#        ":compute_infeasible_subsystem_arguments",
+#        ":compute_infeasible_subsystem_result",
+#        ":math_opt",
+#        ":model",
+#        ":solve_impl",
+#        ":update_result",
+#        "//ortools/base:gmock_main",
+#        "//ortools/math_opt:callback_cc_proto",
+#        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+#        "//ortools/math_opt:model_parameters_cc_proto",
+#        "//ortools/math_opt:solution_cc_proto",
+#        "//ortools/math_opt:sparse_containers_cc_proto",
+#        "//ortools/math_opt/core:base_solver",
+#        "//ortools/math_opt/core:math_opt_proto_utils",
+#        #"//ortools/math_opt/core:sparse_collection_matchers",
+#        "//ortools/util:solve_interrupter",
+#        "@abseil-cpp//absl/container:flat_hash_set",
+#        "@abseil-cpp//absl/functional:any_invocable",
+#        "@abseil-cpp//absl/log:die_if_null",
+#        "@abseil-cpp//absl/status",
+#        "@abseil-cpp//absl/status:statusor",
+#        "@abseil-cpp//absl/strings:string_view",
+#        "@abseil-cpp//absl/types:span",
+#    ],
+#)
 
 cc_library(
     name = "incremental_solver",
