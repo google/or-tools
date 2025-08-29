@@ -149,12 +149,12 @@ std::vector<typename Map::mapped_type> Values(const Map& map,
 namespace internal {
 
 // The CHECK message to use when a KeyType::storage() is nullptr.
-inline constexpr absl::string_view kKeyHasNullModelStorage =
+inline const std::string kKeyHasNullModelStorage =
     "The input key has null .storage().";
 
 // The CHECK message to use when two KeyType with different storage() are used
 // in the same collection.
-inline constexpr absl::string_view kObjectsFromOtherModelStorage =
+inline const std::string kObjectsFromOtherModelStorage =
     "The input objects belongs to another model.";
 
 // The Status message to use when an input KeyType is from an unexpected

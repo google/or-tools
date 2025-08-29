@@ -15,6 +15,7 @@ set(NAME ${PROJECT_NAME}_math_opt_cpp)
 add_library(${NAME} OBJECT)
 
 file(GLOB _SRCS "*.h" "*.cc")
+list(FILTER _SRCS EXCLUDE REGEX ".*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/matchers\\.")
 
 target_sources(${NAME} PRIVATE ${_SRCS})

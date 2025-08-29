@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
@@ -43,6 +45,17 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "basis_status_test",
+    srcs = ["basis_status_test.cc"],
+    deps = [
+        ":basis_status",
+        ":enums_testing",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_library(
     name = "sparse_containers",
     srcs = ["sparse_containers.cc"],
@@ -67,6 +80,21 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/types:span",
         "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "sparse_containers_test",
+    srcs = ["sparse_containers_test.cc"],
+    deps = [
+        ":matchers",
+        ":math_opt",
+        ":sparse_containers",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -104,6 +132,35 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "model_test",
+    srcs = ["model_test.cc"],
+    deps = [
+        ":key_types",
+        ":linear_constraint",
+        ":math_opt",
+        ":model",
+        ":update_tracker",
+        ":variable_and_expressions",
+        "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/constraints/indicator:indicator_constraint",
+        "//ortools/math_opt/constraints/quadratic:quadratic_constraint",
+        "//ortools/math_opt/constraints/second_order_cone:second_order_cone_constraint",
+        "//ortools/math_opt/constraints/sos:sos1_constraint",
+        "//ortools/math_opt/constraints/sos:sos2_constraint",
+        "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_types",
+        "//ortools/math_opt/testing:stream",
+        "//ortools/util:fp_roundtrip_conv_testing",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -412,6 +469,7 @@ cc_library(
         "//ortools/math_opt/solvers:gurobi_cc_proto",
         "//ortools/math_opt/solvers:highs_cc_proto",
         "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:status_macros",
@@ -455,6 +513,21 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
+)
+
+cc_library(
+    name = "enums_testing",
+    testonly = True,
+    hdrs = ["enums_testing.h"],
+    deps = [
+        ":enums",
+        "//ortools/base:gmock",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/strings",
+    ],
+    # Make sure the tests are included when using --dynamic_mode=off.
+    alwayslink = 1,
 )
 
 cc_library(
@@ -582,4 +655,15 @@ cc_library(
     srcs = ["remote_streaming_mode.cc"],
     hdrs = ["remote_streaming_mode.h"],
     deps = ["@abseil-cpp//absl/strings:string_view"],
+)
+
+cc_test(
+    name = "remote_streaming_mode_test",
+    srcs = ["remote_streaming_mode_test.cc"],
+    deps = [
+        ":remote_streaming_mode",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/flags:marshalling",
+        "@abseil-cpp//absl/strings",
+    ],
 )
