@@ -12,8 +12,10 @@
 # limitations under the License.
 
 file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/status_matchers\\.h")
+list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
+list(FILTER _SRCS EXCLUDE REGEX "/status-matchers\.h")
+list(FILTER _SRCS EXCLUDE REGEX "/protocol-buffer-matchers\.h")
+
 set(NAME ${PROJECT_NAME}_base)
 
 # Will be merge in libortools.so

@@ -130,9 +130,7 @@ class NormalizedLinearInequalityTest(absltest.TestCase):
 
     def test_bounded_expr_bad_type_raise_error(self) -> None:
         with self.assertRaisesRegex(TypeError, "bounded_expr has bad type"):
-            normalized_inequality.as_normalized_linear_inequality(
-                "dogdog"
-            )  # pytype: disable=wrong-arg-types
+            normalized_inequality.as_normalized_linear_inequality("dogdog")
 
     def test_bounded_expr_inner_expr_bad_type_raise_error(self) -> None:
         with self.assertRaisesRegex(
@@ -141,9 +139,7 @@ class NormalizedLinearInequalityTest(absltest.TestCase):
             bounded = bounded_expressions.BoundedExpression(
                 lower_bound=1.0, expression="dogdog", upper_bound=1.0
             )
-            normalized_inequality.as_normalized_linear_inequality(
-                bounded
-            )  # pytype: disable=wrong-arg-types
+            normalized_inequality.as_normalized_linear_inequality(bounded)
 
 
 def _quad_coef_dict(
@@ -196,7 +192,7 @@ class NormalizedQuadraticInequalityTest(absltest.TestCase):
         with self.assertRaises(TypeError):
             normalized_inequality.NormalizedQuadraticInequality(
                 lb=1.0, expr="dog", ub=2.0
-            )  # pytype: disable=wrong-arg-types
+            )
 
     def test_as_normalized_inequality_from_parts(self) -> None:
         mod = model.Model()
@@ -273,18 +269,14 @@ class NormalizedQuadraticInequalityTest(absltest.TestCase):
 
     def test_bounded_expr_bad_type_raise_error(self) -> None:
         with self.assertRaisesRegex(TypeError, "bounded_expr has bad type"):
-            normalized_inequality.as_normalized_quadratic_inequality(
-                "dogdog"
-            )  # pytype: disable=wrong-arg-types
+            normalized_inequality.as_normalized_quadratic_inequality("dogdog")
 
     def test_bounded_expr_inner_expr_bad_type_raise_error(self) -> None:
         with self.assertRaisesRegex(TypeError, "bounded_expr.expression has bad type"):
             bounded = bounded_expressions.BoundedExpression(
                 lower_bound=1.0, expression="dogdog", upper_bound=1.0
             )
-            normalized_inequality.as_normalized_quadratic_inequality(
-                bounded
-            )  # pytype: disable=wrong-arg-types
+            normalized_inequality.as_normalized_quadratic_inequality(bounded)
 
 
 if __name__ == "__main__":

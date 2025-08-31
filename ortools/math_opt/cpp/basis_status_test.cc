@@ -11,11 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_GMOCK_H_
-#define OR_TOOLS_BASE_GMOCK_H_
+#include "ortools/math_opt/cpp/basis_status.h"
 
-#include "gmock/gmock.h"
-#include "ortools/base/protocol-buffer-matchers.h"  // IWYU pragma: export
-#include "ortools/base/status-matchers.h"           // IWYU pragma: export
+#include "gtest/gtest.h"
+#include "ortools/math_opt/cpp/enums_testing.h"
 
-#endif  // OR_TOOLS_BASE_GMOCK_H_
+namespace operations_research::math_opt {
+namespace {
+
+INSTANTIATE_TYPED_TEST_SUITE_P(BasisStatus, EnumTest, BasisStatus);
+
+}
+}  // namespace operations_research::math_opt

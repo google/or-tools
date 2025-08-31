@@ -107,8 +107,7 @@ class SparseElementStorage {
 class ElementStorage {
   // Functions with deduced return must be defined before they are used.
  private:
-  // std::visit is very slow, see
-  // 5253596299885805568
+  // std::visit is very slow, see yaqs/5253596299885805568.
   //
   // This function is static, taking Self as template argument, to avoid
   // having const and non-const versions. Post C++ 23, prefer:

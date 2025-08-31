@@ -2479,7 +2479,7 @@ class UnsupportedProductOperandTest(parameterized.TestCase):
 
         # pylint: disable=pointless-statement
         # pytype: disable=unsupported-operands
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, expected_string):
             lhs * rhs
 
@@ -2501,7 +2501,7 @@ class UnsupportedProductOperandTest(parameterized.TestCase):
 
         # pylint: disable=pointless-statement
         # pytype: disable=unsupported-operands
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, expected_string):
             lhs / rhs
 
@@ -2566,7 +2566,7 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
 
         # pylint: disable=pointless-statement
         # pytype: disable=unsupported-operands
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, expected_string):
             if linear_or_quadratic_first:
                 linear_or_quadratic + other
@@ -2602,7 +2602,7 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
 
         # pylint: disable=pointless-statement
         # pytype: disable=unsupported-operands
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, expected_string):
             if linear_or_quadratic_first:
                 linear_or_quadratic - other
@@ -2622,7 +2622,7 @@ class UnsupportedAdditionOperandTest(parameterized.TestCase):
 class UnsupportedInitializationTest(parameterized.TestCase):
 
     def test_linear_sum_not_tuple(self):
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
             variables.LinearSum(2.0)
         # pytype: enable=wrong-arg-types
@@ -2630,19 +2630,19 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_linear_sum_not_linear_in_tuple(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
             variables.LinearSum((2.0, x * x))
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_sum_not_tuple(self):
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, "object is not iterable"):
             variables.QuadraticSum(2.0)
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_sum_not_linear_in_tuple(self):
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(TypeError, "unsupported type in iterable argument"):
             variables.QuadraticSum((2.0, "string"))
         # pytype: enable=wrong-arg-types
@@ -2650,7 +2650,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_linear_product_not_scalar(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in LinearProduct"
         ):
@@ -2658,7 +2658,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         # pytype: enable=wrong-arg-types
 
     def test_linear_product_not_linear(self):
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in LinearProduct"
         ):
@@ -2668,7 +2668,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_quadratic_product_not_scalar(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError, "unsupported type for scalar argument in QuadraticProduct"
         ):
@@ -2676,7 +2676,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
         # pytype: enable=wrong-arg-types
 
     def test_quadratic_product_not_quadratic(self):
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError, "unsupported type for linear argument in QuadraticProduct"
         ):
@@ -2686,7 +2686,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_linear_linear_product_first_not_linear(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError,
             "unsupported type for first_linear argument in LinearLinearProduct",
@@ -2697,7 +2697,7 @@ class UnsupportedInitializationTest(parameterized.TestCase):
     def test_linear_linear_product_second_not_linear(self):
         mod = model.Model()
         x = mod.add_binary_variable(name="x")
-        # pytype: disable=wrong-arg-types
+
         with self.assertRaisesRegex(
             TypeError,
             "unsupported type for second_linear argument in LinearLinearProduct",

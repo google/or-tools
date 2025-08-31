@@ -39,7 +39,7 @@ cc_proto_library(
 )
 
 py_proto_library(
-    name = "gscip_proto_py_pb2",
+    name = "gscip_py_pb2",
     visibility = ["//visibility:public"],
     deps = [":gscip_proto"],
 )
