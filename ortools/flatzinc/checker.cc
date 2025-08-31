@@ -665,92 +665,51 @@ std::vector<int64_t> ComputeGlobalCardinalityCards(
   return cards;
 }
 
-bool CheckGlobalCardinality(
+bool CheckOrToolsGlobalCardinality(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const std::vector<int64_t> cards =
       ComputeGlobalCardinalityCards(ct, evaluator);
   CHECK_EQ(cards.size(), Length(ct.arguments[2]));
+  const bool is_closed = Eval(ct.arguments[3], evaluator) != 0;
   for (int i = 0; i < Length(ct.arguments[2]); ++i) {
     const int64_t card = EvalAt(ct.arguments[2], i, evaluator);
     if (card != cards[i]) {
       return false;
     }
   }
+
+  if (is_closed) {
+    int64_t sum_of_cards = 0;
+    for (int64_t card : cards) {
+      sum_of_cards += card;
+    }
+    return sum_of_cards == Length(ct.arguments[0]);
+  }
   return true;
 }
 
-bool CheckGlobalCardinalityClosed(
-    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
-    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const std::vector<int64_t> cards =
-      ComputeGlobalCardinalityCards(ct, evaluator);
-  CHECK_EQ(cards.size(), Length(ct.arguments[2]));
-  for (int i = 0; i < Length(ct.arguments[2]); ++i) {
-    const int64_t card = EvalAt(ct.arguments[2], i, evaluator);
-    if (card != cards[i]) {
-      return false;
-    }
-  }
-  int64_t sum_of_cards = 0;
-  for (int64_t card : cards) {
-    sum_of_cards += card;
-  }
-  return sum_of_cards == Length(ct.arguments[0]);
-}
-
-bool CheckGlobalCardinalityLowUp(
+bool CheckOrToolsGlobalCardinalityLowUp(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
   const std::vector<int64_t> cards =
       ComputeGlobalCardinalityCards(ct, evaluator);
   CHECK_EQ(cards.size(), ct.arguments[2].values.size());
   CHECK_EQ(cards.size(), ct.arguments[3].values.size());
+  const bool is_closed = Eval(ct.arguments[4], evaluator) != 0;
   for (int i = 0; i < cards.size(); ++i) {
     const int64_t card = cards[i];
     if (card < ct.arguments[2].values[i] || card > ct.arguments[3].values[i]) {
       return false;
     }
   }
-  return true;
-}
 
-bool CheckGlobalCardinalityLowUpClosed(
-    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
-    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const std::vector<int64_t> cards =
-      ComputeGlobalCardinalityCards(ct, evaluator);
-  CHECK_EQ(cards.size(), ct.arguments[2].values.size());
-  CHECK_EQ(cards.size(), ct.arguments[3].values.size());
-  for (int i = 0; i < cards.size(); ++i) {
-    const int64_t card = cards[i];
-    if (card < ct.arguments[2].values[i] || card > ct.arguments[3].values[i]) {
-      return false;
+  if (is_closed) {
+    int64_t sum_of_cards = 0;
+    for (int64_t card : cards) {
+      sum_of_cards += card;
     }
-  }
-  int64_t sum_of_cards = 0;
-  for (int64_t card : cards) {
-    sum_of_cards += card;
-  }
-  return sum_of_cards == Length(ct.arguments[0]);
-}
-
-bool CheckGlobalCardinalityOld(
-    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
-    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
-  const int size = Length(ct.arguments[1]);
-  std::vector<int64_t> cards(size, 0);
-  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
-    const int64_t value = EvalAt(ct.arguments[0], i, evaluator);
-    if (value >= 0 && value < size) {
-      cards[value]++;
-    }
-  }
-  for (int i = 0; i < size; ++i) {
-    const int64_t card = EvalAt(ct.arguments[1], i, evaluator);
-    if (card != cards[i]) {
-      return false;
-    }
+    return sum_of_cards == Length(ct.arguments[0]);
   }
   return true;
 }
@@ -1678,11 +1637,6 @@ CallMap CreateCallMap() {
   m["fzn_diffn"] = CheckDiffn;
   m["fzn_disjunctive_strict"] = CheckDisjunctiveStrict;
   m["fzn_disjunctive"] = CheckDisjunctive;
-  m["global_cardinality_closed"] = CheckGlobalCardinalityClosed;
-  m["global_cardinality_low_up_closed"] = CheckGlobalCardinalityLowUpClosed;
-  m["global_cardinality_low_up"] = CheckGlobalCardinalityLowUp;
-  m["global_cardinality_old"] = CheckGlobalCardinalityOld;
-  m["global_cardinality"] = CheckGlobalCardinality;
   m["int_abs"] = CheckIntAbs;
   m["int_div"] = CheckIntDiv;
   m["int_eq_imp"] = CheckIntEqImp;
@@ -1740,6 +1694,8 @@ CallMap CreateCallMap() {
   m["ortools_count_eq"] = CheckOrToolsCountEq;
   m["ortools_cumulative_opt"] = CheckOrToolsCumulativeOpt;
   m["ortools_disjunctive_strict_opt"] = CheckOrToolsDisjunctiveStrictOpt;
+  m["ortools_global_cardinality_low_up"] = CheckOrToolsGlobalCardinalityLowUp;
+  m["ortools_global_cardinality"] = CheckOrToolsGlobalCardinality;
   m["ortools_inverse"] = CheckOrToolsInverse;
   m["ortools_lex_less_bool"] = CheckOrToolsLexLessInt;
   m["ortools_lex_less_int"] = CheckOrToolsLexLessInt;

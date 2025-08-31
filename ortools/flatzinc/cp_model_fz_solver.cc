@@ -18,11 +18,13 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -53,7 +55,7 @@ ABSL_FLAG(int64_t, fz_int_max, int64_t{1} << 40,
           "Default max value for unbounded integer variables.");
 ABSL_FLAG(bool, force_interleave_search, false,
           "If true, enable interleaved workers when num_workers is 1.");
-ABSL_FLAG(bool, fz_light_full_encoding, false,
+ABSL_FLAG(bool, fz_light_encoding, false,
           "EXPERIMENTAL: Use the at_most_one encoding when fully encoding a "
           "variable.");
 
@@ -128,17 +130,27 @@ struct CpModelProtoWithMapping {
   std::shared_ptr<SetVariable> LookupSetVarAt(const fz::Argument& argument,
                                               int pos);
 
-  // Get or create a literal that is equivalent to var == value.
+  // literal <=> (var op value).
   int GetOrCreateLiteralForVarEqValue(int var, int64_t value);
+  void AddVarEqValueLiteral(int var, int64_t value, int literal);
+  void AddVarGeValueLiteral(int var, int64_t value, int literal);
+  void AddVarGtValueLiteral(int var, int64_t value, int literal);
+  void AddVarLeValueLiteral(int var, int64_t value, int literal);
+  void AddVarLtValueLiteral(int var, int64_t value, int literal);
 
-  // Get or create a literal that is equivalent to var1 == var2.
+  // literal <=> (var1 op var2).
   int GetOrCreateLiteralForVarEqVar(int var1, int var2);
-
-  // Get or create a literal that is equivalent to var1 < var2.
-  int GetOrCreateLiteralForVarLtVar(int var1, int var2);
-
-  // Get or create a literal that is equivalent to var1 <= var2.
+  void AddVarEqVarLiteral(int var1, int var2, int literal);
+  std::optional<int> GetVarEqVarLiteral(int var1, int var2);
+  int GetOrCreateLiteralForVarNeVar(int var1, int var2);
+  std::optional<int> GetVarNeVarLiteral(int var1, int var2);
+  void AddVarNeVarLiteral(int var1, int var2, int literal);
   int GetOrCreateLiteralForVarLeVar(int var1, int var2);
+  std::optional<int> GetVarLeVarLiteral(int var1, int var2);
+  void AddVarLeVarLiteral(int var1, int var2, int literal);
+  int GetOrCreateLiteralForVarLtVar(int var1, int var2);
+  std::optional<int> GetVarLtVarLiteral(int var1, int var2);
+  void AddVarLtVarLiteral(int var1, int var2, int literal);
 
   // Returns the list of literals corresponding to the domain of the variable.
   absl::flat_hash_map<int64_t, int> FullyEncode(int var);
@@ -193,8 +205,7 @@ struct CpModelProtoWithMapping {
                                            const fz::Constraint& fz_ct,
                                            ConstraintProto* ct);
   void FillConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
-  void FillReifOrImpliedConstraint(const fz::Constraint& fz_ct,
-                                   ConstraintProto* ct);
+  void FillReifiedOrImpliedConstraint(const fz::Constraint& fz_ct);
   void BuildTableFromDomainIntLinEq(const fz::Constraint& fz_ct,
                                     ConstraintProto* ct);
 
@@ -226,15 +237,19 @@ struct CpModelProtoWithMapping {
   absl::flat_hash_map<std::pair<int, int>, int> var_eq_var_to_literal;
   absl::flat_hash_map<std::pair<int, int>, int> var_lt_var_to_literal;
   absl::flat_hash_map<std::pair<int, int>, int> var_le_var_to_literal;
+  absl::flat_hash_map<std::pair<int, int64_t>, int> var_le_value_to_literal;
   absl::flat_hash_map<fz::Variable*, std::shared_ptr<SetVariable>>
       set_variables;
+  int num_var_op_value_reif_cached = 0;
+  int num_var_op_var_reif_cached = 0;
+  int num_var_op_var_imp_cached = 0;
 };
 
 int CpModelProtoWithMapping::NewBoolVar() { return NewIntVar(0, 1); }
 
 int CpModelProtoWithMapping::NewIntVar(int64_t min_value, int64_t max_value) {
   const int index = proto.variables_size();
-  FillDomainInProto({min_value, max_value}, proto.add_variables());
+  FillDomainInProto(min_value, max_value, proto.add_variables());
   return index;
 }
 
@@ -482,6 +497,8 @@ void CpModelProtoWithMapping::AddLexOrdering(absl::Span<const int> x,
   }
 }
 
+// lit <=> var op value
+
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
                                                              int64_t value) {
   CHECK_GE(var, 0);
@@ -505,13 +522,54 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqValue(int var,
   }
 
   const int bool_var = NewBoolVar();
-  var_eq_value_to_literal[key] = bool_var;
-
-  AddLinearConstraint({bool_var}, Domain(value), {{var, 1}});
-  AddLinearConstraint({NegatedRef(bool_var)}, Domain(value).Complement(),
-                      {{var, 1}});
-
+  AddVarEqValueLiteral(var, value, bool_var);
   return bool_var;
+}
+
+void CpModelProtoWithMapping::AddVarEqValueLiteral(int var, int64_t value,
+                                                   int lit) {
+  // TODO(user): Special case for Boolean variables.
+  CHECK_GE(var, 0);
+  const std::pair<int, int64_t> key = {var, value};
+  const auto it = var_eq_value_to_literal.find(key);
+  if (it != var_eq_value_to_literal.end()) {
+    AddLinearConstraint({}, Domain(0), {{lit, 1}, {it->second, -1}});
+    ++num_var_op_value_reif_cached;
+  } else {
+    AddLinearConstraint({lit}, Domain(value), {{var, 1}});
+    AddLinearConstraint({NegatedRef(lit)}, Domain(value).Complement(),
+                        {{var, 1}});
+    var_eq_value_to_literal[key] = lit;
+  }
+}
+
+void CpModelProtoWithMapping::AddVarGeValueLiteral(int var, int64_t value,
+                                                   int lit) {
+  AddVarLeValueLiteral(var, value - 1, NegatedRef(lit));
+}
+
+void CpModelProtoWithMapping::AddVarGtValueLiteral(int var, int64_t value,
+                                                   int lit) {
+  AddVarLeValueLiteral(var, value, NegatedRef(lit));
+}
+
+void CpModelProtoWithMapping::AddVarLtValueLiteral(int var, int64_t value,
+                                                   int lit) {
+  AddVarLeValueLiteral(var, value - 1, lit);
+}
+
+void CpModelProtoWithMapping::AddVarLeValueLiteral(int var, int64_t value,
+                                                   int lit) {
+  const auto it = var_le_value_to_literal.find({var, value});
+  if (it != var_le_value_to_literal.end()) {
+    AddLinearConstraint({}, Domain(0), {{lit, 1}, {it->second, -1}});
+    ++num_var_op_value_reif_cached;
+  } else {
+    var_le_value_to_literal[{var, value}] = lit;
+    const Domain domain(std::numeric_limits<int64_t>::min(), value);
+    AddLinearConstraint({lit}, domain, {{var, 1}});
+    AddLinearConstraint({NegatedRef(lit)}, domain.Complement(), {{var, 1}});
+  }
 }
 
 absl::flat_hash_map<int64_t, int> CpModelProtoWithMapping::FullyEncode(
@@ -520,7 +578,7 @@ absl::flat_hash_map<int64_t, int> CpModelProtoWithMapping::FullyEncode(
   const Domain domain = ReadDomainFromProto(proto.variables(var));
 
   bool use_normal_encoding = true;
-  if (absl::GetFlag(FLAGS_fz_light_full_encoding)) {
+  if (absl::GetFlag(FLAGS_fz_light_encoding)) {
     use_normal_encoding = false;
     for (int64_t value : domain.Values()) {
       if (var_eq_value_to_literal.contains({var, value})) {
@@ -549,6 +607,8 @@ absl::flat_hash_map<int64_t, int> CpModelProtoWithMapping::FullyEncode(
   return result;
 }
 
+// literal <=> var1 op var2
+
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
   CHECK_NE(var1, kNoVar);
   CHECK_NE(var2, kNoVar);
@@ -559,14 +619,59 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarEqVar(int var1, int var2) {
   const auto it = var_eq_var_to_literal.find(key);
   if (it != var_eq_var_to_literal.end()) return it->second;
 
-  const int bool_var = NewBoolVar();
+  const int lit = NewBoolVar();
+  AddVarEqVarLiteral(var1, var2, lit);
+  return lit;
+}
 
-  AddLinearConstraint({bool_var}, Domain(0), {{var1, 1}, {var2, -1}});
-  AddLinearConstraint({NegatedRef(bool_var)}, Domain(0).Complement(),
-                      {{var1, 1}, {var2, -1}});
+int CpModelProtoWithMapping::GetOrCreateLiteralForVarNeVar(int var1, int var2) {
+  return NegatedRef(GetOrCreateLiteralForVarEqVar(var1, var2));
+}
 
-  var_eq_var_to_literal[key] = bool_var;
-  return bool_var;
+void CpModelProtoWithMapping::AddVarEqVarLiteral(int var1, int var2, int lit) {
+  // TODO(user): Special case for Boolean variables.
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) {
+    AddImplication({}, lit);
+    return;
+  }
+  if (var1 > var2) std::swap(var1, var2);
+
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_eq_var_to_literal.find(key);
+  if (it != var_eq_var_to_literal.end()) {
+    AddLinearConstraint({}, Domain(0), {{lit, 1}, {it->second, -1}});
+    ++num_var_op_var_reif_cached;
+  } else {
+    AddLinearConstraint({lit}, Domain(0), {{var1, 1}, {var2, -1}});
+    AddLinearConstraint({NegatedRef(lit)}, Domain(0).Complement(),
+                        {{var1, 1}, {var2, -1}});
+    var_eq_var_to_literal[key] = lit;
+  }
+}
+
+void CpModelProtoWithMapping::AddVarNeVarLiteral(int var1, int var2, int lit) {
+  AddVarEqVarLiteral(var1, var2, NegatedRef(lit));
+}
+
+std::optional<int> CpModelProtoWithMapping::GetVarEqVarLiteral(int var1,
+                                                               int var2) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) return LookupConstant(1);
+  if (var1 > var2) std::swap(var1, var2);
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_eq_var_to_literal.find(key);
+  if (it != var_eq_var_to_literal.end()) return it->second;
+  return std::nullopt;
+}
+
+std::optional<int> CpModelProtoWithMapping::GetVarNeVarLiteral(int var1,
+                                                               int var2) {
+  std::optional<int> lit = GetVarEqVarLiteral(var1, var2);
+  if (lit.has_value()) return NegatedRef(lit.value());
+  return std::nullopt;
 }
 
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarLtVar(int var1, int var2) {
@@ -578,33 +683,59 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarLtVar(int var1, int var2) {
   const auto it = var_lt_var_to_literal.find(key);
   if (it != var_lt_var_to_literal.end()) return it->second;
 
-  const int bool_var = NewBoolVar();
-  var_lt_var_to_literal[key] = bool_var;
-  var_le_var_to_literal[{var2, var1}] = NegatedRef(bool_var);
+  const int lit = NewBoolVar();
+  AddVarLtVarLiteral(var1, var2, lit);
+  return lit;
+}
 
-  if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
-    // bool_var => var1 < var2 => !var1 && var2
-    BoolArgumentProto* is_lt =
-        AddEnforcedConstraint(bool_var)->mutable_bool_and();
-    is_lt->add_literals(NegatedRef(var1));
-    is_lt->add_literals(var2);
-
-    // !bool_var => var1 >= var2 => var1 || !var2
-    BoolArgumentProto* is_ge =
-        AddEnforcedConstraint(NegatedRef(bool_var))->mutable_bool_or();
-    is_ge->add_literals(var1);
-    is_ge->add_literals(NegatedRef(var2));
-
-  } else {
-    AddLinearConstraint({bool_var},
-                        Domain(std::numeric_limits<int64_t>::min(), -1),
-                        {{var1, 1}, {var2, -1}});
-    AddLinearConstraint({NegatedRef(bool_var)},
-                        Domain(0, std::numeric_limits<int64_t>::max()),
-                        {{var1, 1}, {var2, -1}});
+void CpModelProtoWithMapping::AddVarLtVarLiteral(int var1, int var2, int lit) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) {
+    AddImplication({}, NegatedRef(lit));
+    return;
   }
 
-  return bool_var;
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_lt_var_to_literal.find(key);
+  if (it != var_lt_var_to_literal.end()) {
+    AddLinearConstraint({}, Domain(0), {{lit, 1}, {it->second, -1}});
+    ++num_var_op_var_reif_cached;
+  } else {
+    var_lt_var_to_literal[key] = lit;
+    var_le_var_to_literal[{var2, var1}] = NegatedRef(lit);
+
+    if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
+      // bool_var => var1 < var2 => !var1 && var2
+      BoolArgumentProto* is_lt = AddEnforcedConstraint(lit)->mutable_bool_and();
+      is_lt->add_literals(NegatedRef(var1));
+      is_lt->add_literals(var2);
+
+      // !bool_var => var1 >= var2 => var1 || !var2
+      BoolArgumentProto* is_ge =
+          AddEnforcedConstraint(NegatedRef(lit))->mutable_bool_or();
+      is_ge->add_literals(var1);
+      is_ge->add_literals(NegatedRef(var2));
+    } else {
+      AddLinearConstraint({lit},
+                          Domain(std::numeric_limits<int64_t>::min(), -1),
+                          {{var1, 1}, {var2, -1}});
+      AddLinearConstraint({NegatedRef(lit)},
+                          Domain(0, std::numeric_limits<int64_t>::max()),
+                          {{var1, 1}, {var2, -1}});
+    }
+  }
+}
+
+std::optional<int> CpModelProtoWithMapping::GetVarLtVarLiteral(int var1,
+                                                               int var2) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) return LookupConstant(0);
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_lt_var_to_literal.find(key);
+  if (it != var_lt_var_to_literal.end()) return it->second;
+  return std::nullopt;
 }
 
 int CpModelProtoWithMapping::GetOrCreateLiteralForVarLeVar(int var1, int var2) {
@@ -616,32 +747,58 @@ int CpModelProtoWithMapping::GetOrCreateLiteralForVarLeVar(int var1, int var2) {
   const auto it = var_le_var_to_literal.find(key);
   if (it != var_le_var_to_literal.end()) return it->second;
 
-  const int bool_var = NewBoolVar();
-  var_le_var_to_literal[key] = bool_var;
-  var_lt_var_to_literal[{var2, var1}] = NegatedRef(bool_var);
+  const int lit = NewBoolVar();
+  AddVarLeVarLiteral(var1, var2, lit);
+  return lit;
+}
 
-  if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
-    // bool_var => var1 <= var2 <=> !var1 || var2
-    BoolArgumentProto* is_le =
-        AddEnforcedConstraint(bool_var)->mutable_bool_or();
-    is_le->add_literals(NegatedRef(var1));
-    is_le->add_literals(var2);
-
-    // !bool_var => var1 > var2 <=> var1 && !var2
-    BoolArgumentProto* is_gt =
-        AddEnforcedConstraint(NegatedRef(bool_var))->mutable_bool_and();
-    is_gt->add_literals(var1);
-    is_gt->add_literals(NegatedRef(var2));
-  } else {
-    AddLinearConstraint({bool_var},
-                        Domain(std::numeric_limits<int64_t>::min(), 0),
-                        {{var1, 1}, {var2, -1}});
-    AddLinearConstraint({NegatedRef(bool_var)},
-                        Domain(1, std::numeric_limits<int64_t>::max()),
-                        {{var1, 1}, {var2, -1}});
+void CpModelProtoWithMapping::AddVarLeVarLiteral(int var1, int var2, int lit) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) {
+    AddImplication({}, lit);
+    return;
   }
 
-  return bool_var;
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_le_var_to_literal.find(key);
+  if (it != var_le_var_to_literal.end()) {
+    AddLinearConstraint({}, Domain(0), {{lit, 1}, {it->second, -1}});
+    ++num_var_op_var_reif_cached;
+  } else {
+    var_le_var_to_literal[key] = lit;
+    var_lt_var_to_literal[{var2, var1}] = NegatedRef(lit);
+
+    if (VariableIsBoolean(var1) && VariableIsBoolean(var2)) {
+      // bool_var => var1 <= var2 <=> !var1 || var2
+      BoolArgumentProto* is_le = AddEnforcedConstraint(lit)->mutable_bool_or();
+      is_le->add_literals(NegatedRef(var1));
+      is_le->add_literals(var2);
+
+      // !bool_var => var1 > var2 <=> var1 && !var2
+      BoolArgumentProto* is_gt =
+          AddEnforcedConstraint(NegatedRef(lit))->mutable_bool_and();
+      is_gt->add_literals(var1);
+      is_gt->add_literals(NegatedRef(var2));
+    } else {
+      AddLinearConstraint({lit}, Domain(std::numeric_limits<int64_t>::min(), 0),
+                          {{var1, 1}, {var2, -1}});
+      AddLinearConstraint({NegatedRef(lit)},
+                          Domain(1, std::numeric_limits<int64_t>::max()),
+                          {{var1, 1}, {var2, -1}});
+    }
+  }
+}
+
+std::optional<int> CpModelProtoWithMapping::GetVarLeVarLiteral(int var1,
+                                                               int var2) {
+  CHECK_NE(var1, kNoVar);
+  CHECK_NE(var2, kNoVar);
+  if (var1 == var2) return LookupConstant(1);
+  const std::pair<int, int> key = {var1, var2};
+  const auto it = var_le_var_to_literal.find(key);
+  if (it != var_le_var_to_literal.end()) return it->second;
+  return std::nullopt;
 }
 
 int CpModelProtoWithMapping::GetOrCreateOptionalInterval(VarOrValue start,
@@ -868,7 +1025,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     // not(x) => a == b
     ct->add_enforcement_literal(NegatedRef(x));
     auto* const refute = ct->mutable_linear();
-    FillDomainInProto(Domain(0), refute);
+    FillDomainInProto(0, refute);
     AddTermToLinearConstraint(a, 1, refute);
     AddTermToLinearConstraint(b, -1, refute);
 
@@ -912,7 +1069,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     FillAMinusBInDomain({0, 0}, fz_ct, ct);
   } else if (fz_ct.type == "bool_ne" || fz_ct.type == "bool_not") {
     auto* arg = ct->mutable_linear();
-    FillDomainInProto(Domain(1), arg);
+    FillDomainInProto(1, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
   } else if (fz_ct.type == "int_ne") {
@@ -933,11 +1090,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_linear();
     const std::vector<int> vars = LookupVars(fz_ct.arguments[1]);
     if (fz_ct.arguments[2].IsVariable()) {
-      FillDomainInProto(Domain(0), arg);
+      FillDomainInProto(0, arg);
       AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), -1, arg);
     } else {
       const int64_t v = fz_ct.arguments[2].Value();
-      FillDomainInProto(Domain(v), arg);
+      FillDomainInProto(v, arg);
     }
     for (int i = 0; i < vars.size(); ++i) {
       AddTermToLinearConstraint(vars[i], fz_ct.arguments[0].values[i], arg);
@@ -977,7 +1134,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
 
     auto* arg = ct->mutable_linear();
-    FillDomainInProto(Domain(set_size), arg);
+    FillDomainInProto(set_size, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
   } else if (fz_ct.type == "set_in") {
     auto* arg = ct->mutable_linear();
@@ -989,9 +1146,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                             fz_ct.arguments[1].values.end()}),
                         arg);
     } else if (fz_ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
-      FillDomainInProto(
-          Domain(fz_ct.arguments[1].values[0], fz_ct.arguments[1].values[1]),
-          arg);
+      FillDomainInProto(fz_ct.arguments[1].values[0],
+                        fz_ct.arguments[1].values[1], arg);
     } else {
       LOG(FATAL) << "Wrong format";
     }
@@ -1047,7 +1203,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     *arg->mutable_target() = LookupExpr(fz_ct.arguments[1]);
   } else if (fz_ct.type == "int_plus") {
     auto* arg = ct->mutable_linear();
-    FillDomainInProto(Domain(0), arg);
+    FillDomainInProto(0, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[0]), 1, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[1]), 1, arg);
     AddTermToLinearConstraint(LookupVar(fz_ct.arguments[2]), -1, arg);
@@ -1188,9 +1344,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
 
     if (target.var == kNoVar) {
-      FillDomainInProto(Domain(target.value - fixed_contributions), arg);
+      FillDomainInProto(target.value - fixed_contributions, arg);
     } else {
-      FillDomainInProto(Domain(-fixed_contributions), arg);
+      FillDomainInProto(-fixed_contributions, arg);
       AddTermToLinearConstraint(target.var, -1, arg);
     }
 
@@ -1207,9 +1363,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const VarOrValue target = LookupVarOrValue(fz_ct.arguments[2]);
     LinearConstraintProto* arg = ct->mutable_linear();
     if (target.var == kNoVar) {
-      FillDomainInProto(Domain(target.value), arg);
+      FillDomainInProto(target.value, arg);
     } else {
-      FillDomainInProto(Domain(0), arg);
+      FillDomainInProto(0, arg);
       AddTermToLinearConstraint(target.var, -1, arg);
     }
     for (const VarOrValue& count : counts) {
@@ -1252,7 +1408,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
           const int literal = proto.variables_size();
           {
             auto* new_var = proto.add_variables();
-            FillDomainInProto({0, 1}, new_var);
+            FillDomainInProto(0, 1, new_var);
           }
 
           // Add the arc.
@@ -1608,7 +1764,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const std::vector<int>& x = LookupVars(fz_ct.arguments[1]);
 
     LinearConstraintProto* global_cardinality = ct->mutable_linear();
-    FillDomainInProto(Domain(x.size()), global_cardinality);
+    FillDomainInProto(x.size(), global_cardinality);
 
     absl::btree_map<int64_t, std::vector<int>> value_to_literals;
     for (int i = 0; i < x.size(); ++i) {
@@ -1634,6 +1790,87 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       for (const int literal : literals) {
         AddImplication({literal}, is_present);
         is_present_constraint->add_literals(literal);
+      }
+    }
+  } else if (fz_ct.type == "ortools_global_cardinality") {
+    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
+    CHECK_EQ(fz_ct.arguments[1].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t>& values = fz_ct.arguments[1].values;
+    const std::vector<int> cards = LookupVars(fz_ct.arguments[2]);
+    const bool is_closed = fz_ct.arguments[3].Value() != 0;
+
+    const absl::flat_hash_set<int64_t> all_values(values.begin(), values.end());
+    absl::flat_hash_map<int64_t, std::vector<int>> value_to_literals;
+    bool exact_cover = true;
+
+    for (const int x_var : x) {
+      const absl::flat_hash_map<int64_t, int> encoding = FullyEncode(x_var);
+      for (const auto& [value, literal] : encoding) {
+        if (all_values.contains(value)) {
+          value_to_literals[value].push_back(literal);
+        } else if (is_closed) {
+          AddImplication({}, NegatedRef(literal));
+        } else {
+          exact_cover = false;
+        }
+      }
+    }
+
+    for (int i = 0; i < cards.size(); ++i) {
+      const int64_t value = values[i];
+      const int card = cards[i];
+      LinearConstraintProto* lin =
+          AddLinearConstraint({}, Domain(0), {{card, -1}});
+      for (const int literal : value_to_literals[value]) {
+        AddTermToLinearConstraint(literal, 1, lin);
+      }
+    }
+
+    if (exact_cover) {
+      LinearConstraintProto* cover = AddLinearConstraint({}, Domain(x.size()));
+      for (const int card : cards) {
+        AddTermToLinearConstraint(card, 1, cover);
+      }
+    }
+  } else if (fz_ct.type == "ortools_global_cardinality_low_up") {
+    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
+    CHECK_EQ(fz_ct.arguments[1].type, fz::Argument::INT_LIST);
+    const std::vector<int64_t>& values = fz_ct.arguments[1].values;
+    absl::Span<const int64_t> lbs = fz_ct.arguments[2].values;
+    absl::Span<const int64_t> ubs = fz_ct.arguments[3].values;
+    const bool is_closed = fz_ct.arguments[4].Value() != 0;
+
+    const absl::flat_hash_set<int64_t> all_values(values.begin(), values.end());
+    absl::flat_hash_map<int64_t, std::vector<int>> value_to_literals;
+    bool exact_cover = true;
+
+    for (const int x_var : x) {
+      const absl::flat_hash_map<int64_t, int> encoding = FullyEncode(x_var);
+      for (const auto& [value, literal] : encoding) {
+        if (all_values.contains(value)) {
+          value_to_literals[value].push_back(literal);
+        } else if (is_closed) {
+          AddImplication({}, NegatedRef(literal));
+        } else {
+          exact_cover = false;
+        }
+      }
+    }
+
+    // Optimization: if sum(lbs) == length(x), then we can reduce ubs to lbs,
+    // and vice versa. the constraint is redundant.
+    const int64_t sum_lbs = absl::c_accumulate(lbs, 0);
+    const int64_t sum_ubs = absl::c_accumulate(ubs, 0);
+    if (exact_cover && sum_lbs == x.size()) {
+      ubs = lbs;
+    } else if (exact_cover && sum_ubs == x.size()) {
+      lbs = ubs;
+    }
+
+    for (int i = 0; i < values.size(); ++i) {
+      LinearConstraintProto* lin = AddLinearConstraint({}, {lbs[i], ubs[i]});
+      for (const int literal : value_to_literals[values[i]]) {
+        AddTermToLinearConstraint(literal, 1, lin);
       }
     }
   } else {
@@ -1780,10 +2017,10 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
       ConstraintProto* ct = proto.add_constraints();
       if (var_or_value.var == kNoVar) {
         set_var->card_var_index = LookupConstant(var_or_value.value);
-        FillDomainInProto(Domain(var_or_value.value), ct->mutable_linear());
+        FillDomainInProto(var_or_value.value, ct->mutable_linear());
       } else {
         set_var->card_var_index = var_or_value.var;
-        FillDomainInProto(Domain(0), ct->mutable_linear());
+        FillDomainInProto(0, ct->mutable_linear());
         AddTermToLinearConstraint(var_or_value.var, -1, ct->mutable_linear());
       }
       for (const int bool_var : set_var->var_indices) {
@@ -2076,91 +2313,278 @@ void CpModelProtoWithMapping::ExtractSetConstraint(
   }
 }  // NOLINT(readability/fn_size)
 
-void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
-    const fz::Constraint& fz_ct, ConstraintProto* ct) {
-  // Start by adding a non-reified version of the same constraint.
-  std::string simplified_type;
-  if (absl::EndsWith(fz_ct.type, "_reif")) {
-    // Remove _reif.
-    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 5);
-  } else if (absl::EndsWith(fz_ct.type, "_imp")) {
-    // Remove _imp.
-    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 4);
+void CpModelProtoWithMapping::FillReifiedOrImpliedConstraint(
+    const fz::Constraint& fz_ct) {
+  // Start by processing the constraints that are cached.
+  if (fz_ct.type == "int_eq_reif" || fz_ct.type == "bool_eq_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    if (left.var == kNoVar) std::swap(left, right);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      CHECK_EQ(right.var, kNoVar);
+      if (left.value == right.value) {
+        AddImplication({}, e);
+      } else {
+        AddImplication({}, NegatedRef(e));
+      }
+    } else if (right.var == kNoVar) {
+      AddVarEqValueLiteral(left.var, right.value, e);
+    } else {
+      AddVarEqVarLiteral(left.var, right.var, e);
+    }
+  } else if (fz_ct.type == "int_eq_imp" || fz_ct.type == "bool_eq_imp") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    if (left.var == kNoVar) std::swap(left, right);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      CHECK_EQ(right.var, kNoVar);
+      if (left.value != right.value) {
+        AddImplication({}, NegatedRef(e));
+      }
+    } else if (right.var == kNoVar) {
+      AddLinearConstraint({e}, Domain(right.value), {{left.var, 1}});
+    } else {
+      const std::optional<int> lit = GetVarEqVarLiteral(left.var, right.var);
+      if (lit.has_value()) {
+        AddImplication({e}, lit.value());
+        ++num_var_op_var_imp_cached;
+      } else {
+        AddLinearConstraint({e}, Domain(0), {{left.var, 1}, {right.var, -1}});
+      }
+    }
+  } else if (fz_ct.type == "int_ne_reif" || fz_ct.type == "bool_ne_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    if (left.var == kNoVar) std::swap(left, right);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      CHECK_EQ(right.var, kNoVar);
+      if (left.value != right.value) {
+        AddImplication({}, e);
+      } else {
+        AddImplication({}, NegatedRef(e));
+      }
+    } else if (right.var == kNoVar) {
+      AddVarEqValueLiteral(left.var, right.value, NegatedRef(e));
+    } else {
+      AddVarEqVarLiteral(left.var, right.var, NegatedRef(e));
+    }
+  } else if (fz_ct.type == "int_ne_imp" || fz_ct.type == "bool_ne_imp") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    if (left.var == kNoVar) std::swap(left, right);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      CHECK_EQ(right.var, kNoVar);
+      if (left.value == right.value) {
+        AddImplication({}, NegatedRef(e));
+      }
+    } else if (right.var == kNoVar) {
+      AddLinearConstraint({e}, Domain(right.value).Complement(),
+                          {{left.var, 1}});
+    } else {
+      const std::optional<int> lit = GetVarNeVarLiteral(left.var, right.var);
+      if (lit.has_value()) {
+        AddImplication({e}, lit.value());
+        ++num_var_op_var_imp_cached;
+      } else {
+        AddLinearConstraint({e}, Domain(0).Complement(),
+                            {{left.var, 1}, {right.var, -1}});
+      }
+    }
+  } else if (fz_ct.type == "int_le_reif" || fz_ct.type == "bool_le_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      if (right.var == kNoVar) {
+        if (left.value <= right.value) {
+          AddImplication({}, e);
+        } else {
+          AddImplication({}, NegatedRef(e));
+        }
+      } else {
+        AddVarGeValueLiteral(right.var, left.value, e);
+      }
+    } else if (right.var == kNoVar) {
+      AddVarLeValueLiteral(left.var, right.value, e);
+    } else {
+      AddVarLeVarLiteral(left.var, right.var, e);
+    }
+  } else if (fz_ct.type == "int_le_imp" || fz_ct.type == "bool_le_imp") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      if (right.var == kNoVar) {
+        if (left.value > right.value) {
+          AddImplication({}, NegatedRef(e));
+        }
+      } else {
+        AddLinearConstraint({e},
+                            {left.value, std::numeric_limits<int64_t>::max()},
+                            {{right.var, 1}});
+      }
+    } else if (right.var == kNoVar) {
+      AddLinearConstraint({e},
+                          {std::numeric_limits<int64_t>::min(), right.value},
+                          {{left.var, 1}});
+    } else {
+      const std::optional<int> lit = GetVarLeVarLiteral(left.var, right.var);
+      if (lit.has_value()) {
+        AddImplication({e}, lit.value());
+        ++num_var_op_var_imp_cached;
+      } else {
+        AddLinearConstraint({e}, {std::numeric_limits<int64_t>::min(), 0},
+                            {{left.var, 1}, {right.var, -1}});
+      }
+    }
+  } else if (fz_ct.type == "int_ge_reif" || fz_ct.type == "bool_ge_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      if (right.var == kNoVar) {
+        if (left.value >= right.value) {
+          AddImplication({}, e);
+        } else {
+          AddImplication({}, NegatedRef(e));
+        }
+      } else {
+        AddVarLeValueLiteral(right.var, left.value, e);
+      }
+    } else if (right.var == kNoVar) {
+      AddVarGeValueLiteral(left.var, right.value, e);
+    } else {
+      AddVarLeVarLiteral(right.var, left.var, e);
+    }
+  } else if (fz_ct.type == "int_lt_reif" || fz_ct.type == "bool_lt_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      if (right.var == kNoVar) {
+        if (left.value < right.value) {
+          AddImplication({}, e);
+        } else {
+          AddImplication({}, NegatedRef(e));
+        }
+      } else {
+        AddVarGtValueLiteral(right.var, left.value, e);
+      }
+    } else if (right.var == kNoVar) {
+      AddVarLtValueLiteral(left.var, right.value, e);
+    } else {
+      AddVarLtVarLiteral(left.var, right.var, e);
+    }
+  } else if (fz_ct.type == "int_gt_reif" || fz_ct.type == "bool_gt_reif") {
+    VarOrValue left = LookupVarOrValue(fz_ct.arguments[0]);
+    VarOrValue right = LookupVarOrValue(fz_ct.arguments[1]);
+    const int e = LookupVar(fz_ct.arguments[2]);
+    if (left.var == kNoVar) {
+      if (right.var == kNoVar) {
+        if (left.value < right.value) {
+          AddImplication({}, e);
+        } else {
+          AddImplication({}, NegatedRef(e));
+        }
+      } else {
+        AddVarLtValueLiteral(right.var, left.value, e);
+      }
+    } else if (right.var == kNoVar) {
+      AddVarGtValueLiteral(left.var, right.value, e);
+    } else {
+      AddVarLtVarLiteral(right.var, left.var, e);
+    }
   } else {
-    // Keep name as it is an implicit reified constraint.
-    simplified_type = fz_ct.type;
+    // Start by adding a non-reified version of the same constraint.
+    ConstraintProto* ct = proto.add_constraints();
+    ct->set_name(fz_ct.type);
+    std::string simplified_type;
+    if (absl::EndsWith(fz_ct.type, "_reif")) {
+      // Remove _reif.
+      simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 5);
+    } else if (absl::EndsWith(fz_ct.type, "_imp")) {
+      // Remove _imp.
+      simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 4);
+    } else {
+      // Keep name as it is an implicit reified constraint.
+      simplified_type = fz_ct.type;
+    }
+
+    // We need a copy to be able to change the type of the constraint.
+    fz::Constraint copy = fz_ct;
+    copy.type = simplified_type;
+
+    // Create the CP-SAT constraint.
+    FillConstraint(copy, ct);
+
+    // In case of reified constraints, the type of the opposite constraint.
+    std::string negated_type;
+
+    // Fill enforcement_literal and set copy.type to the negated constraint.
+    if (simplified_type == "array_bool_or") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
+      negated_type = "array_bool_or_negated";
+    } else if (simplified_type == "array_bool_and") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
+      negated_type = "array_bool_and_negated";
+    } else if (simplified_type == "set_in") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "set_in_negated";
+    } else if (simplified_type == "bool_eq" || simplified_type == "int_eq") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_ne";
+    } else if (simplified_type == "bool_ne" || simplified_type == "int_ne") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_eq";
+    } else if (simplified_type == "bool_le" || simplified_type == "int_le") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_gt";
+    } else if (simplified_type == "bool_lt" || simplified_type == "int_lt") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_ge";
+    } else if (simplified_type == "bool_ge" || simplified_type == "int_ge") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_lt";
+    } else if (simplified_type == "bool_gt" || simplified_type == "int_gt") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
+      negated_type = "int_le";
+    } else if (simplified_type == "int_lin_eq") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_ne";
+    } else if (simplified_type == "int_lin_ne") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_eq";
+    } else if (simplified_type == "int_lin_le") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_gt";
+    } else if (simplified_type == "int_lin_ge") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_lt";
+    } else if (simplified_type == "int_lin_lt") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_ge";
+    } else if (simplified_type == "int_lin_gt") {
+      ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
+      negated_type = "int_lin_le";
+    } else {
+      LOG(FATAL) << "Unsupported " << simplified_type;
+    }
+
+    // One way implication. We can stop here.
+    if (absl::EndsWith(fz_ct.type, "_imp")) return;
+
+    // Add the other side of the reification because CpModelProto only support
+    // half reification.
+    ConstraintProto* negated_ct =
+        AddEnforcedConstraint(NegatedRef(ct->enforcement_literal(0)));
+    negated_ct->set_name(fz_ct.type + " (negated)");
+    copy.type = negated_type;
+    FillConstraint(copy, negated_ct);
   }
-
-  // We need a copy to be able to change the type of the constraint.
-  fz::Constraint copy = fz_ct;
-  copy.type = simplified_type;
-
-  // Create the CP-SAT constraint.
-  FillConstraint(copy, ct);
-
-  // In case of reified constraints, the type of the opposite constraint.
-  std::string negated_type;
-
-  // Fill enforcement_literal and set copy.type to the negated constraint.
-  if (simplified_type == "array_bool_or") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
-    negated_type = "array_bool_or_negated";
-  } else if (simplified_type == "array_bool_and") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[1]));
-    negated_type = "array_bool_and_negated";
-  } else if (simplified_type == "set_in") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "set_in_negated";
-  } else if (simplified_type == "bool_eq" || simplified_type == "int_eq") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_ne";
-  } else if (simplified_type == "bool_ne" || simplified_type == "int_ne") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_eq";
-  } else if (simplified_type == "bool_le" || simplified_type == "int_le") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_gt";
-  } else if (simplified_type == "bool_lt" || simplified_type == "int_lt") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_ge";
-  } else if (simplified_type == "bool_ge" || simplified_type == "int_ge") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_lt";
-  } else if (simplified_type == "bool_gt" || simplified_type == "int_gt") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[2]));
-    negated_type = "int_le";
-  } else if (simplified_type == "int_lin_eq") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_ne";
-  } else if (simplified_type == "int_lin_ne") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_eq";
-  } else if (simplified_type == "int_lin_le") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_gt";
-  } else if (simplified_type == "int_lin_ge") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_lt";
-  } else if (simplified_type == "int_lin_lt") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_ge";
-  } else if (simplified_type == "int_lin_gt") {
-    ct->add_enforcement_literal(LookupVar(fz_ct.arguments[3]));
-    negated_type = "int_lin_le";
-  } else {
-    LOG(FATAL) << "Unsupported " << simplified_type;
-  }
-
-  // One way implication. We can stop here.
-  if (absl::EndsWith(fz_ct.type, "_imp")) return;
-
-  // Add the other side of the reification because CpModelProto only support
-  // half reification.
-  ConstraintProto* negated_ct =
-      AddEnforcedConstraint(NegatedRef(ct->enforcement_literal(0)));
-  negated_ct->set_name(fz_ct.type + " (negated)");
-  copy.type = negated_type;
-  FillConstraint(copy, negated_ct);
 }
 
 void CpModelProtoWithMapping::TranslateSearchAnnotations(
@@ -2491,12 +2915,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
           LOG_FIRST_N(WARNING, 1)
               << "    actual domain is [" << -absl::GetFlag(FLAGS_fz_int_max)
               << ".." << absl::GetFlag(FLAGS_fz_int_max) << "]";
-          FillDomainInProto({-absl::GetFlag(FLAGS_fz_int_max),
-                             absl::GetFlag(FLAGS_fz_int_max)},
-                            var);
+          FillDomainInProto(-absl::GetFlag(FLAGS_fz_int_max),
+                            absl::GetFlag(FLAGS_fz_int_max), var);
         } else {
-          FillDomainInProto(
-              {fz_var->domain.values[0], fz_var->domain.values[1]}, var);
+          FillDomainInProto(fz_var->domain.values[0], fz_var->domain.values[1],
+                            var);
         }
       } else {
         FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
@@ -2510,13 +2933,13 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     if (m.ConstraintContainsSetVariables(*fz_ct)) {
       m.ExtractSetConstraint(*fz_ct);
     } else {
-      ConstraintProto* ct = m.proto.add_constraints();
-      ct->set_name(fz_ct->type);
       if (absl::EndsWith(fz_ct->type, "_reif") ||
           absl::EndsWith(fz_ct->type, "_imp") ||
           fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
-        m.FillReifOrImpliedConstraint(*fz_ct, ct);
+        m.FillReifiedOrImpliedConstraint(*fz_ct);
       } else {
+        ConstraintProto* ct = m.proto.add_constraints();
+        ct->set_name(fz_ct->type);
         m.FillConstraint(*fz_ct, ct);
       }
     }
@@ -2546,6 +2969,14 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations(), logger);
+
+  // Extra statistics.
+  SOLVER_LOG(logger,
+             "  - #var_op_value_reif cached: ", m.num_var_op_value_reif_cached);
+  SOLVER_LOG(logger,
+             "  - #var_op_var_reif cached: ", m.num_var_op_var_reif_cached);
+  SOLVER_LOG(logger,
+             "  - #var_op_var_imp cached: ", m.num_var_op_var_reif_cached);
 
   if (p.search_all_solutions && !m.proto.has_objective()) {
     // Enumerate all sat solutions.
