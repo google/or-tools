@@ -232,6 +232,7 @@ cc_library(
     hdrs = ["sigint.h"],
     deps = [
         "//ortools/base",
+        "//ortools/port:os",
     ],
 )
 

@@ -18,6 +18,9 @@
 #include <functional>
 
 #include "ortools/base/logging.h"
+#include "ortools/port/os.h"
+
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 namespace operations_research {
 
@@ -67,3 +70,5 @@ SigtermHandler::~SigtermHandler() {
 thread_local std::function<void()> SigtermHandler::handler_;
 
 }  // namespace operations_research
+
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS

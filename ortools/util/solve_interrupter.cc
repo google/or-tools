@@ -15,14 +15,12 @@
 
 #include <atomic>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <utility>
 
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 
