@@ -119,9 +119,6 @@ ABSL_FLAG(std::string, cp_model_params, "",
           "This is interpreted as a text SatParameters proto. The "
           "specified fields will override the normal ones for all solves.");
 
-ABSL_FLAG(bool, debug_model_copy, false,
-          "If true, copy the input model as if with no basic presolve");
-
 ABSL_FLAG(bool, cp_model_ignore_objective, false,
           "If true, ignore the objective.");
 ABSL_FLAG(bool, cp_model_ignore_hints, false,
@@ -1719,8 +1716,6 @@ class LnsSolver : public SubSolver {
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
-  CHECK(!params.enumerate_all_solutions())
-      << "Enumerating all solutions in parallel is not supported.";
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   // If specified by the user, we might disable some parameters based on their
@@ -2492,10 +2487,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 
-  if (absl::GetFlag(FLAGS_debug_model_copy)) {
-    *new_cp_model_proto = model_proto;
-  } else if (!ImportModelWithBasicPresolveIntoContext(model_proto,
-                                                      context.get())) {
+  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
     const std::string info = "Problem proven infeasible during initial copy.";
     SOLVER_LOG(logger, info);
     CpSolverResponse status_response;

@@ -243,15 +243,19 @@ class MinPropagator : public PropagatorInterface {
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
 // linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
 // Assumes Canonical expressions (all positive coefficients).
-class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
+class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
+                                        LazyReasonInterface {
  public:
-  LinMinPropagator(std::vector<LinearExpression> exprs, IntegerVariable min_var,
-                   Model* model);
-  LinMinPropagator(const LinMinPropagator&) = delete;
-  LinMinPropagator& operator=(const LinMinPropagator&) = delete;
+  GreaterThanMinOfExprsPropagator(
+      absl::Span<const Literal> enforcement_literals,
+      std::vector<LinearExpression> exprs, IntegerVariable min_var,
+      Model* model);
+  GreaterThanMinOfExprsPropagator(const GreaterThanMinOfExprsPropagator&) =
+      delete;
+  GreaterThanMinOfExprsPropagator& operator=(
+      const GreaterThanMinOfExprsPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
   // For LazyReasonInterface.
   void Explain(int id, IntegerValue propagation_slack,
@@ -260,6 +264,8 @@ class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
                std::vector<int>* trail_indices_reason) final;
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   // Lighter version of IntegerSumLE. This uses the current value of
   // integer_reason_ in addition to the reason for propagating the linear
   // constraint. The coeffs are assumed to be positive here.
@@ -271,7 +277,9 @@ class LinMinPropagator : public PropagatorInterface, LazyReasonInterface {
   const IntegerVariable min_var_;
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
-  IntegerTrail* integer_trail_;
+  IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
+  EnforcementId enforcement_id_;
   std::vector<IntegerValue> max_variations_;
   std::vector<IntegerValue> reason_coeffs_;
   std::vector<IntegerLiteral> local_reason_;
@@ -732,9 +740,10 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
 // Expresses the fact that an existing integer variable is equal to the minimum
 // of linear expressions. Assumes Canonical expressions (all positive
 // coefficients).
-inline void AddIsEqualToMinOf(const LinearExpression& min_expr,
-                              std::vector<LinearExpression> exprs,
-                              Model* model) {
+inline void AddIsEqualToMinOf(
+    const absl::Span<const Literal> enforcement_literals,
+    const LinearExpression& min_expr, std::vector<LinearExpression> exprs,
+    Model* model) {
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   IntegerVariable min_var;
@@ -758,17 +767,18 @@ inline void AddIsEqualToMinOf(const LinearExpression& min_expr,
     LoadLinearConstraint(builder.Build(), model);
   }
 
-  // Add for all i, min <= exprs[i].
+  // Add for all i, enforcement_literals => min <= exprs[i].
   for (const LinearExpression& expr : exprs) {
     LinearConstraintBuilder builder(0, kMaxIntegerValue);
     builder.AddLinearExpression(expr, 1);
     builder.AddTerm(min_var, -1);
-    LoadLinearConstraint(builder.Build(), model);
+    LoadConditionalLinearConstraint(enforcement_literals, builder.Build(),
+                                    model);
   }
 
-  LinMinPropagator* constraint =
-      new LinMinPropagator(std::move(exprs), min_var, model);
-  constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+  GreaterThanMinOfExprsPropagator* constraint =
+      new GreaterThanMinOfExprsPropagator(enforcement_literals,
+                                          std::move(exprs), min_var, model);
   model->TakeOwnership(constraint);
 }
 
@@ -776,7 +786,9 @@ ABSL_DEPRECATED("Use AddIsEqualToMinOf() instead.")
 inline std::function<void(Model*)> IsEqualToMinOf(
     const LinearExpression& min_expr,
     const std::vector<LinearExpression>& exprs) {
-  return [&](Model* model) { AddIsEqualToMinOf(min_expr, exprs, model); };
+  return [&](Model* model) {
+    AddIsEqualToMinOf(/*enforcement_literals=*/{}, min_expr, exprs, model);
+  };
 }
 
 // Adds the constraint: a * b = p.

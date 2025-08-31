@@ -443,6 +443,13 @@ void SolutionCrush::SetReservoirCircuitVars(
   for (int i = 0; i < active_event_values.size(); ++i) {
     active_event_value_index[active_event_values[i].index] = i;
   }
+  // Set the level vars of inactive events to an arbitrary value.
+  for (int i = 0; i < num_events; ++i) {
+    if (active_event_value_index[i] == -1) {
+      SetVarValue(level_vars[i], min_level);
+    }
+  }
+
   for (int i = 0; i < circuit.literals_size(); ++i) {
     const int head = circuit.heads(i);
     const int tail = circuit.tails(i);

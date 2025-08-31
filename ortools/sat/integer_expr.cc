@@ -644,20 +644,28 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinMinPropagator::LinMinPropagator(std::vector<LinearExpression> exprs,
-                                   IntegerVariable min_var, Model* model)
+GreaterThanMinOfExprsPropagator::GreaterThanMinOfExprsPropagator(
+    absl::Span<const Literal> enforcement_literals,
+    std::vector<LinearExpression> exprs, IntegerVariable min_var, Model* model)
     : exprs_(std::move(exprs)),
       min_var_(min_var),
       model_(model),
-      integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
+      integer_trail_(*model_->GetOrCreate<IntegerTrail>()),
+      enforcement_propagator_(*model_->GetOrCreate<EnforcementPropagator>()) {
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  enforcement_id_ = enforcement_propagator_.Register(
+      enforcement_literals, watcher, RegisterWith(watcher));
+}
 
-void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerVariable var_to_explain, int trail_index,
-                               std::vector<Literal>* literals_reason,
-                               std::vector<int>* trail_indices_reason) {
+void GreaterThanMinOfExprsPropagator::Explain(
+    int id, IntegerValue propagation_slack, IntegerVariable var_to_explain,
+    int trail_index, std::vector<Literal>* literals_reason,
+    std::vector<int>* trail_indices_reason) {
   const auto& vars = exprs_[id].vars;
   const auto& coeffs = exprs_[id].coeffs;
   literals_reason->clear();
+  enforcement_propagator_.AddEnforcementReason(enforcement_id_,
+                                               literals_reason);
   trail_indices_reason->clear();
   std::vector<IntegerValue> reason_coeffs;
   const int size = vars.size();
@@ -667,7 +675,7 @@ void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
       continue;
     }
     const int index =
-        integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
+        integer_trail_.FindTrailIndexOfVarBefore(var, trail_index);
     if (index >= 0) {
       trail_indices_reason->push_back(index);
       if (propagation_slack > 0) {
@@ -676,20 +684,20 @@ void LinMinPropagator::Explain(int id, IntegerValue propagation_slack,
     }
   }
   if (propagation_slack > 0) {
-    integer_trail_->RelaxLinearReason(propagation_slack, reason_coeffs,
-                                      trail_indices_reason);
+    integer_trail_.RelaxLinearReason(propagation_slack, reason_coeffs,
+                                     trail_indices_reason);
   }
   // Now add the old integer_reason that triggered this propagation.
   for (IntegerLiteral reason_lit : integer_reason_for_unique_candidate_) {
     const int index =
-        integer_trail_->FindTrailIndexOfVarBefore(reason_lit.var, trail_index);
+        integer_trail_.FindTrailIndexOfVarBefore(reason_lit.var, trail_index);
     if (index >= 0) {
       trail_indices_reason->push_back(index);
     }
   }
 }
 
-bool LinMinPropagator::PropagateLinearUpperBound(
+bool GreaterThanMinOfExprsPropagator::PropagateLinearUpperBound(
     int id, absl::Span<const IntegerVariable> vars,
     absl::Span<const IntegerValue> coeffs, const IntegerValue upper_bound) {
   IntegerValue sum_lb = IntegerValue(0);
@@ -700,8 +708,8 @@ bool LinMinPropagator::PropagateLinearUpperBound(
     const IntegerValue coeff = coeffs[i];
     // The coefficients are assumed to be positive for this to work properly.
     DCHECK_GE(coeff, 0);
-    const IntegerValue lb = integer_trail_->LowerBound(var);
-    const IntegerValue ub = integer_trail_->UpperBound(var);
+    const IntegerValue lb = integer_trail_.LowerBound(var);
+    const IntegerValue ub = integer_trail_.UpperBound(var);
     max_variations_[i] = (ub - lb) * coeff;
     sum_lb += lb * coeff;
   }
@@ -709,6 +717,8 @@ bool LinMinPropagator::PropagateLinearUpperBound(
   model_->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
       static_cast<double>(num_vars) * 1e-9);
 
+  const EnforcementStatus status =
+      enforcement_propagator_.Status(enforcement_id_);
   const IntegerValue slack = upper_bound - sum_lb;
   if (slack < 0) {
     // Conflict.
@@ -716,30 +726,37 @@ bool LinMinPropagator::PropagateLinearUpperBound(
     reason_coeffs_.clear();
     for (int i = 0; i < num_vars; ++i) {
       const IntegerVariable var = vars[i];
-      if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
-        local_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+      if (!integer_trail_.VariableLowerBoundIsFromLevelZero(var)) {
+        local_reason_.push_back(integer_trail_.LowerBoundAsLiteral(var));
         reason_coeffs_.push_back(coeffs[i]);
       }
     }
-    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
-                                      &local_reason_);
+    integer_trail_.RelaxLinearReason(-slack - 1, reason_coeffs_,
+                                     &local_reason_);
     local_reason_.insert(local_reason_.end(),
                          integer_reason_for_unique_candidate_.begin(),
                          integer_reason_for_unique_candidate_.end());
-    return integer_trail_->ReportConflict({}, local_reason_);
+    if (status == EnforcementStatus::IS_ENFORCED) {
+      return enforcement_propagator_.ReportConflict(enforcement_id_,
+                                                    local_reason_);
+    } else {
+      return enforcement_propagator_.PropagateWhenFalse(
+          enforcement_id_, /*literal_reason=*/{}, local_reason_);
+    }
   }
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
+  if (status != EnforcementStatus::IS_ENFORCED) return true;
   for (int i = 0; i < num_vars; ++i) {
     if (max_variations_[i] <= slack) continue;
 
     const IntegerVariable var = vars[i];
     const IntegerValue coeff = coeffs[i];
     const IntegerValue div = slack / coeff;
-    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+    const IntegerValue new_ub = integer_trail_.LowerBound(var) + div;
     const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
-    if (!integer_trail_->EnqueueWithLazyReason(
+    if (!integer_trail_.EnqueueWithLazyReason(
             IntegerLiteral::LowerOrEqual(var, new_ub), id, propagation_slack,
             this)) {
       return false;
@@ -748,19 +765,27 @@ bool LinMinPropagator::PropagateLinearUpperBound(
   return true;
 }
 
-bool LinMinPropagator::Propagate() {
-  if (exprs_.empty()) return true;
+bool GreaterThanMinOfExprsPropagator::Propagate() {
+  // The case of empty exprs is handled in cp_model_loader.cc.
+  DCHECK(!exprs_.empty());
+
+  const EnforcementStatus status =
+      enforcement_propagator_.Status(enforcement_id_);
+  if (status != EnforcementStatus::IS_ENFORCED &&
+      status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
+    return true;
+  }
 
   // Count the number of interval that are possible candidate for the min.
   // Only the intervals for which lb > current_min_ub cannot.
-  const IntegerValue current_min_ub = integer_trail_->UpperBound(min_var_);
+  const IntegerValue current_min_ub = integer_trail_.UpperBound(min_var_);
   int num_intervals_that_can_be_min = 0;
   int last_possible_min_interval = 0;
 
   expr_lbs_.clear();
   IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
   for (int i = 0; i < exprs_.size(); ++i) {
-    const IntegerValue lb = exprs_[i].Min(*integer_trail_);
+    const IntegerValue lb = exprs_[i].Min(integer_trail_);
     expr_lbs_.push_back(lb);
     min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
     if (lb <= current_min_ub) {
@@ -776,17 +801,28 @@ bool LinMinPropagator::Propagate() {
   if (min_of_linear_expression_lb > current_min_ub) {
     min_of_linear_expression_lb = current_min_ub + 1;
   }
-  if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
+  if (min_of_linear_expression_lb > integer_trail_.LowerBound(min_var_)) {
     local_reason_.clear();
     for (int i = 0; i < exprs_.size(); ++i) {
       const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
-      integer_trail_->AppendRelaxedLinearReason(slack, exprs_[i].coeffs,
-                                                exprs_[i].vars, &local_reason_);
+      integer_trail_.AppendRelaxedLinearReason(slack, exprs_[i].coeffs,
+                                               exprs_[i].vars, &local_reason_);
     }
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
-                                     min_var_, min_of_linear_expression_lb),
-                                 {}, local_reason_)) {
-      return false;
+    if (status == EnforcementStatus::IS_ENFORCED) {
+      if (!enforcement_propagator_.SafeEnqueue(
+              enforcement_id_,
+              IntegerLiteral::GreaterOrEqual(min_var_,
+                                             min_of_linear_expression_lb),
+              local_reason_)) {
+        return false;
+      }
+    } else if (min_of_linear_expression_lb > current_min_ub) {
+      // If the upper bound of min_var_ is strictly smaller than the lower bound
+      // of all the expressions, then the enforcement must be false.
+      local_reason_.push_back(
+          IntegerLiteral::LowerOrEqual(min_var_, current_min_ub));
+      return enforcement_propagator_.PropagateWhenFalse(
+          enforcement_id_, /*literal_reason=*/{}, local_reason_);
     }
   }
 
@@ -796,7 +832,7 @@ bool LinMinPropagator::Propagate() {
   // In this case, ub(min) >= ub(e).
   if (num_intervals_that_can_be_min == 1) {
     const IntegerValue ub_of_only_candidate =
-        exprs_[last_possible_min_interval].Max(*integer_trail_);
+        exprs_[last_possible_min_interval].Max(integer_trail_);
     if (current_min_ub < ub_of_only_candidate) {
       // For this propagation, we only need to fill the integer reason once at
       // the lowest level. At higher levels this reason still remains valid.
@@ -806,11 +842,11 @@ bool LinMinPropagator::Propagate() {
         // The reason is that all the other interval start after current_min_ub.
         // And that min_ub has its current value.
         integer_reason_for_unique_candidate_.push_back(
-            integer_trail_->UpperBoundAsLiteral(min_var_));
+            integer_trail_.UpperBoundAsLiteral(min_var_));
         for (int i = 0; i < exprs_.size(); ++i) {
           if (i == last_possible_min_interval) continue;
           const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
-          integer_trail_->AppendRelaxedLinearReason(
+          integer_trail_.AppendRelaxedLinearReason(
               slack, exprs_[i].coeffs, exprs_[i].vars,
               &integer_reason_for_unique_candidate_);
         }
@@ -827,7 +863,8 @@ bool LinMinPropagator::Propagate() {
   return true;
 }
 
-void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+int GreaterThanMinOfExprsPropagator::RegisterWith(
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   bool has_var_also_in_exprs = false;
   for (const LinearExpression& expr : exprs_) {
@@ -847,6 +884,7 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   if (has_var_also_in_exprs) {
     watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   }
+  return id;
 }
 
 ProductPropagator::ProductPropagator(
@@ -1022,7 +1060,7 @@ bool ProductPropagator::PropagateMaxOnPositiveProduct(AffineExpression a,
 bool ProductPropagator::Propagate() {
   const EnforcementStatus status =
       enforcement_propagator_.Status(enforcement_id_);
-  if (status == EnforcementStatus::CAN_PROPAGATE) {
+  if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     const int64_t min_a = integer_trail_.LowerBound(a_).value();
     const int64_t max_a = integer_trail_.UpperBound(a_).value();
     const int64_t min_b = integer_trail_.LowerBound(b_).value();
@@ -1239,7 +1277,7 @@ bool SquarePropagator::Propagate() {
 
   const EnforcementStatus status =
       enforcement_propagator_.Status(enforcement_id_);
-  if (status == EnforcementStatus::CAN_PROPAGATE) {
+  if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     // If the bounds of x * x and s are disjoint, the enforcement must be false.
     // TODO(user): relax the reason in a better way.
     if (min_x_square > max_s) {
@@ -1337,7 +1375,7 @@ bool DivisionPropagator::Propagate() {
 
   const EnforcementStatus status =
       enforcement_propagator_.Status(enforcement_id_);
-  if (status == EnforcementStatus::CAN_PROPAGATE) {
+  if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     const IntegerValue min_num = integer_trail_.LowerBound(num);
     const IntegerValue max_num = integer_trail_.UpperBound(num);
     const IntegerValue min_denom = integer_trail_.LowerBound(denom);
@@ -1567,7 +1605,7 @@ bool FixedDivisionPropagator::Propagate() {
 
   const EnforcementStatus status =
       enforcement_propagator_.Status(enforcement_id_);
-  if (status == EnforcementStatus::CAN_PROPAGATE) {
+  if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     // If the bounds of a / b and c are disjoint, the enforcement must be false.
     // TODO(user): relax the reason in a better way.
     if (min_a / b_ > max_c) {
@@ -1652,7 +1690,7 @@ FixedModuloPropagator::FixedModuloPropagator(
 bool FixedModuloPropagator::Propagate() {
   const EnforcementStatus status =
       enforcement_propagator_.Status(enforcement_id_);
-  if (status == EnforcementStatus::CAN_PROPAGATE) {
+  if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     const IntegerValue min_target = integer_trail_.LowerBound(target_);
     const IntegerValue max_target = integer_trail_.UpperBound(target_);
     if (min_target >= mod_) {

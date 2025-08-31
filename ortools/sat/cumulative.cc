@@ -411,8 +411,8 @@ std::function<void(Model*)> CumulativeUsingReservoir(
         presences.push_back(encoder->GetTrueLiteral());
       }
     }
-    AddReservoirConstraint(times, deltas, presences, 0, fixed_capacity.value(),
-                           model);
+    AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas,
+                           presences, 0, fixed_capacity.value(), model);
   };
 }
 

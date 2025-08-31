@@ -44,15 +44,15 @@ TEST(EnforcementPropagatorTest, BasicTest) {
   const EnforcementId id3 = propag->Register(Literals({-2}));
 
   EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
   EXPECT_EQ(propag->Status(id2), EnforcementStatus::CANNOT_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 
   sat_solver->EnqueueDecisionIfNotConflicting(Literal(+1));
   EXPECT_TRUE(propag->Propagate(trail));
   EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 
   sat_solver->EnqueueDecisionIfNotConflicting(Literal(+2));
   EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
@@ -60,9 +60,9 @@ TEST(EnforcementPropagatorTest, BasicTest) {
   EXPECT_EQ(propag->Status(id3), EnforcementStatus::IS_FALSE);
 
   CHECK(sat_solver->ResetToLevelZero());
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
   EXPECT_EQ(propag->Status(id2), EnforcementStatus::CANNOT_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 }
 
 TEST(EnforcementPropagatorTest, UntrailWork) {
@@ -77,21 +77,21 @@ TEST(EnforcementPropagatorTest, UntrailWork) {
   const EnforcementId id3 = propag->Register(Literals({+3}));
 
   EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id1), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
+  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 
   sat_solver->EnqueueDecisionIfNotConflicting(Literal(+1));
   EXPECT_TRUE(propag->Propagate(trail));
   EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id2), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 
   sat_solver->EnqueueDecisionIfNotConflicting(Literal(+2));
   EXPECT_TRUE(propag->Propagate(trail));
   EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
   EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
   const int level = sat_solver->CurrentDecisionLevel();
 
   sat_solver->EnqueueDecisionIfNotConflicting(Literal(+3));
@@ -103,7 +103,7 @@ TEST(EnforcementPropagatorTest, UntrailWork) {
   sat_solver->Backtrack(level);
   EXPECT_EQ(propag->Status(id1), EnforcementStatus::IS_ENFORCED);
   EXPECT_EQ(propag->Status(id2), EnforcementStatus::IS_ENFORCED);
-  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id3), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 }
 
 TEST(EnforcementPropagatorTest, AddingAtPositiveLevelTrue) {
@@ -122,7 +122,7 @@ TEST(EnforcementPropagatorTest, AddingAtPositiveLevelTrue) {
 
   sat_solver->Backtrack(0);
   EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 }
 
 TEST(EnforcementPropagatorTest, AddingAtPositiveLevelFalse) {
@@ -141,7 +141,7 @@ TEST(EnforcementPropagatorTest, AddingAtPositiveLevelFalse) {
 
   sat_solver->Backtrack(0);
   EXPECT_TRUE(propag->Propagate(trail));
-  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE);
+  EXPECT_EQ(propag->Status(id), EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
 }
 
 TEST(LiteralXorIsTest, OneVariable) {

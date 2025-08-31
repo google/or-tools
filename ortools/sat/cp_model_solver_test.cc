@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
@@ -872,7 +873,7 @@ TEST(SolveCpModelTest, IntProdWithEnforcementLiteral) {
 }
 
 TEST(SolveCpModelTest, SquareIntProdWithEnforcementLiteral) {
-  // not(b) => x.y.z = 17
+  // not(b) => x^2 = 17
   CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 2, 20 ] }
@@ -889,6 +890,20 @@ TEST(SolveCpModelTest, SquareIntProdWithEnforcementLiteral) {
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(response.solution(0), 1);
+}
+
+TEST(SolveCpModelTest, IntProdWithEnforcementLiteralButNoTerms) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 0
+      int_prod { target { vars: 0 coeffs: -4096 offset: 4096 } }
+    }
+  )pb");
+  Model model;
+  model.Add(NewSatParameters("cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
 }
 
 TEST(SolveCpModelTest, LinMaxObjectiveDomainLowerBoundInfeasible) {
@@ -987,6 +1002,151 @@ TEST(SolveCpModelTest, LinMaxUniqueTarget) {
 
   const CpSolverResponse response = Solve(model_proto);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(SolveCpModelTest, LinMaxWithEnforcementLiteral) {
+  // not(b) => z = max(x, y), x in [2, 5], y in [0, 4], z in [6, 9].
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 2, 5 ] }
+    variables { domain: [ 0, 4 ] }
+    variables { domain: [ 6, 9 ] }
+    constraints {
+      enforcement_literal: -1
+      lin_max {
+        target { vars: 3 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    })pb");
+  Model model;
+  model.Add(NewSatParameters("cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(0), 1);
+}
+
+TEST(SolveCpModelTest, AllDifferentWithEnforcementLiteral) {
+  // not(b) => all_diff(x, y+1, 2-z), x,y+1,3-z in [1, 2].
+  CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 2 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 1, 2 ] }
+    constraints {
+      enforcement_literal: -1
+      all_diff {
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 offset: 1 }
+        exprs { vars: 3 coeffs: -1 offset: 3 }
+      }
+    })pb");
+  Model model;
+  model.Add(NewSatParameters("cp_model_presolve:false"));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(response.solution(0), 1);
+}
+
+TEST(SolveCpModelTest, FeasibleCircuitWithEnforcementLiteral) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 3
+      circuit {
+        tails: [ 0, 1, 2, 3, 0, 2, 1 ]
+        heads: [ 1, 2, 3, 0, 2, 1, 3 ]
+        literals: [ 0, 1, 2, 3, 4, 5, 6 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  int count = 0;
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+    LOG(INFO) << absl::StrJoin(response.solution(), " ");
+    EXPECT_TRUE(SolutionIsFeasible(
+        model_proto, std::vector<int64_t>(response.solution().begin(),
+                                          response.solution().end())));
+    ++count;
+  }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // Two feasible circuits (0, 1, 2, 3) and (0, 2, 1, 3), plus 2^6 solutions
+  // when the circuit constraint is not enforced.
+  EXPECT_EQ(count, 2 + 2 * 2 * 2 * 2 * 2 * 2);
+}
+
+TEST(SolveCpModelTest, InfeasibleCircuitDueToMultiArcsWithEnforcementLiteral) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: 1 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 2
+      circuit {
+        tails: [ 0, 0, 1 ]
+        heads: [ 1, 1, 0 ]
+        literals: [ 0, 0, 1 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  int count = 0;
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+    LOG(INFO) << absl::StrJoin(response.solution(), " ");
+    EXPECT_TRUE(SolutionIsFeasible(
+        model_proto, std::vector<int64_t>(response.solution().begin(),
+                                          response.solution().end())));
+    ++count;
+  }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // No feasible circuit, but 2 solutions with a false enforcement literal.
+  EXPECT_EQ(count, 2);
+}
+
+TEST(SolveCpModelTest,
+     InfeasibleCircuitDueToMissingArcsWithEnforcementLiteral) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 4
+      circuit {
+        tails: [ 0, 1, 0, 2 ]
+        heads: [ 1, 1, 2, 2 ]
+        literals: [ 0, 1, 2, 3 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  int count = 0;
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+    LOG(INFO) << absl::StrJoin(response.solution(), " ");
+    EXPECT_TRUE(SolutionIsFeasible(
+        model_proto, std::vector<int64_t>(response.solution().begin(),
+                                          response.solution().end())));
+    ++count;
+  }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // No feasible circuit, but 2^4 solutions with a false enforcement literal.
+  EXPECT_EQ(count, 2 * 2 * 2 * 2);
 }
 
 TEST(SolveCpModelTest, HintWithCore) {
@@ -1358,6 +1518,61 @@ TEST(SolveCpModelTest, MultipleEnforcementLiteral) {
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   EXPECT_EQ(count, 25 + 25 + 25 + /*when enforced*/ 5);
+}
+
+TEST(SolveCpModelTest, IntProdWithNonAffineExpressions) {
+  // z = (x-2y-1)^2 = (3-x)(1+x)
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables {
+      name: "x"
+      domain: [ -5, 5 ]
+    }
+    variables {
+      name: "y"
+      domain: [ -5, 5 ]
+    }
+    variables {
+      name: "z"
+      domain: [ -5, 5 ]
+    }
+    constraints {
+      int_prod {
+        target { vars: 2 coeffs: 1 }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -2 ]
+          offset: -1
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, -2 ]
+          offset: -1
+        }
+      }
+    }
+    constraints {
+      int_prod {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 0 coeffs: -1 offset: 3 }
+        exprs { vars: 0 coeffs: 1 offset: 1 }
+      }
+    }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  absl::flat_hash_set<std::vector<int>> solutions;
+  model.Add(NewFeasibleSolutionObserver([&solutions](
+                                            const CpSolverResponse& response) {
+    solutions.insert({response.solution().begin(), response.solution().end()});
+  }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_THAT(solutions,
+              testing::UnorderedElementsAre(testing::ElementsAre(-1, -1, 0),
+                                            testing::ElementsAre(1, -1, 4),
+                                            testing::ElementsAre(1, 1, 4),
+                                            testing::ElementsAre(3, 1, 0)));
 }
 
 TEST(SolveCpModelTest, TightenedDomains) {
@@ -4957,6 +5172,84 @@ TEST(PresolveCpModelTest, CumulativeBug4) {
   params.set_cp_model_presolve(true);
   response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(PresolveCpModelTest, AutomatonNonCanonical) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: [ 0, 1 ] }
+        variables { domain: [ 0, 1 ] }
+        variables { domain: [ 0, 1 ] }
+        variables { domain: [ 0, 1 ] }
+        constraints {
+          automaton {
+            final_states: [ 3 ]
+            transition_tail: [ 0, 0, 1, 2, 1, 2 ]
+            transition_head: [ 1, 2, 1, 2, 3, 3 ]
+            transition_label: [ 0, 1, 0, 1, 1, 0 ]
+            exprs {
+              vars: [ 0 ]
+              coeffs: [ 1 ]
+            }
+            exprs {
+              vars: [ 1 ]
+              coeffs: [ 0 ]
+            }
+            exprs {
+              vars: [ 2 ]
+              coeffs: [ 1 ]
+            }
+            exprs {
+              vars: [ 3 ]
+              coeffs: [ 1 ]
+            }
+          }
+        })pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_cp_model_presolve(false);
+  params.set_cp_model_probing_level(0);
+  params.set_symmetry_level(0);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  params.set_cp_model_presolve(true);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+}
+
+TEST(PresolveCpModelTest, SolutionCrushBug) {
+  const CpModelProto cp_model = ParseTestProto(
+      R"pb(
+        variables { domain: 0 domain: 2 }
+        variables { domain: 0 domain: 2 }
+        constraints {
+          int_mod {
+            target {}
+            exprs { offset: -1 }
+            exprs { vars: 1 coeffs: 1 offset: 2647 }
+          }
+        }
+        constraints { at_most_one {} }
+        floating_point_objective { vars: 0 coeffs: 1 offset: 5.12549424074614 }
+      )pb");
+
+  SatParameters params;
+  params.set_log_search_progress(true);
+  params.set_debug_crash_if_presolve_breaks_hint(true);
+  params.set_cp_model_presolve(false);
+  params.set_cp_model_probing_level(0);
+  params.set_symmetry_level(0);
+
+  CpSolverResponse response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+
+  params.set_cp_model_presolve(true);
+  response = SolveWithParameters(cp_model, params);
+  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS

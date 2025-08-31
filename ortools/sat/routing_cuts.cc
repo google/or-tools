@@ -1851,7 +1851,8 @@ int ToNodeVariableIndex(IntegerVariable var) {
 // in routes constraints.
 BinaryRelationRepository ComputePartialBinaryRelationRepository(
     const CpModelProto& model) {
-  BinaryRelationRepository repository;
+  Model empty_model;
+  BinaryRelationRepository repository(&empty_model);
   for (const ConstraintProto& ct : model.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const absl::Span<const int> vars = ct.linear().vars();
@@ -1861,7 +1862,6 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
                                   ToPositiveIntegerVariable(vars[0]),
                                   ToPositiveIntegerVariable(vars[1]));
   }
-  Model empty_model;
   repository.Build();
   return repository;
 }

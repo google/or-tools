@@ -277,6 +277,8 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   void AddEnergyAfterReason(int t, IntegerValue energy_min, IntegerValue time);
   void AddEnergyMinInIntervalReason(int t, IntegerValue min, IntegerValue max);
 
+  bool TaskIsBeforeOrIsOverlapping(int before, int after);
+
   // Adds the reason why the task "before" must be before task "after", in
   // the sense that "after" can only start at the same time or later than the
   // task "before" ends.
@@ -320,6 +322,11 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   ABSL_MUST_USE_RESULT bool ReportConflict();
   ABSL_MUST_USE_RESULT bool PushIntegerLiteralIfTaskPresent(int t,
                                                             IntegerLiteral lit);
+
+  // Push that t_before must end at the same time or before t_after starts.
+  // This function does the correct thing if t_before or t_after are optional
+  // and their presence is unknown. Returns false on conflict.
+  ABSL_MUST_USE_RESULT bool PushTaskOrderWhenPresent(int t_before, int t_after);
 
   absl::Span<const AffineExpression> Starts() const { return starts_; }
   absl::Span<const AffineExpression> Ends() const { return ends_; }

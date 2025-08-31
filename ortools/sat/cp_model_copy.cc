@@ -15,10 +15,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -216,6 +219,9 @@ bool ModelCopy::ImportAndSimplifyConstraints(
     }
   }
 
+  if (first_copy) {
+    ExpandNonAffineExpressions();
+  }
   return true;
 }
 
@@ -544,6 +550,8 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
   if (ct.element().vars().empty() && !ct.element().exprs().empty()) {
     // New format, just copy.
     *new_ct = ct;
+    new_ct->mutable_enforcement_literal()->Clear();
+    FinishEnforcementCopy(new_ct);
     return true;
   }
 
@@ -559,6 +567,7 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
     }
   };
 
+  FinishEnforcementCopy(new_ct);
   fill_expr(ct.element().index(),
             new_ct->mutable_element()->mutable_linear_index());
   fill_expr(ct.element().target(),
@@ -571,8 +580,20 @@ bool ModelCopy::CopyElement(const ConstraintProto& ct) {
 
 bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
   ConstraintProto* new_ct = context_->working_model->add_constraints();
-  *new_ct = ct;
-  if (new_ct->automaton().vars().empty()) return true;
+  new_ct->mutable_automaton()->set_starting_state(
+      ct.automaton().starting_state());
+  *new_ct->mutable_automaton()->mutable_final_states() =
+      ct.automaton().final_states();
+  *new_ct->mutable_automaton()->mutable_transition_tail() =
+      ct.automaton().transition_tail();
+  *new_ct->mutable_automaton()->mutable_transition_head() =
+      ct.automaton().transition_head();
+  *new_ct->mutable_automaton()->mutable_transition_label() =
+      ct.automaton().transition_label();
+  for (const LinearExpressionProto& expr : ct.automaton().exprs()) {
+    CopyLinearExpression(expr, new_ct->mutable_automaton()->add_exprs());
+  }
+  FinishEnforcementCopy(new_ct);
 
   auto fill_expr = [this](int var, LinearExpressionProto* expr) mutable {
     if (context_->IsFixed(var)) {
@@ -589,7 +610,6 @@ bool ModelCopy::CopyAutomaton(const ConstraintProto& ct) {
   for (const int var : ct.automaton().vars()) {
     fill_expr(var, new_ct->mutable_automaton()->add_exprs());
   }
-  new_ct->mutable_automaton()->clear_vars();
 
   return true;
 }
@@ -599,6 +619,8 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
   if (ct.table().vars().empty() && !ct.table().exprs().empty()) {
     // New format, just copy.
     *new_ct = ct;
+    new_ct->mutable_enforcement_literal()->Clear();
+    FinishEnforcementCopy(new_ct);
     return true;
   }
 
@@ -614,6 +636,7 @@ bool ModelCopy::CopyTable(const ConstraintProto& ct) {
     }
   };
 
+  FinishEnforcementCopy(new_ct);
   for (const int var : ct.table().vars()) {
     fill_expr(var, new_ct->mutable_table()->add_exprs());
   }
@@ -630,6 +653,7 @@ bool ModelCopy::CopyAllDiff(const ConstraintProto& ct) {
   for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
     CopyLinearExpression(expr, new_ct->mutable_all_diff()->add_exprs());
   }
+  FinishEnforcementCopy(new_ct);
   return true;
 }
 
@@ -673,27 +697,9 @@ bool ModelCopy::CopyLinMax(const ConstraintProto& ct) {
   if (new_ct == nullptr) return false;  // No expr == unsat.
   CopyLinearExpression(ct.lin_max().target(),
                        new_ct->mutable_lin_max()->mutable_target());
+  FinishEnforcementCopy(new_ct);
   return true;
 }
-
-namespace {
-void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
-                      LinearConstraintProto* linear) {
-  for (const int lit : literals) {
-    if (RefIsPositive(lit)) {
-      linear->add_vars(lit);
-      linear->add_coeffs(1);
-    } else {
-      linear->add_vars(NegatedRef(lit));
-      linear->add_coeffs(-1);
-      lb -= 1;
-      ub -= 1;
-    }
-  }
-  linear->add_domain(lb);
-  linear->add_domain(ub);
-}
-}  // namespace
 
 bool ModelCopy::CopyAtMostOne(const ConstraintProto& ct) {
   if (!ct.enforcement_literal().empty()) {
@@ -935,6 +941,129 @@ bool ModelCopy::CreateUnsatModel(int c, const ConstraintProto& ct) {
     }
   }
   return context_->NotifyThatModelIsUnsat(message);
+}
+
+void ModelCopy::ExpandNonAffineExpressions() {
+  // Make sure all domains are initialized (they are used in
+  // MaybeExpandNonAffineExpression()).
+  context_->InitializeNewDomains();
+
+  non_affine_expression_to_new_var_.clear();
+  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
+    ConstraintProto* const ct = context_->working_model->mutable_constraints(c);
+    switch (ct->constraint_case()) {
+      case ConstraintProto::kIntDiv:
+        MaybeExpandNonAffineExpressions(ct->mutable_int_div());
+        break;
+      case ConstraintProto::kIntMod:
+        MaybeExpandNonAffineExpressions(ct->mutable_int_mod());
+        break;
+      case ConstraintProto::kIntProd:
+        MaybeExpandNonAffineExpressions(ct->mutable_int_prod());
+        break;
+      case ConstraintProto::kAllDiff:
+        for (LinearExpressionProto& expr :
+             *ct->mutable_all_diff()->mutable_exprs()) {
+          MaybeExpandNonAffineExpression(&expr);
+        }
+        break;
+      case ConstraintProto::kElement:
+        if (!ct->element().exprs().empty()) {
+          MaybeExpandNonAffineExpression(
+              ct->mutable_element()->mutable_linear_index());
+          MaybeExpandNonAffineExpression(
+              ct->mutable_element()->mutable_linear_target());
+          for (LinearExpressionProto& expr :
+               *ct->mutable_element()->mutable_exprs()) {
+            MaybeExpandNonAffineExpression(&expr);
+          }
+        }
+        break;
+      case ConstraintProto::kInterval:
+        MaybeExpandNonAffineExpression(ct->mutable_interval()->mutable_start());
+        MaybeExpandNonAffineExpression(ct->mutable_interval()->mutable_end());
+        MaybeExpandNonAffineExpression(ct->mutable_interval()->mutable_size());
+        break;
+      case ConstraintProto::kReservoir:
+        for (LinearExpressionProto& expr :
+             *ct->mutable_reservoir()->mutable_time_exprs()) {
+          MaybeExpandNonAffineExpression(&expr);
+        }
+        break;
+      case ConstraintProto::kRoutes:
+        for (RoutesConstraintProto::NodeExpressions& node_exprs :
+             *ct->mutable_routes()->mutable_dimensions()) {
+          for (LinearExpressionProto& expr : *node_exprs.mutable_exprs()) {
+            MaybeExpandNonAffineExpression(&expr);
+          }
+        }
+        break;
+      case ConstraintProto::kTable:
+        for (LinearExpressionProto& expr :
+             *ct->mutable_table()->mutable_exprs()) {
+          MaybeExpandNonAffineExpression(&expr);
+        }
+        break;
+      case ConstraintProto::kAutomaton:
+        for (LinearExpressionProto& expr :
+             *ct->mutable_automaton()->mutable_exprs()) {
+          MaybeExpandNonAffineExpression(&expr);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+// Replaces the expression sum a_i * x_i + c with gcd * y + c, where y is a new
+// variable defined with an additional constraint y = sum a_i / gcd * x_i.
+void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
+  if (expr->vars_size() < 2) return;
+
+  int64_t gcd = std::abs(expr->coeffs(0));
+  for (int i = 1; i < expr->coeffs().size(); ++i) {
+    gcd = std::gcd(gcd, std::abs(expr->coeffs(i)));
+  }
+  Domain domain(0);
+  std::vector<std::pair<int, int64_t>> definition;
+  for (int i = 0; i < expr->vars().size(); ++i) {
+    const int var = expr->vars(i);
+    const int64_t coeff = expr->coeffs(i) / gcd;
+    domain =
+        domain.AdditionWith(context_->DomainOf(var).MultiplicationBy(coeff));
+    definition.push_back({var, coeff});
+  }
+  int new_var;
+  auto it = non_affine_expression_to_new_var_.find(definition);
+  if (it != non_affine_expression_to_new_var_.end()) {
+    new_var = it->second;
+  } else {
+    new_var = context_->NewIntVar(domain);
+    auto* new_linear =
+        context_->working_model->add_constraints()->mutable_linear();
+    new_linear->add_vars(new_var);
+    new_linear->add_coeffs(-1);
+    for (const auto [var, coeff] : definition) {
+      new_linear->add_vars(var);
+      new_linear->add_coeffs(coeff);
+    }
+    new_linear->add_domain(0);
+    new_linear->add_domain(0);
+    context_->solution_crush().SetVarToLinearExpression(new_var, definition);
+  }
+  expr->clear_vars();
+  expr->clear_coeffs();
+  expr->add_vars(new_var);
+  expr->add_coeffs(gcd);
+}
+
+void ModelCopy::MaybeExpandNonAffineExpressions(
+    LinearArgumentProto* linear_argument) {
+  MaybeExpandNonAffineExpression(linear_argument->mutable_target());
+  for (LinearExpressionProto& expr : *linear_argument->mutable_exprs()) {
+    MaybeExpandNonAffineExpression(&expr);
+  }
 }
 
 bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,

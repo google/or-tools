@@ -318,10 +318,10 @@ bool CpModelPresolver::PresolveBoolXor(ConstraintProto* ct) {
           return false;
         }
       }
-    }
-    context_->UpdateNewConstraintsVariableUsage();
-    context_->UpdateRuleStats("bool_xor: two active literals");
-    return RemoveConstraint(ct);
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("bool_xor: two active literals");
+      return RemoveConstraint(ct);
+    }  // TODO(user): maybe replace the enforced XOR by an enforced equality?
   }
 
   if (num_true_literals % 2 == 1) {
@@ -1086,6 +1086,7 @@ bool CpModelPresolver::PropagateAndReduceLinMax(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
   const LinearExpressionProto& target = ct->lin_max().target();
 
@@ -1655,11 +1656,18 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         return false;
       }
       context_->UpdateRuleStats("int_prod: constant product");
-      return RemoveConstraint(ct);
     } else {
-      context_->UpdateRuleStats("TODO enforced int_prod: constant product");
       // Replace ct with an enforced linear "target == constant_factor".
+      ConstraintProto* new_ct = context_->working_model->add_constraints();
+      *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+      LinearConstraintProto* const lin = new_ct->mutable_linear();
+      lin->add_domain(constant_factor);
+      lin->add_domain(constant_factor);
+      AddLinearExpressionToLinearConstraint(ct->int_prod().target(), 1, lin);
+      context_->UpdateNewConstraintsVariableUsage();
+      context_->UpdateRuleStats("enforced int_prod: constant product");
     }
+    return RemoveConstraint(ct);
   }
 
   // If target is fixed to zero, we can forget the constant factor.
@@ -3176,7 +3184,7 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   // TODO(user): Make sure the newly generated linear constraint
   // satisfy our no-overflow precondition on the min/max activity.
   // We should check that the model still satisfy conditions in
-  // 3/ortools/sat/cp_model_checker.cc;l=165;bpv=0
+  // https://source.corp.google.com/piper///depot/ortools/sat/cp_model_checker.cc;l=165;bpv=0
 
   // Create new variables.
   std::vector<int> new_variables(num_new_variables);
@@ -5018,6 +5026,8 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
 
 // TODO(user): avoid code duplication between expand and presolve.
 bool CpModelPresolver::PresolveInverse(ConstraintProto* ct) {
+  // TODO(user): add support for this case.
+  if (HasEnforcementLiteral(*ct)) return false;
   const int size = ct->inverse().f_direct().size();
   bool changed = false;
 
@@ -5119,8 +5129,7 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   if (ct->element().exprs().empty()) {
-    context_->UpdateRuleStats("element: empty array");
-    return context_->NotifyThatModelIsUnsat();
+    return MarkConstraintAsFalse(ct, "element: empty array");
   }
 
   bool changed = false;
@@ -5136,8 +5145,8 @@ bool CpModelPresolver::PresolveElement(int c, ConstraintProto* ct) {
   const LinearExpressionProto& index = ct->element().linear_index();
   const LinearExpressionProto& target = ct->element().linear_target();
 
-  // TODO(user): think about this once we do have such constraint.
-  if (HasEnforcementLiteral(*ct)) return false;
+  // TODO(user): add support for this case.
+  if (HasEnforcementLiteral(*ct)) return changed;
 
   // Reduce index domain from the array size.
   {
@@ -5607,6 +5616,7 @@ class UniqueNonNegativeValue {
 
 bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
 
   AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
@@ -5812,7 +5822,7 @@ void ExtractClauses(bool merge_into_bool_and,
     // bool_or.
     ConstraintProto* ct = proto->add_constraints();
     if (!debug_name.empty()) {
-      ct->set_name(std::string(debug_name));
+      ct->set_name(debug_name);
     }
     ct->mutable_bool_or()->mutable_literals()->Reserve(clause.size());
     for (const Literal l : clause) {
@@ -7195,6 +7205,7 @@ bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
   CircuitConstraintProto& proto = *ct->mutable_circuit();
 
@@ -7394,6 +7405,7 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
 
   AutomatonConstraintProto* proto = ct->mutable_automaton();
@@ -7439,6 +7451,7 @@ bool CpModelPresolver::PresolveAutomaton(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
 
   ReservoirConstraintProto& proto = *ct->mutable_reservoir();

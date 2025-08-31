@@ -406,7 +406,8 @@ TEST(ReservoirTest, FindAllParenthesis) {
   std::vector<Literal> all_true(size, true_lit);
 
   model.Add(AllDifferentOnBounds(vars));
-  AddReservoirConstraint(times, deltas, all_true, 0, size, &model);
+  AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, all_true,
+                         0, size, &model);
 
   absl::btree_map<std::string, int> sequence_to_count;
   int num_solutions_found = 0;
@@ -462,7 +463,8 @@ TEST(ReservoirTest, FindAllParenthesisWithOptionality) {
   }
 
   model.Add(AllDifferentOnBounds(vars));
-  AddReservoirConstraint(times, deltas, present, 0, size, &model);
+  AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, present, 0,
+                         size, &model);
 
   absl::btree_map<std::string, int> sequence_to_count;
   int num_solutions_found = 0;
@@ -512,7 +514,8 @@ TEST(ReservoirTest, VariableLevelChange) {
 
   const int min_level = 0;
   const int max_level = 1;
-  AddReservoirConstraint(times, deltas, all_true, min_level, max_level, &model);
+  AddReservoirConstraint(/*enforcement_literals=*/{}, times, deltas, all_true,
+                         min_level, max_level, &model);
 
   absl::btree_map<std::string, int> sequence_to_count;
   int num_solutions_found = 0;
@@ -550,6 +553,26 @@ TEST(ReservoirTest, VariableLevelChange) {
   // For each subset of non-zero position, the value are fixed, it must
   // be an alternating sequence starting at 1.
   EXPECT_EQ(num_solutions_found, 1 << size);
+}
+
+TEST(ReservoirTimeTablingTest, WithUnassignedEnforcementLiteral) {
+  Model model;
+  std::vector<AffineExpression> times(4);
+  std::vector<AffineExpression> deltas(4);
+  std::vector<Literal> presences(4);
+  for (int i = 0; i < 4; ++i) {
+    times.push_back(AffineExpression(i + 1));
+    deltas.push_back(AffineExpression(i + 2));
+    presences.push_back(model.GetOrCreate<IntegerEncoder>()->GetTrueLiteral());
+  }
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  // Always false is enforced (sum(deltas) = 2+3+4+5 > 10).
+  model.TakeOwnership(new ReservoirTimeTabling({b}, times, deltas, presences,
+                                               IntegerValue(10), &model));
+
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
 }
 
 }  // namespace

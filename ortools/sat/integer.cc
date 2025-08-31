@@ -1397,6 +1397,18 @@ void IntegerTrail::EnqueueLiteral(
   EnqueueLiteralInternal(literal, false, literal_reason, integer_reason);
 }
 
+bool IntegerTrail::SafeEnqueueLiteral(
+    Literal literal, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  if (trail_->Assignment().LiteralIsTrue(literal)) {
+    return true;
+  } else if (trail_->Assignment().LiteralIsFalse(literal)) {
+    return ReportConflict(literal_reason, integer_reason);
+  }
+  EnqueueLiteralInternal(literal, false, literal_reason, integer_reason);
+  return true;
+}
+
 void IntegerTrail::EnqueueLiteralInternal(
     Literal literal, bool use_lazy_reason,
     absl::Span<const Literal> literal_reason,

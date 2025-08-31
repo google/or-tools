@@ -678,6 +678,24 @@ void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
   }
 }
 
+void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
+                      LinearConstraintProto* linear) {
+  linear->Clear();
+  for (const int lit : literals) {
+    if (RefIsPositive(lit)) {
+      linear->add_vars(lit);
+      linear->add_coeffs(1);
+    } else {
+      linear->add_vars(NegatedRef(lit));
+      linear->add_coeffs(-1);
+      lb -= 1;
+      ub -= 1;
+    }
+  }
+  linear->add_domain(lb);
+  linear->add_domain(ub);
+}
+
 bool SafeAddLinearExpressionToLinearConstraint(
     const LinearExpressionProto& expr, int64_t coefficient,
     LinearConstraintProto* linear) {

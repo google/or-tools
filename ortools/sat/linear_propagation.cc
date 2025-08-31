@@ -388,7 +388,7 @@ bool LinearPropagator::AddConstraint(
           // TODO(user): With some care, when we cannot propagate or the
           // constraint is not enforced, we could leave in_queue_[] at true but
           // not put the constraint in the queue.
-          if (status == EnforcementStatus::CAN_PROPAGATE ||
+          if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT ||
               status == EnforcementStatus::IS_ENFORCED) {
             AddToQueueIfNeeded(id);
             watcher_->CallOnNextPropagate(watcher_id_);

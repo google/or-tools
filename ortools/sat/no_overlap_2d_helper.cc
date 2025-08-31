@@ -156,37 +156,15 @@ namespace {
 bool LeftBoxBeforeRightBoxOnFirstDimension(int left, int right,
                                            SchedulingConstraintHelper* x,
                                            SchedulingConstraintHelper* y) {
-  // left box2 pushes right box2.
-  const IntegerValue left_end_min = x->EndMin(left);
-  if (left_end_min > x->StartMin(right)) {
-    x->ClearReason();
-    x->AddPresenceReason(left);
-    x->AddPresenceReason(right);
-    x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
-    x->AddEndMinReason(left, left_end_min);
-    // left and right must overlap on y.
-    ClearAndAddMandatoryOverlapReason(left, right, y);
-    // Propagate with the complete reason.
-    x->ImportOtherReasons(*y);
-    if (!x->IncreaseStartMin(right, left_end_min)) return false;
-  }
-
-  // right box2 pushes left box2.
-  const IntegerValue right_start_max = x->StartMax(right);
-  if (right_start_max < x->EndMax(left)) {
-    x->ClearReason();
-    x->AddPresenceReason(left);
-    x->AddPresenceReason(right);
-    x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
-    x->AddStartMaxReason(right, right_start_max);
-    // left and right must overlap on y.
-    ClearAndAddMandatoryOverlapReason(left, right, y);
-    // Propagate with the complete reason.
-    x->ImportOtherReasons(*y);
-    if (!x->DecreaseEndMax(left, right_start_max)) return false;
-  }
-
-  return true;
+  x->ClearReason();
+  x->AddPresenceReason(left);
+  x->AddPresenceReason(right);
+  x->AddReasonForBeingBeforeAssumingNoOverlap(left, right);
+  // left and right must overlap on y.
+  ClearAndAddMandatoryOverlapReason(left, right, y);
+  // Propagate with the complete reason.
+  x->ImportOtherReasons(*y);
+  return x->PushTaskOrderWhenPresent(left, right);
 }
 
 }  // namespace

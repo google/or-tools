@@ -45,7 +45,7 @@ enum class EnforcementStatus {
   // More than two literals are unassigned.
   CANNOT_PROPAGATE = 1,
   // All enforcement literals are true but one.
-  CAN_PROPAGATE = 2,
+  CAN_PROPAGATE_ENFORCEMENT = 2,
   // All enforcement literals are true.
   IS_ENFORCED = 3,
 };
@@ -89,11 +89,31 @@ class EnforcementPropagator : public SatPropagator {
       EnforcementId id, absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason);
 
+  ABSL_MUST_USE_RESULT bool Enqueue(
+      EnforcementId id, IntegerLiteral i_lit,
+      absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
+
   ABSL_MUST_USE_RESULT bool SafeEnqueue(
       EnforcementId id, IntegerLiteral i_lit,
       absl::Span<const IntegerLiteral> integer_reason);
 
+  ABSL_MUST_USE_RESULT bool ConditionalEnqueue(
+      EnforcementId id, Literal lit, IntegerLiteral i_lit,
+      absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
+
+  void EnqueueLiteral(EnforcementId id, Literal literal,
+                      absl::Span<const Literal> literal_reason,
+                      absl::Span<const IntegerLiteral> integer_reason);
+
   bool ReportConflict(EnforcementId id,
+                      absl::Span<const IntegerLiteral> integer_reason) {
+    return ReportConflict(id, /*literal_reason=*/{}, integer_reason);
+  }
+
+  bool ReportConflict(EnforcementId id,
+                      absl::Span<const Literal> literal_reason,
                       absl::Span<const IntegerLiteral> integer_reason);
 
   EnforcementStatus Status(EnforcementId id) const {
@@ -148,6 +168,7 @@ class EnforcementPropagator : public SatPropagator {
 
   std::vector<Literal> temp_literals_;
   std::vector<Literal> temp_reason_;
+  std::vector<IntegerLiteral> temp_integer_reason_;
 
   std::vector<EnforcementId> ids_to_fix_until_next_root_level_;
 };
@@ -175,9 +196,9 @@ class BooleanXorPropagator : public PropagatorInterface {
   const std::vector<Literal> literals_;
   const bool value_;
   std::vector<Literal> literal_reason_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  EnforcementPropagator* enforcement_propagator_;
+  const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementPropagator& enforcement_propagator_;
   EnforcementId enforcement_id_;
 };
 

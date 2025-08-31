@@ -736,6 +736,16 @@ void EnforcedLinear2Bounds::CollectPrecedences(
   }
 }
 
+BinaryRelationRepository::~BinaryRelationRepository() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"BinaryRelationRepository/num_enforced_relations",
+                   num_enforced_relations_});
+  stats.push_back({"BinaryRelationRepository/num_encoded_equivalences",
+                   num_encoded_equivalences_});
+  shared_stats_->AddStats(stats);
+}
+
 void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
                                    IntegerValue lhs, IntegerValue rhs) {
   expr.SimpleCanonicalization();
@@ -774,6 +784,91 @@ void BinaryRelationRepository::Build() {
     literal_key_values.emplace_back(r.enforcement.Index(), i);
   }
   lit_to_relations_.ResetFromPairs(literal_key_values);
+  lit_to_relations_.Add({});  // One extra unit size to make sure the negation
+                              // cannot be out of bounds in lit_to_relations_.
+
+  // If we have "l => (x <= 6)" and "~l => (x >= 9)" we can push
+  // "l <=> (x <= 6)" to the repository of fully encoded linear2 bounds.
+  // More generally, if we have:
+  //
+  //    l => (expr <= a)
+  //   ~l => (expr >= b)
+  //
+  // And if moreover a < b, we have the following truth table:
+  //
+  //   l | expr <= a | a < expr < b | expr >= b
+  //   --+-----------+---------------+----------
+  //   0 |    false  |     false     |   true    (from "~l => (expr >= b)")
+  //   1 |    true   |     false     |   false   (from "l => (expr <= a)")
+  //
+  //  So we can generalize the expressions to equivalences:
+  //    l <=> (expr <= a)
+  //   ~l <=> (expr >= b)
+  //    (a < expr < b) is impossible
+  absl::flat_hash_map<LinearExpression2, IntegerValue> lin2_to_upper_bound;
+  for (LiteralIndex lit_index{0}; lit_index < lit_to_relations_.size() - 1;
+       ++lit_index) {
+    const Literal lit(lit_index);
+    lin2_to_upper_bound.clear();
+    const absl::Span<const int> relations = lit_to_relations_[lit_index];
+    const absl::Span<const int> relations_negation =
+        lit_to_relations_[lit.NegatedIndex()];
+    if (relations.empty() || relations_negation.empty()) continue;
+    for (const int relation_index : relations) {
+      const Relation& r = relations_[relation_index];
+      LinearExpression2 expr = r.expr;
+      if (expr.coeffs[0] == 0) continue;
+      expr.SimpleCanonicalization();  // Since relations_ uses a different
+                                      // canonicalization convention.
+      DCHECK_EQ(expr.DivideByGcd(), 1);
+      {
+        const auto [it, inserted] = lin2_to_upper_bound.insert({expr, r.rhs});
+        if (!inserted) {
+          it->second = std::min(it->second, r.rhs);
+        }
+      }
+      {
+        expr.Negate();
+        const auto [it, inserted] = lin2_to_upper_bound.insert({expr, -r.lhs});
+        if (!inserted) {
+          it->second = std::min(it->second, -r.lhs);
+        }
+      }
+    }
+    for (const int relation_index : relations_negation) {
+      const Relation& r = relations_[relation_index];
+      LinearExpression2 canonical_expr = r.expr;
+      canonical_expr.SimpleCanonicalization();
+      if (canonical_expr.coeffs[0] == 0) continue;
+      DCHECK_EQ(canonical_expr.DivideByGcd(), 1);
+
+      // Let's work with lower bounds only.
+      const IntegerValue lower_bounds[2] = {r.lhs, -r.rhs};
+      LinearExpression2 exprs[2] = {canonical_expr, canonical_expr};
+      exprs[1].Negate();
+      for (int i = 0; i < 2; ++i) {
+        // We have here "~l => (exprs[i] >= lower_bounds[i])".
+        const auto it = lin2_to_upper_bound.find(exprs[i]);
+        if (it != lin2_to_upper_bound.end()) {
+          const IntegerValue ub = it->second;
+          // Here we have "l => expr <= ub".
+          if (ub >= lower_bounds[i]) {
+            // Don't obey the "a < b" condition
+            continue;
+          }
+          num_encoded_equivalences_++;
+
+          // Make both relationships two-way.
+          reified_linear2_bounds_->AddBoundEncodingIfNonTrivial(lit, exprs[i],
+                                                                ub);
+          LinearExpression2 expr = exprs[i];
+          expr.Negate();
+          reified_linear2_bounds_->AddBoundEncodingIfNonTrivial(
+              lit.Negated(), expr, -lower_bounds[i]);
+        }
+      }
+    }
+  }
 }
 
 bool BinaryRelationRepository::PropagateLocalBounds(
@@ -1411,6 +1506,124 @@ RelationStatus Linear2Bounds::GetStatus(LinearExpression2 expr, IntegerValue lb,
   if (lb > known_ub || ub < known_lb) return RelationStatus::IS_FALSE;
 
   return RelationStatus::IS_UNKNOWN;
+}
+
+bool Linear2Bounds::EnqueueLowerOrEqual(
+    LinearExpression2 expr, IntegerValue ub,
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  using ReifiedBoundType = ReifiedLinear2Bounds::ReifiedBoundType;
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  ub = FloorRatio(ub, gcd);
+  // We have many different scenarios here, each one pushing something different
+  // in the trail.
+
+  // Trivial.
+  if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) {
+    if (ub >= 0) {
+      return true;
+    } else {
+      return integer_trail_->ReportConflict(literal_reason, integer_reason);
+    }
+  }
+
+  // Degenerate single variable case, just push the IntegerLiteral.
+  if (expr.coeffs[0] == 0) {
+    return integer_trail_->Enqueue(
+        IntegerLiteral::LowerOrEqual(expr.vars[1], ub), literal_reason,
+        integer_reason);
+  }
+
+  // TODO(user): also check partially-encoded bounds, e.g. (expr <= ub) => l,
+  // which might be in BinaryRelationRepository as ~l => (-expr <= - ub - 1).
+  const auto reified_bound = reified_lin2_bounds_->GetEncodedBound(expr, ub);
+
+  // Already true.
+  if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
+      std::get<ReifiedBoundType>(reified_bound) ==
+          ReifiedBoundType::kAlwaysTrue) {
+    return true;
+  }
+
+  // Conflict (ub < lb).
+  if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
+      std::get<ReifiedBoundType>(reified_bound) ==
+          ReifiedBoundType::kAlwaysFalse) {
+    LinearExpression2 negated_expr = expr;
+    negated_expr.Negate();
+    DCHECK_LT(ub, -UpperBound(negated_expr));
+    std::vector<Literal> tmp_literal_reason(literal_reason.begin(),
+                                            literal_reason.end());
+    std::vector<IntegerLiteral> tmp_integer_reason(integer_reason.begin(),
+                                                   integer_reason.end());
+    AddReasonForUpperBoundLowerThan(negated_expr, -ub - 1, &tmp_literal_reason,
+                                    &tmp_integer_reason);
+    return integer_trail_->ReportConflict(tmp_literal_reason,
+                                          tmp_integer_reason);
+  }
+
+  // Now all the cases below are pushing a proper linear2 bound. If we are at
+  // level zero, store this in the root_level_bounds_.
+  if (trail_->CurrentDecisionLevel() == 0) {
+    root_level_bounds_->AddUpperBound(expr, ub);
+  }
+
+  // We don't have anything encoding this linear2 bound. Push the bounds of
+  // its two variables.
+  if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
+      std::get<ReifiedBoundType>(reified_bound) ==
+          ReifiedBoundType::kNoLiteralStored) {
+    // TODO(user): create a Linear2 trail and enqueue this bound there.
+    std::vector<IntegerLiteral> tmp_integer_reason(integer_reason.begin(),
+                                                   integer_reason.end());
+    const IntegerValue var_0_ub = FloorRatio(
+        ub - integer_trail_->LowerBound(expr.vars[1]) * expr.coeffs[1],
+        expr.coeffs[0]);
+    const IntegerValue var_1_ub = FloorRatio(
+        ub - integer_trail_->LowerBound(expr.vars[0]) * expr.coeffs[0],
+        expr.coeffs[1]);
+
+    tmp_integer_reason.push_back(IntegerLiteral::GreaterOrEqual(
+        expr.vars[1], integer_trail_->LowerBound(expr.vars[1])));
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(expr.vars[0], var_0_ub),
+            literal_reason, tmp_integer_reason)) {
+      return false;
+    }
+    tmp_integer_reason.pop_back();
+
+    tmp_integer_reason.push_back(IntegerLiteral::GreaterOrEqual(
+        expr.vars[0], integer_trail_->LowerBound(expr.vars[0])));
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(expr.vars[1], var_1_ub),
+            literal_reason, tmp_integer_reason)) {
+      return false;
+    }
+    return true;
+  }
+
+  // We have a literal encoding for this linear2 bound, push it.
+  if (std::holds_alternative<Literal>(reified_bound)) {
+    // TODO(user): push this to EnforcedLinear2Bounds so the same
+    // propagator that enqueued this bound will get the new linear2 bound if
+    // request it to this class without needing to wait the propagation fix
+    // point.
+    const Literal literal = std::get<Literal>(reified_bound);
+
+    integer_trail_->SafeEnqueueLiteral(literal, literal_reason, integer_reason);
+    return true;
+  }
+
+  // We can encode this linear2 bound with an IntegerLiteral (probably coming
+  // from a linear3). Push the IntegerLiteral.
+  if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
+    // TODO(user): update Linear2BoundsFromLinear3.
+    const IntegerLiteral literal = std::get<IntegerLiteral>(reified_bound);
+    return integer_trail_->Enqueue(literal, literal_reason, integer_reason);
+  }
+  LOG(FATAL) << "Unknown reified bound type";
+  return false;
 }
 
 }  // namespace sat

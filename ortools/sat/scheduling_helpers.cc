@@ -477,6 +477,13 @@ SchedulingConstraintHelper::GetEnergyProfile() {
   return energy_profile_;
 }
 
+bool SchedulingConstraintHelper::TaskIsBeforeOrIsOverlapping(int before,
+                                                             int after) {
+  const auto [expr, ub] =
+      EncodeDifferenceLowerThan(starts_[before], ends_[after], -1);
+  return linear2_bounds_->UpperBound(expr) <= ub;
+}
+
 void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
     int before, int after) {
   AddOtherReason(before);
@@ -661,6 +668,51 @@ bool SchedulingConstraintHelper::PushTaskPresence(int t) {
   integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
                                  literal_reason_, integer_reason_);
   return true;
+}
+
+bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
+                                                          int t_after) {
+  CHECK_NE(t_before, t_after);
+  if (IsAbsent(t_before)) return true;
+  if (IsAbsent(t_after)) return true;
+  if (!IsPresent(t_before) && !IsPresent(t_after)) return true;
+
+  const auto [expr, rhs] =
+      EncodeDifferenceLowerThan(ends_[t_before], starts_[t_after], 0);
+  const auto status = linear2_bounds_->GetStatus(expr, kMinIntegerValue, rhs);
+
+  if (status == RelationStatus::IS_TRUE) return true;
+
+  ImportOtherReasons();
+
+  if (status == RelationStatus::IS_FALSE) {
+    LinearExpression2 negated_expr = expr;
+    negated_expr.Negate();
+    linear2_bounds_->AddReasonForUpperBoundLowerThan(
+        negated_expr, -rhs - 1, &literal_reason_, &integer_reason_);
+    if (!IsPresent(t_before)) {
+      AddPresenceReason(t_after);
+      return PushTaskAbsence(t_before);
+    } else if (!IsPresent(t_after)) {
+      AddPresenceReason(t_before);
+      return PushTaskAbsence(t_after);
+    } else {
+      AddPresenceReason(t_before);
+      AddPresenceReason(t_after);
+      return ReportConflict();
+    }
+  }
+
+  if (!IsPresent(t_before) || !IsPresent(t_after)) return true;
+
+  AddPresenceReason(t_before);
+  AddPresenceReason(t_after);
+
+  AddOtherReason(t_before);
+  AddOtherReason(t_after);
+
+  return linear2_bounds_->EnqueueLowerOrEqual(expr, rhs, literal_reason_,
+                                              integer_reason_);
 }
 
 bool SchedulingConstraintHelper::ReportConflict() {

@@ -1164,46 +1164,47 @@ TEST(DagTopologicalSortIteratorTest, RandomTest) {
 
 TEST(FindMostDiverseSubsetTest, Random) {
   const int k = 4;
-  const int n = 10;
-  absl::BitGen random;
-  std::vector<int64_t> distances(n * n);
-  std::vector<int64_t> buffer;
-  for (int i = 0; i < n; ++i) {
-    for (int j = i + 1; j < n; ++j) {
-      distances[i * n + j] = distances[j * n + i] =
-          absl::Uniform<int>(random, 0, 1000);
-    }
-  }
-
-  const std::vector<int> result =
-      FindMostDiverseSubset(k, n, distances, buffer);
-  CHECK(std::is_sorted(result.begin(), result.end()));
-  int64_t result_value = 0;
-  for (const int i : result) {
-    for (const int j : result) {
-      if (i < j) result_value += distances[i * n + j];
-    }
-  }
-
-  int64_t best_seen = 0;
-  std::vector<int> subset;
-  const int limit = 1 << n;
-  for (unsigned int mask = 0; mask < limit; ++mask) {
-    if (absl::popcount(mask) != k) continue;
-    subset.clear();
+  for (const int n : {4, 5, 10}) {  // We test the two special cases.
+    absl::BitGen random;
+    std::vector<int64_t> distances(n * n);
+    std::vector<int64_t> buffer;
     for (int i = 0; i < n; ++i) {
-      if ((mask >> i) & 1) subset.push_back(i);
-    }
-    int64_t value = 0;
-    for (const int i : subset) {
-      for (const int j : subset) {
-        if (i < j) value += distances[i * n + j];
+      for (int j = i + 1; j < n; ++j) {
+        distances[i * n + j] = distances[j * n + i] =
+            absl::Uniform<int>(random, 0, 1000);
       }
     }
-    ASSERT_LE(value, result_value);
-    best_seen = std::max(best_seen, value);
+
+    const std::vector<int> result =
+        FindMostDiverseSubset(k, n, distances, buffer);
+    CHECK(std::is_sorted(result.begin(), result.end()));
+    int64_t result_value = 0;
+    for (const int i : result) {
+      for (const int j : result) {
+        if (i < j) result_value += distances[i * n + j];
+      }
+    }
+
+    int64_t best_seen = 0;
+    std::vector<int> subset;
+    const int limit = 1 << n;
+    for (unsigned int mask = 0; mask < limit; ++mask) {
+      if (absl::popcount(mask) != k) continue;
+      subset.clear();
+      for (int i = 0; i < n; ++i) {
+        if ((mask >> i) & 1) subset.push_back(i);
+      }
+      int64_t value = 0;
+      for (const int i : subset) {
+        for (const int j : subset) {
+          if (i < j) value += distances[i * n + j];
+        }
+      }
+      ASSERT_LE(value, result_value);
+      best_seen = std::max(best_seen, value);
+    }
+    EXPECT_EQ(best_seen, result_value);
   }
-  EXPECT_EQ(best_seen, result_value);
 }
 
 TEST(FindMostDiverseSubsetTest, RandomButAlwaysPickZero) {

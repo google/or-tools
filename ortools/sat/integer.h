@@ -689,6 +689,10 @@ class IntegerTrail final : public SatPropagator {
   void EnqueueLiteral(Literal literal, absl::Span<const Literal> literal_reason,
                       absl::Span<const IntegerLiteral> integer_reason);
 
+  bool SafeEnqueueLiteral(Literal literal,
+                          absl::Span<const Literal> literal_reason,
+                          absl::Span<const IntegerLiteral> integer_reason);
+
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
   // bound (checked).

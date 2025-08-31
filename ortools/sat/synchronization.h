@@ -171,9 +171,12 @@ class SharedSolutionRepository {
 
   int num_solutions_to_keep() const { return num_solutions_to_keep_; }
 
+  void SetDiversityLimit(int value) { diversity_limit_ = value; }
+
  protected:
   const std::string name_;
   const int num_solutions_to_keep_;
+  int diversity_limit_ = 10;
 
   mutable absl::Mutex mutex_;
   int source_id_ ABSL_GUARDED_BY(mutex_);
@@ -212,7 +215,10 @@ class SharedSolutionPool {
   explicit SharedSolutionPool(const SatParameters& parameters_)
       : best_solutions_(parameters_.solution_pool_size(), "best_solutions"),
         alternative_path_(parameters_.alternative_pool_size(),
-                          "alternative_path", /*source_id=*/0) {}
+                          "alternative_path", /*source_id=*/0) {
+    best_solutions_.SetDiversityLimit(
+        parameters_.solution_pool_diversity_limit());
+  }
 
   const SharedSolutionRepository<int64_t>& BestSolutions() const {
     return best_solutions_;
@@ -1170,7 +1176,8 @@ void SharedSolutionRepository<ValueType>::Synchronize(
       ++num_best;
     }
 
-    if (num_best > num_solutions_to_keep_ && num_solutions_to_keep_ < 10) {
+    if (num_best > num_solutions_to_keep_ &&
+        num_solutions_to_keep_ <= diversity_limit_) {
       // We should only be here if a new solution (not in our current set) was
       // found. It could be one we saw before but forgot about. We put one
       // first.
@@ -1182,8 +1189,9 @@ void SharedSolutionRepository<ValueType>::Synchronize(
         }
       }
 
-      // We are going to be in O(n^2 * solution_size), so keep n <= 10.
-      solutions_.resize(std::min(10, num_best));
+      // We are going to be in O(n^2 * solution_size + 2^n),
+      // so keep n <= diversity_limit_.
+      solutions_.resize(std::min(diversity_limit_, num_best));
 
       // Fill the pairwise distances.
       const int n = solutions_.size();
@@ -1208,6 +1216,9 @@ void SharedSolutionRepository<ValueType>::Synchronize(
       // with the rest.
       //
       // This way, as we find new solution, the set changes slowly.
+      //
+      // TODO(user): When n == num_solutions_to_keep_ + 1, there is
+      // a faster algo thant 2^n since there is only n possible sets. Fix.
       const std::vector<int> selected =
           FindMostDiverseSubset(num_solutions_to_keep_, n, distances_, buffer_,
                                 /*always_pick_mask = */ 1);

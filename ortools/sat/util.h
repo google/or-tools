@@ -394,9 +394,10 @@ int MoveOneUnprocessedLiteralLast(
 // Selects k out of n such that the sum of pairwise distances is maximal.
 // distances[i * n + j] = distances[j * n + j] = distances between i and j.
 //
-// This shall only be called with small n, we CHECK_LE(n, 20).
-// Complexity is in O(2 ^ n + n_choose_k * n).
-// Memory is in O(2 ^ n).
+// In the special case k >= n - 1, we use a faster algo.
+//
+// Otherwise, this shall only be called with small n, we CHECK_LE(n, 25).
+// Complexity is in O(2 ^ n + n_choose_k * n). Memory is in O(2 ^ n).
 //
 // In case of tie, this will choose deterministically, so one can randomize the
 // order first to get a random subset. The returned subset will always be

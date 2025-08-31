@@ -16,8 +16,10 @@
 
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -118,6 +120,17 @@ class ModelCopy {
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
   bool CopyAndMapCumulative(const ConstraintProto& ct);
 
+  // Expands linear expressions with more than one variable in constraints which
+  // internally only support affine expressions (such as all_diff, element,
+  // interval, reservoir, table, etc). This creates new variables for each such
+  // expression, and replaces the original expressions with the new variables in
+  // the constraints.
+  void ExpandNonAffineExpressions();
+  // Replaces the expression sum a_i * x_i + c with gcd * y + c, where y is a
+  // new variable defined with an additional constraint y = sum a_i / gcd * x_i.
+  void MaybeExpandNonAffineExpression(LinearExpressionProto* expr);
+  void MaybeExpandNonAffineExpressions(LinearArgumentProto* linear_argument);
+
   PresolveContext* context_;
 
   // Temp vectors.
@@ -133,6 +146,11 @@ class ModelCopy {
   absl::flat_hash_set<int> temp_literals_set_;
 
   ConstraintProto tmp_constraint_;
+
+  // Map used in ExpandNonAffineExpressions() to avoid creating the duplicate
+  // variables for the identical non affine expressions.
+  absl::flat_hash_map<std::vector<std::pair<int, int64_t>>, int>
+      non_affine_expression_to_new_var_;
 };
 
 // Copy in_model to the model in the presolve context.

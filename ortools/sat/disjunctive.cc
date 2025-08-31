@@ -32,6 +32,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/util/scheduling.h"
 #include "ortools/util/sort.h"
@@ -66,7 +67,7 @@ void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
     for (const IntervalVariable interval : intervals) {
       starts.push_back(repository->Start(interval));
     }
-    model->Add(AllDifferentOnBounds(starts));
+    model->Add(AllDifferentOnBounds(/*enforcement_literals=*/{}, starts));
     return;
   }
 
@@ -263,6 +264,9 @@ bool DisjunctiveWithTwoItems::Propagate() {
   // We can't propagate anything if one of the interval is absent for sure.
   if (helper_->IsAbsent(0) || helper_->IsAbsent(1)) return true;
 
+  // We can't propagate anything for two intervals if neither are present.
+  if (!helper_->IsPresent(0) && !helper_->IsPresent(0)) return true;
+
   // Note that this propagation also take care of the "overload checker" part.
   // It also propagates as much as possible, even in the presence of task with
   // variable sizes.
@@ -274,8 +278,8 @@ bool DisjunctiveWithTwoItems::Propagate() {
   int task_before = 0;
   int task_after = 1;
 
-  const bool task_0_before_task_1 = helper_->StartMax(0) < helper_->EndMin(1);
-  const bool task_1_before_task_0 = helper_->StartMax(1) < helper_->EndMin(0);
+  const bool task_0_before_task_1 = helper_->TaskIsBeforeOrIsOverlapping(0, 1);
+  const bool task_1_before_task_0 = helper_->TaskIsBeforeOrIsOverlapping(1, 0);
 
   if (task_0_before_task_1 && task_1_before_task_0 &&
       helper_->IsPresent(task_before) && helper_->IsPresent(task_after)) {
@@ -296,40 +300,11 @@ bool DisjunctiveWithTwoItems::Propagate() {
     return true;
   }
 
-  if (helper_->IsPresent(task_before)) {
-    const IntegerValue end_min_before = helper_->EndMin(task_before);
-    if (helper_->StartMin(task_after) < end_min_before) {
-      // Reason for precedences if both present.
-      helper_->ClearReason();
-      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
-                                                        task_after);
-
-      // Reason for the bound push.
-      helper_->AddPresenceReason(task_before);
-      helper_->AddEndMinReason(task_before, end_min_before);
-      if (!helper_->IncreaseStartMin(task_after, end_min_before)) {
-        return false;
-      }
-    }
+  helper_->ClearReason();
+  helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before, task_after);
+  if (!helper_->PushTaskOrderWhenPresent(task_before, task_after)) {
+    return false;
   }
-
-  if (helper_->IsPresent(task_after)) {
-    const IntegerValue start_max_after = helper_->StartMax(task_after);
-    if (helper_->EndMax(task_before) > start_max_after) {
-      // Reason for precedences if both present.
-      helper_->ClearReason();
-      helper_->AddReasonForBeingBeforeAssumingNoOverlap(task_before,
-                                                        task_after);
-
-      // Reason for the bound push.
-      helper_->AddPresenceReason(task_after);
-      helper_->AddStartMaxReason(task_after, start_max_after);
-      if (!helper_->DecreaseEndMax(task_before, start_max_after)) {
-        return false;
-      }
-    }
-  }
-
   return true;
 }
 
@@ -767,16 +742,8 @@ bool DisjunctiveSimplePrecedences::Push(TaskTime before, int t) {
 
   DCHECK_NE(t_before, t);
   helper_->ClearReason();
-  helper_->AddPresenceReason(t_before);
   helper_->AddReasonForBeingBeforeAssumingNoOverlap(t_before, t);
-  helper_->AddEndMinReason(t_before, before.time);
-  if (!helper_->IncreaseStartMin(t, before.time)) {
-    return false;
-  }
-  if (helper_->CurrentDecisionLevel() == 0 && helper_->IsPresent(t_before) &&
-      helper_->IsPresent(t)) {
-    if (!helper_->NotifyLevelZeroPrecedence(t_before, t)) return false;
-  }
+  if (!helper_->PushTaskOrderWhenPresent(t_before, t)) return false;
   ++stats_.num_propagations;
   return true;
 }

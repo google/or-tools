@@ -40,8 +40,8 @@ std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
     case EnforcementStatus::CANNOT_PROPAGATE:
       os << "CANNOT_PROPAGATE";
       break;
-    case EnforcementStatus::CAN_PROPAGATE:
-      os << "CAN_PROPAGATE";
+    case EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT:
+      os << "CAN_PROPAGATE_ENFORCEMENT";
       break;
     case EnforcementStatus::IS_ENFORCED:
       os << "IS_ENFORCED";
@@ -160,7 +160,7 @@ EnforcementId EnforcementPropagator::Register(
 
   // The default status at level zero.
   statuses_.push_back(temp_literals_.size() == 1
-                          ? EnforcementStatus::CAN_PROPAGATE
+                          ? EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT
                           : EnforcementStatus::CANNOT_PROPAGATE);
 
   if (temp_literals_.size() == 1) {
@@ -199,11 +199,11 @@ EnforcementId EnforcementPropagator::Register(
   } else if (num_true == temp_literals_.size()) {
     ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
   } else if (num_true + 1 == temp_literals_.size()) {
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
+    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
     // Because this is the default status, we still need to call the callback.
     if (temp_literals_.size() == 1) {
       if (callbacks_[id] != nullptr) {
-        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE);
+        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
       }
     }
   }
@@ -221,13 +221,13 @@ EnforcementId EnforcementPropagator::Register(
 EnforcementId EnforcementPropagator::Register(
     absl::Span<const Literal> enforcement_literals,
     GenericLiteralWatcher* watcher, int literal_watcher_id) {
-  return Register(enforcement_literals,
-                  [=](EnforcementId, EnforcementStatus status) {
-                    if (status == EnforcementStatus::CAN_PROPAGATE ||
-                        status == EnforcementStatus::IS_ENFORCED) {
-                      watcher->CallOnNextPropagate(literal_watcher_id);
-                    }
-                  });
+  return Register(
+      enforcement_literals, [=](EnforcementId, EnforcementStatus status) {
+        if (status == EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT ||
+            status == EnforcementStatus::IS_ENFORCED) {
+          watcher->CallOnNextPropagate(literal_watcher_id);
+        }
+      });
 }
 
 // Add the enforcement reason to the given vector.
@@ -268,6 +268,17 @@ bool EnforcementPropagator::PropagateWhenFalse(
   return true;
 }
 
+bool EnforcementPropagator::Enqueue(
+    EnforcementId id, IntegerLiteral i_lit,
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  temp_reason_.clear();
+  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
+                      literal_reason.end());
+  AddEnforcementReason(id, &temp_reason_);
+  return integer_trail_->Enqueue(i_lit, temp_reason_, integer_reason);
+}
+
 bool EnforcementPropagator::SafeEnqueue(
     EnforcementId id, IntegerLiteral i_lit,
     absl::Span<const IntegerLiteral> integer_reason) {
@@ -276,9 +287,37 @@ bool EnforcementPropagator::SafeEnqueue(
   return integer_trail_->SafeEnqueue(i_lit, temp_reason_, integer_reason);
 }
 
-bool EnforcementPropagator::ReportConflict(
-    EnforcementId id, absl::Span<const IntegerLiteral> integer_reason) {
+bool EnforcementPropagator::ConditionalEnqueue(
+    EnforcementId id, Literal lit, IntegerLiteral i_lit,
+    absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
   temp_reason_.clear();
+  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
+                      literal_reason.end());
+  AddEnforcementReason(id, &temp_reason_);
+  temp_integer_reason_.clear();
+  temp_integer_reason_.insert(temp_integer_reason_.end(),
+                              integer_reason.begin(), integer_reason.end());
+  return integer_trail_->ConditionalEnqueue(lit, i_lit, &temp_reason_,
+                                            &temp_integer_reason_);
+}
+
+void EnforcementPropagator::EnqueueLiteral(
+    EnforcementId id, Literal literal, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  temp_reason_.clear();
+  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
+                      literal_reason.end());
+  AddEnforcementReason(id, &temp_reason_);
+  return integer_trail_->EnqueueLiteral(literal, temp_reason_, integer_reason);
+}
+
+bool EnforcementPropagator::ReportConflict(
+    EnforcementId id, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  temp_reason_.clear();
+  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
+                      literal_reason.end());
   AddEnforcementReason(id, &temp_reason_);
   return integer_trail_->ReportConflict(temp_reason_, integer_reason);
 }
@@ -307,7 +346,7 @@ LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
 
   const auto span = GetSpan(id);
   if (span.size() == 1) {
-    CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE);
+    CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
     ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
     return kNoLiteralIndex;
   }
@@ -341,7 +380,7 @@ LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
   } else {
     // The other watched literal is the last unassigned
     CHECK_EQ(status, EnforcementStatus::CANNOT_PROPAGATE);
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
+    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT);
     return kNoLiteralIndex;
   }
 }
@@ -369,7 +408,7 @@ EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
   }
   const int size = GetSpan(id).size();
   if (num_true == size) return EnforcementStatus::IS_ENFORCED;
-  if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE;
+  if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT;
   return EnforcementStatus::CANNOT_PROPAGATE;
 }
 
@@ -378,17 +417,17 @@ BooleanXorPropagator::BooleanXorPropagator(
     const std::vector<Literal>& literals, bool value, Model* model)
     : literals_(literals),
       value_(value),
-      trail_(model->GetOrCreate<Trail>()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()) {
+      trail_(*model->GetOrCreate<Trail>()),
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      enforcement_propagator_(*model->GetOrCreate<EnforcementPropagator>()) {
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_propagator_->Register(
+  enforcement_id_ = enforcement_propagator_.Register(
       enforcement_literals, watcher, RegisterWith(watcher));
 }
 
 bool BooleanXorPropagator::Propagate() {
   const EnforcementStatus status =
-      enforcement_propagator_->Status(enforcement_id_);
+      enforcement_propagator_.Status(enforcement_id_);
   if (status == EnforcementStatus::IS_FALSE ||
       status == EnforcementStatus::CANNOT_PROPAGATE) {
     return true;
@@ -398,9 +437,9 @@ bool BooleanXorPropagator::Propagate() {
   int unassigned_index = -1;
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    if (trail_->Assignment().LiteralIsFalse(l)) {
+    if (trail_.Assignment().LiteralIsFalse(l)) {
       sum ^= false;
-    } else if (trail_->Assignment().LiteralIsTrue(l)) {
+    } else if (trail_.Assignment().LiteralIsTrue(l)) {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
@@ -409,29 +448,23 @@ bool BooleanXorPropagator::Propagate() {
     }
   }
 
-  // Propagates?
-  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
+  auto fill_literal_reason = [&]() {
     literal_reason_.clear();
-    enforcement_propagator_->AddEnforcementReason(enforcement_id_,
-                                                  &literal_reason_);
     for (int i = 0; i < literals_.size(); ++i) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
-          trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
+          trail_.Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
+  };
+
+  // Propagates?
+  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
+    fill_literal_reason();
     const Literal u = literals_[unassigned_index];
-    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
-                                   literal_reason_, {});
-    return true;
-  }
-  if (status == EnforcementStatus::CAN_PROPAGATE && unassigned_index == -1 &&
-      sum != value_) {
-    return enforcement_propagator_->PropagateWhenFalse(enforcement_id_,
-                                                       literals_,
-                                                       /*integer_reason=*/{});
-  }
-  if (status != EnforcementStatus::IS_ENFORCED || unassigned_index != -1) {
+    enforcement_propagator_.EnqueueLiteral(
+        enforcement_id_, sum == value_ ? u.Negated() : u, literal_reason_,
+        /*integer_reason=*/{});
     return true;
   }
 
@@ -439,14 +472,17 @@ bool BooleanXorPropagator::Propagate() {
   if (sum == value_) return true;
 
   // Conflict.
-  std::vector<Literal>* conflict = trail_->MutableConflict();
-  conflict->clear();
-  enforcement_propagator_->AddEnforcementReason(enforcement_id_, conflict);
-  for (const Literal& l : literals_) {
-    conflict->push_back(trail_->Assignment().LiteralIsFalse(l) ? l
-                                                               : l.Negated());
+  if (status == EnforcementStatus::IS_ENFORCED) {
+    fill_literal_reason();
+    return enforcement_propagator_.ReportConflict(
+        enforcement_id_, literal_reason_, /*integer_reason=*/{});
+  } else if (unassigned_index == -1) {
+    fill_literal_reason();
+    return enforcement_propagator_.PropagateWhenFalse(
+        enforcement_id_, literal_reason_, /*integer_reason=*/{});
+  } else {
+    return true;
   }
-  return false;
 }
 
 int BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {

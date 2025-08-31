@@ -1409,7 +1409,7 @@ TEST(RouteRelationsHelperTest, Basic) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(a, b), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(a, c), 70, 1000);
   repository.Add(literals[2], LinearExpression2::Difference(c, b), 40, 1000);
@@ -1504,7 +1504,7 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   RootLevelLinear2Bounds* bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 1, 1);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 2, 2);
@@ -1554,7 +1554,7 @@ TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 70, 1000);
   repository.Add(literals[0], LinearExpression2::Difference(z, y), 5, 100);
@@ -1585,7 +1585,7 @@ TEST(RouteRelationsHelperTest, ComplexVariableRelations) {
   // and 1, respectively.
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 150));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 1));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   // "complex" relation with non +1/-1 coefficients.
   repository.Add(literals[0], LinearExpression2(b, a, 10, 1), 0, 150);
   repository.Build();
@@ -1620,7 +1620,7 @@ TEST(RouteRelationsHelperTest, TwoUnaryRelationsPerArc) {
   IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
   encoder.AssociateToIntegerEqualValue(literals[0], a, 20);
   encoder.AssociateToIntegerLiteral(literals[0], {b, 50});
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Build();
 
   const RoutingCumulExpressions cumuls = {
@@ -1650,7 +1650,7 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 70, 1000);
   // Add a second relation for some arc.
@@ -1686,7 +1686,7 @@ TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[0], LinearExpression2::Difference(c, b), 40, 1000);
   repository.Build();
@@ -1728,7 +1728,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable f = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 0, 0);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 1, 1);
   repository.Add(literals[2], LinearExpression2::Difference(d, c), 2, 2);
@@ -1788,7 +1788,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 0, 0);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 1, 1);
   repository.Add(literals[2], LinearExpression2::Difference(d, c), 2, 2);
