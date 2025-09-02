@@ -35,7 +35,6 @@ py_test(
     data = [
         "//ortools/scheduling/testdata:j301_1.sm",
     ],
-    python_version = "PY3",
     deps = [
         ":rcpsp",
         "//ortools/scheduling:rcpsp_py_proto",

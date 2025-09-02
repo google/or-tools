@@ -39,7 +39,6 @@ pybind_extension(
 py_test(
     name = "sorted_interval_list_test",
     srcs = ["sorted_interval_list_test.py"],
-    python_version = "PY3",
     deps = [
         ":sorted_interval_list",
         requirement("absl-py"),

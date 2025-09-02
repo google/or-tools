@@ -35,7 +35,6 @@ pybind_extension(
 py_test(
     name = "set_cover_test",
     srcs = ["set_cover_test.py"],
-    python_version = "PY3",
     deps = [
         ":set_cover",
         "//ortools/set_cover:set_cover_py_pb2",
