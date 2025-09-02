@@ -41,10 +41,10 @@ bazel_dep(name = "rules_python", version = "1.5.1")
 
 # OR-Tools C++ dependencies
 # keep sorted go/buildifier#keep-sorted
-bazel_dep(name = "abseil-cpp", version = "20250512.1")
+bazel_dep(name = "abseil-cpp", version = "20250814.0")
 bazel_dep(name = "bzip2", version = "1.0.8.bcr.2")
 bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
-bazel_dep(name = "fuzztest", version = "20250214.0")
+bazel_dep(name = "fuzztest", version = "20250805.0")
 bazel_dep(name = "riegeli", version = "0.0.0-20241218-3385e3c")  # otherwise fuzztest use a borken version
 bazel_dep(name = "glpk", version = "5.0.bcr.4")
 bazel_dep(name = "google_benchmark", version = "1.9.2")
