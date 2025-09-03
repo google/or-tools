@@ -42,8 +42,6 @@ py_test(
     data = [
         ":pdlp.so",
     ],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
