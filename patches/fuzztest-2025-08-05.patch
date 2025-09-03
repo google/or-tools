@@ -12,7 +12,7 @@ index f9f71df..321caf5 100644
  
  if (COMPILER_GCC AND (FUZZTEST_FUZZING_MODE OR (FUZZTEST_COMPATIBILITY_MODE STREQUAL "libfuzzer")))
 diff --git a/cmake/BuildDependencies.cmake b/cmake/BuildDependencies.cmake
-index d8565c0..eb79f61 100644
+index d8565c0..24b7f52 100644
 --- a/cmake/BuildDependencies.cmake
 +++ b/cmake/BuildDependencies.cmake
 @@ -17,20 +17,20 @@ cmake_minimum_required(VERSION 3.19)
@@ -57,6 +57,14 @@ index d8565c0..eb79f61 100644
  
  set(RE2_BUILD_TESTING OFF)
  FetchContent_MakeAvailable(re2)
+@@ -101,6 +101,7 @@ FetchContent_MakeAvailable(re2)
+ set(GTEST_HAS_ABSL ON)
+ FetchContent_MakeAvailable(googletest)
+ 
++set(ANTLR_BUILD_CPP_TESTS OFF)
+ FetchContent_MakeAvailable(antlr_cpp)
+ 
+ if (FUZZTEST_BUILD_TESTING)
 diff --git a/cmake/FuzzTestHelpers.cmake b/cmake/FuzzTestHelpers.cmake
 index 2869a77..8462fdd 100644
 --- a/cmake/FuzzTestHelpers.cmake

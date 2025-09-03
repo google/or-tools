@@ -380,7 +380,6 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_entropy_pool>>
