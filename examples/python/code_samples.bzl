@@ -39,8 +39,6 @@ def code_sample_compile_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_test_py(name):
@@ -50,8 +48,6 @@ def code_sample_test_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_test_arg_py(name, suffix, args, data):
@@ -63,8 +59,6 @@ def code_sample_test_arg_py(name, suffix, args, data):
         data = data,
         args = args,
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_py(name):
