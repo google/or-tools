@@ -52,7 +52,7 @@ test --test_output=errors --test_timeout_filters=-eternal
 # Put user-specific options in .bazelrc.user
 try-import %workspace%/.bazelrc.user
 
-# googletest
+# Enable absl::string_view support in @googletest
 build --define absl=1
 
 # asan
