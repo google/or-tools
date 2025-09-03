@@ -58,8 +58,6 @@ def code_sample_py(name):
             "//ortools/init/python:init",
             "//ortools/linear_solver/python:model_builder",
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
     py_test(
@@ -77,8 +75,6 @@ def code_sample_py(name):
             requirement("numpy"),
             requirement("pandas"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_java(name):
