@@ -394,7 +394,6 @@ cc_library(
         "pdlp_solver.cc",
         "pdlp_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":pdlp_bridge",
         "//ortools/base:protoutil",

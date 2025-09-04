@@ -29,7 +29,7 @@ exports_files(
 )
 
 java_wrap_cc(
-    name = "sorted_interval_list_swig",
+    name = "sorted_interval_list",
     srcs = ["sorted_interval_list.swig"],
     package = "com.google.ortools.util",
     swig_includes = [
