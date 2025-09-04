@@ -443,6 +443,7 @@ cc_library(
 
 cc_library(
     name = "protocol-buffer-matchers",
+    srcs = ["protocol-buffer-matchers.cc"],
     hdrs = ["protocol-buffer-matchers.h"],
     deps = [
         "@abseil-cpp//absl/log:check",

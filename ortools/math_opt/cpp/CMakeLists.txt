@@ -36,9 +36,9 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
+    ortools::base_gmock
     absl::log
     absl::status
     absl::strings
-    GTest::gmock
   TESTING
 )
