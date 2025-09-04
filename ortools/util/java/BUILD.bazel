@@ -15,21 +15,6 @@
 
 load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
 filegroup(
     name = "vector_swig",
     srcs = [
@@ -71,7 +56,7 @@ ortools_java_wrap_cc(
         "//ortools/base:base_swig",
     ],
     swig_opt = select({
-        "on_linux": "-DSWIGWORDSIZE64",
+        "@platforms//os:linux": "-DSWIGWORDSIZE64",
         "//conditions:default": "",
     }),
     visibility = ["//visibility:public"],

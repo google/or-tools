@@ -15,28 +15,11 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
 cc_library(
     name = "dynamic_library",
     hdrs = ["dynamic_library.h"],
     linkopts = select({
-        "on_linux": ["-Wl,--no-as-needed -ldl"],
-        "on_macos": [],
-        "on_windows": [],
+        "@platforms//os:linux": ["-Wl,--no-as-needed -ldl"],
         "//conditions:default": [],
     }),
     deps = [

@@ -17,21 +17,6 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
 cc_library(
     name = "graph",
     hdrs = ["graph.h"],
@@ -533,9 +518,7 @@ cc_library(
     srcs = ["min_cost_flow.cc"],
     hdrs = ["min_cost_flow.h"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:public"],
