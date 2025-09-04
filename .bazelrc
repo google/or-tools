@@ -55,9 +55,6 @@ build:windows --enable_runfiles
 # non-PIC version for binaries.
 build:ci --copt=-O1
 
-# Speedup bazel using a ramdisk.
-build:ci --sandbox_base=/dev/shm
-
 # Show as many errors as possible.
 build:ci --keep_going
 
