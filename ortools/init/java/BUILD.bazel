@@ -13,16 +13,16 @@
 
 # Description: java wrapping of the C++ code at ../
 
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "init",
-    src = "init.i",
+    srcs = ["init.i"],
     module = "operations_research_init",
     package = "com.google.ortools.init",
     swig_includes = [
         "//ortools/base:base_swig",
-        "//ortools/util/java:absl_string_view_swig",
+        "//ortools/util/java:absl_string_view.swig",
     ],
     visibility = ["//visibility:public"],
     deps = [
