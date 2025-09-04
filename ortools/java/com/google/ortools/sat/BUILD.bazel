@@ -15,7 +15,7 @@ load("@rules_java//java:java_library.bzl", "java_library")
 
 package(default_visibility = ["//visibility:public"])
 
-# Utilities to load native libraries in java or-tools.
+# Additional dependency to use when using the wrapped sat solver library.
 java_library(
     name = "sat",
     srcs = [
@@ -43,7 +43,6 @@ java_library(
         "TableConstraint.java",
         "WeightedSumExpression.java",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/sat:cp_model_java_proto",

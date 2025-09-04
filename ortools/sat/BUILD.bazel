@@ -965,9 +965,8 @@ proto_library(
 cc_proto_library(
     name = "boolean_problem_cc_proto",
     visibility = [
-        "//ops/netarch/wand/transport:__subpackages__",
-        "//ortools:__subpackages__",
         "//ortools/bop:__pkg__",
+        "//visibility:public",
     ],
     deps = [":boolean_problem_proto"],
 )
@@ -1816,10 +1815,7 @@ cc_library(
     name = "integer_base",
     srcs = ["integer_base.cc"],
     hdrs = ["integer_base.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":sat_base",
         "//ortools/base",
@@ -1850,10 +1846,7 @@ cc_library(
     name = "integer",
     srcs = ["integer.cc"],
     hdrs = ["integer.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":integer_base",
         ":model",
@@ -2131,10 +2124,7 @@ cc_library(
     name = "precedences",
     srcs = ["precedences.cc"],
     hdrs = ["precedences.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":clause",
         ":cp_constraints",
@@ -2214,10 +2204,7 @@ cc_library(
     name = "integer_expr",
     srcs = ["integer_expr.cc"],
     hdrs = ["integer_expr.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_constraints",
         ":integer",
@@ -2701,10 +2688,7 @@ cc_library(
     name = "linear_constraint",
     srcs = ["linear_constraint.cc"],
     hdrs = ["linear_constraint.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":integer",
         ":integer_base",
@@ -3375,10 +3359,7 @@ cc_library(
     name = "cp_constraints",
     srcs = ["cp_constraints.cc"],
     hdrs = ["cp_constraints.h"],
-    visibility = [
-        "//learning/brain/experimental/telamon:__pkg__",
-        "//ortools:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [
         ":integer",
         ":integer_base",

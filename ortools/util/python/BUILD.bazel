@@ -11,7 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for sorted_interval_list.
+# Description: python wrapping of (some of) the code in ../, plus
+# some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
