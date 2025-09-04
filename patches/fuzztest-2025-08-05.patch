@@ -83,6 +83,46 @@ index 2869a77..8462fdd 100644
  
      set_property(
        TARGET ${_NAME}
+diff --git a/fuzztest/internal/CMakeLists.txt b/fuzztest/internal/CMakeLists.txt
+index 61f6da8..84fe3a7 100644
+--- a/fuzztest/internal/CMakeLists.txt
++++ b/fuzztest/internal/CMakeLists.txt
+@@ -434,35 +434,6 @@ fuzztest_cc_library(
+     absl::cord
+ )
+ 
+-fuzztest_cc_library(
+-  NAME
+-    subprocess
+-  HDRS
+-    "subprocess.h"
+-  SRCS
+-    "subprocess.cc"
+-  DEPS
+-    fuzztest::logging
+-    absl::flat_hash_map
+-    absl::function_ref
+-    absl::span
+-    absl::strings
+-    absl::string_view
+-    absl::time
+-)
+-
+-fuzztest_cc_test(
+-  NAME
+-    subprocess_test
+-  SRCS
+-    "subprocess_test.cc"
+-  DEPS
+-    fuzztest::subprocess
+-    absl::strings
+-    absl::time
+-    GTest::gmock_main
+-)
+-
+ fuzztest_cc_library(
+   NAME
+     table_of_recent_compares
 diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
 index 79ada1a..124c76b 100644
 --- a/tools/CMakeLists.txt
