@@ -19,21 +19,6 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
 proto_library(
     name = "enums_proto",
     srcs = ["enums.proto"],
@@ -236,9 +221,7 @@ cc_library(
         "search.h",
     ],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
