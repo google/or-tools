@@ -36,9 +36,9 @@ cc_test(
     name = "scheduler_test",
     srcs = ["scheduler_test.cc"],
     deps = [
-        ":gtest_main",
         ":scheduler",
         ":solvers_cc_proto",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/functional:any_invocable",
     ],
 )
@@ -78,15 +78,6 @@ py_proto_library(
 )
 
 cc_library(
-    name = "gtest_main",
-    srcs = ["gtest_main.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:gmock",
-    ],
-)
-
-cc_library(
     name = "iteration_stats",
     srcs = ["iteration_stats.cc"],
     hdrs = ["iteration_stats.h"],
@@ -107,13 +98,13 @@ cc_test(
     name = "iteration_stats_test",
     srcs = ["iteration_stats_test.cc"],
     deps = [
-        ":gtest_main",
         ":iteration_stats",
         ":quadratic_program",
         ":sharded_quadratic_program",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         ":test_util",
+        "//ortools/base:gmock_main",
         "//ortools/base:protobuf_util",
         "@eigen",
     ],
@@ -162,7 +153,6 @@ cc_test(
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
     shard_count = 3,
     deps = [
-        ":gtest_main",
         ":iteration_stats",
         ":primal_dual_hybrid_gradient",
         ":quadratic_program",
@@ -173,6 +163,7 @@ cc_test(
         ":termination",
         ":test_util",
         "//ortools/base",
+        "//ortools/base:gmock_main",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
@@ -204,9 +195,9 @@ cc_test(
     size = "small",
     srcs = ["quadratic_program_test.cc"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":test_util",
+        "//ortools/base:gmock_main",
         "//ortools/base:protobuf_util",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -260,13 +251,13 @@ cc_test(
     size = "small",
     srcs = ["sharded_optimization_utils_test.cc"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_optimization_utils",
         ":sharded_quadratic_program",
         ":sharder",
         ":solve_log_cc_proto",
         ":test_util",
+        "//ortools/base:gmock_main",
         "@eigen",
     ],
 )
@@ -292,11 +283,11 @@ cc_test(
     name = "sharded_quadratic_program_test",
     srcs = ["sharded_quadratic_program_test.cc"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_quadratic_program",
         ":sharder",
         ":test_util",
+        "//ortools/base:gmock_main",
         "@eigen",
     ],
 )
@@ -324,11 +315,11 @@ cc_test(
     size = "small",
     srcs = ["sharder_test.cc"],
     deps = [
-        ":gtest_main",
         ":scheduler",
         ":sharder",
         ":solvers_cc_proto",
         "//ortools/base",
+        "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
         "@abseil-cpp//absl/random:distributions",
         "@eigen",
@@ -351,9 +342,9 @@ cc_test(
     name = "solvers_proto_validation_test",
     srcs = ["solvers_proto_validation_test.cc"],
     deps = [
-        ":gtest_main",
         ":solvers_cc_proto",
         ":solvers_proto_validation",
+        "//ortools/base:gmock_main",
         "//ortools/base:protobuf_util",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
@@ -376,10 +367,10 @@ cc_test(
     size = "small",
     srcs = ["termination_test.cc"],
     deps = [
-        ":gtest_main",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         ":termination",
+        "//ortools/base:gmock_main",
         "//ortools/base:protobuf_util",
     ],
 )
@@ -402,9 +393,9 @@ cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
-        ":gtest_main",
         ":test_util",
         "//ortools/base",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/types:span",
         "@eigen",
     ],
@@ -430,13 +421,13 @@ cc_test(
     name = "trust_region_test",
     srcs = ["trust_region_test.cc"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_optimization_utils",
         ":sharded_quadratic_program",
         ":sharder",
         ":test_util",
         ":trust_region",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/strings",
         "@eigen",
     ],
