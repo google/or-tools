@@ -1,7 +1,10 @@
 # Enable logging rc options.
 common --announce_rc
 
-# ----CONFIG OPTIONS----
+###############################################################################
+# Global options for building OR-Tools.
+###############################################################################
+
 build --flag_alias=with_bop=//ortools/linear_solver:with_bop
 build --flag_alias=with_cbc=//ortools/linear_solver:with_cbc
 build --flag_alias=with_clp=//ortools/linear_solver:with_clp
@@ -14,26 +17,44 @@ build --flag_alias=with_pdlp=//ortools/linear_solver:with_pdlp
 build --flag_alias=with_scip=//ortools/linear_solver:with_scip
 build --flag_alias=with_xpress=//ortools/linear_solver:with_xpress
 
-# Sets the default Apple platform to macOS.
-build --apple_platform_type=macos
-
-# By default, build OR-Tools in C++ 17 mode, with various extra flags per
-# platform.
-build --enable_platform_specific_config
+# Enable absl::string_view support in @googletest
+build --define absl=1
 
 # Fix the python version
 build --@rules_python//python/config_settings:python_version=3.12
 
-# Per platform parameters.
-build:linux --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare
-build:linux --host_cxxopt="-std=c++17" --host_cxxopt=-Wno-sign-compare
+###############################################################################
+# Per plaform options
+###############################################################################
 
+# By default, build with various extra flags per platform.
+build --enable_platform_specific_config
+
+###############################################################################
+# Options for Linux.
+###############################################################################
+
+build:linux --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build:linux --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
+
+
+###############################################################################
+# Options for macOS.
+###############################################################################
+
+# Sets the default Apple platform to macOS.
+build --apple_platform_type=macos
 build:macos --features=-supports_dynamic_linker
-build:macos --cxxopt="-std=c++17" --cxxopt=-Wno-sign-compare --cxxopt=-mmacos-version-min=10.15  --cxxopt=-Wno-dangling-field
-build:macos --host_cxxopt="-std=c++17" --host_cxxopt=-Wno-sign-compare --host_cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-Wno-dangling-field
+build:macos --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
+build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
+build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min=10.15
 
-build:windows --cxxopt="/std:c++20"
-build:windows --host_cxxopt="/std:c++20"
+###############################################################################
+# Options for Windows.
+###############################################################################
+
+build:windows --cxxopt=/std:c++20 --host_cxxopt=/std:c++20
 
 # Enable the runfiles symlink tree on Windows. This makes it possible to build
 # the pip package on Windows without an intermediate data-file archive, as the
@@ -41,7 +62,6 @@ build:windows --host_cxxopt="/std:c++20"
 # runfiles symlink tree to decide what to put into the Python wheel.
 startup --windows_enable_symlinks
 build:windows --enable_runfiles
-
 
 ###############################################################################
 # Options for continuous integration.
@@ -71,13 +91,10 @@ build:ci --test_summary=terse
 # See e.g. https://github.com/bazelbuild/bazel/issues/18694.
 build:ci --remote_default_exec_properties=cache-silo-key=CleverPeafowl
 
-# Put user-specific options in .bazelrc.user
-try-import %workspace%/.bazelrc.user
+###############################################################################
+# Options for asan.
+################################################################################
 
-# Enable absl::string_view support in @googletest
-build --define absl=1
-
-# asan
 build:asan --strip=never
 build:asan --copt -fsanitize=address
 build:asan --copt -DADDRESS_SANITIZER
@@ -85,3 +102,8 @@ build:asan --copt -O1
 build:asan --copt -g
 build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
+
+###############################################################################
+# Put user-specific options in .bazelrc.user
+################################################################################
+try-import %workspace%/.bazelrc.user
