@@ -365,6 +365,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::int128>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::kernel_timeout_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::leak_check>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_entry>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_flags>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_globals>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_initialize>>
