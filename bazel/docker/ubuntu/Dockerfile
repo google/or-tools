@@ -15,16 +15,12 @@ RUN apt update -qq \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install Bazel
-RUN apt install -y apt-transport-https curl gnupg \
-&& curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg \
-&& mv bazel-archive-keyring.gpg /usr/share/keyrings
+# Install Bazelisk
 ARG TARGETARCH=amd64
-RUN echo "deb [arch=$TARGETARCH signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-RUN apt update -qq \
-&& apt install -yq bazel \
-&& apt clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN wget \
+https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-${TARGETARCH} \
+&& chmod +x bazelisk-linux-${TARGETARCH} \
+&& mv bazelisk-linux-${TARGETARCH} /usr/local/bin/bazel
 
 FROM env AS devel
 WORKDIR /home/project

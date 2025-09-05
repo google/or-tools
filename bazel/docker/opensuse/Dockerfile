@@ -10,10 +10,11 @@ RUN zypper update -y \
 ENV CC=gcc CXX=g++
 
 # Install Bazelisk
+ARG TARGETARCH=amd64
 RUN wget \
-https://github.com/bazelbuild/bazelisk/releases/download/v1.25.0/bazelisk-linux-amd64 \
-&& chmod +x bazelisk-linux-amd64 \
-&& mv bazelisk-linux-amd64 /usr/local/bin/bazel
+https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-${TARGETARCH} \
+&& chmod +x bazelisk-linux-${TARGETARCH} \
+&& mv bazelisk-linux-${TARGETARCH} /usr/local/bin/bazel
 
 # Install Java JDK and Maven
 RUN zypper refresh \
