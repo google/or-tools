@@ -15,6 +15,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,6 +103,7 @@ class HighsInterface : public MPSolverInterface {
   void NonIncrementalChange();
 
   const bool solve_as_a_mip_;
+  std::optional<HighsSolveInfo> solve_info_;
 };
 
 HighsInterface::HighsInterface(MPSolver* const solver, bool solve_as_a_mip)
@@ -140,8 +142,9 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   }
 
   // Set parameters.
+  solve_info_ = HighsSolveInfo();
   absl::StatusOr<MPSolutionResponse> response =
-      HighsSolveProto(std::move(request));
+      HighsSolveProto(std::move(request), &*solve_info_);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
@@ -163,7 +166,10 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-void HighsInterface::Reset() { ResetExtractionInformation(); }
+void HighsInterface::Reset() {
+  ResetExtractionInformation();
+  solve_info_.reset();
+}
 
 void HighsInterface::SetOptimizationDirection(bool maximize) {
   NonIncrementalChange();
@@ -215,8 +221,9 @@ int64_t HighsInterface::iterations() const {
 }
 
 int64_t HighsInterface::nodes() const {
-  LOG(DFATAL) << "Number of nodes only available for discrete problems";
-  return MPSolverInterface::kUnknownNumberOfNodes;
+  QCHECK(solve_info_.has_value())
+      << "Number of nodes only available after solve";
+  return solve_info_->mip_node_count;
 }
 
 MPSolver::BasisStatus HighsInterface::row_status(int constraint_index) const {
