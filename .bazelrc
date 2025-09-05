@@ -6,13 +6,12 @@ build --flag_alias=with_bop=//ortools/linear_solver:with_bop
 build --flag_alias=with_cbc=//ortools/linear_solver:with_cbc
 build --flag_alias=with_clp=//ortools/linear_solver:with_clp
 build --flag_alias=with_cp_sat=//ortools/linear_solver:with_cp_sat
+build --flag_alias=with_cplex=//ortools/linear_solver:with_cplex
 build --flag_alias=with_glop=//ortools/linear_solver:with_glop
 build --flag_alias=with_glpk=//ortools/linear_solver:with_glpk
 build --flag_alias=with_highs=//ortools/linear_solver:with_highs
 build --flag_alias=with_pdlp=//ortools/linear_solver:with_pdlp
 build --flag_alias=with_scip=//ortools/linear_solver:with_scip
-
-build --flag_alias=with_cplex=//ortools/linear_solver:with_cplex
 build --flag_alias=with_xpress=//ortools/linear_solver:with_xpress
 
 # Sets the default Apple platform to macOS.
@@ -43,11 +42,34 @@ build:windows --host_cxxopt="/std:c++20"
 startup --windows_enable_symlinks
 build:windows --enable_runfiles
 
-# Print command lines for build commands.
-# build --subcommands=pretty_print
 
-# Print test logs for failed tests.
-test --test_output=errors --test_timeout_filters=-eternal
+###############################################################################
+# Options for continuous integration.
+###############################################################################
+
+# All build options also apply to test as described by the "Option precedence"
+# section in https://bazel.build/run/bazelrc#bazelrc-syntax-semantics.
+
+# Note for anybody considering using --compilation_mode=opt in CI, it builds
+# most files twice, one PIC version for shared libraries in tests, and one
+# non-PIC version for binaries.
+build:ci --copt=-O1
+
+# Show as many errors as possible.
+build:ci --keep_going
+
+# Show test errors.
+build:ci --test_output=errors
+
+# Override timeout for tests
+build:ci --test_timeout_filters=-eternal
+
+# Only show failing tests to reduce output
+build:ci --test_summary=terse
+
+# Attempt to work around intermittent issue while trying to fetch remote blob.
+# See e.g. https://github.com/bazelbuild/bazel/issues/18694.
+build:ci --remote_default_exec_properties=cache-silo-key=CleverPeafowl
 
 # Put user-specific options in .bazelrc.user
 try-import %workspace%/.bazelrc.user

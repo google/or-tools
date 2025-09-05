@@ -20,13 +20,7 @@ COPY . .
 
 FROM devel AS build
 RUN bazel version
-RUN bazel build \
- -c opt \
- --subcommands=true \
- //ortools/... //examples/...
+RUN bazel build --config=ci //ortools/... //examples/...
 
 FROM build AS test
-RUN bazel test \
- -c opt \
- --test_output=errors \
- //ortools/... //examples/...
+RUN bazel test --config=ci //ortools/... //examples/...
