@@ -58,9 +58,11 @@
 //                                   "bar: 'x'"));
 
 #include <cstddef>
-#include <iterator>
+#include <functional>
+#include <iomanip>
+#include <limits>
+#include <memory>
 #include <ostream>
-#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -69,11 +71,10 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "gmock/gmock-matchers.h"
-#include "gmock/gmock.h"
 #include "google/protobuf/descriptor.h"
-#include "google/protobuf/io/tokenizer.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/util/message_differencer.h"
+#include "gtest/gtest.h"
 
 namespace testing {
 using DifferencerConfigFunction =
@@ -172,7 +173,6 @@ std::string PrintProtoPointee(const ::google::protobuf::Message* proto);
 std::string DescribeDiff(const ProtoComparison& comp,
                          const ::google::protobuf::Message& actual,
                          const ::google::protobuf::Message& expected);
-
 // Common code for implementing EqualsProto and EquivToProto.
 class ProtoMatcherBase {
  public:
@@ -280,9 +280,11 @@ class ProtoMatcherBase {
   const ProtoComparison& comp() const { return *comp_; }
 
  private:
-  bool MatchAndExplain(const ::google::protobuf::Message& arg,
-                       bool is_matcher_for_pointer,
-                       ::testing::MatchResultListener* listener) const;
+  bool MatchAndExplain(
+      const ::google::protobuf::Message& arg,
+      bool is_matcher_for_pointer,  // true iff this matcher is used to match a
+                                    // protobuf pointer.
+      ::testing::MatchResultListener* listener) const;
 
   const bool must_be_initialized_;
   std::unique_ptr<ProtoComparison> comp_;
@@ -347,15 +349,15 @@ class ProtoStringMatcher : public ProtoMatcherBase {
           expected,              // The text representing the expected protobuf.
       bool must_be_initialized,  // Must the argument be fully initialized?
       const ProtoComparison comp)  // How to compare the two protobufs.
-      : ProtoMatcherBase(must_be_initialized, comp), expected_(std::string(expected)) {}
+      : ProtoMatcherBase(must_be_initialized, comp),
+        expected_(std::string(expected)) {}
 
   // Parses the expected string as a protobuf of the same type as arg,
   // and returns the parsed protobuf (or NULL when the parse fails).
   // The caller must call DeleteExpectedProto() on the return value
   // later.
   virtual const MessageType* CreateExpectedProto(
-      const MessageType& arg,
-      ::testing::MatchResultListener* listener) const {
+      const MessageType& arg, ::testing::MatchResultListener* listener) const {
     ::google::protobuf::Message* expected_proto = arg.New();
     // We don't insist that the expected string parses as an
     // *initialized* protobuf.  Otherwise EqualsProto("...") may

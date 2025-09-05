@@ -14,6 +14,17 @@
 // emulates g3/testing/base/public/gmock_utils/protocol-buffer-matchers.cc
 #include "ortools/base/protocol-buffer-matchers.h"
 
+#include <regex>
+
+#include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/strings/string_view.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/io/tokenizer.h"
+#include "google/protobuf/message.h"
+#include "google/protobuf/text_format.h"
+#include "google/protobuf/util/message_differencer.h"
+
 namespace testing {
 namespace internal {
 // Utilities.
@@ -314,7 +325,7 @@ std::string DescribeTypes(const ::google::protobuf::Message& expected,
 
 // Prints the protocol buffer pointed to by proto.
 std::string PrintProtoPointee(const ::google::protobuf::Message* proto) {
-  if (proto == NULL) return "";
+  if (proto == nullptr) return "";
   return "which points to " + ::testing::PrintToString(*proto);
 }
 
@@ -355,7 +366,7 @@ bool ProtoMatcherBase::MatchAndExplain(
 
   const google::protobuf::Message* const expected =
       CreateExpectedProto(arg, listener);
-  if (expected == NULL) return false;
+  if (expected == nullptr) return false;
 
   // Protobufs of different types cannot be compared.
   const bool comparable = ProtoComparable(arg, *expected);
