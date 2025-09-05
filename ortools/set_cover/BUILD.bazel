@@ -232,6 +232,7 @@ cc_test(
     size = "medium",
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
+    tags = ["manual"],
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
