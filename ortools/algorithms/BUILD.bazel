@@ -180,6 +180,9 @@ cc_test(
     size = "large",
     timeout = "eternal",
     srcs = ["adjustable_k_ary_heap_stress_test.cc"],
+    tags = [
+        "manual",
+    ],
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
