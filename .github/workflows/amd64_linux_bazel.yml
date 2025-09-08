@@ -61,11 +61,10 @@ jobs:
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
       - name: Build
         run: |
-          export CC="sccache $CC"
+          export CC="/usr/bin/sccache /usr/bin/gcc-12"
           bazel build --config=ci //ortools/... //examples/...
       - name: Test
         run: |
-          export CC="sccache $CC"
           bazel test --config=ci //ortools/... //examples/...
 
   amd64_linux_bazel:
