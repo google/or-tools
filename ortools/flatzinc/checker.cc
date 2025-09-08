@@ -169,6 +169,24 @@ bool CheckAllDifferentInt(
   return true;
 }
 
+bool CheckAllDifferentSet(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  std::vector<std::vector<int64_t>> values;
+  values.reserve(Length(ct.arguments[0]));
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+    values.push_back(SetEvalAt(ct.arguments[0], i, set_evaluator));
+  }
+  for (int i = 0; i + 1 < values.size(); ++i) {
+    for (int j = i + 1; j < values.size(); ++j) {
+      if (values[i] == values[j]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 bool CheckAlldifferentExcept0(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -181,6 +199,21 @@ bool CheckAlldifferentExcept0(
     visited.insert(value);
   }
 
+  return true;
+}
+
+bool CheckAllDisjoint(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  absl::flat_hash_set<int64_t> visited;
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+    for (const int64_t value : SetEvalAt(ct.arguments[0], i, set_evaluator)) {
+      if (visited.contains(value)) {
+        return false;
+      }
+      visited.insert(value);
+    }
+  }
   return true;
 }
 
@@ -340,6 +373,18 @@ bool CheckBoolXor(
   const int64_t right = Eval(ct.arguments[1], evaluator);
   const int64_t target = Eval(ct.arguments[2], evaluator);
   return target == (left + right == 1);
+}
+
+bool CheckDisjoint(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  std::vector<int64_t> computed_intersection;
+  std::set_intersection(values_x.begin(), values_x.end(), values_y.begin(),
+                        values_y.end(),
+                        std::back_inserter(computed_intersection));
+  return computed_intersection.empty();
 }
 
 bool CheckOrToolsCircuit(
@@ -637,6 +682,29 @@ bool CheckOrToolsDisjunctiveStrictOpt(
     if (pair.first < previous_end) return false;
     previous_end = pair.first + pair.second;
   }
+  return true;
+}
+
+bool CheckPartitionSet(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  absl::flat_hash_set<int64_t> visited;
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+    for (const int64_t value : SetEvalAt(ct.arguments[0], i, set_evaluator)) {
+      if (visited.contains(value)) {
+        return false;
+      }
+      visited.insert(value);
+    }
+  }
+  const std::vector<int64_t> universe = SetEval(ct.arguments[1], set_evaluator);
+  if (universe.size() != visited.size()) return false;
+  for (const int64_t value : universe) {
+    if (!visited.contains(value)) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -1305,8 +1373,6 @@ bool CheckSetIntersect(
   const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
   const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
   const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
-  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
-  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
   absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
   absl::flat_hash_set<int64_t> computed_intersection;
   std::set_intersection(
@@ -1321,8 +1387,6 @@ bool CheckSetUnion(
   const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
   const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
   const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
-  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
-  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
   absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
   absl::flat_hash_set<int64_t> computed_intersection;
   std::set_union(
@@ -1375,8 +1439,6 @@ bool CheckSetDiff(
   const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
   const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
   const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
-  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
-  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
   absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
   absl::flat_hash_set<int64_t> computed_diff;
   std::set_difference(values_x.begin(), values_x.end(), values_y.begin(),
@@ -1391,8 +1453,6 @@ bool CheckSetSymDiff(
   const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
   const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
   const std::vector<int64_t> values_r = SetEval(ct.arguments[2], set_evaluator);
-  absl::flat_hash_set<int64_t> set_x(values_x.begin(), values_x.end());
-  absl::flat_hash_set<int64_t> set_y(values_y.begin(), values_y.end());
   absl::flat_hash_set<int64_t> set_r(values_r.begin(), values_r.end());
   absl::flat_hash_set<int64_t> computed_sym_diff;
   std::set_symmetric_difference(
@@ -1439,6 +1499,25 @@ bool CheckSetLe(
   return values_y.size() >= values_x.size();
 }
 
+bool CheckSetLeReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const int min_size = std::min(values_x.size(), values_y.size());
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+
+  const bool expected_status = [&]() {
+    for (int i = 0; i < min_size; ++i) {
+      if (values_x[i] < values_y[i]) return true;
+      if (values_x[i] > values_y[i]) return false;
+    }
+    return values_y.size() >= values_x.size();
+  }();
+
+  return expected_status == status;
+}
+
 bool CheckSetLt(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1450,6 +1529,25 @@ bool CheckSetLt(
     if (values_x[i] > values_y[i]) return false;
   }
   return values_y.size() > values_x.size();
+}
+
+bool CheckSetLtReif(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const std::vector<int64_t> values_x = SetEval(ct.arguments[0], set_evaluator);
+  const std::vector<int64_t> values_y = SetEval(ct.arguments[1], set_evaluator);
+  const int min_size = std::min(values_x.size(), values_y.size());
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+
+  const bool expected_status = [&]() {
+    for (int i = 0; i < min_size; ++i) {
+      if (values_x[i] < values_y[i]) return true;
+      if (values_x[i] > values_y[i]) return false;
+    }
+    return values_y.size() > values_x.size();
+  }();
+
+  return expected_status == status;
 }
 
 bool CheckSetNeReif(
@@ -1632,11 +1730,15 @@ CallMap CreateCallMap() {
   m["false_constraint"] = CheckFalseConstraint;
   m["fixed_cumulative"] = CheckCumulative;
   m["fzn_all_different_int"] = CheckAllDifferentInt;
+  m["fzn_all_different_set"] = CheckAllDifferentSet;
+  m["fzn_all_disjoint"] = CheckAllDisjoint;
   m["fzn_cumulative"] = CheckCumulative;
   m["fzn_diffn_nonstrict"] = CheckDiffnNonStrict;
   m["fzn_diffn"] = CheckDiffn;
+  m["fzn_disjoint"] = CheckDisjoint;
   m["fzn_disjunctive_strict"] = CheckDisjunctiveStrict;
   m["fzn_disjunctive"] = CheckDisjunctive;
+  m["fzn_partition_set"] = CheckPartitionSet;
   m["int_abs"] = CheckIntAbs;
   m["int_div"] = CheckIntDiv;
   m["int_eq_imp"] = CheckIntEqImp;
@@ -1718,6 +1820,8 @@ CallMap CreateCallMap() {
   m["set_intersect"] = CheckSetIntersect;
   m["set_le"] = CheckSetLe;
   m["set_lt"] = CheckSetLt;
+  m["set_le_reif"] = CheckSetLeReif;
+  m["set_lt_reif"] = CheckSetLtReif;
   m["set_ne_reif"] = CheckSetNeReif;
   m["set_ne"] = CheckSetNe;
   m["set_not_in"] = CheckSetNotIn;
@@ -1745,6 +1849,7 @@ bool CheckSolution(
   const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
     if (!ct->active) continue;
+    DCHECK(call_map.contains(ct->type)) << ct->type;
     const auto& checker = call_map.at(ct->type);
     if (!checker(*ct, evaluator, set_evaluator)) {
       SOLVER_LOG(logger, "Failing constraint ", ct->DebugString());
