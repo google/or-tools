@@ -59,12 +59,13 @@ jobs:
         if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "CC='sccache gcc'" >> $GITHUB_ENV
       - name: Build
         run: >
+          export CC="sccache $CC"
           bazel build --config=ci //ortools/... //examples/...
       - name: Test
         run: >
+          export CC="sccache $CC"
           bazel test --config=ci //ortools/... //examples/...
 
   amd64_linux_bazel:
