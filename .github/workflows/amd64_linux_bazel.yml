@@ -60,7 +60,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{env.BAZEL_OUTPUT_ROOT}}
-          key: ${{github.workflow}}-${{matrix.python.version}}
+          key: amd64•Linux•Bazel•Python-${{matrix.python.version}}
       - name: Build
         run: |
           bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/base/...
