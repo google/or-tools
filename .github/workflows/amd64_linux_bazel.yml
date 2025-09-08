@@ -7,6 +7,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+env:
+  BAZEL_OUTPUT_ROOT: /tmp/bazel
+
 # Building using the github runner environement directly.
 jobs:
   native:
@@ -56,14 +59,14 @@ jobs:
       - name: Mount bazel cache
         uses: actions/cache@v3
         with:
-          path: "/home/runner/.cache/bazel"
-          key: ${{github.workflow}}
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{github.job}}
       - name: Build
         run: |
-          bazel build --config=ci //...
+          bazel --output_user_root=$BAZEL_OUTPUT_ROOT build --config=ci //ortools/base/...
       - name: Test
         run: |
-          bazel test --config=ci //...
+          bazel --output_user_root=$BAZEL_OUTPUT_ROOT test --config=ci //ortools/base/...
 
   amd64_linux_bazel:
     runs-on: ubuntu-latest
