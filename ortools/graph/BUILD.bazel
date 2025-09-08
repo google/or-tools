@@ -612,17 +612,6 @@ cc_test(
     ],
 )
 
-cc_test(
-    name = "line_graph_test",
-    srcs = ["line_graph_test.cc"],
-    deps = [
-        ":line_graph",
-        "//ortools/base:gmock_main",
-        "//ortools/graph",
-        "@abseil-cpp//absl/base:core_headers",
-    ],
-)
-
 # Linear Assignment with full-featured interface and efficient
 # implementation.
 cc_library(
@@ -751,12 +740,6 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
-)
-
-cc_library(
-    name = "line_graph",
-    hdrs = ["line_graph.h"],
-    deps = ["@abseil-cpp//absl/log"],
 )
 
 cc_test(
