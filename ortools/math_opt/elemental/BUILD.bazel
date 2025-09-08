@@ -541,20 +541,6 @@ cc_test(
 )
 
 cc_test(
-    name = "elemental_from_proto_fuzz_test",
-    srcs = ["elemental_from_proto_fuzz_test.cc"],
-    tags = ["componentid:1147829"],
-    deps = [
-        ":elemental",
-        ":elemental_matcher",
-        "//ortools/base:fuzztest",
-        "//ortools/base:gmock_main",
-        "//ortools/math_opt:model_update_cc_proto",
-        "@abseil-cpp//absl/status:statusor",
-    ],
-)
-
-cc_test(
     name = "elemental_update_from_proto_test",
     srcs = ["elemental_update_from_proto_test.cc"],
     deps = [
