@@ -167,6 +167,7 @@ BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution& first_solution,
     VLOG(1)
         << "First solution is infeasible. Using it as assignment preference.";
     std::vector<bool> assignment_preference;
+    assignment_preference.reserve(first_solution.Size());
     for (int i = 0; i < first_solution.Size(); ++i) {
       assignment_preference.push_back(first_solution.Value(VariableIndex(i)));
     }
