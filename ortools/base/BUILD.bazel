@@ -229,19 +229,6 @@ cc_library(
 )
 
 cc_library(
-    name = "fuzztest",
-    testonly = 1,
-    hdrs = ["fuzztest.h"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-        "@fuzztest//fuzztest",
-        "@fuzztest//fuzztest:googletest_fixture_adapter",
-        "@fuzztest//fuzztest:init_fuzztest",
-        "@protobuf",
-    ],
-)
-
-cc_library(
     name = "gmock",
     hdrs = ["gmock.h"],
     deps = [
