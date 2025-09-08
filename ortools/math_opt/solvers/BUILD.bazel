@@ -89,7 +89,6 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
-        "//ortools/third_party_solvers:gurobi_environment",
         "//ortools/util:solve_interrupter",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/status",
@@ -139,7 +138,6 @@ cc_library(
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
-        "//ortools/third_party_solvers:gurobi_environment",
         "//ortools/util:solve_interrupter",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/algorithm:container",
@@ -283,7 +281,6 @@ cc_test(
     name = "cp_sat_solver_test",
     timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
-    shard_count = 10,
     tags = ["manual"],
     deps = [
         ":cp_sat_solver",
@@ -400,7 +397,6 @@ cc_test(
     name = "pdlp_solver_test",
     size = "small",
     srcs = ["pdlp_solver_test.cc"],
-    shard_count = 10,
     deps = [
         ":pdlp_solver",
         "//ortools/base:gmock",
@@ -575,7 +571,6 @@ cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
-    shard_count = 10,
     # See note above ":highs_solver" rule.
     tags = ["nosan"],
     deps = [
