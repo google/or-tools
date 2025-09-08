@@ -21,6 +21,11 @@ cc_library(
     name = "rays",
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         "//ortools/base:logging",
         "//ortools/base:status_macros",
@@ -38,6 +43,11 @@ cc_library(
     name = "glpk_sparse_vector",
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         "//ortools/base:logging",
         "@abseil-cpp//absl/log:check",
@@ -47,6 +57,11 @@ cc_library(
 cc_test(
     name = "glpk_sparse_vector_test",
     srcs = ["glpk_sparse_vector_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":glpk_sparse_vector",
         "//ortools/base:gmock_main",
@@ -57,11 +72,21 @@ cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
 )
 
 cc_test(
     name = "gap_test",
     srcs = ["gap_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":gap",
         "//ortools/base:gmock_main",
