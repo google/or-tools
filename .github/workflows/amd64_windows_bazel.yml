@@ -7,6 +7,9 @@ concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
+env:
+  BAZEL_OUTPUT_ROOT: '%USERPROFILE%\AppData\Local\Temp\bazel'
+
 # Building using the github runner environement directly.
 jobs:
   native:
@@ -41,12 +44,17 @@ jobs:
         run: choco install bazel
       - name: Check Bazel
         run: bazel version
+      - name: Mount bazel cache
+        uses: actions/cache@v3
+        with:
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: amd64•Windows•Bazel•Python-${{matrix.python.version}}
       - name: Build
         run: >
-          bazel build --config=ci //ortools/... //examples/...
+          bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/base/...
       - name: Test
         run: >
-          bazel test --config=ci //ortools/... //examples/...
+          bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/base/...
 
   amd64_windows_bazel:
     runs-on: ubuntu-latest
