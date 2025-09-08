@@ -53,6 +53,13 @@ jobs:
         run: |
           sed -i -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]\+"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+      - name: Set caching env vars only on non-release runs
+        if: github.event_name != 'release' && github.event_name != 'workflow_dispatch'
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "CC='sccache gcc'" >> $GITHUB_ENV
       - name: Build
         run: >
           bazel build --config=ci //ortools/... //examples/...
