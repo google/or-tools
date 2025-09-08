@@ -24,6 +24,7 @@
 
 #include "absl/base/log_severity.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -32,7 +33,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -51,6 +52,7 @@ LinearPropagator::LinearPropagator(Model* model)
     : trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()),
+      enforcement_helper_(model->GetOrCreate<EnforcementHelper>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       rev_int_repository_(model->GetOrCreate<RevIntRepository>()),
@@ -403,6 +405,15 @@ bool LinearPropagator::AddConstraint(
             if (info.initial_size == 2) {
               const auto vars = GetVariables(info);
               const auto coeffs = GetCoeffs(info);
+
+              // WARNING, subtle: this callback is called from the enforcement
+              // propagator, which can run before running the propagation of the
+              // IntegerTrail. Since it is in IntegerTrail::Propagate() that we
+              // call SetLevel() on the reversible classes,
+              // EnforcedLinear2Bounds might be at the wrong level.
+              // TODO(user): find a cleaner solution
+              precedences_->SetLevelToTrail();
+
               precedences_->PushConditionalRelation(
                   enforcement_propagator_->GetEnforcementLiterals(enf_id),
                   LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
@@ -633,8 +644,8 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
   integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs_,
                                     &integer_reason_);
   ++num_enforcement_pushes_;
-  return enforcement_propagator_->PropagateWhenFalse(info.enf_id, {},
-                                                     integer_reason_);
+  return enforcement_helper_->PropagateWhenFalse(info.enf_id, {},
+                                                 integer_reason_);
 }
 
 void LinearPropagator::Explain(int id, IntegerValue propagation_slack,

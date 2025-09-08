@@ -25,7 +25,7 @@
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -42,7 +42,7 @@ CircuitPropagator::CircuitPropagator(
     : num_nodes_(num_nodes),
       options_(options),
       trail_(*model->GetOrCreate<Trail>()),
-      enforcement_propagator_(*model->GetOrCreate<EnforcementPropagator>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
       assignment_(trail_.Assignment()) {
   CHECK(!tails.empty()) << "Empty constraint, shouldn't be constructed!";
   next_.resize(num_nodes_, -1);
@@ -121,8 +121,8 @@ CircuitPropagator::CircuitPropagator(
   }
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_propagator_.Register(
-      enforcement_literals, watcher, RegisterWith(watcher));
+  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
+                                                 RegisterWith(watcher));
 }
 
 int CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
@@ -177,14 +177,14 @@ void CircuitPropagator::FillReasonForPath(int start_node,
 
 bool CircuitPropagator::ReportConflictOrPropagateEnforcement(
     std::vector<Literal>* reason) {
-  if (enforcement_propagator_.Status(enforcement_id_) ==
+  if (enforcement_helper_.Status(enforcement_id_) ==
       EnforcementStatus::IS_ENFORCED) {
-    enforcement_propagator_.AddEnforcementReason(enforcement_id_, reason);
+    enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
     trail_.MutableConflict()->assign(reason->begin(), reason->end());
     return false;
   } else {
-    return enforcement_propagator_.PropagateWhenFalse(enforcement_id_, *reason,
-                                                      /*integer_reason=*/{});
+    return enforcement_helper_.PropagateWhenFalse(enforcement_id_, *reason,
+                                                  /*integer_reason=*/{});
   }
 }
 
@@ -203,8 +203,7 @@ void CircuitPropagator::AddArc(int tail, int head, LiteralIndex literal_index) {
 bool CircuitPropagator::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
   if (!enabled_) return true;
-  const EnforcementStatus status =
-      enforcement_propagator_.Status(enforcement_id_);
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT &&
       status != EnforcementStatus::IS_ENFORCED) {
     return true;
@@ -252,8 +251,7 @@ bool CircuitPropagator::IncrementalPropagate(
 // are all up to date.
 bool CircuitPropagator::Propagate() {
   if (!enabled_) return true;
-  const EnforcementStatus status =
-      enforcement_propagator_.Status(enforcement_id_);
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT &&
       status != EnforcementStatus::IS_ENFORCED) {
     return true;
@@ -308,7 +306,7 @@ bool CircuitPropagator::Propagate() {
 
         std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
-        enforcement_propagator_.AddEnforcementReason(enforcement_id_, reason);
+        enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
         if (!trail_.EnqueueWithStoredReason(literal.Negated())) {
           return false;
         }
@@ -354,7 +352,7 @@ bool CircuitPropagator::Propagate() {
 
         std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
-        enforcement_propagator_.AddEnforcementReason(enforcement_id_, reason);
+        enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
         if (extra_reason != kFalseLiteralIndex) {
           reason->push_back(Literal(extra_reason));
         }
@@ -398,7 +396,7 @@ bool CircuitPropagator::Propagate() {
           variable_with_same_reason = literal.Variable();
           std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
           FillReasonForPath(start_node, reason);
-          enforcement_propagator_.AddEnforcementReason(enforcement_id_, reason);
+          enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
           const bool ok = trail_.EnqueueWithStoredReason(literal);
           if (!ok) return false;
         } else {

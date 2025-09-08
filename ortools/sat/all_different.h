@@ -19,11 +19,11 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -215,7 +215,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   IntegerValue GetValue(int index) const { return base_ + IntegerValue(index); }
 
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 
   // These vector will be either sorted by lb or by -ub.

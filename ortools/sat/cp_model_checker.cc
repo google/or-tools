@@ -669,12 +669,6 @@ std::string ValidateRoutesConstraint(const CpModelProto& model,
 
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
-  if (ct.enforcement_literal().size() > 1) {
-    return absl::StrCat(
-        "Interval with more than one enforcement literals are currently not "
-        "supported: ",
-        ProtobufShortDebugString(ct));
-  }
   const IntervalConstraintProto& arg = ct.interval();
 
   if (!arg.has_start()) {
@@ -1123,8 +1117,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   for (int c = 0; c < model.constraints_size(); ++c) {
     RETURN_IF_NOT_EMPTY(ValidateVariablesUsedInConstraint(model, c));
 
-    bool support_enforcement = true;
-
     // Other non-generic validations.
     const ConstraintProto& ct = model.constraints(c);
     switch (ct.constraint_case()) {
@@ -1179,22 +1171,18 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        support_enforcement = false;
         RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
-        support_enforcement = false;
         constraints_using_intervals.push_back(c);
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap:
-        support_enforcement = false;
         constraints_using_intervals.push_back(c);
         break;
       case ConstraintProto::ConstraintCase::kNoOverlap2D:
-        support_enforcement = false;
         constraints_using_intervals.push_back(c);
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
@@ -1204,21 +1192,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         return "The dummy constraint should never appear in a model.";
       default:
         break;
-    }
-
-    // Because some client set fixed enforcement literal which are supported
-    // in the presolve for all constraints, we just check that there is no
-    // non-fixed enforcement.
-    if (!support_enforcement && !ct.enforcement_literal().empty()) {
-      for (const int ref : ct.enforcement_literal()) {
-        const int var = PositiveRef(ref);
-        const Domain domain = ReadDomainFromProto(model.variables(var));
-        if (domain.Size() != 1) {
-          return absl::StrCat(
-              "Enforcement literal not supported in constraint: ",
-              ProtobufShortDebugString(ct));
-        }
-      }
     }
   }
 

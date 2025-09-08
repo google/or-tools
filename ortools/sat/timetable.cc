@@ -19,7 +19,7 @@
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -73,7 +73,7 @@ ReservoirTimeTabling::ReservoirTimeTabling(
       capacity_(capacity),
       assignment_(model->GetOrCreate<Trail>()->Assignment()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-      enforcement_propagator_(*model->GetOrCreate<EnforcementPropagator>()) {
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int id = watcher->Register(this);
   const int num_events = times.size();
@@ -90,12 +90,11 @@ ReservoirTimeTabling::ReservoirTimeTabling(
   }
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
   enforcement_id_ =
-      enforcement_propagator_.Register(enforcement_literals, watcher, id);
+      enforcement_helper_.Register(enforcement_literals, watcher, id);
 }
 
 bool ReservoirTimeTabling::Propagate() {
-  const EnforcementStatus status =
-      enforcement_propagator_.DebugStatus(enforcement_id_);
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status == EnforcementStatus::IS_FALSE ||
       status == EnforcementStatus::CANNOT_PROPAGATE) {
     return true;
@@ -156,17 +155,17 @@ bool ReservoirTimeTabling::BuildProfile() {
   profile_.resize(last + 1);
 
   // Conflict?
-  const bool is_enforced = enforcement_propagator_.Status(enforcement_id_) ==
+  const bool is_enforced = enforcement_helper_.Status(enforcement_id_) ==
                            EnforcementStatus::IS_ENFORCED;
   for (const ProfileRectangle& rect : profile_) {
     if (rect.height <= capacity_) continue;
 
     FillReasonForProfileAtGivenTime(rect.start);
     if (is_enforced) {
-      return enforcement_propagator_.ReportConflict(
+      return enforcement_helper_.ReportConflict(
           enforcement_id_, literal_reason_, integer_reason_);
     } else {
-      return enforcement_propagator_.PropagateWhenFalse(
+      return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_, literal_reason_, integer_reason_);
     }
   }
@@ -265,8 +264,8 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // updated, better be defensive.
   if (new_end < start) {
     AddGreaterOrEqual(times_[event], new_end + 1, &integer_reason_);
-    return enforcement_propagator_.ReportConflict(
-        enforcement_id_, literal_reason_, integer_reason_);
+    return enforcement_helper_.ReportConflict(enforcement_id_, literal_reason_,
+                                              integer_reason_);
   }
 
   // First, the task MUST be present, otherwise we have a conflict.
@@ -274,14 +273,14 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // TODO(user): We actually need to look after 'end' to potentially push the
   // presence in more situation.
   if (!assignment_.LiteralIsTrue(presences_[event])) {
-    enforcement_propagator_.EnqueueLiteral(enforcement_id_, presences_[event],
-                                           literal_reason_, integer_reason_);
+    enforcement_helper_.EnqueueLiteral(enforcement_id_, presences_[event],
+                                       literal_reason_, integer_reason_);
   }
 
   // Push new_end too. Note that we don't need the presence reason.
-  return enforcement_propagator_.Enqueue(enforcement_id_,
-                                         times_[event].LowerOrEqual(new_end),
-                                         literal_reason_, integer_reason_);
+  return enforcement_helper_.Enqueue(enforcement_id_,
+                                     times_[event].LowerOrEqual(new_end),
+                                     literal_reason_, integer_reason_);
 }
 
 bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
@@ -334,7 +333,7 @@ bool ReservoirTimeTabling::TryToIncreaseMin(int event) {
   // The reason is simply the capacity at new_start - 1;
   FillReasonForProfileAtGivenTime(new_start - 1, event);
   AddGreaterOrEqual(deltas_[event], min_d, &integer_reason_);
-  return enforcement_propagator_.ConditionalEnqueue(
+  return enforcement_helper_.ConditionalEnqueue(
       enforcement_id_, presences_[event],
       times_[event].GreaterOrEqual(new_start), literal_reason_,
       integer_reason_);
@@ -388,8 +387,9 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-// Note that we relly on being called again to reach a fixed point.
+// Note that we rely on being called again to reach a fixed point.
 bool TimeTablingPerTask::Propagate() {
+  if (!helper_->IsEnforced()) return true;
   // This can fail if the profile exceeds the resource capacity.
   if (!BuildProfile()) return false;
 
@@ -606,7 +606,7 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
 
         // Note that the task_id is already part of the profile reason, so
         // there is nothing else needed.
-        helper_->ClearReason();
+        helper_->ResetReason();
         const IntegerValue time = std::max(start_max, profile_[rec_id].start);
         AddProfileReason(task_id, time, time + 1, CapacityMax());
         if (!helper_->PushIntegerLiteralIfTaskPresent(
@@ -647,11 +647,11 @@ bool TimeTablingPerTask::SweepTask(int task_id, IntegerValue initial_start_min,
 bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
                                             IntegerValue right) {
   DCHECK_LT(left, right);
-  helper_->ClearReason();
+  helper_->ResetReason();
   AddProfileReason(task_id, left, right,
                    CapacityMax() - demands_->DemandMin(task_id));
   if (capacity_.var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
+    helper_->AddIntegerReason(
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
 
@@ -734,7 +734,7 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
   // and we can optimize the reason a bit.
   new_min = std::min(CapacityMax() + 1, new_min);
 
-  helper_->ClearReason();
+  helper_->ResetReason();
   AddProfileReason(-1, time, time + 1, new_min);
   if (capacity_.var == kNoIntegerVariable) {
     return helper_->ReportConflict();

@@ -22,6 +22,7 @@
 #include <functional>
 #include <new>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -35,6 +36,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/cliques.h"
+#include "ortools/sat/container.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -522,7 +524,7 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Returns the "size" of this class, that is 2 * num_boolean_variables as
   // updated by the larger Resize() call.
-  int64_t literal_size() const { return implications_.size(); }
+  int64_t literal_size() const { return implications_and_amos_.size(); }
 
   // Returns true if no constraints where ever added to this class.
   bool IsEmpty() const final { return no_constraint_ever_added_; }
@@ -616,8 +618,8 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Returns the list of literal "directly" implied by l. Beware that this can
   // easily change behind your back if you modify the solver state.
-  const absl::InlinedVector<Literal, 6>& Implications(Literal l) const {
-    return implications_[l];
+  absl::Span<const Literal> Implications(Literal l) const {
+    return implications_and_amos_[l].literals();
   }
 
   // Returns the representative of the equivalence class of l (or l itself if it
@@ -726,7 +728,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // thing is half this number. This should only be used in logs.
   int64_t ComputeNumImplicationsForLog() const {
     int64_t result = 0;
-    for (const auto& list : implications_) result += list.size();
+    for (const auto& list : implications_and_amos_) {
+      result += list.num_literals();
+    }
     return result;
   }
 
@@ -744,9 +748,9 @@ class BinaryImplicationGraph : public SatPropagator {
     // twice.
     absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>>
         duplicate_detection;
-    for (LiteralIndex i(0); i < implications_.size(); ++i) {
+    for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
       const Literal a = Literal(i).Negated();
-      for (const Literal b : implications_[i]) {
+      for (const Literal b : implications_and_amos_[i].literals()) {
         // Note(user): We almost always have both a => b and not(b) => not(a) in
         // our implications_ database. Except if ComputeTransitiveReduction()
         // was aborted early, but in this case, if only one is present, the
@@ -840,8 +844,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // used to detect that two literals are in the same AMO (i.e. if they share
   // the same index).
   absl::Span<const int> AtMostOneIndices(Literal lit) const {
-    if (lit.Index() >= at_most_ones_.size()) return {};
-    return at_most_ones_[lit];
+    return implications_and_amos_[lit].offsets();
   }
 
  private:
@@ -901,42 +904,25 @@ class BinaryImplicationGraph : public SatPropagator {
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
 
-  // This is indexed by the Index() of a literal. Each list stores the
-  // literals that are implied if the index literal becomes true.
-  //
-  // Using InlinedVector helps quite a bit because on many problems, a literal
-  // only implies a few others. Note that on a 64 bits computer we get exactly
-  // 6 inlined int32_t elements without extra space, and the size of the inlined
-  // vector is 4 times 64 bits.
-  //
-  // TODO(user): We could be even more efficient since a size of int32_t is
-  // enough for us and we could store in common the inlined/not-inlined size.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
-      implications_;
+  // This is indexed by the Index() of a literal. Each entry stores two lists:
+  //  - A list of literals that are implied if the index literal becomes true.
+  //  - A set of offsets that point to the starts of AMO constraints in
+  //    at_most_one_buffer_. When LiteralIndex is true, then all entry in the at
+  //    most one constraint must be false except the one referring to
+  //    LiteralIndex.
+  util_intops::StrongVector<LiteralIndex, LiteralsOrOffsets>
+      implications_and_amos_;
 
   // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
   util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;
   std::vector<Literal> to_clean_;
 
-  // Internal representation of at_most_one constraints. Each entry point to the
-  // start of a constraint in the buffer.
-  //
-  // TRICKY: The first literal is actually the size of the at_most_one.
-  // Most users should just use AtMostOne(start).
-  //
-  // When LiteralIndex is true, then all entry in the at most one
-  // constraint must be false except the one referring to LiteralIndex.
-  //
-  // TODO(user): We could be more cache efficient by combining this with
-  // implications_ in some way. Do some propagation speed benchmark.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>
-      at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
   const int at_most_one_max_expansion_size_;
   int at_most_one_iterator_ = 0;
 
-  // Invariant: implies_something_[l] should be true iff implications_[l] or
-  // at_most_ones_[l] might be non-empty.
+  // Invariant: implies_something_[l] should be true iff
+  // implications_and_amos_[l] might be non-empty.
   //
   // For problems with a large number of variables and sparse implications_ or
   // at_most_ones_ entries, checking this is way faster during

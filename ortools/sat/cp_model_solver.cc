@@ -301,12 +301,18 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     // We split the linear constraints into 3 buckets has it gives more insight
     // on the type of problem we are facing.
     char const* name;
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+    if (ct.constraint_case() == ConstraintProto::kLinear) {
       if (ct.linear().vars_size() == 0) name = "kLinear0";
       if (ct.linear().vars_size() == 1) name = "kLinear1";
       if (ct.linear().vars_size() == 2) name = "kLinear2";
       if (ct.linear().vars_size() == 3) name = "kLinear3";
       if (ct.linear().vars_size() > 3) name = "kLinearN";
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
+               ct.enforcement_literal().size() > 1) {
+      // BoolAnd of the form "n literals => m literals" with n > 1 are just a
+      // compact way to encode m clauses of size n + 1. We report them
+      // separately as they are not handled in the same way internally.
+      name = "kBoolAndClauses";
     } else {
       name = ConstraintCaseName(ct.constraint_case()).data();
     }

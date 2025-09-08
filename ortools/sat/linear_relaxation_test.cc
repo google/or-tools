@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -662,7 +663,8 @@ void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
   const IntegerValue one(1);
   std::vector<AffineExpression> demands(intervals.size(), one);
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
@@ -849,7 +851,8 @@ void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
       mapping->Affines(ct.cumulative().demands());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);

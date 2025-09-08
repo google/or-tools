@@ -588,7 +588,7 @@ struct ViewOfAffineLinearExpressionProto {
 };
 
 // Special constraint for no overlap between two intervals.
-// We usually expand small no-overlap in n^2 such constraint, so we want to
+// We usually expand small no-overlap in n^2 such constraints, so we want to
 // be compact and efficient here.
 template <bool has_enforcement = true>
 class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
@@ -600,11 +600,15 @@ class CompiledNoOverlapWithTwoIntervals : public CompiledConstraint {
     ViewOfAffineLinearExpressionProto end;
   };
 
-  CompiledNoOverlapWithTwoIntervals(const ConstraintProto& x1,
+  CompiledNoOverlapWithTwoIntervals(absl::Span<const int> enforcement_literals,
+                                    const ConstraintProto& x1,
                                     const ConstraintProto& x2)
       : interval1_(x1), interval2_(x2) {
     if (has_enforcement) {
-      enforcements_.assign(x1.enforcement_literal().begin(),
+      enforcements_.assign(enforcement_literals.begin(),
+                           enforcement_literals.end());
+      enforcements_.insert(enforcements_.end(),
+                           x1.enforcement_literal().begin(),
                            x1.enforcement_literal().end());
       enforcements_.insert(enforcements_.end(),
                            x2.enforcement_literal().begin(),
@@ -664,13 +668,17 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
     ViewOfAffineLinearExpressionProto y_max;
   };
 
-  CompiledNoOverlap2dWithTwoBoxes(const ConstraintProto& x1,
+  CompiledNoOverlap2dWithTwoBoxes(absl::Span<const int> enforcement_literals,
+                                  const ConstraintProto& x1,
                                   const ConstraintProto& y1,
                                   const ConstraintProto& x2,
                                   const ConstraintProto& y2)
       : box1_(x1, y1), box2_(x2, y2) {
     if (has_enforcement) {
-      enforcements_.assign(x1.enforcement_literal().begin(),
+      enforcements_.assign(enforcement_literals.begin(),
+                           enforcement_literals.end());
+      enforcements_.insert(enforcements_.end(),
+                           x1.enforcement_literal().begin(),
                            x1.enforcement_literal().end());
       enforcements_.insert(enforcements_.end(),
                            y1.enforcement_literal().begin(),
@@ -720,11 +728,13 @@ class CompiledNoOverlap2dWithTwoBoxes : public CompiledConstraint {
 // ViolationDelta().
 class CompiledReservoirConstraint : public CompiledConstraint {
  public:
-  CompiledReservoirConstraint(LinearExpressionProto capacity,
+  CompiledReservoirConstraint(std::vector<int> enforcement_literals,
+                              LinearExpressionProto capacity,
                               std::vector<std::optional<int>> is_active,
                               std::vector<LinearExpressionProto> times,
                               std::vector<LinearExpressionProto> demands)
-      : capacity_(std::move(capacity)),
+      : enforcement_literals_(std::move(enforcement_literals)),
+        capacity_(std::move(capacity)),
         is_active_(std::move(is_active)),
         times_(std::move(times)),
         demands_(std::move(demands)) {
@@ -734,13 +744,7 @@ class CompiledReservoirConstraint : public CompiledConstraint {
     InitializeDenseIndexToEvents();
   }
 
-  // Note that since we have our own ViolationDelta() implementation this is
-  // only used for initialization and our PerformMove(). It is why we set
-  // violations_ here.
-  int64_t ComputeViolation(absl::Span<const int64_t> solution) final {
-    violation_ = BuildProfileAndReturnViolation(solution);
-    return violation_;
-  }
+  int64_t ComputeViolation(absl::Span<const int64_t> solution) final;
 
   void PerformMove(int /*var*/, int64_t /*old_value*/,
                    absl::Span<const int64_t> solution_with_new_value) final {
@@ -772,6 +776,7 @@ class CompiledReservoirConstraint : public CompiledConstraint {
 
   // The const data from the constructor.
   // Note that is_active_ might be empty if all events are mandatory.
+  const std::vector<int> enforcement_literals_;
   const LinearExpressionProto capacity_;
   const std::vector<std::optional<int>> is_active_;
   const std::vector<LinearExpressionProto> times_;

@@ -395,6 +395,12 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   // Called each time we change decision level.
   void SetLevel(int level) final;
 
+  void SetLevelToTrail() {
+    if (trail_->CurrentDecisionLevel() != stored_level_) {
+      SetLevel(trail_->CurrentDecisionLevel());
+    }
+  }
+
   // Returns a set of precedences such that we have a relation
   // of the form vars[index] <= var + offset.
   //
@@ -437,6 +443,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   Linear2Indices* lin2_indices_;
 
   int64_t num_conditional_relation_updates_ = 0;
+  int stored_level_ = 0;
 
   // Conditional stack for push/pop of conditional relations.
   //
@@ -689,7 +696,10 @@ class Linear2Bounds {
         linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
         lin2_indices_(model->GetOrCreate<Linear2Indices>()),
         reified_lin2_bounds_(model->GetOrCreate<ReifiedLinear2Bounds>()),
-        trail_(model->GetOrCreate<Trail>()) {}
+        trail_(model->GetOrCreate<Trail>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
+  ~Linear2Bounds();
 
   // Returns the best known upper-bound of the given LinearExpression2 at the
   // current decision level. If its explanation is needed, it can be queried
@@ -723,6 +733,15 @@ class Linear2Bounds {
   Linear2Indices* lin2_indices_;
   ReifiedLinear2Bounds* reified_lin2_bounds_;
   Trail* trail_;
+  SharedStatistics* shared_stats_;
+
+  int64_t enqueue_trivial_ = 0;
+  int64_t enqueue_degenerate_ = 0;
+  int64_t enqueue_true_at_root_level_ = 0;
+  int64_t enqueue_conflict_false_at_root_level_ = 0;
+  int64_t enqueue_individual_var_bounds_ = 0;
+  int64_t enqueue_literal_encoding_ = 0;
+  int64_t enqueue_integer_linear3_encoding_ = 0;
 };
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the

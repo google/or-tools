@@ -97,7 +97,8 @@ bool TestTimeTablingPropagation(absl::Span<const CumulativeTasks> tasks,
   EXPECT_TRUE(precedences->Propagate());
 
   auto* repo = model.GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repo->GetOrCreateHelper(interval_vars);
+  SchedulingConstraintHelper* helper =
+      repo->GetOrCreateHelper(/*enforcement_literals=*/{}, interval_vars);
   SchedulingDemandHelper* demands_helper =
       model.TakeOwnership(new SchedulingDemandHelper(demands, helper, &model));
 
@@ -218,7 +219,8 @@ TEST(TimeTablingSolve, FindAll) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(intervals, demand_exprs, capacity_expr));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                       capacity_expr));
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -265,7 +267,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
       demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
     }
 
-    model.Add(Cumulative(intervals, demand_exprs, capacity_expr));
+    model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                         capacity_expr));
 
     int num_solutions_found = 0;
     auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -305,7 +308,8 @@ TEST(TimeTablingSolve, FindAllWithVaryingCapacity) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(intervals, demand_exprs, capacity_expr));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                       capacity_expr));
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
@@ -355,7 +359,8 @@ TEST(TimeTablingSolve, FindAllWithOptionals) {
     demand_exprs[i] = AffineExpression(IntegerValue(demands[i]));
   }
 
-  model.Add(Cumulative(intervals, demand_exprs, capacity_expr));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, intervals, demand_exprs,
+                       capacity_expr));
 
   int num_solutions_found = 0;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();

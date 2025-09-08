@@ -1702,6 +1702,10 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
         // The violation will be the area above the capacity.
         LinearExpressionProto one;
         one.set_offset(1);
+        std::vector<int> enforcement_literals;
+        for (const int lit : ct.enforcement_literal()) {
+          enforcement_literals.push_back(lit);
+        }
         std::vector<std::optional<int>> is_active;
         std::vector<LinearExpressionProto> times;
         std::vector<LinearExpressionProto> demands;
@@ -1725,8 +1729,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
           demands.push_back(NegatedLinearExpression(one));
         }
         constraints_.emplace_back(new CompiledReservoirConstraint(
-            std::move(one), std::move(is_active), std::move(times),
-            std::move(demands)));
+            std::move(enforcement_literals), std::move(one),
+            std::move(is_active), std::move(times), std::move(demands)));
       } else {
         // We expand the no_overlap constraints into a quadratic number of
         // disjunctions.
@@ -1745,16 +1749,17 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
             if (min_start_i >= max_end_j || min_start_j >= max_end_i) continue;
 
             const bool has_enforcement =
+                !ct.enforcement_literal().empty() ||
                 !proto_i.enforcement_literal().empty() ||
                 !proto_j.enforcement_literal().empty();
             if (has_enforcement) {
               constraints_.emplace_back(
-                  new CompiledNoOverlapWithTwoIntervals<true>(proto_i,
-                                                              proto_j));
+                  new CompiledNoOverlapWithTwoIntervals<true>(
+                      ct.enforcement_literal(), proto_i, proto_j));
             } else {
               constraints_.emplace_back(
-                  new CompiledNoOverlapWithTwoIntervals<false>(proto_i,
-                                                               proto_j));
+                  new CompiledNoOverlapWithTwoIntervals<false>(
+                      /*enforcement_literals=*/{}, proto_i, proto_j));
             }
           }
         }
@@ -1763,6 +1768,10 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
     }
     case ConstraintProto::ConstraintCase::kCumulative: {
       LinearExpressionProto capacity = ct.cumulative().capacity();
+      std::vector<int> enforcement_literals;
+      for (const int lit : ct.enforcement_literal()) {
+        enforcement_literals.push_back(lit);
+      }
       std::vector<std::optional<int>> is_active;
       std::vector<LinearExpressionProto> times;
       std::vector<LinearExpressionProto> demands;
@@ -1797,8 +1806,8 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
       }
 
       constraints_.emplace_back(new CompiledReservoirConstraint(
-          std::move(capacity), std::move(is_active), std::move(times),
-          std::move(demands)));
+          std::move(enforcement_literals), std::move(capacity),
+          std::move(is_active), std::move(times), std::move(demands)));
       break;
     }
     case ConstraintProto::ConstraintCase::kNoOverlap2D: {
@@ -1844,17 +1853,20 @@ void LsEvaluator::CompileOneConstraint(const ConstraintProto& ct) {
           }
 
           const bool has_enforcement =
+              !ct.enforcement_literal().empty() ||
               !x_proto_i.enforcement_literal().empty() ||
               !x_proto_j.enforcement_literal().empty() ||
               !y_proto_i.enforcement_literal().empty() ||
               !y_proto_j.enforcement_literal().empty();
           if (has_enforcement) {
             constraints_.emplace_back(new CompiledNoOverlap2dWithTwoBoxes<true>(
-                x_proto_i, y_proto_i, x_proto_j, y_proto_j));
+                ct.enforcement_literal(), x_proto_i, y_proto_i, x_proto_j,
+                y_proto_j));
           } else {
             constraints_.emplace_back(
                 new CompiledNoOverlap2dWithTwoBoxes<false>(
-                    x_proto_i, y_proto_i, x_proto_j, y_proto_j));
+                    /*enforcement_literals=*/{}, x_proto_i, y_proto_i,
+                    x_proto_j, y_proto_j));
           }
         }
       }
@@ -2120,6 +2132,21 @@ void LsEvaluator::UpdateViolatedList(const int c) {
   }
 }
 
+// Note that since we have our own ViolationDelta() implementation this is
+// only used for initialization and our PerformMove(). It is why we set
+// violations_ here.
+int64_t CompiledReservoirConstraint::ComputeViolation(
+    absl::Span<const int64_t> solution) {
+  for (const int lit : enforcement_literals_) {
+    if (!LiteralValue(lit, solution)) {
+      violation_ = 0;
+      return 0;
+    }
+  }
+  violation_ = BuildProfileAndReturnViolation(solution);
+  return violation_;
+}
+
 int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
     absl::Span<const int64_t> solution) {
   // Starts by filling the cache and profile_.
@@ -2174,6 +2201,11 @@ int64_t CompiledReservoirConstraint::BuildProfileAndReturnViolation(
 
 int64_t CompiledReservoirConstraint::IncrementalViolation(
     int var, absl::Span<const int64_t> solution) {
+  for (const int lit : enforcement_literals_) {
+    if (!LiteralValue(lit, solution)) {
+      return 0;
+    }
+  }
   const int64_t capacity = ExprValue(capacity_, solution);
   profile_delta_.clear();
   CHECK(RefIsPositive(var));

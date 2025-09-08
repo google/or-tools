@@ -80,11 +80,11 @@ TEST(ImpliedBoundsTest, BasicTestPositiveLevel) {
   EXPECT_TRUE(ib->Add(enforcement.Negated(),
                       IntegerLiteral::GreaterOrEqual(var, IntegerValue(7))));
 
-  // Now, only the level zero bound is up to date.
-  EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(0));
+  // Now, because the new "root bound" is better, we update both bounds.
+  EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(3));
   EXPECT_EQ(integer_trail->LevelZeroLowerBound(var), IntegerValue(3));
 
-  // But on the next restart, nothing is lost.
+  // And on the next restart, nothing is lost.
   EXPECT_TRUE(sat_solver->ResetToLevelZero());
   EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(3));
 }

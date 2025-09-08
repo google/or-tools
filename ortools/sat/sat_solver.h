@@ -35,6 +35,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -746,6 +747,7 @@ class SatSolver {
   // SatPropagator interface for them.
   BinaryImplicationGraph* binary_implication_graph_;
   ClauseManager* clauses_propagator_;
+  EnforcementPropagator* enforcement_propagator_;
   PbConstraints* pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().

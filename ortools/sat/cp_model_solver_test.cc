@@ -276,6 +276,108 @@ TEST(SolveCpModelTest, SimpleOptionalIntervalInfeasible) {
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
 }
 
+TEST(SolveCpModelTest, NoOverlapWithEnforcementLiteral) {
+  CpModelProto model_proto;
+  const int enforcement = AddVariable(0, 1, &model_proto);
+  const int i1 = AddInterval(0, 3, 5, &model_proto);
+  const int i2 = AddInterval(0, 2, 5, &model_proto);
+
+  ConstraintProto* no_overlap = model_proto.add_constraints();
+  no_overlap->add_enforcement_literal(enforcement);
+  no_overlap->mutable_no_overlap()->add_intervals(i1);
+  no_overlap->mutable_no_overlap()->add_intervals(i2);
+
+  Model model;
+  SatParameters params;
+  params.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(params));
+  int count = 0;
+  model.Add(
+      NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
+        LOG(INFO) << absl::StrJoin(response.solution(), " ");
+        ++count;
+      }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // Two solutions when the constraint is enforced (i1 before i2, or i2 before
+  // i1, tightly packed), and 3 * 4 otherwise -- 3 possible starts for i1, 4 for
+  // i2).
+  EXPECT_EQ(count, 2 + 3 * 4);
+}
+
+TEST(SolveCpModelTest, NoOverlap2DWithEnforcementLiteral) {
+  CpModelProto model_proto;
+  const int enforcement = AddVariable(0, 1, &model_proto);
+  const int i1 = AddInterval(0, 3, 5, &model_proto);
+  const int i2 = AddInterval(0, 2, 5, &model_proto);
+  const int i3 = AddInterval(0, 4, 5, &model_proto);
+  const int i4 = AddInterval(0, 1, 2, &model_proto);
+  const int i5 = AddInterval(0, 1, 2, &model_proto);
+  const int i6 = AddInterval(0, 1, 2, &model_proto);
+
+  ConstraintProto* no_overlap_2d = model_proto.add_constraints();
+  no_overlap_2d->add_enforcement_literal(enforcement);
+  no_overlap_2d->mutable_no_overlap_2d()->add_x_intervals(i1);
+  no_overlap_2d->mutable_no_overlap_2d()->add_x_intervals(i2);
+  no_overlap_2d->mutable_no_overlap_2d()->add_x_intervals(i3);
+  no_overlap_2d->mutable_no_overlap_2d()->add_y_intervals(i4);
+  no_overlap_2d->mutable_no_overlap_2d()->add_y_intervals(i5);
+  no_overlap_2d->mutable_no_overlap_2d()->add_y_intervals(i6);
+
+  Model model;
+  SatParameters params;
+  params.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(params));
+  int count = 0;
+  model.Add(
+      NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
+        LOG(INFO) << absl::StrJoin(response.solution(), " ");
+        ++count;
+      }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // Eight solutions when the constraint is enforced (i1 before i2 on x, or i2
+  // before i1 on x, tightly packed, each with 2 possible x starts for i3, and
+  // two vertical placements -- i1 and i2 above or below i4), and 3 * 4 * 2^4
+  // otherwise -- 3 possible starts for i1, 4 for i2, 2 for i3, i4, i5, and i6).
+  EXPECT_EQ(count, 8 + 3 * 4 * 2 * 2 * 2 * 2);
+}
+
+TEST(SolveCpModelTest, CumulativeWithEnforcementLiteral) {
+  CpModelProto model_proto;
+  const int enforcement = AddVariable(0, 1, &model_proto);
+  const int i1 = AddInterval(0, 3, 5, &model_proto);
+  const int i2 = AddInterval(0, 2, 5, &model_proto);
+  const int i3 = AddInterval(0, 4, 5, &model_proto);
+
+  ConstraintProto* cumulative = model_proto.add_constraints();
+  cumulative->add_enforcement_literal(enforcement);
+  cumulative->mutable_cumulative()->add_intervals(i1);
+  cumulative->mutable_cumulative()->add_intervals(i2);
+  cumulative->mutable_cumulative()->add_intervals(i3);
+  cumulative->mutable_cumulative()->add_demands()->set_offset(1);
+  cumulative->mutable_cumulative()->add_demands()->set_offset(1);
+  cumulative->mutable_cumulative()->add_demands()->set_offset(1);
+  cumulative->mutable_cumulative()->mutable_capacity()->set_offset(2);
+
+  Model model;
+  SatParameters params;
+  params.set_enumerate_all_solutions(true);
+  model.Add(NewSatParameters(params));
+  int count = 0;
+  model.Add(
+      NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
+        LOG(INFO) << absl::StrJoin(response.solution(), " ");
+        ++count;
+      }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // Four solutions when the constraint is enforced (i1 before i2, or i2 before
+  // i1, tightly packed, each with 2 possible starts for i3), and 3 * 4 * 2
+  // otherwise -- 3 possible starts for i1, 4 for i2, 2 for i3).
+  EXPECT_EQ(count, 4 + 3 * 4 * 2);
+}
+
 TEST(SolveCpModelTest, NonInstantiatedVariables) {
   CpModelProto model_proto;
   const int a = AddVariable(0, 10, &model_proto);
@@ -333,6 +435,52 @@ TEST(SolveCpModelTest, TrivialModelWithCore) {
 }
 
 #if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+
+TEST(SolveCpModelTest, IntervalsWithSeveralEnforcementLiterals) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: [ 0, 1 ]
+      interval {
+        start { offset: 0 }
+        end { offset: 1 }
+        size { offset: 1 }
+      }
+    }
+    constraints {
+      enforcement_literal: [ 1, 2 ]
+      interval {
+        start { offset: 0 }
+        end { offset: 1 }
+        size { offset: 1 }
+      }
+    }
+    constraints {
+      enforcement_literal: [ 2, 0 ]
+      interval {
+        start { offset: 0 }
+        end { offset: 1 }
+        size { offset: 1 }
+      }
+    }
+    constraints { no_overlap { intervals: [ 0, 1, 2 ] } }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  int count = 0;
+  model.Add(
+      NewFeasibleSolutionObserver([&count](const CpSolverResponse& response) {
+        LOG(INFO) << absl::StrJoin(response.solution(), " ");
+        ++count;
+      }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // All combinations except (1, 1, 1) are feasible.
+  EXPECT_EQ(count, 7);
+}
 
 TEST(SolveCpModelTest, TrivialLinearTranslatedModel) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -1147,6 +1295,57 @@ TEST(SolveCpModelTest,
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   // No feasible circuit, but 2^4 solutions with a false enforcement literal.
   EXPECT_EQ(count, 2 * 2 * 2 * 2);
+}
+
+// The graph look like this with a self-loop at 2. If 2 is not selected
+// (self-loop) then there is one solution (0,1,3,0) and (0,3,5,0). Otherwise,
+// there is 2 more solutions with 2 inserted in one of the two routes.
+//
+//   0  ---> 1 ---> 4 -------------
+//   |       |      ^             |
+//   |       -----> 2* --> 5 ---> 0
+//   |              ^      ^
+//   |              |      |
+//   -------------> 3 ------
+//
+TEST(CircuitConstraintTest, RouteConstraintWithEnforcementLiteral) {
+  const CpModelProto model_proto = ParseTestProto(R"pb(
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    variables { domain: 0 domain: 1 }
+    constraints {
+      enforcement_literal: 11
+      routes {
+        tails: [ 0, 0, 1, 1, 2, 2, 2, 3, 3, 4, 5 ]
+        heads: [ 1, 3, 2, 4, 2, 4, 5, 2, 5, 0, 0 ]
+        literals: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+      }
+    }
+  )pb");
+
+  Model model;
+  model.Add(NewSatParameters("enumerate_all_solutions:true"));
+  int count = 0;
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& response) {
+    LOG(INFO) << absl::StrJoin(response.solution(), " ");
+    EXPECT_TRUE(SolutionIsFeasible(
+        model_proto, std::vector<int64_t>(response.solution().begin(),
+                                          response.solution().end())));
+    ++count;
+  }));
+  const CpSolverResponse response = SolveCpModel(model_proto, &model);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+  // 3 solutions when the constraint is enforced, 2^11 otherwise.
+  EXPECT_EQ(count, 3 + 2048);
 }
 
 TEST(SolveCpModelTest, HintWithCore) {

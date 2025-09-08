@@ -814,7 +814,8 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
 
         // Remove added task ending there.
         // Set their demand to zero.
-        while (next_end < num_tasks && by_emin[next_end].time == time) {
+        for (; next_end < num_tasks && by_emin[next_end].time == time;
+             ++next_end) {
           const int t = by_emin[next_end].task_index;
           if (!helper->IsPresent(t)) continue;
           if (added_demand[t] > 0) {
@@ -824,13 +825,13 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             // Corner case if task is of duration zero.
             added_demand[t] = -1;
           }
-          ++next_end;
         }
 
         // Add new task starting here.
         // If the task cannot be added we have a candidate for precedence.
         // TODO(user): tie-break tasks not fitting in the profile smartly.
-        while (next_start < num_tasks && by_smin[next_start].time == time) {
+        for (; next_start < num_tasks && by_smin[next_start].time == time;
+             ++next_start) {
           const int t = by_smin[next_start].task_index;
           if (!helper->IsPresent(t)) continue;
           if (added_demand[t] == -1) continue;  // Corner case.
@@ -845,13 +846,11 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
             found = true;
             break;
           }
-          ++next_start;
         }
       }
 
       // If packing everything to the left is feasible, continue.
       if (first_skipped_task == -1) {
-        CHECK_EQ(num_added, num_tasks);
         continue;
       }
 
@@ -872,10 +871,16 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       // TODO(user): Add heuristic ordering for creating interesting precedence
       // first.
       bool found_precedence_to_add = false;
-      helper->ClearReason();
+      helper->ResetReason();
       for (const int s : open_tasks) {
         for (const int t : open_tasks) {
           if (s == t) continue;
+
+          // Make sure s could be before t.
+          if (helper->TaskIsBeforeOrIsOverlapping(t, s)) {
+            helper->AddReasonForBeingBeforeAssumingNoOverlap(t, s);
+            continue;
+          }
 
           // Can we add s <= t ?
           // All the considered tasks are intersecting if on the left.
@@ -886,26 +891,21 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
           const LiteralIndex existing = repo->GetPrecedenceLiteral(
               helper->Ends()[s], helper->Starts()[t]);
           if (existing != kNoLiteralIndex) {
-            // It shouldn't be able to be true here otherwise we will have s and
-            // t disjoint.
-            CHECK(!trail->Assignment().LiteralIsTrue(Literal(existing)))
-                << helper->TaskDebugString(s) << " ( <= ?) "
-                << helper->TaskDebugString(t);
+            if (trail->Assignment().LiteralIsTrue(Literal(existing))) {
+              // In normal circumstances, this shouldn't be able to be true here
+              // otherwise we will have s and t disjoint. That said, this can
+              // happen if we are not in the propagation fixed point.
+              return BooleanOrIntegerLiteral();
+            }
 
             // This should always be true in normal usage after SAT search has
             // fixed all literal, but if it is not, we can just return this
             // decision.
             if (trail->Assignment().LiteralIsFalse(Literal(existing))) {
-              helper->MutableLiteralReason()->push_back(Literal(existing));
+              helper->AddLiteralReason(Literal(existing));
               continue;
             }
           } else {
-            // Make sure s could be before t.
-            if (helper->EndMin(s) > helper->StartMax(t)) {
-              helper->AddReasonForBeingBeforeAssumingNoOverlap(t, s);
-              continue;
-            }
-
             // It shouldn't be able to fail since s can be before t.
             CHECK(repo->CreatePrecedenceLiteralIfNonTrivial(
                 helper->Ends()[s], helper->Starts()[t]));
@@ -927,22 +927,19 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
       // cannot fit in the capacity!
       //
       // TODO(user): We need to add the reason for demand_min and capacity_max.
-      // TODO(user): unfortunately we can't report it from here.
       if (!h.capacity.IsConstant()) {
-        helper->MutableIntegerReason()->push_back(
+        helper->AddIntegerReason(
             integer_trail->UpperBoundAsLiteral(h.capacity));
       }
       const auto& demands = h.demand_helper->Demands();
       for (const int t : open_tasks) {
         if (helper->IsOptional(t)) {
           CHECK(trail->Assignment().LiteralIsTrue(helper->PresenceLiteral(t)));
-          helper->MutableLiteralReason()->push_back(
-              helper->PresenceLiteral(t).Negated());
+          helper->AddLiteralReason(helper->PresenceLiteral(t).Negated());
         }
         const AffineExpression d = demands[t];
         if (!d.IsConstant()) {
-          helper->MutableIntegerReason()->push_back(
-              integer_trail->LowerBoundAsLiteral(d));
+          helper->AddIntegerReason(integer_trail->LowerBoundAsLiteral(d));
         }
       }
       (void)helper->ReportConflict();

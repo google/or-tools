@@ -109,9 +109,12 @@ class ModelCopy {
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
-  // the input proto and client side code.
+  // the input proto and client side code. If there are more than one
+  // enforcement literals, we replace them with a new one, made equal to their
+  // conjunction with two new constraints.
   bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
   bool AddLinearConstraintForInterval(const ConstraintProto& ct);
+  int GetOrCreateVariableForConjunction(std::vector<int>* literals);
 
   // These function remove unperformed intervals. Note that they requires
   // interval to appear before (validated) as they test unperformed by testing
@@ -147,7 +150,10 @@ class ModelCopy {
 
   ConstraintProto tmp_constraint_;
 
-  // Map used in ExpandNonAffineExpressions() to avoid creating the duplicate
+  // Map used in GetOrCreateVariableForConjunction() to avoid creating duplicate
+  // variables for identical sets of literals.
+  absl::flat_hash_map<std::vector<int>, int> boolean_product_encoding_;
+  // Map used in ExpandNonAffineExpressions() to avoid creating duplicate
   // variables for the identical non affine expressions.
   absl::flat_hash_map<std::vector<std::pair<int, int64_t>>, int>
       non_affine_expression_to_new_var_;

@@ -41,7 +41,7 @@ namespace {
 // RcpspInstance contains the data to define an instance of the Resource
 // Constrained Project Scheduling Problem (RCPSP). We only consider a restricted
 // variant of the RCPSP which is the problem of scheduling a set of
-// non-premptive tasks that consume a given quantity of a resource without
+// non-preemptive tasks that consume a given quantity of a resource without
 // exceeding the resource's capacity. We assume that the duration of a task, its
 // demand, and the resource capacity are fixed.
 struct RcpspInstance {
@@ -135,7 +135,8 @@ int CountAllSolutions(const RcpspInstance& instance, SatParameters parameters,
     demands[t] = IntegerValue(instance.demands[t]);
   }
 
-  model.Add(cumulative(intervals, demands, capacity, nullptr));
+  model.Add(cumulative(/*enforcement_literals=*/{}, intervals, demands,
+                       capacity, nullptr));
 
   // Make sure that every Boolean variable is considered as a decision variable
   // to be fixed.
@@ -270,8 +271,8 @@ TEST(CumulativeTest, CapacityAndDemand) {
   const IntegerVariable demand = model.Add(NewIntegerVariable(5, 15));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(0, 10));
   const IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
-  model.Add(Cumulative({interval}, {AffineExpression(demand)},
-                       AffineExpression(capacity)));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
+                       {AffineExpression(demand)}, AffineExpression(capacity)));
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_EQ(integer_trail->LowerBound(capacity), 5);
   ASSERT_EQ(integer_trail->UpperBound(capacity), 10);
@@ -291,8 +292,8 @@ TEST(CumulativeTest, CapacityAndZeroDemand) {
   const IntegerVariable demand = model.Add(NewIntegerVariable(11, 15));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(0, 10));
   const IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
-  model.Add(Cumulative({interval}, {AffineExpression(demand)},
-                       AffineExpression(capacity)));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
+                       {AffineExpression(demand)}, AffineExpression(capacity)));
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_EQ(integer_trail->LowerBound(capacity), 0);
   ASSERT_EQ(integer_trail->UpperBound(capacity), 10);
@@ -311,8 +312,8 @@ TEST(CumulativeTest, CapacityAndOptionalTask) {
       model.Add(NewOptionalInterval(-1000, 1000, 1, l));
   const IntegerVariable demand = model.Add(ConstantIntegerVariable(15));
   const IntegerVariable capacity = model.Add(ConstantIntegerVariable(10));
-  model.Add(Cumulative({interval}, {AffineExpression(demand)},
-                       AffineExpression(capacity)));
+  model.Add(Cumulative(/*enforcement_literals=*/{}, {interval},
+                       {AffineExpression(demand)}, AffineExpression(capacity)));
   ASSERT_TRUE(sat_solver->Propagate());
   ASSERT_FALSE(model.Get(Value(l)));
 }

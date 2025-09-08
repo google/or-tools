@@ -5840,6 +5840,8 @@ void ExtractClauses(bool merge_into_bool_and,
 
 bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for enforcement literals.
+  if (HasEnforcementLiteral(*ct)) return false;
   NoOverlapConstraintProto* proto = ct->mutable_no_overlap();
   bool changed = false;
 
@@ -6376,6 +6378,8 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) {
     return false;
   }
+  // TODO(user): add support for enforcement literals.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   const NoOverlap2DConstraintProto& proto = ct->no_overlap_2d();
   const int initial_num_boxes = proto.x_intervals_size();
@@ -6656,6 +6660,8 @@ void CpModelPresolver::DetectDuplicateIntervals(
 
 bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for enforcement literals.
+  if (HasEnforcementLiteral(*ct)) return false;
 
   CumulativeConstraintProto* proto = ct->mutable_cumulative();
 
@@ -6734,7 +6740,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       }
 
       const int interval_index = proto->intervals(i);
-      if (context_->SizeMax(interval_index) == 0) {
+      if (context_->SizeMax(interval_index) <= 0) {
         // Size 0 intervals cannot contribute to a cumulative.
         num_zero_size_removed++;
         continue;
@@ -7043,7 +7049,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     if (context_->SizeMin(index) == 1 && context_->SizeMax(index) == 1) {
       num_duration_one++;
     }
-    if (context_->SizeMin(index) == 0) {
+    if (context_->SizeMin(index) <= 0) {
       // The behavior for zero-duration interval is currently not the same in
       // the no-overlap and the cumulative constraint.
       return changed;
@@ -7144,6 +7150,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
 bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
+  // TODO(user): add support for this case.
   if (HasEnforcementLiteral(*ct)) return false;
   RoutesConstraintProto& proto = *ct->mutable_routes();
 
@@ -8875,12 +8882,15 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
   int old_num_no_overlaps = 0;
   int old_num_intervals = 0;
 
-  // Extract the no-overlap constraints.
+  // Extract the no-overlap constraints with no enforcement literals.
+  // TODO(user): generalize this to merge constraints with the same
+  // enforcement literals?
   std::vector<int> disjunctive_index;
   std::vector<std::vector<Literal>> cliques;
   for (int c = 0; c < num_constraints; ++c) {
     const ConstraintProto& ct = context_->working_model->constraints(c);
     if (ct.constraint_case() != ConstraintProto::kNoOverlap) continue;
+    if (HasEnforcementLiteral(ct)) continue;
     std::vector<Literal> clique;
     for (const int i : ct.no_overlap().intervals()) {
       clique.push_back(Literal(BooleanVariable(i), true));

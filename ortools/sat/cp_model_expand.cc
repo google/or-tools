@@ -253,8 +253,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
             reservoir_ct->enforcement_literal();
         new_ct->add_enforcement_literal(start_var);
         LinearConstraintProto* lin = new_ct->mutable_linear();
-        lin->add_domain(0);
-        lin->add_domain(0);
+        FillDomainInProto(0, lin);
         lin->add_vars(level_vars[i]);
         lin->add_coeffs(1);
         AddLinearExpressionToLinearConstraint(reservoir.level_changes(i), -1,
@@ -294,8 +293,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
             reservoir_ct->enforcement_literal();
         new_ct->add_enforcement_literal(arc_i_j);
         LinearConstraintProto* lin = new_ct->mutable_linear();
-        lin->add_domain(0);
-        lin->add_domain(std::numeric_limits<int64_t>::max());
+        FillDomainInProto(0, std::numeric_limits<int64_t>::max(), lin);
         AddLinearExpressionToLinearConstraint(reservoir.time_exprs(j), 1, lin);
         AddLinearExpressionToLinearConstraint(reservoir.time_exprs(i), -1, lin);
         context->CanonicalizeLinearConstraint(new_ct);
@@ -308,8 +306,7 @@ void ExpandReservoirUsingCircuit(int64_t sum_of_positive_demand,
             reservoir_ct->enforcement_literal();
         new_ct->add_enforcement_literal(arc_i_j);
         LinearConstraintProto* lin = new_ct->mutable_linear();
-        lin->add_domain(0);
-        lin->add_domain(0);
+        FillDomainInProto(0, lin);
         lin->add_vars(level_vars[j]);
         lin->add_coeffs(1);
         lin->add_vars(level_vars[i]);
@@ -391,11 +388,11 @@ void ExpandReservoirUsingPrecedences(bool max_level_is_constraining,
     // Note that according to the sign of demand_i, we only need one side.
     // We apply the offset here to make sure we use int64_t min and max.
     if (demand_i > 0) {
-      new_linear->add_domain(std::numeric_limits<int64_t>::min());
-      new_linear->add_domain(reservoir.max_level() - offset);
+      FillDomainInProto(std::numeric_limits<int64_t>::min(),
+                        reservoir.max_level() - offset, new_linear);
     } else {
-      new_linear->add_domain(reservoir.min_level() - offset);
-      new_linear->add_domain(std::numeric_limits<int64_t>::max());
+      FillDomainInProto(reservoir.min_level() - offset,
+                        std::numeric_limits<int64_t>::max(), new_linear);
     }
 
     // Canonicalize the newly created constraint.
@@ -457,8 +454,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
     *new_ct->mutable_enforcement_literal() =
         reservoir_ct->enforcement_literal();
     LinearConstraintProto* sum = new_ct->mutable_linear();
-    sum->add_domain(reservoir.min_level());
-    sum->add_domain(reservoir.max_level());
+    FillDomainInProto(reservoir.min_level(), reservoir.max_level(), sum);
     for (int i = 0; i < num_events; ++i) {
       const int active = reservoir.active_literals().empty()
                              ? true_literal
@@ -491,8 +487,7 @@ void ExpandReservoir(ConstraintProto* reservoir_ct, PresolveContext* context) {
               context->working_model->add_constraints();
           demand_ct->add_enforcement_literal(active);
           LinearConstraintProto* lin = demand_ct->mutable_linear();
-          lin->add_domain(0);
-          lin->add_domain(0);
+          FillDomainInProto(0, lin);
           lin->add_vars(new_var);
           lin->add_coeffs(1);
           AddLinearExpressionToLinearConstraint(demand, -1, lin);
@@ -545,6 +540,7 @@ void EncodeCumulativeAsReservoir(ConstraintProto* ct,
   // Note that we know that the min_level can never go below zero, so we can
   // just ignore this part of the constraint here.
   ConstraintProto reservoir_ct;
+  *reservoir_ct.mutable_enforcement_literal() = ct->enforcement_literal();
   auto* reservoir = reservoir_ct.mutable_reservoir();
   reservoir->set_min_level(std::numeric_limits<int64_t>::min());
   reservoir->set_max_level(context->FixedValue(ct->cumulative().capacity()));
@@ -643,8 +639,7 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   // expr - prod_expr = target_expr.
   LinearConstraintProto* const lin =
       new_enforced_constraint()->mutable_linear();
-  lin->add_domain(0);
-  lin->add_domain(0);
+  FillDomainInProto(0, lin);
   AddLinearExpressionToLinearConstraint(expr, 1, lin);
   AddLinearExpressionToLinearConstraint(prod_expr, -1, lin);
   AddLinearExpressionToLinearConstraint(target_expr, -1, lin);
@@ -841,8 +836,7 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     ConstraintProto* new_ct = context->working_model->add_constraints();
     *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
     LinearConstraintProto* lin = new_ct->mutable_linear();
-    lin->add_domain(0);
-    lin->add_domain(std::numeric_limits<int64_t>::max());
+    FillDomainInProto(0, std::numeric_limits<int64_t>::max(), lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(expr, -1, lin);
     context->CanonicalizeLinearConstraint(new_ct);
@@ -870,8 +864,7 @@ void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
     ConstraintProto* new_ct = context->working_model->add_constraints();
     new_ct->add_enforcement_literal(enforcement_literals[i]);
     LinearConstraintProto* lin = new_ct->mutable_linear();
-    lin->add_domain(std::numeric_limits<int64_t>::min());
-    lin->add_domain(0);
+    FillDomainInProto(std::numeric_limits<int64_t>::min(), 0, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().target(), 1, lin);
     AddLinearExpressionToLinearConstraint(ct->lin_max().exprs(i), -1, lin);
     context->CanonicalizeLinearConstraint(new_ct);
@@ -904,8 +897,7 @@ void ExpandElementWhenTargetShareVarWithIndex(
     *imply->mutable_enforcement_literal() = ct->enforcement_literal();
     imply->add_enforcement_literal(
         context->GetOrCreateVarValueEncoding(index_var, v));
-    imply->mutable_linear()->add_domain(target_value);
-    imply->mutable_linear()->add_domain(target_value);
+    FillDomainInProto(target_value, imply->mutable_linear());
     AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
     context->CanonicalizeLinearConstraint(imply);
   }
@@ -993,8 +985,7 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
     ConstraintProto* const imply = context->working_model->add_constraints();
     *imply->mutable_enforcement_literal() = ct->enforcement_literal();
     imply->add_enforcement_literal(index_lit);
-    imply->mutable_linear()->add_domain(0);
-    imply->mutable_linear()->add_domain(0);
+    FillDomainInProto(0, imply->mutable_linear());
     AddLinearExpressionToLinearConstraint(target, -1, imply->mutable_linear());
     AddLinearExpressionToLinearConstraint(ct->element().exprs(index_value), 1,
                                           imply->mutable_linear());
@@ -1044,8 +1035,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     // enforcement_literal => index in [0, size - 1]
     ConstraintProto* const index_ct = context->working_model->add_constraints();
     *index_ct->mutable_enforcement_literal() = ct->enforcement_literal();
-    index_ct->mutable_linear()->add_domain(0);
-    index_ct->mutable_linear()->add_domain(size - 1);
+    FillDomainInProto(0, size - 1, index_ct->mutable_linear());
     AddLinearExpressionToLinearConstraint(index, 1, index_ct->mutable_linear());
     context->CanonicalizeLinearConstraint(index_ct);
   }
@@ -1056,12 +1046,13 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     DCHECK(!ct->enforcement_literal().empty() || context->IsFixed(index));
     ConstraintProto* const eq = context->working_model->add_constraints();
     *eq->mutable_enforcement_literal() = ct->enforcement_literal();
-    eq->mutable_linear()->add_domain(0);
-    eq->mutable_linear()->add_domain(0);
+    FillDomainInProto(0, eq->mutable_linear());
     AddLinearExpressionToLinearConstraint(target, 1, eq->mutable_linear());
     const int64_t reduced_index_fixed_value =
-        index.vars_size() == 0 ? index.offset()
-                               : reduced_index_var_domain.FixedValue();
+        index.vars_size() == 0
+            ? index.offset()
+            : AffineExpressionValueAt(index,
+                                      reduced_index_var_domain.FixedValue());
     AddLinearExpressionToLinearConstraint(
         ct->element().exprs(reduced_index_fixed_value), -1,
         eq->mutable_linear());
@@ -1838,8 +1829,7 @@ bool ReduceTableInPresenceOfUniqueVariableWithCosts(
         LinearConstraintProto* new_lin = mapping_ct->mutable_linear();
         new_lin->add_vars(deleted_vars[j]);
         new_lin->add_coeffs(1);
-        new_lin->add_domain((*tuples)[i][new_vars.size() + 1 + j]);
-        new_lin->add_domain((*tuples)[i][new_vars.size() + 1 + j]);
+        FillDomainInProto((*tuples)[i][new_vars.size() + 1 + j], new_lin);
       }
       (*tuples)[i].resize(new_vars.size() + 1);
       (*tuples)[new_size++] = (*tuples)[i];
@@ -2374,8 +2364,7 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     ct->mutable_linear()->add_vars(slack);
     ct->mutable_linear()->add_coeffs(-1);
     ct->mutable_linear()->clear_domain();
-    ct->mutable_linear()->add_domain(0);
-    ct->mutable_linear()->add_domain(0);
+    FillDomainInProto(0, ct->mutable_linear());
   } else {
     // Boolean encoding.
     int single_bool;
@@ -2714,39 +2703,45 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
   if (!keep_after_expansion) ct->Clear();
 }
 
-void ExpandCircuit(ConstraintProto* ct, PresolveContext* context) {
+template <typename T>
+void ExpandCircuitOrRoutes(absl::Span<const int> enforcement_literals,
+                           const T& graph_proto, PresolveContext* context,
+                           bool multiple_subcircuit_through_zero) {
   // The constraints added below are added by LoadSubcircuitConstraint() when
-  // enforcement_literal is empty.
+  // enforcement_literals is empty.
   // TODO(user): ideally we don't want to do that here, but only create
   // these constraints at loading time so that the presolve does not have to
   // deal with redundant constraints.
-  if (ct->enforcement_literal().empty()) return;
-  const auto& circuit = ct->circuit();
-  const int num_arcs = circuit.tails_size();
+  if (enforcement_literals.empty()) return;
+  const int num_arcs = graph_proto.tails_size();
   // At this point the node indices can have arbitrary values.
   absl::flat_hash_map<int, int> dense_node_index;
   for (int arc = 0; arc < num_arcs; arc++) {
-    dense_node_index.insert({circuit.tails(arc), dense_node_index.size()});
-    dense_node_index.insert({circuit.heads(arc), dense_node_index.size()});
+    dense_node_index.insert({graph_proto.tails(arc), dense_node_index.size()});
+    dense_node_index.insert({graph_proto.heads(arc), dense_node_index.size()});
   }
   const int num_nodes = dense_node_index.size();
   std::vector<std::vector<int>> exactly_one_incoming(num_nodes);
   std::vector<std::vector<int>> exactly_one_outgoing(num_nodes);
   for (int arc = 0; arc < num_arcs; arc++) {
-    const int tail = dense_node_index[circuit.tails(arc)];
-    const int head = dense_node_index[circuit.heads(arc)];
-    exactly_one_outgoing[tail].push_back(circuit.literals(arc));
-    exactly_one_incoming[head].push_back(circuit.literals(arc));
+    const int tail = dense_node_index[graph_proto.tails(arc)];
+    const int head = dense_node_index[graph_proto.heads(arc)];
+    exactly_one_outgoing[tail].push_back(graph_proto.literals(arc));
+    exactly_one_incoming[head].push_back(graph_proto.literals(arc));
   }
   for (int i = 0; i < exactly_one_incoming.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
     ConstraintProto* const new_ct = context->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+    *new_ct->mutable_enforcement_literal() = {enforcement_literals.begin(),
+                                              enforcement_literals.end()};
     LiteralsToLinear(exactly_one_incoming[i], /*lb=*/1, /*ub=*/1,
                      new_ct->mutable_linear());
   }
   for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
     ConstraintProto* const new_ct = context->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+    *new_ct->mutable_enforcement_literal() = {enforcement_literals.begin(),
+                                              enforcement_literals.end()};
     LiteralsToLinear(exactly_one_outgoing[i], /*lb=*/1, /*ub=*/1,
                      new_ct->mutable_linear());
   }
@@ -2830,7 +2825,12 @@ void ExpandCpModel(PresolveContext* context) {
         skip = true;
         break;
       case ConstraintProto::kCircuit:
-        ExpandCircuit(ct, context);
+        ExpandCircuitOrRoutes(ct->enforcement_literal(), ct->circuit(), context,
+                              /*multiple_subcircuit_through_zero=*/false);
+        break;
+      case ConstraintProto::kRoutes:
+        ExpandCircuitOrRoutes(ct->enforcement_literal(), ct->routes(), context,
+                              /*multiple_subcircuit_through_zero=*/true);
         break;
       default:
         skip = true;

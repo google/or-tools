@@ -28,7 +28,8 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -317,6 +318,7 @@ class LinearPropagator : public PropagatorInterface,
   Trail* trail_;
   IntegerTrail* integer_trail_;
   EnforcementPropagator* enforcement_propagator_;
+  EnforcementHelper* enforcement_helper_;
   GenericLiteralWatcher* watcher_;
   TimeLimit* time_limit_;
   RevIntRepository* rev_int_repository_;

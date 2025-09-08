@@ -22,7 +22,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -84,7 +85,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   const int num_nodes_;
   const Options options_;
   Trail& trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
   const VariablesAssignment& assignment_;
   bool enabled_;

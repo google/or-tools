@@ -26,7 +26,8 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -278,7 +279,7 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
   IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
   std::vector<IntegerValue> max_variations_;
   std::vector<IntegerValue> reason_coeffs_;
@@ -323,7 +324,7 @@ class ProductPropagator : public PropagatorInterface {
   AffineExpression b_;
   AffineExpression p_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 
@@ -362,14 +363,12 @@ class DivisionPropagator : public PropagatorInterface {
   bool PropagatePositiveDomains(AffineExpression num, AffineExpression denom,
                                 AffineExpression div);
 
-  const AffineExpression num_;
-  const AffineExpression denom_;
+  AffineExpression num_;
+  AffineExpression denom_;
   const AffineExpression div_;
-  const AffineExpression negated_denom_;
-  const AffineExpression negated_num_;
   const AffineExpression negated_div_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 
@@ -394,7 +393,7 @@ class FixedDivisionPropagator : public PropagatorInterface {
   const IntegerValue b_;
   const AffineExpression c_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 
@@ -429,7 +428,7 @@ class FixedModuloPropagator : public PropagatorInterface {
   const AffineExpression negated_expr_;
   const AffineExpression negated_target_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 
@@ -452,7 +451,7 @@ class SquarePropagator : public PropagatorInterface {
   const AffineExpression x_;
   const AffineExpression s_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 

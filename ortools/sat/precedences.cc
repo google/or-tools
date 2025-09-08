@@ -347,6 +347,7 @@ EnforcedLinear2Bounds::~EnforcedLinear2Bounds() {
 void EnforcedLinear2Bounds::PushConditionalRelation(
     absl::Span<const Literal> enforcements, LinearExpression2Index lin2_index,
     IntegerValue rhs) {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), stored_level_);
   // This must be currently true.
   if (DEBUG_MODE) {
     for (const Literal l : enforcements) {
@@ -407,6 +408,7 @@ void EnforcedLinear2Bounds::CreateLevelEntryIfNeeded() {
 
 // We only pop what is needed.
 void EnforcedLinear2Bounds::SetLevel(int level) {
+  stored_level_ = level;
   while (!level_to_stack_size_.empty() &&
          level_to_stack_size_.back().first > level) {
     const int target = level_to_stack_size_.back().second;
@@ -438,6 +440,7 @@ void EnforcedLinear2Bounds::AddReasonForUpperBoundLowerThan(
     LinearExpression2Index index, IntegerValue ub,
     std::vector<Literal>* literal_reason,
     std::vector<IntegerLiteral>* /*unused*/) const {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), stored_level_);
   if (ub >= root_level_bounds_->LevelZeroUpperBound(index)) return;
   DCHECK_LT(index, conditional_relations_.size());
   const int entry_index = conditional_relations_[index];
@@ -457,6 +460,7 @@ void EnforcedLinear2Bounds::AddReasonForUpperBoundLowerThan(
 
 IntegerValue EnforcedLinear2Bounds::GetUpperBoundFromEnforced(
     LinearExpression2Index index) const {
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), stored_level_);
   if (index >= conditional_relations_.size()) {
     return kMaxIntegerValue;
   }
@@ -1421,6 +1425,24 @@ void Linear2BoundsFromLinear3::AddReasonForUpperBoundLowerThan(
   integer_reason->push_back(affine.LowerOrEqual(CapProdI(ub + 1, divisor) - 1));
 }
 
+Linear2Bounds::~Linear2Bounds() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"Linear2Bounds/enqueue_trivial", enqueue_trivial_});
+  stats.push_back({"Linear2Bounds/enqueue_degenerate", enqueue_degenerate_});
+  stats.push_back({"Linear2Bounds/enqueue_true_at_root_level",
+                   enqueue_true_at_root_level_});
+  stats.push_back({"Linear2Bounds/enqueue_conflict_false_at_root_level",
+                   enqueue_conflict_false_at_root_level_});
+  stats.push_back({"Linear2Bounds/enqueue_individual_var_bounds",
+                   enqueue_individual_var_bounds_});
+  stats.push_back(
+      {"Linear2Bounds/enqueue_literal_encoding", enqueue_literal_encoding_});
+  stats.push_back({"Linear2Bounds/enqueue_integer_linear3_encoding",
+                   enqueue_integer_linear3_encoding_});
+  shared_stats_->AddStats(stats);
+}
+
 IntegerValue Linear2Bounds::UpperBound(
     LinearExpression2Index lin2_index) const {
   return std::min(
@@ -1436,6 +1458,9 @@ IntegerValue Linear2Bounds::UpperBound(LinearExpression2 expr) const {
   DCHECK_NE(expr.coeffs[1], 0);
   const IntegerValue gcd = expr.DivideByGcd();
   IntegerValue ub = integer_trail_->UpperBound(expr);
+  // TODO(user): remove this when the UB in the trail in the current level is
+  // never worse than in the root level.
+  ub = std::min(ub, integer_trail_->LevelZeroUpperBound(expr));
   const LinearExpression2Index index = lin2_indices_->GetIndex(expr);
   if (index != kNoLinearExpression2Index) {
     ub = std::min(ub, root_level_bounds_->GetUpperBoundNoTrail(index));
@@ -1521,6 +1546,7 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
 
   // Trivial.
   if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) {
+    ++enqueue_trivial_;
     if (ub >= 0) {
       return true;
     } else {
@@ -1530,6 +1556,7 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
 
   // Degenerate single variable case, just push the IntegerLiteral.
   if (expr.coeffs[0] == 0) {
+    ++enqueue_degenerate_;
     return integer_trail_->Enqueue(
         IntegerLiteral::LowerOrEqual(expr.vars[1], ub), literal_reason,
         integer_reason);
@@ -1543,6 +1570,7 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
       std::get<ReifiedBoundType>(reified_bound) ==
           ReifiedBoundType::kAlwaysTrue) {
+    ++enqueue_true_at_root_level_;
     return true;
   }
 
@@ -1550,17 +1578,9 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
       std::get<ReifiedBoundType>(reified_bound) ==
           ReifiedBoundType::kAlwaysFalse) {
-    LinearExpression2 negated_expr = expr;
-    negated_expr.Negate();
-    DCHECK_LT(ub, -UpperBound(negated_expr));
-    std::vector<Literal> tmp_literal_reason(literal_reason.begin(),
-                                            literal_reason.end());
-    std::vector<IntegerLiteral> tmp_integer_reason(integer_reason.begin(),
-                                                   integer_reason.end());
-    AddReasonForUpperBoundLowerThan(negated_expr, -ub - 1, &tmp_literal_reason,
-                                    &tmp_integer_reason);
-    return integer_trail_->ReportConflict(tmp_literal_reason,
-                                          tmp_integer_reason);
+    ++enqueue_conflict_false_at_root_level_;
+    // It's false at level zero, so we can just report a conflict.
+    return integer_trail_->ReportConflict(literal_reason, integer_reason);
   }
 
   // Now all the cases below are pushing a proper linear2 bound. If we are at
@@ -1574,6 +1594,7 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
       std::get<ReifiedBoundType>(reified_bound) ==
           ReifiedBoundType::kNoLiteralStored) {
+    ++enqueue_individual_var_bounds_;
     // TODO(user): create a Linear2 trail and enqueue this bound there.
     std::vector<IntegerLiteral> tmp_integer_reason(integer_reason.begin(),
                                                    integer_reason.end());
@@ -1605,20 +1626,24 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
 
   // We have a literal encoding for this linear2 bound, push it.
   if (std::holds_alternative<Literal>(reified_bound)) {
-    // TODO(user): push this to EnforcedLinear2Bounds so the same
-    // propagator that enqueued this bound will get the new linear2 bound if
-    // request it to this class without needing to wait the propagation fix
-    // point.
+    ++enqueue_literal_encoding_;
     const Literal literal = std::get<Literal>(reified_bound);
-
-    integer_trail_->SafeEnqueueLiteral(literal, literal_reason, integer_reason);
+    if (!integer_trail_->SafeEnqueueLiteral(literal, literal_reason,
+                                            integer_reason)) {
+      return false;
+    }
+    enforced_bounds_->PushConditionalRelation({literal}, expr, ub);
     return true;
   }
 
   // We can encode this linear2 bound with an IntegerLiteral (probably coming
   // from a linear3). Push the IntegerLiteral.
   if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
-    // TODO(user): update Linear2BoundsFromLinear3.
+    ++enqueue_integer_linear3_encoding_;
+    // TODO(user): push this to Linear2BoundsFromLinear3 so the same
+    // propagator that enqueued this bound will get the new linear2 bound if
+    // request it to this class without needing to wait the propagation fix
+    // point.
     const IntegerLiteral literal = std::get<IntegerLiteral>(reified_bound);
     return integer_trail_->Enqueue(literal, literal_reason, integer_reason);
   }

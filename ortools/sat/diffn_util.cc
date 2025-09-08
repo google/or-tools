@@ -40,7 +40,6 @@
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
-#include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -48,6 +47,7 @@
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/fixed_shape_binary_tree.h"
 #include "ortools/util/integer_pq.h"
@@ -139,8 +139,8 @@ CompactVectorVector<int> GetOverlappingRectangleComponents(
 bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
                           SchedulingConstraintHelper* x,
                           SchedulingConstraintHelper* y) {
-  x->ClearReason();
-  y->ClearReason();
+  x->ResetReason();
+  y->ResetReason();
   IntegerValue total_energy(0);
   for (const int b : boxes) {
     const IntegerValue x_min = x->ShiftedStartMin(b);
@@ -164,7 +164,7 @@ bool ReportEnergyConflict(Rectangle bounding_box, absl::Span<const int> boxes,
   }
 
   CHECK_GT(total_energy, bounding_box.Area());
-  x->ImportOtherReasons(*y);
+  x->ImportReasonsFromOther(*y);
   return x->ReportConflict();
 }
 

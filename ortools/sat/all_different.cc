@@ -25,7 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -416,7 +416,7 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
     absl::Span<const Literal> enforcement_literals,
     absl::Span<const AffineExpression> expressions, Model* model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-      enforcement_propagator_(*model->GetOrCreate<EnforcementPropagator>()) {
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   CHECK(!expressions.empty());
 
   // We need +2 for sentinels.
@@ -432,13 +432,12 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
   }
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_propagator_.Register(
-      enforcement_literals, watcher, RegisterWith(watcher));
+  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
+                                                 RegisterWith(watcher));
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
-  const EnforcementStatus status =
-      enforcement_propagator_.Status(enforcement_id_);
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status != EnforcementStatus::IS_ENFORCED &&
       status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
     return true;
@@ -569,16 +568,16 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
         const IntegerValue he = hall_ends_[hall_index];
         FillHallReason(hs, he);
         integer_reason_.push_back(expr.GreaterOrEqual(hs));
-        if (enforcement_propagator_.Status(enforcement_id_) ==
+        if (enforcement_helper_.Status(enforcement_id_) ==
             EnforcementStatus::IS_ENFORCED) {
-          if (!enforcement_propagator_.SafeEnqueue(enforcement_id_,
-                                                   expr.GreaterOrEqual(he + 1),
-                                                   integer_reason_)) {
+          if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                               expr.GreaterOrEqual(he + 1),
+                                               integer_reason_)) {
             return false;
           }
         } else if (he >= entry.ub) {
           integer_reason_.push_back(expr.LowerOrEqual(entry.ub));
-          return enforcement_propagator_.PropagateWhenFalse(
+          return enforcement_helper_.PropagateWhenFalse(
               enforcement_id_, /*literal_reason=*/{}, integer_reason_);
         }
       }

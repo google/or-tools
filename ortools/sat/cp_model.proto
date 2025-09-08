@@ -102,7 +102,7 @@ message LinearConstraintProto {
   repeated int64 domain = 3;
 }
 
-// The constraint target = vars[index].
+// The constraint linear_target = exprs[linear_index].
 // This enforces that index takes one of the value in [0, vars_size()).
 message ElementConstraintProto {
   int32 index = 1;          // Legacy field.
@@ -321,10 +321,10 @@ message ConstraintProto {
   // (controlled by a literal l) and its negation (controlled by the negation of
   // l).
   //
-  // Important: as of August 2025, some constraints do not support enforcement:
-  // - interval: only support a single enforcement literal.
-  // - routes, no_overlap, no_overlap_2d, cumulative: no support (but can be
-  // added on a per-demand basis).
+  // Important: as of September 2025, some constraints might be less efficient
+  // with enforcement than without: circuit, routes, no_overlap, no_overlap_2d,
+  // and cumulative. If performance is not great, consider using a model without
+  // these constraints enforced.
   repeated int32 enforcement_literal = 2;
 
   // The actual constraint with its arguments.

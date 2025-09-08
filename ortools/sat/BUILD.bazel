@@ -259,6 +259,29 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "container",
+    hdrs = ["container.h"],
+    deps = [
+        ":sat_base",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "container_test",
+    srcs = ["container_test.cc"],
+    deps = [
+        ":container",
+        ":sat_base",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -1390,6 +1413,7 @@ cc_library(
     deps = [
         ":clause",
         ":drat_proof_handler",
+        ":enforcement",
         ":model",
         ":pb_constraint",
         ":restart",
@@ -1593,6 +1617,7 @@ cc_library(
     srcs = ["clause.cc"],
     hdrs = ["clause.h"],
     deps = [
+        ":container",
         ":drat_proof_handler",
         ":inclusion",
         ":model",
@@ -2063,6 +2088,8 @@ cc_library(
     srcs = ["scheduling_helpers.cc"],
     hdrs = ["scheduling_helpers.h"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":implied_bounds",
         ":integer",
         ":integer_base",
@@ -2090,6 +2117,8 @@ cc_library(
     deps = [
         ":2d_rectangle_presolve",
         ":diffn_util",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -2207,6 +2236,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":linear_constraint",
@@ -2268,7 +2299,8 @@ cc_library(
     srcs = ["linear_propagation.cc"],
     hdrs = ["linear_propagation.h"],
     deps = [
-        ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -2284,6 +2316,7 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
@@ -2318,7 +2351,8 @@ cc_library(
     srcs = ["all_different.cc"],
     hdrs = ["all_different.h"],
     deps = [
-        ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -2377,7 +2411,9 @@ cc_library(
         "//ortools/util:scheduling",
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -2418,7 +2454,8 @@ cc_library(
     srcs = ["timetable.cc"],
     hdrs = ["timetable.h"],
     deps = [
-        ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -2490,6 +2527,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":scheduling_helpers",
         ":timetable",
         ":timetable_edgefinding",
         "//ortools/base",
@@ -2676,6 +2714,7 @@ cc_test(
         ":linear_relaxation",
         ":model",
         ":sat_base",
+        ":scheduling_helpers",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
@@ -3361,17 +3400,14 @@ cc_library(
     hdrs = ["cp_constraints.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
         ":sat_base",
-        ":sat_solver",
         "//ortools/base",
-        "//ortools/base:stl_util",
-        "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
-        "@abseil-cpp//absl/base:core_headers",
-        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -3391,6 +3427,59 @@ cc_test(
         ":sat_solver",
         "//ortools/base:gmock_main",
         "//ortools/base:logging",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "enforcement",
+    srcs = ["enforcement.cc"],
+    hdrs = ["enforcement.h"],
+    deps = [
+        ":model",
+        ":sat_base",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:rev",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "enforcement_test",
+    srcs = ["enforcement_test.cc"],
+    deps = [
+        ":enforcement",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "enforcement_helper",
+    srcs = ["enforcement_helper.cc"],
+    hdrs = ["enforcement_helper.h"],
+    deps = [
+        ":enforcement",
+        ":integer",
+        ":integer_base",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -3709,7 +3798,8 @@ cc_library(
     deps = [
         ":all_different",
         ":clause",
-        ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":model",
         ":sat_base",

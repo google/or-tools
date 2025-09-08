@@ -72,8 +72,11 @@ struct LiteralValueValue {
 // Sometimes we propagate fact with no reason at a positive level, those
 // will automatically be fixed on the next restart.
 //
-// TODO(user): If we change the logic to not restart right away, we probably
-// need to remove duplicates bounds for the same variable.
+// Note that for integer literal, we already remore all "stale" entry, however
+// this is still needed to properly update the InitialVariableDomain().
+//
+// TODO(user): we should update the initial domain right away, but this as
+// some complication to clean up first.
 struct DelayedRootLevelDeduction {
   std::vector<Literal> literal_to_fix;
   std::vector<IntegerLiteral> integer_literal_to_fix;

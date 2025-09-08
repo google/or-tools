@@ -1637,27 +1637,33 @@ void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  AddDisjunctive(mapping->Intervals(ct.no_overlap().intervals()), m);
+  AddDisjunctive(mapping->Literals(ct.enforcement_literal()),
+                 mapping->Intervals(ct.no_overlap().intervals()), m);
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.no_overlap_2d().x_intervals().empty()) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  AddNonOverlappingRectangles(x_intervals, y_intervals, m);
+  AddNonOverlappingRectangles(enforcement_literals, x_intervals, y_intervals,
+                              m);
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   const std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
-  m->Add(Cumulative(intervals, demands, capacity));
+  m->Add(Cumulative(enforcement_literals, intervals, demands, capacity));
 }
 
 void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
@@ -1704,10 +1710,12 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
 
   std::vector<int> tails(routes.tails().begin(), routes.tails().end());
   std::vector<int> heads(routes.heads().begin(), routes.heads().end());
-  std::vector<Literal> literals =
-      m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+  std::vector<Literal> literals = mapping->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  LoadSubcircuitConstraint(num_nodes, tails, heads, /*enforcement_literals=*/{},
+  LoadSubcircuitConstraint(num_nodes, tails, heads, enforcement_literals,
                            literals, m,
                            /*multiple_subcircuit_through_zero=*/true);
 }

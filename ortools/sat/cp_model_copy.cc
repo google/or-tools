@@ -84,6 +84,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   std::vector<int> constraints_using_intervals;
 
   interval_mapping_.assign(in_model.constraints().size(), -1);
+  boolean_product_encoding_.clear();
 
   starting_constraint_index_ = context_->working_model->constraints_size();
   for (int c = 0; c < in_model.constraints_size(); ++c) {
@@ -204,6 +205,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
   DCHECK(first_copy || constraints_using_intervals.empty());
   for (const int c : constraints_using_intervals) {
     const ConstraintProto& ct = in_model.constraints(c);
+    if (!PrepareEnforcementCopyWithDup(ct)) continue;
     switch (ct.constraint_case()) {
       case ConstraintProto::kNoOverlap:
         CopyAndMapNoOverlap(ct);
@@ -763,7 +765,11 @@ bool ModelCopy::CopyInterval(const ConstraintProto& ct, int c,
   if (!ignore_names) {
     new_ct->set_name(ct.name());
   }
-  *new_ct->mutable_enforcement_literal() = ct.enforcement_literal();
+  if (temp_enforcement_literals_.size() > 1) {
+    temp_enforcement_literals_ = {
+        GetOrCreateVariableForConjunction(&temp_enforcement_literals_)};
+  }
+  FinishEnforcementCopy(new_ct);
   CopyLinearExpression(ct.interval().start(),
                        new_ct->mutable_interval()->mutable_start(),
                        ct.enforcement_literal());
@@ -860,56 +866,92 @@ bool ModelCopy::AddLinearConstraintForInterval(const ConstraintProto& ct) {
   return true;
 }
 
+int ModelCopy::GetOrCreateVariableForConjunction(std::vector<int>* literals) {
+  std::sort(literals->begin(), literals->end());
+  auto it = boolean_product_encoding_.find(*literals);
+  if (it != boolean_product_encoding_.end()) return it->second;
+  const int new_var = context_->NewBoolVarWithConjunction(*literals);
+  boolean_product_encoding_[*literals] = new_var;
+  // Add the constraint 'literals => new_var'
+  auto* ct1 = context_->working_model->add_constraints();
+  ct1->mutable_bool_or()->mutable_literals()->Reserve(literals->size() + 1);
+  for (const int literal : *literals) {
+    ct1->mutable_bool_or()->add_literals(NegatedRef(literal));
+  }
+  ct1->mutable_bool_or()->add_literals(new_var);
+  // Add the constraint 'new_var => literals'
+  auto* ct2 = context_->working_model->add_constraints();
+  ct2->add_enforcement_literal(new_var);
+  *ct2->mutable_bool_and()->mutable_literals() = {literals->begin(),
+                                                  literals->end()};
+  return new_var;
+}
+
 void ModelCopy::CopyAndMapNoOverlap(const ConstraintProto& ct) {
-  // Note that we don't copy names or enforcement_literal (not supported) here.
-  auto* new_ct =
-      context_->working_model->add_constraints()->mutable_no_overlap();
-  new_ct->mutable_intervals()->Reserve(ct.no_overlap().intervals().size());
+  // Note that we don't copy names here.
+  auto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  NoOverlapConstraintProto* no_overlap = new_ct->mutable_no_overlap();
+  no_overlap->mutable_intervals()->Reserve(ct.no_overlap().intervals().size());
   for (const int index : ct.no_overlap().intervals()) {
     const int new_index = interval_mapping_[index];
     if (new_index != -1) {
-      new_ct->add_intervals(new_index);
+      no_overlap->add_intervals(new_index);
     }
   }
 }
 
 void ModelCopy::CopyAndMapNoOverlap2D(const ConstraintProto& ct) {
-  // Note that we don't copy names or enforcement_literal (not supported) here.
-  auto* new_ct =
-      context_->working_model->add_constraints()->mutable_no_overlap_2d();
-
+  // Note that we don't copy names here.
+  auto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  NoOverlap2DConstraintProto* no_overlap_2d = new_ct->mutable_no_overlap_2d();
   const int num_intervals = ct.no_overlap_2d().x_intervals().size();
-  new_ct->mutable_x_intervals()->Reserve(num_intervals);
-  new_ct->mutable_y_intervals()->Reserve(num_intervals);
+  no_overlap_2d->mutable_x_intervals()->Reserve(num_intervals);
+  no_overlap_2d->mutable_y_intervals()->Reserve(num_intervals);
   for (int i = 0; i < num_intervals; ++i) {
     const int new_x = interval_mapping_[ct.no_overlap_2d().x_intervals(i)];
     if (new_x == -1) continue;
     const int new_y = interval_mapping_[ct.no_overlap_2d().y_intervals(i)];
     if (new_y == -1) continue;
-    new_ct->add_x_intervals(new_x);
-    new_ct->add_y_intervals(new_y);
+    no_overlap_2d->add_x_intervals(new_x);
+    no_overlap_2d->add_y_intervals(new_y);
   }
 }
 
 bool ModelCopy::CopyAndMapCumulative(const ConstraintProto& ct) {
   if (ct.cumulative().intervals().empty() &&
       context_->IsFixed(ct.cumulative().capacity())) {
-    // Trivial constraint, either obviously SAT or UNSAT.
-    return context_->FixedValue(ct.cumulative().capacity()) >= 0;
+    // Trivial constraint, either obviously SAT or UNSAT if enforced.
+    const int64_t capacity = context_->FixedValue(ct.cumulative().capacity());
+    if (temp_enforcement_literals_.empty()) {
+      return capacity >= 0;
+    }
+    if (capacity < 0) {
+      // At least one enforcement literal must be false.
+      auto* new_ct = context_->working_model->add_constraints();
+      for (const int literal : temp_enforcement_literals_) {
+        new_ct->mutable_bool_or()->add_literals(NegatedRef(literal));
+      }
+    }
+    return true;
   }
-  // Note that we don't copy names or enforcement_literal (not supported) here.
-  auto* new_ct =
-      context_->working_model->add_constraints()->mutable_cumulative();
-  CopyLinearExpression(ct.cumulative().capacity(), new_ct->mutable_capacity());
+  // Note that we don't copy names here.
+  auto* new_ct = context_->working_model->add_constraints();
+  FinishEnforcementCopy(new_ct);
+  CumulativeConstraintProto* cumulative = new_ct->mutable_cumulative();
+  CopyLinearExpression(ct.cumulative().capacity(),
+                       cumulative->mutable_capacity());
 
   const int num_intervals = ct.cumulative().intervals().size();
-  new_ct->mutable_intervals()->Reserve(num_intervals);
-  new_ct->mutable_demands()->Reserve(num_intervals);
+  cumulative->mutable_intervals()->Reserve(num_intervals);
+  cumulative->mutable_demands()->Reserve(num_intervals);
   for (int i = 0; i < num_intervals; ++i) {
     const int new_index = interval_mapping_[ct.cumulative().intervals(i)];
     if (new_index != -1) {
-      new_ct->add_intervals(new_index);
-      CopyLinearExpression(ct.cumulative().demands(i), new_ct->add_demands());
+      cumulative->add_intervals(new_index);
+      CopyLinearExpression(ct.cumulative().demands(i),
+                           cumulative->add_demands());
     }
   }
 
@@ -1034,6 +1076,9 @@ void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
         domain.AdditionWith(context_->DomainOf(var).MultiplicationBy(coeff));
     definition.push_back({var, coeff});
   }
+  // TODO(user): we could also make sure that expr and -expr are expanded
+  // to the same variable.
+  std::sort(definition.begin(), definition.end());
   int new_var;
   auto it = non_affine_expression_to_new_var_.find(definition);
   if (it != non_affine_expression_to_new_var_.end()) {

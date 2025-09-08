@@ -18,7 +18,8 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -99,7 +100,7 @@ class ReservoirTimeTabling : public PropagatorInterface {
   // Model class.
   const VariablesAssignment& assignment_;
   const IntegerTrail& integer_trail_;
-  EnforcementPropagator& enforcement_propagator_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 
   // Temporary data.

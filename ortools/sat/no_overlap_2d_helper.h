@@ -21,6 +21,8 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -51,6 +53,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
             x_starts, x_ends, x_sizes, x_reason_for_presence, model)),
         y_helper_(std::make_unique<SchedulingConstraintHelper>(
             y_starts, y_ends, y_sizes, y_reason_for_presence, model)),
+        enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
+        enforcement_id_(-1),
         model_(model),
         watcher_(model->GetOrCreate<GenericLiteralWatcher>()) {
     const int num_boxes = x_helper_->NumTasks();
@@ -63,7 +67,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
     }
   }
 
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher* watcher,
+                    absl::Span<const Literal> enforcement_literals);
 
   bool SynchronizeAndSetDirection(bool x_is_forward_after_swap = true,
                                   bool y_is_forward_after_swap = true,
@@ -110,9 +115,11 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
             y_helper_->LevelZeroSizeMin(index)};
   }
 
-  void ClearReason() {
-    x_helper_->ClearReason();
-    y_helper_->ClearReason();
+  bool IsEnforced() const;
+
+  void ResetReason() {
+    x_helper_->ResetReason();
+    y_helper_->ResetReason();
   }
 
   void WatchAllBoxes(int id) { propagators_watching_.push_back(id); }
@@ -203,12 +210,12 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   }
 
   bool IncreaseLeftMin(int index, IntegerValue new_lower_bound) {
-    x_helper_->ImportOtherReasons(*y_helper_);
+    x_helper_->ImportReasonsFromOther(*y_helper_);
     return x_helper_->IncreaseStartMin(index, new_lower_bound);
   }
 
   bool ReportConflict() {
-    x_helper_->ImportOtherReasons(*y_helper_);
+    x_helper_->ImportReasonsFromOther(*y_helper_);
     return x_helper_->ReportConflict();
   }
 
@@ -244,6 +251,8 @@ class NoOverlap2DConstraintHelper : public PropagatorInterface {
   std::unique_ptr<SchedulingConstraintHelper> y_helper_;
   std::unique_ptr<SchedulingDemandHelper> x_demands_helper_;
   std::unique_ptr<SchedulingDemandHelper> y_demands_helper_;
+  EnforcementHelper& enforcement_helper_;
+  EnforcementId enforcement_id_;
   Model* model_;
   GenericLiteralWatcher* watcher_;
   std::vector<int> propagators_watching_;

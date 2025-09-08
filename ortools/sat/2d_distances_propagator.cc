@@ -164,6 +164,7 @@ IntegerValue Precedences2DPropagator::UpperBound(
 }
 
 bool Precedences2DPropagator::Propagate() {
+  if (!helper_.IsEnforced()) return true;
   if (last_helper_inprocessing_count_ != helper_.InProcessingCount()) {
     if (!helper_.SynchronizeAndSetDirection()) return false;
     last_helper_inprocessing_count_ = helper_.InProcessingCount();
@@ -175,9 +176,6 @@ bool Precedences2DPropagator::Propagate() {
   CollectNewPairsOfBoxesWithNonTrivialDistance();
 
   num_calls_++;
-
-  SchedulingConstraintHelper* helpers[2] = {&helper_.x_helper(),
-                                            &helper_.y_helper()};
 
   for (const PairData& pair_data : pair_data_) {
     if (!absl::c_all_of(pair_data.pair_presence_literals,
@@ -206,24 +204,14 @@ bool Precedences2DPropagator::Propagate() {
 
     const int box1 = pair_data.box1;
     const int box2 = pair_data.box2;
-    helper_.ClearReason();
+    helper_.ResetReason();
     num_conflicts_++;
 
-    for (int dim = 0; dim < 2; dim++) {
-      SchedulingConstraintHelper* helper = helpers[dim];
-      for (int j = 0; j < 2; j++) {
-        int b1 = box1;
-        int b2 = box2;
-        if (j == 1) {
-          std::swap(b1, b2);
-        }
-        const auto [expr, ub] = EncodeDifferenceLowerThan(
-            helper->Starts()[b1], helper->Ends()[b2], -1);
-        linear2_bounds_->AddReasonForUpperBoundLowerThan(
-            expr, ub, helper_.x_helper().MutableLiteralReason(),
-            helper_.x_helper().MutableIntegerReason());
-      }
-    }
+    helper_.x_helper().AddReasonForBeingBeforeAssumingNoOverlap(box1, box2);
+    helper_.x_helper().AddReasonForBeingBeforeAssumingNoOverlap(box2, box1);
+    helper_.y_helper().AddReasonForBeingBeforeAssumingNoOverlap(box1, box2);
+    helper_.y_helper().AddReasonForBeingBeforeAssumingNoOverlap(box2, box1);
+
     helper_.AddPresenceReason(box1);
     helper_.AddPresenceReason(box2);
     return helper_.ReportConflict();

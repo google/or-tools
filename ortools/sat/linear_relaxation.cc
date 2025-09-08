@@ -731,6 +731,7 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
 void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
                                               Model* model,
                                               LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -749,7 +750,8 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
     intervals.erase(intervals.begin() + makespan_index.value());
   }
 
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
       repository->GetOrCreateDemandHelper(helper, demands);
@@ -768,6 +770,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
 void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
                                                Model* model,
                                                LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> intervals =
@@ -787,7 +790,8 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   }
 
   // We try to linearize the energy of each task (size * demand).
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
       repository->GetOrCreateDemandHelper(helper, demands);
@@ -1069,6 +1073,7 @@ void AppendNoOverlap2dRelaxationForComponent(
 void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap_2d());
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -1079,7 +1084,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
 
   auto* intervals_repository = model->GetOrCreate<IntervalsRepository>();
   NoOverlap2DConstraintHelper* no_overlap_helper =
-      intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
+      intervals_repository->GetOrCreate2DHelper(/*enforcement_literals=*/{},
+                                                x_intervals, y_intervals);
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
 
   CutGenerator& result = relaxation->cut_generators.emplace_back();
@@ -1495,9 +1501,12 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
       break;
     }
     case ConstraintProto::ConstraintCase::kRoutes: {
-      AppendRoutesRelaxation(ct, model, relaxation);
-      if (linearization_level > 1) {
-        AddRoutesCutGenerator(ct, model, relaxation);
+      // TODO(user): add support for enforcement literals?
+      if (!HasEnforcementLiteral(ct)) {
+        AppendRoutesRelaxation(ct, model, relaxation);
+        if (linearization_level > 1) {
+          AddRoutesCutGenerator(ct, model, relaxation);
+        }
       }
       break;
     }
@@ -1768,6 +1777,7 @@ void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
 
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
                                 LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = m->GetOrCreate<CpModelMapping>();
@@ -1779,7 +1789,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
   IntervalsRepository* intervals_repository =
       m->GetOrCreate<IntervalsRepository>();
   NoOverlap2DConstraintHelper* no_overlap_helper =
-      intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
+      intervals_repository->GetOrCreate2DHelper(/*enforcement_literals=*/{},
+                                                x_intervals, y_intervals);
 
   relaxation->cut_generators.push_back(
       CreateNoOverlap2dCompletionTimeCutGenerator(no_overlap_helper, m));
