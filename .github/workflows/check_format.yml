@@ -1,6 +1,6 @@
 name: Check Format
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
