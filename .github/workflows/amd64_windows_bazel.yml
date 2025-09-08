@@ -43,16 +43,10 @@ jobs:
         run: bazel version
       - name: Build
         run: >
-          bazel build
-          -c opt
-          --subcommands=pretty_print
-          //ortools/... //examples/...
+          bazel build --config=ci //ortools/... //examples/...
       - name: Test
         run: >
-          bazel test
-          -c opt
-          --test_output=errors
-          //ortools/... //examples/...
+          bazel test --config=ci //ortools/... //examples/...
 
   amd64_windows_bazel:
     runs-on: ubuntu-latest
