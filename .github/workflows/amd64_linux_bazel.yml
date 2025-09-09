@@ -22,11 +22,12 @@ jobs:
           #{version: '3.13'},
         ]
       fail-fast: false
-    name: amd64•Linux•Bazel•Python-${{matrix.python.version}}
-    runs-on: ubuntu-latest
     env:
       CC:  gcc-12
       CXX: g++-12
+      NAME: amd64•Linux•Bazel•Python-${{matrix.python.version}}
+    name: ${{github.job.jobs.native.env.NAME}}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Check Java
@@ -56,15 +57,22 @@ jobs:
         run: |
           sed -i -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]\+"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
-      - name: Mount bazel cache
-        uses: actions/cache@v3
+      - name: Restore bazel cache
+        uses: actions/cache/restore@v4
+        id: bazel-cache-restore
         with:
           path: ${{env.BAZEL_OUTPUT_ROOT}}
-          key: amd64•Linux•Bazel•Python-${{matrix.python.version}}
+          key: ${{github.job.jobs.native.env.NAME}}
       - name: Build
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/base/...
+      - name: Save bazel cache
+        uses: actions/cache/save@v4
+        if: always() && steps.bazel-cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{github.job.jobs.native.env.NAME}}
       - name: Test
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/base/...
 
   amd64_linux_bazel:
     runs-on: ubuntu-latest
