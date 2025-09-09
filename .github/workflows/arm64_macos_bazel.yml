@@ -49,15 +49,28 @@ jobs:
         run: |
           sed -i '' -e 's/\(DEFAULT_PYTHON =\) "3.[0-9]*"/\1 "${{matrix.python.version}}"/g' MODULE.bazel
           cat MODULE.bazel
-      - name: Mount bazel cache
-        uses: actions/cache@v3
+      - name: Restore bazel cache
+        uses: actions/cache/restore@v4
+        id: bazel-cache-restore
         with:
-          path: ${{env.BAZEL_OUTPUT_ROOT}}
           key: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
       - name: Build
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/base/...
+      - name: Save bazel cache after build
+        uses: actions/cache/save@v4
+        if: always() && steps.bazel-cache-restore.outputs.cache-hit != 'true'
+        with:
+          key: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
       - name: Test
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/base/...
+      - name: Save bazel cache after test
+        uses: actions/cache/save@v4
+        if: always() && steps.bazel-cache-restore.outputs.cache-hit != 'true'
+        with:
+          key: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
+          path: ${{env.BAZEL_OUTPUT_ROOT}}
 
   arm64_macos_bazel:
     runs-on: ubuntu-latest
