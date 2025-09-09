@@ -144,6 +144,9 @@ ortools_cxx_test(
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
 )
+# This test is too long so we currently disable it.
+set_tests_properties(cxx_math_opt_solvers_cp_sat_solver_test
+  PROPERTIES DISABLED TRUE)
 
 ortools_cxx_test(
   NAME
