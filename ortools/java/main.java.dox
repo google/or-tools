@@ -3,7 +3,7 @@
 * @author Corentin "Mizux" Le Molgat <corentinl@google.com>
 */
 
-/*! @mainpage OR-Tools
+/*! @mainpage OR-Tools Java Reference
 This is the reference documentation for the Google OR-Tools Java wrapper.
 
 This repository contains several components:

@@ -18,18 +18,17 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <map>
+#include <limits>
 #include <memory>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"

@@ -12,7 +12,7 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
     name = "tsp",
@@ -114,7 +114,6 @@ py_binary(
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
-        "//ortools/math_opt/solvers:highs_solver",
     ],
 )
 

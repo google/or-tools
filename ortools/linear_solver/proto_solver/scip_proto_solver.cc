@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -41,9 +40,9 @@
 #include "absl/time/time.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
-#include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/linear_solver/proto_solver/scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_and.h"
@@ -55,10 +54,8 @@
 #include "scip/cons_sos1.h"
 #include "scip/cons_sos2.h"
 #include "scip/def.h"
-#include "scip/pub_event.h"
 #include "scip/pub_var.h"
 #include "scip/scip_cons.h"
-#include "scip/scip_event.h"
 #include "scip/scip_general.h"
 #include "scip/scip_message.h"
 #include "scip/scip_numerics.h"
@@ -72,7 +69,6 @@
 #include "scip/type_clock.h"
 #include "scip/type_cons.h"
 #include "scip/type_prob.h"
-#include "scip/type_retcode.h"
 #include "scip/type_scip.h"
 #include "scip/type_sol.h"
 #include "scip/type_stat.h"
@@ -587,6 +583,7 @@ absl::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
 
   return absl::OkStatus();
 }
+
 }  // namespace
 
 // Returns "" iff the model seems valid for SCIP, else returns a human-readable
@@ -947,9 +944,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
       return variable_value;
     };
 
-    // NOTE(user): As of SCIP 7.0.1, getting the pointer to all
-    // solutions is as fast as getting the pointer to the best solution.
-    // See scip/src/scip/scip_sol.c?l=2264&rcl=322332899.
+    // NOTE: As of SCIP 7.0.1, getting the pointer to all solutions is as fast
+    // as getting the pointer to the best solution.
+    // See https://github.com/scipopt/scip/blob/v701/src/scip/scip_sol.c#L2264.
     SCIP_SOL** const scip_solutions = SCIPgetSols(scip);
     response.set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[0]));
     response.set_best_objective_bound(SCIPgetDualbound(scip));

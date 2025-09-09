@@ -21,6 +21,8 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -36,26 +38,26 @@ namespace sat {
 // faster.
 class BooleanXorPropagator : public PropagatorInterface {
  public:
-  BooleanXorPropagator(const std::vector<Literal>& literals, bool value,
-                       Trail* trail, IntegerTrail* integer_trail)
-      : literals_(literals),
-        value_(value),
-        trail_(trail),
-        integer_trail_(integer_trail) {}
+  BooleanXorPropagator(absl::Span<const Literal> enforcement_literals,
+                       const std::vector<Literal>& literals, bool value,
+                       Model* model);
 
   // This type is neither copyable nor movable.
   BooleanXorPropagator(const BooleanXorPropagator&) = delete;
   BooleanXorPropagator& operator=(const BooleanXorPropagator&) = delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  int RegisterWith(GenericLiteralWatcher* watcher);
+
   const std::vector<Literal> literals_;
   const bool value_;
   std::vector<Literal> literal_reason_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
+  const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementHelper& enforcement_helper_;
+  EnforcementId enforcement_id_;
 };
 
 // If we have:
@@ -119,14 +121,11 @@ inline std::vector<IntegerValue> ToIntegerValueVector(
 
 // Enforces the XOR of a set of literals to be equal to the given value.
 inline std::function<void(Model*)> LiteralXorIs(
+    const std::vector<Literal>& enforcement_literals,
     const std::vector<Literal>& literals, bool value) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    BooleanXorPropagator* constraint =
-        new BooleanXorPropagator(literals, value, trail, integer_trail);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    model->TakeOwnership(
+        new BooleanXorPropagator(enforcement_literals, literals, value, model));
   };
 }
 

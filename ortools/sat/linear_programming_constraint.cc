@@ -286,7 +286,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       product_detector_(model->GetOrCreate<ProductDetector>()),
       objective_definition_(model->GetOrCreate<ObjectiveDefinition>()),
       shared_stats_(model->GetOrCreate<SharedStatistics>()),
@@ -294,6 +293,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       symmetrizer_(model->GetOrCreate<LinearConstraintSymmetrizer>()),
       linear_propagator_(model->GetOrCreate<LinearPropagator>()),
+      cover_cut_helper_(model),
+      integer_rounding_cut_helper_(model),
       rlt_cut_helper_(model),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
@@ -321,11 +322,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(
   integer_trail_->RegisterReversibleClass(&rc_rev_int_repository_);
   mirror_lp_variable_.resize(integer_trail_->NumIntegerVariables(),
                              glop::kInvalidCol);
-
-  // Register SharedStatistics with the cut helpers.
-  auto* stats = model->GetOrCreate<SharedStatistics>();
-  integer_rounding_cut_helper_.SetSharedStatistics(stats);
-  cover_cut_helper_.SetSharedStatistics(stats);
 
   // Initialize the IntegerVariable -> ColIndex mapping.
   CHECK(std::is_sorted(vars.begin(), vars.end()));
@@ -2565,37 +2561,6 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
   if (adjusted) ++num_adjusts_;
 }
 
-void LinearProgrammingConstraint::SetReducedCostsInConstraintManager(
-    const LinearConstraint& ct) {
-  constraint_manager_.ClearReducedCostsInfo();
-  absl::int128 ub = ct.ub.value();
-  absl::int128 level_zero_lb = 0;
-  for (int i = 0; i < ct.num_terms; ++i) {
-    IntegerVariable var = ct.vars[i];
-    IntegerValue coeff = ct.coeffs[i];
-    if (coeff < 0) {
-      coeff = -coeff;
-      var = NegationOf(var);
-    }
-
-    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
-    level_zero_lb += absl::int128(coeff.value()) * absl::int128(lb.value());
-
-    if (lb == integer_trail_->LevelZeroUpperBound(var)) continue;
-    const LiteralIndex lit = integer_encoder_->GetAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(var, lb + 1));
-    if (lit != kNoLiteralIndex) {
-      constraint_manager_.SetLiteralReducedCost(Literal(lit), coeff);
-    }
-  }
-  const absl::int128 gap = absl::int128(ct.ub.value()) - level_zero_lb;
-  if (gap > 0) {
-    constraint_manager_.SetReducedCostsGap(gap);
-  } else {
-    constraint_manager_.ClearReducedCostsInfo();
-  }
-}
-
 bool LinearProgrammingConstraint::PropagateLpConstraint(LinearConstraint ct) {
   DCHECK(constraint_manager_.DebugCheckConstraint(ct));
 
@@ -2735,7 +2700,7 @@ bool LinearProgrammingConstraint::PropagateExactLpReason() {
     return explanation.ub >= 0;
   }
 
-  SetReducedCostsInConstraintManager(explanation);
+  constraint_manager_.SetReducedCostsAsLinearConstraint(explanation);
   return PropagateLpConstraint(std::move(explanation));
 }
 

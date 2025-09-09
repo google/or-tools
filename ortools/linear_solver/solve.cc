@@ -32,7 +32,7 @@
 //    CP-SAT parameters:
 //
 // solve --solver=sat \
-//       --params="max_time_in_seconds:600, num_search_workers:8"
+//       --params="max_time_in_seconds:600, num_workers:8"
 //       --stderrthreshold=0 \
 //       --input=/tmp/foo.mps \
 //       2>/tmp/foo.err
@@ -169,7 +169,7 @@ MPModelRequest ReadMipModel(const std::string& input) {
 }
 
 MPSolutionResponse LocalSolve(const MPModelRequest& request_proto) {
-  // TODO(or-core-team): Why doesn't this use MPSolver::SolveWithProto() ?
+  // TODO(user): Why doesn't this use MPSolver::SolveWithProto() ?
 
   // Create the solver, we use the name of the model as the solver name.
   MPSolver solver(request_proto.model().name(),

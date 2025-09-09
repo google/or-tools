@@ -105,7 +105,7 @@ class PiecewiseLinearFunction {
 
   // This API provides a factory for creating different families of Piecewise
   // Linear Functions based on specific properties of each family. The
-  // PiecewiseLinearFunction is composed by a set of PiecwiseSegments and upon
+  // PiecewiseLinearFunction is composed by a set of PiecewiseSegments and upon
   // creation is not modifiable but with the provided function operations.
   // The object returned by any of these builders in the factory is owned by
   // the client code.

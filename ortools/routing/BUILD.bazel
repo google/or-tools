@@ -1,0 +1,344 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+proto_library(
+    name = "enums_proto",
+    srcs = ["enums.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "enums_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":enums_proto"],
+)
+
+java_proto_library(
+    name = "enums_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":enums_proto"],
+)
+
+proto_library(
+    name = "ils_proto",
+    srcs = ["ils.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":enums_proto",
+        ":heuristic_parameters_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "ils_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":ils_proto"],
+)
+
+py_proto_library(
+    name = "ils_py_pb2",
+    deps = [":ils_proto"],
+)
+
+java_proto_library(
+    name = "ils_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":ils_proto"],
+)
+
+proto_library(
+    name = "parameters_proto",
+    srcs = ["parameters.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":enums_proto",
+        ":heuristic_parameters_proto",
+        ":ils_proto",
+        "//ortools/constraint_solver:solver_parameters_proto",
+        "//ortools/sat:sat_parameters_proto",
+        "//ortools/util:optional_boolean_proto",
+        "@protobuf//:duration_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "parameters_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":parameters_proto"],
+)
+
+java_proto_library(
+    name = "parameters_java_proto",
+    visibility = ["//visibility:public"],
+    deps = [":parameters_proto"],
+)
+
+py_proto_library(
+    name = "parameters_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":parameters_proto"],
+)
+
+py_proto_library(
+    name = "enums_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":enums_proto"],
+)
+
+cc_library(
+    name = "parameters",
+    srcs = ["parameters.cc"],
+    hdrs = ["parameters.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":enums_cc_proto",
+        ":heuristic_parameters_cc_proto",
+        ":ils_cc_proto",
+        ":parameters_cc_proto",
+        "//ortools/base",
+        "//ortools/base:proto_enum_utils",
+        "//ortools/base:protoutil",
+        "//ortools/base:types",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:testing_utils",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@protobuf",
+    ],
+)
+
+cc_library(
+    name = "parameters_utils",
+    srcs = ["parameters_utils.cc"],
+    hdrs = ["parameters_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":heuristic_parameters_cc_proto",
+        ":parameters_cc_proto",
+        "//ortools/util:optional_boolean_cc_proto",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:strong_integers",
+    ],
+)
+
+cc_library(
+    name = "utils",
+    srcs = ["utils.cc"],
+    hdrs = ["utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "neighborhoods",
+    srcs = ["neighborhoods.cc"],
+    hdrs = ["neighborhoods.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":types",
+        ":utils",
+        "//ortools/base:types",
+        "//ortools/constraint_solver:cp",
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "index_manager",
+    srcs = ["index_manager.cc"],
+    hdrs = ["index_manager.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":types",
+        "//ortools/base",
+        "//ortools/base:base_export",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "breaks",
+    srcs = ["breaks.cc"],
+    hdrs = ["breaks.h"],
+    deps = [
+        ":filter_committables",
+        "//ortools/algorithms:binary_search",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "routing",
+    srcs = [
+        "constraints.cc",
+        "decision_builders.cc",
+        "filters.cc",
+        "flow.cc",
+        "ils.cc",
+        "insertion_lns.cc",
+        "lp_scheduling.cc",
+        "routing.cc",
+        "sat.cc",
+        "search.cc",
+    ],
+    hdrs = [
+        "constraints.h",
+        "decision_builders.h",
+        "filters.h",
+        "ils.h",
+        "insertion_lns.h",
+        "lp_scheduling.h",
+        "routing.h",
+        "search.h",
+    ],
+    copts = select({
+        "@platforms//os:windows": ["/Zc:preprocessor"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+    deps = [
+        ":breaks",
+        ":enums_cc_proto",
+        ":filter_committables",
+        ":heuristic_parameters_cc_proto",
+        ":ils_cc_proto",
+        ":index_manager",
+        ":neighborhoods",
+        ":parameters",
+        ":parameters_cc_proto",
+        ":parameters_utils",
+        ":types",
+        ":utils",
+        "//ortools/base",
+        "//ortools/base:dump_vars",
+        "//ortools/base:map_util",
+        "//ortools/base:mathutil",
+        "//ortools/base:protoutil",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/base:types",
+        "//ortools/constraint_solver:cp",
+        "//ortools/constraint_solver:solver_parameters_cc_proto",
+        "//ortools/glop:lp_solver",
+        "//ortools/glop:parameters_cc_proto",
+        "//ortools/graph",
+        "//ortools/graph:christofides",
+        "//ortools/graph:connected_components",
+        "//ortools/graph:linear_assignment",
+        "//ortools/graph:min_cost_flow",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/port:proto_utils",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:integer_base",
+        "//ortools/sat:lp_utils",
+        "//ortools/sat:model",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "//ortools/util:bitset",
+        "//ortools/util:flat_matrix",
+        "//ortools/util:optional_boolean_cc_proto",
+        "//ortools/util:piecewise_linear_function",
+        "//ortools/util:range_minimum_query",
+        "//ortools/util:range_query_function",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/functional:bind_front",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_library(
+    name = "filter_committables",
+    srcs = ["filter_committables.cc"],
+    hdrs = ["filter_committables.h"],
+    deps = [
+        "//ortools/util:bitset",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+proto_library(
+    name = "heuristic_parameters_proto",
+    srcs = ["heuristic_parameters.proto"],
+)
+
+java_proto_library(
+    name = "heuristic_parameters_java_proto",
+    deps = [":heuristic_parameters_proto"],
+)
+
+cc_proto_library(
+    name = "heuristic_parameters_cc_proto",
+    deps = [":heuristic_parameters_proto"],
+)
+
+py_proto_library(
+    name = "heuristic_parameters_py_pb2",
+    deps = [":heuristic_parameters_proto"],
+)

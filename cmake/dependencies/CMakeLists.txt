@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# We are using FetchContent OVERRIDE_FIND_PACKAGE introduced in 3.24
+cmake_minimum_required(VERSION 3.24)
+
 # ##############################################################################
 # SWIG (WIN32)
 # ##############################################################################
@@ -111,10 +114,10 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20250512.0"
+    GIT_TAG "20250814.0"
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250512.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250814.0.patch"
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(absl)
@@ -303,10 +306,10 @@ if(BUILD_Boost)
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
   FetchContent_Declare(
     Boost
-    URL
-    https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.gz
-    USES_TERMINAL_DOWNLOAD TRUE
-    DOWNLOAD_NO_EXTRACT FALSE
+    GIT_REPOSITORY "https://github.com/boostorg/boost.git"
+    GIT_TAG "boost-1.87.0"
+    GIT_SHALLOW TRUE
+    GIT_SUBMODULES_RECURSE TRUE
     PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
   )
   set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)
@@ -530,10 +533,10 @@ if(BUILD_fuzztest)
   FetchContent_Declare(
     fuzztest
     GIT_REPOSITORY https://github.com/google/fuzztest.git
-    GIT_TAG 2025-02-14
+    GIT_TAG 2025-08-05
     GIT_SHALLOW TRUE
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-02-14.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-08-05.patch"
   )
   FetchContent_MakeAvailable(fuzztest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)

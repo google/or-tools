@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 325
+// NEXT TAG: 330
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -703,6 +703,13 @@ message SatParameters {
   // Allows sharing of the bounds of modified variables at level 0.
   optional bool share_level_zero_bounds = 114 [default = true];
 
+  // Allows sharing of the bounds on linear2 discovered at level 0. This is
+  // mainly interesting on scheduling type of problems when we branch on
+  // precedences.
+  //
+  // Warning: This currently non-deterministic.
+  optional bool share_linear2_bounds = 326 [default = false];
+
   // Allows sharing of new learned binary clause between workers.
   optional bool share_binary_clauses = 203 [default = true];
 
@@ -817,6 +824,11 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_precedences_in_disjunctive_constraint = 74 [default = true];
+
+  // At root level, we might compute the transitive closure of "precedences"
+  // relations so that we can exploit that in scheduling problems. Setting this
+  // to zero disable the feature.
+  optional int32 transitive_precedences_work_limit = 327 [default = 1000000];
 
   // Create one literal for each disjunction of two pairs of tasks. This slows
   // down the solve time, but improves the lower bound of the objective in the
@@ -1265,13 +1277,20 @@ message SatParameters {
   // SPLIT_STRATEGY_BALANCED_TREE and SPLIT_STRATEGY_DISCREPANCY.
   optional int32 shared_tree_balance_tolerance = 305 [default = 1];
 
-  // Whether we enumerate all solutions of a problem without objective. Note
-  // that setting this to true automatically disable some presolve reduction
-  // that can remove feasible solution. That is it has the same effect as
-  // setting keep_all_feasible_solutions_in_presolve.
+  // How much dtime a worker will wait between proposing splits.
+  // This limits the contention in splitting the shared tree, and also reduces
+  // the number of too-easy subtrees that are generates.
+  optional double shared_tree_split_min_dtime = 328 [default = 0.1];
+
+  // Whether we enumerate all solutions of a problem without objective.
   //
-  // TODO(user): Do not do that and let the user choose what behavior is best by
-  // setting keep_all_feasible_solutions_in_presolve ?
+  // WARNING:
+  // - This can be used with num_workers > 1 but then each solutions can be
+  //   found more than once, so it is up to the client to deduplicate them.
+  // - If keep_all_feasible_solutions_in_presolve is unset, we will set it to
+  //   true as otherwise, many feasible solution can just be removed by the
+  //   presolve. It is still possible to manually set this to false if one only
+  //   wants to enumerate all solutions of the presolved model.
   optional bool enumerate_all_solutions = 87 [default = false];
 
   // If true, we disable the presolve reductions that remove feasible solutions
@@ -1336,9 +1355,20 @@ message SatParameters {
   optional bool use_lns_only = 101 [default = false];
 
   // Size of the top-n different solutions kept by the solver.
-  // This parameter must be > 0.
-  // Currently this only impact the "base" solution chosen for a LNS fragment.
+  // This parameter must be > 0. Currently, having this larger than one mainly
+  // impact the "base" solution chosen for a LNS/LS fragment.
   optional int32 solution_pool_size = 193 [default = 3];
+
+  // If solution_pool_size is <= this, we will use DP to keep a "diverse" set
+  // of solutions (the one further apart via hamming distance) in the pool.
+  // Setting this to large value might be slow, especially if your solution are
+  // large.
+  optional int32 solution_pool_diversity_limit = 329 [default = 10];
+
+  // In order to not get stuck in local optima, when this is non-zero, we try to
+  // also work on "older" solutions with a worse objective value so we get a
+  // chance to follow a different LS/LNS trajectory.
+  optional int32 alternative_pool_size = 325 [default = 1];
 
   // Turns on relaxation induced neighborhood generator.
   optional bool use_rins_lns = 129 [default = true];

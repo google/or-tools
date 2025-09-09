@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,6 +88,7 @@ class OpbReader {
     LOG(INFO) << "#variables: " << num_variables_;
     LOG(INFO) << "#constraints: " << constraints_.size();
     LOG(INFO) << "#objective: " << objective_.size();
+    if (top_cost_.has_value()) LOG(INFO) << "top_cost: " << top_cost_.value();
 
     const std::string error_message = ValidateModel();
     if (!error_message.empty()) {
@@ -134,13 +136,15 @@ class OpbReader {
   void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
         absl::StrSplit(line, absl::ByAnyChar(" ;"), absl::SkipEmpty());
-    if (words.empty() || words[0].empty() || words[0][0] == '*') {
-      // TODO(user): Parse comments.
+    if (words.empty() || words[0].empty() || words[0][0] == '*') return;
+
+    if (words[0] == "soft:") {
+      if (words.size() == 1) return;
+      int64_t top_cost;
+      if (!ParseInt64Into(words[1], &top_cost)) return;
+      top_cost_ = top_cost;
       return;
     }
-
-    // We ignore the number of soft constraints.
-    if (words[0] == "soft:") return;
 
     if (words[0] == "min:") {
       for (int i = 1; i < words.size(); ++i) {
@@ -364,6 +368,12 @@ class OpbReader {
         obj->add_coeffs(term.coeff);
       }
     }
+
+    if (top_cost_.has_value()) {
+      CpObjectiveProto* obj = model->mutable_objective();
+      obj->add_domain(std::numeric_limits<int64_t>::min());
+      obj->add_domain(top_cost_.value());
+    }
   }
 
   int num_variables_;
@@ -371,6 +381,7 @@ class OpbReader {
   std::vector<PbConstraint> constraints_;
   absl::flat_hash_map<absl::Span<const int>, int> product_to_var_;
   bool model_is_supported_ = true;
+  std::optional<int64_t> top_cost_;
 };
 
 }  // namespace sat

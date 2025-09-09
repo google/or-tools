@@ -11,12 +11,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load(":code_samples.bzl", "code_sample_cc")
+
+code_sample_cc(name = "simple_routing_program")
+
+code_sample_cc(name = "tsp")
+
+code_sample_cc(name = "tsp_circuit_board")
+
+code_sample_cc(name = "tsp_cities")
+
+code_sample_cc(name = "tsp_distance_matrix")
+
+code_sample_cc(name = "vrp")
+
+code_sample_cc(name = "vrp_breaks")
+
+code_sample_cc(name = "vrp_capacity")
+
+code_sample_cc(name = "vrp_drop_nodes")
+
+code_sample_cc(name = "vrp_global_span")
+
+code_sample_cc(name = "vrp_initial_routes")
+
+code_sample_cc(name = "vrp_pickup_delivery")
+
+code_sample_cc(name = "vrp_pickup_delivery_fifo")
+
+code_sample_cc(name = "vrp_pickup_delivery_lifo")
+
+code_sample_cc(name = "vrp_resources")
+
+code_sample_cc(name = "vrp_starts_ends")
+
+code_sample_cc(name = "vrp_time_windows")
+
+code_sample_cc(name = "vrp_with_time_limit")
+
+# cvrptw samples
 cc_binary(
     name = "cvrptw",
     srcs = ["cvrptw.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
     ],
 )
@@ -26,7 +66,7 @@ cc_binary(
     srcs = ["cvrp_disjoint_tw.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
     ],
 )
@@ -36,8 +76,8 @@ cc_binary(
     srcs = ["cvrptw_with_breaks.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
-        "//ortools/constraint_solver:routing_enums_cc_proto",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
         "//ortools/routing/parsers:cvrptw_lib",
         "@abseil-cpp//absl/strings",
     ],
@@ -48,7 +88,7 @@ cc_binary(
     srcs = ["cvrptw_with_resources.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
     ],
 )
@@ -58,7 +98,7 @@ cc_binary(
     srcs = ["cvrptw_with_stop_times_and_resources.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
         "@abseil-cpp//absl/strings",
     ],
@@ -69,7 +109,7 @@ cc_binary(
     srcs = ["cvrptw_with_refueling.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:cvrptw_lib",
     ],
 )

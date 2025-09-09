@@ -11,12 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-exports_files(
-    [
-        "shift_minimization.dat",
-        "wt40.txt",
-    ],
-)
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 # Constraint solver examples.
 cc_binary(
@@ -604,7 +601,7 @@ cc_binary(
     srcs = ["random_tsp.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/util:random_engine",
         "@abseil-cpp//absl/strings",
         "@protobuf",
@@ -618,7 +615,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:mathutil",
-        "//ortools/constraint_solver:routing",
+        "//ortools/routing",
         "//ortools/routing/parsers:lilim_parser",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/strings",

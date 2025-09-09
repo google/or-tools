@@ -27,6 +27,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -154,6 +155,39 @@ TEST_P(AllDifferentTest, EnumerateAllInjections) {
   }
   // Count the number of solutions, it should be m!/(m-n)!.
   EXPECT_EQ(num_solutions, Factorial(m) / Factorial(m - n));
+}
+
+TEST(AllDifferentOnBoundsTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(1, 2)),
+                                    model.Add(NewIntegerVariable(0, 1)),
+                                    model.Add(NewIntegerVariable(1, 2))};
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  integer_trail->UpdateInitialDomain(vars[0], Domain::FromValues({1, 1}));
+  integer_trail->UpdateInitialDomain(vars[1], Domain::FromValues({0, 0}));
+  // b => all_diff(x, y+1, 2-z), x=y=1 (always false if enforced).
+  model.Add(AllDifferentOnBounds(
+      {b}, {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
+            AffineExpression(vars[2], -1, 3)}));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+}
+
+TEST(AllDifferentOnBoundsTest, NotAlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(1, 3)),
+                                    model.Add(NewIntegerVariable(0, 2)),
+                                    model.Add(NewIntegerVariable(1, 3))};
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  // b => all_diff(x, y+1, 2-z), x,y+1,3-z in [1, 3].
+  model.Add(AllDifferentOnBounds(
+      {b}, {AffineExpression(vars[0], 1), AffineExpression(vars[1], 1, 1),
+            AffineExpression(vars[2], -1, 3)}));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
 }
 
 }  // namespace

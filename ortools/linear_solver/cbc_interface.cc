@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 #if defined(USE_CBC)
 
 #include <cstdint>
@@ -396,7 +395,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
   VLOG(1) << "cbc result status: " << tmp_status;
   /* Final status of problem
-     (info from cbc/.../CbcSolver.cpp,
+     (info from third_party/cbc/.../CbcSolver.cpp,
       See http://cs?q="cbc+status"+file:CbcSolver.cpp)
      Some of these can be found out by is...... functions
      -1 before branchAndBound

@@ -33,6 +33,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/string_view_migration.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
 #include "ortools/math_opt/cpp/linear_constraint.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
@@ -373,7 +374,7 @@ absl::StatusOr<Termination> Termination::FromProto(
     return absl::InvalidArgumentError("reason must be specified");
   }
   Termination result(/*is_maximize=*/false, *reason,
-                     termination_proto.detail());
+                     google::protobuf::StringCopy(termination_proto.detail()));
   result.limit = EnumFromProto(termination_proto.limit());
   OR_ASSIGN_OR_RETURN3(
       result.problem_status,

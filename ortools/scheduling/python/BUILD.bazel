@@ -15,7 +15,7 @@
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 pybind_extension(
     name = "rcpsp",
@@ -35,7 +35,6 @@ py_test(
     data = [
         "//ortools/scheduling/testdata:j301_1.sm",
     ],
-    python_version = "PY3",
     deps = [
         ":rcpsp",
         "//ortools/scheduling:rcpsp_py_proto",

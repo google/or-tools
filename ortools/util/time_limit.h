@@ -343,37 +343,37 @@ class SharedTimeLimit {
   bool LimitReached() const {
     // Note, time_limit_->LimitReached() is not const, and changes internal
     // state of time_limit_, hence we need a writer's lock.
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     return time_limit_->LimitReached();
   }
 
   void Stop() {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     *stopped_ = true;
   }
 
   void UpdateLocalLimit(TimeLimit* local_limit) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
   }
 
   void AdvanceDeterministicTime(double deterministic_duration) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     time_limit_->AdvanceDeterministicTime(deterministic_duration);
   }
 
   double GetTimeLeft() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     return time_limit_->GetTimeLeft();
   }
 
   double GetElapsedDeterministicTime() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     return time_limit_->GetElapsedDeterministicTime();
   }
 
   std::atomic<bool>* ExternalBooleanAsLimit() const {
-    absl::ReaderMutexLock lock(&mutex_);
+    absl::ReaderMutexLock lock(mutex_);
     // We can simply return the "external bool" and remain thread-safe because
     // it's wrapped in std::atomic.
     return time_limit_->ExternalBooleanAsLimit();

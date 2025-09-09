@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
@@ -201,7 +201,8 @@ if(BUILD_TESTING)
   if(MSVC OR CMAKE_CROSSCOMPILING)
     set(USE_fuzztest OFF)
   else()
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ON "BUILD_CXX" OFF)
+    # since no distro provide a fuzztest package disable support by default.
+    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS} "BUILD_CXX" OFF)
   endif()
   if(NOT USE_fuzztest)
     set(BUILD_fuzztest OFF)
@@ -467,6 +468,7 @@ foreach(SAMPLES IN ITEMS
  graph
  glop
  constraint_solver
+ routing
  linear_solver
  ${MATH_OPT_DIR}
  ${PDLP_DIR}

@@ -31,6 +31,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
@@ -156,7 +157,7 @@ bool TestDisjunctivePropagation(absl::Span<const TaskWithDuration> input,
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
 
   const int initial_num_enqueues = integer_trail->num_enqueues();
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
   if (!model.GetOrCreate<SatSolver>()->Propagate()) return false;
   CHECK_EQ(input.size(), expected.size());
   for (int i = 0; i < input.size(); ++i) {
@@ -238,8 +239,8 @@ TEST(DisjunctiveConstraintTest, Precedences) {
   Trail* trail = model.GetOrCreate<Trail>();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
-  auto* relations = model.GetOrCreate<PrecedenceRelations>();
   auto* intervals = model.GetOrCreate<IntervalsRepository>();
+  auto* lin2_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
 
   const auto add_affine_coeff_one_precedence = [&](const AffineExpression e1,
                                                    const AffineExpression& e2) {
@@ -249,8 +250,8 @@ TEST(DisjunctiveConstraintTest, Precedences) {
     CHECK_EQ(e2.coeff, 1);
     precedences->AddPrecedenceWithOffset(e1.var, e2.var,
                                          e1.constant - e2.constant);
-    relations->AddUpperBound(LinearExpression2::Difference(e1.var, e2.var),
-                             e2.constant - e1.constant);
+    lin2_bounds->AddUpperBound(LinearExpression2::Difference(e1.var, e2.var),
+                               e2.constant - e1.constant);
   };
 
   const int kStart(0);
@@ -260,7 +261,7 @@ TEST(DisjunctiveConstraintTest, Precedences) {
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
 
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   for (const IntervalVariable i : ids) {
@@ -290,7 +291,7 @@ TEST(SchedulingTest, Permutations) {
         model.Add(NewInterval(0, kNumIntervals, 1));
     intervals.push_back(interval);
   }
-  AddDisjunctive(intervals, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   IntervalsRepository* repository = model.GetOrCreate<IntervalsRepository>();
@@ -336,8 +337,9 @@ TEST(SchedulingTest, Permutations) {
 // Random tests with comparison with a simple time-decomposition encoding.
 // ============================================================================
 
-void AddDisjunctiveTimeDecomposition(absl::Span<const IntervalVariable> vars,
-                                     Model* model) {
+void AddDisjunctiveTimeDecomposition(
+    absl::Span<const Literal> /*enforcement_literals*/,
+    absl::Span<const IntervalVariable> vars, Model* model) {
   const int num_tasks = vars.size();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -413,7 +415,8 @@ std::vector<OptionalTasksWithDuration> GenerateRandomInstance(
 
 int CountAllSolutions(
     absl::Span<const OptionalTasksWithDuration> instance,
-    const std::function<void(const std::vector<IntervalVariable>&, Model*)>&
+    const std::function<void(const std::vector<Literal>&,
+                             const std::vector<IntervalVariable>&, Model*)>&
         add_disjunctive) {
   Model model;
   std::vector<IntervalVariable> intervals;
@@ -427,7 +430,7 @@ int CountAllSolutions(
           model.Add(NewInterval(task.min_start, task.max_end, task.duration)));
     }
   }
-  add_disjunctive(intervals, &model);
+  add_disjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   int num_solutions_found = 0;
   while (true) {
@@ -463,7 +466,12 @@ TEST(DisjunctiveTest, RandomComparisonWithSimpleEncoding) {
         << InstanceDebugString(instance);
     EXPECT_EQ(
         CountAllSolutions(instance, AddDisjunctive),
-        CountAllSolutions(instance, AddDisjunctiveWithBooleanPrecedencesOnly))
+        CountAllSolutions(
+            instance,
+            [](const std::vector<Literal>& /*enforcement_literals*/,
+               const std::vector<IntervalVariable>& intervals, Model* model) {
+              AddDisjunctiveWithBooleanPrecedencesOnly(intervals, model);
+            }))
         << InstanceDebugString(instance);
   }
 }
@@ -483,20 +491,35 @@ TEST(DisjunctiveTest, TwoIntervalsTest) {
   EXPECT_EQ(12, CountAllSolutions(instance, AddDisjunctive));
 }
 
+namespace {
+
+void AddLowerOrEqualWithOffset(AffineExpression a, IntegerVariable b,
+                               int64_t offset, Model* model) {
+  const int64_t rhs = -a.constant.value() - offset;
+  std::vector<IntegerVariable> vars = {a.var, b};
+  std::vector<int64_t> coeffs = {a.coeff.value(), -1};
+  AddWeightedSumLowerOrEqual({}, vars, coeffs, rhs, model);
+
+  // We also need to register them.
+  model->GetOrCreate<RootLevelLinear2Bounds>()->AddUpperBound(
+      LinearExpression2::Difference(a.var, b), rhs);
+}
+
+}  // namespace
+
 TEST(DisjunctiveTest, Precedences) {
   Model model;
 
   std::vector<IntervalVariable> ids;
   ids.push_back(model.Add(NewInterval(0, 7, 3)));
   ids.push_back(model.Add(NewInterval(0, 7, 2)));
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
 
   const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
   IntervalsRepository* intervals = model.GetOrCreate<IntervalsRepository>();
-  model.Add(
-      AffineCoeffOneLowerOrEqualWithOffset(intervals->End(ids[0]), var, 5));
-  model.Add(
-      AffineCoeffOneLowerOrEqualWithOffset(intervals->End(ids[1]), var, 4));
+
+  AddLowerOrEqualWithOffset(intervals->End(ids[0]), var, 5, &model);
+  AddLowerOrEqualWithOffset(intervals->End(ids[1]), var, 4, &model);
 
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_EQ(model.Get(LowerBound(var)), (3 + 2) + std::min(4, 5));
@@ -511,7 +534,7 @@ TEST(DisjunctiveTest, OptionalIntervalsWithLinkedPresence) {
   intervals.push_back(model.Add(NewOptionalInterval(0, 6, 2, alternative)));
   intervals.push_back(
       model.Add(NewOptionalInterval(0, 6, 4, alternative.Negated())));
-  AddDisjunctive(intervals, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   int num_solutions_found = 0;
   while (true) {

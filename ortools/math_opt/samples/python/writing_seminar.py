@@ -43,10 +43,10 @@ Warning: this method is not strategy proof, students can get a better assignment
 by not submitting their true preferences over the seminars.
 """
 
+from collections.abc import Sequence
 import dataclasses
 import datetime
 import random
-from typing import Dict, Sequence, Tuple
 
 from absl import app
 from absl import flags
@@ -75,7 +75,7 @@ _TEST_DATA = flags.DEFINE_boolean("test_data", False, "Use the small test instan
 
 @dataclasses.dataclass(frozen=True)
 class Student:
-    preferred_classes: Tuple[int, ...]
+    preferred_classes: tuple[int, ...]
     name: str = ""
 
 
@@ -87,9 +87,9 @@ class Seminar:
 
 @dataclasses.dataclass(frozen=True)
 class WritingSeminarAssignmentProblem:
-    seminars: Tuple[Seminar, ...]
-    students: Tuple[Student, ...]
-    rank_penalty: Tuple[float, ...]
+    seminars: tuple[Seminar, ...]
+    students: tuple[Student, ...]
+    rank_penalty: tuple[float, ...]
     unmatched_penalty: float
 
 
@@ -113,7 +113,7 @@ def _random_writing_seminar_assignment_problem(
     num_students: int,
     selections_per_student: int,
     unmatched_penalty: float,
-    rank_penalty: Tuple[float, ...],
+    rank_penalty: tuple[float, ...],
 ) -> WritingSeminarAssignmentProblem:
     """Generates a random instance of the WritingSeminarAssignmentProblem."""
     if len(rank_penalty) != selections_per_student:
@@ -141,7 +141,7 @@ def _assign_students(
     problem: WritingSeminarAssignmentProblem,
     solver_type: mathopt.SolverType,
     time_limit: datetime.timedelta,
-) -> Dict[Student, Seminar]:
+) -> dict[Student, Seminar]:
     """Optimally assigns students to classes by solving an IP."""
     # Problem data:
     #   * i in S: the students.

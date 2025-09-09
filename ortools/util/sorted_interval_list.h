@@ -724,7 +724,9 @@ class ClosedInterval::Iterator {
   // arithmetic.
   uint64_t current_;
 };
-
+#if __cplusplus >= 202002L
+static_assert(std::input_iterator<ClosedInterval::Iterator>);
+#endif
 // begin()/end() are required for iteration over ClosedInterval in a range for
 // loop.
 inline ClosedInterval::Iterator begin(ClosedInterval interval) {

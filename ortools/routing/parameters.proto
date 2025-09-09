@@ -1,0 +1,615 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Protocol buffer used to parametrize the routing library, in particular the
+// search parameters such as first solution heuristics and local search
+// neighborhoods.
+
+syntax = "proto3";
+
+option java_package = "com.google.ortools.routing";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Routing";
+
+import "google/protobuf/duration.proto";
+import "ortools/constraint_solver/solver_parameters.proto";
+import "ortools/routing/enums.proto";
+import "ortools/routing/heuristic_parameters.proto";
+import "ortools/routing/ils.proto";
+import "ortools/sat/sat_parameters.proto";
+import "ortools/util/optional_boolean.proto";
+
+package operations_research.routing;
+
+// Parameters defining the search used to solve vehicle routing problems.
+//
+// If a parameter is unset (or, equivalently, set to its default value),
+// then the routing library will pick its preferred value for that parameter
+// automatically: this should be the case for most parameters.
+// To see those "default" parameters, call GetDefaultRoutingSearchParameters().
+// Next ID: 71
+message RoutingSearchParameters {
+  reserved 14, 15, 18, 19, 23, 49, 55, 65, 67;
+
+  // First solution strategies, used as starting point of local search.
+  FirstSolutionStrategy.Value first_solution_strategy = 1;
+
+  // --- Advanced first solutions strategy settings ---
+  // Don't touch these unless you know what you are doing.
+  //
+  // Use filtered version of first solution strategy if available.
+  bool use_unfiltered_first_solution_strategy = 2;
+
+  // Parameters for the Savings heuristic.
+  SavingsParameters savings_parameters = 70;
+
+  // Ratio (between 0 and 1) of available vehicles in the model on which
+  // farthest nodes of the model are inserted as seeds in the
+  // GlobalCheapestInsertion first solution heuristic.
+  double cheapest_insertion_farthest_seeds_ratio = 16;
+
+  // Ratio (in ]0, 1]) of closest non start/end nodes to consider as neighbors
+  // for each node when creating new insertions in the parallel/sequential
+  // cheapest insertion heuristic.
+  // If not overridden, its default value is 1, meaning all neighbors will be
+  // considered.
+  // The neighborhood ratio is coupled with the corresponding min_neighbors
+  // integer, indicating the minimum number of neighbors to consider for each
+  // node:
+  // num_closest_neighbors =
+  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
+  // This minimum number of neighbors must be greater or equal to 1, its
+  // default value.
+  //
+  // Neighbors ratio and minimum number of neighbors for the first solution
+  // heuristic.
+  double cheapest_insertion_first_solution_neighbors_ratio = 21;
+  int32 cheapest_insertion_first_solution_min_neighbors = 44;
+  // Neighbors ratio and minimum number of neighbors for the heuristic when used
+  // in a local search operator (see
+  // local_search_operators.use_global_cheapest_insertion_path_lns and
+  // local_search_operators.use_global_cheapest_insertion_chain_lns below).
+  double cheapest_insertion_ls_operator_neighbors_ratio = 31;
+  int32 cheapest_insertion_ls_operator_min_neighbors = 45;
+
+  // Whether or not to only consider closest neighbors when initializing the
+  // assignment for the first solution.
+  bool
+      cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization =
+          46;
+  // Whether or not to consider entries making the nodes/pairs unperformed in
+  // the GlobalCheapestInsertion heuristic.
+  bool cheapest_insertion_add_unperformed_entries = 40;
+
+  // Parameters for the local cheapest insertion heuristic.
+  LocalCheapestInsertionParameters local_cheapest_insertion_parameters = 68;
+
+  // Parameters for the local cheapest cost insertion heuristic.
+  LocalCheapestInsertionParameters local_cheapest_cost_insertion_parameters =
+      69;
+
+  // If true use minimum matching instead of minimal matching in the
+  // Christofides algorithm.
+  bool christofides_use_minimum_matching = 30;
+
+  // If non zero, a period p indicates that every p node insertions or additions
+  // to a path, an optimization of the current partial solution will be
+  // performed. As of 12/2023:
+  // - this requires that a secondary routing model has been passed to the main
+  //   one,
+  // - this is only supported by LOCAL_CHEAPEST_INSERTION and
+  // LOCAL_CHEAPEST_COST_INSERTION.
+  int32 first_solution_optimization_period = 59;
+
+  // Local search neighborhood operators used to build a solutions neighborhood.
+  // Next ID: 41
+  message LocalSearchNeighborhoodOperators {
+    // --- Inter-route operators ---
+    // Operator which moves a single node to another position.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+    // (where (1, 5) are first and last nodes of the path and can therefore not
+    // be moved):
+    //   1 ->  3  -> [2] ->  4  -> 5
+    //   1 ->  3  ->  4  -> [2] -> 5
+    //   1 ->  2  ->  4  -> [3] -> 5
+    //   1 -> [4] ->  2  ->  3  -> 5
+    OptionalBoolean use_relocate = 1;
+    // Operator which moves a pair of pickup and delivery nodes to another
+    // position where the first node of the pair must be before the second node
+    // on the same path. Compared to the light_relocate_pair operator, tries all
+    // possible positions of insertion of a pair (not only after another pair).
+    // Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
+    // first and last nodes of the path and can therefore not be moved, and
+    // (A, B) is a pair of nodes):
+    //   1 -> [A] ->  2  -> [B] -> 3
+    //   1 ->  2  -> [A] -> [B] -> 3
+    OptionalBoolean use_relocate_pair = 2;
+    // Operator which moves a pair of pickup and delivery nodes after another
+    // pair.
+    // Possible neighbors for paths 1 -> A -> B -> 2, 3 -> C -> D -> 4 (where
+    // (1, 2) and (3, 4) are first and last nodes of paths and can therefore not
+    // be moved, and (A, B) and (C, D) are pair of nodes):
+    //   1 -> 2, 3 -> C -> [A] -> D -> [B] -> 4
+    //   1 -> A -> [C] -> B -> [D] -> 2, 3 -> 4
+    OptionalBoolean use_light_relocate_pair = 24;
+    // Relocate neighborhood which moves chains of neighbors.
+    // The operator starts by relocating a node n after a node m, then continues
+    // moving nodes which were after n as long as the "cost" added is less than
+    // the "cost" of the arc (m, n). If the new chain doesn't respect the domain
+    // of next variables, it will try reordering the nodes until it finds a
+    // valid path.
+    // Possible neighbors for path 1 -> A -> B -> C -> D -> E -> 2 (where (1, 2)
+    // are first and last nodes of the path and can therefore not be moved, A
+    // must be performed before B, and A, D and E are located at the same
+    // place):
+    // 1 -> A -> C -> [B] -> D -> E -> 2
+    // 1 -> A -> C -> D -> [B] -> E -> 2
+    // 1 -> A -> C -> D -> E -> [B] -> 2
+    // 1 -> A -> B -> D -> [C] -> E -> 2
+    // 1 -> A -> B -> D -> E -> [C] -> 2
+    // 1 -> A -> [D] -> [E] -> B -> C -> 2
+    // 1 -> A -> B -> [D] -> [E] ->  C -> 2
+    // 1 -> A -> [E] -> B -> C -> D -> 2
+    // 1 -> A -> B -> [E] -> C -> D -> 2
+    // 1 -> A -> B -> C -> [E] -> D -> 2
+    // This operator is extremely useful to move chains of nodes which are
+    // located at the same place (for instance nodes part of a same stop).
+    OptionalBoolean use_relocate_neighbors = 3;
+    // Relocate neighborhood that moves subpaths all pickup and delivery
+    // pairs have both pickup and delivery inside the subpath or both outside
+    // the subpath. For instance, for given paths:
+    // 0 -> A -> B -> A' -> B' -> 5 -> 6 -> 8
+    // 7 -> 9
+    // Pairs (A,A') and (B,B') are interleaved, so the expected neighbors are:
+    // 0 -> 5 -> A -> B -> A' -> B' -> 6 -> 8
+    // 7 -> 9
+    //
+    // 0 -> 5 -> 6 -> A -> B -> A' -> B' -> 8
+    // 7 -> 9
+    //
+    // 0 -> 5 -> 6 -> 8
+    // 7 -> A -> B -> A' -> B' -> 9
+    OptionalBoolean use_relocate_subtrip = 25;
+    // Operator which exchanges the positions of two nodes.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+    // (where (1, 5) are first and last nodes of the path and can therefore not
+    // be moved):
+    //   1 -> [3] -> [2] ->  4  -> 5
+    //   1 -> [4] ->  3  -> [2] -> 5
+    //   1 ->  2  -> [4] -> [3] -> 5
+    OptionalBoolean use_exchange = 4;
+    // Operator which exchanges the positions of two pair of nodes. Pairs
+    // correspond to the pickup and delivery pairs defined in the routing model.
+    // Possible neighbor for the paths
+    // 1 -> A -> B -> 2 -> 3 and 4 -> C -> D -> 5
+    // (where (1, 3) and (4, 5) are first and last nodes of the paths and can
+    // therefore not be moved, and (A, B) and (C,D) are pairs of nodes):
+    //   1 -> [C] ->  [D] -> 2 -> 3, 4 -> [A] -> [B] -> 5
+    OptionalBoolean use_exchange_pair = 22;
+    // Operator which exchanges subtrips associated to two pairs of nodes,
+    // see use_relocate_subtrip for a definition of subtrips.
+    OptionalBoolean use_exchange_subtrip = 26;
+    // Operator which cross exchanges the starting chains of 2 paths, including
+    // exchanging the whole paths.
+    // First and last nodes are not moved.
+    // Possible neighbors for the paths 1 -> 2 -> 3 -> 4 -> 5 and 6 -> 7 -> 8
+    // (where (1, 5) and (6, 8) are first and last nodes of the paths and can
+    // therefore not be moved):
+    //   1 -> [7] -> 3 -> 4 -> 5  6 -> [2] -> 8
+    //   1 -> [7] -> 4 -> 5       6 -> [2 -> 3] -> 8
+    //   1 -> [7] -> 5            6 -> [2 -> 3 -> 4] -> 8
+    OptionalBoolean use_cross = 5;
+    // Not implemented yet. TODO(b/68128619): Implement.
+    OptionalBoolean use_cross_exchange = 6;
+    // Operator which detects the relocate_expensive_chain_num_arcs_to_consider
+    // most expensive arcs on a path, and moves the chain resulting from cutting
+    // pairs of arcs among these to another position.
+    // Possible neighbors for paths 1 -> 2 (empty) and
+    // 3 -> A ------> B --> C -----> D -> 4 (where A -> B and C -> D are the 2
+    // most expensive arcs, and the chain resulting from breaking them is
+    // B -> C):
+    //   1 -> [B -> C] -> 2     3 -> A -> D -> 4
+    //   1 -> 2      3 -> [B -> C] -> A -> D -> 4
+    //   1 -> 2      3 -> A -> D -> [B -> C] -> 4
+    OptionalBoolean use_relocate_expensive_chain = 23;
+    // --- Intra-route operators ---
+    // Operator which reverses a subchain of a path. It is called TwoOpt
+    // because it breaks two arcs on the path; resulting paths are called
+    // two-optimal.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
+    // (where (1, 5) are first and last nodes of the path and can therefore not
+    // be moved):
+    //   1 -> [3 -> 2] -> 4  -> 5
+    //   1 -> [4 -> 3  -> 2] -> 5
+    //   1 ->  2 -> [4 -> 3] -> 5
+    OptionalBoolean use_two_opt = 7;
+    // Operator which moves sub-chains of a path of length 1, 2 and 3 to another
+    // position in the same path.
+    // When the length of the sub-chain is 1, the operator simply moves a node
+    // to another position.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5, for a sub-chain
+    // length of 2 (where (1, 5) are first and last nodes of the path and can
+    // therefore not be moved):
+    //   1 ->  4 -> [2 -> 3] -> 5
+    //   1 -> [3 -> 4] -> 2  -> 5
+    // The OR_OPT operator is a limited version of 3-Opt (breaks 3 arcs on a
+    // path).
+    OptionalBoolean use_or_opt = 8;
+    // Lin-Kernighan operator.
+    // While the accumulated local gain is positive, performs a 2-OPT or a 3-OPT
+    // move followed by a series of 2-OPT moves. Returns a neighbor for which
+    // the global gain is positive.
+    OptionalBoolean use_lin_kernighan = 9;
+    // Sliding TSP operator.
+    // Uses an exact dynamic programming algorithm to solve the TSP
+    // corresponding to path sub-chains.
+    // For a subchain 1 -> 2 -> 3 -> 4 -> 5 -> 6, solves the TSP on
+    // nodes A, 2, 3, 4, 5, where A is a merger of nodes 1 and 6 such that
+    // cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
+    OptionalBoolean use_tsp_opt = 10;
+    // --- Operators on inactive nodes ---
+    // Operator which inserts an inactive node into a path.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  2  ->  3  -> 4
+    //   1 ->  2  -> [5] ->  3  -> 4
+    //   1 ->  2  ->  3  -> [5] -> 4
+    OptionalBoolean use_make_active = 11;
+    // Operator which relocates a node while making an inactive one active.
+    // As of 3/2017, the operator is limited to two kinds of moves:
+    // - Relocating a node and replacing it by an inactive node.
+    //   Possible neighbor for path 1 -> 5, 2 -> 3 -> 6 and 4 inactive
+    //   (where 1,2 and 5,6 are first and last nodes of paths) is:
+    //   1 -> 3 -> 5, 2 -> 4 -> 6.
+    // - Relocating a node and inserting an inactive node next to it.
+    //   Possible neighbor for path 1 -> 5, 2 -> 3 -> 6 and 4 inactive
+    //   (where 1,2 and 5,6 are first and last nodes of paths) is:
+    //   1 -> 4 -> 3 -> 5, 2 -> 6.
+    OptionalBoolean use_relocate_and_make_active = 21;
+    // Operator which exchanges two nodes and inserts an inactive node.
+    // Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 6 and 5 inactive are:
+    // 0 -> 3 -> 4, 1 -> 5 -> 2 -> 6
+    // 0 -> 3 -> 5 -> 4, 1 -> 2 -> 6
+    // 0 -> 5 -> 3 -> 4, 1 -> 2 -> 6
+    // 0 -> 3 -> 4, 1 -> 2 -> 5 -> 6
+    OptionalBoolean use_exchange_and_make_active = 37;
+    // Operator which exchanges the first and last nodes of two paths and makes
+    // a node active.
+    // Possible neighbors for paths 0 -> 1 -> 2 -> 7, 6 -> 3 -> 4 -> 8
+    // and 5 inactive are:
+    // 0 -> 5 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 5 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 7, 6 -> 1 -> 2 -> 5 -> 8
+    // 0 -> 3 -> 5 -> 4 -> 7, 6 -> 1 -> 2 -> 8
+    // 0 -> 3 -> 4 -> 5 -> 7, 6 -> 1 -> 2 -> 8
+    OptionalBoolean use_exchange_path_start_ends_and_make_active = 38;
+    // Operator which makes path nodes inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+    // and last nodes of the path) are:
+    //   1 -> 3 -> 4 with 2 inactive
+    //   1 -> 2 -> 4 with 3 inactive
+    OptionalBoolean use_make_inactive = 12;
+    // Operator which makes a "chain" of path nodes inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
+    // and last nodes of the path) are:
+    //   1 -> 3 -> 4 with 2 inactive
+    //   1 -> 2 -> 4 with 3 inactive
+    //   1 -> 4 with 2 and 3 inactive
+    OptionalBoolean use_make_chain_inactive = 13;
+    // Operator which replaces an active node by an inactive one.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    OptionalBoolean use_swap_active = 14;
+    // Operator which replaces a chain of active nodes by an inactive one.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    //   1 -> [5] -> 4 with 2 and 3 inactive
+    OptionalBoolean use_swap_active_chain = 35;
+    // Operator which makes an inactive node active and an active one inactive.
+    // It is similar to SwapActiveOperator excepts that it tries to insert the
+    // inactive node in all possible positions instead of just the position of
+    // the node made inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path) are:
+    //   1 -> [5] ->  3  -> 4 with 2 inactive
+    //   1 ->  3  -> [5] -> 4 with 2 inactive
+    //   1 -> [5] ->  2  -> 4 with 3 inactive
+    //   1 ->  2  -> [5] -> 4 with 3 inactive
+    OptionalBoolean use_extended_swap_active = 15;
+    // Swaps active nodes from node alternatives in sequence. Considers chains
+    // of nodes with alternatives, builds a DAG from the chain, each "layer" of
+    // the DAG being composed of the set of alternatives of the node at a given
+    // rank in the chain, fully connected to the next layer. A neighbor is built
+    // from the shortest path starting from the node before the chain (source),
+    // through the DAG to the node following the chain.
+    OptionalBoolean use_shortest_path_swap_active = 34;
+    // Similar to use_two_opt but returns the shortest path on the DAG of node
+    // alternatives of the reversed chain (cf. use_shortest_path_swap_active).
+    OptionalBoolean use_shortest_path_two_opt = 36;
+    // Operator which makes an inactive node active and an active pair of nodes
+    // inactive OR makes an inactive pair of nodes active and an active node
+    // inactive.
+    // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
+    // (where 1 and 4 are first and last nodes of the path and (2,3) is a pair
+    // of nodes) are:
+    //   1 -> [5] -> 4 with (2,3) inactive
+    // Possible neighbors for the path 1 -> 2 -> 3 with (4,5) inactive
+    // (where 1 and 3 are first and last nodes of the path and (4,5) is a pair
+    // of nodes) are:
+    //   1 -> [4] -> [5] -> 3 with 2 inactive
+    OptionalBoolean use_node_pair_swap_active = 20;
+    // --- Large neighborhood search operators ---
+    // Operator which relaxes two sub-chains of three consecutive arcs each.
+    // Each sub-chain is defined by a start node and the next three arcs. Those
+    // six arcs are relaxed to build a new neighbor.
+    // PATH_LNS explores all possible pairs of starting nodes and so defines
+    // n^2 neighbors, n being the number of nodes.
+    // Note that the two sub-chains can be part of the same path; they even may
+    // overlap.
+    OptionalBoolean use_path_lns = 16;
+    // Operator which relaxes one entire path and all inactive nodes.
+    OptionalBoolean use_full_path_lns = 17;
+    // TSP-base LNS.
+    // Randomly merges consecutive nodes until n "meta"-nodes remain and solves
+    // the corresponding TSP.
+    // This defines an "unlimited" neighborhood which must be stopped by search
+    // limits. To force diversification, the operator iteratively forces each
+    // node to serve as base of a meta-node.
+    OptionalBoolean use_tsp_lns = 18;
+    // Operator which relaxes all inactive nodes and one sub-chain of six
+    // consecutive arcs. That way the path can be improved by inserting inactive
+    // nodes or swapping arcs.
+    OptionalBoolean use_inactive_lns = 19;
+    // --- LNS-like large neighborhood search operators using heuristics ---
+    // Operator which makes all nodes on a route unperformed, and reinserts them
+    // using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_path_lns = 27;
+    // Same as above but using LocalCheapestInsertion as a heuristic.
+    OptionalBoolean use_local_cheapest_insertion_path_lns = 28;
+    // The following operator relocates an entire route to an empty path and
+    // then tries to insert the unperformed nodes using the global cheapest
+    // insertion heuristic.
+    OptionalBoolean
+        use_relocate_path_global_cheapest_insertion_insert_unperformed = 33;
+    // This operator finds heuristic_expensive_chain_lns_num_arcs_to_consider
+    // most expensive arcs on a route, makes the nodes in between pairs of these
+    // expensive arcs unperformed, and reinserts them using the
+    // GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_expensive_chain_lns = 29;
+    // Same as above but using LocalCheapestInsertion as a heuristic for
+    // insertion.
+    OptionalBoolean use_local_cheapest_insertion_expensive_chain_lns = 30;
+    // The following operator makes a node and its
+    // heuristic_close_nodes_lns_num_nodes closest neighbors unperformed along
+    // with each of their corresponding performed pickup/delivery pairs, and
+    // then reinserts them using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_close_nodes_lns = 31;
+    // Same as above, but insertion positions for nodes are determined by the
+    // LocalCheapestInsertion heuristic.
+    OptionalBoolean use_local_cheapest_insertion_close_nodes_lns = 32;
+    // The following operator removes all nodes of a visit type connected
+    // component from their current route and reinserts them to an empty route
+    // using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_visit_types_lns = 39;
+    // Same as above, but insertion positions for nodes are determined by the
+    // LocalCheapestInsertion heuristic.
+    OptionalBoolean use_local_cheapest_insertion_visit_types_lns = 40;
+  }
+  LocalSearchNeighborhoodOperators local_search_operators = 3;
+
+  // Neighbors ratio and minimum number of neighbors considered in local
+  // search operators (see cheapest_insertion_first_solution_neighbors_ratio
+  // and cheapest_insertion_first_solution_min_neighbors for more information).
+  double ls_operator_neighbors_ratio = 53;
+  int32 ls_operator_min_neighbors = 54;
+
+  // If true, the solver will use multi-armed bandit concatenate operators. It
+  // dynamically chooses the next neighbor operator in order to get the best
+  // objective improvement.
+  bool use_multi_armed_bandit_concatenate_operators = 41;
+
+  // Memory coefficient related to the multi-armed bandit compound operator.
+  // Sets how much the objective improvement of previous accepted neighbors
+  // influence the current average improvement.
+  // This parameter should be between 0 and 1.
+  double multi_armed_bandit_compound_operator_memory_coefficient = 42;
+
+  // Positive parameter defining the exploration coefficient of the multi-armed
+  // bandit compound operator. Sets how often we explore rarely used and
+  // unsuccessful in the past operators
+  double multi_armed_bandit_compound_operator_exploration_coefficient = 43;
+
+  // Maximum size of the chain to make inactive in SwapActiveChainOperator.
+  int32 max_swap_active_chain_size = 66;
+
+  // Number of expensive arcs to consider cutting in the RelocateExpensiveChain
+  // neighborhood operator (see
+  // LocalSearchNeighborhoodOperators.use_relocate_expensive_chain()).
+  // This parameter must be greater than 2.
+  // NOTE(user): The number of neighbors generated by the operator for
+  // relocate_expensive_chain_num_arcs_to_consider = K is around
+  // K*(K-1)/2 * number_of_routes * number_of_nodes.
+  int32 relocate_expensive_chain_num_arcs_to_consider = 20;
+
+  // Number of expensive arcs to consider cutting in the
+  // FilteredHeuristicExpensiveChainLNSOperator operator.
+  int32 heuristic_expensive_chain_lns_num_arcs_to_consider = 32;
+
+  // Number of closest nodes to consider for each node during the destruction
+  // phase of the FilteredHeuristicCloseNodesLNSOperator.
+  int32 heuristic_close_nodes_lns_num_nodes = 35;
+
+  // Local search metaheuristics used to guide the search.
+  LocalSearchMetaheuristic.Value local_search_metaheuristic = 4;
+  // Local search metaheuristics alternatively used to guide the search. Every
+  // num_max_local_optima_before_metaheuristic_switch local minima found by a
+  // metaheurisitic, the solver will switch to the next metaheuristic. Cannot be
+  // defined if local_search_metaheuristic is different from UNSET or AUTOMATIC.
+  repeated LocalSearchMetaheuristic.Value local_search_metaheuristics = 63;
+  int32 num_max_local_optima_before_metaheuristic_switch = 64;
+  // These are advanced settings which should not be modified unless you know
+  // what you are doing.
+  // Lambda coefficient used to penalize arc costs when GUIDED_LOCAL_SEARCH is
+  // used. Must be positive.
+  double guided_local_search_lambda_coefficient = 5;
+  // Whether to reset penalties when a new best solution is found. The effect is
+  // that a greedy descent is started before the next penalization phase.
+  bool guided_local_search_reset_penalties_on_new_best_solution = 51;
+  // When an arc leaving a vehicle start or arriving at a vehicle end is
+  // penalized, this field controls whether to penalize all other equivalent
+  // arcs with starts or ends in the same vehicle class.
+  bool guided_local_search_penalize_with_vehicle_classes = 61;
+  // Whether to consider arc penalties in cost functions used in local search
+  // operators using arc costs.
+  bool use_guided_local_search_penalties_in_local_search_operators = 62;
+
+  // --- Search control ---
+  //
+  // If true, the solver should use depth-first search rather than local search
+  // to solve the problem.
+  bool use_depth_first_search = 6;
+  // If true, use the CP solver to find a solution. Either local or depth-first
+  // search will be used depending on the value of use_depth_first_search. Will
+  // be run before the CP-SAT solver (cf. use_cp_sat).
+  OptionalBoolean use_cp = 28;
+  // If true, use the CP-SAT solver to find a solution. If use_cp is also true,
+  // the CP-SAT solver will be run after the CP solver if there is time
+  // remaining and will use the CP solution as a hint for the CP-SAT search.
+  // As of 5/2019, only TSP models can be solved.
+  OptionalBoolean use_cp_sat = 27;
+  // If true, use the CP-SAT solver to find a solution on generalized routing
+  // model. If use_cp is also true, the CP-SAT solver will be run after the CP
+  // solver if there is time remaining and will use the CP solution as a hint
+  // for the CP-SAT search.
+  OptionalBoolean use_generalized_cp_sat = 47;
+  // If use_cp_sat or use_generalized_cp_sat is true, contains the SAT algorithm
+  // parameters which will be used.
+  sat.SatParameters sat_parameters = 48;
+  // If use_cp_sat or use_generalized_cp_sat is true, will report intermediate
+  // solutions found by CP-SAT to solution listeners.
+  bool report_intermediate_cp_sat_solutions = 56;
+  // If model.Size() is less than the threshold and that no solution has been
+  // found, attempt a pass with CP-SAT.
+  int32 fallback_to_cp_sat_size_threshold = 52;
+  // Underlying solver to use in dimension scheduling, respectively for
+  // continuous and mixed models.
+  enum SchedulingSolver {
+    SCHEDULING_UNSET = 0;
+    SCHEDULING_GLOP = 1;
+    SCHEDULING_CP_SAT = 2;
+  }
+  SchedulingSolver continuous_scheduling_solver = 33;
+  SchedulingSolver mixed_integer_scheduling_solver = 34;
+  // Setting this to true completely disables the LP and MIP scheduling in the
+  // solver. This overrides the 2 SchedulingSolver options above.
+  optional bool disable_scheduling_beware_this_may_degrade_performance = 50;
+  // Minimum step by which the solution must be improved in local search. 0
+  // means "unspecified". If this value is fractional, it will get rounded to
+  // the nearest integer.
+  double optimization_step = 7;
+  // Number of solutions to collect during the search. Corresponds to the best
+  // solutions found during the search. 0 means "unspecified".
+  int32 number_of_solutions_to_collect = 17;
+  // -- Search limits --
+  // Limit to the number of solutions generated during the search. 0 means
+  // "unspecified".
+  int64 solution_limit = 8;
+  // Limit to the time spent in the search.
+  google.protobuf.Duration time_limit = 9;
+  // Limit to the time spent in the completion search for each local search
+  // neighbor.
+  google.protobuf.Duration lns_time_limit = 10;
+  // Ratio of the overall time limit spent in a secondary LS phase with only
+  // intra-route and insertion operators, meant to "cleanup" the current
+  // solution before stopping the search.
+  // TODO(user): Since these operators are very fast, add a parameter to cap
+  // the max time allocated for this second phase (e.g.
+  // Duration max_secondary_ls_time_limit).
+  double secondary_ls_time_limit_ratio = 57;
+
+  // Parameters required for the improvement search limit.
+  message ImprovementSearchLimitParameters {
+    // Parameter that regulates exchange rate between objective improvement and
+    // number of neighbors spent. The smaller the value, the sooner the limit
+    // stops the search. Must be positive.
+    double improvement_rate_coefficient = 38;
+    // Parameter that specifies the distance between improvements taken into
+    // consideration for calculating the improvement rate.
+    // Example: For 5 objective improvements = (10, 8, 6, 4, 2), and the
+    // solutions_distance parameter of 2, then the improvement_rate will be
+    // computed for (10, 6), (8, 4), and (6, 2).
+    int32 improvement_rate_solutions_distance = 39;
+  }
+  // The improvement search limit is added to the solver if the following
+  // parameters are set.
+  ImprovementSearchLimitParameters improvement_limit_parameters = 37;
+
+  // --- Propagation control ---
+  // These are advanced settings which should not be modified unless you know
+  // what you are doing.
+  //
+  // Use constraints with full propagation in routing model (instead of 'light'
+  // propagation only). Full propagation is only necessary when using
+  // depth-first search or for models which require strong propagation to
+  // finalize the value of secondary variables.
+  // Changing this setting to true will slow down the search in most cases and
+  // increase memory consumption in all cases.
+  bool use_full_propagation = 11;
+
+  // --- Miscellaneous ---
+  // Some of these are advanced settings which should not be modified unless you
+  // know what you are doing.
+  //
+  // Activates search logging. For each solution found during the search, the
+  // following will be displayed: its objective value, the maximum objective
+  // value since the beginning of the search, the elapsed time since the
+  // beginning of the search, the number of branches explored in the search
+  // tree, the number of failures in the search tree, the depth of the search
+  // tree, the number of local search neighbors explored, the number of local
+  // search neighbors filtered by local search filters, the number of local
+  // search neighbors accepted, the total memory used and the percentage of the
+  // search done.
+  bool log_search = 13;
+  // In logs, cost values will be scaled and offset by the given values in the
+  // following way: log_cost_scaling_factor * (cost + log_cost_offset)
+  double log_cost_scaling_factor = 22;
+  double log_cost_offset = 29;
+  // In logs, this tag will be appended to each line corresponding to a new
+  // solution. Useful to sort out logs when several solves are run in parallel.
+  string log_tag = 36;
+
+  // Whether the solver should use an Iterated Local Search approach to solve
+  // the problem.
+  bool use_iterated_local_search = 58;
+
+  // Iterated Local Search parameters.
+  IteratedLocalSearchParameters iterated_local_search_parameters = 60;
+}
+
+// Parameters which have to be set when creating a RoutingModel.
+message RoutingModelParameters {
+  // Parameters to use in the underlying constraint solver.
+  ConstraintSolverParameters solver_parameters = 1;
+  // Advanced settings.
+  // If set to true reduction of the underlying constraint model will be
+  // attempted when all vehicles have exactly the same cost structure. This can
+  // result in significant speedups.
+  bool reduce_vehicle_cost_model = 2;
+  // Cache callback calls if the number of nodes in the model is less or equal
+  // to this value.
+  int32 max_callback_cache_size = 3;
+}

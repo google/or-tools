@@ -30,10 +30,10 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
@@ -168,7 +168,7 @@ void DisplayPlan(const RoutingIndexManager& manager,
                  bool use_same_vehicle_costs, int64_t max_nodes_per_group,
                  int64_t same_vehicle_cost,
                  absl::Span<const std::string> dimension_names) {
-  std::vector<const operations_research::RoutingDimension*> dimensions;
+  std::vector<const RoutingDimension*> dimensions;
   for (const std::string& dimension_name : dimension_names) {
     dimensions.push_back(&routing.GetDimensionOrDie(dimension_name));
   }
@@ -239,7 +239,7 @@ void DisplayPlan(const RoutingIndexManager& manager,
       while (true) {
         absl::StrAppendFormat(&plan_output, "%d ",
                               manager.IndexToNode(order).value());
-        for (const operations_research::RoutingDimension* dimension : dimensions) {
+        for (const RoutingDimension* dimension : dimensions) {
           str_append_variable(dimension->CumulVar(order), dimension->name());
           operations_research::IntVar* const slack_var =
               routing.IsEnd(order) ? nullptr : dimension->SlackVar(order);
@@ -254,4 +254,4 @@ void DisplayPlan(const RoutingIndexManager& manager,
   }
   LOG(INFO) << plan_output;
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

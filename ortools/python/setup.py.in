@@ -44,7 +44,7 @@ setup(
     python_requires='>= 3.9',
     install_requires=[
         'absl-py >= 2.0.0',
-        'numpy >= 1.13.3',
+        'numpy >= 2.0.2',
         'pandas >= 2.0.0',
         'protobuf >= 6.31.1,<6.32',
         'typing-extensions >= 4.12',
@@ -72,6 +72,10 @@ setup(
         '@PYTHON_PROJECT@.gscip':['*.pyi'],
         '@PYTHON_PROJECT@.constraint_solver':[
             '$<TARGET_FILE_NAME:pywrapcp>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.constraint_solver.python':[
+            '$<TARGET_FILE_NAME:constraint_solver_pybind11>',
             '*.pyi'
         ],
         '@PYTHON_PROJECT@.linear_solver':[
@@ -110,6 +114,14 @@ setup(
             '$<TARGET_FILE_NAME:pdlp_pybind11>',
             '*.pyi'
         ],
+        '@PYTHON_PROJECT@.routing':[
+            '$<TARGET_FILE_NAME:pywraprouting>',
+            '*.pyi'
+        ],
+        '@PYTHON_PROJECT@.routing.python':[
+            '$<TARGET_FILE_NAME:routing_pybind11>',
+            '*.pyi'
+        ],
         '@PYTHON_PROJECT@.sat':['*.pyi'],
         '@PYTHON_PROJECT@.sat.colab':['*.pyi', 'py.typed'],
         '@PYTHON_PROJECT@.sat.python':[
@@ -127,6 +139,8 @@ setup(
         ],
         '@PYTHON_PROJECT@.util.python':[
             '$<TARGET_FILE_NAME:sorted_interval_list_pybind11>',
+            '$<TARGET_FILE_NAME:solve_interrupter_pybind11>',
+            '$<TARGET_FILE_NAME:solve_interrupter_testing_pybind11>',
             '*.pyi'
         ],
     },

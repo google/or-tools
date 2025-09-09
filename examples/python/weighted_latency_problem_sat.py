@@ -16,10 +16,10 @@
 
 import random
 from typing import Sequence
+
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _NUM_NODES = flags.DEFINE_integer("num_nodes", 12, "Number of nodes to visit.")
@@ -27,7 +27,9 @@ _GRID_SIZE = flags.DEFINE_integer("grid_size", 20, "Size of the grid where nodes
 _PROFIT_RANGE = flags.DEFINE_integer("profit_range", 50, "Range of profit.")
 _SEED = flags.DEFINE_integer("seed", 0, "Random seed.")
 _PARAMS = flags.DEFINE_string(
-    "params", "num_search_workers:16, max_time_in_seconds:5", "Sat solver parameters."
+    "params",
+    "num_search_workers:16, max_time_in_seconds:5",
+    "Sat solver parameters.",
 )
 _PROTO_FILE = flags.DEFINE_string(
     "proto_file", "", "If not empty, output the proto to this file."
@@ -96,7 +98,7 @@ def solve_with_cp_sat(x, y, profits) -> None:
     # Solve model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     solver.parameters.log_search_progress = True
     solver.solve(model)
 

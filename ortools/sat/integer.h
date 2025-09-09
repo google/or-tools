@@ -72,8 +72,11 @@ struct LiteralValueValue {
 // Sometimes we propagate fact with no reason at a positive level, those
 // will automatically be fixed on the next restart.
 //
-// TODO(user): If we change the logic to not restart right away, we probably
-// need to remove duplicates bounds for the same variable.
+// Note that for integer literal, we already remore all "stale" entry, however
+// this is still needed to properly update the InitialVariableDomain().
+//
+// TODO(user): we should update the initial domain right away, but this as
+// some complication to clean up first.
 struct DelayedRootLevelDeduction {
   std::vector<Literal> literal_to_fix;
   std::vector<IntegerLiteral> integer_literal_to_fix;
@@ -194,13 +197,16 @@ class IntegerEncoder {
   //
   // Tricky: for domain with hole, like [0,1][5,6], we assume some equivalence
   // classes, like >=2, >=3, >=4 are all the same as >= 5.
+  //
+  // Note that GetAssociatedLiteral() should not be called with trivially true
+  // or trivially false literal. This is DCHECKed.
   bool IsFixedOrHasAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
   LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
                                             IntegerValue value) const;
 
   // Advanced usage. It is more efficient to create the associated literals in
-  // order, but it might be anoying to do so. Instead, you can first call
+  // order, but it might be annoying to do so. Instead, you can first call
   // DisableImplicationBetweenLiteral() and when you are done creating all the
   // associated literals, you can call (only at level zero)
   // AddAllImplicationsBetweenAssociatedLiterals() which will also turn back on
@@ -295,6 +301,10 @@ class IntegerEncoder {
   // Makes sure all element in the >= encoding are non-trivial and canonical.
   // The input variable must be positive.
   bool UpdateEncodingOnInitialDomainChange(IntegerVariable var, Domain domain);
+
+  // All IntegerVariable passed to the functions above must be in
+  // [0, NumVariables).
+  int NumVariables() const { return 2 * encoding_by_var_.size(); }
 
  private:
   // Adds the implications:
@@ -505,6 +515,7 @@ class IntegerTrail final : public SatPropagator {
   // Same as above for an affine expression.
   IntegerValue LowerBound(AffineExpression expr) const;
   IntegerValue UpperBound(AffineExpression expr) const;
+  IntegerValue UpperBound(LinearExpression2 expr) const;
   bool IsFixed(AffineExpression expr) const;
   IntegerValue FixedValue(AffineExpression expr) const;
 
@@ -522,6 +533,7 @@ class IntegerTrail final : public SatPropagator {
   // Returns the current value (if known) of an IntegerLiteral.
   bool IntegerLiteralIsTrue(IntegerLiteral l) const;
   bool IntegerLiteralIsFalse(IntegerLiteral l) const;
+  bool IsTrueAtLevelZero(IntegerLiteral l) const;
 
   // Returns globally valid lower/upper bound on the given integer variable.
   IntegerValue LevelZeroLowerBound(IntegerVariable var) const;
@@ -627,6 +639,9 @@ class IntegerTrail final : public SatPropagator {
   // ReportConflict() or Enqueue().
   ABSL_MUST_USE_RESULT bool SafeEnqueue(
       IntegerLiteral i_lit, absl::Span<const IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool SafeEnqueue(
+      IntegerLiteral i_lit, absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
 
   // Pushes the given integer literal assuming that the Boolean literal is true.
   // This can do a few things:
@@ -676,6 +691,10 @@ class IntegerTrail final : public SatPropagator {
   // See the comment of Enqueue() for the reason format.
   void EnqueueLiteral(Literal literal, absl::Span<const Literal> literal_reason,
                       absl::Span<const IntegerLiteral> integer_reason);
+
+  bool SafeEnqueueLiteral(Literal literal,
+                          absl::Span<const Literal> literal_reason,
+                          absl::Span<const IntegerLiteral> integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
@@ -795,39 +814,38 @@ class IntegerTrail final : public SatPropagator {
   void AddAllGreaterThanConstantReason(absl::Span<AffineExpression> exprs,
                                        IntegerValue target_min,
                                        std::vector<int>* indices) const {
-    int64_t num_processed = 0;
+    constexpr int64_t check_period = 1e6;
+    int64_t limit_check = work_done_in_explain_lower_than_ + check_period;
     for (const AffineExpression& expr : exprs) {
       if (expr.IsConstant()) {
         DCHECK_GE(expr.constant, target_min);
         continue;
       }
       DCHECK_NE(expr.var, kNoIntegerVariable);
+      const IntegerLiteral to_explain = expr.GreaterOrEqual(target_min);
+      if (IsTrueAtLevelZero(to_explain)) continue;
 
       // On large routing problems, we can spend a lot of time in this loop.
-      // We check the time limit every 5 processed expressions.
-      if (++num_processed % 5 == 0 && time_limit_->LimitReached()) return;
+      if (work_done_in_explain_lower_than_ > limit_check) {
+        limit_check = work_done_in_explain_lower_than_ + check_period;
+        if (time_limit_->LimitReached()) return;
+      }
 
       // Skip if we already have an explanation for expr >= target_min. Note
       // that we already do that while processing the returned indices, so this
       // mainly save a FindLowestTrailIndexThatExplainBound() call per skipped
       // indices, which can still be costly.
       {
-        const int index = tmp_var_to_trail_index_in_queue_[expr.var];
+        const int index = tmp_var_to_trail_index_in_queue_[to_explain.var];
         if (index == std::numeric_limits<int>::max()) continue;
-        if (index > 0 &&
-            expr.ValueAt(integer_trail_[index].bound) >= target_min) {
+        if (index > 0 && integer_trail_[index].bound >= to_explain.bound) {
           has_dependency_ = true;
           continue;
         }
       }
 
       // We need to find the index that explain the bound.
-      // Note that this will skip if the condition is true at level zero.
-      const int index =
-          FindLowestTrailIndexThatExplainBound(expr.GreaterOrEqual(target_min));
-      if (index >= 0) {
-        indices->push_back(index);
-      }
+      indices->push_back(FindLowestTrailIndexThatExplainBound(to_explain));
     }
   }
 
@@ -884,8 +902,8 @@ class IntegerTrail final : public SatPropagator {
                                int64_t conflict_id) const;
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
-  // the given IntegerLiteral. The literal must be currently true (CHECKed).
-  // Returns -1 if the explanation is trivial.
+  // the given IntegerLiteral. The literal must be currently true but not true
+  // at level zero (DCHECKed).
   int FindLowestTrailIndexThatExplainBound(IntegerLiteral i_lit) const;
 
   // This must be called before Dependencies() or AppendLiteralsReason().
@@ -1031,6 +1049,8 @@ class IntegerTrail final : public SatPropagator {
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
+
+  mutable int64_t work_done_in_explain_lower_than_ = 0;
 
   mutable Domain temp_domain_;
   DelayedRootLevelDeduction* delayed_to_fix_;
@@ -1375,6 +1395,20 @@ inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
   return UpperBound(expr.var) * expr.coeff + expr.constant;
 }
 
+inline IntegerValue IntegerTrail::UpperBound(LinearExpression2 expr) const {
+  IntegerValue result = 0;
+  for (int i = 0; i < 2; ++i) {
+    if (expr.coeffs[i] == 0) {
+      continue;
+    } else if (expr.coeffs[i] > 0) {
+      result += expr.coeffs[i] * UpperBound(expr.vars[i]);
+    } else {
+      result += expr.coeffs[i] * LowerBound(expr.vars[i]);
+    }
+  }
+  return result;
+}
+
 inline bool IntegerTrail::IsFixed(AffineExpression expr) const {
   if (expr.var == kNoIntegerVariable) return true;
   return IsFixed(expr.var);
@@ -1403,6 +1437,10 @@ inline bool IntegerTrail::IntegerLiteralIsTrue(IntegerLiteral l) const {
 
 inline bool IntegerTrail::IntegerLiteralIsFalse(IntegerLiteral l) const {
   return l.bound > UpperBound(l.var);
+}
+
+inline bool IntegerTrail::IsTrueAtLevelZero(IntegerLiteral l) const {
+  return l.bound <= LevelZeroLowerBound(l.var);
 }
 
 // The level zero bounds are stored at the beginning of the trail and they also

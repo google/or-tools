@@ -61,7 +61,7 @@ if(BUILD_TESTING)
         ${_FILE_NAME}
       LINK_LIBRARIES
         benchmark::benchmark
-        GTest::gmock
+        ortools::base_gmock
         GTest::gtest_main
         ortools::math_opt_matchers
         ortools::math_opt_elemental_matcher

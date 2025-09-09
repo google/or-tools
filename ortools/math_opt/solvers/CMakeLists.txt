@@ -39,12 +39,16 @@ if(NOT USE_SCIP)
   list(FILTER _SRCS EXCLUDE REGEX "/gscip/")
   list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/gscip_.*.cc$")
+else()
+  list(FILTER _SRCS EXCLUDE REGEX "/gscip/bugs/")
+  list(FILTER _SRCS EXCLUDE REGEX "/gscip/gscip_testing")
 endif()
 if(NOT USE_XPRESS)
   list(FILTER _SRCS EXCLUDE REGEX "/xpress/")
   list(FILTER _SRCS EXCLUDE REGEX "/xpress_.*.h$")
   list(FILTER _SRCS EXCLUDE REGEX "/xpress_.*.cc$")
 endif()
+
 target_sources(${NAME} PRIVATE ${_SRCS})
 set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
@@ -65,7 +69,7 @@ if(USE_SCIP)
     SOURCES
       "gscip_solver_test.cc"
     LINK_LIBRARIES
-      GTest::gmock
+      ortools::base_gmock
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
@@ -93,7 +97,7 @@ if(USE_GLOP)
     SOURCES
       "glop_solver_test.cc"
     LINK_LIBRARIES
-      GTest::gmock
+      ortools::base_gmock
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
@@ -121,7 +125,7 @@ ortools_cxx_test(
   SOURCES
     "cp_sat_solver_test.cc"
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     GTest::gmock_main
     absl::status
     ortools::math_opt_matchers
@@ -159,7 +163,7 @@ if(USE_PDLP)
     SOURCES
       "pdlp_solver_test.cc"
     LINK_LIBRARIES
-      GTest::gmock
+      ortools::base_gmock
       GTest::gmock_main
       absl::status
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
@@ -187,7 +191,7 @@ if(USE_GLPK)
     SOURCES
       "glpk_solver_test.cc"
     LINK_LIBRARIES
-      GTest::gmock
+      ortools::base_gmock
       GTest::gmock_main
       absl::status
       absl::time
@@ -219,7 +223,7 @@ if(USE_HIGHS)
     SOURCES
       "highs_solver_test.cc"
     LINK_LIBRARIES
-      GTest::gmock
+      ortools::base_gmock
       GTest::gmock_main
       absl::status
       ortools::math_opt_matchers
@@ -241,30 +245,31 @@ endif()
 
 if(USE_XPRESS)
   ortools_cxx_test(
-          NAME
-          math_opt_solvers_xpress_solver_test
-          SOURCES
-          "xpress_solver_test.cc"
-          LINK_LIBRARIES
-          GTest::gtest
-          absl::status
-          ortools::math_opt_matchers
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
-          "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
+    NAME
+      math_opt_solvers_xpress_solver_test
+    SOURCES
+      "xpress_solver_test.cc"
+    LINK_LIBRARIES
+      ortools::base_gmock
+      GTest::gmock_main
+      absl::status
+      ortools::math_opt_matchers
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_callback_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_invalid_input_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_generic_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_infeasible_subsystem_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_ip_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_logical_constraint_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_incomplete_solve_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_model_solve_parameters_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_parameter_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_lp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_mip_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_multi_objective_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qp_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_second_order_cone_tests>"
+      "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_qc_tests>"
   )
 endif()

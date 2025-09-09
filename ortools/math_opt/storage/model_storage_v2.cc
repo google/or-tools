@@ -76,13 +76,13 @@ void ModelStorageV2::DeleteLinearConstraint(LinearConstraintId id) {
       << ", it is not in the model";
 }
 
-absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorageV2>>>
+absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorageV2>>
 ModelStorageV2::FromModelProto(const ModelProto& model_proto) {
   ASSIGN_OR_RETURN(Elemental e, Elemental::FromModelProto(model_proto));
   return absl::WrapUnique(new ModelStorageV2(std::move(e)));
 }
 
-absl::Nonnull<std::unique_ptr<ModelStorageV2>> ModelStorageV2::Clone(
+absl_nonnull std::unique_ptr<ModelStorageV2> ModelStorageV2::Clone(
     const std::optional<absl::string_view> new_name) const {
   return absl::WrapUnique(new ModelStorageV2(elemental_.Clone(new_name)));
 }

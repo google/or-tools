@@ -36,8 +36,8 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research::math_opt {
 

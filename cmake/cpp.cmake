@@ -86,7 +86,6 @@ if(USE_PDLP)
 endif()
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
-  set(GSCIP_DIR gscip)
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
@@ -197,6 +196,7 @@ function(ortools_cxx_test)
   target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
+    ${PROJECT_NAMESPACE}::base_gmock
     ${TEST_LINK_LIBRARIES}
   )
   target_link_options(${TEST_NAME} PRIVATE ${TEST_LINK_OPTIONS})
@@ -405,7 +405,6 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
-  "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
@@ -416,15 +415,21 @@ if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_FILES ${PDLP_PROTO_FILES})
 endif()
-if(USE_SCIP OR BUILD_MATH_OPT)
-  file(GLOB_RECURSE GSCIP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
-  list(APPEND OR_TOOLS_PROTO_FILES ${GSCIP_PROTO_FILES})
-endif()
 
 # ORTools proto
 generate_proto_library(
   NAME ortools
   FILES ${OR_TOOLS_PROTO_FILES})
+
+# Routing proto
+file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/routing/*.proto"
+  "ortools/routing/parsers/*.proto"
+)
+generate_proto_library(
+  NAME routing
+  FILES ${ROUTING_PROTO_FILES}
+  LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
 
 # MathOpt proto
 if(BUILD_MATH_OPT)
@@ -497,6 +502,11 @@ target_sources(${PROJECT_NAME} PRIVATE
   $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::ortools_proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::ortools_proto)
 
+# Add ${PROJECT_NAMESPACE}::routing_proto to libortools
+target_sources(${PROJECT_NAME} PRIVATE
+  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::routing_proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::routing_proto)
+
 if(BUILD_MATH_OPT)
   # Add ${PROJECT_NAMESPACE}::math_opt_proto to libortools
   target_sources(${PROJECT_NAME} PRIVATE
@@ -514,16 +524,16 @@ foreach(SUBPROJECT IN ITEMS
  bop
  glop
  ${GLPK_DIR}
- ${GSCIP_DIR}
  ${GUROBI_DIR}
  ${PDLP_DIR}
  sat
- xpress
  lp_data
  packing
+ routing
  scheduling
  set_cover
  port
+ third_party_solvers
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
@@ -543,6 +553,10 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
 add_subdirectory(ortools/linear_solver/proto_solver)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
+
+add_subdirectory(ortools/routing/parsers)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_routing_parsers>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_routing_parsers)
 
 # Dependencies
 if(APPLE)
@@ -579,9 +593,20 @@ if(BUILD_CXX_DOC)
   # add a target to generate API documentation with Doxygen
   find_package(Doxygen REQUIRED)
   if(DOXYGEN_FOUND)
-    configure_file(${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in ${PROJECT_BINARY_DIR}/cpp/Doxyfile @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in
+      ${PROJECT_BINARY_DIR}/cpp/Doxyfile
+      @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/dirs.cpp.dox.in
+      ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
+      @ONLY)
+    configure_file(
+      ${PROJECT_SOURCE_DIR}/ortools/cpp/main.cpp.dox.in
+      ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
+      @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -590,9 +615,14 @@ if(BUILD_CXX_DOC)
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/cpp
       COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/cpp/Doxyfile
       DEPENDS
+        ${PROJECT_NAMESPACE}::ortools
         ${PROJECT_BINARY_DIR}/cpp/Doxyfile
         ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
+        ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
+        ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating C++ API documentation with Doxygen"
       VERBATIM)
@@ -693,6 +723,10 @@ install(DIRECTORY ortools/sat/docs/
   PATTERN "*.md")
 install(DIRECTORY ortools/constraint_solver/docs/
   DESTINATION "${CMAKE_INSTALL_DOCDIR}/constraint_solver"
+  FILES_MATCHING
+  PATTERN "*.md")
+install(DIRECTORY ortools/routing/docs/
+  DESTINATION "${CMAKE_INSTALL_DOCDIR}/routing"
   FILES_MATCHING
   PATTERN "*.md")
 endif()

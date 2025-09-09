@@ -15,8 +15,8 @@
 
 #include <stdint.h>
 
+#include <algorithm>
 #include <optional>
-#include <string>
 #include <vector>
 
 #include "absl/base/log_severity.h"
@@ -70,7 +70,8 @@ TEST(CumulativeEnergyCutGenerator, TestCutTimeTableGenerator) {
   const IntegerVariable demand2 = model.Add(NewIntegerVariable(3, 10));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand1, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -132,7 +133,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemand) {
   e2.coeffs.push_back(IntegerValue(7));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -209,7 +211,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -263,10 +266,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
       start2, AffineExpression(start2, one, size2), AffineExpression(size2),
       kNoLiteralIndex, /*add_linear_relation=*/false);
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i1,
-          i2,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i1,
+                                                  i2,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -305,10 +309,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -347,10 +352,11 @@ TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -397,7 +403,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -448,7 +455,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -500,7 +508,8 @@ TEST(ComputeMinSumOfEndMinsTest, Abort) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -550,7 +559,8 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -587,7 +597,7 @@ double ExactMakespan(absl::Span<const int> sizes, std::vector<int>& demands,
   }
   builder.Minimize(obj);
   const CpSolverResponse response =
-      SolveWithParameters(builder.Build(), "num_search_workers:8");
+      SolveWithParameters(builder.Build(), "num_workers:8");
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
   return response.objective_value();
 }
@@ -610,7 +620,8 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
   }
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, intervals);
   std::vector<AffineExpression> demands_expr;
   for (int i = 0; i < demands.size(); ++i) {
     demands_expr.push_back(AffineExpression(demands[i]));
@@ -655,6 +666,35 @@ TEST(ComputeMinSumOfEndMinsTest, RandomCases) {
     EXPECT_NEAR(ExactMakespan(sizes, demands, capacity),
                 ExactMakespanBruteForce(sizes, demands, capacity), 1e-6);
   }
+}
+
+struct SimpleEvent {
+  IntegerValue start_min;
+  IntegerValue end_max;
+  bool operator==(const SimpleEvent& other) const {
+    return start_min == other.start_min && end_max == other.end_max;
+  }
+};
+
+SimpleEvent ConvexHull(absl::Span<const SimpleEvent> events) {
+  SimpleEvent result = events[0];
+  for (int i = 1; i < events.size(); ++i) {
+    result.start_min = std::min(result.start_min, events[i].start_min);
+    result.end_max = std::max(result.end_max, events[i].end_max);
+  }
+  return result;
+}
+
+TEST(SplitEventsInIndendentSetsTest, BasicTest) {
+  std::vector<SimpleEvent> events = {{0, 10},  {2, 12},  {3, 5},
+                                     {15, 20}, {12, 21}, {30, 35}};
+  const std::vector<absl::Span<SimpleEvent>> sets =
+      SplitEventsInIndendentSets(absl::MakeSpan(events));
+  EXPECT_EQ(sets.size(), 2);
+  EXPECT_EQ(sets[0].size(), 3);
+  EXPECT_EQ(ConvexHull(sets[0]), SimpleEvent({0, 12}));
+  EXPECT_EQ(sets[1].size(), 2);
+  EXPECT_EQ(ConvexHull(sets[1]), SimpleEvent({12, 21}));
 }
 
 }  // namespace

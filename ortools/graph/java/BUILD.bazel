@@ -15,11 +15,11 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_jvm_external//:defs.bzl", "artifact")
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "graph",
-    src = "graph.i",
+    srcs = ["graph.swig"],
     module = "graph",
     package = "com.google.ortools.graph",
     swig_includes = [

@@ -19,8 +19,9 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
-	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 	"google.golang.org/protobuf/proto"
+
+	sppb "github.com/google/or-tools/ortools/sat/proto/satparameters"
 )
 
 func solveAndPrintIntermediateSolutionsSampleSat() error {

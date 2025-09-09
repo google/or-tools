@@ -39,6 +39,7 @@
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -65,6 +66,7 @@ SatSolver::SatSolver(Model* model)
     : model_(model),
       binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       clauses_propagator_(model->GetOrCreate<ClauseManager>()),
+      enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()),
       pb_constraints_(model->GetOrCreate<PbConstraints>()),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
@@ -1013,9 +1015,9 @@ SatSolver::Status SatSolver::EnqueueDecisionAndBacktrackOnConflict(
 
 bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
+  if (model_is_unsat_) return false;
   DCHECK(PropagationIsDone());
 
-  if (model_is_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
   EnqueueNewDecision(true_literal);
   if (Propagate()) {
@@ -1965,6 +1967,7 @@ void SatSolver::InitializePropagators() {
   propagators_.clear();
   propagators_.push_back(binary_implication_graph_);
   propagators_.push_back(clauses_propagator_);
+  propagators_.push_back(enforcement_propagator_);
   propagators_.push_back(pb_constraints_);
   for (int i = 0; i < external_propagators_.size(); ++i) {
     propagators_.push_back(external_propagators_[i]);

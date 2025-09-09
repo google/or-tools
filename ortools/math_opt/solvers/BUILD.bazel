@@ -32,9 +32,6 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gscip",
-        "//ortools/gscip:gscip_cc_proto",
-        "//ortools/gscip:gscip_parameters",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -50,7 +47,10 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_submatrix",
         "//ortools/math_opt/core:sparse_vector_view",
-        "//ortools/math_opt/solvers/gscip:gscip_solver_constraint_handler",
+        "//ortools/math_opt/solvers/gscip",
+        "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_parameters",
+        "//ortools/math_opt/solvers/gscip:math_opt_gscip_solver_constraint_handler",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
@@ -72,39 +72,6 @@ cc_library(
     alwayslink = 1,
 )
 
-cc_test(
-    name = "gscip_solver_test",
-    size = "medium",
-    srcs = ["gscip_solver_test.cc"],
-    shard_count = 10,
-    deps = [
-        ":gscip_solver",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-        "//ortools/gscip:gscip_parameters",
-        "//ortools/math_opt/cpp:matchers",
-        "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solver_tests:callback_tests",
-        "//ortools/math_opt/solver_tests:generic_tests",
-        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
-        "//ortools/math_opt/solver_tests:invalid_input_tests",
-        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
-        "//ortools/math_opt/solver_tests:ip_multiple_solutions_tests",
-        "//ortools/math_opt/solver_tests:ip_parameter_tests",
-        "//ortools/math_opt/solver_tests:logical_constraint_tests",
-        "//ortools/math_opt/solver_tests:mip_tests",
-        "//ortools/math_opt/solver_tests:multi_objective_tests",
-        "//ortools/math_opt/solver_tests:qc_tests",
-        "//ortools/math_opt/solver_tests:qp_tests",
-        "//ortools/math_opt/solver_tests:second_order_cone_tests",
-        "//ortools/math_opt/solver_tests:status_tests",
-        "//ortools/math_opt/testing:param_name",
-        "//ortools/port:scoped_std_stream_capture",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-    ],
-)
-
 cc_library(
     name = "gurobi_callback",
     srcs = ["gurobi_callback.cc"],
@@ -115,7 +82,6 @@ cc_library(
         "//ortools/base:logging",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -152,7 +118,6 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
@@ -316,7 +281,7 @@ cc_test(
     name = "cp_sat_solver_test",
     timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
-    shard_count = 10,
+    tags = ["manual"],
     deps = [
         ":cp_sat_solver",
         "//ortools/base:gmock_main",
@@ -394,7 +359,6 @@ cc_library(
         "pdlp_solver.cc",
         "pdlp_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":pdlp_bridge",
         "//ortools/base:protoutil",
@@ -433,7 +397,6 @@ cc_test(
     name = "pdlp_solver_test",
     size = "small",
     srcs = ["pdlp_solver_test.cc"],
-    shard_count = 10,
     deps = [
         ":pdlp_solver",
         "//ortools/base:gmock",
@@ -467,6 +430,11 @@ cc_library(
         "glpk_solver.cc",
         "glpk_solver.h",
     ],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     visibility = ["//visibility:public"],
     deps = [
         ":glpk_cc_proto",
@@ -515,6 +483,11 @@ cc_library(
 cc_test(
     name = "glpk_solver_test",
     srcs = ["glpk_solver_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":glpk_solver",
         "//ortools/base:gmock_main",
@@ -608,7 +581,6 @@ cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
-    shard_count = 10,
     # See note above ":highs_solver" rule.
     tags = ["nosan"],
     deps = [
@@ -710,8 +682,8 @@ cc_library(
         "//ortools/math_opt/solvers/xpress:g_xpress",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
+        "//ortools/third_party_solvers:xpress_environment",
         "//ortools/util:solve_interrupter",
-        "//ortools/xpress:environment",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
@@ -744,7 +716,7 @@ cc_test(
         "//ortools/math_opt/solver_tests:qp_tests",
         "//ortools/math_opt/solver_tests:second_order_cone_tests",
         "//ortools/math_opt/solver_tests:status_tests",
-        "//ortools/xpress:environment",
+        "//ortools/third_party_solvers:xpress_environment",
         "@abseil-cpp//absl/log",
     ],
 )

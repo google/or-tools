@@ -23,6 +23,7 @@ from ortools.math_opt import parameters_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt.core.python import solver
 from ortools.math_opt.python.testing import compare_proto
+from ortools.util.python import pybind_solve_interrupter
 
 
 # The model is:
@@ -109,7 +110,7 @@ class PybindComputeInfeasibleSubsystemTest(
         self.assert_protos_equiv(iis_result, _expected_iis_success())
 
     def test_compute_infeasible_subsystem_infeasible_uninterrupted(self) -> None:
-        interrupter = solver.SolveInterrupter()
+        interrupter = pybind_solve_interrupter.PySolveInterrupter()
         iis_result = solver.compute_infeasible_subsystem(
             _simple_infeasible_model(),
             parameters_pb2.SOLVER_TYPE_GUROBI,
@@ -121,7 +122,7 @@ class PybindComputeInfeasibleSubsystemTest(
         self.assert_protos_equiv(iis_result, _expected_iis_success())
 
     def test_compute_infeasible_subsystem_interrupted(self) -> None:
-        interrupter = solver.SolveInterrupter()
+        interrupter = pybind_solve_interrupter.PySolveInterrupter()
         interrupter.interrupt()
         iis_result = solver.compute_infeasible_subsystem(
             _nontrivial_infeasible_model(),

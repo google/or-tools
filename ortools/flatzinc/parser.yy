@@ -1,3 +1,16 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Renames all yy to orfz_ in public functions.
 %define api.prefix {orfz_}
 
@@ -34,6 +47,8 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 // Code in the implementation file.
 %code {
+#include <cstdint>
+
 #include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
@@ -257,10 +272,27 @@ variable_or_constant_declaration:
   Variable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
-  } else if (assignment.variable == nullptr) {  // just an integer constant.
-    CHECK(domain.Contains(assignment.value));
-    var = model->AddVariable(
-        identifier, Domain::IntegerValue(assignment.value), introduced);
+    CHECK_EQ(var->domain.is_a_set, domain.is_a_set);
+  } else if (assignment.variable == nullptr) {  // A constant.
+    if (assignment.is_float) {
+      // Assigned to an float constant.
+      const double value = assignment.float_value;
+      var = model->AddVariable(
+          identifier, Domain::FloatValue(value), introduced);
+    } else if (assignment.is_domain) {
+      // TODO(user): Check that the assignment is included in the domain.
+      // We force the set domain because we can have the following code:
+      //   var set of {0,18}: x = {0,18};
+      // where the second domain is not tagged as a set.
+      //
+      // Assigned to a set constant.
+      var = model->AddVariable(
+          identifier, assignment.domain, introduced, domain.is_a_set);
+    } else {
+      CHECK(domain.Contains(assignment.value));
+      var = model->AddVariable(
+          identifier, Domain::IntegerValue(assignment.value), introduced);
+    }
   } else {  // a variable.
     var = assignment.variable;
     var->Merge(identifier, domain, introduced);
@@ -297,13 +329,21 @@ variable_or_constant_declaration:
     const std::string var_name = absl::StrFormat("%s[%d]", identifier, i + 1);
     if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
-    } else if ((*assignments)[i].variable == nullptr) {
+    } else if ((*assignments)[i].variable == nullptr) {  // A constant.
       if ((*assignments)[i].is_float) {
         // Assigned to an float constant.
         const double value = (*assignments)[i].float_value;
-        //CHECK(domain.Contains(value));
         vars[i] =
             model->AddVariable(var_name, Domain::FloatValue(value), introduced);
+      } else if ((*assignments)[i].is_domain) {
+        // TODO(user): Check that the assignment is included in the domain.
+        // We force the set domain because we can have the following code:
+        //   var set of {0,18}: x = {0,18};
+        // where the second domain is not tagged as a set.
+        //
+        // Assigned to a set constant.
+        vars[i] = model->AddVariable(
+            var_name, (*assignments)[i].domain, introduced, domain.is_a_set);
       } else {
         // Assigned to an integer constant.
         const int64_t value = (*assignments)[i].value;
@@ -374,6 +414,14 @@ var_or_value_array:  // Cannot be empty.
 var_or_value:
   IVALUE { $$ = VarRefOrValue::Value($1); }  // An integer value.
 | DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.
+| IVALUE DOTDOT IVALUE {
+   $$ = VarRefOrValue::DomainValue(Domain::Interval($1, $3));
+}
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = VarRefOrValue::DomainValue(Domain::IntegerList(std::move(*$2)));
+  delete $2;
+}
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;

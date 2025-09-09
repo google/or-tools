@@ -38,7 +38,7 @@
 //
 // The above limitations are largely due MPSolver and this file, not Gurobi.
 //
-// Warning(rander): the interactions between callbacks and incrementalism are
+// TODO(user): the interactions between callbacks and incrementalism are
 // poorly tested, proceed with caution.
 
 #include <algorithm>
@@ -66,12 +66,12 @@
 #include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/gurobi/environment.h"
-#include "ortools/gurobi/gurobi_util.h"
+#include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/time_limit.h"
 
@@ -543,6 +543,13 @@ struct MPCallbackWithGurobiContext {
 
 // NOTE(user): This function must have this exact API, because we are passing
 // it to Gurobi as a callback.
+
+#if defined(_MSC_VER)
+#define GUROBI_STDCALL __stdcall
+#else
+#define GUROBI_STDCALL
+#endif
+
 int GUROBI_STDCALL CallbackImpl(GRBmodel* model,
                                 void* gurobi_internal_callback_data, int where,
                                 void* raw_model_and_callback) {

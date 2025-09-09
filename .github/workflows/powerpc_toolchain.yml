@@ -1,7 +1,7 @@
 # ref: https://toolchains.bootlin.com/
 name: powerpc Toolchain
 
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

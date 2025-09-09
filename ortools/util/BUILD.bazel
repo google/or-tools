@@ -14,30 +14,9 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
-)
 
 # OptionalBoolean
 proto_library(
@@ -132,9 +111,7 @@ cc_library(
     srcs = ["piecewise_linear_function.cc"],
     hdrs = ["piecewise_linear_function.h"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
@@ -232,6 +209,7 @@ cc_library(
     hdrs = ["sigint.h"],
     deps = [
         "//ortools/base",
+        "//ortools/port:os",
     ],
 )
 
@@ -243,9 +221,9 @@ cc_library(
     # You must also set this flag if you depend on this target and use
     # its methods related to IEEE-754 rounding modes.
     copts = select({
-        "on_linux": ["-frounding-math"],
-        "on_macos": ["-frounding-math"],
-        "on_windows": [],
+        "@platforms//os:linux": ["-frounding-math"],
+        "@platforms//os:macos": ["-frounding-math"],
+        "@platforms//os:windows": [],
         "//conditions:default": ["-frounding-math"],
     }),
     deps = [
@@ -358,6 +336,7 @@ cc_library(
     name = "vector_or_function",
     hdrs = ["vector_or_function.h"],
     deps = [
+        ":flat_matrix",
         "//ortools/base",
     ],
 )
@@ -405,7 +384,6 @@ cc_library(
 cc_library(
     name = "random_engine",
     hdrs = ["random_engine.h"],
-    deps = [],
 )
 
 cc_library(

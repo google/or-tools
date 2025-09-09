@@ -14,13 +14,11 @@
 #ifndef OR_TOOLS_EXAMPLES_COURSE_SCHEDULING_H_
 #define OR_TOOLS_EXAMPLES_COURSE_SCHEDULING_H_
 
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
-#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/cp_model.pb.h"

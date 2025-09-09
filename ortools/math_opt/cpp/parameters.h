@@ -26,13 +26,13 @@
 #include "absl/time/time.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
-#include "ortools/gscip/gscip.pb.h"      // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
-#include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
-#include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
-#include "ortools/pdlp/solvers.pb.h"             // IWYU pragma: export
-#include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
+#include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
+#include "ortools/pdlp/solvers.pb.h"                  // IWYU pragma: export
+#include "ortools/sat/sat_parameters.pb.h"            // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {

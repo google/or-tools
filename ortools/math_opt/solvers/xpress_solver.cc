@@ -40,8 +40,8 @@
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace math_opt {

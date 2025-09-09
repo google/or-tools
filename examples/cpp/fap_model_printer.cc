@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-
 #include "examples/cpp/fap_model_printer.h"
 
 #include <string>

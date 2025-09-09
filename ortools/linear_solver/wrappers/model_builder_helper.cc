@@ -30,14 +30,14 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/gurobi/environment.h"
+#include "ortools/base/string_view_migration.h"
+#include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/xpress_proto_solver.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
@@ -50,7 +50,6 @@
 #endif  // defined(USE_PDLP)
 #include "ortools/lp_data/lp_parser.h"
 #include "ortools/lp_data/mps_reader.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace mb {
@@ -185,7 +184,7 @@ double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
 }
 
 std::string ModelBuilderHelper::VarName(int var_index) const {
-  return model_.variable(var_index).name();
+  return google::protobuf::StringCopy(model_.variable(var_index).name());
 }
 
 int ModelBuilderHelper::AddLinearConstraint() {
@@ -261,7 +260,7 @@ double ModelBuilderHelper::ConstraintUpperBound(int ct_index) const {
 }
 
 std::string ModelBuilderHelper::ConstraintName(int ct_index) const {
-  return model_.constraint(ct_index).name();
+  return google::protobuf::StringCopy(model_.constraint(ct_index).name());
 }
 
 std::vector<int> ModelBuilderHelper::ConstraintVarIndices(int ct_index) const {
@@ -401,7 +400,8 @@ double ModelBuilderHelper::EnforcedConstraintUpperBound(int ct_index) const {
 
 std::string ModelBuilderHelper::EnforcedConstraintName(int ct_index) const {
   DCHECK(IsEnforcedConstraint(ct_index));
-  return model_.general_constraint(ct_index).name();
+  return google::protobuf::StringCopy(
+      model_.general_constraint(ct_index).name());
 }
 
 std::vector<int> ModelBuilderHelper::EnforcedConstraintVarIndices(
@@ -438,7 +438,9 @@ int ModelBuilderHelper::num_constraints() const {
   return model_.constraint_size() + model_.general_constraint_size();
 }
 
-std::string ModelBuilderHelper::name() const { return model_.name(); }
+std::string ModelBuilderHelper::name() const {
+  return google::protobuf::StringCopy(model_.name());
+}
 
 void ModelBuilderHelper::SetName(const std::string& name) {
   model_.set_name(name);
@@ -557,11 +559,6 @@ bool ModelSolverHelper::SolverIsSupported() const {
       solver_type_.value() == MPModelRequest::GUROBI_LINEAR_PROGRAMMING) {
     return GurobiIsCorrectlyInstalled();
   }
-  if (solver_type_.value() ==
-          MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING ||
-      solver_type_.value() == MPModelRequest::XPRESS_LINEAR_PROGRAMMING) {
-    return XpressIsCorrectlyInstalled();
-  }
   return false;
 }
 
@@ -635,12 +632,6 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_HIGHS)
-    case MPModelRequest::
-        XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
-    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
-      response_ = XPressSolveProto(request);
-      break;
-    }
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
@@ -754,7 +745,7 @@ double ModelSolverHelper::activity(int ct_index) {
 
 std::string ModelSolverHelper::status_string() const {
   if (!has_response()) return "";
-  return response_.value().status_str();
+  return google::protobuf::StringCopy(response_.value().status_str());
 }
 
 double ModelSolverHelper::wall_time() const {

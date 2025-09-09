@@ -64,7 +64,7 @@ struct SolutionHintTestParams {
   std::optional<SolveParameters> two_hint_params;
 
   // A testing::ContainsRegex-compatible regex for the expected hint-acceptance
-  // message. see #regular-expression-syntax)
+  // message. see http://go/gunitadvanced#regular-expression-syntax)
   std::string hint_accepted_message_regex;
 
   friend std::ostream& operator<<(std::ostream& out,

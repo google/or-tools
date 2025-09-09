@@ -313,8 +313,6 @@ typedef ::util::internal::DenseIntTopologicalSorterTpl<
 // TopologicalSorter requires that all nodes and edges be added before
 // traversing the nodes, otherwise it will die with a fatal error.
 //
-// TopologicalSorter is -compatible
-//
 // Note(user): since all the real work is done by
 // DenseIntTopologicalSorterTpl, and this class is a template, we inline
 // every function here in the .h.

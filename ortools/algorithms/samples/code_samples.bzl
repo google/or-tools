@@ -14,9 +14,11 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
-load("@rules_java//java:defs.bzl", "java_test")
-load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_java//java:java_test.bzl", "java_test")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 def code_sample_cc(name):
     cc_binary(
@@ -47,8 +49,6 @@ def code_sample_py(name):
             requirement("absl-py"),
             requirement("numpy"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
     py_test(
@@ -61,8 +61,6 @@ def code_sample_py(name):
             requirement("absl-py"),
             requirement("numpy"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_cc_py(name):

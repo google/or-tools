@@ -1237,7 +1237,7 @@ CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
 }
 
 bool NeighborhoodGenerator::ReadyToGenerate() const {
-  return (helper_.shared_response().SolutionsRepository().NumSolutions() > 0);
+  return helper_.shared_response().HasFeasibleSolution();
 }
 
 double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {

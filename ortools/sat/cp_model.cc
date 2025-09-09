@@ -26,6 +26,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/string_view_migration.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -125,7 +126,8 @@ IntVar IntVar::WithName(absl::string_view name) {
 
 std::string IntVar::Name() const {
   if (builder_ == nullptr) return "null";
-  return builder_->Proto().variables(index_).name();
+  return google::protobuf::StringCopy(
+      builder_->Proto().variables(index_).name());
 }
 
 ::operations_research::Domain IntVar::Domain() const {
@@ -619,7 +621,8 @@ BoolVar IntervalVar::PresenceBoolVar() const {
 
 std::string IntervalVar::Name() const {
   if (builder_ == nullptr) return "null";
-  return builder_->Proto().constraints(index_).name();
+  return google::protobuf::StringCopy(
+      builder_->Proto().constraints(index_).name());
 }
 
 std::string IntervalVar::DebugString() const {

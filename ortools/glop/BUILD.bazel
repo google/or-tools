@@ -14,40 +14,19 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(
     default_visibility = ["//visibility:public"],
-)
-
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
 )
 
 # Floating-point code in this directory must not be compiled with
 # dangerous optimizations. For example do not assume that FP expressions
 # are associative. This is what -fno-fast-math is for.
 SAFE_FP_CODE = select({
-    "on_linux": ["-fno-fast-math"],
-    "on_macos": [],  # no_fast_math is the default.
-    "on_windows": [],  # /fp:precise is the default.
+    "@platforms//os:linux": ["-fno-fast-math"],
+    "@platforms//os:macos": [],  # no_fast_math is the default.
+    "@platforms//os:windows": [],  # /fp:precise is the default.
     "//conditions:default": [],
 })
 

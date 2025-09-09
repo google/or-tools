@@ -18,6 +18,7 @@
 #define OR_TOOLS_MATH_OPT_CPP_SOLVER_RESOURCES_H_
 
 #include <optional>
+#include <ostream>
 #include <string>
 
 #include "absl/status/statusor.h"
@@ -73,6 +74,8 @@ struct SolverResources {
   static absl::StatusOr<SolverResources> FromProto(
       const SolverResourcesProto& proto);
 };
+
+std::ostream& operator<<(std::ostream& out, const SolverResources& resources);
 
 bool AbslParseFlag(absl::string_view text, SolverResources* solver_resources,
                    std::string* error);

@@ -14,12 +14,13 @@
 #ifndef OR_TOOLS_BASE_GZIPSTRING_H_
 #define OR_TOOLS_BASE_GZIPSTRING_H_
 
+#include <zconf.h>
+#include <zlib.h>
+
 #include <string>
 
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "zconf.h"
-#include "zlib.h"
 
 inline bool GunzipString(absl::string_view str, std::string* out) {
   z_stream zs;

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +14,8 @@
 
 """An API for storing a MathOpt model and tracking model modifications."""
 
-from typing import Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Optional, Protocol
 
 import numpy as np
 

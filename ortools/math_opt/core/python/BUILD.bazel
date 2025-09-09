@@ -11,9 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -52,30 +50,11 @@ pybind_extension(
             "//ortools/math_opt/core:solver",
             "//ortools/math_opt/core:solver_debug",
             "//ortools/util:solve_interrupter",
+            "//ortools/util/python:py_solve_interrupter_lib",
             "@abseil-cpp//absl/memory",
             "@abseil-cpp//absl/status:statusor",
             "@pybind11_abseil//pybind11_abseil:import_status_module",
             "@pybind11_abseil//pybind11_abseil:status_casters",
             "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
         ],
-)
-
-py_test(
-    name = "solver_test",
-    size = "small",
-    srcs = ["solver_test.py"],
-    deps = [
-        ":solver",
-        requirement("absl-py"),
-        "//ortools/math_opt:callback_py_pb2",
-        "//ortools/math_opt:model_parameters_py_pb2",
-        "//ortools/math_opt:model_py_pb2",
-        "//ortools/math_opt:model_update_py_pb2",
-        "//ortools/math_opt:parameters_py_pb2",
-        "//ortools/math_opt:result_py_pb2",
-        "//ortools/math_opt/solvers:cp_sat_solver",
-        "//ortools/math_opt/solvers:glop_solver",
-        "//ortools/math_opt/solvers:gscip_solver",
-        "@pybind11_abseil//pybind11_abseil:status",
-    ],
 )

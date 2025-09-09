@@ -14,12 +14,14 @@
 #include "ortools/sat/sat_decision.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -222,6 +224,27 @@ void SatDecisionPolicy::RandomizeCurrentPolarity() {
   const int num_variables = var_polarity_.size();
   for (BooleanVariable var; var < num_variables; ++var) {
     var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+  }
+}
+
+void SatDecisionPolicy::ResetActivitiesToFollowBestPartialAssignment() {
+  DCHECK_EQ(trail_.CurrentDecisionLevel(), 0);
+  CHECK(!activities_.empty());
+  const double max_activity =
+      *absl::c_max_element(activities_) + variable_activity_increment_;
+  const double kDecay = 0.999;
+  variable_activity_increment_ =
+      max_activity / pow(kDecay, best_partial_assignment_.size() + 1);
+  var_ordering_is_initialized_ = false;
+  if (max_activity + variable_activity_increment_ >
+      parameters_.max_variable_activity_value()) {
+    RescaleVariableActivities(1 / parameters_.max_variable_activity_value());
+  }
+  double weight = 1.0;
+  for (int i = 0; i < best_partial_assignment_.size(); ++i) {
+    const Literal l = best_partial_assignment_[i];
+    weight *= kDecay;
+    activities_[l.Variable()] += weight * variable_activity_increment_;
   }
 }
 

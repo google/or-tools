@@ -1,7 +1,7 @@
 # ref: https://codescape.mips.com/components/toolchain/2021.09-01/downloads.html
 name: mips Toolchain
 
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

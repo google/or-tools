@@ -20,6 +20,7 @@ import (
 
 	log "github.com/golang/glog"
 	"github.com/google/or-tools/ortools/sat/go/cpmodel"
+
 	cmpb "github.com/google/or-tools/ortools/sat/proto/cpmodel"
 )
 

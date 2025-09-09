@@ -145,6 +145,22 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
   }
 }
 
+template <typename ProtoWithDomain>
+void FillDomainInProto(int64_t lb, int64_t ub, ProtoWithDomain* proto) {
+  proto->clear_domain();
+  proto->mutable_domain()->Reserve(2);
+  proto->add_domain(lb);
+  proto->add_domain(ub);
+}
+
+template <typename ProtoWithDomain>
+void FillDomainInProto(int64_t value, ProtoWithDomain* proto) {
+  proto->clear_domain();
+  proto->mutable_domain()->Reserve(2);
+  proto->add_domain(value);
+  proto->add_domain(value);
+}
+
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
@@ -260,6 +276,10 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
 void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
                                           LinearConstraintProto* linear,
                                           int64_t* offset);
+
+// Sets `linear` to the constraint "lb <= sum(`literals`) <= ub".
+void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
+                      LinearConstraintProto* linear);
 
 // Same method, but returns if the addition was possible without overflowing.
 bool SafeAddLinearExpressionToLinearConstraint(

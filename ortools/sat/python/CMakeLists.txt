@@ -11,7 +11,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pybind11_add_module(cp_model_helper_pybind11 MODULE cp_model_helper.cc)
+set(WRAPPERS_NAME sat_python_wrappers)
+
+add_library(${WRAPPERS_NAME} OBJECT wrappers.h wrappers.cc)
+set_target_properties(${WRAPPERS_NAME} PROPERTIES
+  POSITION_INDEPENDENT_CODE ON)
+target_include_directories(${WRAPPERS_NAME} PUBLIC
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_BINARY_DIR})
+target_link_libraries(${WRAPPERS_NAME} PUBLIC
+  absl::memory
+  absl::synchronization
+  absl::str_format
+  protobuf::libprotobuf)
+add_library(${PROJECT_NAMESPACE}::${WRAPPERS_NAME} ALIAS ${WRAPPERS_NAME})  
+
+# gen_proto_builder_pybind11 code generator.
+add_executable(gen_proto_builder_pybind11)
+target_sources(gen_proto_builder_pybind11 PRIVATE "gen_proto_builder_pybind11.cc")
+target_include_directories(gen_proto_builder_pybind11 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(gen_proto_builder_pybind11 PRIVATE cxx_std_17)
+target_link_libraries(gen_proto_builder_pybind11 PRIVATE
+  absl::flags_commandlineflag
+  absl::flags_parse
+  absl::flags_usage
+  absl::die_if_null
+  absl::str_format
+  protobuf::libprotobuf
+  ${PROJECT_NAMESPACE}::ortools_proto
+  ${PROJECT_NAMESPACE}::${WRAPPERS_NAME})
+
+include(GNUInstallDirs)
+if(APPLE)
+  set_target_properties(gen_proto_builder_pybind11 PROPERTIES INSTALL_RPATH
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+             BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+             OUTPUT_VARIABLE libdir_relative_path)
+  set_target_properties(gen_proto_builder_pybind11 PROPERTIES
+                        INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
+endif()
+
+install(TARGETS gen_proto_builder_pybind11)
+
+add_custom_command(
+     OUTPUT proto_builder_pybind11.h
+     COMMAND gen_proto_builder_pybind11 > proto_builder_pybind11.h
+     COMMENT "Generate C++ proto_builder_pybind11.h"
+     VERBATIM)
+
+pybind11_add_module(cp_model_helper_pybind11 MODULE cp_model_helper.cc proto_builder_pybind11.h)
 set_target_properties(cp_model_helper_pybind11 PROPERTIES
   LIBRARY_OUTPUT_NAME "cp_model_helper")
 
@@ -26,8 +76,8 @@ elseif(UNIX)
 endif()
 target_link_libraries(cp_model_helper_pybind11 PRIVATE
   ${PROJECT_NAMESPACE}::ortools
-  pybind11_native_proto_caster
-  protobuf::libprotobuf)
+  protobuf::libprotobuf
+  )
 
 target_include_directories(cp_model_helper_pybind11 PRIVATE ${protobuf_SOURCE_DIR})
 add_library(${PROJECT_NAMESPACE}::cp_model_helper_pybind11 ALIAS cp_model_helper_pybind11)

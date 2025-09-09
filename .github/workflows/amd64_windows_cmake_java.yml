@@ -1,7 +1,7 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 Windows CMake Java
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -42,10 +42,6 @@ jobs:
         with:
           distribution: ${{matrix.java.distrib}}
           java-version: ${{matrix.java.version}}
-      - name: Update maven
-        run: |
-          choco upgrade maven
-          echo "C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.9\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Check java
         run: |
           java -version

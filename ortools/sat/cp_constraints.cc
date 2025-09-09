@@ -14,9 +14,11 @@
 #include "ortools/sat/cp_constraints.h"
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -26,14 +28,33 @@
 namespace operations_research {
 namespace sat {
 
+BooleanXorPropagator::BooleanXorPropagator(
+    absl::Span<const Literal> enforcement_literals,
+    const std::vector<Literal>& literals, bool value, Model* model)
+    : literals_(literals),
+      value_(value),
+      trail_(*model->GetOrCreate<Trail>()),
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
+                                                 RegisterWith(watcher));
+}
+
 bool BooleanXorPropagator::Propagate() {
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
+  if (status == EnforcementStatus::IS_FALSE ||
+      status == EnforcementStatus::CANNOT_PROPAGATE) {
+    return true;
+  }
+
   bool sum = false;
   int unassigned_index = -1;
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    if (trail_->Assignment().LiteralIsFalse(l)) {
+    if (trail_.Assignment().LiteralIsFalse(l)) {
       sum ^= false;
-    } else if (trail_->Assignment().LiteralIsTrue(l)) {
+    } else if (trail_.Assignment().LiteralIsTrue(l)) {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
@@ -42,18 +63,23 @@ bool BooleanXorPropagator::Propagate() {
     }
   }
 
-  // Propagates?
-  if (unassigned_index != -1) {
+  auto fill_literal_reason = [&]() {
     literal_reason_.clear();
     for (int i = 0; i < literals_.size(); ++i) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
-          trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
+          trail_.Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
+  };
+
+  // Propagates?
+  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
+    fill_literal_reason();
     const Literal u = literals_[unassigned_index];
-    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
-                                   literal_reason_, {});
+    enforcement_helper_.EnqueueLiteral(
+        enforcement_id_, sum == value_ ? u.Negated() : u, literal_reason_,
+        /*integer_reason=*/{});
     return true;
   }
 
@@ -61,22 +87,26 @@ bool BooleanXorPropagator::Propagate() {
   if (sum == value_) return true;
 
   // Conflict.
-  std::vector<Literal>* conflict = trail_->MutableConflict();
-  conflict->clear();
-  for (int i = 0; i < literals_.size(); ++i) {
-    const Literal l = literals_[i];
-    conflict->push_back(trail_->Assignment().LiteralIsFalse(l) ? l
-                                                               : l.Negated());
+  if (status == EnforcementStatus::IS_ENFORCED) {
+    fill_literal_reason();
+    return enforcement_helper_.ReportConflict(enforcement_id_, literal_reason_,
+                                              /*integer_reason=*/{});
+  } else if (unassigned_index == -1) {
+    fill_literal_reason();
+    return enforcement_helper_.PropagateWhenFalse(
+        enforcement_id_, literal_reason_, /*integer_reason=*/{});
+  } else {
+    return true;
   }
-  return false;
 }
 
-void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+int BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const Literal& l : literals_) {
     watcher->WatchLiteral(l, id);
     watcher->WatchLiteral(l.Negated(), id);
   }
+  return id;
 }
 
 GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(

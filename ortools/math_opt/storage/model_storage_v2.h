@@ -90,7 +90,7 @@ class ModelStorageV2 {
   // considered invalid when solving.
   //
   // See ApplyUpdateProto() for dealing with subsequent updates.
-  static absl::StatusOr<absl::Nonnull<std::unique_ptr<ModelStorageV2>>>
+  static absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorageV2>>
   FromModelProto(const ModelProto& model_proto);
 
   // Creates an empty minimization problem.
@@ -106,7 +106,7 @@ class ModelStorageV2 {
   // reused any id of variable/constraint that was deleted in the original.
   //
   // Note that the returned model does not have any update tracker.
-  absl::Nonnull<std::unique_ptr<ModelStorageV2>> Clone(
+  absl_nonnull std::unique_ptr<ModelStorageV2> Clone(
       std::optional<absl::string_view> new_name = std::nullopt) const;
 
   inline const std::string& name() const { return elemental_.model_name(); }

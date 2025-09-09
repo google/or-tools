@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -28,6 +29,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -118,10 +120,12 @@ class IntervalsRepository {
   // by setting the Boolean to true. This is used by our scheduling heuristic
   // based on precedences.
   SchedulingConstraintHelper* GetOrCreateHelper(
+      std::vector<Literal> enforcement_literals,
       const std::vector<IntervalVariable>& variables,
       bool register_as_disjunctive_helper = false);
 
   NoOverlap2DConstraintHelper* GetOrCreate2DHelper(
+      std::vector<Literal> enforcement_literals,
       const std::vector<IntervalVariable>& x_variables,
       const std::vector<IntervalVariable>& y_variables);
 
@@ -189,7 +193,10 @@ class IntervalsRepository {
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implications_;
   IntegerTrail* integer_trail_;
-  BinaryRelationsMaps* relations_maps_;
+  ReifiedLinear2Bounds* reified_precedences_;
+  RootLevelLinear2Bounds* root_level_bounds_;
+  Linear2Bounds* linear2_bounds_;
+  IntegerEncoder* integer_encoder_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
@@ -201,12 +208,14 @@ class IntervalsRepository {
   util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
 
   // We can share the helper for all the propagators that work on the same set
-  // of intervals.
-  absl::flat_hash_map<std::vector<IntervalVariable>,
-                      SchedulingConstraintHelper*>
+  // of intervals, and with the same enforcement literals.
+  absl::flat_hash_map<
+      std::pair<std::vector<Literal>, std::vector<IntervalVariable>>,
+      SchedulingConstraintHelper*>
       helper_repository_;
   absl::flat_hash_map<
-      std::pair<std::vector<IntervalVariable>, std::vector<IntervalVariable>>,
+      std::tuple<std::vector<Literal>, std::vector<IntervalVariable>,
+                 std::vector<IntervalVariable>>,
       NoOverlap2DConstraintHelper*>
       no_overlap_2d_helper_repository_;
   absl::flat_hash_map<

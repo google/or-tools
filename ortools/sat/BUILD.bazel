@@ -17,7 +17,9 @@ load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//proto:def.bzl", "go_proto_library")
 
 package(default_visibility = ["//visibility:public"])
@@ -26,12 +28,14 @@ cc_library(
     name = "cp_model",
     srcs = ["cp_model.cc"],
     hdrs = ["cp_model.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
         ":cp_model_utils",
         ":model",
         ":sat_parameters_cc_proto",
+        "//ortools/base:string_view_migration",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
@@ -52,9 +56,9 @@ cc_test(
         ":cp_model_solver",
         ":model",
         ":sat_parameters_cc_proto",
-        "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/types:span",
@@ -64,6 +68,7 @@ cc_test(
 cc_library(
     name = "model",
     hdrs = ["model.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:typeid",
@@ -86,20 +91,24 @@ cc_test(
 proto_library(
     name = "sat_parameters_proto",
     srcs = ["sat_parameters.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "sat_parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":sat_parameters_proto"],
 )
 
 py_proto_library(
     name = "sat_parameters_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":sat_parameters_proto"],
 )
 
 java_proto_library(
     name = "sat_parameters_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":sat_parameters_proto"],
 )
 
@@ -107,11 +116,13 @@ go_proto_library(
     name = "sat_parameters_go_proto",
     importpath = "github.com/google/or-tools/ortools/sat/proto/satparameters",
     protos = [":sat_parameters_proto"],
+    visibility = ["//visibility:public"],
 )
 
 proto_library(
     name = "cp_model_proto",
     srcs = ["cp_model.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -130,7 +141,10 @@ cc_library(
         ":scheduling_helpers",
         ":synchronization",
         "//ortools/base:stl_util",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:fixed_array",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
@@ -164,9 +178,10 @@ cc_library(
         ":cp_model_utils",
         ":presolve_context",
         ":sat_parameters_cc_proto",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:protobuf_util",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -218,18 +233,70 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "old_precedences_propagator",
+    srcs = ["old_precedences_propagator.cc"],
+    hdrs = ["old_precedences_propagator.h"],
+    deps = [
+        ":integer",
+        ":integer_base",
+        ":model",
+        ":precedences",
+        ":sat_base",
+        ":sat_solver",
+        ":synchronization",
+        "//ortools/base:logging",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:bitset",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "container",
+    hdrs = ["container.h"],
+    deps = [
+        ":sat_base",
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "container_test",
+    srcs = ["container_test.cc"],
+    deps = [
+        ":container",
+        ":sat_base",
+        "//ortools/base:gmock_main",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":cp_model_proto"],
 )
 
 py_proto_library(
     name = "cp_model_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":cp_model_proto"],
 )
 
 java_proto_library(
     name = "cp_model_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":cp_model_proto"],
 )
 
@@ -237,12 +304,14 @@ go_proto_library(
     name = "cp_model_go_proto",
     importpath = "github.com/google/or-tools/ortools/sat/proto/cpmodel",
     protos = [":cp_model_proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "cp_model_utils",
     srcs = ["cp_model_utils.cc"],
     hdrs = ["cp_model_utils.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":sat_base",
@@ -282,6 +351,7 @@ cc_library(
     name = "synchronization",
     srcs = ["synchronization.cc"],
     hdrs = ["synchronization.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -313,8 +383,10 @@ cc_library(
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -346,6 +418,7 @@ cc_library(
     name = "cp_model_checker",
     srcs = ["cp_model_checker.cc"],
     hdrs = ["cp_model_checker.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -386,6 +459,7 @@ cc_library(
     name = "constraint_violation",
     srcs = ["constraint_violation.cc"],
     hdrs = ["constraint_violation.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -416,9 +490,9 @@ cc_test(
         ":constraint_violation",
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        "//ortools/base",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
@@ -430,6 +504,7 @@ cc_library(
     name = "feasibility_jump",
     srcs = ["feasibility_jump.cc"],
     hdrs = ["feasibility_jump.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":combine_solutions",
         ":constraint_violation",
@@ -476,6 +551,7 @@ cc_library(
     name = "linear_model",
     srcs = ["linear_model.cc"],
     hdrs = ["linear_model.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
@@ -504,6 +580,7 @@ cc_library(
     name = "parameters_validation",
     srcs = ["parameters_validation.cc"],
     hdrs = ["parameters_validation.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_search",
         ":sat_parameters_cc_proto",
@@ -575,6 +652,7 @@ cc_library(
     name = "cp_model_solver_helpers",
     srcs = ["cp_model_solver_helpers.cc"],
     hdrs = ["cp_model_solver_helpers.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":circuit",
         ":clause",
@@ -626,6 +704,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
+        "//ortools/base:threadpool",
         "//ortools/base:timer",
         "//ortools/base:types",
         "//ortools/graph:connected_components",
@@ -663,6 +742,7 @@ cc_library(
     name = "shaving_solver",
     srcs = ["shaving_solver.cc"],
     hdrs = ["shaving_solver.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_copy",
@@ -695,6 +775,7 @@ cc_library(
     name = "cp_model_solver",
     srcs = ["cp_model_solver.cc"],
     hdrs = ["cp_model_solver.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":circuit",
         ":clause",
@@ -757,6 +838,7 @@ cc_library(
         "//ortools/base:types",
         "//ortools/graph:connected_components",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/port:os",
         "//ortools/port:proto_utils",
         "//ortools/util:logging",
         "//ortools/util:random_engine",
@@ -802,7 +884,9 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/port:os",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
     ],
@@ -811,10 +895,10 @@ cc_test(
 cc_library(
     name = "cp_model_mapping",
     hdrs = ["cp_model_mapping.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        ":integer",
         ":integer_base",
         ":linear_constraint",
         ":model",
@@ -831,6 +915,7 @@ cc_library(
     name = "cp_model_loader",
     srcs = ["cp_model_loader.cc"],
     hdrs = ["cp_model_loader.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":2d_distances_propagator",
         ":all_different",
@@ -902,6 +987,10 @@ proto_library(
 
 cc_proto_library(
     name = "boolean_problem_cc_proto",
+    visibility = [
+        "//ortools/bop:__pkg__",
+        "//visibility:public",
+    ],
     deps = [":boolean_problem_proto"],
 )
 
@@ -972,7 +1061,7 @@ cc_library(
         ":sat_solver",
         ":solution_crush",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
         "//ortools/util:bitset",
@@ -1095,6 +1184,7 @@ cc_library(
         ":integer",
         ":integer_base",
         ":model",
+        ":precedences",
         ":presolve_context",
         ":presolve_util",
         ":probing",
@@ -1132,7 +1222,6 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/status:statusor",
@@ -1181,9 +1270,9 @@ cc_test(
         ":cp_model_solver",
         ":cp_model_utils",
         ":sat_parameters_cc_proto",
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:path",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/flags:flag",
@@ -1240,7 +1329,7 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":solution_crush",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:stl_util",
         "//ortools/port:proto_utils",
         "//ortools/util:logging",
@@ -1275,6 +1364,7 @@ cc_test(
         "//ortools/base:container_logging",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
+        "//ortools/base:parse_text_proto",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",
@@ -1323,6 +1413,7 @@ cc_library(
     deps = [
         ":clause",
         ":drat_proof_handler",
+        ":enforcement",
         ":model",
         ":pb_constraint",
         ":restart",
@@ -1362,7 +1453,7 @@ cc_library(
         ":model",
         ":sat_decision",
         ":sat_parameters_cc_proto",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/port:proto_utils",
         "//ortools/util:bitset",
         "//ortools/util:running_stat",
@@ -1500,6 +1591,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:integer_pq",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -1525,6 +1617,7 @@ cc_library(
     srcs = ["clause.cc"],
     hdrs = ["clause.h"],
     deps = [
+        ":container",
         ":drat_proof_handler",
         ":inclusion",
         ":model",
@@ -1708,7 +1801,8 @@ cc_library(
         ":solution_crush",
         ":util",
         "//ortools/algorithms:dynamic_partition",
-        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
@@ -1746,10 +1840,12 @@ cc_library(
     name = "integer_base",
     srcs = ["integer_base.cc"],
     hdrs = ["integer_base.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":sat_base",
         "//ortools/base",
         "//ortools/base:strong_vector",
+        "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
@@ -1767,6 +1863,7 @@ cc_test(
     deps = [
         ":integer_base",
         "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -1774,6 +1871,7 @@ cc_library(
     name = "integer",
     srcs = ["integer.cc"],
     hdrs = ["integer.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":integer_base",
         ":model",
@@ -1827,7 +1925,7 @@ cc_library(
         ":scheduling_helpers",
         ":synchronization",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -1853,8 +1951,8 @@ cc_test(
         ":integer_search",
         ":model",
         ":sat_parameters_cc_proto",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/util:random_engine",
         "@abseil-cpp//absl/container:flat_hash_set",
     ],
@@ -1879,7 +1977,7 @@ cc_library(
         ":sat_solver",
         ":synchronization",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:strong_vector",
         "//ortools/glop:variables_info",
         "//ortools/util:strong_integers",
@@ -1920,7 +2018,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
@@ -1990,6 +2088,8 @@ cc_library(
     srcs = ["scheduling_helpers.cc"],
     hdrs = ["scheduling_helpers.h"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":implied_bounds",
         ":integer",
         ":integer_base",
@@ -1999,7 +2099,7 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/util:bitset",
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
@@ -2017,6 +2117,8 @@ cc_library(
     deps = [
         ":2d_rectangle_presolve",
         ":diffn_util",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -2051,9 +2153,11 @@ cc_library(
     name = "precedences",
     srcs = ["precedences.cc"],
     hdrs = ["precedences.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":clause",
         ":cp_constraints",
+        ":cp_model_mapping",
         ":integer",
         ":integer_base",
         ":model",
@@ -2063,16 +2167,12 @@ cc_library(
         ":util",
         "//ortools/base",
         "//ortools/base:mathutil",
-        "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
-        "//ortools/graph",
         "//ortools/graph:topologicalsorter",
-        "//ortools/util:bitset",
         "//ortools/util:logging",
         "//ortools/util:rev",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
-        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
@@ -2080,6 +2180,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -2103,6 +2204,7 @@ cc_test(
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -2117,8 +2219,8 @@ cc_test(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
@@ -2131,13 +2233,17 @@ cc_library(
     name = "integer_expr",
     srcs = ["integer_expr.cc"],
     hdrs = ["integer_expr.h"],
+    visibility = ["//visibility:public"],
     deps = [
+        ":cp_constraints",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":linear_constraint",
         ":linear_propagation",
         ":model",
-        ":precedences",
+        ":old_precedences_propagator",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
@@ -2146,6 +2252,7 @@ cc_library(
         "//ortools/base:mathutil",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/numeric:int128",
@@ -2170,9 +2277,10 @@ cc_test(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:parse_test_proto",
+        "//ortools/base:parse_text_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
@@ -2191,15 +2299,15 @@ cc_library(
     srcs = ["linear_propagation.cc"],
     hdrs = ["linear_propagation.h"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
         ":precedences",
         ":sat_base",
-        ":sat_solver",
         ":synchronization",
         ":util",
-        "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:rev",
@@ -2243,11 +2351,14 @@ cc_library(
     srcs = ["all_different.cc"],
     hdrs = ["all_different.h"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
         ":sat_base",
         ":sat_solver",
+        ":util",
         "//ortools/base",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:bitset",
@@ -2270,6 +2381,7 @@ cc_test(
         ":integer_base",
         ":integer_search",
         ":model",
+        ":sat_base",
         ":sat_solver",
         "//ortools/base",
         "//ortools/base:gmock_main",
@@ -2287,17 +2399,22 @@ cc_library(
         ":integer",
         ":integer_base",
         ":intervals",
+        ":linear_propagation",
         ":model",
         ":precedences",
         ":sat_base",
         ":sat_parameters_cc_proto",
+        ":scheduling_helpers",
         ":synchronization",
         ":timetable",
         ":util",
         "//ortools/util:scheduling",
         "//ortools/util:sort",
         "//ortools/util:strong_integers",
+        "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -2314,6 +2431,7 @@ cc_test(
         ":disjunctive",
         ":integer",
         ":integer_base",
+        ":integer_expr",
         ":integer_search",
         ":intervals",
         ":model",
@@ -2336,9 +2454,10 @@ cc_library(
     srcs = ["timetable.cc"],
     hdrs = ["timetable.h"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
-        ":intervals",
         ":model",
         ":sat_base",
         ":scheduling_helpers",
@@ -2408,6 +2527,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":scheduling_helpers",
         ":timetable",
         ":timetable_edgefinding",
         "//ortools/base",
@@ -2422,7 +2542,6 @@ cc_test(
     name = "cumulative_test",
     size = "large",
     srcs = ["cumulative_test.cc"],
-    shard_count = 32,
     deps = [
         ":cumulative",
         ":integer",
@@ -2563,12 +2682,11 @@ cc_library(
         ":scheduling_cuts",
         ":scheduling_helpers",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/util:logging",
-        "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/base:core_headers",
@@ -2596,6 +2714,7 @@ cc_test(
         ":linear_relaxation",
         ":model",
         ":sat_base",
+        ":scheduling_helpers",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/util:sorted_interval_list",
@@ -2608,6 +2727,7 @@ cc_library(
     name = "linear_constraint",
     srcs = ["linear_constraint.cc"],
     hdrs = ["linear_constraint.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":integer",
         ":integer_base",
@@ -2723,11 +2843,12 @@ cc_library(
         ":integer_base",
         ":linear_constraint",
         ":model",
+        ":sat_base",
         ":sat_parameters_cc_proto",
         ":synchronization",
         ":util",
-        "//ortools/base",
         "//ortools/base:hash",
+        "//ortools/base:logging",
         "//ortools/base:strong_vector",
         "//ortools/glop:variables_info",
         "//ortools/lp_data:base",
@@ -2739,7 +2860,7 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/meta:type_traits",
+        "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -2826,10 +2947,12 @@ cc_test(
 proto_library(
     name = "routes_support_graph_proto",
     srcs = ["routes_support_graph.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "routes_support_graph_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":routes_support_graph_proto"],
 )
 
@@ -2999,7 +3122,7 @@ cc_library(
     deps = [
         ":integer_base",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/lp_data:base",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
@@ -3042,6 +3165,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
@@ -3158,6 +3282,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
@@ -3172,6 +3297,7 @@ cc_library(
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:log_streamer",
+        "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:bit_gen_ref",
@@ -3192,8 +3318,8 @@ cc_test(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":util",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:random_engine",
@@ -3201,6 +3327,7 @@ cc_test(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
@@ -3258,9 +3385,9 @@ cc_test(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":table",
-        "//ortools/base",
         "//ortools/base:container_logging",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "//ortools/base:parse_test_proto",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/types:span",
@@ -3271,7 +3398,10 @@ cc_library(
     name = "cp_constraints",
     srcs = ["cp_constraints.cc"],
     hdrs = ["cp_constraints.h"],
+    visibility = ["//visibility:public"],
     deps = [
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":integer_base",
         ":model",
@@ -3295,8 +3425,61 @@ cc_test(
         ":precedences",
         ":sat_base",
         ":sat_solver",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "enforcement",
+    srcs = ["enforcement.cc"],
+    hdrs = ["enforcement.h"],
+    deps = [
+        ":model",
+        ":sat_base",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:rev",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "enforcement_test",
+    srcs = ["enforcement_test.cc"],
+    deps = [
+        ":enforcement",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "enforcement_helper",
+    srcs = ["enforcement_helper.cc"],
+    hdrs = ["enforcement_helper.h"],
+    deps = [
+        ":enforcement",
+        ":integer",
+        ":integer_base",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:stl_util",
+        "//ortools/base:strong_vector",
+        "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -3309,7 +3492,7 @@ cc_library(
         ":integer_base",
         ":scheduling_helpers",
         ":util",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/graph:connected_components",
@@ -3525,8 +3708,8 @@ cc_test(
         ":diffn_util",
         ":integer_base",
         ":util",
-        "//ortools/base",
         "//ortools/base:gmock",
+        "//ortools/base:logging",
         "//ortools/graph:connected_components",
         "//ortools/graph:strongly_connected_components",
         "//ortools/util:saturated_arithmetic",
@@ -3570,7 +3753,6 @@ cc_library(
         ":synchronization",
         ":timetable",
         ":util",
-        "//ortools/base:stl_util",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:strong_integers",
@@ -3603,8 +3785,8 @@ cc_test(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
-        "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/base:logging",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -3616,6 +3798,8 @@ cc_library(
     deps = [
         ":all_different",
         ":clause",
+        ":enforcement",
+        ":enforcement_helper",
         ":integer",
         ":model",
         ":sat_base",
@@ -3629,7 +3813,6 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -3691,6 +3874,7 @@ cc_library(
     name = "cp_model_lns",
     srcs = ["cp_model_lns.cc"],
     hdrs = ["cp_model_lns.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_copy",
@@ -3769,6 +3953,7 @@ cc_library(
     name = "feasibility_pump",
     srcs = ["feasibility_pump.cc"],
     hdrs = ["feasibility_pump.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_mapping",
         ":integer",
@@ -3822,6 +4007,7 @@ cc_library(
     name = "rins",
     srcs = ["rins.cc"],
     hdrs = ["rins.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":cp_model_mapping",
         ":integer_base",
@@ -3849,6 +4035,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/util:random_engine",
+        "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -3857,6 +4044,7 @@ cc_library(
     name = "subsolver",
     srcs = ["subsolver.cc"],
     hdrs = ["subsolver.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":util",
         "//ortools/base",
@@ -3911,8 +4099,8 @@ cc_library(
     hdrs = ["drat_checker.h"],
     deps = [
         ":sat_base",
-        "//ortools/base",
         "//ortools/base:hash",
+        "//ortools/base:logging",
         "//ortools/base:strong_vector",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
@@ -3959,7 +4147,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:stl_util",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/base:core_headers",
@@ -4016,13 +4204,17 @@ cc_binary(
         "//ortools/base:path",
         "//ortools/util:file_util",
         "//ortools/util:logging",
+        "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
         "@protobuf",
     ],
 )
@@ -4030,6 +4222,7 @@ cc_binary(
 cc_library(
     name = "sat_cnf_reader",
     hdrs = ["sat_cnf_reader.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":boolean_problem_cc_proto",
         ":cp_model_cc_proto",
@@ -4082,8 +4275,8 @@ cc_library(
         "//ortools/algorithms:binary_search",
         "//ortools/algorithms:find_graph_symmetries",
         "//ortools/algorithms:sparse_permutation",
-        "//ortools/base",
         "//ortools/base:hash",
+        "//ortools/base:logging",
         "//ortools/graph",
         "//ortools/util:affine_relation",
         "//ortools/util:logging",
@@ -4126,6 +4319,10 @@ cc_library(
     name = "swig_helper",
     srcs = ["swig_helper.cc"],
     hdrs = ["swig_helper.h"],
+    visibility = [
+        "//ortools/sat/java:__pkg__",
+        "//ortools/sat/python:__pkg__",
+    ],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",

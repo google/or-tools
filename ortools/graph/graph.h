@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-//
 // This file defines a generic graph interface on which most algorithms can be
 // built and provides a few efficient implementations with a fast construction
 // time. Its design is based on the experience acquired by the Operations
@@ -315,7 +313,7 @@ class BaseGraph {
 template <typename Graph, typename ArcIterator, typename PropertyT,
           PropertyT (Graph::*property)(typename Graph::ArcIndex) const>
 class ArcPropertyIterator
-#if __cplusplus < 202002L
+#if __cplusplus < 201703L
     : public std::iterator<std::input_iterator_tag, PropertyT>
 #endif
 {
@@ -324,6 +322,11 @@ class ArcPropertyIterator
   // TODO(b/385094969): This should be `NodeIndex` for integers,
   // `NodeIndex::value_type` for strong signed integer types.
   using difference_type = std::ptrdiff_t;
+#if __cplusplus >= 201703L && __cplusplus < 202002L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = PropertyT*;
+  using reference = PropertyT&;
+#endif
 
   ArcPropertyIterator() = default;
 
@@ -346,6 +349,7 @@ class ArcPropertyIterator
                          const ArcPropertyIterator& r) {
     return l.arc_it_ == r.arc_it_;
   }
+
   friend bool operator!=(const ArcPropertyIterator& l,
                          const ArcPropertyIterator& r) {
     return !(l == r);
@@ -632,8 +636,6 @@ struct GraphTraits {
 //   + (ArcIndexType + NodeIndexType) * arc_capacity().
 // - Has an efficient Tail() but need an extra NodeIndexType/arc memory for it.
 // - Never changes the initial arc index returned by AddArc().
-//
-// All graphs should be -compatible, but we haven't tested that.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;

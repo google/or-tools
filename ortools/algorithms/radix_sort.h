@@ -51,7 +51,7 @@
 namespace operations_research {
 
 // Sorts an array of int, double, or other numeric types. Up to ~10x faster than
-// std::sort() when size ≥ 8k: go/radix-sort-bench. See file-level comment.
+// std::sort() when size ≥ 8k. See file-level comment for more details.
 template <typename T>
 void RadixSort(
     absl::Span<T> values,

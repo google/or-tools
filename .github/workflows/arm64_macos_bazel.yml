@@ -1,7 +1,7 @@
 # ref: https://github.com/actions/runner-images
 name: arm64 MacOS Bazel
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
@@ -48,16 +48,10 @@ jobs:
           cat MODULE.bazel
       - name: Build
         run: >
-          bazel build
-          -c opt
-          --subcommands=pretty_print
-          //ortools/... //examples/...
+          bazel build --config=ci //ortools/... //examples/...
       - name: Test
         run: >
-          bazel test
-          -c opt
-          --test_output=errors
-          //ortools/... //examples/...
+          bazel test --config=ci //ortools/... //examples/...
 
   arm64_macos_bazel:
     runs-on: ubuntu-latest

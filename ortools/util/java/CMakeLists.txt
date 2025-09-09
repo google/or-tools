@@ -11,17 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE sorted_interval_list.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE sorted_interval_list.i PROPERTY SWIG_MODULE_NAME main)
-set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_DEFINITIONS
+set_property(SOURCE sorted_interval_list.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE sorted_interval_list.swig PROPERTY SWIG_MODULE_NAME main)
+set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_OPTIONS
+set_property(SOURCE sorted_interval_list.swig PROPERTY COMPILE_OPTIONS
   -package ${JAVA_PACKAGE}.util)
 swig_add_library(jniutil
   TYPE OBJECT
   LANGUAGE java
   OUTPUT_DIR ${JAVA_PROJECT_DIR}/${JAVA_SRC_PATH}/util
-  SOURCES sorted_interval_list.i)
+  SOURCES sorted_interval_list.swig)
 
 target_include_directories(jniutil PRIVATE ${JNI_INCLUDE_DIRS})
 set_target_properties(jniutil PROPERTIES

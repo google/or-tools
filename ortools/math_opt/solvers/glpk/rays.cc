@@ -14,7 +14,6 @@
 #include "ortools/math_opt/solvers/glpk/rays.h"
 
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 

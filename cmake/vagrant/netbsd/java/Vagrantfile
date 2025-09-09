@@ -73,9 +73,9 @@ Vagrant.configure("2") do |config|
   # note: clang installed by default
   config.vm.provision "env", type: "shell", inline:<<-SHELL
   set -x
-  pkg update -f
-  pkg install -y git cmake
-  pkg install -y swig openjdk11 maven
+  pkgin update
+  pkg -y install git cmake
+  pkg -y install swig openjdk11 maven
   mount -t fdescfs fdesc /dev/fd
   mount -t procfs proc /proc
   SHELL

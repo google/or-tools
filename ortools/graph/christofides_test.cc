@@ -273,7 +273,7 @@ void BM_ChristofidesPathSolver(benchmark::State& state) {
     }
   }
   auto cost = [&costs](int i, int j) { return costs[i][j]; };
-  // TODO: MSVC v19.41 can't convert lambda to std::function.
+  // TODO(user) MSVC v19.41 can't convert lambda to std::function.
 #if defined(_MSC_VER)
   using Cost = std::function<int(int, int)>;
 #else

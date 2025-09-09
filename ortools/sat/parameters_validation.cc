@@ -141,6 +141,8 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_POSITIVE(glucose_decay_increment_period);
   TEST_POSITIVE(shared_tree_max_nodes_per_worker);
   TEST_POSITIVE(shared_tree_open_leaves_per_worker);
+  TEST_NON_NEGATIVE(shared_tree_split_min_dtime);
+  TEST_IS_FINITE(shared_tree_split_min_dtime);
   TEST_POSITIVE(mip_var_scaling);
 
   // Test LP tolerances.
@@ -158,11 +160,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_NON_NEGATIVE(probing_deterministic_time_limit);
   TEST_NON_NEGATIVE(symmetry_detection_deterministic_time_limit);
   TEST_POSITIVE(share_glue_clauses_dtime);
-
-  if (params.enumerate_all_solutions() &&
-      (params.num_search_workers() > 1 || params.num_workers() > 1)) {
-    return "Enumerating all solutions does not work in parallel";
-  }
 
   if (params.enumerate_all_solutions() &&
       (!params.subsolvers().empty() || !params.extra_subsolvers().empty() ||

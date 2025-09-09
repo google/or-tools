@@ -36,12 +36,24 @@ TEST(LiteralXorIsTest, OneVariable) {
   Model model;
   const BooleanVariable a = model.Add(NewBooleanVariable());
   const BooleanVariable b = model.Add(NewBooleanVariable());
-  model.Add(LiteralXorIs({Literal(a, true)}, true));
-  model.Add(LiteralXorIs({Literal(b, true)}, false));
+  model.Add(LiteralXorIs({}, {Literal(a, true)}, true));
+  model.Add(LiteralXorIs({}, {Literal(b, true)}, false));
   SatSolver* solver = model.GetOrCreate<SatSolver>();
   EXPECT_TRUE(solver->Propagate());
   EXPECT_TRUE(solver->Assignment().LiteralIsTrue(Literal(a, true)));
   EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(b, true)));
+}
+
+TEST(LiteralXorIsTest, OneEnforcedVariable) {
+  Model model;
+  const BooleanVariable e = model.Add(NewBooleanVariable());
+  const BooleanVariable f = model.Add(NewBooleanVariable());
+  model.Add(LiteralXorIs({Literal(e, true)}, {}, true));
+  model.Add(LiteralXorIs({Literal(f, false)}, {}, true));
+  SatSolver* solver = model.GetOrCreate<SatSolver>();
+  EXPECT_TRUE(solver->Propagate());
+  EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(e, true)));
+  EXPECT_TRUE(solver->Assignment().LiteralIsFalse(Literal(f, false)));
 }
 
 // A simple macro to make the code more readable.

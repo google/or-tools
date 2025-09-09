@@ -30,7 +30,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research::math_opt {
 

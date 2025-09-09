@@ -14,7 +14,9 @@
 load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -36,6 +38,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "set_cover_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":set_cover_proto"],
 )
 
@@ -229,6 +232,7 @@ cc_test(
     size = "medium",
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
+    tags = ["manual"],
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -259,6 +263,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "capacity_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":capacity_proto"],
 )
 

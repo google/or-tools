@@ -78,8 +78,7 @@ TEST(ElementalTest, HaveNames) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Typed tests do not work with non-type template parameters, so we need to
-// wrap the values with a type. See
-// 8947385822189977600
+// wrap the values with a type. See yaqs/8947385822189977600.
 template <ElementType e>
 class ElementTypeProxy {
  public:
@@ -546,28 +545,52 @@ TEST(ElementalTest, ElementValuedAttr) {
   const IndicatorConstraintId ic3 =
       elemental.AddElement<ElementType::kIndicatorConstraint>("");
 
-  {
-    const Diff& diff = ElementalTestPeer::GetDiffRef(elemental.AddDiff());
-    elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic1), x);
-    elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic2), x);
-    elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic2), y);
-    elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic3), x);
-    EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator),
-                UnorderedElementsAre(AttrKey(ic1), AttrKey(ic2), AttrKey(ic3)));
-  }
+  const Diff& diff = ElementalTestPeer::GetDiffRef(elemental.AddDiff());
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic1), x);
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic2), x);
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic2), y);
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic3), x);
+  EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator),
+              UnorderedElementsAre(AttrKey(ic1), AttrKey(ic2), AttrKey(ic3)));
+}
 
-  {
-    const Diff& diff = ElementalTestPeer::GetDiffRef(elemental.AddDiff());
-    // Deleting `x` clears the attribute for `ic1` and `ic3`, which both
-    // reference `x`.
-    elemental.DeleteElement(x);
-    EXPECT_THAT(elemental.AttrNonDefaults(VariableAttr1::kIndConIndicator),
-                UnorderedElementsAre(AttrKey(ic2)));
-    // It also informs the diffs that the attributes referencing `x` were
-    // modified.
-    EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator),
-                UnorderedElementsAre(AttrKey(ic1), AttrKey(ic3)));
-  }
+TEST(ElementalTest, ElementValuedAttrDeleteVar) {
+  Elemental elemental;
+  const VariableId x = elemental.AddElement<ElementType::kVariable>("");
+  const IndicatorConstraintId ic =
+      elemental.AddElement<ElementType::kIndicatorConstraint>("");
+
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic), x);
+
+  const Diff& diff = ElementalTestPeer::GetDiffRef(elemental.AddDiff());
+  // Deleting `x` clears the attribute for `ic`.
+  EXPECT_THAT(elemental.AttrNonDefaults(VariableAttr1::kIndConIndicator),
+              UnorderedElementsAre(AttrKey(ic)));
+  elemental.DeleteElement(x);
+  EXPECT_THAT(elemental.AttrNonDefaults(VariableAttr1::kIndConIndicator),
+              IsEmpty());
+  // We do not explicitly track this change in the diff, it is implicit from
+  // the deletion of f.
+  EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator), IsEmpty());
+}
+
+TEST(ElementalTest, ElementValuedAttrDeleteVarAfterModifyingVar) {
+  Elemental elemental;
+  const VariableId x = elemental.AddElement<ElementType::kVariable>("");
+  const VariableId y = elemental.AddElement<ElementType::kVariable>("");
+  const IndicatorConstraintId ic =
+      elemental.AddElement<ElementType::kIndicatorConstraint>("");
+
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic), x);
+
+  const Diff& diff = ElementalTestPeer::GetDiffRef(elemental.AddDiff());
+  elemental.SetAttr(VariableAttr1::kIndConIndicator, AttrKey(ic), y);
+  EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator),
+              UnorderedElementsAre(AttrKey(ic)));
+  elemental.DeleteElement(y);
+  EXPECT_THAT(elemental.AttrNonDefaults(VariableAttr1::kIndConIndicator),
+              IsEmpty());
+  EXPECT_THAT(diff.modified_keys(VariableAttr1::kIndConIndicator), IsEmpty());
 }
 
 TEST(ElementalTest, ElementValuedAttrClear) {

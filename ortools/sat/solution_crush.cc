@@ -281,6 +281,40 @@ void SolutionCrush::MaybeUpdateVarWithSymmetriesToValue(
   DCHECK_EQ(GetVarValue(var), value);
 }
 
+void SolutionCrush::MaybeSwapOrbitopeColumns(
+    absl::Span<const std::vector<int>> orbitope, int row, int pivot_col,
+    bool value) {
+  if (!solution_is_loaded_) return;
+  int col = -1;
+  for (int c = 0; c < orbitope[row].size(); ++c) {
+    if (GetLiteralValue(orbitope[row][c]) == value) {
+      if (col != -1) {
+        VLOG(2) << "Multiple literals in row with given value";
+        return;
+      }
+      col = c;
+    }
+  }
+  if (col < pivot_col) {
+    // Nothing to do.
+    return;
+  }
+  // Swap the value of the literals in column `col` with the value of the ones
+  // in column `pivot_col`, if they all have a value.
+  for (int i = 0; i < orbitope.size(); ++i) {
+    if (!HasValue(PositiveRef(orbitope[i][col]))) return;
+    if (!HasValue(PositiveRef(orbitope[i][pivot_col]))) return;
+  }
+  for (int i = 0; i < orbitope.size(); ++i) {
+    const int src_lit = orbitope[i][col];
+    const int dst_lit = orbitope[i][pivot_col];
+    const bool src_value = GetLiteralValue(src_lit);
+    const bool dst_value = GetLiteralValue(dst_lit);
+    SetLiteralValue(src_lit, dst_value);
+    SetLiteralValue(dst_lit, src_value);
+  }
+}
+
 void SolutionCrush::UpdateRefsWithDominance(
     int ref, int64_t min_value, int64_t max_value,
     absl::Span<const std::pair<int, Domain>> dominating_refs) {
@@ -409,6 +443,13 @@ void SolutionCrush::SetReservoirCircuitVars(
   for (int i = 0; i < active_event_values.size(); ++i) {
     active_event_value_index[active_event_values[i].index] = i;
   }
+  // Set the level vars of inactive events to an arbitrary value.
+  for (int i = 0; i < num_events; ++i) {
+    if (active_event_value_index[i] == -1) {
+      SetVarValue(level_vars[i], min_level);
+    }
+  }
+
   for (int i = 0; i < circuit.literals_size(); ++i) {
     const int head = circuit.heads(i);
     const int tail = circuit.tails(i);

@@ -18,18 +18,27 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/functional/any_invocable.h"
+#include "absl/log/check.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "ortools/base/string_view_migration.h"
+#include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/python/linear_expr.h"
 #include "ortools/sat/python/linear_expr_doc.h"
+#include "ortools/sat/sat_parameters.pb.h"  // IWYU: keep
 #include "ortools/sat/swig_helper.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "pybind11/attr.h"
 #include "pybind11/cast.h"
@@ -39,7 +48,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/pytypes.h"
 #include "pybind11/stl.h"
-#include "pybind11_protobuf/native_proto_caster.h"
 
 namespace py = pybind11;
 
@@ -83,99 +91,48 @@ class PySolutionCallback : public SolutionCallback {
   }
 };
 
-// A trampoline class to override the __str__ and __repr__ methods.
-class PyBaseIntVar : public BaseIntVar {
+class ResponseHelper {
  public:
-  using BaseIntVar::BaseIntVar; /* Inherit constructors */
-
-  std::string ToString() const override {
-    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
-                                BaseIntVar,   // Parent class (cname)
-                                "__str__",    // Name of method in Python (name)
-                                ToString,     // Name of function in C++ (fn)
-    );
-  }
-
-  std::string DebugString() const override {
-    PYBIND11_OVERRIDE_PURE_NAME(std::string,  // Return type (ret_type)
-                                BaseIntVar,   // Parent class (cname)
-                                "__repr__",   // Name of method in Python (name)
-                                DebugString,  // Name of function in C++ (fn)
-    );
-  }
-};
-
-// A class to wrap a C++ CpSolverResponse in a Python object, avoid the proto
-// conversion back to python.
-class ResponseWrapper {
- public:
-  explicit ResponseWrapper(const CpSolverResponse& response)
-      : response_(response) {}
-
-  double BestObjectiveBound() const { return response_.best_objective_bound(); }
-
-  bool BooleanValue(std::shared_ptr<Literal> lit) const {
+  static bool BooleanValue(std::shared_ptr<CpSolverResponse> response,
+                           std::shared_ptr<Literal> lit) {
     const int index = lit->index();
     if (index >= 0) {
-      return response_.solution(index) != 0;
+      return response->solution(index) != 0;
     } else {
-      return response_.solution(NegatedRef(index)) == 0;
+      return response->solution(NegatedRef(index)) == 0;
     }
   }
 
-  bool FixedBooleanValue(bool lit) const { return lit; }
-
-  double DeterministicTime() const { return response_.deterministic_time(); }
-
-  int64_t NumBinaryPropagations() const {
-    return response_.num_binary_propagations();
+  static bool FixedBooleanValue(std::shared_ptr<CpSolverResponse> response,
+                                bool lit) {
+    return lit;
   }
 
-  int64_t NumBooleans() const { return response_.num_booleans(); }
-
-  int64_t NumBranches() const { return response_.num_branches(); }
-
-  int64_t NumConflicts() const { return response_.num_conflicts(); }
-
-  int64_t NumIntegerPropagations() const {
-    return response_.num_integer_propagations();
-  }
-
-  int64_t NumRestarts() const { return response_.num_restarts(); }
-
-  double ObjectiveValue() const { return response_.objective_value(); }
-
-  const CpSolverResponse& Response() const { return response_; }
-
-  std::string ResponseStats() const {
-    return CpSatHelper::SolverResponseStats(response_);
-  }
-
-  std::string SolutionInfo() const { return response_.solution_info(); }
-
-  std::vector<int> SufficientAssumptionsForInfeasibility() const {
+  static std::vector<int> SufficientAssumptionsForInfeasibility(
+      std::shared_ptr<CpSolverResponse> response) {
     return std::vector<int>(
-        response_.sufficient_assumptions_for_infeasibility().begin(),
-        response_.sufficient_assumptions_for_infeasibility().end());
+        response->sufficient_assumptions_for_infeasibility().begin(),
+        response->sufficient_assumptions_for_infeasibility().end());
   }
 
-  CpSolverStatus Status() const { return response_.status(); }
-
-  double UserTime() const { return response_.user_time(); }
-
-  double FloatValue(std::shared_ptr<LinearExpr> expr) const {
+  static double FloatValue(std::shared_ptr<CpSolverResponse> response,
+                           std::shared_ptr<LinearExpr> expr) {
     FloatExprVisitor visitor;
     visitor.AddToProcess(expr, 1);
-    return visitor.Evaluate(response_);
+    return visitor.Evaluate(*response);
   }
 
-  double FixedFloatValue(double value) const { return value; }
+  static double FixedFloatValue(std::shared_ptr<CpSolverResponse> response,
+                                double value) {
+    return value;
+  }
 
-  int64_t Value(std::shared_ptr<LinearExpr> expr) const {
+  static int64_t Value(std::shared_ptr<CpSolverResponse> response,
+                       std::shared_ptr<LinearExpr> expr) {
     int64_t value;
     IntExprVisitor visitor;
     visitor.AddToProcess(expr, 1);
-    if (!visitor.Evaluate(response_, &value)) {
+    if (!visitor.Evaluate(*response, &value)) {
       ThrowError(PyExc_ValueError,
                  absl::StrCat("Failed to evaluate linear expression: ",
                               expr->DebugString()));
@@ -183,12 +140,10 @@ class ResponseWrapper {
     return value;
   }
 
-  int64_t FixedValue(int64_t value) const { return value; }
-
-  double WallTime() const { return response_.wall_time(); }
-
- private:
-  const CpSolverResponse response_;
+  static int64_t FixedValue(std::shared_ptr<CpSolverResponse> response,
+                            int64_t value) {
+    return value;
+  }
 };
 
 // Checks that the result is not null and throws an error if it is.
@@ -432,8 +387,711 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(py::sequence expressions,
   }
 }
 
+void LinearExprToProto(const py::handle& arg, int64_t multiplier,
+                       LinearExpressionProto* proto) {
+  proto->Clear();
+  if (py::isinstance<LinearExpr>(arg)) {
+    std::shared_ptr<LinearExpr> expr = arg.cast<std::shared_ptr<LinearExpr>>();
+    IntExprVisitor visitor;
+    visitor.AddToProcess(expr, multiplier);
+    std::vector<std::shared_ptr<IntVar>> vars;
+    std::vector<int64_t> coeffs;
+    int64_t offset = 0;
+    if (!visitor.Process(&vars, &coeffs, &offset)) {
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Failed to convert integer linear expression: ",
+                              expr->DebugString()));
+    }
+    for (const auto& var : vars) {
+      proto->add_vars(var->index());
+    }
+    for (const int64_t coeff : coeffs) {
+      proto->add_coeffs(coeff);
+    }
+    proto->set_offset(offset);
+  } else if (py::isinstance<py::int_>(arg)) {
+    int64_t value = arg.cast<int64_t>();
+    proto->set_offset(value * multiplier);
+  } else if (hasattr(arg, "dtype") && hasattr(arg, "is_integer") &&
+             getattr(arg, "is_integer")().cast<bool>()) {
+    int64_t value = arg.cast<int64_t>();
+    proto->set_offset(value * multiplier);
+  } else {
+    py::type objtype = py::type::of(arg);
+    const std::string type_name = objtype.attr("__name__").cast<std::string>();
+    py::print(arg);
+    ThrowError(PyExc_TypeError,
+               absl::StrCat("Cannot convert '", absl::CEscape(type_name),
+                            "' to a linear expression."));
+  }
+}
+
+class Constraint;
+class IntervalVar;
+
+enum class BoolArgumentConstraint {
+  kAtMostOne,
+  kBoolAnd,
+  kBoolOr,
+  kBoolXor,
+  kExactlyOne,
+};
+
+enum class LinearArgumentConstraint {
+  kDiv,
+  kMax,
+  kMin,
+  kMod,
+  kProd,
+};
+
+class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
+ public:
+  explicit CpBaseModel(std::shared_ptr<CpModelProto> model_proto)
+      : model_proto_(model_proto == nullptr ? std::make_shared<CpModelProto>()
+                                            : model_proto),
+        numpy_bool_type_(py::dtype::of<bool>().attr("type").cast<py::type>()) {
+    if (model_proto != nullptr) RebuildConstantMap();
+  }
+
+  std::shared_ptr<CpModelProto> model_proto() const { return model_proto_; }
+
+  int GetOrMakeIndexFromConstant(int64_t value) {
+    auto it = cache_.find(value);
+    if (it != cache_.end()) return it->second;
+    const int index = model_proto_->variables_size();
+    IntegerVariableProto* const_var = model_proto_->add_variables();
+    const_var->add_domain(value);
+    const_var->add_domain(value);
+    cache_[value] = index;
+    return index;
+  }
+
+  void RebuildConstantMap() {
+    cache_.clear();
+    for (int i = 0; i < model_proto_->variables_size(); ++i) {
+      const IntegerVariableProto& var = model_proto_->variables(i);
+      if (var.domain_size() == 2 && var.domain(0) == var.domain(1) &&
+          var.name().empty()) {  // Constants do not have names.
+        cache_[var.domain(0)] = i;
+      }
+    }
+  }
+
+  int GetOrMakeBooleanIndex(py::handle literal) {
+    if (py::isinstance<IntVar>(literal)) {
+      std::shared_ptr<IntVar> var = literal.cast<std::shared_ptr<IntVar>>();
+      AssertVariableIsBoolean(var);
+      return var->index();
+    } else if (py::isinstance<NotBooleanVariable>(literal)) {
+      std::shared_ptr<NotBooleanVariable> not_var =
+          literal.cast<std::shared_ptr<NotBooleanVariable>>();
+      AssertVariableIsBoolean(not_var);
+      return not_var->index();
+    } else if (IsBooleanValue(literal)) {
+      const bool value = literal.cast<py::bool_>();
+      if (value) {
+        return GetOrMakeIndexFromConstant(1);
+      } else {
+        return GetOrMakeIndexFromConstant(0);
+      }
+    } else if (py::isinstance<py::int_>(literal)) {
+      const int64_t value = literal.cast<int64_t>();
+      if (value == 1 || value == -1) {  // -1 = ~False.
+        return GetOrMakeIndexFromConstant(1);
+      }
+      if (value == 0 || value == -2) {  // -2 = ~True.
+        return GetOrMakeIndexFromConstant(0);
+      }
+      ThrowError(PyExc_TypeError, absl::StrCat("Invalid literal: ", value));
+    } else {
+      py::type objtype = py::type::of(literal);
+      const std::string type_name =
+          objtype.attr("__name__").cast<std::string>();
+      ThrowError(PyExc_TypeError, absl::StrCat("Invalid boolean literal:  '",
+                                               absl::CEscape(type_name), "'"));
+    }
+    return 0;  // Unreachable.
+  }
+
+  int GetOrMakeVariableIndex(py::handle arg) {
+    if (py::isinstance<IntVar>(arg)) {
+      std::shared_ptr<IntVar> var = arg.cast<std::shared_ptr<IntVar>>();
+      return var->index();
+    } else if (py::isinstance<py::int_>(arg)) {
+      return GetOrMakeIndexFromConstant(arg.cast<int64_t>());
+    } else if (hasattr(arg, "dtype") && hasattr(arg, "is_integer") &&
+               getattr(arg, "is_integer")().cast<bool>()) {
+      return GetOrMakeIndexFromConstant(arg.cast<int64_t>());
+    } else {
+      py::type objtype = py::type::of(arg);
+      const std::string type_name =
+          objtype.attr("__name__").cast<std::string>();
+      ThrowError(PyExc_TypeError,
+                 absl::StrCat("GetOrMakeVariableIndex() only accept integer "
+                              "variables or constants as argument: '",
+                              absl::CEscape(type_name), "'"));
+    }
+    return 0;  // Unreachable.
+  }
+
+  void AssertVariableIsBoolean(std::shared_ptr<Literal> literal) {
+    IntegerVariableProto* var =
+        model_proto_->mutable_variables(PositiveRef(literal->index()));
+    if (var->domain_size() != 2 || var->domain(0) < 0 || var->domain(1) > 1) {
+      ThrowError(PyExc_TypeError, absl::StrCat("Invalid boolean literal: ",
+                                               literal->ToString()));
+    }
+  }
+
+  bool IsBooleanValue(py::handle value) {
+    return py::isinstance<py::bool_>(value) ||
+           py::isinstance(value, numpy_bool_type_);
+  }
+
+  std::shared_ptr<Constraint> AddAllDifferentInternal(py::args exprs);
+
+  std::shared_ptr<Constraint> AddAutomatonInternal(
+      py::sequence transition_expressions, int64_t starting_state,
+      const std::vector<int64_t>& final_states,
+      const std::vector<std::vector<int64_t>>& transition_triples);
+
+  std::shared_ptr<Constraint> AddBoolArgumentConstraintInternal(
+      BoolArgumentConstraint type, py::args literals);
+
+  std::shared_ptr<Constraint> AddBoundedLinearExpressionInternal(
+      BoundedLinearExpression* ble);
+
+  std::shared_ptr<Constraint> AddElementInternal(const py::handle& index,
+                                                 py::sequence exprs,
+                                                 const py::handle& target);
+
+  std::shared_ptr<Constraint> AddInverseInternal(py::sequence direct,
+                                                 py::sequence inverse);
+
+  std::shared_ptr<Constraint> AddLinearArgumentConstraintInternal(
+      LinearArgumentConstraint type, const py::handle& target, py::args exprs);
+
+  std::shared_ptr<Constraint> AddReservoirInternal(py::sequence times,
+                                                   py::sequence level_changes,
+                                                   py::sequence actives,
+                                                   int64_t min_level,
+                                                   int64_t max_level);
+
+  std::shared_ptr<Constraint> AddTableInternal(
+      py::sequence exprs, const std::vector<std::vector<int64_t>>& tuples,
+      bool negated);
+
+  std::shared_ptr<IntervalVar> NewIntervalVarInternal(const std::string& name,
+                                                      const py::handle& start,
+                                                      const py::handle& size,
+                                                      const py::handle& end,
+                                                      py::sequence literals);
+
+  std::shared_ptr<Constraint> AddNoOverlapInternal(
+      const std::vector<std::shared_ptr<IntervalVar>>& intervals);
+
+  std::shared_ptr<Constraint> AddNoOverlap2DInternal(
+      const std::vector<std::shared_ptr<IntervalVar>>& x_intervals,
+      const std::vector<std::shared_ptr<IntervalVar>>& y_intervals);
+
+  std::shared_ptr<Constraint> AddCumulativeInternal(
+      const std::vector<std::shared_ptr<IntervalVar>>& intervals,
+      py::sequence demands, const py::handle& capacity);
+
+  std::shared_ptr<Constraint> AddCircuitInternal(
+      const std::vector<std::tuple<int, int, py::handle>>& arcs);
+
+  std::shared_ptr<Constraint> AddRoutesInternal(
+      const std::vector<std::tuple<int, int, py::handle>>& arcs);
+
+ private:
+  std::shared_ptr<CpModelProto> model_proto_;
+  absl::flat_hash_map<int64_t, int> cache_;
+  py::type numpy_bool_type_;
+};
+
+class Constraint {
+ public:
+  // We need to store the CpBaseModel to convert enforcement literals to
+  // indices.
+  Constraint(std::shared_ptr<CpBaseModel> model, int index)
+      : model_(model), index_(index) {}
+
+  int index() const { return index_; }
+
+  std::shared_ptr<CpModelProto> model_proto() const {
+    return model_->model_proto();
+  }
+
+  ConstraintProto* proto() const {
+    return model_->model_proto()->mutable_constraints(index_);
+  }
+
+  std::shared_ptr<CpBaseModel> model() const { return model_; }
+
+  std::string name() const { return proto()->name(); }
+  void SetName(const std::string& name) { proto()->set_name(name); }
+  void ClearName() { proto()->clear_name(); }
+
+  std::string ToString() const {
+    return absl::StrCat("Constraint(index=", index_, ", ",
+                        ProtobufDebugString(*proto()), ")");
+  }
+
+ private:
+  std::shared_ptr<CpBaseModel> model_;
+  int index_;
+};
+
+std::shared_ptr<Constraint> CpBaseModel::AddAllDifferentInternal(
+    py::args exprs) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  if (exprs.size() == 1 && py::isinstance<py::iterable>(exprs[0])) {
+    for (const auto& expr : exprs[0]) {
+      LinearExprToProto(expr, 1, ct->mutable_all_diff()->add_exprs());
+    }
+  } else {
+    for (const auto& expr : exprs) {
+      LinearExprToProto(expr, 1, ct->mutable_all_diff()->add_exprs());
+    }
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddAutomatonInternal(
+    py::sequence transition_expressions, int64_t starting_state,
+    const std::vector<int64_t>& final_states,
+    const std::vector<std::vector<int64_t>>& transition_triples) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  for (const auto& expr : transition_expressions) {
+    LinearExprToProto(expr, 1, ct->mutable_automaton()->add_exprs());
+  }
+  ct->mutable_automaton()->set_starting_state(starting_state);
+  ct->mutable_automaton()->mutable_final_states()->Add(final_states.begin(),
+                                                       final_states.end());
+  for (const auto& tuple : transition_triples) {
+    if (tuple.size() != 3) {
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("transition (", absl::StrJoin(tuple, ","),
+                              ") has the wrong arity != 3"));
+    }
+    ct->mutable_automaton()->add_transition_tail(tuple[0]);
+    ct->mutable_automaton()->add_transition_label(tuple[1]);
+    ct->mutable_automaton()->add_transition_head(tuple[2]);
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddBoolArgumentConstraintInternal(
+    BoolArgumentConstraint type, py::args literals) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  BoolArgumentProto* proto = nullptr;
+  switch (type) {
+    case BoolArgumentConstraint::kAtMostOne:
+      proto = ct->mutable_at_most_one();
+      break;
+    case BoolArgumentConstraint::kBoolAnd:
+      proto = ct->mutable_bool_and();
+      break;
+    case BoolArgumentConstraint::kBoolOr:
+      proto = ct->mutable_bool_or();
+      break;
+    case BoolArgumentConstraint::kBoolXor:
+      proto = ct->mutable_bool_xor();
+      break;
+    case BoolArgumentConstraint::kExactlyOne:
+      proto = ct->mutable_exactly_one();
+      break;
+    default:
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Unknown boolean argument constraint: ", type));
+  }
+  if (literals.size() == 1 && py::isinstance<py::iterable>(literals[0])) {
+    for (const auto& literal : literals[0]) {
+      proto->add_literals(GetOrMakeBooleanIndex(literal));
+    }
+  } else {
+    for (const auto& literal : literals) {
+      proto->add_literals(GetOrMakeBooleanIndex(literal));
+    }
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddBoundedLinearExpressionInternal(
+    BoundedLinearExpression* ble) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  for (const auto& var : ble->vars()) {
+    ct->mutable_linear()->add_vars(var->index());
+  }
+  for (const int64_t coeff : ble->coeffs()) {
+    ct->mutable_linear()->add_coeffs(coeff);
+  }
+  const int64_t offset = ble->offset();
+  const Domain& bounds = ble->bounds();
+  for (const int64_t bound : bounds.FlattenedIntervals()) {
+    if (bound == std::numeric_limits<int64_t>::min() ||
+        bound == std::numeric_limits<int64_t>::max()) {
+      ct->mutable_linear()->add_domain(bound);
+    } else {
+      ct->mutable_linear()->add_domain(CapSub(bound, offset));
+    }
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddElementInternal(
+    const py::handle& index, py::sequence exprs, const py::handle& target) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  LinearExprToProto(index, 1, ct->mutable_element()->mutable_linear_index());
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, 1, ct->mutable_element()->add_exprs());
+  }
+  LinearExprToProto(target, 1, ct->mutable_element()->mutable_linear_target());
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddInverseInternal(
+    py::sequence direct, py::sequence inverse) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  for (const auto& var : direct) {
+    ct->mutable_inverse()->add_f_direct(GetOrMakeVariableIndex(var));
+  }
+  for (const auto& var : inverse) {
+    ct->mutable_inverse()->add_f_inverse(GetOrMakeVariableIndex(var));
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddLinearArgumentConstraintInternal(
+    LinearArgumentConstraint type, const py::handle& target, py::args exprs) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  LinearArgumentProto* proto;
+  int64_t multiplier = 1;
+  switch (type) {
+    case LinearArgumentConstraint::kDiv:
+      proto = ct->mutable_int_div();
+      break;
+    case LinearArgumentConstraint::kMax:
+      proto = ct->mutable_lin_max();
+      break;
+    case LinearArgumentConstraint::kMin:
+      proto = ct->mutable_lin_max();
+      multiplier = -1;
+      break;
+    case LinearArgumentConstraint::kMod:
+      proto = ct->mutable_int_mod();
+      break;
+    case LinearArgumentConstraint::kProd:
+      proto = ct->mutable_int_prod();
+      break;
+    default:
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Unknown integer argument constraint: ", type));
+  }
+
+  LinearExprToProto(target, multiplier, proto->mutable_target());
+
+  if (exprs.size() == 1 && py::isinstance<py::iterable>(exprs[0])) {
+    for (const auto& expr : exprs[0]) {
+      LinearExprToProto(expr, multiplier, proto->add_exprs());
+    }
+  } else {
+    for (const auto& expr : exprs) {
+      LinearExprToProto(expr, multiplier, proto->add_exprs());
+    }
+  }
+
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddReservoirInternal(
+    py::sequence times, py::sequence level_changes, py::sequence actives,
+    int64_t min_level, int64_t max_level) {
+  const int ct_index = model_proto_->constraints_size();
+  ReservoirConstraintProto* proto =
+      model_proto_->add_constraints()->mutable_reservoir();
+  for (const auto& time : times) {
+    LinearExprToProto(time, 1, proto->add_time_exprs());
+  }
+  for (const auto& change : level_changes) {
+    LinearExprToProto(change, 1, proto->add_level_changes());
+  }
+  for (const auto& active : actives) {
+    proto->add_active_literals(GetOrMakeBooleanIndex(active));
+  }
+  proto->set_min_level(min_level);
+  proto->set_max_level(max_level);
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddTableInternal(
+    py::sequence exprs, const std::vector<std::vector<int64_t>>& tuples,
+    bool negated) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  const int num_exprs = exprs.size();
+  for (const auto& expr : exprs) {
+    LinearExprToProto(expr, 1, ct->mutable_table()->add_exprs());
+  }
+  for (const auto& tuple : tuples) {
+    if (tuple.size() != num_exprs) {
+      ThrowError(PyExc_ValueError,
+                 absl::StrCat("Tuple (", absl::StrJoin(tuple, ","),
+                              ") has the wrong arity != ", num_exprs));
+    }
+    ct->mutable_table()->mutable_values()->Add(tuple.begin(), tuple.end());
+  }
+  ct->mutable_table()->set_negated(negated);
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::string ShortName(int literal, std::shared_ptr<CpModelProto> model_proto) {
+  const int var = PositiveRef(literal);
+  const IntegerVariableProto& var_proto = model_proto->variables(var);
+  const std::string& var_name =
+      var_proto.name().empty() ? absl::StrCat("i", var) : var_proto.name();
+  if (literal < 0) {
+    return absl::StrCat("not(", var_name, ")");
+  } else {
+    return var_name;
+  }
+}
+
+std::string ShortExprName(const LinearExpressionProto& expr,
+                          std::shared_ptr<CpModelProto> model_proto) {
+  if (expr.vars().empty()) {
+    return absl::StrCat(expr.offset());
+  } else {
+    const IntegerVariableProto& var_proto =
+        model_proto->variables(expr.vars(0));
+    const std::string& var_name = var_proto.name().empty()
+                                      ? absl::StrCat("i", expr.vars(0))
+                                      : var_proto.name();
+    const int64_t coeff = expr.coeffs(0);
+    std::string result;
+    if (coeff == 1) {
+      result = var_name;
+    } else if (coeff == -1) {
+      result = absl::StrCat("-", var_name);
+    } else if (coeff != 0) {
+      result = absl::StrCat(coeff, " * ", var_name);
+    }
+    if (expr.offset() > 0) {
+      absl::StrAppend(&result, " + ", expr.offset());
+    } else if (expr.offset() < 0) {
+      absl::StrAppend(&result, " - ", -expr.offset());
+    }
+    return result;
+  }
+}
+
+std::shared_ptr<LinearExpr> RebuildFromLinearExpressionProto(
+    const LinearExpressionProto& proto,
+    std::shared_ptr<CpModelProto> model_proto) {
+  if (proto.vars().empty()) {
+    return LinearExpr::ConstantInt(proto.offset());
+  } else if (proto.vars_size() == 1) {
+    return LinearExpr::AffineInt(
+        std::make_shared<IntVar>(model_proto, proto.vars(0)), proto.coeffs(0),
+        proto.offset());
+  } else {
+    std::vector<std::shared_ptr<LinearExpr>> vars;
+    vars.reserve(proto.vars_size());
+    for (const int var : proto.vars()) {
+      vars.push_back(std::make_shared<IntVar>(model_proto, var));
+    }
+    return std::make_shared<IntWeightedSum>(vars, proto.coeffs(),
+                                            proto.offset());
+  }
+}
+
+class IntervalVar {
+ public:
+  IntervalVar(std::shared_ptr<CpModelProto> model_proto, int index)
+      : model_proto_(model_proto), index_(index) {
+    DCHECK_GE(index, 0);
+  }
+
+  int index() const { return index_; }
+
+  std::shared_ptr<CpModelProto> model_proto() const { return model_proto_; }
+
+  ConstraintProto* proto() const {
+    return model_proto_->mutable_constraints(index_);
+  }
+
+  std::string ToString() const {
+    const std::string name = proto()->name();
+    if (name.empty()) {
+      return absl::StrCat("iv", index_);
+    } else {
+      return name;
+    }
+  }
+
+  std::string DebugString() const {
+    if (proto()->enforcement_literal().empty()) {
+      return absl::StrCat(
+          name(), "(start = ",
+          ShortExprName(proto()->interval().start(), model_proto()),
+          ", size = ", ShortExprName(proto()->interval().size(), model_proto()),
+          ", end = ", ShortExprName(proto()->interval().end(), model_proto()),
+          ")");
+    } else {
+      return absl::StrCat(
+          name(), "(start = ",
+          ShortExprName(proto()->interval().start(), model_proto()),
+          ", size = ", ShortExprName(proto()->interval().size(), model_proto()),
+          ", end = ", ShortExprName(proto()->interval().end(), model_proto()),
+          ", is_present = ",
+          ShortName(proto()->enforcement_literal(0), model_proto()), ")");
+    }
+  }
+
+  std::string name() const { return proto()->name(); }
+
+  void SetName(const std::string& name) { proto()->set_name(name); }
+
+  std::shared_ptr<LinearExpr> StartExpr() const {
+    return RebuildFromLinearExpressionProto(proto()->interval().start(),
+                                            model_proto_);
+  }
+  std::shared_ptr<LinearExpr> SizeExpr() const {
+    return RebuildFromLinearExpressionProto(proto()->interval().size(),
+                                            model_proto_);
+  }
+  std::shared_ptr<LinearExpr> EndExpr() const {
+    return RebuildFromLinearExpressionProto(proto()->interval().end(),
+                                            model_proto_);
+  }
+
+ private:
+  std::shared_ptr<CpModelProto> model_proto_;
+  int index_;
+};
+
+std::shared_ptr<IntervalVar> CpBaseModel::NewIntervalVarInternal(
+    const std::string& name, const py::handle& start, const py::handle& size,
+    const py::handle& end, py::sequence literals) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  if (!name.empty()) ct->set_name(name);
+  LinearExprToProto(start, 1, ct->mutable_interval()->mutable_start());
+  LinearExprToProto(size, 1, ct->mutable_interval()->mutable_size());
+  LinearExprToProto(end, 1, ct->mutable_interval()->mutable_end());
+  for (const auto& lit : literals) {
+    ct->add_enforcement_literal(GetOrMakeBooleanIndex(lit));
+  }
+  const std::string method = literals.empty()
+                                 ? "cp_model.new_interval_var"
+                                 : "cp_model.new_optional_interval_var";
+  if (ct->interval().start().vars_size() > 1) {
+    ThrowError(PyExc_TypeError,
+               absl::StrCat(method, ": start must be affine or constant."));
+  }
+  if (ct->interval().size().vars_size() > 1) {
+    ThrowError(PyExc_TypeError,
+               absl::StrCat(method, ": size must be affine or constant."));
+  }
+  if (ct->interval().end().vars_size() > 1) {
+    ThrowError(PyExc_TypeError,
+               absl::StrCat(method, ": end must be affine or constant."));
+  }
+  return std::make_shared<IntervalVar>(model_proto_, ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddNoOverlapInternal(
+    const std::vector<std::shared_ptr<IntervalVar>>& intervals) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  ct->mutable_no_overlap()->mutable_intervals()->Reserve(intervals.size());
+  for (const std::shared_ptr<IntervalVar>& interval : intervals) {
+    ct->mutable_no_overlap()->add_intervals(interval->index());
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddNoOverlap2DInternal(
+    const std::vector<std::shared_ptr<IntervalVar>>& x_intervals,
+    const std::vector<std::shared_ptr<IntervalVar>>& y_intervals) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  ct->mutable_no_overlap_2d()->mutable_x_intervals()->Reserve(
+      x_intervals.size());
+  for (const std::shared_ptr<IntervalVar>& x_interval : x_intervals) {
+    ct->mutable_no_overlap_2d()->add_x_intervals(x_interval->index());
+  }
+  ct->mutable_no_overlap_2d()->mutable_y_intervals()->Reserve(
+      y_intervals.size());
+  for (const std::shared_ptr<IntervalVar>& y_interval : y_intervals) {
+    ct->mutable_no_overlap_2d()->add_y_intervals(y_interval->index());
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddCumulativeInternal(
+    const std::vector<std::shared_ptr<IntervalVar>>& intervals,
+    const py::sequence demands, const py::handle& capacity) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  CumulativeConstraintProto* proto = ct->mutable_cumulative();
+
+  proto->mutable_intervals()->Reserve(intervals.size());
+  for (const std::shared_ptr<IntervalVar>& interval : intervals) {
+    proto->add_intervals(interval->index());
+  }
+
+  proto->mutable_demands()->Reserve(demands.size());
+  for (const auto& expr : demands) {
+    LinearExprToProto(expr, 1, proto->add_demands());
+  }
+
+  LinearExprToProto(capacity, 1, proto->mutable_capacity());
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddCircuitInternal(
+    const std::vector<std::tuple<int, int, py::handle>>& arcs) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  CircuitConstraintProto* proto = ct->mutable_circuit();
+  proto->mutable_tails()->Reserve(arcs.size());
+  proto->mutable_heads()->Reserve(arcs.size());
+  proto->mutable_literals()->Reserve(arcs.size());
+  for (const auto& [tail, head, lit] : arcs) {
+    proto->add_tails(tail);
+    proto->add_heads(head);
+    proto->add_literals(GetOrMakeBooleanIndex(lit));
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
+std::shared_ptr<Constraint> CpBaseModel::AddRoutesInternal(
+    const std::vector<std::tuple<int, int, py::handle>>& arcs) {
+  const int ct_index = model_proto_->constraints_size();
+  ConstraintProto* ct = model_proto_->add_constraints();
+  RoutesConstraintProto* proto = ct->mutable_routes();
+  proto->mutable_tails()->Reserve(arcs.size());
+  proto->mutable_heads()->Reserve(arcs.size());
+  proto->mutable_literals()->Reserve(arcs.size());
+  for (const auto& [tail, head, lit] : arcs) {
+    proto->add_tails(tail);
+    proto->add_heads(head);
+    proto->add_literals(GetOrMakeBooleanIndex(lit));
+  }
+  return std::make_shared<Constraint>(shared_from_this(), ct_index);
+}
+
 PYBIND11_MODULE(cp_model_helper, m) {
-  pybind11_protobuf::ImportNativeProtoCasters();
   py::module::import("ortools.util.python.sorted_interval_list");
 
   // We keep the CamelCase name for the SolutionCallback class to be
@@ -450,7 +1108,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("NumConflicts", &SolutionCallback::NumConflicts)
       .def("NumIntegerPropagations", &SolutionCallback::NumIntegerPropagations)
       .def("ObjectiveValue", &SolutionCallback::ObjectiveValue)
-      .def("Response", &SolutionCallback::Response)
+      .def("Response", &SolutionCallback::SharedResponse)
       .def("SolutionBooleanValue", &SolutionCallback::SolutionBooleanValue,
            py::arg("index"))
       .def("SolutionIntegerValue", &SolutionCallback::SolutionIntegerValue,
@@ -460,17 +1118,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("WallTime", &SolutionCallback::WallTime)
       .def(
           "Value",
-          [](const SolutionCallback& callback,
-             std::shared_ptr<LinearExpr> expr) {
-            int64_t value;
-            IntExprVisitor visitor;
-            visitor.AddToProcess(expr, 1);
-            if (!visitor.Evaluate(callback.Response(), &value)) {
-              ThrowError(PyExc_ValueError,
-                         absl::StrCat("Failed to evaluate linear expression: ",
-                                      expr->DebugString()));
-            }
-            return value;
+          [](const SolutionCallback& self, std::shared_ptr<LinearExpr> expr) {
+            return ResponseHelper::Value(self.SharedResponse(), expr);
           },
           "Returns the value of a linear expression after solve.")
       .def(
@@ -478,11 +1127,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "Returns the value of a linear expression after solve.")
       .def(
           "FloatValue",
-          [](const SolutionCallback& callback,
-             std::shared_ptr<LinearExpr> expr) {
-            FloatExprVisitor visitor;
-            visitor.AddToProcess(expr, 1.0);
-            return visitor.Evaluate(callback.Response());
+          [](const SolutionCallback& self, std::shared_ptr<LinearExpr> expr) {
+            return ResponseHelper::FloatValue(self.SharedResponse(), expr);
           },
           "Returns the value of a floating point linear expression after "
           "solve.")
@@ -493,42 +1139,31 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "solve.")
       .def(
           "BooleanValue",
-          [](const SolutionCallback& callback, std::shared_ptr<Literal> lit) {
-            return callback.SolutionBooleanValue(lit->index());
+          [](const SolutionCallback& self, std::shared_ptr<Literal> lit) {
+            return ResponseHelper::BooleanValue(self.SharedResponse(), lit);
           },
           "Returns the Boolean value of a literal after solve.")
       .def(
           "BooleanValue", [](const SolutionCallback&, bool lit) { return lit; },
           "Returns the Boolean value of a literal after solve.");
 
-  py::class_<ResponseWrapper>(m, "ResponseWrapper")
-      .def("best_objective_bound", &ResponseWrapper::BestObjectiveBound)
-      .def("boolean_value", &ResponseWrapper::BooleanValue,
-           py::arg("lit").none(false))
-      .def("boolean_value", &ResponseWrapper::FixedBooleanValue,
-           py::arg("lit").none(false))
-      .def("deterministic_time", &ResponseWrapper::DeterministicTime)
-      .def("num_binary_propagations", &ResponseWrapper::NumBinaryPropagations)
-      .def("num_booleans", &ResponseWrapper::NumBooleans)
-      .def("num_branches", &ResponseWrapper::NumBranches)
-      .def("num_conflicts", &ResponseWrapper::NumConflicts)
-      .def("num_integer_propagations", &ResponseWrapper::NumIntegerPropagations)
-      .def("num_restarts", &ResponseWrapper::NumRestarts)
-      .def("objective_value", &ResponseWrapper::ObjectiveValue)
-      .def("response", &ResponseWrapper::Response)
-      .def("response_stats", &ResponseWrapper::ResponseStats)
-      .def("solution_info", &ResponseWrapper::SolutionInfo)
-      .def("status", &ResponseWrapper::Status)
-      .def("sufficient_assumptions_for_infeasibility",
-           &ResponseWrapper::SufficientAssumptionsForInfeasibility)
-      .def("user_time", &ResponseWrapper::UserTime)
-      .def("float_value", &ResponseWrapper::FloatValue,
-           py::arg("expr").none(false))
-      .def("float_value", &ResponseWrapper::FixedFloatValue,
-           py::arg("value").none(false))
-      .def("value", &ResponseWrapper::Value, py::arg("expr").none(false))
-      .def("value", &ResponseWrapper::FixedValue, py::arg("value").none(false))
-      .def("wall_time", &ResponseWrapper::WallTime);
+  py::class_<ResponseHelper>(m, "ResponseHelper")
+      .def_static("boolean_value", &ResponseHelper::BooleanValue,
+                  py::arg("response").none(false), py::arg("lit").none(false))
+      .def_static("boolean_value", &ResponseHelper::FixedBooleanValue,
+                  py::arg("response").none(false), py::arg("lit").none(false))
+      .def_static("float_value", &ResponseHelper::FloatValue,
+                  py::arg("response").none(false), py::arg("expr").none(false))
+      .def_static("float_value", &ResponseHelper::FixedFloatValue,
+                  py::arg("response").none(false), py::arg("value").none(false))
+      .def_static("sufficient_assumptions_for_infeasibility",
+                  &ResponseHelper::SufficientAssumptionsForInfeasibility,
+                  py::arg("response").none(false))
+      .def_static("value", &ResponseHelper::Value,
+                  py::arg("response").none(false), py::arg("expr").none(false))
+      .def_static("value", &ResponseHelper::FixedValue,
+                  py::arg("response").none(false),
+                  py::arg("value").none(false));
 
   py::class_<ExtSolveWrapper>(m, "SolveWrapper")
       .def(py::init<>())
@@ -575,36 +1210,29 @@ PYBIND11_MODULE(cp_model_helper, m) {
             solve_wrapper->AddBestBoundCallback(safe_best_bound_callback);
           },
           py::arg("best_bound_callback").none(false))
-      .def("set_parameters", &SolveWrapper::SetParameters,
-           py::arg("parameters"))
-      .def("solve",
-           [](ExtSolveWrapper* solve_wrapper,
-              const CpModelProto& model_proto) -> CpSolverResponse {
-             const auto result = [&]() -> CpSolverResponse {
-               ::py::gil_scoped_release release;
-               return solve_wrapper->Solve(model_proto);
-             }();
-             if (solve_wrapper->local_error_already_set_.has_value()) {
-               solve_wrapper->local_error_already_set_->restore();
-               solve_wrapper->local_error_already_set_.reset();
-               throw py::error_already_set();
-             }
-             return result;
-           })
-      .def("solve_and_return_response_wrapper",
-           [](ExtSolveWrapper* solve_wrapper,
-              const CpModelProto& model_proto) -> ResponseWrapper {
-             const auto result = [&]() -> ResponseWrapper {
-               ::py::gil_scoped_release release;
-               return ResponseWrapper(solve_wrapper->Solve(model_proto));
-             }();
-             if (solve_wrapper->local_error_already_set_.has_value()) {
-               solve_wrapper->local_error_already_set_->restore();
-               solve_wrapper->local_error_already_set_.reset();
-               throw py::error_already_set();
-             }
-             return result;
-           })
+      .def(
+          "set_parameters",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::shared_ptr<SatParameters> parameters) {
+            solve_wrapper->SetParameters(*parameters);
+          },
+          py::arg("parameters").none(false))
+      .def(
+          "solve",
+          [](ExtSolveWrapper* solve_wrapper,
+             std::shared_ptr<CpModelProto> model_proto) -> CpSolverResponse {
+            const auto result = [=]() -> CpSolverResponse {
+              ::py::gil_scoped_release release;
+              return solve_wrapper->Solve(*model_proto);
+            }();
+            if (solve_wrapper->local_error_already_set_.has_value()) {
+              solve_wrapper->local_error_already_set_->restore();
+              solve_wrapper->local_error_already_set_.reset();
+              throw py::error_already_set();
+            }
+            return result;
+          },
+          py::arg("model_proto").none(false))
       .def("stop_search", &SolveWrapper::StopSearch);
 
   py::class_<CpSatHelper>(m, "CpSatHelper")
@@ -614,8 +1242,6 @@ PYBIND11_MODULE(cp_model_helper, m) {
                   py::arg("response"))
       .def_static("validate_model", &CpSatHelper::ValidateModel,
                   py::arg("model_proto"))
-      .def_static("variable_domain", &CpSatHelper::VariableDomain,
-                  py::arg("variable_proto"))
       .def_static("write_model_to_file", &CpSatHelper::WriteModelToFile,
                   py::arg("model_proto"), py::arg("filename"));
 
@@ -892,31 +1518,27 @@ PYBIND11_MODULE(cp_model_helper, m) {
           py::init<std::vector<std::shared_ptr<LinearExpr>>, int64_t, double>())
       .def(
           "__add__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
       .def(
           "__add__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(cst)
                                    : expr->AddInt(cst);
           },
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__add__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(cst)
                                    : expr->AddFloat(cst);
           },
@@ -924,10 +1546,18 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__radd__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
+            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Add))
+      .def(
+          "__radd__",
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(cst)
                                    : expr->AddInt(cst);
           },
@@ -935,10 +1565,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__radd__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(cst)
                                    : expr->AddFloat(cst);
           },
@@ -969,11 +1598,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
       .def(
           "__sub__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddInPlace(other->Neg())
                                    : expr->Sub(other);
           },
@@ -981,10 +1608,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, Sub))
       .def(
           "__sub__",
-          [](py::object self, int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             int64_t cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(-cst)
                                    : expr->SubInt(cst);
           },
@@ -992,10 +1618,9 @@ PYBIND11_MODULE(cp_model_helper, m) {
           DOC(operations_research, sat, python, LinearExpr, SubInt))
       .def(
           "__sub__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
                                    : expr->SubFloat(cst);
           },
@@ -1061,56 +1686,97 @@ PYBIND11_MODULE(cp_model_helper, m) {
                         "not supported.");
            })
       .def("__hash__", &Literal::Hash)
-      // PEP8 Compatibility.
+      // Pre PEP8 compatibility layer.
       .def("Not", &Literal::negated)
       .def("Index", &Literal::index);
 
-  // Memory management:
-  // - The BaseIntVar owns the NotBooleanVariable and keeps a shared_ptr to it.
-  // - The NotBooleanVariable is created on demand, and is deleted when the base
-  //   variable is deleted. It holds a weak_ptr to the base variable.
-  py::class_<BaseIntVar, PyBaseIntVar, std::shared_ptr<BaseIntVar>, Literal>(
-      m, "BaseIntVar", DOC(operations_research, sat, python, BaseIntVar))
-      .def(py::init<int>())        // Integer variable.
-      .def(py::init<int, bool>())  // Potential Boolean variable.
+  // IntVar and NotBooleanVariable both hold a shared_ptr to the model_proto.
+  py::class_<IntVar, std::shared_ptr<IntVar>, Literal>(
+      m, "IntVar", DOC(operations_research, sat, python, IntVar))
+      .def(py::init<std::shared_ptr<CpModelProto>, int>())
+      .def(py::init<std::shared_ptr<CpModelProto>>())  // new variable.
       .def_property_readonly(
-          "index", &BaseIntVar::index,
-          DOC(operations_research, sat, python, BaseIntVar, index))
+          "proto", &IntVar::proto, py::return_value_policy::reference,
+          py::keep_alive<1, 0>(),
+          "Returns the IntegerVariableProto of this variable.")
+      .def_property_readonly("model_proto", &IntVar::model_proto,
+                             "Returns the CP model protobuf")
       .def_property_readonly(
-          "is_boolean", &BaseIntVar::is_boolean,
-          DOC(operations_research, sat, python, BaseIntVar, is_boolean))
-      .def("__str__", &BaseIntVar::ToString)
-      .def("__repr__", &BaseIntVar::DebugString)
+          "index", &IntVar::index, py::return_value_policy::reference,
+          DOC(operations_research, sat, python, IntVar, index))
+      .def_property_readonly(
+          "is_boolean", &IntVar::is_boolean,
+          DOC(operations_research, sat, python, IntVar, is_boolean))
+      .def_property("name", &IntVar::name, &IntVar::SetName,
+                    "The name of the variable.")
+      .def(
+          "with_name",
+          [](std::shared_ptr<IntVar> self, const std::string& name) {
+            self->SetName(name);
+            return self;
+          },
+          py::arg("name"),
+          "Sets the name of the variable and returns the variable.")
+      .def_property("domain", &IntVar::domain, &IntVar::SetDomain,
+                    "The domain of the variable.")
+      .def(
+          "with_domain",
+          [](std::shared_ptr<IntVar> self, const Domain& domain) {
+            self->SetDomain(domain);
+            return self;
+          },
+          py::arg("domain"),
+          "Sets the domain of the variable and returns the variable.")
+      .def("__str__", &IntVar::ToString)
+      .def("__repr__", &IntVar::DebugString)
       .def(
           "negated",
-          [](std::shared_ptr<BaseIntVar> self) {
+          [](std::shared_ptr<IntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated))
+          DOC(operations_research, sat, python, IntVar, negated))
       .def(
           "__invert__",
-          [](std::shared_ptr<BaseIntVar> self) {
+          [](std::shared_ptr<IntVar> self) {
             if (!self->is_boolean()) {
               ThrowError(PyExc_TypeError,
                          "negated() is only supported for Boolean variables.");
             }
             return self->negated();
           },
-          DOC(operations_research, sat, python, BaseIntVar, negated))
-      // PEP8 Compatibility.
+          DOC(operations_research, sat, python, IntVar, negated))
+      .def("__copy__",
+           [](const std::shared_ptr<IntVar>& self) {
+             return std::make_shared<IntVar>(self->model_proto(),
+                                             self->index());
+           })
+      .def(py::pickle(
+          [](std::shared_ptr<IntVar> p) {  // __getstate__
+            /* Return a tuple that fully encodes the state of the object */
+            return py::make_tuple(p->model_proto(), p->index());
+          },
+          [](py::tuple t) {  // __setstate__
+            if (t.size() != 2) throw std::runtime_error("Invalid state!");
+
+            return std::make_shared<IntVar>(
+                t[0].cast<std::shared_ptr<CpModelProto>>(), t[1].cast<int>());
+          }))
+      // Pre PEP8 compatibility layer.
+      .def("Name", &IntVar::name)
+      .def("Proto", &IntVar::proto)
       .def("Not",
-           [](std::shared_ptr<BaseIntVar> self) {
+           [](std::shared_ptr<IntVar> self) {
              if (!self->is_boolean()) {
                ThrowError(PyExc_TypeError,
                           "negated() is only supported for Boolean variables.");
              }
              return self->negated();
            })
-      .def("Index", &BaseIntVar::index);
+      .def("Index", &IntVar::index);
 
   py::class_<NotBooleanVariable, std::shared_ptr<NotBooleanVariable>, Literal>(
       m, "NotBooleanVariable",
@@ -1118,61 +1784,32 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def_property_readonly(
           "index",
           [](std::shared_ptr<NotBooleanVariable> not_var) -> int {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
             return not_var->index();
           },
           DOC(operations_research, sat, python, NotBooleanVariable, index))
       .def("__str__",
            [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
-             if (!not_var->ok()) {
-               ThrowError(PyExc_ReferenceError,
-                          "The base variable is not valid.");
-             }
              return not_var->ToString();
            })
       .def("__repr__",
            [](std::shared_ptr<NotBooleanVariable> not_var) -> std::string {
-             if (!not_var->ok()) {
-               ThrowError(PyExc_ReferenceError,
-                          "The base variable is not valid.");
-             }
              return not_var->DebugString();
            })
       .def(
           "negated",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated))
       .def(
           "__invert__",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated))
+      // Pre PEP8 compatibility layer.
       .def(
           "Not",
           [](std::shared_ptr<NotBooleanVariable> not_var)
-              -> std::shared_ptr<Literal> {
-            if (!not_var->ok()) {
-              ThrowError(PyExc_ReferenceError,
-                         "The base variable is not valid.");
-            }
-            return not_var->negated();
-          },
+              -> std::shared_ptr<Literal> { return not_var->negated(); },
           DOC(operations_research, sat, python, NotBooleanVariable, negated));
 
   py::class_<BoundedLinearExpression, std::shared_ptr<BoundedLinearExpression>>(
@@ -1198,6 +1835,327 @@ PYBIND11_MODULE(cp_model_helper, m) {
                                 "not supported."));
         return false;
       });
+
+  py::enum_<BoolArgumentConstraint>(m, "BoolArgumentConstraint")
+      .value("at_most_one", BoolArgumentConstraint::kAtMostOne)
+      .value("bool_and", BoolArgumentConstraint::kBoolAnd)
+      .value("bool_or", BoolArgumentConstraint::kBoolOr)
+      .value("bool_xor", BoolArgumentConstraint::kBoolXor)
+      .value("exactly_one", BoolArgumentConstraint::kExactlyOne)
+      .export_values();
+
+  py::enum_<LinearArgumentConstraint>(m, "LinearArgumentConstraint")
+      .value("div", LinearArgumentConstraint::kDiv)
+      .value("max", LinearArgumentConstraint::kMax)
+      .value("min", LinearArgumentConstraint::kMin)
+      .value("mod", LinearArgumentConstraint::kMod)
+      .value("prod", LinearArgumentConstraint::kProd)
+      .export_values();
+
+  py::class_<CpBaseModel, std::shared_ptr<CpBaseModel>>(
+      m, "CpBaseModel", "Base class for the CP model.")
+      .def(py::init<std::shared_ptr<CpModelProto>>())
+      .def_property_readonly("model_proto", &CpBaseModel::model_proto,
+                             "Returns the CP model protobuf")
+      .def("get_or_make_index_from_constant",
+           &CpBaseModel::GetOrMakeIndexFromConstant, py::arg("value"),
+           "Returns the index of the given constant value.")
+      .def("get_or_make_boolean_index", &CpBaseModel::GetOrMakeBooleanIndex,
+           py::arg("value"), "Returns the index of the given boolean value.")
+      .def("get_or_make_variable_index", &CpBaseModel::GetOrMakeVariableIndex,
+           py::arg("arg"),
+           "Returns the index of the given variable or constant variable.")
+      .def("is_boolean_value", &CpBaseModel::IsBooleanValue, py::arg("value"))
+      .def("rebuild_constant_map", &CpBaseModel::RebuildConstantMap)
+      .def("_add_all_different", &CpBaseModel::AddAllDifferentInternal)
+      .def("_add_automaton", &CpBaseModel::AddAutomatonInternal,
+           py::arg("transition_expressions"), py::arg("starting_state"),
+           py::arg("final_states"), py::arg("transition_triples"))
+      .def("_add_bool_argument_constraint",
+           &CpBaseModel::AddBoolArgumentConstraintInternal, py::arg("name"))
+      .def("_add_bounded_linear_expression",
+           &CpBaseModel::AddBoundedLinearExpressionInternal, py::arg("ble"))
+      .def("_add_element", &CpBaseModel::AddElementInternal,
+           py::arg("index").none(false), py::arg("expressions"),
+           py::arg("target").none(false))
+      .def("_add_linear_argument_constraint",
+           &CpBaseModel::AddLinearArgumentConstraintInternal,
+           py::arg("name").none(false), py::arg("target").none(false))
+      .def("_add_inverse", &CpBaseModel::AddInverseInternal, py::arg("direct"),
+           py::arg("inverse"))
+      .def("_add_reservoir", &CpBaseModel::AddReservoirInternal,
+           py::arg("times"), py::arg("level_changes"), py::arg("actives"),
+           py::arg("min_level"), py::arg("max_level"))
+      .def("_add_table", &CpBaseModel::AddTableInternal, py::arg("expressions"),
+           py::arg("values"), py::arg("negated"))
+      // Scheduling support.
+      .def("_new_interval_var", &CpBaseModel::NewIntervalVarInternal,
+           py::arg("name"), py::arg("start"), py::arg("size"), py::arg("end"),
+           py::arg("Literals"))
+      .def("_add_no_overlap", &CpBaseModel::AddNoOverlapInternal,
+           py::arg("intervals"))
+      .def("_add_no_overlap_2d", &CpBaseModel::AddNoOverlap2DInternal,
+           py::arg("x_intervals"), py::arg("y_intervals"))
+      .def("_add_cumulative", &CpBaseModel::AddCumulativeInternal,
+           py::arg("intervals"), py::arg("demands"), py::arg("capacity"))
+      // Routing support.
+      .def("_add_circuit", &CpBaseModel::AddCircuitInternal, py::arg("arcs"))
+      .def("_add_routes", &CpBaseModel::AddRoutesInternal, py::arg("arcs"));
+
+  static const char* kConstraintDoc = R"doc(
+  Base class for constraints.
+
+  Constraints are built by the CpModel through the add<XXX> methods.
+  Once created by the CpModel class, they are automatically added to the model.
+  The purpose of this class is to allow specification of enforcement literals
+  for this constraint.
+
+      b = model.new_bool_var('b')
+      x = model.new_int_var(0, 10, 'x')
+      y = model.new_int_var(0, 10, 'y')
+
+      model.add(x + 2 * y == 5).only_enforce_if(b.negated())
+    )doc";
+
+  static const char* kConstraintOnlyEnforceIfDoc = R"doc(
+  Adds one or more enforcement literals to the constraint.
+
+  This method adds one or more literals (that is, a boolean variable or its
+  negation) as enforcement literals. The conjunction of all these literals
+  determines whether the constraint is active or not. It acts as an
+  implication, so if the conjunction is true, it implies that the constraint
+  must be enforced. If it is false, then the constraint is ignored.
+
+  BoolOr, BoolAnd, and linear constraints all support enforcement literals.
+
+  Args:
+    *literals: One or more Boolean literals.
+
+  Returns:
+    self.)doc";
+
+  py::class_<Constraint, std::shared_ptr<Constraint>>(m, "Constraint",
+                                                      kConstraintDoc)
+      .def(py::init<std::shared_ptr<CpBaseModel>, int>())
+      .def_property_readonly(
+          "index", &Constraint::index,
+          "Returns the index of the constraint in the model protobuf.")
+      .def_property_readonly("model_proto", &Constraint::model_proto,
+                             "Returns the model protobuf.")
+      .def_property_readonly("proto", &Constraint::proto,
+                             py::return_value_policy::reference,
+                             py::keep_alive<1, 0>(),
+                             "Returns the ConstraintProto of this constraint.")
+      .def_property("name", &Constraint::name, &Constraint::SetName,
+                    "The name of the constraint.")
+      .def(
+          "with_name",
+          [](Constraint* self, const std::string& name) {
+            if (name.empty()) {
+              self->ClearName();
+            } else {
+              self->SetName(name);
+            }
+            return self;
+          },
+          "Sets the name of the constraint and returns the constraints")
+      .def(
+          "only_enforce_if",
+          [](std::shared_ptr<Constraint> self,
+             std::shared_ptr<Literal> literal) {
+            self->proto()->add_enforcement_literal(literal->index());
+            return self;
+          },
+          py::arg("literal"), kConstraintOnlyEnforceIfDoc)
+      .def(
+          "only_enforce_if",
+          [](std::shared_ptr<Constraint> self, bool literal) {
+            self->proto()->add_enforcement_literal(
+                self->model()->GetOrMakeIndexFromConstant(literal));
+            return self;
+          },
+          py::arg("literal"), kConstraintOnlyEnforceIfDoc)
+      .def(
+          "only_enforce_if",
+          [](std::shared_ptr<Constraint> self,
+             const std::vector<std::shared_ptr<Literal>>& literals) {
+            for (const std::shared_ptr<Literal>& literal : literals) {
+              self->proto()->add_enforcement_literal(literal->index());
+            }
+          },
+          py::arg("literals"), kConstraintOnlyEnforceIfDoc)
+      .def(
+          "only_enforce_if",
+          [](std::shared_ptr<Constraint> self, py::args literals) {
+            if (literals.size() == 1 &&
+                py::isinstance<py::sequence>(literals[0])) {
+              py::sequence seq = literals[0].cast<py::sequence>();
+              for (const auto& literal : seq) {
+                self->proto()->add_enforcement_literal(
+                    self->model()->GetOrMakeBooleanIndex(literal));
+              }
+            } else {
+              for (const auto& literal : literals) {
+                self->proto()->add_enforcement_literal(
+                    self->model()->GetOrMakeBooleanIndex(literal));
+              }
+            }
+          },
+          kConstraintOnlyEnforceIfDoc)
+      // Pre PEP8 compatibility.
+      .def("Name", &Constraint::name)
+      .def("Index", &Constraint::index)
+      .def("Proto", &Constraint::proto)
+      .def("WithName",
+           [](Constraint* self, const std::string& name) {
+             if (name.empty()) {
+               self->ClearName();
+             } else {
+               self->SetName(name);
+             }
+             return self;
+           })
+      .def("OnlyEnforceIf", [](std::shared_ptr<Constraint> self,
+                               py::args literals) {
+        if (literals.size() == 1 && py::isinstance<py::sequence>(literals[0])) {
+          py::sequence seq = literals[0].cast<py::sequence>();
+          for (const auto& literal : seq) {
+            self->proto()->add_enforcement_literal(
+                self->model()->GetOrMakeBooleanIndex(literal));
+          }
+        } else {
+          for (const auto& literal : literals) {
+            self->proto()->add_enforcement_literal(
+                self->model()->GetOrMakeBooleanIndex(literal));
+          }
+        }
+      });
+
+  static const char* kIntervalVarDoc = R"doc(
+Represents an Interval variable.
+
+An interval variable is both a constraint and a variable. It is defined by
+three integer variables: start, size, and end.
+
+It is a constraint because, internally, it enforces that start + size == end.
+
+It is also a variable as it can appear in specific scheduling constraints:
+NoOverlap, NoOverlap2D, Cumulative.
+
+Optionally, an enforcement literal can be added to this constraint, in which
+case these scheduling constraints will ignore interval variables with
+enforcement literals assigned to false. Conversely, these constraints will
+also set these enforcement literals to false if they cannot fit these
+intervals into the schedule.
+
+Raises:
+  ValueError: if start, size, end are not defined, or have the wrong type.  
+)doc";
+
+  py::class_<IntervalVar, std::shared_ptr<IntervalVar>>(m, "IntervalVar",
+                                                        kIntervalVarDoc)
+      .def(py::init<std::shared_ptr<CpModelProto>, int>())
+      .def_property_readonly("index", &IntervalVar::index,
+                             "Returns the index of the interval variable.")
+      .def_property_readonly("model_proto", &IntervalVar::model_proto,
+                             "Returns the model protobuf.")
+      .def_property_readonly(
+          "proto", &IntervalVar::proto, py::return_value_policy::reference,
+          py::keep_alive<1, 0>(), "Returns the interval constraint protobuf.")
+      .def_property("name", &IntervalVar::name, &IntervalVar::SetName,
+                    "The name of the interval variable.")
+      .def(
+          "start_expr",
+          [](std::shared_ptr<IntervalVar> self) -> py::object {
+            const IntervalConstraintProto& proto = self->proto()->interval();
+            if (proto.start().vars().empty()) {
+              return py::cast(proto.start().offset());
+            } else {
+              return py::cast(self->StartExpr());
+            }
+          },
+          "Returns the start expression of the interval variable.")
+      .def(
+          "size_expr",
+          [](std::shared_ptr<IntervalVar> self) -> py::object {
+            const IntervalConstraintProto& proto = self->proto()->interval();
+            if (proto.size().vars().empty()) {
+              return py::cast(proto.size().offset());
+            } else {
+              return py::cast(self->SizeExpr());
+            }
+          },
+          "Returns the size expression of the interval variable.")
+      .def(
+          "end_expr",
+          [](std::shared_ptr<IntervalVar> self) -> py::object {
+            const IntervalConstraintProto& proto = self->proto()->interval();
+            if (proto.end().vars().empty()) {
+              return py::cast(proto.end().offset());
+            } else {
+              return py::cast(self->EndExpr());
+            }
+          },
+          "Returns the end expression of the interval variable.")
+      .def("__str__", &IntervalVar::ToString)
+      .def("__repr__", &IntervalVar::DebugString)
+      .def(py::pickle(
+          [](std::shared_ptr<IntervalVar> p) {  // __getstate__
+            /* Return a tuple that fully encodes the state of the object */
+            return py::make_tuple(p->model_proto(), p->index());
+          },
+          [](py::tuple t) {  // __setstate__
+            if (t.size() != 2) throw std::runtime_error("Invalid state!");
+
+            return std::make_shared<IntervalVar>(
+                t[0].cast<std::shared_ptr<CpModelProto>>(), t[1].cast<int>());
+          }))
+      // Pre PEP8 compatibility layer.
+      .def("Proto", &IntervalVar::proto)
+      .def("Index", &IntervalVar::index)
+      .def("Name", &IntervalVar::name)
+      .def("StartExpr",
+           [](std::shared_ptr<IntervalVar> self) -> py::object {
+             const IntervalConstraintProto& proto = self->proto()->interval();
+             if (proto.start().vars().empty()) {
+               return py::cast(proto.start().offset());
+             } else {
+               return py::cast(self->StartExpr());
+             }
+           })
+      .def("SizeExpr",
+           [](std::shared_ptr<IntervalVar> self) -> py::object {
+             const IntervalConstraintProto& proto = self->proto()->interval();
+             if (proto.size().vars().empty()) {
+               return py::cast(proto.size().offset());
+             } else {
+               return py::cast(self->SizeExpr());
+             }
+           })
+      .def("EndExpr", [](std::shared_ptr<IntervalVar> self) -> py::object {
+        const IntervalConstraintProto& proto = self->proto()->interval();
+        if (proto.end().vars().empty()) {
+          return py::cast(proto.end().offset());
+        } else {
+          return py::cast(self->EndExpr());
+        }
+      });
+
+  m.def(
+      "rebuild_from_linear_expression_proto",
+      [](const LinearExpressionProto& proto,
+         std::shared_ptr<CpModelProto> model_proto) -> py::object {
+        if (proto.vars().empty()) {
+          return py::cast(proto.offset());
+        } else {
+          return py::cast(RebuildFromLinearExpressionProto(proto, model_proto));
+        }
+      },
+      py::arg("proto"), py::arg("model_proto"));
+
+#define IMPORT_PROTO_WRAPPER_CODE
+#include "ortools/sat/python/proto_builder_pybind11.h"
+#undef IMPORT_PROTO_WRAPPER_CODE
 }  // NOLINT(readability/fn_size)
 
 }  // namespace operations_research::sat::python

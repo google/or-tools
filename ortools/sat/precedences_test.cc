@@ -14,10 +14,12 @@
 #include "ortools/sat/precedences.h"
 
 #include <algorithm>
+#include <numeric>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_test_proto.h"
@@ -38,6 +40,7 @@ namespace {
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
 using ::testing::ElementsAre;
+using ::testing::FieldsAre;
 using ::testing::IsEmpty;
 using ::testing::UnorderedElementsAre;
 
@@ -59,123 +62,135 @@ std::vector<IntegerVariable> AddVariables(IntegerTrail* integer_trail) {
   return vars;
 }
 
-TEST(PrecedenceRelationsTest, BasicAPI) {
+TEST(EnforcedLinear2BoundsTest, BasicAPI) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  auto* precedence_builder =
+      model.GetOrCreate<TransitivePrecedencesEvaluator>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2), c(4), d(6);
 
-  PrecedenceRelations precedences(&model);
-  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -10);
-  precedences.AddUpperBound(LinearExpression2::Difference(d, c), -7);
-  precedences.AddUpperBound(LinearExpression2::Difference(b, d), -5);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, b), -10);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(d, c), -7);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(b, d), -5);
 
-  precedences.Build();
+  precedence_builder->Build();
   EXPECT_EQ(
-      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
+      root_bounds->LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
       -10);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
             -10);
   EXPECT_EQ(
-      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, c)),
+      root_bounds->LevelZeroUpperBound(LinearExpression2::Difference(a, c)),
       -22);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(c), NegationOf(a))),
             -22);
   EXPECT_EQ(
-      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, d)),
+      root_bounds->LevelZeroUpperBound(LinearExpression2::Difference(a, d)),
       -15);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(d), NegationOf(a))),
             -15);
   EXPECT_EQ(
-      precedences.LevelZeroUpperBound(LinearExpression2::Difference(d, a)),
-      kMaxIntegerValue);
+      root_bounds->LevelZeroUpperBound(LinearExpression2::Difference(d, a)),
+      100);
 
   // Once built, we can update the offsets.
   // Note however that this would not propagate through the precedence graphs.
-  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -15);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, b), -15);
   EXPECT_EQ(
-      precedences.LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
+      root_bounds->LevelZeroUpperBound(LinearExpression2::Difference(a, b)),
       -15);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
             -15);
 }
 
-TEST(PrecedenceRelationsTest, CornerCase1) {
+TEST(EnforcedLinear2BoundsTest, CornerCase1) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  auto* precedence_builder =
+      model.GetOrCreate<TransitivePrecedencesEvaluator>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2), c(4), d(6);
 
-  PrecedenceRelations precedences(&model);
-  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -10);
-  precedences.AddUpperBound(LinearExpression2::Difference(b, c), -7);
-  precedences.AddUpperBound(LinearExpression2::Difference(b, d), -5);
-  precedences.AddUpperBound(LinearExpression2::Difference(NegationOf(b), a),
-                            -5);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, b), -10);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(b, c), -7);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(b, d), -5);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(NegationOf(b), a),
+                             -5);
 
-  precedences.Build();
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  precedence_builder->Build();
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), a)),
             -5);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), c)),
             -22);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), d)),
             -20);
 }
 
-TEST(PrecedenceRelationsTest, CornerCase2) {
+TEST(EnforcedLinear2BoundsTest, CornerCase2) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  auto* precedence_builder =
+      model.GetOrCreate<TransitivePrecedencesEvaluator>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2), c(4), d(6);
 
-  PrecedenceRelations precedences(&model);
-  precedences.AddUpperBound(LinearExpression2::Difference(NegationOf(a), a),
-                            -10);
-  precedences.AddUpperBound(LinearExpression2::Difference(a, b), -7);
-  precedences.AddUpperBound(LinearExpression2::Difference(a, c), -5);
-  precedences.AddUpperBound(LinearExpression2::Difference(a, d), -2);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(
+  root_bounds->AddUpperBound(LinearExpression2::Difference(NegationOf(a), a),
+                             -10);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, b), -7);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, c), -5);
+  root_bounds->AddUpperBound(LinearExpression2::Difference(a, d), -2);
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(
                 LinearExpression2::Difference(NegationOf(b), NegationOf(a))),
             -7);
 
-  precedences.Build();
+  precedence_builder->Build();
 }
 
-TEST(PrecedenceRelationsTest, CoefficientGreaterThanOne) {
+TEST(EnforcedLinear2BoundsTest, CoefficientGreaterThanOne) {
   Model model;
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  auto* precedence_builder =
+      model.GetOrCreate<TransitivePrecedencesEvaluator>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2), c(4);
 
-  PrecedenceRelations precedences(&model);
-  precedences.AddUpperBound(LinearExpression2(a, b, 3, -4), 7);
-  precedences.AddUpperBound(LinearExpression2(a, c, 2, -3), -5);
-  precedences.AddUpperBound(LinearExpression2(a, b, 6, -8), 5);
-  EXPECT_EQ(precedences.LevelZeroUpperBound(LinearExpression2(a, b, 9, -12)),
+  EnforcedLinear2Bounds precedences(&model);
+  root_bounds->AddUpperBound(LinearExpression2(a, b, 3, -4), 7);
+  root_bounds->AddUpperBound(LinearExpression2(a, c, 2, -3), -5);
+  root_bounds->AddUpperBound(LinearExpression2(a, b, 6, -8), 5);
+  EXPECT_EQ(root_bounds->LevelZeroUpperBound(LinearExpression2(a, b, 9, -12)),
             6);
 
-  precedences.Build();
+  precedence_builder->Build();
 }
 
-TEST(PrecedenceRelationsTest, ConditionalRelations) {
+TEST(EnforcedLinear2BoundsTest, ConditionalRelations) {
   Model model;
   auto* sat_solver = model.GetOrCreate<SatSolver>();
+  auto* lin2_bounds = model.GetOrCreate<Linear2Bounds>();
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
+  auto* precedences = model.GetOrCreate<EnforcedLinear2Bounds>();
+  auto* lin2_indices = model.GetOrCreate<Linear2Indices>();
   const std::vector<IntegerVariable> vars = AddVariables(integer_trail);
 
   const Literal l(model.Add(NewBooleanVariable()), true);
@@ -183,31 +198,29 @@ TEST(PrecedenceRelationsTest, ConditionalRelations) {
 
   // Note that odd indices are for the negation.
   IntegerVariable a(0), b(2);
-  PrecedenceRelations precedences(&model);
-  precedences.PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 15);
-  precedences.PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 20);
+  precedences->PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 15);
+  precedences->PushConditionalRelation({l}, LinearExpression2(a, b, 1, 1), 20);
 
+  LinearExpression2 expr_a_plus_b =
+      LinearExpression2::Difference(a, NegationOf(b));
+  expr_a_plus_b.SimpleCanonicalization();
   // We only keep the best one.
-  EXPECT_EQ(
-      precedences.UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
-      15);
+  EXPECT_EQ(lin2_bounds->UpperBound(expr_a_plus_b), 15);
   std::vector<Literal> literal_reason;
   std::vector<IntegerLiteral> integer_reason;
-  precedences.AddReasonForUpperBoundLowerThan(
-      LinearExpression2::Difference(a, NegationOf(b)), 15, &literal_reason,
+  precedences->AddReasonForUpperBoundLowerThan(
+      lin2_indices->AddOrGet(expr_a_plus_b), 15, &literal_reason,
       &integer_reason);
   EXPECT_THAT(literal_reason, ElementsAre(l.Negated()));
 
   // Backtrack works.
   EXPECT_TRUE(sat_solver->ResetToLevelZero());
-  EXPECT_EQ(
-      precedences.UpperBound(LinearExpression2::Difference(a, NegationOf(b))),
-      kMaxIntegerValue);
+  EXPECT_EQ(lin2_bounds->UpperBound(expr_a_plus_b), 200);
   literal_reason.clear();
   integer_reason.clear();
-  precedences.AddReasonForUpperBoundLowerThan(
-      LinearExpression2::Difference(a, NegationOf(b)), kMaxIntegerValue,
-      &literal_reason, &integer_reason);
+  precedences->AddReasonForUpperBoundLowerThan(
+      lin2_indices->AddOrGet(expr_a_plus_b), kMaxIntegerValue, &literal_reason,
+      &integer_reason);
   EXPECT_THAT(literal_reason, IsEmpty());
 }
 
@@ -435,8 +448,9 @@ TEST(PrecedencesPropagatorTest, ZeroWeightCycleOnDiscreteDomain) {
       NewIntegerVariable(Domain::FromValues({3, 6, 9, 14, 16, 18, 20, 35})));
 
   // Add the fact that a == b with two inequalities.
-  model.Add(LowerOrEqual(a, b));
-  model.Add(LowerOrEqual(b, a));
+  auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
+  precedences->AddPrecedence(a, b);
+  precedences->AddPrecedence(b, a);
 
   // After propagation, we should detect that the only common values fall in
   // [16, 20].
@@ -455,7 +469,8 @@ TEST(PrecedencesPropagatorTest, ConditionalPrecedencesOnFixedLiteral) {
   // To trigger the old bug, we need to add some precedences.
   IntegerVariable x = model.Add(NewIntegerVariable(0, 100));
   IntegerVariable y = model.Add(NewIntegerVariable(50, 100));
-  model.Add(LowerOrEqual(x, y));
+  auto* precedences = model.GetOrCreate<PrecedencesPropagator>();
+  precedences->AddPrecedence(x, y);
 
   // We then add a Boolean variable and fix it.
   // This will trigger a propagation.
@@ -472,33 +487,34 @@ TEST(PrecedencesPropagatorTest, ConditionalPrecedencesOnFixedLiteral) {
 
 #undef EXPECT_BOUNDS_EQ
 
-TEST(PrecedenceRelationsTest, CollectPrecedences) {
+TEST(EnforcedLinear2BoundsTest, CollectPrecedences) {
   Model model;
   auto* integer_trail = model.GetOrCreate<IntegerTrail>();
-  auto* relations = model.GetOrCreate<PrecedenceRelations>();
+  auto* relations = model.GetOrCreate<EnforcedLinear2Bounds>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
 
   std::vector<IntegerVariable> vars = AddVariables(integer_trail);
-  relations->AddUpperBound(LinearExpression2::Difference(vars[0], vars[2]),
-                           IntegerValue(-1));
-  relations->AddUpperBound(LinearExpression2::Difference(vars[0], vars[5]),
-                           IntegerValue(-1));
-  relations->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]),
-                           IntegerValue(-1));
-  relations->AddUpperBound(LinearExpression2::Difference(vars[2], vars[4]),
-                           IntegerValue(-1));
-  relations->AddUpperBound(LinearExpression2::Difference(vars[3], vars[4]),
-                           IntegerValue(-1));
-  relations->AddUpperBound(LinearExpression2::Difference(vars[4], vars[5]),
-                           IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[0], vars[2]),
+                             IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[0], vars[5]),
+                             IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]),
+                             IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[2], vars[4]),
+                             IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[3], vars[4]),
+                             IntegerValue(-1));
+  root_bounds->AddUpperBound(LinearExpression2::Difference(vars[4], vars[5]),
+                             IntegerValue(-1));
 
-  std::vector<PrecedenceRelations::PrecedenceData> p;
+  std::vector<EnforcedLinear2Bounds::PrecedenceData> p;
   relations->CollectPrecedences({vars[0], vars[2], vars[3]}, &p);
 
   // Note that we do not return precedences with just one variable.
   std::vector<int> indices;
   std::vector<IntegerVariable> variables;
   for (const auto precedence : p) {
-    indices.push_back(precedence.index);
+    indices.push_back(precedence.var_index);
     variables.push_back(precedence.var);
   }
   EXPECT_EQ(indices, (std::vector<int>{1, 2}));
@@ -511,46 +527,76 @@ TEST(PrecedenceRelationsTest, CollectPrecedences) {
 
 TEST(BinaryRelationRepositoryTest, Build) {
   Model model;
-  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
+  const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable z = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {NegationOf(x), 1}, {y, 1}, 2, 8);
-  repository.Add(Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10);
-  repository.Add(lit_a, {x, -3}, {NegationOf(y), 2}, 1, 15);
-  repository.Add(lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5);
-  repository.Add(Literal(kNoLiteralIndex), {x, 3}, {y, -1}, 5, 15);
-  repository.Add(Literal(kNoLiteralIndex), {x, 1}, {z, -1}, 0, 10);
+  BinaryRelationRepository repository(&model);
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2(NegationOf(x), y, 1, 1), 2, 8);
+  root_level_bounds->Add(LinearExpression2(x, y, 2, -2), 0, 10);
+  repository.Add(lit_a, LinearExpression2(x, NegationOf(y), -3, 2), 1, 15);
+  repository.Add(lit_b, LinearExpression2(x, kNoIntegerVariable, -3, 0), 3, 5);
+  root_level_bounds->Add(LinearExpression2(x, y, 3, -1), 5, 15);
+  root_level_bounds->Add(LinearExpression2::Difference(x, z), 0, 10);
   repository.AddPartialRelation(lit_b, x, z);
   repository.Build();
 
-  EXPECT_EQ(repository.size(), 7);
-  EXPECT_EQ(repository.relation(0), (Relation{lit_a, {x, -1}, {y, 1}, 2, 8}));
-  EXPECT_EQ(repository.relation(1),
-            (Relation{Literal(kNoLiteralIndex), {x, 2}, {y, -2}, 0, 10}));
-  EXPECT_EQ(repository.relation(2), (Relation{lit_a, {x, -3}, {y, -2}, 1, 15}));
-  EXPECT_EQ(repository.relation(3),
-            (Relation{lit_b, {x, -3}, {kNoIntegerVariable, 0}, 3, 5}));
-  EXPECT_EQ(repository.relation(6), (Relation{lit_b, {x, 1}, {z, 1}, 0, 0}));
-  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_a),
-              UnorderedElementsAre(0, 2));
-  EXPECT_THAT(repository.IndicesOfRelationsEnforcedBy(lit_b),
-              UnorderedElementsAre(3, 6));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(x),
-              UnorderedElementsAre(1, 4, 5));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(y),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsContaining(z),
-              UnorderedElementsAre(5));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, y),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(y, x),
-              UnorderedElementsAre(1, 4));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(x, z),
-              UnorderedElementsAre(5));
-  EXPECT_THAT(repository.IndicesOfRelationsBetween(z, y), IsEmpty());
+  auto get_rel = [&](absl::Span<const int> indexes) {
+    std::vector<Relation> result;
+    for (int i : indexes) {
+      result.push_back(repository.relation(i));
+    }
+    return result;
+  };
+  std::vector<int> all(repository.size());
+  std::iota(all.begin(), all.end(), 0);
+  EXPECT_THAT(
+      get_rel(all),
+      UnorderedElementsAre(
+          Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1},
+          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
+                   5},
+          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
+              UnorderedElementsAre(
+                  Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+                  Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
+  EXPECT_THAT(
+      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+      UnorderedElementsAre(
+          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
+                   5},
+          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+  EXPECT_THAT(root_level_bounds->GetAllBoundsContainingVariable(x),
+              UnorderedElementsAre(
+                  FieldsAre(LinearExpression2(x, NegationOf(y), 1, 1), 0, 5),
+
+                  FieldsAre(LinearExpression2(x, NegationOf(y), 3, 1), 5, 15),
+                  FieldsAre(LinearExpression2(x, NegationOf(z), 1, 1), 0, 10)));
+  EXPECT_THAT(
+      root_level_bounds->GetAllBoundsContainingVariable(y),
+      UnorderedElementsAre(FieldsAre(LinearExpression2(y, x, -1, 1), 0, 5),
+                           FieldsAre(LinearExpression2(y, x, -1, 3), 5, 15)));
+  EXPECT_THAT(
+      root_level_bounds->GetAllBoundsContainingVariable(z),
+      UnorderedElementsAre(FieldsAre(LinearExpression2(z, x, -1, 1), 0, 10)));
+  EXPECT_THAT(
+      root_level_bounds->GetAllBoundsContainingVariables(x, y),
+      UnorderedElementsAre(FieldsAre(LinearExpression2(x, y, 1, -1), 0, 5),
+                           FieldsAre(LinearExpression2(x, y, 3, -1), 5, 15)));
+  EXPECT_THAT(
+      root_level_bounds->GetAllBoundsContainingVariables(y, x),
+      UnorderedElementsAre(FieldsAre(LinearExpression2(y, x, -1, 1), 0, 5),
+                           FieldsAre(LinearExpression2(y, x, -1, 3), 5, 15)));
+  EXPECT_THAT(
+      root_level_bounds->GetAllBoundsContainingVariables(x, z),
+      UnorderedElementsAre(FieldsAre(LinearExpression2(x, z, 1, -1), 0, 10)));
+  EXPECT_THAT(root_level_bounds->GetAllBoundsContainingVariables(z, y),
+              IsEmpty());
 }
 
 std::vector<Relation> GetRelations(Model& model) {
@@ -559,12 +605,11 @@ std::vector<Relation> GetRelations(Model& model) {
   std::vector<Relation> relations;
   for (int i = 0; i < repository.size(); ++i) {
     Relation r = repository.relation(i);
-    if (r.a.coeff < 0) {
+    if (r.expr.coeffs[0] < 0) {
       r = Relation({r.enforcement,
-                    {r.a.var, -r.a.coeff},
-                    {r.b.var, -r.b.coeff},
-                    -r.rhs,
-                    -r.lhs});
+                    LinearExpression2(r.expr.vars[0], r.expr.vars[1],
+                                      -r.expr.coeffs[0], -r.expr.coeffs[1]),
+                    -r.rhs, -r.lhs});
     }
     relations.push_back(r);
   }
@@ -622,22 +667,16 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
   LoadCpModel(model_proto, &model);
 
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(Relation{mapping.Literal(0),
-                                            {mapping.Integer(2), 1},
-                                            {mapping.Integer(3), -1},
-                                            0,
-                                            10},
-                                   Relation{mapping.Literal(1),
-                                            {mapping.Integer(2), 1},
-                                            {kNoIntegerVariable, 0},
-                                            5,
-                                            10},
-                                   Relation{Literal(kNoLiteralIndex),
-                                            {mapping.Integer(2), 3},
-                                            {mapping.Integer(3), -2},
-                                            -10,
-                                            10}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(Relation{mapping.Literal(0),
+                                    LinearExpression2::Difference(
+                                        mapping.Integer(2), mapping.Integer(3)),
+                                    0, 10},
+                           Relation{mapping.Literal(1),
+                                    LinearExpression2(kNoIntegerVariable,
+                                                      mapping.Integer(2), 0, 1),
+                                    5, 10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -672,8 +711,10 @@ TEST(BinaryRelationRepositoryTest,
   // - b => x - 10.a in [10, 90]
   EXPECT_THAT(GetRelations(model),
               UnorderedElementsAre(
-                  Relation{mapping.Literal(0), {x, 1}, {b, -10}, 10, 90},
-                  Relation{mapping.Literal(1), {x, 1}, {a, -10}, 10, 90}));
+                  Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1),
+                           -90, -10},
+                  Relation{mapping.Literal(1), LinearExpression2(a, x, 10, -1),
+                           -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -706,10 +747,12 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x + 10.b in [10, 90]
   // - b => x + 10.a in [10, 90]
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(
-                  Relation{mapping.Literal(0), {x, 1}, {b, 10}, 10, 90},
-                  Relation{mapping.Literal(1), {x, 1}, {a, 10}, 10, 90}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 10, 90},
+          Relation{mapping.Literal(1), LinearExpression2(a, x, 10, 1), 10,
+                   90}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -745,8 +788,9 @@ TEST(BinaryRelationRepositoryTest,
   EXPECT_THAT(
       GetRelations(model),
       UnorderedElementsAre(
-          Relation{mapping.Literal(0), {x, 1}, {b, 10}, 20, 100},
-          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, -10}, 10, 90}));
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 20, 100},
+          Relation{mapping.Literal(1).Negated(),
+                   LinearExpression2(a, x, 10, -1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -782,8 +826,9 @@ TEST(BinaryRelationRepositoryTest,
   EXPECT_THAT(
       GetRelations(model),
       UnorderedElementsAre(
-          Relation{mapping.Literal(0), {x, 1}, {b, -10}, 0, 80},
-          Relation{mapping.Literal(1).Negated(), {x, 1}, {a, 10}, 10, 90}));
+          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1), -80, 0},
+          Relation{mapping.Literal(1).Negated(), LinearExpression2(a, x, 10, 1),
+                   10, 90}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
@@ -791,15 +836,18 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
+  BinaryRelationRepository repository(&model);
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_a => y => x + 2
   repository.Build();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result =
-      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+  const bool result = repository.PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -808,43 +856,50 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
   Model model;
-  const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
-  const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
+  const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  const Literal kNoLiteral = Literal(kNoLiteralIndex);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);      // lit_a => y => x - 5
-  repository.Add(kNoLiteral, {x, -1}, {y, 1}, 2, 10);  // y => x + 2
+  BinaryRelationRepository repository(&model);
+  repository.Add(lit_a, LinearExpression2(x, y, -1, 1), -5,
+                 10);  // lit_a => y => x - 5
+  root_level_bounds->Add(LinearExpression2(x, y, -1, 1), 2,
+                         10);  // y => x + 2
   repository.Build();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result =
-      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+  const bool result = repository.PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, lit_a, input, &output);
 
   EXPECT_TRUE(result);
-  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
+  EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -98),
                                            std::make_pair(y, 5)));
 }
 
 TEST(BinaryRelationRepositoryTest,
      PropagateLocalBounds_EnforcedBoundSmallerThanLevelZeroBound) {
   Model model;
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, -5, 10);  // lit_a => y => x - 5
-  repository.Add(lit_b, {x, -1}, {y, 1}, 2, 10);   // lit_b => y => x + 2
+  BinaryRelationRepository repository(&model);
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), -5,
+                 10);  // lit_a => y => x - 5
+  repository.Add(lit_b, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_b => y => x + 2
   repository.Build();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result =
-      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+  const bool result = repository.PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, IsEmpty());
@@ -856,15 +911,18 @@ TEST(BinaryRelationRepositoryTest,
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 2, 10);  // lit_a => y => x + 2
+  BinaryRelationRepository repository(&model);
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
+                 10);  // lit_a => y => x + 2
   repository.Build();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output = {{y, 8}};
 
-  const bool result =
-      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+  const bool result = repository.PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -876,15 +934,18 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
-  repository.Add(lit_a, {x, -1}, {y, 1}, 8, 10);  // lit_a => y => x + 8
+  BinaryRelationRepository repository(&model);
+  RootLevelLinear2Bounds* root_level_bounds =
+      model.GetOrCreate<RootLevelLinear2Bounds>();
+  repository.Add(lit_a, LinearExpression2::Difference(y, x), 8,
+                 10);  // lit_a => y => x + 8
   repository.Build();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result =
-      repository.PropagateLocalBounds(*integer_trail, lit_a, input, &output);
+  const bool result = repository.PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, lit_a, input, &output);
 
   EXPECT_FALSE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -2),
@@ -903,9 +964,12 @@ TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
-  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
+  repository->Add(lit_a, LinearExpression2::Difference(d, a), 2,
+                  1000);  // d >= a + 2
+  repository->Add(lit_b, LinearExpression2::Difference(d, b), -1,
+                  1000);  // d >= b -1
+  repository->Add(lit_c, LinearExpression2::Difference(d, c), 0,
+                  1000);  // d >= c
   repository->Build();
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
 
@@ -931,9 +995,11 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
-  repository->Add(lit_a, {a, -1}, {d, 1}, 2, 1000);   // d >= a + 2
-  repository->Add(lit_b, {b, -1}, {d, 1}, -1, 1000);  // d >= b -1
-  repository->Add(lit_c, {c, -1}, {d, 1}, 0, 1000);   // d >= c
+  repository->Add(lit_a, LinearExpression2(a, d, -1, 1), 2,
+                  1000);  // d >= a + 2
+  repository->Add(lit_b, LinearExpression2(b, d, -1, 1), -1,
+                  1000);                                            // d >= b -1
+  repository->Add(lit_c, LinearExpression2(c, d, -1, 1), 0, 1000);  // d >= c
   repository->Build();
   auto* detector = model.GetOrCreate<GreaterThanAtLeastOneOfDetector>();
 
@@ -947,7 +1013,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   EXPECT_EQ(model.Get(LowerBound(d)), std::min({2 + 2, 5 - 1, 3 + 0}));
 }
 
-TEST(PrecedencesPropagatorTest, ComputeFullPrecedencesIfCycle) {
+TEST(TransitivePrecedencesEvaluatorTest, ComputeFullPrecedencesIfCycle) {
   Model model;
   std::vector<IntegerVariable> vars(10);
   for (int i = 0; i < vars.size(); ++i) {
@@ -955,18 +1021,19 @@ TEST(PrecedencesPropagatorTest, ComputeFullPrecedencesIfCycle) {
   }
 
   // Even if the weight are compatible, we will fail here.
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[1], 2));
-  model.Add(LowerOrEqualWithOffset(vars[1], vars[2], 2));
-  model.Add(LowerOrEqualWithOffset(vars[2], vars[1], -10));
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[2], 5));
+  auto* r = model.GetOrCreate<RootLevelLinear2Bounds>();
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[1]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[2], vars[1]), 10);
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[2]), -5);
 
   std::vector<FullIntegerPrecedence> precedences;
-  model.GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
+  model.GetOrCreate<TransitivePrecedencesEvaluator>()->ComputeFullPrecedences(
       {vars[0], vars[1]}, &precedences);
   EXPECT_TRUE(precedences.empty());
 }
 
-TEST(PrecedencesPropagatorTest, BasicFiltering) {
+TEST(TransitivePrecedencesEvaluatorTest, BasicTest1) {
   Model model;
   std::vector<IntegerVariable> vars(10);
   for (int i = 0; i < vars.size(); ++i) {
@@ -978,14 +1045,15 @@ TEST(PrecedencesPropagatorTest, BasicFiltering) {
   //  0   2 -- 4
   //   \ /
   //    3
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[1], 2));
-  model.Add(LowerOrEqualWithOffset(vars[1], vars[2], 2));
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[3], 1));
-  model.Add(LowerOrEqualWithOffset(vars[3], vars[2], 2));
-  model.Add(LowerOrEqualWithOffset(vars[2], vars[4], 2));
+  auto* r = model.GetOrCreate<RootLevelLinear2Bounds>();
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[1]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[3]), -1);
+  r->AddUpperBound(LinearExpression2::Difference(vars[3], vars[2]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[2], vars[4]), -2);
 
   std::vector<FullIntegerPrecedence> precedences;
-  model.GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
+  model.GetOrCreate<TransitivePrecedencesEvaluator>()->ComputeFullPrecedences(
       {vars[0], vars[1], vars[3]}, &precedences);
 
   // We only output size at least 2, and "relevant" precedences.
@@ -996,7 +1064,7 @@ TEST(PrecedencesPropagatorTest, BasicFiltering) {
   EXPECT_THAT(precedences[0].indices, ElementsAre(0, 1, 2));
 }
 
-TEST(PrecedencesPropagatorTest, BasicFiltering2) {
+TEST(TransitivePrecedencesEvaluatorTest, BasicTest2) {
   Model model;
   std::vector<IntegerVariable> vars(10);
   for (int i = 0; i < vars.size(); ++i) {
@@ -1008,15 +1076,16 @@ TEST(PrecedencesPropagatorTest, BasicFiltering2) {
   //  0   2 -- 4
   //   \ /    /
   //    3    5
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[1], 2));
-  model.Add(LowerOrEqualWithOffset(vars[1], vars[2], 2));
-  model.Add(LowerOrEqualWithOffset(vars[0], vars[3], 1));
-  model.Add(LowerOrEqualWithOffset(vars[3], vars[2], 2));
-  model.Add(LowerOrEqualWithOffset(vars[2], vars[4], 2));
-  model.Add(LowerOrEqualWithOffset(vars[5], vars[4], 7));
+  auto* r = model.GetOrCreate<RootLevelLinear2Bounds>();
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[1]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[1], vars[2]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[0], vars[3]), -1);
+  r->AddUpperBound(LinearExpression2::Difference(vars[3], vars[2]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[2], vars[4]), -2);
+  r->AddUpperBound(LinearExpression2::Difference(vars[5], vars[4]), -7);
 
   std::vector<FullIntegerPrecedence> precedences;
-  model.GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
+  model.GetOrCreate<TransitivePrecedencesEvaluator>()->ComputeFullPrecedences(
       {vars[0], vars[1], vars[3]}, &precedences);
 
   // Same as before here.
@@ -1027,7 +1096,7 @@ TEST(PrecedencesPropagatorTest, BasicFiltering2) {
 
   // But if we ask for 5, we will get two results.
   precedences.clear();
-  model.GetOrCreate<PrecedenceRelations>()->ComputeFullPrecedences(
+  model.GetOrCreate<TransitivePrecedencesEvaluator>()->ComputeFullPrecedences(
       {vars[0], vars[1], vars[3], vars[5]}, &precedences);
   ASSERT_EQ(precedences.size(), 2);
   EXPECT_EQ(precedences[0].var, vars[2]);
@@ -1043,6 +1112,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable z = model.Add(NewIntegerVariable(0, 2));
+  const IntegerVariable w = model.Add(NewIntegerVariable(0, 20));
 
   // x - y;
   LinearExpression2 expr;
@@ -1052,35 +1122,41 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   expr.coeffs[1] = IntegerValue(-1);
 
   // Starts with trivial level zero bound.
-  auto* tested = model.GetOrCreate<BinaryRelationsMaps>();
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(10));
+  auto* bounds = model.GetOrCreate<Linear2Bounds>();
+  auto* lin3_bounds = model.GetOrCreate<Linear2BoundsFromLinear3>();
+  auto* root_bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(10));
+
+  auto* search = model.GetOrCreate<IntegerSearchHelper>();
+  search->TakeDecision(
+      Literal(search->GetDecisionLiteral(BooleanOrIntegerLiteral(
+          IntegerLiteral::LowerOrEqual(w, IntegerValue(10))))));
 
   // Lets add a relation.
-  tested->AddRelationBounds(expr, IntegerValue(-5), IntegerValue(5));
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(5));
+  root_bounds->Add(expr, IntegerValue(-5), IntegerValue(5));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(5));
 
   // Note that we canonicalize with gcd.
   expr.coeffs[0] *= 3;
   expr.coeffs[1] *= 3;
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(15));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(15));
 
   // Lets add an affine upper bound to that expression <= 4 * z + 1.
-  EXPECT_TRUE(tested->AddAffineUpperBound(
+  EXPECT_TRUE(lin3_bounds->AddAffineUpperBound(
       expr, AffineExpression(z, IntegerValue(4), IntegerValue(1))));
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(9));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(9));
 
   // Lets test the reason, first push a new bound.
-  auto* search = model.GetOrCreate<IntegerSearchHelper>();
   search->TakeDecision(
       Literal(search->GetDecisionLiteral(BooleanOrIntegerLiteral(
           IntegerLiteral::LowerOrEqual(z, IntegerValue(1))))));
 
   // Because of gcd, even though ub(affine) is now 5, we get 3,
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(3));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(3));
   {
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(4),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(4),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason,
@@ -1091,7 +1167,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   {
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(9),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(9),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason,
@@ -1101,7 +1177,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
     // This is implied by the level zero relation x <= 5
     std::vector<Literal> literal_reason;
     std::vector<IntegerLiteral> integer_reason;
-    tested->AddReasonForUpperBoundLowerThan(expr, IntegerValue(15),
+    bounds->AddReasonForUpperBoundLowerThan(expr, IntegerValue(15),
                                             &literal_reason, &integer_reason);
     EXPECT_THAT(literal_reason, ElementsAre());
     EXPECT_THAT(integer_reason, ElementsAre());
@@ -1110,7 +1186,7 @@ TEST(BinaryRelationMapsTest, AffineUpperBound) {
   // Note that the bound works on the canonicalized expr.
   expr.coeffs[0] /= 3;
   expr.coeffs[1] /= 3;
-  EXPECT_EQ(tested->UpperBound(expr), IntegerValue(1));
+  EXPECT_EQ(bounds->UpperBound(expr), IntegerValue(1));
 }
 
 }  // namespace

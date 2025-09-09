@@ -24,6 +24,7 @@ cc_binary(
     deps = [
         ":file_format_flags",
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/math_opt:parameters_cc_proto",
         "//ortools/math_opt/core:solver_interface",
@@ -70,7 +71,6 @@ cc_library(
     srcs = ["file_format_flags.cc"],
     hdrs = ["file_format_flags.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",

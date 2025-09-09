@@ -15,6 +15,7 @@ const SUPPORTED_SOLVER_TYPES = [
     SolverType.SOLVER_TYPE_UNSPECIFIED,
     SolverType.SOLVER_TYPE_GLOP,
     SolverType.SOLVER_TYPE_CP_SAT,
+    SolverType.SOLVER_TYPE_PDLP,
 ]
 
 const NON_GOOGLE_SOLVER_WARNING = """
@@ -36,7 +37,9 @@ const ZERO_ONE_CONSTRAINT_KEY = "zero_one"
 
   # Solver Type
 
-  By default, the optimizer will use the `GLOP` solver.
+  By default, the solver type is `SOLVER_TYPE_UNSPECIFIED`.
+
+  TODO: b/435482716 - Add support for solver specific Optimizers.
 """
 mutable struct Optimizer <: MOI.AbstractOptimizer
     solver_type::SolverType.T
@@ -55,11 +58,24 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     solve_result::Union{SolveResultProto,Nothing}
 
     # Constructor with optional parameters
-    function Optimizer(;
-        model_name::String = "",
-        solver_type::SolverType.T = SolverType.SOLVER_TYPE_GLOP,
-        parameters::Union{SolveParameters,Nothing} = SolveParameters(),
-    )
+    function Optimizer(;kwargs...)
+        model_name = ""
+        solver_type = SolverType.SOLVER_TYPE_UNSPECIFIED
+        parameters = SolveParameters()
+
+        param_keys = keys(kwargs)
+
+        if :model_name in param_keys
+            model_name = kwargs[:model_name]
+        end
+        if :solver_type in param_keys
+            solver_type = kwargs[:solver_type]
+        end
+        if :parameters in param_keys
+            parameters = kwargs[:parameters]
+        end
+
+
         if !in(solver_type, SUPPORTED_SOLVER_TYPES)
             @warn NON_GOOGLE_SOLVER_WARNING
         end
@@ -97,13 +113,50 @@ function setproperty!(model::Optimizer, field::Symbol, value)
     return nothing
 end
 
+"""
+  An optimizer that uses Glop as the underlying solver.
+"""
+struct GlopOptimizer
+    function GlopOptimizer(;kwargs...)
+        return Optimizer(;solver_type = SolverType.SOLVER_TYPE_GLOP, kwargs...)
+    end
+end
+
+"""
+  An optimizer that uses CP-SAT as the underlying solver.
+  This optimizer currently uses MathOpt as the underlying interface.
+
+  TODO: b/436879803 - return a different instance once the CPModelProto is implemented.
+"""
+struct CPSatOptimizer
+    function CPSatOptimizer(;kwargs...)
+        return Optimizer(;solver_type = SolverType.SOLVER_TYPE_CP_SAT, kwargs...)
+    end
+end
+
+"""
+    An optimizer that uses PDLP as the underlying solver.
+    This optimizer currently uses MathOpt as the underlying interface.
+
+    TODO: b/436879979 - return a different instance once the PDLP interface is implemented.
+"""
+struct PDLPOptimizer
+    function PDLPOptimizer(;kwargs...)
+        return Optimizer(;solver_type = SolverType.SOLVER_TYPE_PDLP, kwargs...)
+    end
+end
+
+
 function MOI.empty!(model::Optimizer)
-    model.solver_type = SolverType.SOLVER_TYPE_UNSPECIFIED
-    model.model = nothing
-    model.parameters = nothing
+    model.model = Model()
     # Clear the related metadata
     model.constraint_types_present = Set{Tuple{Type,Type}}()
-    model.constraint_indices_dict = Dict()
+    model.constraint_indices_dict = Dict(
+        SCALAR_SET_WITH_VARIABLE_INDEX_CONSTRAINT_KEY => [],
+        SCALAR_SET_WITH_SCALAR_FUNCTION_CONSTRAINT_KEY => [],
+        INTEGER_CONSTRAINT_KEY => [],
+        ZERO_ONE_CONSTRAINT_KEY => [],
+    )
     model.objective_set = false
     model.solve_result = nothing
 
@@ -111,18 +164,49 @@ function MOI.empty!(model::Optimizer)
 end
 
 function MOI.is_empty(model::Optimizer)
-    return isnothing(model.model) &&
-           isnothing(model.parameters) &&
-           model.solver_type == SolverType.SOLVER_TYPE_UNSPECIFIED &&
+    return isempty(model.model) &&
            !model.objective_set &&
            isnothing(model.solve_result)
 end
+
+function Base.isempty(model::Model)
+    # A model with default values is considered empty.
+    return isnothing(model) || (encoded_model_size(model) == encoded_model_size(Model()))
+end
+
+function Base.isempty(parameters::SolveParameters)
+    # A SolveParameters with default values is considered empty.
+    return isnothing(parameters) || (
+        encoded_parameters_size(parameters) == encoded_parameters_size(SolveParameters())
+    )
+end
+
+# Solver Type attribute
+# NB: Despite this attribute being an optimizer attribute, to allow for the use of
+# MOI.default_copy_to method during the optimize! call, the attribute is defined as
+# an AbstractModelAttribute. Using an AbstractOptimizerAttribute will require the
+# re-implementation of calling MOI.copy_to to allow for the copying of optimizer attributes.
+struct BaseSolverType <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::BaseSolverType) = SolverType.T
+
+function MOI.set(model::Optimizer, ::BaseSolverType, solver_type::SolverType.T)
+    optionally_initialize_model_and_parameters!(model)
+
+    model.solver_type = solver_type
+
+    return nothing
+end
+
+function MOI.get(model::Optimizer, ::BaseSolverType)
+    return model.solver_type
+end
+
+MOI.supports(model::Optimizer, ::BaseSolverType) = true
 
 """
 TODO: b/384496265 - implement Base.summary(::IO, ::Optimizer) 
 to print a nice string when someone shows your model
 """
-
 function MOI.get(model::Optimizer, ::MOI.SolverName)
     return "$(model.solver_type)"
 end
@@ -149,12 +233,9 @@ end
 
 MOI.supports(model::Optimizer, ::MOI.Name) = true
 
-
 function optionally_initialize_model_and_parameters!(model::Optimizer)::Nothing
     if MOI.is_empty(model)
-        model.solver_type = SolverType.SOLVER_TYPE_UNSPECIFIED
         model.model = Model()
-        model.parameters = SolveParameters()
         # Re-initailize the associated metadata.
         # TODO: b/392072219 - use emtpy! to do this after resolving this bug.
         model.constraint_indices_dict = Dict(
@@ -831,7 +912,7 @@ internal fields split by the `PARAM_SPLITTER` and the solver name. For example,
 `gscip_parameters.preprocessing` should be passed as `gscip__preprocessing`.
 """
 function MOI.get(model::Optimizer, param::MOI.RawOptimizerAttribute)
-    if !MOI.is_empty(model) && !isnothing(model.parameters)
+    if !isnothing(model.parameters)
         param_name = param.name
 
         if contains(param_name, PARAM_SPLITTER)
@@ -882,9 +963,13 @@ function MOI.get(model::Optimizer, ::MOI.ListOfModelAttributesSet)
         push!(model_attributes_set, MOI.Name())
     end
 
+    solver_type = MOI.get(model, BaseSolverType())
+    if solver_type != SolverType.SOLVER_TYPE_UNSPECIFIED
+        push!(model_attributes_set, BaseSolverType())
+    end
+
     return model_attributes_set
 end
-
 
 """
 
@@ -1885,6 +1970,12 @@ function MOI.supports(
 end
 
 function MOI.optimize!(model::Optimizer)
+    # If the solver type is not specified, set it to GLOP by default.
+    if model.solver_type == SolverType.SOLVER_TYPE_UNSPECIFIED
+        @error "The solver type is not specified. Please specify a solver type.\nYou can do so when building an `Optimizer` object or by setting the `BaseSolverType` attribute.\nFor instance: `Optimizer(solver_type=ORTools.SolverType.SOLVER_TYPE_CP_SAT)`.\nWith JuMP, you can do the following: `Model(() -> ORTools.Optimizer(solver_type=ORTools.SolverType.SOLVER_TYPE_CP_SAT))`."
+        return
+    end
+
     status_msg = Ref(pointer(zeros(Int8, 1)))
 
     # Serialize the model
@@ -1924,6 +2015,8 @@ function MOI.optimize!(model::Optimizer)
 
     return nothing
 end
+
+MOI.supports_incremental_interface(model::Optimizer) = true
 
 function MOI.get(model::Optimizer, ::MOI.RawStatusString)::String
     if !isnothing(model) && !isnothing(model.solve_result)
@@ -2084,4 +2177,758 @@ function MOI.get(model::Optimizer, attr::DualObjectiveBound)
     end
 
     return model.solve_result.termination.objective_bounds.dual_bound
+end
+
+function MOI.get(model::Optimizer, ::MOI.ResultCount)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return length(model.solve_result.solutions)
+end
+
+# TODO: b/428754197 - assess if we need this custom error or if a generic one can be used.
+"""
+Error thrown when there's an attempt to retrieved the VariablePrimal value
+when the model or solve_result value is `nothing` or when the primal_status
+is NO_SOLUTION.
+"""
+struct GetVariablePrimalNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, index::MOI.VariableIndex)
+    if isnothing(model)
+        throw(
+            GetVariablePrimalNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetVariablePrimalNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.PrimalStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetVariablePrimalNotAllowed(
+                "Cannot retrieve VariablePrimal as no primal solution was found when optimizing the defined model.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    variable_value_idx = findfirst(
+        isequal(index.value),
+        model.solve_result.solutions[attr.result_index].primal_solution.variable_values.ids,
+    )
+    return model.solve_result.solutions[attr.result_index].primal_solution.variable_values.values[variable_value_idx]
+end
+
+# TODO: b/428754197 - assess if we need this custom error or if a generic one can be used.
+"""
+Error thrown when there's an attempt to retrieved the objective value
+when the model or solve_result value is `nothing` or when the primal_status
+is NO_SOLUTION.
+"""
+struct GetObjectiveValueNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(model::Optimizer, attr::MOI.ObjectiveValue)
+    if isnothing(model)
+        throw(
+            GetObjectiveValueNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetObjectiveValueNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.PrimalStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetObjectiveValueNotAllowed(
+                "Cannot retrieve objective value as no primal solution was found when optimizing the defined model.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    return model.solve_result.solutions[attr.result_index].primal_solution.objective_value
+end
+
+# TODO: b/428758462 - offer better documentation for this attribute.
+"""
+Feasibility status of the primal solution according to the underlying solver.
+This attribute indicates whether the solution is feasible in case of an early termination.
+"""
+struct FeasibilityStatus <: MOI.AbstractOptimizerAttribute
+    result_index::Int
+    FeasibilityStatus() = new(1)
+    FeasibilityStatus(result_index::Int) = new(result_index)
+end
+MOI.attribute_value_type(::FeasibilityStatus) = MOI.ResultStatusCode
+
+function MOI.get(model::Optimizer, attr::FeasibilityStatus)::MOI.ResultStatusCode
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.NO_SOLUTION
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    solution_status =
+        model.solve_result.solutions[attr.result_index].primal_solution.feasibility_status
+    # TODO: b/428760341 - move this mapping to its own function.
+    if solution_status == SolutionStatusProto.SOLUTION_STATUS_FEASIBLE
+        return MOI.FEASIBLE_POINT
+    elseif solution_status == SolutionStatusProto.SOLUTION_STATUS_INFEASIBLE
+        return MOI.INFEASIBLE_POINT
+    elseif solution_status == SolutionStatusProto.SOLUTION_STATUS_UNDETERMINED
+        return MOI.UNKNOWN_RESULT_STATUS
+    else
+        # For SolutionStatusProto.SOLUTION_STATUS_UNSPECIFIED
+        # A guard value representing no status.
+        return MOI.NO_SOLUTION
+    end
+end
+
+"""
+Error thrown when there's an attempt to retrieved the ConstraintDual value
+when the model or solve_result value is `nothing` or when the dual_status
+is NO_SOLUTION.
+"""
+struct GetConstraintDualNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintDual,
+    index::MOI.ConstraintIndex{MOI.VariableIndex,<:S},
+) where {S<:SCALAR_SET}
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(
+            GetConstraintDualNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetConstraintDualNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetVariableDualNotAllowed(
+                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    constraint_index = findfirst(
+        isequal(index.value),
+        model.solve_result.solutions[attr.result_index].dual_solution.dual_values.ids,
+    )
+    return model.solve_result.solutions[attr.result_index].dual_solution.dual_values.values[constraint_index]
+end
+
+"""
+A solution to the dual of an optimization problem.
+
+This attribute is used to get the variable's reduced cost from the dual solution.
+"""
+struct VariableReducedCost <: MOI.AbstractVariableAttribute
+    result_index::Int
+    VariableReducedCost() = new(1)
+    VariableReducedCost(result_index::Int) = new(result_index)
+end
+MOI.attribute_value_type(::VariableReducedCost) = Real
+
+"""
+Error thrown when there's an attempt to retrieved the VariableReducedCost value
+when the model or solve_result value is `nothing` or when the dual_status
+is NO_SOLUTION.
+"""
+struct GetVariableReducedCostNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(model::Optimizer, attr::VariableReducedCost, index::MOI.VariableIndex)
+    if isnothing(model)
+        throw(
+            GetVariableReducedCostNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetVariableReducedCostNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetVariableDualNotAllowed(
+                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    variable_index = findfirst(
+        isequal(index.value),
+        model.solve_result.solutions[attr.result_index].dual_solution.reduced_costs.ids,
+    )
+    return model.solve_result.solutions[attr.result_index].dual_solution.reduced_costs.values[variable_index]
+end
+
+"""
+Error thrown when there's an attempt to retrieve the DualObjectiveValue value
+when the model or solve_result value is `nothing` or when the dual_status
+is NO_SOLUTION.
+"""
+struct GetDualObjectiveValueNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(model::Optimizer, attr::MOI.DualObjectiveValue)
+    if isnothing(model)
+        throw(
+            GetDualObjectiveValueNotAllowed(
+                "No model exists. Initialize the model and call optimize! afterwards before calling this function.",
+            ),
+        )
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetDualObjectiveValueNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.DualStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetVariableDualNotAllowed(
+                "Cannot retrieve VariableDual as no dual solution was found when optimizing the defined model.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    return model.solve_result.solutions[attr.result_index].dual_solution.objective_value
+end
+
+"""
+Feasibility status of the dual solution.
+"""
+struct DualSolutionStatus <: MOI.AbstractOptimizerAttribute
+    result_index::Int
+    DualSolutionStatus() = new(1)
+    DualSolutionStatus(result_index::Int) = new(result_index)
+end
+MOI.attribute_value_type(::DualSolutionStatus) = MOI.ResultStatusCode
+
+function MOI.get(model::Optimizer, attr::DualSolutionStatus)::MOI.ResultStatusCode
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.NO_SOLUTION
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    dual_status =
+        model.solve_result.solutions[attr.result_index].dual_solution.feasibility_status
+
+    if dual_status == SolutionStatusProto.SOLUTION_STATUS_FEASIBLE
+        return MOI.FEASIBLE_POINT
+    elseif dual_status == SolutionStatusProto.SOLUTION_STATUS_INFEASIBLE
+        return MOI.INFEASIBLE_POINT
+    elseif dual_status == SolutionStatusProto.SOLUTION_STATUS_UNDETERMINED
+        return MOI.UNKNOWN_RESULT_STATUS
+    else
+        # For DualSolutionStatusProto.SOLUTION_STATUS_UNSPECIFIED
+        # A guard value representing no status.
+        return MOI.NO_SOLUTION
+    end
+end
+
+# TODO: b/428759950 - assess what happens when querying basis status for solver
+# that doesn't support the simplex method.
+"""
+Error thrown when the returned BasisStatusProto is BASIS_STATUS_UNSPECIFIED which
+is just a guard value representing no status and has no mapping to the statuses
+exposed through MOI.BasisStatusCode.
+"""
+struct UnsupportedBasisStatus <: MOI.UnsupportedError
+    message::String
+end
+
+function get_MOI_basis_status(basis_status_proto::BasisStatusProto.T)::MOI.BasisStatusCode
+    if basis_status_proto == BasisStatusProto.BASIS_STATUS_BASIC
+        return MOI.BASIC
+    elseif basis_status_proto == BasisStatusProto.BASIS_STATUS_AT_UPPER_BOUND
+        return MOI.NONBASIC_AT_UPPER
+    elseif basis_status_proto == BasisStatusProto.BASIS_STATUS_AT_LOWER_BOUND
+        return MOI.NONBASIC_AT_LOWER
+    elseif basis_status_proto == BasisStatusProto.BASIS_STATUS_FIXED_VALUE
+        return MOI.NONBASIC
+    elseif basis_status_proto == BasisStatusProto.BASIS_STATUS_FREE
+        return MOI.SUPER_BASIC
+    else
+        # For BasisStatusProto.BASIS_STATUS_UNSPECIFIED
+        throw(
+            UnsupportedBasisStatus(
+                "Unsupported BasisStatusProto value: $basis_status_proto",
+            ),
+        )
+    end
+end
+
+"""
+Error thrown when there's an attempt to retrieved the VariableBasisStatus value
+when the model or solve_result value is `nothing` or when the primal_status
+is NO_SOLUTION.
+"""
+struct GetVariableBasisStatusNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(model::Optimizer, attr::MOI.VariableBasisStatus, index::MOI.VariableIndex)
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(
+            GetVariableBasisStatusNotAllowed(
+                "model or solve_result value is `nothing`. Initialize the model or call optimize! on an initialized model.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.PrimalStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetVariableBasisStatusNotAllowed(
+                "Cannot retrieve VariableBasisStatus as no primal solution was found.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    variable_index = findfirst(
+        isequal(index.value),
+        model.solve_result.solutions[attr.result_index].basis.variable_status.ids,
+    )
+    basis_status =
+        model.solve_result.solutions[attr.result_index].basis.variable_status.values[variable_index]
+
+    return get_MOI_basis_status(basis_status)
+end
+
+
+"""
+Error thrown when there's an attempt to retrieved the ConstraintBasisStatus value
+when the model or solve_result value is `nothing` or when the primal_status
+is NO_SOLUTION.
+"""
+struct GetConstraintBasisStatusNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+function MOI.get(
+    model::Optimizer,
+    attr::MOI.ConstraintBasisStatus,
+    index::MOI.ConstraintIndex{MOI.VariableIndex,S},
+) where {S<:SCALAR_SET}
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(
+            GetConstraintBasisStatusNotAllowed(
+                "model or solve_result value is `nothing`. Initialize the model or call optimize! on an initialized model.",
+            ),
+        )
+    end
+
+    if MOI.get(model, MOI.PrimalStatus()) == MOI.NO_SOLUTION
+        throw(
+            GetConstraintBasisStatusNotAllowed(
+                "Cannot retrieve ConstraintBasisStatus as no primal solution was found.",
+            ),
+        )
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    constraint_index = findfirst(
+        isequal(index.value),
+        model.solve_result.solutions[attr.result_index].basis.constraint_status.ids,
+    )
+    basis_status =
+        model.solve_result.solutions[attr.result_index].basis.constraint_status.values[constraint_index]
+
+    return get_MOI_basis_status(basis_status)
+end
+
+"""
+This is an advanced feature used by MathOpt to characterize feasibility of
+suboptimal LP solutions (optimal solutions will always have status
+SOLUTION_STATUS_FEASIBLE (MOI.FEASIBLE_POINT)).
+
+For single-sided LPs it should be equal to the feasibility status of the
+associated dual solution. For two-sided LPs it may be different in some
+edge cases (e.g. incomplete solves with primal simplex).
+
+If you are providing a starting basis via
+ModelSolveParametersProto.initial_basis, this value is ignored. It is only
+relevant for the basis returned by SolutionProto.basis.
+"""
+struct BasicDualFeasibilityStatus <: MOI.AbstractOptimizerAttribute
+    result_index::Int
+    BasicDualFeasibilityStatus() = new(1)
+    BasicDualFeasibilityStatus(result_index::Int) = new(result_index)
+end
+MOI.attribute_value_type(::BasicDualFeasibilityStatus) = MOI.ResultStatusCode
+
+function MOI.get(model::Optimizer, attr::BasicDualFeasibilityStatus)
+    if isnothing(model) || isnothing(model.solve_result)
+        return MOI.NO_SOLUTION
+    end
+
+    MOI.check_result_index_bounds(model, attr)
+
+    if dual_status == SolutionStatusProto.SOLUTION_STATUS_FEASIBLE
+        return MOI.FEASIBLE_POINT
+    elseif dual_status == SolutionStatusProto.SOLUTION_STATUS_INFEASIBLE
+        return MOI.INFEASIBLE_POINT
+    elseif dual_status == SolutionStatusProto.SOLUTION_STATUS_UNDETERMINED
+        return MOI.UNKNOWN_RESULT_STATUS
+    else
+        # For DualSolutionStatusProto.SOLUTION_STATUS_UNSPECIFIED
+        # A guard value representing no status.
+        return MOI.NO_SOLUTION
+    end
+end
+
+function MOI.get(model::Optimizer, ::MOI.SolveTimeSec)
+    if isnothing(model) || isnothing(model.solve_result)
+        return NaN
+    end
+
+    sec = model.solve_result.solve_stats.solve_time.seconds
+    nanos = model.solve_result.solve_stats.solve_time.nanos
+    return sec + (nanos / 1e9)
+end
+
+function MOI.get(model::Optimizer, ::MOI.SimplexIterations)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return model.solve_result.solve_stats.simplex_iterations
+end
+
+function MOI.get(model::Optimizer, ::MOI.BarrierIterations)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return model.solve_result.solve_stats.barrier_iterations
+end
+
+function MOI.get(model::Optimizer, ::MOI.NodeCount)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return model.solve_result.solve_stats.node_count
+end
+
+"""
+Attributes that returns the nummber of first order iterations.
+"""
+struct FirstOrderIterations <: MOI.AbstractOptimizerAttribute end
+
+MOI.attribute_value_type(::FirstOrderIterations) = Int
+
+function MOI.get(model::Optimizer, ::FirstOrderIterations)::Int
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return model.solve_result.solve_stats.first_order_iterations
+end
+
+"""
+Attribute used to retrieve the size of the primal ray vector.
+"""
+struct PrimalRaysSize <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::PrimalRaysSize) = Int
+
+function MOI.get(model::Optimizer, ::PrimalRaysSize)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    return length(model.solve_result.primal_rays)
+end
+
+"""
+Error thrown when GetPrimalRay is called but either the model is not initialized
+or the optimize! method has not been called.
+"""
+struct GetPrimalRayNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+"""
+Attribute used to retrieve a `PrimalRay` by index.
+A value is returned if the result_index is in the range [1, PrimalRaysSize].
+"""
+struct PrimalRay <: MOI.AbstractOptimizerAttribute
+    result_index::Int
+    PrimalRay() = new(1)
+    PrimalRay(result_index::Int) = new(result_index)
+end
+MOI.attribute_value_type(::PrimalRay) = Real
+
+function MOI.get(model::Optimizer, attr::PrimalRay, index::MOI.VariableIndex)
+    if isnothing(model)
+        throw(GetPrimalRayNotAllowed("No model exists. Initialize the model
+            and call optimize! afterwards before calling this function."))
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetPrimalRayNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    primal_ray_size = MOI.get(model, PrimalRaysSize())
+    if !(1 <= attr.result_index <= primal_ray_size)
+        throw(GetPrimalRayNotAllowed("result_index is out of bounds.
+            Valid values are in the range [1, PrimalRaysSize]."))
+    end
+
+    variable_index = findfirst(
+        isequal(index.value),
+        model.solve_result.primal_rays[attr.result_index].variable_values.ids,
+    )
+
+    if isnothing(variable_index)
+        throw(
+            GetPrimalRayNotAllowed(
+                "Variable with the passed index not found in the primal ray.",
+            ),
+        )
+    end
+
+    return model.solve_result.primal_rays[attr.result_index].variable_values.values[variable_index]
+end
+
+"""
+Attribute used to retrieve the number of the dual_ray vectors.
+"""
+struct DualRaySize <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::DualRaySize) = Int
+
+function MOI.get(model::Optimizer, attr::DualRaySize)
+    if isnothing(model) || isnothing(model.solve_result)
+        return 0
+    end
+
+    # TODO: b/428836099 - Maybe throw an error for CP-SAT as it will never return a ray.
+    return length(model.solve_result.dual_rays)
+end
+
+"""
+Error thrown when DualRay() is called but either the model is not initialized
+or the optimize! method has not been called.
+"""
+struct GetDualRayNotAllowed <: MOI.NotAllowedError
+    message::String
+end
+
+"""
+Attribute used to retrieve a DualRay by index.
+A value is returned if the result_index is in the range [1, DualRayDualValuesSize]
+"""
+struct DualRay <: MOI.AbstractOptimizerAttribute
+    result_index::Int
+    DualRay() = new(1)
+    DualRay(result_index::Int) = new(result_index)
+end
+
+"""
+Specifying the index as a `VariableIndex` attempts to retrieve a value from the `reduced_costs`
+vector from the respective DualRayProto instance. The value retrieved, if present, is the one 
+associated with the variable index.
+"""
+function MOI.get(model::Optimizer, attr::DualRay, index::MOI.VariableIndex)
+    if isnothing(model)
+        throw(GetDualRayNotAllowed("No model exists. Initialize the model
+            and call optimize! afterwards before calling this function."))
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetDualRayNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    dual_ray_size = MOI.get(model, attr::DualRaySize)
+    if !(1 <= attr.result_index <= dual_ray_size)
+        throw(GetDualRayNotAllowed("result_index is out of bounds.
+            Valid values are in the range [1, DualRaySize]."))
+    end
+
+    variable_index = findfirst(
+        isequal(index.value),
+        model.solve_result.dual_rays[attr.result_index].reduced_costs.ids,
+    )
+
+    if isnothing(variable_index)
+        throw(
+            GetPrimalRayNotAllowed(
+                "Variable with the passed index not found in the dual ray reduced costs.",
+            ),
+        )
+    end
+
+    return model.solve_result.dual_rays[attr.result_index].reduced_costs.values[variable_index]
+end
+
+"""
+Specifying the index as a `ConstraintIndex` attempts to retrieve a value from the `dual_values`
+vector from the respective DualRayProto instance. The value retrieved, if present, is the one 
+associated with the constraint index. The allowable set of constraint indices are those that are
+linear constraints.
+"""
+function MOI.get(
+    model::Optimizer,
+    attr::DualRay,
+    index::MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S},
+) where {T<:Real,S<:SCALAR_SET}
+    if isnothing(model)
+        throw(GetDualRayNotAllowed("No model exists. Initialize the model
+            and call optimize! afterwards before calling this function."))
+    end
+
+    if isnothing(model.solve_result)
+        throw(
+            GetDualRayNotAllowed(
+                "Call optimize! on your model before calling this function.",
+            ),
+        )
+    end
+
+    dual_ray_size = MOI.get(model, attr::DualRaySize)
+    if !(1 <= attr.result_index <= dual_ray_size)
+        throw(GetDualRayNotAllowed("result_index is out of bounds.
+            Valid values are in the range [1, DualRaySize]."))
+    end
+
+    constraint_index = findfirst(
+        isequal(index.value),
+        model.solve_result.dual_rays[attr.result_index].dual_values.ids,
+    )
+
+    if isnothing(constraint_index)
+        throw(
+            GetDualRayNotAllowed(
+                "Constraint with the passed index not found in the dual ray dual values.",
+            ),
+        )
+    end
+
+    return model.solve_result.dual_rays[attr.result_index].dual_values.values[constraint_index]
+end
+
+"""
+Attibute that returns the `GScipOutput` as part of the solve result.
+"""
+struct GScipOutputAttribute <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::GScipOutputAttribute) = Union{Nothing,GScipOutput}
+
+function MOI.get(model::Optimizer, attr::GScipOutputAttribute)
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(MOI.GetAttributeNotAllowed(attr))
+    end
+
+    if (model.solver_type != SolverType.SOLVER_TYPE_GSCIP)
+        throw(error("GScipOutputAttribute is only supported for the GSCIP solver"))
+    end
+
+    solver_specific_output = model.solve_result.solver_specific_output
+
+    if isnothing(solver_specific_output) ||
+        solver_specific_output.name != :gscip_output
+        return nothing
+    end
+
+    return solver_specific_output.value
+end
+
+function MOI.get(model::MOI.Utilities.CachingOptimizer, attr::GScipOutputAttribute)
+    return MOI.get(unsafe_backend(model), attr)
+end
+
+"""
+Attribute that returns the `PdlpOutput` as part of the solve result.
+"""
+struct PdlpOutputAttribute <: MOI.AbstractOptimizerAttribute end
+MOI.attribute_value_type(::PdlpOutputAttribute) = Union{Nothing,PdlpOutput}
+
+function MOI.get(model::Optimizer, attr::PdlpOutputAttribute)
+    if isnothing(model) || isnothing(model.solve_result)
+        throw(MOI.GetAttributeNotAllowed(attr))
+    end
+
+    if (model.solver_type != SolverType.SOLVER_TYPE_PDLP)
+        throw(error("PdlpOutputAttribute is only supported for the PDLP solver"))
+    end
+
+    solver_specific_output = model.solve_result.solver_specific_output
+
+    if isnothing(solver_specific_output) ||
+        solver_specific_output.name != :pdlp_output
+        return nothing
+    end
+
+    return solver_specific_output.value
+end
+
+function MOI.get(model::MOI.Utilities.CachingOptimizer, attr::PdlpOutputAttribute)
+    return MOI.get(unsafe_backend(model), attr)
+end
+
+function unsafe_backend(model::MOI.Utilities.CachingOptimizer)
+    return model.optimizer.model
 end

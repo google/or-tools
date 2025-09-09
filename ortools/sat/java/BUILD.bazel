@@ -15,11 +15,11 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_jvm_external//:defs.bzl", "artifact")
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "sat",
-    src = "sat.i",
+    srcs = ["sat.swig"],
     java_deps = [
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
@@ -29,9 +29,9 @@ ortools_java_wrap_cc(
     package = "com.google.ortools.sat",
     swig_includes = [
         "//ortools/base:base_swig",
-        "//ortools/util/java:proto_swig",
-        "//ortools/util/java:sorted_interval_list_swig",
-        "//ortools/util/java:vector_swig",
+        "//ortools/util/java:proto.i",
+        "//ortools/util/java:sorted_interval_list.swig",
+        "//ortools/util/java:vector.swig",
     ],
     use_directors = True,
     visibility = ["//visibility:public"],

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_MODEL_H_
-#define OR_TOOLS_FLATZINC_MODEL_H_
+#ifndef ORTOOLS_FLATZINC_MODEL_H_
+#define ORTOOLS_FLATZINC_MODEL_H_
 
 #include <cstdint>
 #include <map>
@@ -23,7 +23,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -109,6 +108,7 @@ struct Domain {
   bool display_as_boolean = false;
   // Indicates if the domain was created as a set domain.
   bool is_a_set = false;
+  bool is_fixed_set = false;
   // Float domain.
   bool is_float = false;
   std::vector<double> float_values;
@@ -349,7 +349,7 @@ class Model {
   // The objects returned by AddVariable(), AddConstant(),  and AddConstraint()
   // are owned by the model and will remain live for its lifetime.
   Variable* AddVariable(absl::string_view name, const Domain& domain,
-                        bool defined);
+                        bool defined, bool set_is_fixed = false);
   Variable* AddConstant(int64_t value);
   Variable* AddFloatConstant(double value);
   // Creates and add a constraint to the model.
@@ -444,4 +444,4 @@ void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
 }  // namespace fz
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_MODEL_H_
+#endif  // ORTOOLS_FLATZINC_MODEL_H_

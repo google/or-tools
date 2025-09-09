@@ -41,10 +41,10 @@
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/constraint_solver/constraint_solver.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
+#include "ortools/routing/routing.h"
 #include "ortools/util/random_engine.h"
 
 ABSL_FLAG(int, tsp_size, 10, "Size of Traveling Salesman Problem instance.");
@@ -61,7 +61,7 @@ ABSL_FLAG(std::string, routing_search_parameters,
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-namespace operations_research {
+namespace operations_research::routing {
 
 // Random seed generator.
 int32_t GetSeed() {
@@ -130,8 +130,8 @@ void Tsp() {
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
-    // has the following signature: ResultCallback2<int64_t, int64_t, int64_t>.
-    // The two arguments are the from and to node indices.
+    // is of type `std::function<int64_t(int64_t, int64_t)>` and the two
+    // arguments are the from and to node indices.
     RandomMatrix matrix(absl::GetFlag(FLAGS_tsp_size));
     if (absl::GetFlag(FLAGS_tsp_use_random_matrix)) {
       matrix.Initialize();
@@ -187,13 +187,13 @@ void Tsp() {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 int main(int argc, char** argv) {
   absl::InitializeLog();
   absl::EnableLogPrefix(false);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   absl::ParseCommandLine(argc, argv);
-  operations_research::Tsp();
+  operations_research::routing::Tsp();
   return EXIT_SUCCESS;
 }

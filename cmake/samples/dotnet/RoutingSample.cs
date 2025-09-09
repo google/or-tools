@@ -15,6 +15,7 @@ using System;
 using Xunit;
 
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 namespace Google.OrTools.Tests
 {
@@ -45,8 +46,7 @@ public class RoutingSolverTest
             GC.Collect();
         }
         // Setting first solution heuristic.
-        RoutingSearchParameters searchParameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters searchParameters = RoutingGlobals.DefaultRoutingSearchParameters();
         searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
         Assignment solution = routing.SolveWithParameters(searchParameters);
         // 0 --(+1)-> 1 --(+1)-> 2 --(+1)-> 3 --(+1)-> 4 --(+4)-> 0 := +8

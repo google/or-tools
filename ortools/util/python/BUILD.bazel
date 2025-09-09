@@ -11,12 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for sorted_interval_list.
+# Description: python wrapping of (some of) the code in ../, plus
+# some generic utilities for SWIG python.
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 cc_library(
     name = "sorted_interval_list_doc",
@@ -38,9 +40,88 @@ pybind_extension(
 py_test(
     name = "sorted_interval_list_test",
     srcs = ["sorted_interval_list_test.py"],
-    python_version = "PY3",
     deps = [
         ":sorted_interval_list",
+        requirement("absl-py"),
+    ],
+)
+
+cc_library(
+    name = "py_solve_interrupter_lib",
+    srcs = ["py_solve_interrupter.cc"],
+    hdrs = ["py_solve_interrupter.h"],
+    # This library is not meant to be consumed end users; only by C++ code of
+    # Clif libraries that needs a SolverInterrupter.
+    visibility = [
+        "//ortools/math_opt/core/python:__subpackages__",
+        "//ortools/math_opt/python:__subpackages__",
+    ],
+    deps = [
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "py_solve_interrupter_testing_lib",
+    testonly = True,
+    srcs = ["py_solve_interrupter_testing.cc"],
+    hdrs = ["py_solve_interrupter_testing.h"],
+    deps = [
+        ":py_solve_interrupter_lib",
+        "@abseil-cpp//absl/base:nullability",
+    ],
+)
+
+pybind_extension(
+    name = "pybind_solve_interrupter",
+    srcs = ["pybind_solve_interrupter.cc"],
+    # This library is not meant to be consumed end users; only pybind11 code
+    # that needs a SolverInterrupter.
+    visibility = [
+        "//ortools/math_opt/core/python:__subpackages__",
+    ],
+    deps = [":py_solve_interrupter_lib"],
+)
+
+pybind_extension(
+    name = "pybind_solve_interrupter_testing",
+    testonly = True,
+    srcs = ["pybind_solve_interrupter_testing.cc"],
+    deps = [":py_solve_interrupter_testing_lib"],
+)
+
+py_test(
+    name = "pybind_solve_interrupter_test",
+    srcs = ["pybind_solve_interrupter_test.py"],
+    deps = [
+        ":pybind_solve_interrupter",
+        ":pybind_solve_interrupter_testing",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "solve_interrupter",
+    srcs = ["solve_interrupter.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":py_solve_interrupter_lib",
+        ":pybind_solve_interrupter",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "solve_interrupter_test",
+    srcs = ["solve_interrupter_test.py"],
+    deps = [
+        ":py_solve_interrupter_testing_lib",
+        ":pybind_solve_interrupter_testing",
+        ":solve_interrupter",
         requirement("absl-py"),
     ],
 )

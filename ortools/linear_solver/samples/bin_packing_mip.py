@@ -16,6 +16,7 @@
 # [START program]
 # [START import]
 from ortools.linear_solver import pywraplp
+
 # [END import]
 
 
@@ -30,6 +31,7 @@ def create_data_model():
     data["bins"] = data["items"]
     data["bin_capacity"] = 100
     return data
+
 
 # [END data_model]
 

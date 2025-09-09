@@ -593,7 +593,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       const Literal prev_decision =
           sat_solver->Decisions()[sat_solver->CurrentDecisionLevel() - 1]
               .literal;
-      const auto& list =
+      const absl::Span<const Literal> list =
           implication_graph->Implications(prev_decision.Negated());
       const int saved_queue_size = queue.size();
       for (const Literal l : list) {
@@ -658,7 +658,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
     } else if (next_decision == kNoLiteralIndex) {
       const int level = sat_solver->CurrentDecisionLevel();
       const Literal prev_decision = sat_solver->Decisions()[level - 1].literal;
-      const auto& list =
+      const absl::Span<const Literal> list =
           implication_graph->Implications(prev_decision.Negated());
 
       // Probe a literal that implies previous decision.

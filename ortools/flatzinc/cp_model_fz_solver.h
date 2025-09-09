@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
-#define OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#ifndef ORTOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#define ORTOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
 
 #include <string>
 
@@ -32,6 +32,7 @@ struct FlatzincSatParameters {
   int number_of_threads = 0;
   double max_time_in_seconds = 0.0;
   bool ortools_mode = false;
+  bool check_all_solutions = false;
 };
 
 }  // namespace fz
@@ -57,4 +58,4 @@ void SolveFzWithCpModelProto(const fz::Model& model,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#endif  // ORTOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_

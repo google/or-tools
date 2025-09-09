@@ -18,6 +18,7 @@ endif()
 if(BUILD_CXX_SAMPLES)
   file(GLOB CXX_SRCS "*.cc")
   list(FILTER CXX_SRCS EXCLUDE REGEX "area_socp.cc$")
+  list(FILTER CXX_SRCS EXCLUDE REGEX "coil_in_the_box.cc$") # missing base/context.h
 
   if(NOT USE_SCIP)
     list(FILTER CXX_SRCS EXCLUDE REGEX "cocktail_hour.cc$")

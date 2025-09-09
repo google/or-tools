@@ -174,6 +174,9 @@ class CtExhaustiveHelper {
       absl::Span<const int> permutation);
 
  private:
+  void BuildPredecessors(absl::Span<const CompletionTimeEvent> events,
+                         Model* model);
+
   CompactVectorVector<int> predecessors_;
   int max_task_index_ = 0;
   std::vector<bool> visited_;
@@ -214,6 +217,37 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
     CtExhaustiveHelper& helper, double& min_sum_of_ends,
     double& min_sum_of_weighted_ends, bool& cut_use_precedences,
     int& exploration_credit);
+
+// Split the list of events in connected components. Two intervals are connected
+// if they overlap. It expects the events to have the start_min and end_max
+// fields. Note that events are semi-open intervals [start_min, end_max). This
+// will filter out components of size one.
+template <class E>
+std::vector<absl::Span<E>> SplitEventsInIndendentSets(absl::Span<E> events) {
+  if (events.empty()) return {};
+
+  std::sort(events.begin(), events.end(), [](const E& a, const E& b) {
+    return std::tie(a.start_min, a.end_max) < std::tie(b.start_min, b.end_max);
+  });
+  const int size = events.size();
+  std::vector<absl::Span<E>> result;
+  IntegerValue max_end_max = events[0].end_max;
+  int start = 0;
+  for (int i = 1; i < size; ++i) {
+    const E& event = events[i];
+    if (event.start_min >= max_end_max) {
+      if (i - start > 1) {
+        result.push_back(absl::MakeSpan(events.data() + start, i - start));
+      }
+      start = i;
+    }
+    max_end_max = std::max(max_end_max, event.end_max);
+  }
+  if (size - start > 1) {
+    result.push_back(absl::MakeSpan(events.data() + start, size - start));
+  }
+  return result;
+}
 
 }  // namespace sat
 }  // namespace operations_research

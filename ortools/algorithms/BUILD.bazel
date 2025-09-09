@@ -12,27 +12,13 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
 # Description:
 # Home of algorithms used in OR solvers
-
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
 
 # OSS solvers
 bool_flag(
@@ -109,9 +95,7 @@ cc_test(
     name = "radix_sort_test",
     srcs = ["radix_sort_test.cc"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
@@ -150,6 +134,7 @@ cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -176,6 +161,7 @@ cc_test(
 cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
+    visibility = ["//visibility:public"],
     deps = ["@abseil-cpp//absl/log:check"],
 )
 
@@ -194,6 +180,7 @@ cc_test(
     size = "large",
     timeout = "eternal",
     srcs = ["adjustable_k_ary_heap_stress_test.cc"],
+    tags = ["manual"],
     deps = [
         ":adjustable_k_ary_heap",
         "//ortools/base:gmock_main",
@@ -240,6 +227,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -421,24 +409,5 @@ cc_library(
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
-    ],
-)
-
-cc_test(
-    name = "n_choose_k_test",
-    srcs = ["n_choose_k_test.cc"],
-    deps = [
-        ":n_choose_k",
-        "//ortools/base:dump_vars",
-        "//ortools/base:fuzztest",
-        "//ortools/base:gmock_main",
-        "//ortools/base:mathutil",
-        "//ortools/util:flat_matrix",
-        "@abseil-cpp//absl/numeric:int128",
-        "@abseil-cpp//absl/random",
-        "@abseil-cpp//absl/random:distributions",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@google_benchmark//:benchmark",
     ],
 )

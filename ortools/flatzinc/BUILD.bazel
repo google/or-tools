@@ -15,28 +15,10 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
-)
 
 # ---------------------------------------------------------------------------
 # Baseline flatzinc model.
@@ -85,9 +67,8 @@ cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
-        "on_linux": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_macos": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_windows": [],
+        "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
+        "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
     }),
     deps = [
@@ -106,6 +87,23 @@ cc_library(
         ":model",
         ":parser_lex_lib",
         ":parser_yacc_lib",
+    ],
+)
+
+cc_binary(
+    name = "parser",
+    srcs = ["parser_main.cc"],
+    deps = [
+        ":model",
+        ":parser_lib",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

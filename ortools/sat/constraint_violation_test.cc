@@ -231,6 +231,51 @@ TEST(ConstraintViolationTest, BasicBoolXorExample) {
   EXPECT_EQ(1, ct.ComputeViolation({1, 0, 0}));
 }
 
+TEST(ConstraintViolationTest, ComputeViolationWithEnforcementLiteral) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          bool_xor { literals: [ 1, 2 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  EXPECT_EQ(0, ct.ComputeViolation({0, 1, 1}));  // Not enforced.
+  EXPECT_EQ(1, ct.ComputeViolation({1, 1, 1}));  // Enforced.
+}
+
+TEST(ConstraintViolationTest, ViolationDeltaWithEnforcementLiteral) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          enforcement_literal: 1
+                          bool_xor { literals: [ 2, 3 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  ct.InitializeViolation({0, 0, 0, 0});
+  EXPECT_EQ(0, ct.violation());
+
+  // Was not enforced and stays unenforced: no change.
+  EXPECT_EQ(0, ct.ViolationDelta(0, 0, {1, 0, 1, 1}));
+  ct.PerformMove(0, 0, {1, 0, 1, 1});
+  EXPECT_EQ(0, ct.violation());
+
+  // Was not enforced and becomes enforced and violated.
+  EXPECT_EQ(1, ct.ViolationDelta(1, 0, {1, 1, 1, 1}));
+  ct.PerformMove(1, 0, {1, 1, 1, 1});
+  EXPECT_EQ(1, ct.violation());
+
+  // Was enforced and violated, becomes unenforced.
+  EXPECT_EQ(-1, ct.ViolationDelta(0, 1, {0, 1, 1, 1}));
+  ct.PerformMove(0, 1, {0, 1, 1, 1});
+  EXPECT_EQ(0, ct.violation());
+}
+
+TEST(ConstraintViolationTest, ViolationDeltaWhenEnforced) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          enforcement_literal: 1
+                          bool_xor { literals: [ 2, 3 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  ct.InitializeViolation({1, 1, 0, 1});
+  EXPECT_EQ(0, ct.violation());
+  EXPECT_EQ(1, ct.ViolationDelta(2, 0, {1, 1, 1, 1}));
+}
+
 TEST(ConstraintViolationTest, BasicLinMaxExampleNoViolation) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }

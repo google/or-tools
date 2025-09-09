@@ -27,6 +27,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
@@ -85,9 +86,10 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
-void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
-                                 const std::vector<IntervalVariable>& y,
-                                 Model* model);
+void AddNonOverlappingRectangles(
+    const std::vector<Literal>& enforcement_literals,
+    const std::vector<IntervalVariable>& x,
+    const std::vector<IntervalVariable>& y, Model* model);
 
 // Non overlapping rectangles. This includes box with zero-areas.
 // The following is forbidden:

@@ -1,7 +1,7 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 Linux CMake GLPK ON
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}

@@ -87,13 +87,12 @@ MessageCallback PrinterMessageCallback(std::ostream& output_stream,
   // it uses an absl::Mutex that is not.
   const auto impl =
       std::make_shared<PrinterMessageCallbackImpl>(output_stream, prefix);
-  return
-      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+  return [=](absl::Span<const std::string> messages) { impl->Call(messages); };
 }
 
 MessageCallback InfoLoggerMessageCallback(const absl::string_view prefix,
                                           const absl::SourceLocation loc) {
-  return [=](const std::vector<std::string>& messages) {
+  return [=](absl::Span<const std::string> messages) {
     for (const std::string& message : messages) {
       LOG(INFO).AtLocation(loc.file_name(), loc.line()) << prefix << message;
     }
@@ -128,8 +127,7 @@ MessageCallback RepeatedPtrFieldMessageCallback(
   // it uses an absl::Mutex that is not.
   const auto impl = std::make_shared<VectorLikeMessageCallbackImpl<
       google::protobuf::RepeatedPtrField<std::string>>>(sink);
-  return
-      [=](const std::vector<std::string>& messages) { impl->Call(messages); };
+  return [=](absl::Span<const std::string> messages) { impl->Call(messages); };
 }
 
 }  // namespace operations_research::math_opt

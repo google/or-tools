@@ -497,6 +497,8 @@ message MPModelRequest {
   // These additional solutions may have a worse objective than the main
   // solution returned in the response.
   optional int32 populate_additional_solutions_up_to = 11 [default = 0];
+
+  reserved 12;
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
@@ -658,4 +660,6 @@ message MPSolutionResponse {
   // additional solutions are different than the main solution described by the
   // above fields `objective_value` and `variable_value`.
   repeated MPSolution additional_solutions = 8;
+
+  reserved 9;
 }

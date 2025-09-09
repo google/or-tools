@@ -26,7 +26,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "ortools/base/logging.h"
@@ -699,8 +698,8 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
   }
 
   std::vector<FullIntegerPrecedence> output;
-  auto* precedences = model->GetOrCreate<PrecedenceRelations>();
-  precedences->ComputeFullPrecedences(end_vars, &output);
+  auto* evaluator = model->GetOrCreate<TransitivePrecedencesEvaluator>();
+  evaluator->ComputeFullPrecedences(end_vars, &output);
   for (const auto& p : output) {
     // TODO(user): What if we have more than one candidate makespan ?
     if (p.indices.size() != ends.size()) continue;
@@ -732,6 +731,7 @@ std::optional<AffineExpression> DetectMakespanFromPrecedences(
 void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
                                               Model* model,
                                               LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -750,7 +750,8 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
     intervals.erase(intervals.begin() + makespan_index.value());
   }
 
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
       repository->GetOrCreateDemandHelper(helper, demands);
@@ -769,6 +770,7 @@ void AppendNoOverlapRelaxationAndCutGenerator(const ConstraintProto& ct,
 void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
                                                Model* model,
                                                LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   std::vector<IntervalVariable> intervals =
@@ -788,7 +790,8 @@ void AppendCumulativeRelaxationAndCutGenerator(const ConstraintProto& ct,
   }
 
   // We try to linearize the energy of each task (size * demand).
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   if (!helper->SynchronizeAndSetTimeDirection(true)) return;
   SchedulingDemandHelper* demands_helper =
       repository->GetOrCreateDemandHelper(helper, demands);
@@ -1070,6 +1073,7 @@ void AppendNoOverlap2dRelaxationForComponent(
 void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
                                  LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap_2d());
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -1080,7 +1084,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
 
   auto* intervals_repository = model->GetOrCreate<IntervalsRepository>();
   NoOverlap2DConstraintHelper* no_overlap_helper =
-      intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
+      intervals_repository->GetOrCreate2DHelper(/*enforcement_literals=*/{},
+                                                x_intervals, y_intervals);
   auto* product_decomposer = model->GetOrCreate<ProductDecomposer>();
 
   CutGenerator& result = relaxation->cut_generators.emplace_back();
@@ -1111,7 +1116,8 @@ void AppendNoOverlap2dRelaxation(const ConstraintProto& ct, Model* model,
 }
 
 void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
-                                 LinearRelaxation* relaxation) {
+                                 LinearRelaxation* relaxation,
+                                 ActivityBoundHelper* activity_helper) {
   auto* mapping = model->GetOrCreate<CpModelMapping>();
 
   // We want to linearize target = max(exprs[1], exprs[2], ..., exprs[d]).
@@ -1124,7 +1130,8 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
     LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
     lc.AddLinearExpression(negated_target);
     lc.AddLinearExpression(expr);
-    relaxation->linear_constraints.push_back(lc.Build());
+    AppendLinearConstraintRelaxation(ct.enforcement_literal(), lc.Build(),
+                                     model, relaxation, activity_helper);
   }
 }
 
@@ -1133,7 +1140,8 @@ void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
 //   2) keep this code
 //   3) remove this code and create the cut generator at level 1.
 void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
-                               LinearRelaxation* relaxation) {
+                               LinearRelaxation* relaxation,
+                               ActivityBoundHelper* activity_helper) {
   IntegerVariable var;
   std::vector<std::pair<IntegerValue, IntegerValue>> affines;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
@@ -1148,7 +1156,8 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
       PositiveVarExpr(mapping->GetExprFromProto(ct.lin_max().target()));
   LinearConstraintBuilder builder(model);
   if (BuildMaxAffineUpConstraint(target_expr, var, affines, model, &builder)) {
-    relaxation->linear_constraints.push_back(builder.Build());
+    AppendLinearConstraintRelaxation(ct.enforcement_literal(), builder.Build(),
+                                     model, relaxation, activity_helper);
   }
 }
 
@@ -1250,13 +1259,15 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
   }
 }
 
-void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
-                                      bool linearize_enforced_constraints,
-                                      Model* model,
+namespace {
+bool LinearizeEnforcedConstraints(Model* model) {
+  return model->GetOrCreate<SatParameters>()->linearization_level() > 1;
+}
+}  // namespace
+
+void AppendLinearConstraintRelaxation(const ConstraintProto& ct, Model* model,
                                       LinearRelaxation* relaxation,
                                       ActivityBoundHelper* activity_helper) {
-  auto* mapping = model->Get<CpModelMapping>();
-
   // Note that we ignore the holes in the domain.
   //
   // TODO(user): In LoadLinearConstraint() we already created intermediate
@@ -1271,19 +1282,23 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
       rhs_domain_max == std::numeric_limits<int64_t>::max())
     return;
 
+  LinearConstraintBuilder lc(model, rhs_domain_min, rhs_domain_max);
+  auto* mapping = model->Get<CpModelMapping>();
+  for (int i = 0; i < ct.linear().vars_size(); i++) {
+    const int ref = ct.linear().vars(i);
+    const IntegerVariable int_var = mapping->Integer(ref);
+    // Everything here should have a view.
+    CHECK_NE(int_var, kNoIntegerVariable);
+    const int64_t coeff = ct.linear().coeffs(i);
+    lc.AddTerm(int_var, IntegerValue(coeff));
+  }
   if (!HasEnforcementLiteral(ct)) {
-    LinearConstraintBuilder lc(model, rhs_domain_min, rhs_domain_max);
-    for (int i = 0; i < ct.linear().vars_size(); i++) {
-      const int ref = ct.linear().vars(i);
-      const int64_t coeff = ct.linear().coeffs(i);
-      lc.AddTerm(mapping->Integer(ref), IntegerValue(coeff));
-    }
     relaxation->linear_constraints.push_back(lc.Build());
     return;
   }
 
   // Reified version.
-  if (!linearize_enforced_constraints) return;
+  if (!LinearizeEnforcedConstraints(model)) return;
 
   // We linearize fully reified constraints of size 1 all together for a given
   // variable. But we need to process half-reified ones or constraint with
@@ -1296,9 +1311,25 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
     return;
   }
 
+  AppendLinearConstraintRelaxation(ct.enforcement_literal(), lc.Build(), model,
+                                   relaxation, activity_helper);
+}
+
+void AppendLinearConstraintRelaxation(absl::Span<const int> enforcement,
+                                      LinearConstraint&& linear_constraint,
+                                      Model* model,
+                                      LinearRelaxation* relaxation,
+                                      ActivityBoundHelper* activity_helper) {
+  if (enforcement.empty()) {
+    relaxation->linear_constraints.push_back(std::move(linear_constraint));
+    return;
+  }
+  if (!LinearizeEnforcedConstraints(model)) return;
+
+  auto* mapping = model->Get<CpModelMapping>();
   std::vector<Literal> enforcing_literals;
-  enforcing_literals.reserve(ct.enforcement_literal_size());
-  for (const int enforcement_ref : ct.enforcement_literal()) {
+  enforcing_literals.reserve(enforcement.size());
+  for (const int enforcement_ref : enforcement) {
     enforcing_literals.push_back(mapping->Literal(enforcement_ref));
   }
 
@@ -1307,17 +1338,14 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
   IntegerValue min_activity(0);
   IntegerValue max_activity(0);
   const auto integer_trail = model->GetOrCreate<IntegerTrail>();
-  for (int i = 0; i < ct.linear().vars_size(); i++) {
-    const int ref = ct.linear().vars(i);
-    const IntegerValue coeff(ct.linear().coeffs(i));
-    const IntegerVariable int_var = mapping->Integer(ref);
-
-    // Everything here should have a view.
-    CHECK_NE(int_var, kNoIntegerVariable);
+  for (int i = 0; i < linear_constraint.num_terms; i++) {
+    const IntegerValue coeff = linear_constraint.coeffs[i];
+    const IntegerVariable int_var = linear_constraint.vars[i];
+    const int ref = mapping->GetProtoVariableFromIntegerVariable(int_var);
 
     const IntegerValue lb = integer_trail->LowerBound(int_var);
     const IntegerValue ub = integer_trail->UpperBound(int_var);
-    if (lb == 0 && ub == 1 && activity_helper != nullptr) {
+    if (lb == 0 && ub == 1 && activity_helper != nullptr && ref != -1) {
       bool_terms.push_back({ref, coeff.value()});
     } else {
       if (coeff > 0) {
@@ -1336,42 +1364,36 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& ct,
         IntegerValue(activity_helper->ComputeMaxActivity(bool_terms));
   }
 
-  if (rhs_domain_min > min_activity) {
-    // And(ei) => terms >= rhs_domain_min
-    // <=> Sum_i (~ei * (rhs_domain_min - min_activity)) + terms >=
+  if (linear_constraint.lb > min_activity) {
+    // And(ei) => terms >= linear_constraint.lb
+    // <=> Sum_i (~ei * (linear_constraint.lb - min_activity)) + terms >=
     // rhs_domain_min
-    LinearConstraintBuilder lc(model, rhs_domain_min, kMaxIntegerValue);
-    const IntegerValue term = CapSubI(rhs_domain_min, min_activity);
+    LinearConstraintBuilder lc(model, linear_constraint.lb, kMaxIntegerValue);
+    const IntegerValue term = CapSubI(linear_constraint.lb, min_activity);
     if (AtMinOrMaxInt64I(term) && !enforcing_literals.empty()) return;
     for (const Literal& literal : enforcing_literals) {
       CHECK(lc.AddLiteralTerm(literal.Negated(), term));
     }
-    for (int i = 0; i < ct.linear().vars_size(); i++) {
-      const int ref = ct.linear().vars(i);
-      const IntegerValue coeff(ct.linear().coeffs(i));
-      const IntegerVariable int_var = mapping->Integer(ref);
-      lc.AddTerm(int_var, coeff);
+    for (int i = 0; i < linear_constraint.num_terms; i++) {
+      lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
     LinearConstraint built_ct = lc.Build();
     if (!PossibleOverflow(*integer_trail, built_ct)) {
       relaxation->linear_constraints.push_back(std::move(built_ct));
     }
   }
-  if (rhs_domain_max < max_activity) {
-    // And(ei) => terms <= rhs_domain_max
-    // <=> Sum_i (~ei * (rhs_domain_max - max_activity)) + terms <=
-    // rhs_domain_max
-    LinearConstraintBuilder lc(model, kMinIntegerValue, rhs_domain_max);
-    const IntegerValue term = CapSubI(rhs_domain_max, max_activity);
+  if (linear_constraint.ub < max_activity) {
+    // And(ei) => terms <= linear_constraint.ub
+    // <=> Sum_i (~ei * (linear_constraint.ub - max_activity)) + terms <=
+    // linear_constraint.ub
+    LinearConstraintBuilder lc(model, kMinIntegerValue, linear_constraint.ub);
+    const IntegerValue term = CapSubI(linear_constraint.ub, max_activity);
     if (AtMinOrMaxInt64I(term) && !enforcing_literals.empty()) return;
     for (const Literal& literal : enforcing_literals) {
       CHECK(lc.AddLiteralTerm(literal.Negated(), term));
     }
-    for (int i = 0; i < ct.linear().vars_size(); i++) {
-      const int ref = ct.linear().vars(i);
-      const IntegerValue coeff(ct.linear().coeffs(i));
-      const IntegerVariable int_var = mapping->Integer(ref);
-      lc.AddTerm(int_var, coeff);
+    for (int i = 0; i < linear_constraint.num_terms; i++) {
+      lc.AddTerm(linear_constraint.vars[i], linear_constraint.coeffs[i]);
     }
     LinearConstraint built_ct = lc.Build();
     if (!PossibleOverflow(*integer_trail, built_ct)) {
@@ -1422,28 +1444,32 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
       break;
     }
     case ConstraintProto::ConstraintCase::kIntProd: {
-      const LinearArgumentProto& int_prod = ct.int_prod();
-      if (int_prod.exprs_size() == 2 &&
-          LinearExpressionProtosAreEqual(int_prod.exprs(0),
-                                         int_prod.exprs(1))) {
-        AppendSquareRelaxation(ct, model, relaxation);
-        AddSquareCutGenerator(ct, linearization_level, model, relaxation);
-      } else {
-        // No relaxation, just a cut generator .
-        AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+      // TODO(user): add support for enforcement literals.
+      if (!HasEnforcementLiteral(ct)) {
+        const LinearArgumentProto& int_prod = ct.int_prod();
+        if (int_prod.exprs_size() == 2 &&
+            LinearExpressionProtosAreEqual(int_prod.exprs(0),
+                                           int_prod.exprs(1))) {
+          AppendSquareRelaxation(ct, model, relaxation);
+          AddSquareCutGenerator(ct, linearization_level, model, relaxation);
+        } else {
+          // No relaxation, just a cut generator.
+          AddIntProdCutGenerator(ct, linearization_level, model, relaxation);
+        }
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kLinMax: {
-      AppendLinMaxRelaxationPart1(ct, model, relaxation);
+      AppendLinMaxRelaxationPart1(ct, model, relaxation, activity_helper);
       const bool is_affine_max =
           ExpressionsContainsOnlyOneVar(ct.lin_max().exprs());
       if (is_affine_max) {
-        AppendMaxAffineRelaxation(ct, model, relaxation);
+        AppendMaxAffineRelaxation(ct, model, relaxation, activity_helper);
       }
 
       // Add cut generators.
-      if (linearization_level > 1) {
+      // TODO(user): add support for enforcement literals.
+      if (linearization_level > 1 && !HasEnforcementLiteral(ct)) {
         if (is_affine_max) {
           AddMaxAffineCutGenerator(ct, model, relaxation);
         } else if (ct.lin_max().exprs().size() < 100) {
@@ -1453,27 +1479,34 @@ void TryToLinearizeConstraint(const CpModelProto& /*model_proto*/,
       break;
     }
     case ConstraintProto::ConstraintCase::kAllDiff: {
-      AddAllDiffRelaxationAndCutGenerator(ct, linearization_level, model,
-                                          relaxation);
+      // TODO(user): add support for enforcement literals.
+      if (!HasEnforcementLiteral(ct)) {
+        AddAllDiffRelaxationAndCutGenerator(ct, linearization_level, model,
+                                            relaxation);
+      }
       break;
     }
     case ConstraintProto::ConstraintCase::kLinear: {
-      AppendLinearConstraintRelaxation(
-          ct, /*linearize_enforced_constraints=*/linearization_level > 1, model,
-          relaxation, activity_helper);
+      AppendLinearConstraintRelaxation(ct, model, relaxation, activity_helper);
       break;
     }
     case ConstraintProto::ConstraintCase::kCircuit: {
-      AppendCircuitRelaxation(ct, model, relaxation);
-      if (linearization_level > 1) {
-        AddCircuitCutGenerator(ct, model, relaxation);
+      // TODO(user): add support for enforcement literals?
+      if (!HasEnforcementLiteral(ct)) {
+        AppendCircuitRelaxation(ct, model, relaxation);
+        if (linearization_level > 1) {
+          AddCircuitCutGenerator(ct, model, relaxation);
+        }
       }
       break;
     }
     case ConstraintProto::ConstraintCase::kRoutes: {
-      AppendRoutesRelaxation(ct, model, relaxation);
-      if (linearization_level > 1) {
-        AddRoutesCutGenerator(ct, model, relaxation);
+      // TODO(user): add support for enforcement literals?
+      if (!HasEnforcementLiteral(ct)) {
+        AppendRoutesRelaxation(ct, model, relaxation);
+        if (linearization_level > 1) {
+          AddRoutesCutGenerator(ct, model, relaxation);
+        }
       }
       break;
     }
@@ -1744,6 +1777,7 @@ void AddNoOverlapCutGenerator(SchedulingConstraintHelper* helper,
 
 void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
                                 LinearRelaxation* relaxation) {
+  // TODO(user): add support for enforcement literals?
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = m->GetOrCreate<CpModelMapping>();
@@ -1755,7 +1789,8 @@ void AddNoOverlap2dCutGenerator(const ConstraintProto& ct, Model* m,
   IntervalsRepository* intervals_repository =
       m->GetOrCreate<IntervalsRepository>();
   NoOverlap2DConstraintHelper* no_overlap_helper =
-      intervals_repository->GetOrCreate2DHelper(x_intervals, y_intervals);
+      intervals_repository->GetOrCreate2DHelper(/*enforcement_literals=*/{},
+                                                x_intervals, y_intervals);
 
   relaxation->cut_generators.push_back(
       CreateNoOverlap2dCompletionTimeCutGenerator(no_overlap_helper, m));

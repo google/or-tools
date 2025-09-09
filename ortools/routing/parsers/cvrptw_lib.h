@@ -25,9 +25,9 @@
 
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/constraint_solver/routing.h"
+#include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 typedef std::function<int64_t(RoutingNodeIndex, RoutingNodeIndex)>
     RoutingNodeEvaluator2;
@@ -73,7 +73,8 @@ class LocationContainer {
 
   std::mt19937 randomizer_;
   const int64_t speed_;
-  util_intops::StrongVector<RoutingIndexManager::NodeIndex, Location> locations_;
+  util_intops::StrongVector<RoutingIndexManager::NodeIndex, Location>
+      locations_;
 };
 
 // Random demand.
@@ -95,44 +96,43 @@ class RandomDemand {
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
-  ServiceTimePlusTransition(
-      int64_t time_per_demand_unit,
-      operations_research::RoutingNodeEvaluator2 demand,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+  ServiceTimePlusTransition(int64_t time_per_demand_unit,
+                            RoutingNodeEvaluator2 demand,
+                            RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
                   RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t time_per_demand_unit_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Stop service time + transition time callback.
 class StopServiceTimePlusTransition {
  public:
-  StopServiceTimePlusTransition(
-      int64_t stop_time, const LocationContainer& location_container,
-      operations_research::RoutingNodeEvaluator2 transition_time);
+  StopServiceTimePlusTransition(int64_t stop_time,
+                                const LocationContainer& location_container,
+                                RoutingNodeEvaluator2 transition_time);
   int64_t Compute(RoutingIndexManager::NodeIndex from,
                   RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64_t stop_time_;
   const LocationContainer& location_container_;
-  operations_research::RoutingNodeEvaluator2 demand_;
-  operations_research::RoutingNodeEvaluator2 transition_time_;
+  RoutingNodeEvaluator2 demand_;
+  RoutingNodeEvaluator2 transition_time_;
 };
 
 // Route plan displayer.
 // TODO(user): Move the display code to the routing library.
-void DisplayPlan(
-    const operations_research::RoutingIndexManager& manager,
-    const operations_research::RoutingModel& routing,
-    const operations_research::Assignment& plan, bool use_same_vehicle_costs,
-    int64_t max_nodes_per_group, int64_t same_vehicle_cost,
-    absl::Span<const std::string> dimension_names);
+void DisplayPlan(const RoutingIndexManager& manager,
+                 const RoutingModel& routing,
+                 const operations_research::Assignment& plan,
+                 bool use_same_vehicle_costs, int64_t max_nodes_per_group,
+                 int64_t same_vehicle_cost,
+                 absl::Span<const std::string> dimension_names);
 
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 #endif  // OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_

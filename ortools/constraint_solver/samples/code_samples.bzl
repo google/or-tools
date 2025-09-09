@@ -13,7 +13,8 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 def code_sample_cc(name):
     cc_binary(
@@ -22,8 +23,6 @@ def code_sample_cc(name):
         deps = [
             "//ortools/base",
             "//ortools/constraint_solver:cp",
-            "//ortools/constraint_solver:routing",
-            "//ortools/constraint_solver:routing_enums_cc_proto",
         ],
     )
 
@@ -35,7 +34,5 @@ def code_sample_cc(name):
             ":" + name + "_cc",
             "//ortools/base",
             "//ortools/constraint_solver:cp",
-            "//ortools/constraint_solver:routing",
-            "//ortools/constraint_solver:routing_enums_cc_proto",
         ],
     )

@@ -60,6 +60,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/sat/timetable.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -1038,8 +1039,8 @@ void LoadExactlyOneConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
-  m->Add(LiteralXorIs(mapping->Literals(ct.bool_xor().literals()), true));
+  m->Add(LiteralXorIs(mapping->Literals(ct.enforcement_literal()),
+                      mapping->Literals(ct.bool_xor().literals()), true));
 }
 
 namespace {
@@ -1130,8 +1131,6 @@ bool IsPartOfProductEncoding(const ConstraintProto& ct) {
 
 }  // namespace
 
-// TODO(user): We could use a smarter way to determine buckets, like putting
-// everyone with the same coeff together if possible and the split is ok.
 void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
                                          std::vector<int64_t>* coeffs,
@@ -1143,25 +1142,61 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     ub_required = true;
   }
 
+  // We sort by absolute value of coefficients. The separate - from +, and then
+  // by variable order, usually variable with the same "meaning" are defined
+  // together in a model.
+  const int num_terms = vars->size();
+  std::vector<std::pair<IntegerVariable, int64_t>> terms;
+  {
+    terms.reserve(num_terms);
+    for (int i = 0; i < num_terms; ++i) {
+      terms.push_back({(*vars)[i], (*coeffs)[i]});
+    }
+    std::sort(terms.begin(), terms.end(),
+              [](const std::pair<IntegerVariable, int64_t> a,
+                 const std::pair<IntegerVariable, int64_t> b) {
+                const int64_t abs_coeff_a = std::abs(a.second);
+                const int64_t abs_coeff_b = std::abs(b.second);
+                if (abs_coeff_a != abs_coeff_b) {
+                  return abs_coeff_a < abs_coeff_b;
+                }
+                if (a.second != b.second) {
+                  return a.second < b.second;
+                }
+                return a.first < b.first;
+              });
+  }
+  std::vector<int64_t> sorted_coeffs;
+  sorted_coeffs.resize(num_terms);
+  for (int i = 0; i < num_terms; ++i) {
+    sorted_coeffs[i] = terms[i].second;
+  }
+  const std::vector<std::pair<int, int>> buckets =
+      HeuristicallySplitLongLinear(sorted_coeffs);
+
   std::vector<IntegerVariable> bucket_sum_vars;
   std::vector<int64_t> bucket_sum_coeffs;
   std::vector<IntegerVariable> local_vars;
   std::vector<int64_t> local_coeffs;
 
-  int64_t i = 0;
-  const int64_t num_vars = vars->size();
-  const int64_t num_buckets = static_cast<int>(std::round(std::sqrt(num_vars)));
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  for (int64_t b = 0; b < num_buckets; ++b) {
+  for (const auto [start, size] : buckets) {
+    // Just keep the same variable if the size of that bucket is one.
+    if (size == 1) {
+      const auto [var, coeff] = terms[start];
+      bucket_sum_vars.push_back(var);
+      bucket_sum_coeffs.push_back(coeff);
+      continue;
+    }
+
     local_vars.clear();
     local_coeffs.clear();
     int64_t bucket_lb = 0;
     int64_t bucket_ub = 0;
     int64_t gcd = 0;
-    const int64_t limit = num_vars * (b + 1);
-    for (; i * num_buckets < limit; ++i) {
-      const IntegerVariable var = (*vars)[i];
-      const int64_t coeff = (*coeffs)[i];
+
+    for (int i = 0; i < size; ++i) {
+      const auto [var, coeff] = terms[start + i];
       gcd = std::gcd(gcd, std::abs(coeff));
       local_vars.push_back(var);
       local_coeffs.push_back(coeff);
@@ -1170,6 +1205,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
       bucket_lb += std::min(term1, term2);
       bucket_ub += std::max(term1, term2);
     }
+
     if (gcd == 0) continue;
     if (gcd > 1) {
       // Everything should be exactly divisible!
@@ -1194,6 +1230,8 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
       m->Add(WeightedSumLowerOrEqual(local_vars, local_coeffs, 0));
     }
   }
+
+  // Rewrite the constraint.
   *vars = bucket_sum_vars;
   *coeffs = bucket_sum_coeffs;
 }
@@ -1261,7 +1299,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   // Load precedences.
   if (!HasEnforcementLiteral(ct)) {
-    auto* precedences = m->GetOrCreate<PrecedenceRelations>();
+    auto* root_level_lin2_bounds = m->GetOrCreate<RootLevelLinear2Bounds>();
 
     // To avoid overflow in the code below, we tighten the bounds.
     // Note that we detect and do not add trivial relation.
@@ -1272,7 +1310,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
     if (vars.size() == 2) {
       LinearExpression2 expr(vars[0], vars[1], coeffs[0], coeffs[1]);
-      precedences->AddBounds(expr, rhs_min, rhs_max);
+      root_level_lin2_bounds->Add(expr, rhs_min, rhs_max);
     } else if (vars.size() == 3) {
       // TODO(user): This is a weaker duplication of the logic of
       // BinaryRelationsMaps, but is is useful for the transitive closure in
@@ -1293,7 +1331,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                   ? coeff * integer_trail->UpperBound(vars[other]).value()
                   : coeff * integer_trail->LowerBound(vars[other]).value();
           LinearExpression2 expr(vars[i], vars[j], coeffs[i], coeffs[j]);
-          precedences->AddBounds(expr, rhs_min - other_ub, rhs_max - other_lb);
+          root_level_lin2_bounds->Add(expr, rhs_min - other_ub,
+                                      rhs_max - other_lb);
         }
       }
     }
@@ -1473,13 +1512,29 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> expressions =
       mapping->Affines(ct.all_diff().exprs());
-  m->Add(AllDifferentOnBounds(expressions));
+  m->Add(AllDifferentOnBounds(enforcement_literals, expressions));
+}
+
+void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.enforcement_literal().empty()) {
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  }
+  ConstraintProto new_ct = ct;
+  BoolArgumentProto& bool_or = *new_ct.mutable_bool_or();
+  for (const int literal : ct.enforcement_literal()) {
+    bool_or.add_literals(NegatedRef(literal));
+  }
+  LoadBoolOrConstraint(new_ct, m);
 }
 
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression prod = mapping->Affine(ct.int_prod().target());
   std::vector<AffineExpression> terms;
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
@@ -1488,16 +1543,20 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
   switch (terms.size()) {
     case 0: {
       auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-      auto* sat_solver = m->GetOrCreate<SatSolver>();
       if (prod.IsConstant()) {
         if (prod.constant.value() != 1) {
-          sat_solver->NotifyThatModelIsUnsat();
+          LoadAlwaysFalseConstraint(ct, m);
         }
-      } else {
+      } else if (enforcement_literals.empty()) {
         if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
             !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
-          sat_solver->NotifyThatModelIsUnsat();
+          m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
         }
+      } else {
+        LinearConstraintBuilder builder(m, /*lb=*/1, /*ub=*/1);
+        builder.AddTerm(prod, 1);
+        LoadConditionalLinearConstraint(enforcement_literals, builder.Build(),
+                                        m);
       }
       break;
     }
@@ -1505,11 +1564,11 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
       LinearConstraintBuilder builder(m, /*lb=*/0, /*ub=*/0);
       builder.AddTerm(prod, 1);
       builder.AddTerm(terms[0], -1);
-      LoadLinearConstraint(builder.Build(), m);
+      LoadConditionalLinearConstraint(enforcement_literals, builder.Build(), m);
       break;
     }
     case 2: {
-      m->Add(ProductConstraint(terms[0], terms[1], prod));
+      m->Add(ProductConstraint(enforcement_literals, terms[0], terms[1], prod));
       break;
     }
     default: {
@@ -1522,11 +1581,14 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
 void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression div = mapping->Affine(ct.int_div().target());
   const AffineExpression num = mapping->Affine(ct.int_div().exprs(0));
   const AffineExpression denom = mapping->Affine(ct.int_div().exprs(1));
   if (integer_trail->IsFixed(denom)) {
-    m->Add(FixedDivisionConstraint(num, integer_trail->FixedValue(denom), div));
+    m->Add(FixedDivisionConstraint(enforcement_literals, num,
+                                   integer_trail->FixedValue(denom), div));
   } else {
     if (VLOG_IS_ON(1)) {
       LinearConstraintBuilder builder(m);
@@ -1535,7 +1597,7 @@ void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
         VLOG(1) << "Division " << ct << " can be linearized";
       }
     }
-    m->Add(DivisionConstraint(num, denom, div));
+    m->Add(DivisionConstraint(enforcement_literals, num, denom, div));
   }
 }
 
@@ -1543,17 +1605,20 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
 
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const AffineExpression target = mapping->Affine(ct.int_mod().target());
   const AffineExpression expr = mapping->Affine(ct.int_mod().exprs(0));
   const AffineExpression mod = mapping->Affine(ct.int_mod().exprs(1));
   CHECK(integer_trail->IsFixed(mod));
   const IntegerValue fixed_modulo = integer_trail->FixedValue(mod);
-  m->Add(FixedModuloConstraint(expr, fixed_modulo, target));
+  m->Add(
+      FixedModuloConstraint(enforcement_literals, expr, fixed_modulo, target));
 }
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.lin_max().exprs().empty()) {
-    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    LoadAlwaysFalseConstraint(ct, m);
     return;
   }
 
@@ -1566,37 +1631,46 @@ void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
         NegationOf(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
   }
   // TODO(user): Consider replacing the min propagator by max.
-  m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
+  AddIsEqualToMinOf(mapping->Literals(ct.enforcement_literal()),
+                    NegationOf(max), negated_exprs, m);
 }
 
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  AddDisjunctive(mapping->Intervals(ct.no_overlap().intervals()), m);
+  AddDisjunctive(mapping->Literals(ct.enforcement_literal()),
+                 mapping->Intervals(ct.no_overlap().intervals()), m);
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.no_overlap_2d().x_intervals().empty()) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  AddNonOverlappingRectangles(x_intervals, y_intervals, m);
+  AddNonOverlappingRectangles(enforcement_literals, x_intervals, y_intervals,
+                              m);
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   const std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
-  m->Add(Cumulative(intervals, demands, capacity));
+  m->Add(Cumulative(enforcement_literals, intervals, demands, capacity));
 }
 
 void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> times =
       mapping->Affines(ct.reservoir().time_exprs());
   const std::vector<AffineExpression> level_changes =
@@ -1610,7 +1684,7 @@ void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
       presences.push_back(encoder->GetTrueLiteral());
     }
   }
-  AddReservoirConstraint(times, level_changes, presences,
+  AddReservoirConstraint(enforcement_literals, times, level_changes, presences,
                          ct.reservoir().min_level(), ct.reservoir().max_level(),
                          m);
 }
@@ -1621,10 +1695,13 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
 
   std::vector<int> tails(circuit.tails().begin(), circuit.tails().end());
   std::vector<int> heads(circuit.heads().begin(), circuit.heads().end());
-  std::vector<Literal> literals =
-      m->GetOrCreate<CpModelMapping>()->Literals(circuit.literals());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+  const std::vector<Literal> literals = mapping->Literals(circuit.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m);
+  LoadSubcircuitConstraint(num_nodes, tails, heads, enforcement_literals,
+                           literals, m);
 }
 
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
@@ -1633,10 +1710,13 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
 
   std::vector<int> tails(routes.tails().begin(), routes.tails().end());
   std::vector<int> heads(routes.heads().begin(), routes.heads().end());
-  std::vector<Literal> literals =
-      m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+  std::vector<Literal> literals = mapping->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m,
+  LoadSubcircuitConstraint(num_nodes, tails, heads, enforcement_literals,
+                           literals, m,
                            /*multiple_subcircuit_through_zero=*/true);
 }
 
