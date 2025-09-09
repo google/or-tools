@@ -56,7 +56,7 @@ jobs:
           key: amd64•MacOS•Bazel•Python-${{matrix.python.version}}
           path: ${{env.BAZEL_OUTPUT_ROOT}}
       - name: Build
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/base/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
       - name: Save bazel cache after build
         uses: actions/cache/save@v4
         if: always() && steps.bazel-cache-restore.outputs.cache-hit != 'true'
@@ -64,7 +64,7 @@ jobs:
           key: amd64•MacOS•Bazel•Python-${{matrix.python.version}}
           path: ${{env.BAZEL_OUTPUT_ROOT}}
       - name: Test
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/base/...
+        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
       - name: Save bazel cache after test
         uses: actions/cache/save@v4
         if: always() && steps.bazel-cache-restore.outputs.cache-hit != 'true'
