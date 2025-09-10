@@ -17,7 +17,7 @@ env:
 
 # Building using the github runner environement directly.
 jobs:
-  amd64-Windows-Bazel-Python:
+  amd64-Windows-Bazel:
     strategy:
       matrix:
         python: [
@@ -27,7 +27,6 @@ jobs:
         #  {version: '3.13'},
         ]
       fail-fast: false # Don't cancel all jobs if one fails.
-    name: ${{github.job}}-${{matrix.python.version}}
     env:
       cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: windows-2022

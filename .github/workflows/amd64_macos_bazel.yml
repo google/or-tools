@@ -17,7 +17,7 @@ env:
 
 # Building using the github runner environement directly.
 jobs:
-  amd64-MacOS-Bazel-Python:
+  amd64-MacOS-Bazel:
     strategy:
       matrix:
         python: [
@@ -27,7 +27,6 @@ jobs:
           #{version: '3.13'},
         ]
       fail-fast: false
-    name: ${{github.job}}-${{matrix.python.version}}
     env:
       cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: macos-13 # last macos intel based runner

@@ -17,7 +17,7 @@ env:
 
 # Building using the github runner environement directly.
 jobs:
-  amd64-Linux-Bazel-Python:
+  amd64-Linux-Bazel:
     strategy:
       matrix:
         python: [
@@ -27,7 +27,6 @@ jobs:
           #{version: '3.13'},
         ]
       fail-fast: false
-    name: ${{github.job}}-${{matrix.python.version}}
     env:
       CC:  gcc-12
       CXX: g++-12
