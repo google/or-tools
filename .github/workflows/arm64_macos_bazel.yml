@@ -13,11 +13,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BAZEL_OUTPUT_ROOT: /private/tmp/bazel
+  cache-root: /private/tmp/bazel
 
 # Building using the github runner environement directly.
 jobs:
-  native:
+  arm64-MacOS-Bazel-Python:
     strategy:
       matrix:
         python: [
@@ -27,7 +27,8 @@ jobs:
           #{version: '3.13'},
         ]
       fail-fast: false
-    name: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
+    env:
+      cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: macos-latest # macos arm64 based runner
     steps:
       - uses: actions/checkout@v5
@@ -58,22 +59,22 @@ jobs:
         uses: actions/cache/restore@v4
         id: bazel-cache-restore
         with:
-          key: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
-          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{env.cache-name}}
+          path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
       - name: Test
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
-      - name: Save Bazel cache unconditionnally
+        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
+      - name: Save Bazel cache for branch main even when Build and Test fail.
         uses: actions/cache/save@v4
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:
-          key: arm64•MacOS•Bazel•Python-${{matrix.python.version}}
-          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{env.cache-name}}
+          path: ${{env.cache-root}}
 
   arm64_macos_bazel:
     runs-on: ubuntu-latest
-    needs: native
+    needs: arm64-MacOS-Bazel-Python
     steps:
       - uses: actions/checkout@v5
