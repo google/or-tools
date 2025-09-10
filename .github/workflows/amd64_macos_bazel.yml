@@ -17,7 +17,7 @@ env:
 
 # Building using the github runner environement directly.
 jobs:
-  amd64-MacOS-Bazel:
+  amd64-MacOS-Bazel-Python:
     strategy:
       matrix:
         python: [
@@ -75,6 +75,6 @@ jobs:
 
   amd64_macos_bazel:
     runs-on: ubuntu-latest
-    needs: amd64-MacOS-Bazel
+    needs: amd64-MacOS-Bazel-Python
     steps:
       - uses: actions/checkout@v5
