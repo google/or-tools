@@ -198,7 +198,7 @@ if(BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
   # Fuzztest do not support MSVC or toolchain
-  if(MSVC OR CMAKE_CROSSCOMPILING)
+  if(APPLE OR MSVC OR CMAKE_CROSSCOMPILING)
     set(USE_fuzztest OFF)
   else()
     # since no distro provide a fuzztest package disable support by default.
