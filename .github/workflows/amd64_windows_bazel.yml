@@ -70,6 +70,6 @@ jobs:
 
   amd64_windows_bazel:
     runs-on: ubuntu-latest
-    needs: amd64-Windows-Bazel-Python
+    needs: amd64-Windows-Bazel
     steps:
       - uses: actions/checkout@v5

@@ -75,6 +75,6 @@ jobs:
 
   arm64_macos_bazel:
     runs-on: ubuntu-latest
-    needs: arm64-MacOS-Bazel-Python
+    needs: arm64-MacOS-Bazel
     steps:
       - uses: actions/checkout@v5
