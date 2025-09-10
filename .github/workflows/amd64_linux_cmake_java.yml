@@ -13,18 +13,52 @@ concurrency:
   cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  CCACHE_BASEDIR: ${{github.workspace}}
+  CCACHE_DIR: ${{github.workspace}}/.ccache
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
 jobs:
   native:
     name: amd64•Linux•CMake•Java
     runs-on: ubuntu-latest
+    env:
+      cmake_deps_src_key: cmake_java_deps_src
+      cmake_deps_build_key: amd64_linux_cmake_java_deps_build
+      ccache_key: amd64_linux_cmake_java_ccache
     steps:
       - uses: actions/checkout@v5
-      - name: Swig install
+      - name: Install Dependencies
         run: |
-          sudo apt install -y swig
+          sudo apt update
+          sudo apt install -y ninja-build ccache swig
           swig -version
       - name: Check java
         run: java -version
+
+      # RESTORING CACHES
+      - name: Restore CMake dependency source code
+        uses: actions/cache/restore@v4
+        id: cmake_deps_src_restore
+        with:
+          key: ${{env.cmake_deps_src_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Restore CMake dependency build code
+        uses: actions/cache/restore@v4
+        id: cmake_deps_build_restore
+        with:
+          key: ${{env.cmake_deps_build_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Restore CCache
+        uses: actions/cache/restore@v4
+        id: ccache_restore
+        with:
+          key: ${{env.ccache_key}}
+          path: ${{env.CCACHE_DIR}}
+
       - name: Check CMake
         run: cmake --version
       - name: Configure
@@ -53,6 +87,28 @@ jobs:
           --config Release
           --target install
           -v
+
+      # SAVING CACHES
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.cmake_deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.cmake_deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CCache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
+          path: ${{env.CCACHE_DIR}}
 
   amd64_linux_cmake_java:
     runs-on: ubuntu-latest
