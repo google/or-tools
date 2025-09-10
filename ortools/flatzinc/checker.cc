@@ -1660,6 +1660,51 @@ bool CheckSymmetricAllDifferent(
   return true;
 }
 
+bool CheckValuePrecedeInt(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int64_t before = ct.arguments[0].Value();
+  const int64_t after = ct.arguments[1].Value();
+  const int64_t length = Length(ct.arguments[2]);
+  bool before_found = false;
+  for (int i = 0; i < length; ++i) {
+    const int64_t current = EvalAt(ct.arguments[2], i, evaluator);
+    if (current == before) before_found = true;
+    if (current == after && !before_found) return false;
+  }
+  return true;
+}
+
+bool CheckOrToolsPrecedeChainInt(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  absl::flat_hash_map<int64_t, int> value_to_index;
+  if (ct.arguments[0].type == fz::Argument::INT_INTERVAL) {
+    for (int64_t v = ct.arguments[0].values[0]; v <= ct.arguments[0].values[1];
+         ++v) {
+      value_to_index[v] = value_to_index.size();
+      ;
+    }
+  } else if (ct.arguments[0].type == fz::Argument::INT_LIST) {
+    for (int64_t v : ct.arguments[0].values) {
+      value_to_index[v] = value_to_index.size();
+    }
+  } else {
+    LOG(FATAL) << "Unsupported argument type: " << ct.arguments[0].type;
+  }
+
+  int max_visited_index = -1;
+  const int64_t length = Length(ct.arguments[1]);
+  for (int i = 0; i < length; ++i) {
+    const int64_t current = EvalAt(ct.arguments[1], i, evaluator);
+    const auto it = value_to_index.find(current);
+    if (it == value_to_index.end()) continue;
+    if (it->second > max_visited_index + 1) return false;
+    if (it->second == max_visited_index + 1) ++max_visited_index;
+  }
+  return true;
+}
+
 using CallMap = absl::flat_hash_map<
     std::string,
     std::function<bool(const Constraint& ct, std::function<int64_t(Variable*)>,
@@ -1739,6 +1784,7 @@ CallMap CreateCallMap() {
   m["fzn_disjunctive_strict"] = CheckDisjunctiveStrict;
   m["fzn_disjunctive"] = CheckDisjunctive;
   m["fzn_partition_set"] = CheckPartitionSet;
+  m["fzn_value_precede_int"] = CheckValuePrecedeInt;
   m["int_abs"] = CheckIntAbs;
   m["int_div"] = CheckIntDiv;
   m["int_eq_imp"] = CheckIntEqImp;
@@ -1806,6 +1852,7 @@ CallMap CreateCallMap() {
   m["ortools_network_flow_cost"] = CheckOrToolsNetworkFlowCost;
   m["ortools_network_flow"] = CheckOrToolsNetworkFlow;
   m["ortools_nvalue"] = CheckOrToolsNValue;
+  m["ortools_precede_chain_int"] = CheckOrToolsPrecedeChainInt;
   m["ortools_regular"] = CheckOrToolsRegular;
   m["ortools_subcircuit"] = CheckOrToolsSubCircuit;
   m["ortools_table_bool"] = CheckOrToolsTableInt;

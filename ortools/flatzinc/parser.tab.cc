@@ -2148,7 +2148,9 @@ yyreduce:
       std::vector<Annotation>* const annotations = (yyvsp[0].annotations);
 
       model->AddConstraint(identifier, arguments,
-                           ContainsId(annotations, "domain"));
+                           ContainsId(annotations, "domain"),
+                           ContainsId(annotations, "symmetry_breaking"),
+                           ContainsId(annotations, "redundant"));
       delete annotations;
       delete (yyvsp[-2].args);
     }

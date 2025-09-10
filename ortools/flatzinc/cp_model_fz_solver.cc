@@ -262,6 +262,7 @@ struct CpModelProtoWithMapping {
   int num_var_op_var_imp_cached = 0;
   int num_full_encodings = 0;
   int num_light_encodings = 0;
+  int num_partial_encodings = 0;
 };
 
 int CpModelProtoWithMapping::NewBoolVar() { return NewIntVar(0, 1); }
@@ -719,6 +720,14 @@ void CpModelProtoWithMapping::AddAllEncodingConstraints() {
         exo->add_literals(lit);
         AddLinearConstraint({lit}, Domain(value), {{var, 1}});
       }
+    } else if (encoding.size() > domain.Size() / 2 && light_encoding) {
+      BoolArgumentProto* exo = proto.add_constraints()->mutable_exactly_one();
+      for (const int64_t value : domain.Values()) {
+        const int lit = GetOrCreateEncodingLiteral(var, value);
+        exo->add_literals(lit);
+        AddLinearConstraint({lit}, Domain(value), {{var, 1}});
+      }
+      ++num_partial_encodings;
     } else {
       for (const auto& [value, lit] : encoding) {
         AddLinearConstraint({lit}, Domain(value), {{var, 1}});
@@ -1484,6 +1493,40 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (int i = 0; i < fz_ct.arguments[0].Size(); ++i) {
       *arg->add_exprs() = LookupExprAt(fz_ct.arguments[0], i);
     }
+  } else if (fz_ct.type == "fzn_value_precede_int") {
+    const int64_t before = fz_ct.arguments[0].Value();
+    const int64_t after = fz_ct.arguments[1].Value();
+    const std::vector<int> x = LookupVars(fz_ct.arguments[2]);
+    if (x.empty()) return;
+
+    std::vector<int> hold(x.size());
+    hold[0] = LookupConstant(0);
+    for (int i = 1; i < x.size(); ++i) hold[i] = NewBoolVar();
+
+    if (absl::GetFlag(FLAGS_fz_use_light_encoding) && !sat_enumeration_) {
+      for (int i = 0; i < x.size(); ++i) {
+        const int is_before = GetOrCreateEncodingLiteral(x[i], before);
+        if (i + 1 < x.size()) {
+          AddImplication({is_before}, hold[i + 1]);
+          AddLinearConstraint({NegatedRef(is_before)}, Domain(0),
+                              {{hold[i], 1}, {hold[i + 1], -1}});
+        }
+        AddLinearConstraint({NegatedRef(hold[i])}, Domain(after).Complement(),
+                            {{x[i], 1}});
+      }
+      ++num_light_encodings;
+    } else {
+      for (int i = 0; i < x.size(); ++i) {
+        const int is_before = GetOrCreateEncodingLiteral(x[i], before);
+        const int is_after = GetOrCreateEncodingLiteral(x[i], after);
+        if (i + 1 < x.size()) {
+          AddImplication({is_before}, hold[i + 1]);
+          AddLinearConstraint({NegatedRef(is_before)}, Domain(0),
+                              {{hold[i], 1}, {hold[i + 1], -1}});
+        }
+        AddImplication({NegatedRef(hold[i])}, NegatedRef(is_after));
+      }
+    }
   } else if (fz_ct.type == "ortools_count_eq_cst") {
     const std::vector<VarOrValue> counts =
         LookupVarsOrValues(fz_ct.arguments[0]);
@@ -1648,6 +1691,47 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
                                 fz_ct.type == "ortools_lex_lesseq_int";
     const int false_literal = LookupConstant(0);
     AddLexOrdering(x, y, NegatedRef(false_literal), accepts_equals);
+  } else if (fz_ct.type == "ortools_precede_chain_int") {
+    std::vector<int64_t> values;
+    if (fz_ct.arguments[0].type == fz::Argument::INT_INTERVAL) {
+      values.reserve(fz_ct.arguments[0].values[1] -
+                     fz_ct.arguments[0].values[0] + 1);
+      for (int64_t value = fz_ct.arguments[0].values[0];
+           value <= fz_ct.arguments[0].values[1]; ++value) {
+        values.push_back(value);
+      }
+    } else if (fz_ct.arguments[0].type == fz::Argument::INT_LIST) {
+      values = fz_ct.arguments[0].values;
+    } else {
+      LOG(FATAL) << "Unsupported argument type: " << fz_ct.arguments[0].type
+                 << " for " << fz_ct.arguments[0].DebugString();
+    }
+    const std::vector<int> x = LookupVars(fz_ct.arguments[1]);
+
+    if (x.empty()) return;
+    if (values.size() <= 1) return;
+
+    std::vector<std::vector<int>> hold(values.size() - 1);
+    for (int r = 0; r < hold.size(); ++r) {
+      std::vector<int>& row = hold[r];
+      const int64_t before = values[r];
+      const int64_t after = values[r + 1];
+      row.resize(x.size());
+      for (int i = 0; i < x.size(); ++i) {
+        row[i] = (i <= r ? LookupConstant(0) : NewBoolVar());
+      }
+
+      for (int i = 0; i < x.size(); ++i) {
+        const int is_before = GetOrCreateEncodingLiteral(x[i], before);
+        const int is_after = GetOrCreateEncodingLiteral(x[i], after);
+        if (i + 1 < x.size()) {
+          AddImplication({is_before}, row[i + 1]);
+          AddLinearConstraint({NegatedRef(is_before)}, Domain(0),
+                              {{row[i], 1}, {row[i + 1], -1}});
+        }
+        AddImplication({NegatedRef(row[i])}, NegatedRef(is_after));
+      }
+    }
   } else if (fz_ct.type == "fzn_disjunctive") {
     const std::vector<VarOrValue> starts =
         LookupVarsOrValues(fz_ct.arguments[0]);
@@ -3307,9 +3391,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
              "  - #var_op_var_reif cached: ", m.num_var_op_var_reif_cached);
   SOLVER_LOG(logger,
              "  - #var_op_var_imp cached: ", m.num_var_op_var_reif_cached);
-  SOLVER_LOG(logger, "  - #full encodings: ", m.num_full_encodings);
+  SOLVER_LOG(logger, "  - #full domain encodings: ", m.num_full_encodings);
   if (absl::GetFlag(FLAGS_fz_use_light_encoding)) {
-    SOLVER_LOG(logger, "  - #light encodings: ", m.num_light_encodings);
+    SOLVER_LOG(logger,
+               "  - #partial domain encodings: ", m.num_partial_encodings);
+    SOLVER_LOG(logger,
+               "  - #light constraint encodings: ", m.num_light_encodings);
   }
 
   if (p.search_all_solutions && !m.proto.has_objective()) {

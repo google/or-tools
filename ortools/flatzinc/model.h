@@ -218,12 +218,13 @@ struct Argument {
 // Constraint is on the heap, and owned by the global Model object.
 struct Constraint {
   Constraint(absl::string_view t, std::vector<Argument> args,
-             bool strong_propag)
+             bool strong_propag, bool sym, bool redundant)
       : type(t),
         arguments(std::move(args)),
         strong_propagation(strong_propag),
         active(true),
-        presolve_propagation_done(false) {}
+        is_symmetric_breaking(sym),
+        is_redundant(redundant) {}
 
   std::string DebugString() const;
 
@@ -250,8 +251,11 @@ struct Constraint {
   // presolve.
   bool active : 1;
 
-  // Indicates if presolve has finished propagating this constraint.
-  bool presolve_propagation_done : 1;
+  // Indicates if the constraint is a symmetric breaking constraint.
+  bool is_symmetric_breaking : 1;
+
+  // Indicates if the constraint is a redundant constraint.
+  bool is_redundant : 1;
 };
 
 // An annotation is a set of information. It has two use cases. One during
@@ -354,7 +358,7 @@ class Model {
   Variable* AddFloatConstant(double value);
   // Creates and add a constraint to the model.
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments,
-                     bool is_domain);
+                     bool is_domain, bool symmetry, bool redundant);
   void AddConstraint(absl::string_view id, std::vector<Argument> arguments);
   void AddOutput(SolutionOutputSpecs output);
 

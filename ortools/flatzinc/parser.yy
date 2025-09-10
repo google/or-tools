@@ -549,7 +549,9 @@ constraint :
   const std::vector<Argument>& arguments = *$4;
   std::vector<Annotation>* const annotations = $6;
 
-  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"));
+  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"),
+                       ContainsId(annotations, "symmetry_breaking"),
+                       ContainsId(annotations, "redundant"));
   delete annotations;
   delete $4;
 }

@@ -1,7 +1,9 @@
-% Ignore.
-predicate symmetry_breaking_constraint(var bool: b) = b;
+% Tag constraints correctly.
+ann: symmetry_breaking;
+ann: redundant;
 
-predicate redundant_constraint(var bool: b) = b;
+predicate symmetry_breaking_constraint(var bool: b) = (b) :: symmetry_breaking;
+predicate redundant_constraint(var bool: b) = (b) :: redundant;
 
 % array_var_bool_element_nonshifted.
 predicate ortools_array_var_bool_element(var int: idx,
