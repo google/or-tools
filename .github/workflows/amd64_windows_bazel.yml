@@ -27,6 +27,8 @@ jobs:
         #  {version: '3.13'},
         ]
       fail-fast: false # Don't cancel all jobs if one fails.
+    env:
+      cache-name: amd64•Windows•Bazel•Python-${{matrix.python.version}}
     name: amd64•Windows•Bazel•Python-${{matrix.python.version}}
     runs-on: windows-2022
     steps:
@@ -53,18 +55,18 @@ jobs:
         uses: actions/cache/restore@v4
         id: bazel-cache-restore
         with:
-          key: amd64•Windows•Bazel•Python-${{matrix.python.version}}
+          key: ${{ env.cache-name }}
           path: ${{env.BAZEL_OUTPUT_ROOT}}
       - name: Build
         run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
       - name: Test
         run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
-      - name: Save Bazel cache unconditionnally
+      - name: Save Bazel cache for branch main even when Build and Test fail.
         uses: actions/cache/save@v4
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:
-          key: amd64•Windows•Bazel•Python-${{matrix.python.version}}
+          key: ${{ env.cache-name }}
           path: ${{env.BAZEL_OUTPUT_ROOT}}
 
   amd64_windows_bazel:
