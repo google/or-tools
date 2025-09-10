@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BAZEL_OUTPUT_ROOT: /tmp/bazel
+  cache-root: /tmp/bazel
 
 # Building using the github runner environement directly.
 jobs:
@@ -27,11 +27,11 @@ jobs:
           #{version: '3.13'},
         ]
       fail-fast: false
+    name: amd64•Linux•Bazel•Python-${{matrix.python.version}}
     env:
       CC:  gcc-12
       CXX: g++-12
-      cache-name: amd64•Linux•Bazel•Python-${{matrix.python.version}}
-    name: amd64•Linux•Bazel•Python-${{matrix.python.version}}
+      cache-name: ${{github.job}}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -66,19 +66,19 @@ jobs:
         uses: actions/cache/restore@v4
         id: bazel-cache-restore
         with:
-          key: ${{ env.cache-name }}
-          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{env.cache-name}}
+          path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} build --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
       - name: Test
-        run: bazel --output_user_root=${{env.BAZEL_OUTPUT_ROOT}} test --config=ci //ortools/... //examples/...
+        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
       - name: Save Bazel cache for branch main even when Build and Test fail.
         uses: actions/cache/save@v4
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:
-          key: ${{ env.cache-name }}
-          path: ${{env.BAZEL_OUTPUT_ROOT}}
+          key: ${{env.cache-name}}
+          path: ${{env.cache-root}}
 
   amd64_linux_bazel:
     runs-on: ubuntu-latest
