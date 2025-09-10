@@ -32,9 +32,10 @@ jobs:
           {distrib: 'temurin', version: '17'}, # 2027/10
           {distrib: 'temurin', version: '21'}, # 2029/12
           # see https://endoflife.date/microsoft-build-of-openjdk
-          {distrib: 'microsoft', version: '11'}, # 2027/09
-          {distrib: 'microsoft', version: '17'}, # 2027/09
-          {distrib: 'microsoft', version: '21'}, # 2028/09
+          # microsoft jdk seems to use an older redistributable
+          #{distrib: 'microsoft', version: '11'}, # 2027/09
+          #{distrib: 'microsoft', version: '17'}, # 2027/09
+          #{distrib: 'microsoft', version: '21'}, # 2028/09
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}})•${{matrix.java.distrib}}-${{matrix.java.version}}
