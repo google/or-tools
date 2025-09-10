@@ -76,6 +76,6 @@ jobs:
 
   amd64_macos_bazel:
     runs-on: ubuntu-latest
-    needs: native
+    needs: amd64-MacOS-Bazel-Python
     steps:
       - uses: actions/checkout@v5

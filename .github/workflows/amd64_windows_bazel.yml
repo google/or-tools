@@ -71,6 +71,6 @@ jobs:
 
   amd64_windows_bazel:
     runs-on: ubuntu-latest
-    needs: native
+    needs: amd64-Windows-Bazel-Python
     steps:
       - uses: actions/checkout@v5
