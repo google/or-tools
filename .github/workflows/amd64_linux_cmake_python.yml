@@ -13,6 +13,12 @@ concurrency:
   cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  CCACHE_BASEDIR: ${{github.workspace}}
+  CCACHE_DIR: ${{github.workspace}}/.ccache
+  CMAKE_C_COMPILER_LAUNCHER: ccache
+  CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
 jobs:
   native:
     strategy:
@@ -20,7 +26,7 @@ jobs:
         cmake: [
           {name: "Make", generator: "Unix Makefiles", config: Release},
           {name: "Ninja", generator: "Ninja", config: Release},
-          {name: "Ninja Multi", generator: "Ninja Multi-Config", config: Release},
+          {name: "NinjaMulti", generator: "Ninja Multi-Config", config: Release},
         ]
         python: [
           {version: "3.9"},
@@ -32,15 +38,16 @@ jobs:
       fail-fast: false
     name: amd64•Linux•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
     runs-on: ubuntu-latest
+    env:
+      cmake_deps_src_key: cmake_python_deps_src_${{matrix.cmake.name}}_${{matrix.python.version}}
+      cmake_deps_build_key: amd64_linux_cmake_python_deps_build_${{matrix.cmake.name}}_${{matrix.python.version}}
+      ccache_key: amd64_linux_cmake_python_ccache_${{matrix.cmake.name}}_${{matrix.python.version}}
     steps:
       - uses: actions/checkout@v5
-      - name: Install Ninja
+      - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y ninja-build
-      - name: Swig install
-        run: |
-          sudo apt install -y swig
+          sudo apt install -y ninja-build ccache swig
           swig -version
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -48,6 +55,29 @@ jobs:
           python-version: ${{matrix.python.version}}
       - name: Update Path
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # RESTORING CACHES
+      - name: Restore CMake dependency source code
+        uses: actions/cache/restore@v4
+        id: cmake_deps_src_restore
+        with:
+          key: ${{env.cmake_deps_src_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Restore CMake dependency build code
+        uses: actions/cache/restore@v4
+        id: cmake_deps_build_restore
+        with:
+          key: ${{env.cmake_deps_build_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Restore CCache
+        uses: actions/cache/restore@v4
+        id: ccache_restore
+        with:
+          key: ${{env.ccache_key}}
+          path: ${{env.CCACHE_DIR}}
+
       - name: Check CMake
         run: cmake --version
       - name: Configure
@@ -77,6 +107,28 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target install
           -v
+
+      # SAVING CACHES
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.cmake_deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.cmake_deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CCache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
+          path: ${{env.CCACHE_DIR}}
 
   amd64_linux_cmake_python:
     runs-on: ubuntu-latest
