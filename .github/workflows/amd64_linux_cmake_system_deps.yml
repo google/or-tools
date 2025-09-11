@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  native:
+  docker:
     strategy:
       matrix:
         distro: [system_deps]

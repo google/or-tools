@@ -24,9 +24,9 @@ jobs:
     name: amd64•Linux•CMake•.Net
     runs-on: ubuntu-latest
     env:
-      cmake_deps_src_key: cmake_dotnet_deps_src
-      cmake_deps_build_key: amd64_linux_cmake_dotnet_deps_build
-      ccache_key: amd64_linux_cmake_dotnet_ccache
+      deps_src_key: amd64_linux_dotnet_deps_src
+      deps_build_key: amd64_linux_dotnet_deps_build
+      ccache_key: amd64_linux_dotnet_ccache
     steps:
       - uses: actions/checkout@v5
       - name: Install Dependencies
@@ -44,15 +44,15 @@ jobs:
       # RESTORING CACHES
       - name: Restore CMake dependency source code
         uses: actions/cache/restore@v4
-        id: cmake_deps_src_restore
+        id: deps_src_restore
         with:
-          key: ${{env.cmake_deps_src_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: ${{github.workspace}}/build/_deps/*-src
-      - name: Restore CMake dependency build code
+      - name: Restore CMake dependency build
         uses: actions/cache/restore@v4
-        id: cmake_deps_build_restore
+        id: deps_build_restore
         with:
-          key: ${{env.cmake_deps_build_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: |
             ${{github.workspace}}/build/_deps/*-build
             ${{github.workspace}}/build/_deps/*-subbuild
@@ -60,7 +60,8 @@ jobs:
         uses: actions/cache/restore@v4
         id: ccache_restore
         with:
-          key: ${{env.ccache_key}}
+          key: ${{env.ccache_key}}-${{github.sha}}
+          restore-key: ${{env.ccache_key}}-
           path: ${{env.CCACHE_DIR}}
 
       - name: Check CMake
@@ -68,6 +69,7 @@ jobs:
       - name: Configure
         run: >
           cmake -S. -Bbuild
+          -G "Ninja"
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_DOTNET=ON
@@ -93,26 +95,26 @@ jobs:
           -v
 
       # SAVING CACHES
-      - name: Save CMake dependency source code
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          key: ${{steps.cmake_deps_src_restore.outputs.cache-primary-key}}
-          path: ${{github.workspace}}/build/_deps/*-src
-      - name: Save CMake dependency source code
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          key: ${{steps.cmake_deps_build_restore.outputs.cache-primary-key}}
-          path: |
-            ${{github.workspace}}/build/_deps/*-build
-            ${{github.workspace}}/build/_deps/*-subbuild
       - name: Save CCache
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
         with:
           key: ${{steps.ccache_restore.outputs.cache-primary-key}}
           path: ${{env.CCACHE_DIR}}
+      - name: Save CMake dependency build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
 
   amd64_linux_cmake_dotnet:
     runs-on: ubuntu-latest

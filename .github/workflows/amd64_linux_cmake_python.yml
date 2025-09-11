@@ -23,25 +23,20 @@ jobs:
   native:
     strategy:
       matrix:
-        cmake: [
-          {name: "Make", generator: "Unix Makefiles", config: Release},
-          {name: "Ninja", generator: "Ninja", config: Release},
-          {name: "NinjaMulti", generator: "Ninja Multi-Config", config: Release},
-        ]
         python: [
           {version: "3.9"},
-          {version: "3.10"},
-          {version: "3.11"},
+          #{version: "3.10"},
+          #{version: "3.11"},
           {version: "3.12"},
           {version: "3.13"},
         ]
       fail-fast: false
-    name: amd64•Linux•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
+    name: amd64•Linux•CMake•Python${{matrix.python.version}}
     runs-on: ubuntu-latest
     env:
-      cmake_deps_src_key: cmake_python_deps_src_${{matrix.cmake.name}}_${{matrix.python.version}}
-      cmake_deps_build_key: amd64_linux_cmake_python_deps_build_${{matrix.cmake.name}}_${{matrix.python.version}}
-      ccache_key: amd64_linux_cmake_python_ccache_${{matrix.cmake.name}}_${{matrix.python.version}}
+      deps_src_key: amd64_linux_python_deps_src_${{matrix.python.version}}
+      deps_build_key: amd64_linux_python_deps_build_${{matrix.python.version}}
+      ccache_key: amd64_linux_python_ccache_${{matrix.python.version}}
     steps:
       - uses: actions/checkout@v5
       - name: Install Dependencies
@@ -59,15 +54,15 @@ jobs:
       # RESTORING CACHES
       - name: Restore CMake dependency source code
         uses: actions/cache/restore@v4
-        id: cmake_deps_src_restore
+        id: deps_src_restore
         with:
-          key: ${{env.cmake_deps_src_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: ${{github.workspace}}/build/_deps/*-src
-      - name: Restore CMake dependency build code
+      - name: Restore CMake dependency build
         uses: actions/cache/restore@v4
-        id: cmake_deps_build_restore
+        id: deps_build_restore
         with:
-          key: ${{env.cmake_deps_build_key}}-${{hashFiles('**/CMakeLists.txt', 'cmake/**')}}
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
           path: |
             ${{github.workspace}}/build/_deps/*-build
             ${{github.workspace}}/build/_deps/*-subbuild
@@ -75,7 +70,8 @@ jobs:
         uses: actions/cache/restore@v4
         id: ccache_restore
         with:
-          key: ${{env.ccache_key}}
+          key: ${{env.ccache_key}}-${{github.sha}}
+          restore-key: ${{env.ccache_key}}-
           path: ${{env.CCACHE_DIR}}
 
       - name: Check CMake
@@ -83,52 +79,52 @@ jobs:
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{matrix.cmake.generator}}"
-          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
+          -G "Ninja"
+          -DCMAKE_BUILD_TYPE=Release
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_PYTHON=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
-          --config ${{matrix.cmake.config}}
+          --config Release
           --target all
           -v -j2
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
-          --config ${{matrix.cmake.config}}
+          --config Release
           --target test
           -v
       - name: Install
         run: >
           cmake --build build
-          --config ${{matrix.cmake.config}}
+          --config Release
           --target install
           -v
 
       # SAVING CACHES
-      - name: Save CMake dependency source code
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          key: ${{steps.cmake_deps_src_restore.outputs.cache-primary-key}}
-          path: ${{github.workspace}}/build/_deps/*-src
-      - name: Save CMake dependency source code
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          key: ${{steps.cmake_deps_build_restore.outputs.cache-primary-key}}
-          path: |
-            ${{github.workspace}}/build/_deps/*-build
-            ${{github.workspace}}/build/_deps/*-subbuild
       - name: Save CCache
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
         with:
           key: ${{steps.ccache_restore.outputs.cache-primary-key}}
           path: ${{env.CCACHE_DIR}}
+      - name: Save CMake dependency build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
 
   amd64_linux_cmake_python:
     runs-on: ubuntu-latest
