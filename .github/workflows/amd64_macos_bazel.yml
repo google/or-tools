@@ -70,7 +70,7 @@ jobs:
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache
         if: always() && github.ref == 'refs/heads/main'
         with:
-          key: ${{env.cache-name}}
+          key: ${{env.cache-name}}-${{github.sha}}
           path: ${{env.cache-root}}
 
   amd64_macos_bazel:
