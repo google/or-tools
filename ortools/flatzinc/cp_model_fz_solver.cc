@@ -722,6 +722,7 @@ void CpModelProtoWithMapping::AddAllEncodingConstraints() {
       }
     } else if (encoding.size() > domain.Size() / 2 && light_encoding) {
       BoolArgumentProto* exo = proto.add_constraints()->mutable_exactly_one();
+      // We iterate on the domain to make sure we visit all values.
       for (const int64_t value : domain.Values()) {
         const int lit = GetOrCreateEncodingLiteral(var, value);
         exo->add_literals(lit);
@@ -1711,9 +1712,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     if (x.empty()) return;
     if (values.size() <= 1) return;
 
-    std::vector<std::vector<int>> hold(values.size() - 1);
-    for (int r = 0; r < hold.size(); ++r) {
-      std::vector<int>& row = hold[r];
+    std::vector<int> row;
+    for (int r = 0; r + 1 < values.size(); ++r) {
+      row.clear();
       const int64_t before = values[r];
       const int64_t after = values[r + 1];
       row.resize(x.size());
@@ -2072,7 +2073,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     }
   } else if (fz_ct.type == "ortools_global_cardinality_low_up") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
-    CHECK_EQ(fz_ct.arguments[1].type, fz::Argument::INT_LIST);
+    CHECK(fz_ct.arguments[1].type == fz::Argument::INT_LIST ||
+          fz_ct.arguments[1].type == fz::Argument::VOID_ARGUMENT);
     const std::vector<int64_t>& values = fz_ct.arguments[1].values;
     absl::Span<const int64_t> lbs = fz_ct.arguments[2].values;
     absl::Span<const int64_t> ubs = fz_ct.arguments[3].values;
@@ -3560,6 +3562,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (p.ortools_mode) {
     if (response.status() == CpSolverStatus::FEASIBLE ||
         response.status() == CpSolverStatus::OPTIMAL) {
+      // Display the solution if it is not already displayed.
       if (!p.display_all_solutions && !p.search_all_solutions) {
         // Already printed otherwise.
         const std::string solution_string = SolutionString(
@@ -3582,7 +3585,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
         SOLVER_LOG(solution_logger, solution_string);
         SOLVER_LOG(solution_logger, "----------");
       }
-      if (response.status() == CpSolverStatus::OPTIMAL) {
+      const bool should_print_optimal =
+          response.status() == CpSolverStatus::OPTIMAL &&
+          (fz_model.objective() != nullptr || p.search_all_solutions);
+
+      if (should_print_optimal) {
         SOLVER_LOG(solution_logger, "==========");
       }
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {

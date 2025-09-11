@@ -10,4 +10,3 @@ predicate fzn_value_precede_chain_int(array [int] of int: T,
   else
     ortools_precede_chain_int(T, X)
   endif;
- 
