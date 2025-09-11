@@ -13,10 +13,10 @@
 
 """Helper macro to compile and test code samples."""
 
-load("@rules_go//go:def.bzl", "go_test")
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_go//go:def.bzl", "go_test")
 load("@rules_java//java:java_test.bzl", "java_test")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
