@@ -57,7 +57,7 @@ jobs:
         id: ccache_restore
         with:
           key: ${{env.ccache_key}}-${{github.sha}}
-          restore-key: ${{env.ccache_key}}-
+          restore-keys: ${{env.ccache_key}}-
           path: ${{env.CCACHE_DIR}}
 
       - name: Check CMake
