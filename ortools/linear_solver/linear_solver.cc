@@ -1376,7 +1376,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 
 void MPSolver::Clear() {
   {
-    absl::MutexLock lock(&global_count_mutex_);
+    absl::MutexLock lock(global_count_mutex_);
     global_num_variables_ += variables_.size();
     global_num_constraints_ += constraints_.size();
   }
@@ -1909,13 +1909,13 @@ int64_t MPSolver::global_num_constraints_ = 0;
 
 // static
 int64_t MPSolver::global_num_variables() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_variables_;
 }
 
 // static
 int64_t MPSolver::global_num_constraints() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_constraints_;
 }
 

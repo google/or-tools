@@ -38,7 +38,7 @@ class PrinterMessageCallbackImpl {
       : output_stream_(output_stream), prefix_(prefix) {}
 
   void Call(absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     for (const std::string& message : messages) {
       output_stream_ << prefix_ << message << '\n';
     }
@@ -69,7 +69,7 @@ class VectorLikeMessageCallbackImpl {
       : sink_(ABSL_DIE_IF_NULL(sink)) {}
 
   void Call(absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     PushBack(messages, sink_);
   }
 

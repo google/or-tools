@@ -138,7 +138,7 @@ class SCIPInterface : public MPSolverInterface {
   }
 
   bool InterruptSolve() override {
-    const absl::MutexLock lock(&hold_interruptions_mutex_);
+    const absl::MutexLock lock(hold_interruptions_mutex_);
     if (scip_ == nullptr) {
       LOG_IF(DFATAL, status_.ok()) << "scip_ is null is unexpected here, since "
                                       "status_ did not report any error";
@@ -280,7 +280,7 @@ SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
 
 void SCIPInterface::Reset() {
   // We hold calls to SCIPinterruptSolve() until the new scip_ is fully built.
-  const absl::MutexLock lock(&hold_interruptions_mutex_);
+  const absl::MutexLock lock(hold_interruptions_mutex_);
 
   // Remove existing one but keep it alive to copy parameters from it.
   SCIP* old_scip = DeleteSCIP(/*return_scip=*/true);
