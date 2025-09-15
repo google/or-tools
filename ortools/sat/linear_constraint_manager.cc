@@ -980,7 +980,7 @@ void LinearConstraintManager::CacheReducedCostsInfo() {
   if (reduced_costs_is_cached_) return;
   reduced_costs_is_cached_ = true;
 
-  absl::int128 ub = reduced_cost_constraint_.ub.value();
+  const absl::int128 ub = reduced_cost_constraint_.ub.value();
   absl::int128 level_zero_lb = 0;
   for (int i = 0; i < reduced_cost_constraint_.num_terms; ++i) {
     IntegerVariable var = reduced_cost_constraint_.vars[i];
@@ -1000,8 +1000,7 @@ void LinearConstraintManager::CacheReducedCostsInfo() {
       reduced_costs_map_[Literal(lit)] = coeff;
     }
   }
-  const absl::int128 gap =
-      absl::int128(reduced_cost_constraint_.ub.value()) - level_zero_lb;
+  const absl::int128 gap = ub - level_zero_lb;
   if (gap > 0) {
     reduced_costs_gap_ = gap;
   } else {

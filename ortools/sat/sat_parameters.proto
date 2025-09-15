@@ -715,7 +715,7 @@ message SatParameters {
 
   // Allows sharing of short glue clauses between workers.
   // Implicitly disabled if share_binary_clauses is false.
-  optional bool share_glue_clauses = 285 [default = false];
+  optional bool share_glue_clauses = 285 [default = true];
 
   // Minimize and detect subsumption of shared clauses immediately after they
   // are imported.

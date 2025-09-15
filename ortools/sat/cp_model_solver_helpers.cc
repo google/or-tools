@@ -2096,17 +2096,17 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 
   if (params->shared_tree_num_workers() == -1) {
     int num_shared_tree_workers = 0;
-    if (params->num_workers() >= 16) {
-      if (model_proto.has_objective() ||
-          model_proto.has_floating_point_objective()) {
-        num_shared_tree_workers = (params->num_workers() - 8) / 2;
-      } else {
-        num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
-      }
+    if (model_proto.has_objective() ||
+        model_proto.has_floating_point_objective()) {
+      num_shared_tree_workers = (params->num_workers() - 16) / 2;
+    } else {
+      num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
     }
-    SOLVER_LOG(logger, "Setting number of shared tree workers to ",
-               num_shared_tree_workers);
-    params->set_shared_tree_num_workers(num_shared_tree_workers);
+    if (num_shared_tree_workers > 4) {
+      SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+                 num_shared_tree_workers);
+      params->set_shared_tree_num_workers(num_shared_tree_workers);
+    }
   }
 
   // We currently only use the feasibility pump or rins/rens if it is enabled

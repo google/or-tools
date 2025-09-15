@@ -158,6 +158,9 @@ void AddDiffnCumulativeRelationOnX(
       model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
           x, y->Sizes());
 
+  model->GetOrCreate<IntervalsRepository>()->RegisterCumulative(
+      {.capacity = capacity, .task_helper = x, .demand_helper = demands});
+
   // Propagator responsible for applying Timetabling filtering rule. It
   // increases the minimum of the start variables, decrease the maximum of the
   // end variables, and increase the minimum of the capacity variable.

@@ -6419,6 +6419,21 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
               "no_overlap_2d: impossible interval.");
         }
       }
+
+      if (context_->SizeMin(interval_index) < 0) {
+        const ConstraintProto* interval_ct =
+            context_->working_model->mutable_constraints(interval_index);
+        if (interval_ct->enforcement_literal().empty()) {
+          bool domain_changed = false;
+          // Size can't be negative.
+          if (!context_->IntersectDomainWith(
+                  interval_ct->interval().size(),
+                  Domain(0, std::numeric_limits<int64_t>::max()),
+                  &domain_changed)) {
+            return false;
+          }
+        }
+      }
     }
 
     if (context_->ConstraintIsInactive(x_interval_index) ||

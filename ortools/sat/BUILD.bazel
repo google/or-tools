@@ -1077,7 +1077,6 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
-        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/numeric:int128",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",

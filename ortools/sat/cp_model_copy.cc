@@ -1061,6 +1061,16 @@ void ModelCopy::ExpandNonAffineExpressions() {
 // Replaces the expression sum a_i * x_i + c with gcd * y + c, where y is a new
 // variable defined with an additional constraint y = sum a_i / gcd * x_i.
 void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
+  int new_size = 0;
+  for (int i = 0; i < expr->vars().size(); ++i) {
+    if (expr->coeffs(i) != 0) {
+      expr->set_vars(new_size, expr->vars(i));
+      expr->set_coeffs(new_size, expr->coeffs(i));
+      ++new_size;
+    }
+  }
+  expr->mutable_vars()->Truncate(new_size);
+  expr->mutable_coeffs()->Truncate(new_size);
   if (expr->vars_size() < 2) return;
 
   int64_t gcd = std::abs(expr->coeffs(0));
@@ -1076,26 +1086,37 @@ void ModelCopy::MaybeExpandNonAffineExpression(LinearExpressionProto* expr) {
         domain.AdditionWith(context_->DomainOf(var).MultiplicationBy(coeff));
     definition.push_back({var, coeff});
   }
-  // TODO(user): we could also make sure that expr and -expr are expanded
-  // to the same variable.
   std::sort(definition.begin(), definition.end());
   int new_var;
   auto it = non_affine_expression_to_new_var_.find(definition);
   if (it != non_affine_expression_to_new_var_.end()) {
     new_var = it->second;
   } else {
-    new_var = context_->NewIntVar(domain);
-    auto* new_linear =
-        context_->working_model->add_constraints()->mutable_linear();
-    new_linear->add_vars(new_var);
-    new_linear->add_coeffs(-1);
+    std::vector<std::pair<int, int64_t>> negated_definition;
+    negated_definition.reserve(definition.size());
     for (const auto [var, coeff] : definition) {
-      new_linear->add_vars(var);
-      new_linear->add_coeffs(coeff);
+      negated_definition.push_back({var, -coeff});
     }
-    new_linear->add_domain(0);
-    new_linear->add_domain(0);
-    context_->solution_crush().SetVarToLinearExpression(new_var, definition);
+    std::sort(negated_definition.begin(), negated_definition.end());
+    it = non_affine_expression_to_new_var_.find(negated_definition);
+    if (it != non_affine_expression_to_new_var_.end()) {
+      new_var = it->second;
+      gcd = -gcd;
+    } else {
+      new_var = context_->NewIntVar(domain);
+      non_affine_expression_to_new_var_[definition] = new_var;
+      auto* new_linear =
+          context_->working_model->add_constraints()->mutable_linear();
+      new_linear->add_vars(new_var);
+      new_linear->add_coeffs(-1);
+      for (const auto [var, coeff] : definition) {
+        new_linear->add_vars(var);
+        new_linear->add_coeffs(coeff);
+      }
+      new_linear->add_domain(0);
+      new_linear->add_domain(0);
+      context_->solution_crush().SetVarToLinearExpression(new_var, definition);
+    }
   }
   expr->clear_vars();
   expr->clear_coeffs();

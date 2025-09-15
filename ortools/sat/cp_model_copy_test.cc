@@ -334,6 +334,58 @@ TEST(ModelCopyTest, ElementConstraint) {
   EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
 }
 
+TEST(ModelCopyTest, ExpandedNonAffineExpressionsShareVariableWhenPossible) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      all_diff {
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 1, 2 ]
+          offset: 1
+        }
+        exprs {
+          vars: [ 0, 1 ]
+          coeffs: [ 2, 4 ]
+          offset: 3
+        }
+        exprs {
+          vars: [ 1, 0 ]
+          coeffs: [ -2, -1 ]
+          offset: 6
+        }
+      }
+    }
+  )pb");
+  const CpModelProto expected_moded = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 30 ] }
+    constraints {
+      all_diff {
+        exprs { vars: 2 coeffs: 1 offset: 1 }
+        exprs { vars: 2 coeffs: 2 offset: 3 }
+        exprs { vars: 2 coeffs: -1 offset: 6 }
+      }
+    }
+    constraints {
+      linear {
+        vars: [ 2, 0, 1 ]
+        coeffs: [ -1, 1, 2 ]
+        domain: [ 0, 0 ]
+      }
+    }
+  )pb");
+  CpModelProto new_cp_model;
+  Model model;
+  model.GetOrCreate<SatParameters>()
+      ->set_keep_all_feasible_solutions_in_presolve(true);
+  PresolveContext context(&model, &new_cp_model, nullptr);
+  ImportModelWithBasicPresolveIntoContext(initial_model, &context);
+  EXPECT_THAT(new_cp_model, EqualsProto(expected_moded));
+}
+
 }  // namespace
 }  // namespace sat
 }  // namespace operations_research
