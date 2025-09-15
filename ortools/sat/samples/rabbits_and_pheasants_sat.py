@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Rabbits and Pheasants quizz."""
 
 from ortools.sat.python import cp_model
@@ -38,3 +39,4 @@ def rabbits_and_pheasants_sat():
 
 
 rabbits_and_pheasants_sat()
+# [END program]

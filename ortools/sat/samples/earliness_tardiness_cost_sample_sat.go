@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The earliness_tardiness_cost_sample_sat command is an example of an implementation of a convex
 // piecewise linear function.
 package main
@@ -89,3 +90,5 @@ func main() {
 		log.Exitf("earlinessTardinessCostSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

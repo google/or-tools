@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The ranking_sample_sat command is an example of ranking intervals in a NoOverlap constraint.
 package main
 
@@ -164,3 +165,5 @@ func main() {
 		log.Exitf("rankingSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

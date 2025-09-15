@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Implements transition times and costs in a no_overlap constraint."""
 
 from collections.abc import Sequence
@@ -202,3 +203,4 @@ def transitions_in_no_overlap_sample_sat():
 
 
 transitions_in_no_overlap_sample_sat()
+# [END program]

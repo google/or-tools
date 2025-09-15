@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The solve_and_print_intermediate_solutions_sample_sat command
 package main
 
@@ -69,3 +70,5 @@ func main() {
 		log.Exitf("solveAndPrintIntermediateSolutionsSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

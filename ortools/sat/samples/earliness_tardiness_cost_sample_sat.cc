@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 #include <stdlib.h>
 
 #include <cstdint>
@@ -80,3 +81,4 @@ int main(int argc, char* argv[]) {
   operations_research::sat::EarlinessTardinessCostSampleSat();
   return EXIT_SUCCESS;
 }
+// [END program]

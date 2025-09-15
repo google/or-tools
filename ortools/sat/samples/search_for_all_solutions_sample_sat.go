@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The search_for_all_solutions_sample_sat command is an example for how to search for
 // all solutions.
 package main
@@ -67,3 +68,5 @@ func main() {
 		log.Exitf("searchForAllSolutionsSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Implements sequence constraints in a no_overlap constraint."""
 
 from collections.abc import Sequence
@@ -296,3 +297,4 @@ def sequences_in_no_overlap_sample_sat():
 
 
 sequences_in_no_overlap_sample_sat()
+# [END program]
