@@ -43,7 +43,8 @@ class ParseProtoHelper {
 
 }  // namespace parse_proto_internal
 
-parse_proto_internal::ParseProtoHelper ParseTestProto(std::string_view input) {
+inline parse_proto_internal::ParseProtoHelper ParseTestProto(
+    std::string_view input) {
   return parse_proto_internal::ParseProtoHelper(input);
 }
 
