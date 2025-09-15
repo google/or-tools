@@ -18,16 +18,33 @@ jobs:
     strategy:
       matrix:
         cmake: [
-          {name: "VS2022", generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
-          # {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL}, # too many symbols
+          {name: "VS2022", generator: "Visual Studio 17 2022", config: Release},
+          # {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug}, # too many symbols
         ]
       fail-fast: false
     name: amd64•Windows•CMake(${{matrix.cmake.name}},${{matrix.cmake.config}})•C++
     runs-on: windows-latest
     env:
+      deps_src_key: amd64_windows_cpp_deps_src
+      deps_build_key: amd64_windows_cpp_deps_build_${{matrix.cmake.config}}
       CTEST_OUTPUT_ON_FAILURE: 1
     steps:
       - uses: actions/checkout@v5
+
+      # CONFIGURING CACHES
+      - name: Cache CMake dependency source code
+        uses: actions/cache@v4
+        with:
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Cache CMake dependency build
+        uses: actions/cache@v4
+        with:
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+
       - name: Check CMake
         run: |
           cmake --version
@@ -43,19 +60,19 @@ jobs:
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target ${{matrix.cmake.build_target}}
+          --target ALL_BUILD
           -v -j2
       - name: Test
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target ${{matrix.cmake.test_target}}
+          --target RUN_TESTS
           -v
       - name: Install
         run: >
           cmake --build build
           --config ${{matrix.cmake.config}}
-          --target ${{matrix.cmake.install_target}}
+          --target INSTALL
           -v
 
   amd64_windows_cmake_cpp:
