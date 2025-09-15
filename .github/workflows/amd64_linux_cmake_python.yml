@@ -16,8 +16,6 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
-  CMAKE_C_COMPILER_LAUNCHER: ccache
-  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   native:
@@ -27,9 +25,9 @@ jobs:
           {version: "3.9"},
           #{version: "3.10"},
           #{version: "3.11"},
-          {version: "3.12"},
+          #{version: "3.12"},
           {version: "3.13"},
-        ]
+         ]
       fail-fast: false
     name: amd64•Linux•CMake•Python${{matrix.python.version}}
     runs-on: ubuntu-latest
@@ -103,6 +101,10 @@ jobs:
           --config Release
           --target install
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
 
       # SAVING CACHES
       - name: Save CCache

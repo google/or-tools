@@ -16,8 +16,6 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
-  CMAKE_C_COMPILER_LAUNCHER: ccache
-  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   native:
@@ -89,6 +87,10 @@ jobs:
           --config Release
           --target install
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
 
       # SAVING CACHES
       - name: Save CCache

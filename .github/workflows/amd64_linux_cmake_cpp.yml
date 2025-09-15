@@ -16,8 +16,6 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
-  CMAKE_C_COMPILER_LAUNCHER: ccache
-  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   native:
@@ -26,8 +24,8 @@ jobs:
         cmake: [
           {name: "Make", generator: "Unix Makefiles", config: Release},
           {name: "Ninja", generator: "Ninja", config: Release},
-          {name: "NinjaMulti", generator: "Ninja Multi-Config", config: Release},
-        ]
+          {name: "NinjaMulti", generator: "Ninja Multi-Config", config: Release}
+         ]
       fail-fast: false
     name: amd64•Linux•CMake(${{matrix.cmake.name}})•C++
     runs-on: ubuntu-latest
@@ -93,6 +91,10 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target install
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
 
       # SAVING CACHES
       - name: Save CCache

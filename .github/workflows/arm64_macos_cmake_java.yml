@@ -16,8 +16,6 @@ concurrency:
 env:
   CCACHE_BASEDIR: ${{github.workspace}}
   CCACHE_DIR: ${{github.workspace}}/.ccache
-  CMAKE_C_COMPILER_LAUNCHER: ccache
-  CMAKE_CXX_COMPILER_LAUNCHER: ccache
 
 jobs:
   native:
@@ -34,7 +32,6 @@ jobs:
       deps_src_key: arm64_macos_java_deps_src
       deps_build_key: arm64_macos_java_deps_build_${{matrix.cmake.name}}
       ccache_key: arm64_macos_java_ccache_${{matrix.cmake.name}}
-      xcode_key: arm64_macos_java_xcode_${{matrix.cmake.name}}
     steps:
       - uses: actions/checkout@v5
       - name: Install Dependencies
@@ -66,13 +63,6 @@ jobs:
           key: ${{env.ccache_key}}-${{github.sha}}
           restore-keys: ${{env.ccache_key}}-
           path: ${{env.CCACHE_DIR}}
-      - name: Restore XCode
-        uses: actions/cache/restore@v4
-        id: xcode_restore
-        with:
-          key: ${{env.xcode_key}}-${{github.sha}}
-          restore-keys: ${{env.xcode_key}}-
-          path: ~/Library/Developer/Xcode/DerivedData
 
       - name: Check CMake
         run: cmake --version
@@ -103,14 +93,12 @@ jobs:
           --config ${{matrix.cmake.config}}
           --target ${{matrix.cmake.install_target}}
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
 
       # SAVING CACHES
-      - name: Save XCode
-        if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          key: ${{steps.xcode_restore.outputs.cache-primary-key}}
-          path: ~/Library/Developer/Xcode/DerivedData
       - name: Save CCache
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
