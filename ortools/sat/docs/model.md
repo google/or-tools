@@ -309,6 +309,7 @@ public class SolutionHintingSampleSat
 ### Go code
 
 ```go
+// Snippet from ortools/sat/samples/solution_hinting_sample_sat.go
 // The solution_hinting_sample_sat command is an example of setting solution hints on the model.
 package main
 

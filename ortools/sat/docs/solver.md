@@ -195,6 +195,7 @@ public class SolveWithTimeLimitSampleSat
 ### Specifying the time limit in Go
 
 ```go
+// Snippet from ortools/sat/samples/solve_with_time_limit_sample_sat.go
 // The solve_with_time_limit_sample_sat command is an example of setting a time limit on the model.
 package main
 
@@ -543,6 +544,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat
 ### Go code
 
 ```go
+// Snippet from ortools/sat/samples/solve_and_print_intermediate_solutions_sample_sat.go
 // The solve_and_print_intermediate_solutions_sample_sat command
 package main
 
@@ -885,6 +887,7 @@ public class SearchForAllSolutionsSampleSat
 To search for all solutions, a parameter of the SAT solver must be changed.
 
 ```go
+// Snippet from ortools/sat/samples/search_for_all_solutions_sample_sat.go
 // The search_for_all_solutions_sample_sat command is an example for how to search for
 // all solutions.
 package main
