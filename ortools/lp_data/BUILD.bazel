@@ -226,7 +226,6 @@ cc_library(
         ":lp_data",
         ":proto_utils",
         "//ortools/base",
-        "//ortools/base:case",
         "//ortools/base:map_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "@abseil-cpp//absl/status:statusor",
