@@ -21,7 +21,6 @@ negation of `x`.
 
 ```python
 # Snippet from ortools/sat/samples/literal_sample_sat.py
-#!/usr/bin/env python3
 """Code sample to demonstrate Boolean variable and literals."""
 
 
@@ -37,7 +36,6 @@ def literal_sample_sat():
 
 
 literal_sample_sat()
-
 ```
 
 ### C++ code
@@ -72,7 +70,6 @@ int main(int argc, char* argv[]) {
   operations_research::sat::LiteralSampleSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
@@ -96,15 +93,12 @@ public class LiteralSampleSat {
     System.out.println(notX);
   }
 }
-
 ```
 
 ### C\# code
 
 ```csharp
 // Snippet from ortools/sat/samples/LiteralSampleSat.cs
-
-
 using System;
 using Google.OrTools.Sat;
 
@@ -117,14 +111,12 @@ public class LiteralSampleSat
         ILiteral not_x = x.Not();
     }
 }
-
 ```
 
 ### Go code
 
 ```go
 // Snippet from ortools/sat/samples/literal_sample_sat.go
-
 // The literal_sample_sat command is a simple example of literals.
 package main
 
@@ -164,7 +156,6 @@ constraints. For instance, we can add a constraint Or(x, not(y)).
 
 ```python
 # Snippet from ortools/sat/samples/bool_or_sample_sat.py
-#!/usr/bin/env python3
 """Code sample to demonstrates a simple Boolean constraint."""
 
 
@@ -184,15 +175,12 @@ def bool_or_sample_sat():
 
 
 bool_or_sample_sat()
-
 ```
 
 ### C++ code
 
 ```cpp
 // Snippet from ortools/sat/samples/bool_or_sample_sat.cc
-
-
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
@@ -223,15 +211,12 @@ int main(int argc, char* argv[]) {
   operations_research::sat::BoolOrSampleSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
 
 ```java
 // Snippet from ortools/sat/samples/BoolOrSampleSat.java
-
-
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -249,15 +234,12 @@ public class BoolOrSampleSat {
     model.addBoolOr(new Literal[] {x, y.not()});
   }
 }
-
 ```
 
 ### C\# code
 
 ```csharp
 // Snippet from ortools/sat/samples/BoolOrSampleSat.cs
-
-
 using System;
 using Google.OrTools.Sat;
 
@@ -273,15 +255,12 @@ public class BoolOrSampleSat
         model.AddBoolOr(new ILiteral[] { x, y.Not() });
     }
 }
-
 ```
 
 ### Go code
 
 ```go
 // Snippet from ortools/sat/samples/bool_or_sample_sat.go
-
-
 // The bool_or_sample_sat command is simple example of the BoolOr constraint.
 package main
 
@@ -327,7 +306,6 @@ then is written as Or(not b, x) and Or(not b, not y).
 
 ```python
 # Snippet from ortools/sat/samples/reified_sample_sat.py
-#!/usr/bin/env python3
 """Simple model with a reified constraint."""
 
 from ortools.sat.python import cp_model
@@ -354,16 +332,12 @@ def reified_sample_sat():
 
 
 reified_sample_sat()
-
 ```
 
 ### C++ code
 
 ```cpp
 // Snippet from ortools/sat/samples/reified_sample_sat.cc
-
-
-
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
@@ -403,15 +377,12 @@ int main(int argc, char* argv[]) {
   operations_research::sat::ReifiedSampleSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
 
 ```java
 // Snippet from ortools/sat/samples/ReifiedSampleSat.java
-
-
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -450,15 +421,12 @@ public class ReifiedSampleSat {
     model.addBoolOr(new Literal[] {b.not(), y.not()});
   }
 }
-
 ```
 
 ### C\# code
 
 ```csharp
 // Snippet from ortools/sat/samples/ReifiedSampleSat.cs
-
-
 using System;
 using Google.OrTools.Sat;
 
@@ -484,15 +452,12 @@ public class ReifiedSampleSat
         model.AddBoolOr(new ILiteral[] { b.Not(), y.Not() });
     }
 }
-
 ```
 
 ### Go code
 
 ```go
 // Snippet from ortools/sat/samples/reified_sample_sat.go
-
-
 // The reified_sample_sat command is a simple example of implication constraints.
 package main
 
@@ -553,7 +518,6 @@ x = 1   y = 1   p = 1
 
 ```python
 # Snippet from ortools/sat/samples/boolean_product_sample_sat.py
-#!/usr/bin/env python3
 """Code sample that encodes the product of two Boolean variables."""
 
 
@@ -585,15 +549,12 @@ def boolean_product_sample_sat():
 
 
 boolean_product_sample_sat()
-
 ```
 
 ### Go code
 
 ```go
 // Snippet from ortools/sat/samples/boolean_product_sample_sat.go
-
-
 // The boolean_product_sample_sat command is a simple example of the product of two literals.
 package main
 
@@ -655,4 +616,5 @@ func main() {
 		log.Exitf("booleanProductSample returned with error: %v", err)
 	}
 }
+
 ```

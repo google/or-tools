@@ -121,7 +121,6 @@ rabbits and pheasants are there?
 
 ```python
 # Snippet from ortools/sat/samples/rabbits_and_pheasants_sat.py
-#!/usr/bin/env python3
 """Rabbits and Pheasants quizz."""
 
 from ortools.sat.python import cp_model
@@ -148,12 +147,12 @@ def rabbits_and_pheasants_sat():
 
 
 rabbits_and_pheasants_sat()
-
 ```
 
 ### C++ code
 
 ```cpp
+// Snippet from ortools/sat/samples/rabbits_and_pheasants_sat.cc
 #include <stdlib.h>
 
 #include "ortools/base/init_google.h"
@@ -197,7 +196,6 @@ int main(int argc, char* argv[]) {
   operations_research::sat::RabbitsAndPheasantsSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
@@ -239,12 +237,12 @@ public class RabbitsAndPheasantsSat {
     }
   }
 }
-
 ```
 
 ### C\# code
 
 ```csharp
+// Snippet from ortools/sat/samples/RabbitsAndPheasantsSat.cs
 using System;
 using Google.OrTools.Sat;
 
@@ -272,11 +270,13 @@ public class RabbitsAndPheasantsSat
         }
     }
 }
+
 ```
 
 ### Go code
 
 ```go
+// Snippet from ortools/sat/samples/rabbits_and_pheasants_sat.go
 // The rabbits_and_pheasants_sat command is an example of a simple sat program that
 // solves the rabbits and pheasants problem.
 package main
@@ -371,7 +371,6 @@ x=20 expr=60
 
 ```python
 # Snippet from ortools/sat/samples/earliness_tardiness_cost_sample_sat.py
-#!/usr/bin/env python3
 """Encodes a convex piecewise linear function."""
 
 
@@ -447,7 +446,6 @@ def earliness_tardiness_cost_sample_sat():
 
 
 earliness_tardiness_cost_sample_sat()
-
 ```
 
 ### C++ code
@@ -523,7 +521,6 @@ int main(int argc, char* argv[]) {
   operations_research::sat::EarlinessTardinessCostSampleSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
@@ -617,7 +614,6 @@ public class EarlinessTardinessCostSampleSat {
             }.init(new IntVar[] {x, expr}));
   }
 }
-
 ```
 
 ### C\# code
@@ -693,7 +689,6 @@ public class EarlinessTardinessCostSampleSat
         solver.Solve(model, cb);
     }
 }
-
 ```
 
 ### Go code
@@ -815,7 +810,6 @@ x=20 expr=2
 
 ```python
 # Snippet from ortools/sat/samples/step_function_sample_sat.py
-#!/usr/bin/env python3
 """Implements a step function."""
 
 from ortools.sat.python import cp_model
@@ -895,7 +889,6 @@ def step_function_sample_sat():
 
 
 step_function_sample_sat()
-
 ```
 
 ### C++ code
@@ -984,7 +977,6 @@ int main(int argc, char* argv[]) {
   operations_research::sat::StepFunctionSampleSat();
   return EXIT_SUCCESS;
 }
-
 ```
 
 ### Java code
@@ -1173,14 +1165,12 @@ public class StepFunctionSampleSat
         solver.Solve(model, cb);
     }
 }
-
 ```
 
 ### Go code
 
 ```go
 // Snippet from ortools/sat/samples/step_function_sample_sat.go
-
 // The step_function_sample_sat command is an example of an implementation of a step function.
 package main
 
@@ -1302,7 +1292,6 @@ x=10 b=1 p=10
 
 ```python
 # Snippet from ortools/sat/samples/bool_and_int_var_product_sample_sat.py
-#!/usr/bin/env python3
 """Code sample that encodes the product of a Boolean and an integer variable."""
 
 from ortools.sat.python import cp_model
@@ -1362,7 +1351,6 @@ def bool_and_int_var_product_sample_sat():
 
 
 bool_and_int_var_product_sample_sat()
-
 ```
 
 ## Scanning the domain of variables.
@@ -1380,7 +1368,6 @@ reading back the values from the model.
 
 ```python
 # Snippet from ortools/sat/samples/all_different_except_zero_sample_sat.py
-#!/usr/bin/env python3
 """Implements AllDifferentExcept0 using atomic constraints."""
 
 import collections
@@ -1451,5 +1438,4 @@ def all_different_except_0():
 
 
 all_different_except_0()
-
 ```
