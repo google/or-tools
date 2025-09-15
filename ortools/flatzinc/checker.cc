@@ -298,6 +298,24 @@ bool CheckArrayVarIntElement(
   return element == target;
 }
 
+bool CheckOrToolsArgMaxInt(
+    const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
+    const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
+  const int rank = evaluator(ct.arguments[1].Var());
+  const int min_index = ct.arguments[2].Value();
+  const int multiplier = ct.arguments[3].Value();
+  int index = -1;
+  int64_t max_value = std::numeric_limits<int64_t>::min();
+  for (int i = 0; i < Length(ct.arguments[0]); ++i) {
+    const int64_t value = EvalAt(ct.arguments[0], i, evaluator) * multiplier;
+    if (value > max_value) {
+      max_value = value;
+      index = i;
+    }
+  }
+  return index + min_index == rank;
+}
+
 bool CheckOrToolsArrayIntElement(
     const Constraint& ct, const std::function<int64_t(Variable*)>& evaluator,
     const std::function<std::vector<int64_t>(Variable*)>& set_evaluator) {
@@ -1830,6 +1848,8 @@ CallMap CreateCallMap() {
   m["maximum_int"] = CheckMaximumInt;
   m["minimum_arg_int"] = CheckMinimumArgInt;
   m["minimum_int"] = CheckMinimumInt;
+  m["ortools_arg_max_bool"] = CheckOrToolsArgMaxInt;
+  m["ortools_arg_max_int"] = CheckOrToolsArgMaxInt;
   m["ortools_array_bool_element"] = CheckOrToolsArrayIntElement;
   m["ortools_array_int_element"] = CheckOrToolsArrayIntElement;
   m["ortools_array_var_bool_element"] = CheckOrToolsArrayIntElement;

@@ -1489,6 +1489,47 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         LOG(FATAL) << "Wrong constraint " << fz_ct.DebugString();
       }
     }
+  } else if (fz_ct.type == "ortools_arg_max_int" ||
+             fz_ct.type == "ortools_arg_max_bool") {
+    const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
+    const int num_vars = x.size();
+    const int z = LookupVar(fz_ct.arguments[1]);
+    const int64_t min_index = fz_ct.arguments[2].Value();
+    const int64_t multiplier = fz_ct.arguments[3].Value();
+    int64_t min_range = std::numeric_limits<int64_t>::max();
+    int64_t max_range = std::numeric_limits<int64_t>::min();
+    auto* max_array = ct->mutable_lin_max();
+    for (int i = 0; i < num_vars; ++i) {
+      const IntegerVariableProto& var_proto = proto.variables(x[i]);
+      const int64_t min_var = var_proto.domain(0);
+      const int64_t max_var = var_proto.domain(var_proto.domain_size() - 1);
+      const int64_t offset = num_vars - i;
+      int64_t min_expr_range = min_var * multiplier * num_vars + offset;
+      int64_t max_expr_range = max_var * multiplier * num_vars + offset;
+      if (multiplier == -1) std::swap(min_expr_range, max_expr_range);
+      min_range = std::min(min_range, min_expr_range);
+      max_range = std::max(max_range, max_expr_range);
+      auto* exprs = max_array->add_exprs();
+      exprs->add_vars(x[i]);
+      exprs->add_coeffs(num_vars * multiplier);
+      exprs->set_offset(offset);
+    }
+    const int max_var = NewIntVar(min_range, max_range);
+    max_array->mutable_target()->add_vars(max_var);
+    max_array->mutable_target()->add_coeffs(1);
+
+    for (const auto& [value, literal] : GetFullEncoding(z)) {
+      if (value < min_index || value >= min_index + num_vars) {
+        AddImplication({}, NegatedRef(literal));
+      }
+      const int64_t index = value - min_index;
+      AddLinearConstraint({literal}, Domain(index - num_vars),
+                          {{x[index], num_vars * multiplier}, {max_var, -1}});
+      AddLinearConstraint(
+          {NegatedRef(literal)},
+          {std::numeric_limits<int64_t>::min(), index - num_vars - 1},
+          {{x[index], num_vars * multiplier}, {max_var, -1}});
+    }
   } else if (fz_ct.type == "fzn_all_different_int") {
     auto* arg = ct->mutable_all_diff();
     for (int i = 0; i < fz_ct.arguments[0].Size(); ++i) {

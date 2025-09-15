@@ -1148,26 +1148,32 @@ void ModelStatistics::PrintStatistics() const {
   SOLVER_LOG(logger_, "Model ", model_.name());
 
   // Variables.
-  int num_int_var = 0;
-  int num_float_var = 0;
-  int num_set_var = 0;
+  int num_bool_vars = 0;
+  int num_int_vars = 0;
+  int num_float_vars = 0;
+  int num_set_vars = 0;
   for (Variable* var : model_.variables()) {
     if (var->domain.is_float) {
-      ++num_float_var;
+      ++num_float_vars;
     } else if (var->domain.is_a_set) {
-      ++num_set_var;
+      ++num_set_vars;
+    } else if (var->domain.display_as_boolean) {
+      ++num_bool_vars;
     } else {
-      ++num_int_var;
+      ++num_int_vars;
     }
   }
-  if (num_int_var > 0) {
-    SOLVER_LOG(logger_, "  - integer variables:", num_int_var);
+  if (num_bool_vars > 0) {
+    SOLVER_LOG(logger_, "  - boolean variables:", num_bool_vars);
   }
-  if (num_float_var > 0) {
-    SOLVER_LOG(logger_, "  - float variables:", num_float_var);
+  if (num_int_vars > 0) {
+    SOLVER_LOG(logger_, "  - integer variables:", num_int_vars);
   }
-  if (num_set_var > 0) {
-    SOLVER_LOG(logger_, "  - set variables:", num_set_var);
+  if (num_float_vars > 0) {
+    SOLVER_LOG(logger_, "  - float variables:", num_float_vars);
+  }
+  if (num_set_vars > 0) {
+    SOLVER_LOG(logger_, "  - set variables:", num_set_vars);
   }
   SOLVER_LOG(logger_);
 
