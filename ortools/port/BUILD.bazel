@@ -25,8 +25,8 @@ cc_library(
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:sysinfo",
+        "//ortools/base:types",
     ],
 )
 
@@ -35,8 +35,8 @@ cc_library(
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
     deps = [
-        "//ortools/base",
         "//ortools/util:parse_proto",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@protobuf",
@@ -46,30 +46,24 @@ cc_library(
 cc_library(
     name = "utf8",
     hdrs = ["utf8.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:encodingutils",
-    ],
+    deps = ["//ortools/base:encodingutils"],
 )
 
 cc_library(
     name = "file",
-    srcs = [
-        "file.cc",
-    ],
-    hdrs = [
-        "file.h",
-    ],
+    srcs = ["file.cc"],
+    hdrs = ["file.h"],
     deps = [
+        "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:status_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/time",
     ],
 )
 
 cc_library(
     name = "scoped_std_stream_capture",
+    testonly = True,
     hdrs = ["scoped_std_stream_capture.h"],
 )
