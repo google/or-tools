@@ -32,12 +32,12 @@ bazel_dep(name = "bazel_skylib", version = "1.8.1")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.1.4")
 bazel_dep(name = "rules_go", version = "0.53.0")
-bazel_dep(name = "rules_java", version = "8.11.0")
+bazel_dep(name = "rules_java", version = "8.12.0")
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 bazel_dep(name = "contrib_rules_jvm", version = "0.28.0")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_python", version = "1.2.0")
+bazel_dep(name = "rules_python", version = "1.5.1")
 
 # OR-Tools C++ dependencies
 # keep sorted go/buildifier#keep-sorted
