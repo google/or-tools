@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -1496,6 +1497,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     const int z = LookupVar(fz_ct.arguments[1]);
     const int64_t min_index = fz_ct.arguments[2].Value();
     const int64_t multiplier = fz_ct.arguments[3].Value();
+    DCHECK_EQ(std::abs(multiplier), 1);
     int64_t min_range = std::numeric_limits<int64_t>::max();
     int64_t max_range = std::numeric_limits<int64_t>::min();
     auto* max_array = ct->mutable_lin_max();
@@ -1515,6 +1517,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       exprs->set_offset(offset);
     }
     const int max_var = NewIntVar(min_range, max_range);
+    // (argmax(x) == z) <=> (x[z] == max_i(x[i]))
+    //
+    // With tie - breakers :
+    //  (argmax(x) == z) <=>
+    //  (num_vars * x[z] + num_vars - z) = max_i(num_vars * x[i] + num_vars - i)
     max_array->mutable_target()->add_vars(max_var);
     max_array->mutable_target()->add_coeffs(1);
 
