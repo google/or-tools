@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The solve_with_time_limit_sample_sat command is an example of setting a time limit on the model.
 package main
 
@@ -67,3 +68,5 @@ func main() {
 		log.Exitf("solveWithTimeLimitSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

@@ -70,7 +70,8 @@ TEST(CumulativeEnergyCutGenerator, TestCutTimeTableGenerator) {
   const IntegerVariable demand2 = model.Add(NewIntegerVariable(3, 10));
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand1, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -132,7 +133,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemand) {
   e2.coeffs.push_back(IntegerValue(7));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -209,7 +211,8 @@ TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
   const IntegerVariable capacity = model.Add(NewIntegerVariable(10, 10));
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({demand, demand, demand2}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -263,10 +266,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
       start2, AffineExpression(start2, one, size2), AffineExpression(size2),
       kNoLiteralIndex, /*add_linear_relation=*/false);
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i1,
-          i2,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i1,
+                                                  i2,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -305,10 +309,11 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -347,10 +352,11 @@ TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
       kNoLiteralIndex, /*add_linear_relation=*/false);
 
   CutGenerator disjunctive = CreateNoOverlapPrecedenceCutGenerator(
-      intervals_repository->GetOrCreateHelper({
-          i2,
-          i1,
-      }),
+      intervals_repository->GetOrCreateHelper(/*enforcement_literals=*/{},
+                                              {
+                                                  i2,
+                                                  i1,
+                                              }),
       &model);
   LinearConstraintManager* const manager =
       model.GetOrCreate<LinearConstraintManager>();
@@ -397,7 +403,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -448,7 +455,8 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -500,7 +508,8 @@ TEST(ComputeMinSumOfEndMinsTest, Abort) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -550,7 +559,8 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
       /*add_linear_relation=*/false);
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper({i1, i2, i3});
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, {i1, i2, i3});
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper({two, one, one}, helper, &model);
   model.TakeOwnership(demands_helper);
@@ -610,7 +620,8 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
   }
 
   SchedulingConstraintHelper* helper =
-      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(intervals);
+      model.GetOrCreate<IntervalsRepository>()->GetOrCreateHelper(
+          /*enforcement_literals=*/{}, intervals);
   std::vector<AffineExpression> demands_expr;
   for (int i = 0; i < demands.size(); ++i) {
     demands_expr.push_back(AffineExpression(demands[i]));

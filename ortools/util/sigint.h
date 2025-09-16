@@ -17,6 +17,10 @@
 #include <atomic>
 #include <functional>
 
+#include "ortools/port/os.h"
+
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+
 namespace operations_research {
 
 class SigintHandler {
@@ -50,5 +54,7 @@ class SigtermHandler {
 };
 
 }  // namespace operations_research
+
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 #endif  // OR_TOOLS_UTIL_SIGINT_H_

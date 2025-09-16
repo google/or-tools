@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 package com.google.ortools.sat.samples;
 
 import com.google.ortools.Loader;
@@ -49,3 +50,4 @@ public class ReifiedSampleSat {
     model.addBoolOr(new Literal[] {b.not(), y.not()});
   }
 }
+// [END program]

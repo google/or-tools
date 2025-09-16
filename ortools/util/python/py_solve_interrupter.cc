@@ -57,7 +57,7 @@ PySolveInterrupter::CleanupAndGetTargets(
 
 void PySolveInterrupter::AddTriggerTarget(
     absl_nonnull std::shared_ptr<PySolveInterrupter> target) {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   CleanupAndGetTargets();
   // Note that we don't test if targets_ already contain the interrupter as
   // interrupter are triggerable only once. Thus having duplicates won't result
@@ -70,14 +70,14 @@ void PySolveInterrupter::AddTriggerTarget(
 
 void PySolveInterrupter::RemoveTriggerTarget(
     absl_nonnull std::shared_ptr<PySolveInterrupter> target) {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   CleanupAndGetTargets(/*to_remove=*/target.get());
 }
 
 void PySolveInterrupter::TriggerTargets() {
   std::vector<absl_nonnull std::shared_ptr<PySolveInterrupter>> targets;
   {  // Limit `lock` scope.
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     targets = CleanupAndGetTargets();
   }
 

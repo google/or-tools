@@ -2047,22 +2047,24 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
   }
 
   if (params->enumerate_all_solutions()) {
-    if (params->num_workers() >= 1) {
+    if (params->num_workers() == 0) {
       SOLVER_LOG(logger,
-                 "Forcing sequential search as enumerating all solutions is "
-                 "not supported in multi-thread.");
+                 "Setting num_workers to 1 since it is not specified and "
+                 "enumerate_all_solutions is true.");
+      params->set_num_workers(1);
+    } else if (params->num_workers() > 1) {
+      SOLVER_LOG(
+          logger,
+          "WARNING: enumerating all solutions in multi-thread works but might "
+          "lead to the same solution being found up to num_workers times.");
     }
-    params->set_num_workers(1);
 
-    // TODO(user): This was the old behavior, but consider switching this to
-    // just a warning? it might be a valid usage to enumerate all solution of
-    // a presolved model.
-    if (!params->keep_all_feasible_solutions_in_presolve()) {
+    if (!params->has_keep_all_feasible_solutions_in_presolve()) {
       SOLVER_LOG(logger,
                  "Forcing presolve to keep all feasible solution given that "
-                 "enumerate_all_solutions is true");
+                 "enumerate_all_solutions is true and that option is unset.");
+      params->set_keep_all_feasible_solutions_in_presolve(true);
     }
-    params->set_keep_all_feasible_solutions_in_presolve(true);
   }
 
   if (!model_proto.assumptions().empty()) {
@@ -2094,17 +2096,17 @@ void AdaptGlobalParameters(const CpModelProto& model_proto, Model* model) {
 
   if (params->shared_tree_num_workers() == -1) {
     int num_shared_tree_workers = 0;
-    if (params->num_workers() >= 16) {
-      if (model_proto.has_objective() ||
-          model_proto.has_floating_point_objective()) {
-        num_shared_tree_workers = (params->num_workers() - 8) / 2;
-      } else {
-        num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
-      }
+    if (model_proto.has_objective() ||
+        model_proto.has_floating_point_objective()) {
+      num_shared_tree_workers = (params->num_workers() - 16) / 2;
+    } else {
+      num_shared_tree_workers = (params->num_workers() - 8) * 3 / 4;
     }
-    SOLVER_LOG(logger, "Setting number of shared tree workers to ",
-               num_shared_tree_workers);
-    params->set_shared_tree_num_workers(num_shared_tree_workers);
+    if (num_shared_tree_workers > 4) {
+      SOLVER_LOG(logger, "Setting number of shared tree workers to ",
+                 num_shared_tree_workers);
+      params->set_shared_tree_num_workers(num_shared_tree_workers);
+    }
   }
 
   // We currently only use the feasibility pump or rins/rens if it is enabled

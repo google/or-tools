@@ -62,7 +62,7 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
         builder << "invalid CallbackResult returned by user callback";
 
         {  // Limit `lock` scope.
-          const absl::MutexLock lock(&mutex);
+          const absl::MutexLock lock(mutex);
           cb_status.Update(builder);
         }
 
@@ -93,7 +93,7 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
   // that case we want to ignore this error and return status generated in the
   // callback instead.
   {  // Limit `lock` scope.
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     RETURN_IF_ERROR(cb_status);
   }
 

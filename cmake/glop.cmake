@@ -82,8 +82,6 @@ target_sources(glop PRIVATE
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
   ortools/base/basictypes.h
-  ortools/base/case.cc
-  ortools/base/case.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h

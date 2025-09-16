@@ -136,6 +136,7 @@ bool TryEdgeRectanglePropagator::CanPlace(
 }
 
 bool TryEdgeRectanglePropagator::Propagate() {
+  if (!helper_.IsEnforced()) return true;
   if (!helper_.SynchronizeAndSetDirection(
           x_is_forward_after_swap_, y_is_forward_after_swap_, swap_x_and_y_)) {
     return false;
@@ -368,7 +369,7 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
         found_propagations) {
   for (const auto& [box_index, new_x_min] : found_propagations) {
     const RectangleInRange& box = active_box_ranges_[box_index];
-    helper_.ClearReason();
+    helper_.ResetReason();
 
     const std::vector<int> minimum_problem_with_propagator =
         GetMinimumProblemWithPropagation(

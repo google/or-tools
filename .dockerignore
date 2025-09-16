@@ -32,7 +32,6 @@ makefiles/docker
 makefiles/Makefile
 Makefile.local
 
-binder
 docs
 tools/docker
 tools/release

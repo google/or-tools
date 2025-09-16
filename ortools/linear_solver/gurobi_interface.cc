@@ -168,7 +168,7 @@ class GurobiInterface : public MPSolverInterface {
   }
 
   bool InterruptSolve() override {
-    const absl::MutexLock lock(&hold_interruptions_mutex_);
+    const absl::MutexLock lock(hold_interruptions_mutex_);
     if (model_ != nullptr) GRBterminate(model_);
     return true;
   }
@@ -663,7 +663,7 @@ GurobiInterface::~GurobiInterface() {
 
 void GurobiInterface::Reset() {
   // We hold calls to GRBterminate() until the new model_ is ready.
-  const absl::MutexLock lock(&hold_interruptions_mutex_);
+  const absl::MutexLock lock(hold_interruptions_mutex_);
 
   GRBmodel* old_model = model_;
   CheckedGurobiCall(GRBnewmodel(global_env_, &model_, solver_->name_.c_str(),

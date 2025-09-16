@@ -85,7 +85,7 @@ message LinearArgumentProto {
   repeated LinearExpressionProto exprs = 2;
 }
 
-// All affine expressions must take different values.
+// All expressions must take different values.
 message AllDifferentConstraintProto {
   repeated LinearExpressionProto exprs = 1;
 }
@@ -102,13 +102,12 @@ message LinearConstraintProto {
   repeated int64 domain = 3;
 }
 
-// The constraint target = vars[index].
+// The constraint linear_target = exprs[linear_index].
 // This enforces that index takes one of the value in [0, vars_size()).
 message ElementConstraintProto {
   int32 index = 1;          // Legacy field.
   int32 target = 2;         // Legacy field.
   repeated int32 vars = 3;  // Legacy field.
-  // All expressions below must be affine function with at most one variable.
   LinearExpressionProto linear_index = 4;
   LinearExpressionProto linear_target = 5;
   repeated LinearExpressionProto exprs = 6;
@@ -121,10 +120,6 @@ message ElementConstraintProto {
 // components, and it is up to the client to add in the model:
 // - enforcement => start + size == end.
 // - enforcement => size >= 0  // Only needed if size is not already >= 0.
-//
-// IMPORTANT: For now, we just support affine relation. We could easily
-// create an intermediate variable to support full linear expression, but this
-// isn't done currently.
 message IntervalConstraintProto {
   LinearExpressionProto start = 4;
   LinearExpressionProto end = 5;
@@ -188,9 +183,8 @@ message CumulativeConstraintProto {
 message ReservoirConstraintProto {
   int64 min_level = 1;
   int64 max_level = 2;
-  repeated LinearExpressionProto time_exprs = 3;  // affine expressions.
-  // Currently, we only support constant level changes.
-  repeated LinearExpressionProto level_changes = 6;  // affine expressions.
+  repeated LinearExpressionProto time_exprs = 3;
+  repeated LinearExpressionProto level_changes = 6;
   repeated int32 active_literals = 5;
   reserved 4;
 }
@@ -242,7 +236,6 @@ message RoutesConstraintProto {
   // A set of linear expressions associated with the nodes.
   message NodeExpressions {
     // The i-th element is the linear expression associated with the i-th node.
-    // All expressions must be affine expressions (a * var + b).
     repeated LinearExpressionProto exprs = 1;
   }
 
@@ -261,7 +254,6 @@ message RoutesConstraintProto {
 // The values of the n-tuple formed by the given expression can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
-// Expressions must be affine (a * var + b).
 // Corner cases:
 //  - If all `vars`, `values` and `exprs` are empty, the constraint is trivially
 //    true, irrespective of the value of `negated`.
@@ -304,9 +296,8 @@ message AutomatonConstraintProto {
 
   // Legacy field.
   repeated int32 vars = 7;
-  // The sequence of affine expressions (a * var + b). The automaton is ran for
-  // exprs_size() "steps" and the value of exprs[i] corresponds to the
-  // transition label at step i.
+  // The sequence of expressions. The automaton is ran for exprs_size() "steps"
+  // and the value of exprs[i] corresponds to the transition label at step i.
   repeated LinearExpressionProto exprs = 8;
 }
 
@@ -330,11 +321,10 @@ message ConstraintProto {
   // (controlled by a literal l) and its negation (controlled by the negation of
   // l).
   //
-  // Important: as of July 2025, only a few constraint support enforcement:
-  // - bool_or, bool_and, at_most_one, exactly_one, bool_xor, int_div, int_mod,
-  // int_prod, linear, table: fully supported.
-  // - interval: only support a single enforcement literal.
-  // - other: no support (but can be added on a per-demand basis).
+  // Important: as of September 2025, some constraints might be less efficient
+  // with enforcement than without: circuit, routes, no_overlap, no_overlap_2d,
+  // and cumulative. If performance is not great, consider using a model without
+  // these constraints enforced.
   repeated int32 enforcement_literal = 2;
 
   // The actual constraint with its arguments.

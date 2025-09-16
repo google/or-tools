@@ -23,7 +23,6 @@
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/status-matchers.h"
 #include "ortools/math_opt/core/solver.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/model.pb.h"

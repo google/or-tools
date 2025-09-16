@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
@@ -48,7 +49,7 @@ struct PushedSolutionPointers {
 };
 PushedSolutionPointers PushAndMaybeCombineSolution(
     SharedResponseManager* response_manager, const CpModelProto& model_proto,
-    absl::Span<const int64_t> new_solution, const std::string& solution_info,
+    absl::Span<const int64_t> new_solution, absl::string_view solution_info,
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
         base_solution);
 

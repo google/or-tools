@@ -26,7 +26,6 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -845,8 +844,8 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     }
 
     util_intops::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/nullptr,
-                                  &equiv_map);
+    ProbeAndFindEquivalentLiteral(&solver, postsolver,
+                                  /*drat_proof_handler=*/nullptr, &equiv_map);
 
     // We can abort if no information is learned.
     if (equiv_map.empty() && solver.LiteralTrail().Index() == 0) break;

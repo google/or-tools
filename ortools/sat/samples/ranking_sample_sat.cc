@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -164,3 +165,4 @@ int main(int argc, char* argv[]) {
   operations_research::sat::RankingSampleSat();
   return EXIT_SUCCESS;
 }
+// [END program]

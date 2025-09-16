@@ -11,14 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "gtest/gtest.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
+syntax = "proto3";
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  google::InitGoogleLogging(argv[0]);
-  absl::ParseCommandLine(argc, argv);
-  return RUN_ALL_TESTS();
+package operations_research.math_opt;
+
+// Proto enum used in the unit tests of enums.h.
+enum TestEnumProto {
+  TEST_ENUM_UNSPECIFIED = 0;
+
+  TEST_ENUM_FIRST_VALUE = 1;
+
+  // We intentionally have a gap in values to test this case.
+  reserved 2;
+
+  TEST_ENUM_SECOND_VALUE = 3;
 }

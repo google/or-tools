@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The solution_hinting_sample_sat command is an example of setting solution hints on the model.
 package main
 
@@ -64,3 +65,5 @@ func main() {
 		log.Exitf("solutionHintingSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

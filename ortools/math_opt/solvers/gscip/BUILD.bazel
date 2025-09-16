@@ -39,7 +39,7 @@ cc_proto_library(
 )
 
 py_proto_library(
-    name = "gscip_proto_py_pb2",
+    name = "gscip_py_pb2",
     visibility = ["//visibility:public"],
     deps = [":gscip_proto"],
 )
@@ -120,33 +120,6 @@ cc_library(
         ":gscip_parameters",
         "//ortools/base:gmock",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "gscip_test",
-    size = "small",
-    srcs = ["gscip_test.cc"],
-    deps = [
-        ":gscip",
-        ":gscip_cc_proto",
-        ":gscip_parameters",
-        ":gscip_testing",
-        "//ortools/base:file",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-        "//ortools/base:logging",
-        "//ortools/base:temp_file",
-        "@abseil-cpp//absl/cleanup",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/time",
-        "@scip",
     ],
 )
 
@@ -232,21 +205,6 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@scip",
-    ],
-)
-
-cc_test(
-    name = "gscip_from_mp_model_proto_test",
-    srcs = ["gscip_from_mp_model_proto_test.cc"],
-    deps = [
-        ":gscip",
-        ":gscip_cc_proto",
-        ":gscip_from_mp_model_proto",
-        ":gscip_testing",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-        "//ortools/base:parse_test_proto",
-        "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )
 

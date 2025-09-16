@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The reified_sample_sat command is a simple example of implication constraints.
 package main
 
@@ -40,3 +41,5 @@ func reifiedSampleSat() {
 func main() {
 	reifiedSampleSat()
 }
+
+// [END program]

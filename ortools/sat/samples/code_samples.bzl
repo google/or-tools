@@ -71,8 +71,6 @@ def code_sample_py(name):
             requirement("pandas"),
             "//ortools/sat/python:cp_model",
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
     py_test(
@@ -89,8 +87,6 @@ def code_sample_py(name):
             requirement("pandas"),
             requirement("protobuf"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_cc_go_py(name):

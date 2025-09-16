@@ -247,7 +247,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
   static DynamicLibrary* xpress_library = new DynamicLibrary;
   static absl::Mutex mutex(absl::kConstInit);
 
-  absl::MutexLock lock(&mutex);
+  absl::MutexLock lock(mutex);
 
   absl::call_once(xpress_loading_done, []() {
     const std::vector<std::string> canonical_paths =

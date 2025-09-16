@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The simple_sat_program command is an example of a simple sat program.
 package main
 
@@ -59,3 +60,5 @@ func main() {
 		log.Exitf("simpleSatProgram returned with error: %v", err)
 	}
 }
+
+// [END program]

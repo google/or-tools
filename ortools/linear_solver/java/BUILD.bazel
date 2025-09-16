@@ -15,16 +15,16 @@
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("@rules_jvm_external//:defs.bzl", "artifact")
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "modelbuilder",
-    src = "modelbuilder.swig",
+    srcs = ["modelbuilder.swig"],
     module = "modelbuilder",
     package = "com.google.ortools.modelbuilder",
     swig_includes = [
         "//ortools/base:base_swig",
-        "//ortools/util/java:vector_swig",
+        "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
     deps = [

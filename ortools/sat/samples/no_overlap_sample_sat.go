@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The no_overlap_sample_sat command is an example of the NoOverlap constraints.
 package main
 
@@ -89,3 +90,5 @@ func main() {
 		log.Exitf("noOverlapSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

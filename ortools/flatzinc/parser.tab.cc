@@ -64,110 +64,112 @@
 #define YYPULL 1
 
 /* Substitute the type names.  */
-#define YYSTYPE ORFZ_STYPE
+#define YYSTYPE         ORFZ_STYPE
 /* Substitute the variable and function names.  */
-#define yyparse orfz_parse
-#define yylex orfz_lex
-#define yyerror orfz_error
-#define yydebug orfz_debug
-#define yynerrs orfz_nerrs
+#define yyparse         orfz_parse
+#define yylex           orfz_lex
+#define yyerror         orfz_error
+#define yydebug         orfz_debug
+#define yynerrs         orfz_nerrs
 
-#ifndef YY_CAST
-#ifdef __cplusplus
-#define YY_CAST(Type, Val) static_cast<Type>(Val)
-#define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type>(Val)
-#else
-#define YY_CAST(Type, Val) ((Type)(Val))
-#define YY_REINTERPRET_CAST(Type, Val) ((Type)(Val))
-#endif
-#endif
-#ifndef YY_NULLPTR
-#if defined __cplusplus
-#if 201103L <= __cplusplus
-#define YY_NULLPTR nullptr
-#else
-#define YY_NULLPTR 0
-#endif
-#else
-#define YY_NULLPTR ((void*)0)
-#endif
-#endif
+
+# ifndef YY_CAST
+#  ifdef __cplusplus
+#   define YY_CAST(Type, Val) static_cast<Type> (Val)
+#   define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type> (Val)
+#  else
+#   define YY_CAST(Type, Val) ((Type) (Val))
+#   define YY_REINTERPRET_CAST(Type, Val) ((Type) (Val))
+#  endif
+# endif
+# ifndef YY_NULLPTR
+#  if defined __cplusplus
+#   if 201103L <= __cplusplus
+#    define YY_NULLPTR nullptr
+#   else
+#    define YY_NULLPTR 0
+#   endif
+#  else
+#   define YY_NULLPTR ((void*)0)
+#  endif
+# endif
 
 #include "parser.tab.hh"
 /* Symbol kind.  */
-enum yysymbol_kind_t {
+enum yysymbol_kind_t
+{
   YYSYMBOL_YYEMPTY = -2,
-  YYSYMBOL_YYEOF = 0,                     /* "end of file"  */
-  YYSYMBOL_YYerror = 1,                   /* error  */
-  YYSYMBOL_YYUNDEF = 2,                   /* "invalid token"  */
-  YYSYMBOL_ARRAY = 3,                     /* ARRAY  */
-  YYSYMBOL_TOKEN_BOOL = 4,                /* TOKEN_BOOL  */
-  YYSYMBOL_CONSTRAINT = 5,                /* CONSTRAINT  */
-  YYSYMBOL_TOKEN_FLOAT = 6,               /* TOKEN_FLOAT  */
-  YYSYMBOL_TOKEN_INT = 7,                 /* TOKEN_INT  */
-  YYSYMBOL_MAXIMIZE = 8,                  /* MAXIMIZE  */
-  YYSYMBOL_MINIMIZE = 9,                  /* MINIMIZE  */
-  YYSYMBOL_OF = 10,                       /* OF  */
-  YYSYMBOL_PREDICATE = 11,                /* PREDICATE  */
-  YYSYMBOL_SATISFY = 12,                  /* SATISFY  */
-  YYSYMBOL_SET = 13,                      /* SET  */
-  YYSYMBOL_SOLVE = 14,                    /* SOLVE  */
-  YYSYMBOL_VAR = 15,                      /* VAR  */
-  YYSYMBOL_DOTDOT = 16,                   /* DOTDOT  */
-  YYSYMBOL_COLONCOLON = 17,               /* COLONCOLON  */
-  YYSYMBOL_IVALUE = 18,                   /* IVALUE  */
-  YYSYMBOL_SVALUE = 19,                   /* SVALUE  */
-  YYSYMBOL_IDENTIFIER = 20,               /* IDENTIFIER  */
-  YYSYMBOL_DVALUE = 21,                   /* DVALUE  */
-  YYSYMBOL_22_ = 22,                      /* ';'  */
-  YYSYMBOL_23_ = 23,                      /* '('  */
-  YYSYMBOL_24_ = 24,                      /* ')'  */
-  YYSYMBOL_25_ = 25,                      /* ','  */
-  YYSYMBOL_26_ = 26,                      /* ':'  */
-  YYSYMBOL_27_ = 27,                      /* '['  */
-  YYSYMBOL_28_ = 28,                      /* ']'  */
-  YYSYMBOL_29_ = 29,                      /* '='  */
-  YYSYMBOL_30_ = 30,                      /* '{'  */
-  YYSYMBOL_31_ = 31,                      /* '}'  */
-  YYSYMBOL_YYACCEPT = 32,                 /* $accept  */
-  YYSYMBOL_model = 33,                    /* model  */
-  YYSYMBOL_predicates = 34,               /* predicates  */
-  YYSYMBOL_predicate = 35,                /* predicate  */
-  YYSYMBOL_predicate_arguments = 36,      /* predicate_arguments  */
-  YYSYMBOL_predicate_argument = 37,       /* predicate_argument  */
-  YYSYMBOL_predicate_array_argument = 38, /* predicate_array_argument  */
-  YYSYMBOL_predicate_ints = 39,           /* predicate_ints  */
-  YYSYMBOL_variable_or_constant_declarations =
-      40, /* variable_or_constant_declarations  */
-  YYSYMBOL_variable_or_constant_declaration =
-      41,                              /* variable_or_constant_declaration  */
-  YYSYMBOL_optional_var_or_value = 42, /* optional_var_or_value  */
+  YYSYMBOL_YYEOF = 0,                      /* "end of file"  */
+  YYSYMBOL_YYerror = 1,                    /* error  */
+  YYSYMBOL_YYUNDEF = 2,                    /* "invalid token"  */
+  YYSYMBOL_ARRAY = 3,                      /* ARRAY  */
+  YYSYMBOL_TOKEN_BOOL = 4,                 /* TOKEN_BOOL  */
+  YYSYMBOL_CONSTRAINT = 5,                 /* CONSTRAINT  */
+  YYSYMBOL_TOKEN_FLOAT = 6,                /* TOKEN_FLOAT  */
+  YYSYMBOL_TOKEN_INT = 7,                  /* TOKEN_INT  */
+  YYSYMBOL_MAXIMIZE = 8,                   /* MAXIMIZE  */
+  YYSYMBOL_MINIMIZE = 9,                   /* MINIMIZE  */
+  YYSYMBOL_OF = 10,                        /* OF  */
+  YYSYMBOL_PREDICATE = 11,                 /* PREDICATE  */
+  YYSYMBOL_SATISFY = 12,                   /* SATISFY  */
+  YYSYMBOL_SET = 13,                       /* SET  */
+  YYSYMBOL_SOLVE = 14,                     /* SOLVE  */
+  YYSYMBOL_VAR = 15,                       /* VAR  */
+  YYSYMBOL_DOTDOT = 16,                    /* DOTDOT  */
+  YYSYMBOL_COLONCOLON = 17,                /* COLONCOLON  */
+  YYSYMBOL_IVALUE = 18,                    /* IVALUE  */
+  YYSYMBOL_SVALUE = 19,                    /* SVALUE  */
+  YYSYMBOL_IDENTIFIER = 20,                /* IDENTIFIER  */
+  YYSYMBOL_DVALUE = 21,                    /* DVALUE  */
+  YYSYMBOL_22_ = 22,                       /* ';'  */
+  YYSYMBOL_23_ = 23,                       /* '('  */
+  YYSYMBOL_24_ = 24,                       /* ')'  */
+  YYSYMBOL_25_ = 25,                       /* ','  */
+  YYSYMBOL_26_ = 26,                       /* ':'  */
+  YYSYMBOL_27_ = 27,                       /* '['  */
+  YYSYMBOL_28_ = 28,                       /* ']'  */
+  YYSYMBOL_29_ = 29,                       /* '='  */
+  YYSYMBOL_30_ = 30,                       /* '{'  */
+  YYSYMBOL_31_ = 31,                       /* '}'  */
+  YYSYMBOL_YYACCEPT = 32,                  /* $accept  */
+  YYSYMBOL_model = 33,                     /* model  */
+  YYSYMBOL_predicates = 34,                /* predicates  */
+  YYSYMBOL_predicate = 35,                 /* predicate  */
+  YYSYMBOL_predicate_arguments = 36,       /* predicate_arguments  */
+  YYSYMBOL_predicate_argument = 37,        /* predicate_argument  */
+  YYSYMBOL_predicate_array_argument = 38,  /* predicate_array_argument  */
+  YYSYMBOL_predicate_ints = 39,            /* predicate_ints  */
+  YYSYMBOL_variable_or_constant_declarations = 40, /* variable_or_constant_declarations  */
+  YYSYMBOL_variable_or_constant_declaration = 41, /* variable_or_constant_declaration  */
+  YYSYMBOL_optional_var_or_value = 42,     /* optional_var_or_value  */
   YYSYMBOL_optional_var_or_value_array = 43, /* optional_var_or_value_array  */
-  YYSYMBOL_var_or_value_array = 44,          /* var_or_value_array  */
-  YYSYMBOL_var_or_value = 45,                /* var_or_value  */
-  YYSYMBOL_int_domain = 46,                  /* int_domain  */
-  YYSYMBOL_set_domain = 47,                  /* set_domain  */
-  YYSYMBOL_float_domain = 48,                /* float_domain  */
-  YYSYMBOL_domain = 49,                      /* domain  */
-  YYSYMBOL_integers = 50,                    /* integers  */
-  YYSYMBOL_integer = 51,                     /* integer  */
-  YYSYMBOL_floats = 52,                      /* floats  */
-  YYSYMBOL_float = 53,                       /* float  */
-  YYSYMBOL_const_literal = 54,               /* const_literal  */
-  YYSYMBOL_const_literals = 55,              /* const_literals  */
-  YYSYMBOL_constraints = 56,                 /* constraints  */
-  YYSYMBOL_constraint = 57,                  /* constraint  */
-  YYSYMBOL_arguments = 58,                   /* arguments  */
-  YYSYMBOL_argument = 59,                    /* argument  */
-  YYSYMBOL_annotations = 60,                 /* annotations  */
-  YYSYMBOL_annotation_arguments = 61,        /* annotation_arguments  */
-  YYSYMBOL_annotation = 62,                  /* annotation  */
-  YYSYMBOL_solve = 63                        /* solve  */
+  YYSYMBOL_var_or_value_array = 44,        /* var_or_value_array  */
+  YYSYMBOL_var_or_value = 45,              /* var_or_value  */
+  YYSYMBOL_int_domain = 46,                /* int_domain  */
+  YYSYMBOL_set_domain = 47,                /* set_domain  */
+  YYSYMBOL_float_domain = 48,              /* float_domain  */
+  YYSYMBOL_domain = 49,                    /* domain  */
+  YYSYMBOL_integers = 50,                  /* integers  */
+  YYSYMBOL_integer = 51,                   /* integer  */
+  YYSYMBOL_floats = 52,                    /* floats  */
+  YYSYMBOL_float = 53,                     /* float  */
+  YYSYMBOL_const_literal = 54,             /* const_literal  */
+  YYSYMBOL_const_literals = 55,            /* const_literals  */
+  YYSYMBOL_constraints = 56,               /* constraints  */
+  YYSYMBOL_constraint = 57,                /* constraint  */
+  YYSYMBOL_arguments = 58,                 /* arguments  */
+  YYSYMBOL_argument = 59,                  /* argument  */
+  YYSYMBOL_annotations = 60,               /* annotations  */
+  YYSYMBOL_annotation_arguments = 61,      /* annotation_arguments  */
+  YYSYMBOL_annotation = 62,                /* annotation  */
+  YYSYMBOL_solve = 63                      /* solve  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
+
+
 /* Unqualified %code blocks.  */
-#line 36 "ortools/flatzinc/parser.yy"
+#line 49 "ortools/flatzinc/parser.yy"
 
 #include <cstdint>
 
@@ -181,17 +183,17 @@ using operations_research::fz::Argument;
 using operations_research::fz::Constraint;
 using operations_research::fz::ConvertAsIntegerOrDie;
 using operations_research::fz::Domain;
+using operations_research::fz::Variable;
 using operations_research::fz::Lookup;
 using operations_research::fz::Model;
-using operations_research::fz::ParserContext;
 using operations_research::fz::SolutionOutputSpecs;
-using operations_research::fz::Variable;
+using operations_research::fz::ParserContext;
 using operations_research::fz::VarRefOrValue;
 
 #line 194 "parser.tab.cc"
 
 #ifdef short
-#undef short
+# undef short
 #endif
 
 /* On compilers that do not define __PTRDIFF_MAX__ etc., make sure
@@ -199,11 +201,11 @@ using operations_research::fz::VarRefOrValue;
    so that the code can choose integer types of a good width.  */
 
 #ifndef __PTRDIFF_MAX__
-#include <limits.h> /* INFRINGES ON USER NAME SPACE */
-#if defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
-#include <stdint.h> /* INFRINGES ON USER NAME SPACE */
-#define YY_STDINT_H
-#endif
+# include <limits.h> /* INFRINGES ON USER NAME SPACE */
+# if defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
+#  include <stdint.h> /* INFRINGES ON USER NAME SPACE */
+#  define YY_STDINT_H
+# endif
 #endif
 
 /* Narrow types that promote to a signed type and that can represent a
@@ -233,16 +235,16 @@ typedef short yytype_int16;
    (aka HP-UX 11i v2) only through the end of 2022; see Table 2 of
    <https://h20195.www2.hpe.com/V2/getpdf.aspx/4AA4-7673ENW.pdf>.  */
 #ifdef __hpux
-#undef UINT_LEAST8_MAX
-#undef UINT_LEAST16_MAX
-#define UINT_LEAST8_MAX 255
-#define UINT_LEAST16_MAX 65535
+# undef UINT_LEAST8_MAX
+# undef UINT_LEAST16_MAX
+# define UINT_LEAST8_MAX 255
+# define UINT_LEAST16_MAX 65535
 #endif
 
 #if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
 typedef __UINT_LEAST8_TYPE__ yytype_uint8;
-#elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H && \
-       UINT_LEAST8_MAX <= INT_MAX)
+#elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST8_MAX <= INT_MAX)
 typedef uint_least8_t yytype_uint8;
 #elif !defined __UINT_LEAST8_MAX__ && UCHAR_MAX <= INT_MAX
 typedef unsigned char yytype_uint8;
@@ -252,8 +254,8 @@ typedef short yytype_uint8;
 
 #if defined __UINT_LEAST16_MAX__ && __UINT_LEAST16_MAX__ <= __INT_MAX__
 typedef __UINT_LEAST16_TYPE__ yytype_uint16;
-#elif (!defined __UINT_LEAST16_MAX__ && defined YY_STDINT_H && \
-       UINT_LEAST16_MAX <= INT_MAX)
+#elif (!defined __UINT_LEAST16_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST16_MAX <= INT_MAX)
 typedef uint_least16_t yytype_uint16;
 #elif !defined __UINT_LEAST16_MAX__ && USHRT_MAX <= INT_MAX
 typedef unsigned short yytype_uint16;
@@ -262,40 +264,42 @@ typedef int yytype_uint16;
 #endif
 
 #ifndef YYPTRDIFF_T
-#if defined __PTRDIFF_TYPE__ && defined __PTRDIFF_MAX__
-#define YYPTRDIFF_T __PTRDIFF_TYPE__
-#define YYPTRDIFF_MAXIMUM __PTRDIFF_MAX__
-#elif defined PTRDIFF_MAX
-#ifndef ptrdiff_t
-#include <stddef.h> /* INFRINGES ON USER NAME SPACE */
-#endif
-#define YYPTRDIFF_T ptrdiff_t
-#define YYPTRDIFF_MAXIMUM PTRDIFF_MAX
-#else
-#define YYPTRDIFF_T long
-#define YYPTRDIFF_MAXIMUM LONG_MAX
-#endif
+# if defined __PTRDIFF_TYPE__ && defined __PTRDIFF_MAX__
+#  define YYPTRDIFF_T __PTRDIFF_TYPE__
+#  define YYPTRDIFF_MAXIMUM __PTRDIFF_MAX__
+# elif defined PTRDIFF_MAX
+#  ifndef ptrdiff_t
+#   include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#  endif
+#  define YYPTRDIFF_T ptrdiff_t
+#  define YYPTRDIFF_MAXIMUM PTRDIFF_MAX
+# else
+#  define YYPTRDIFF_T long
+#  define YYPTRDIFF_MAXIMUM LONG_MAX
+# endif
 #endif
 
 #ifndef YYSIZE_T
-#ifdef __SIZE_TYPE__
-#define YYSIZE_T __SIZE_TYPE__
-#elif defined size_t
-#define YYSIZE_T size_t
-#elif defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
-#include <stddef.h> /* INFRINGES ON USER NAME SPACE */
-#define YYSIZE_T size_t
-#else
-#define YYSIZE_T unsigned
-#endif
+# ifdef __SIZE_TYPE__
+#  define YYSIZE_T __SIZE_TYPE__
+# elif defined size_t
+#  define YYSIZE_T size_t
+# elif defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
+#  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#  define YYSIZE_T size_t
+# else
+#  define YYSIZE_T unsigned
+# endif
 #endif
 
-#define YYSIZE_MAXIMUM                                                   \
-  YY_CAST(YYPTRDIFF_T,                                                   \
-          (YYPTRDIFF_MAXIMUM < YY_CAST(YYSIZE_T, -1) ? YYPTRDIFF_MAXIMUM \
-                                                     : YY_CAST(YYSIZE_T, -1)))
+#define YYSIZE_MAXIMUM                                  \
+  YY_CAST (YYPTRDIFF_T,                                 \
+           (YYPTRDIFF_MAXIMUM < YY_CAST (YYSIZE_T, -1)  \
+            ? YYPTRDIFF_MAXIMUM                         \
+            : YY_CAST (YYSIZE_T, -1)))
 
-#define YYSIZEOF(X) YY_CAST(YYPTRDIFF_T, sizeof(X))
+#define YYSIZEOF(X) YY_CAST (YYPTRDIFF_T, sizeof (X))
+
 
 /* Stored state numbers (used for stacks). */
 typedef yytype_uint8 yy_state_t;
@@ -304,331 +308,316 @@ typedef yytype_uint8 yy_state_t;
 typedef int yy_state_fast_t;
 
 #ifndef YY_
-#if defined YYENABLE_NLS && YYENABLE_NLS
-#if ENABLE_NLS
-#include <libintl.h> /* INFRINGES ON USER NAME SPACE */
-#define YY_(Msgid) dgettext("bison-runtime", Msgid)
-#endif
-#endif
-#ifndef YY_
-#define YY_(Msgid) Msgid
-#endif
+# if defined YYENABLE_NLS && YYENABLE_NLS
+#  if ENABLE_NLS
+#   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
+#   define YY_(Msgid) dgettext ("bison-runtime", Msgid)
+#  endif
+# endif
+# ifndef YY_
+#  define YY_(Msgid) Msgid
+# endif
 #endif
 
+
 #ifndef YY_ATTRIBUTE_PURE
-#if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
-#define YY_ATTRIBUTE_PURE __attribute__((__pure__))
-#else
-#define YY_ATTRIBUTE_PURE
-#endif
+# if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_PURE __attribute__ ((__pure__))
+# else
+#  define YY_ATTRIBUTE_PURE
+# endif
 #endif
 
 #ifndef YY_ATTRIBUTE_UNUSED
-#if defined __GNUC__ && 2 < __GNUC__ + (7 <= __GNUC_MINOR__)
-#define YY_ATTRIBUTE_UNUSED __attribute__((__unused__))
-#else
-#define YY_ATTRIBUTE_UNUSED
-#endif
+# if defined __GNUC__ && 2 < __GNUC__ + (7 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_UNUSED __attribute__ ((__unused__))
+# else
+#  define YY_ATTRIBUTE_UNUSED
+# endif
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
-#if !defined lint || defined __GNUC__
-#define YY_USE(E) ((void)(E))
+#if ! defined lint || defined __GNUC__
+# define YY_USE(E) ((void) (E))
 #else
-#define YY_USE(E) /* empty */
+# define YY_USE(E) /* empty */
 #endif
 
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-#if defined __GNUC__ && !defined __ICC && 406 <= __GNUC__ * 100 + __GNUC_MINOR__
-#if __GNUC__ * 100 + __GNUC_MINOR__ < 407
-#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
-  _Pragma("GCC diagnostic push")            \
-      _Pragma("GCC diagnostic ignored \"-Wuninitialized\"")
+#if defined __GNUC__ && ! defined __ICC && 406 <= __GNUC__ * 100 + __GNUC_MINOR__
+# if __GNUC__ * 100 + __GNUC_MINOR__ < 407
+#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
+    _Pragma ("GCC diagnostic push")                                     \
+    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")
+# else
+#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
+    _Pragma ("GCC diagnostic push")                                     \
+    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")              \
+    _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+# endif
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END      \
+    _Pragma ("GCC diagnostic pop")
 #else
-#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                 \
-  _Pragma("GCC diagnostic push")                            \
-      _Pragma("GCC diagnostic ignored \"-Wuninitialized\"") \
-          _Pragma("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-#endif
-#define YY_IGNORE_MAYBE_UNINITIALIZED_END _Pragma("GCC diagnostic pop")
-#else
-#define YY_INITIAL_VALUE(Value) Value
+# define YY_INITIAL_VALUE(Value) Value
 #endif
 #ifndef YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-#define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-#define YY_IGNORE_MAYBE_UNINITIALIZED_END
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END
 #endif
 #ifndef YY_INITIAL_VALUE
-#define YY_INITIAL_VALUE(Value) /* Nothing. */
+# define YY_INITIAL_VALUE(Value) /* Nothing. */
 #endif
 
-#if defined __cplusplus && defined __GNUC__ && !defined __ICC && 6 <= __GNUC__
-#define YY_IGNORE_USELESS_CAST_BEGIN \
-  _Pragma("GCC diagnostic push")     \
-      _Pragma("GCC diagnostic ignored \"-Wuseless-cast\"")
-#define YY_IGNORE_USELESS_CAST_END _Pragma("GCC diagnostic pop")
+#if defined __cplusplus && defined __GNUC__ && ! defined __ICC && 6 <= __GNUC__
+# define YY_IGNORE_USELESS_CAST_BEGIN                          \
+    _Pragma ("GCC diagnostic push")                            \
+    _Pragma ("GCC diagnostic ignored \"-Wuseless-cast\"")
+# define YY_IGNORE_USELESS_CAST_END            \
+    _Pragma ("GCC diagnostic pop")
 #endif
 #ifndef YY_IGNORE_USELESS_CAST_BEGIN
-#define YY_IGNORE_USELESS_CAST_BEGIN
-#define YY_IGNORE_USELESS_CAST_END
+# define YY_IGNORE_USELESS_CAST_BEGIN
+# define YY_IGNORE_USELESS_CAST_END
 #endif
 
-#define YY_ASSERT(E) ((void)(0 && (E)))
+
+#define YY_ASSERT(E) ((void) (0 && (E)))
 
 #if 1
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
-#ifdef YYSTACK_USE_ALLOCA
-#if YYSTACK_USE_ALLOCA
-#ifdef __GNUC__
-#define YYSTACK_ALLOC __builtin_alloca
-#elif defined __BUILTIN_VA_ARG_INCR
-#include <alloca.h> /* INFRINGES ON USER NAME SPACE */
-#elif defined _AIX
-#define YYSTACK_ALLOC __alloca
-#elif defined _MSC_VER
-#include <malloc.h> /* INFRINGES ON USER NAME SPACE */
-#define alloca _alloca
-#else
-#define YYSTACK_ALLOC alloca
-#if !defined _ALLOCA_H && !defined EXIT_SUCCESS
-#include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-/* Use EXIT_SUCCESS as a witness for stdlib.h.  */
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#endif
-#endif
-#endif
-#endif
+# ifdef YYSTACK_USE_ALLOCA
+#  if YYSTACK_USE_ALLOCA
+#   ifdef __GNUC__
+#    define YYSTACK_ALLOC __builtin_alloca
+#   elif defined __BUILTIN_VA_ARG_INCR
+#    include <alloca.h> /* INFRINGES ON USER NAME SPACE */
+#   elif defined _AIX
+#    define YYSTACK_ALLOC __alloca
+#   elif defined _MSC_VER
+#    include <malloc.h> /* INFRINGES ON USER NAME SPACE */
+#    define alloca _alloca
+#   else
+#    define YYSTACK_ALLOC alloca
+#    if ! defined _ALLOCA_H && ! defined EXIT_SUCCESS
+#     include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
+      /* Use EXIT_SUCCESS as a witness for stdlib.h.  */
+#     ifndef EXIT_SUCCESS
+#      define EXIT_SUCCESS 0
+#     endif
+#    endif
+#   endif
+#  endif
+# endif
 
-#ifdef YYSTACK_ALLOC
-/* Pacify GCC's 'empty if-body' warning.  */
-#define YYSTACK_FREE(Ptr) \
-  do { /* empty */        \
-    ;                     \
-  } while (0)
-#ifndef YYSTACK_ALLOC_MAXIMUM
-/* The OS might guarantee only one guard page at the bottom of the stack,
-   and a page size can be as small as 4096 bytes.  So we cannot safely
-   invoke alloca (N) if N exceeds 4096.  Use a slightly smaller number
-   to allow for a few compiler-allocated temporary stack slots.  */
-#define YYSTACK_ALLOC_MAXIMUM 4032 /* reasonable circa 2006 */
-#endif
-#else
-#define YYSTACK_ALLOC YYMALLOC
-#define YYSTACK_FREE YYFREE
-#ifndef YYSTACK_ALLOC_MAXIMUM
-#define YYSTACK_ALLOC_MAXIMUM YYSIZE_MAXIMUM
-#endif
-#if (defined __cplusplus && !defined EXIT_SUCCESS && \
-     !((defined YYMALLOC || defined malloc) &&       \
-       (defined YYFREE || defined free)))
-#include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#endif
-#ifndef YYMALLOC
-#define YYMALLOC malloc
-#if !defined malloc && !defined EXIT_SUCCESS
-void* malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
-#endif
-#endif
-#ifndef YYFREE
-#define YYFREE free
-#if !defined free && !defined EXIT_SUCCESS
-void free(void*); /* INFRINGES ON USER NAME SPACE */
-#endif
-#endif
-#endif
+# ifdef YYSTACK_ALLOC
+   /* Pacify GCC's 'empty if-body' warning.  */
+#  define YYSTACK_FREE(Ptr) do { /* empty */; } while (0)
+#  ifndef YYSTACK_ALLOC_MAXIMUM
+    /* The OS might guarantee only one guard page at the bottom of the stack,
+       and a page size can be as small as 4096 bytes.  So we cannot safely
+       invoke alloca (N) if N exceeds 4096.  Use a slightly smaller number
+       to allow for a few compiler-allocated temporary stack slots.  */
+#   define YYSTACK_ALLOC_MAXIMUM 4032 /* reasonable circa 2006 */
+#  endif
+# else
+#  define YYSTACK_ALLOC YYMALLOC
+#  define YYSTACK_FREE YYFREE
+#  ifndef YYSTACK_ALLOC_MAXIMUM
+#   define YYSTACK_ALLOC_MAXIMUM YYSIZE_MAXIMUM
+#  endif
+#  if (defined __cplusplus && ! defined EXIT_SUCCESS \
+       && ! ((defined YYMALLOC || defined malloc) \
+             && (defined YYFREE || defined free)))
+#   include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
+#   ifndef EXIT_SUCCESS
+#    define EXIT_SUCCESS 0
+#   endif
+#  endif
+#  ifndef YYMALLOC
+#   define YYMALLOC malloc
+#   if ! defined malloc && ! defined EXIT_SUCCESS
+void *malloc (YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
+#   endif
+#  endif
+#  ifndef YYFREE
+#   define YYFREE free
+#   if ! defined free && ! defined EXIT_SUCCESS
+void free (void *); /* INFRINGES ON USER NAME SPACE */
+#   endif
+#  endif
+# endif
 #endif /* 1 */
 
-#if (!defined yyoverflow &&   \
-     (!defined __cplusplus || \
-      (defined ORFZ_STYPE_IS_TRIVIAL && ORFZ_STYPE_IS_TRIVIAL)))
+#if (! defined yyoverflow \
+     && (! defined __cplusplus \
+         || (defined ORFZ_STYPE_IS_TRIVIAL && ORFZ_STYPE_IS_TRIVIAL)))
 
 /* A type that is properly aligned for any stack member.  */
-union yyalloc {
+union yyalloc
+{
   yy_state_t yyss_alloc;
   YYSTYPE yyvs_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
-#define YYSTACK_GAP_MAXIMUM (YYSIZEOF(union yyalloc) - 1)
+# define YYSTACK_GAP_MAXIMUM (YYSIZEOF (union yyalloc) - 1)
 
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
-#define YYSTACK_BYTES(N) \
-  ((N) * (YYSIZEOF(yy_state_t) + YYSIZEOF(YYSTYPE)) + YYSTACK_GAP_MAXIMUM)
+# define YYSTACK_BYTES(N) \
+     ((N) * (YYSIZEOF (yy_state_t) + YYSIZEOF (YYSTYPE)) \
+      + YYSTACK_GAP_MAXIMUM)
 
-#define YYCOPY_NEEDED 1
+# define YYCOPY_NEEDED 1
 
 /* Relocate STACK from its old location to the new one.  The
    local variables YYSIZE and YYSTACKSIZE give the old and new number of
    elements in the stack, and YYPTR gives the new location of the
    stack.  Advance YYPTR to a properly aligned location for the next
    stack.  */
-#define YYSTACK_RELOCATE(Stack_alloc, Stack)                           \
-  do {                                                                 \
-    YYPTRDIFF_T yynewbytes;                                            \
-    YYCOPY(&yyptr->Stack_alloc, Stack, yysize);                        \
-    Stack = &yyptr->Stack_alloc;                                       \
-    yynewbytes = yystacksize * YYSIZEOF(*Stack) + YYSTACK_GAP_MAXIMUM; \
-    yyptr += yynewbytes / YYSIZEOF(*yyptr);                            \
-  } while (0)
+# define YYSTACK_RELOCATE(Stack_alloc, Stack)                           \
+    do                                                                  \
+      {                                                                 \
+        YYPTRDIFF_T yynewbytes;                                         \
+        YYCOPY (&yyptr->Stack_alloc, Stack, yysize);                    \
+        Stack = &yyptr->Stack_alloc;                                    \
+        yynewbytes = yystacksize * YYSIZEOF (*Stack) + YYSTACK_GAP_MAXIMUM; \
+        yyptr += yynewbytes / YYSIZEOF (*yyptr);                        \
+      }                                                                 \
+    while (0)
 
 #endif
 
 #if defined YYCOPY_NEEDED && YYCOPY_NEEDED
 /* Copy COUNT objects from SRC to DST.  The source and destination do
    not overlap.  */
-#ifndef YYCOPY
-#if defined __GNUC__ && 1 < __GNUC__
-#define YYCOPY(Dst, Src, Count) \
-  __builtin_memcpy(Dst, Src, YY_CAST(YYSIZE_T, (Count)) * sizeof(*(Src)))
-#else
-#define YYCOPY(Dst, Src, Count)                                  \
-  do {                                                           \
-    YYPTRDIFF_T yyi;                                             \
-    for (yyi = 0; yyi < (Count); yyi++) (Dst)[yyi] = (Src)[yyi]; \
-  } while (0)
-#endif
-#endif
+# ifndef YYCOPY
+#  if defined __GNUC__ && 1 < __GNUC__
+#   define YYCOPY(Dst, Src, Count) \
+      __builtin_memcpy (Dst, Src, YY_CAST (YYSIZE_T, (Count)) * sizeof (*(Src)))
+#  else
+#   define YYCOPY(Dst, Src, Count)              \
+      do                                        \
+        {                                       \
+          YYPTRDIFF_T yyi;                      \
+          for (yyi = 0; yyi < (Count); yyi++)   \
+            (Dst)[yyi] = (Src)[yyi];            \
+        }                                       \
+      while (0)
+#  endif
+# endif
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL 3
+#define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST 307
+#define YYLAST   307
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS 32
+#define YYNTOKENS  32
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS 32
+#define YYNNTS  32
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES 100
+#define YYNRULES  100
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES 230
+#define YYNSTATES  230
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK 276
+#define YYMAXUTOK   276
+
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, with out-of-bounds checking.  */
-#define YYTRANSLATE(YYX)                            \
-  (0 <= (YYX) && (YYX) <= YYMAXUTOK                 \
-       ? YY_CAST(yysymbol_kind_t, yytranslate[YYX]) \
-       : YYSYMBOL_YYUNDEF)
+#define YYTRANSLATE(YYX)                                \
+  (0 <= (YYX) && (YYX) <= YYMAXUTOK                     \
+   ? YY_CAST (yysymbol_kind_t, yytranslate[YYX])        \
+   : YYSYMBOL_YYUNDEF)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex.  */
-static const yytype_int8 yytranslate[] = {
-    0,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    23, 24, 2, 2,  25, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 26, 22,
-    2,  29, 2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  27, 2,  28, 2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 30, 2,  31, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
-    2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1, 2, 3,  4,
-    5,  6,  7, 8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+static const yytype_int8 yytranslate[] =
+{
+       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+      23,    24,     2,     2,    25,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,    26,    22,
+       2,    29,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,    27,     2,    28,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,    30,     2,    31,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,    21
+};
 
 #if ORFZ_DEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_int16 yyrline[] = {
-    0,   105, 105, 112, 116, 117, 122, 125, 126, 129, 130, 131, 132, 135, 136,
-    139, 140, 147, 148, 151, 170, 185, 196, 211, 222, 248, 298, 383, 384, 387,
-    388, 389, 392, 396, 402, 403, 404, 407, 412, 427, 448, 449, 450, 451, 458,
-    459, 460, 461, 468, 469, 474, 475, 476, 479, 480, 483, 484, 485, 490, 491,
-    494, 495, 496, 501, 502, 503, 508, 509, 512, 513, 519, 523, 529, 530, 533,
-    545, 546, 549, 550, 551, 552, 553, 558, 584, 601, 649, 658, 662, 665, 666,
-    669, 670, 671, 672, 686, 695, 701, 730, 739, 747, 758};
+static const yytype_int16 yyrline[] =
+{
+       0,   118,   118,   125,   129,   130,   135,   138,   139,   142,
+     143,   144,   145,   148,   149,   152,   153,   160,   161,   164,
+     183,   198,   209,   224,   235,   250,   300,   385,   386,   389,
+     390,   391,   394,   398,   404,   405,   406,   409,   414,   429,
+     450,   451,   452,   453,   460,   461,   462,   463,   470,   471,
+     476,   477,   478,   481,   482,   485,   486,   487,   492,   493,
+     496,   497,   498,   503,   504,   505,   510,   511,   514,   515,
+     521,   525,   531,   532,   535,   549,   550,   553,   554,   555,
+     556,   557,   562,   588,   605,   653,   662,   666,   669,   670,
+     673,   674,   675,   676,   690,   699,   705,   734,   743,   751,
+     762
+};
 #endif
 
 /** Accessing symbol of state STATE.  */
-#define YY_ACCESSING_SYMBOL(State) YY_CAST(yysymbol_kind_t, yystos[State])
+#define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
 
 #if 1
 /* The user-facing name of the symbol whose (internal) number is
    YYSYMBOL.  No bounds checking.  */
-static const char* yysymbol_name(yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
+static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
 
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
-static const char* const yytname[] = {"\"end of file\"",
-                                      "error",
-                                      "\"invalid token\"",
-                                      "ARRAY",
-                                      "TOKEN_BOOL",
-                                      "CONSTRAINT",
-                                      "TOKEN_FLOAT",
-                                      "TOKEN_INT",
-                                      "MAXIMIZE",
-                                      "MINIMIZE",
-                                      "OF",
-                                      "PREDICATE",
-                                      "SATISFY",
-                                      "SET",
-                                      "SOLVE",
-                                      "VAR",
-                                      "DOTDOT",
-                                      "COLONCOLON",
-                                      "IVALUE",
-                                      "SVALUE",
-                                      "IDENTIFIER",
-                                      "DVALUE",
-                                      "';'",
-                                      "'('",
-                                      "')'",
-                                      "','",
-                                      "':'",
-                                      "'['",
-                                      "']'",
-                                      "'='",
-                                      "'{'",
-                                      "'}'",
-                                      "$accept",
-                                      "model",
-                                      "predicates",
-                                      "predicate",
-                                      "predicate_arguments",
-                                      "predicate_argument",
-                                      "predicate_array_argument",
-                                      "predicate_ints",
-                                      "variable_or_constant_declarations",
-                                      "variable_or_constant_declaration",
-                                      "optional_var_or_value",
-                                      "optional_var_or_value_array",
-                                      "var_or_value_array",
-                                      "var_or_value",
-                                      "int_domain",
-                                      "set_domain",
-                                      "float_domain",
-                                      "domain",
-                                      "integers",
-                                      "integer",
-                                      "floats",
-                                      "float",
-                                      "const_literal",
-                                      "const_literals",
-                                      "constraints",
-                                      "constraint",
-                                      "arguments",
-                                      "argument",
-                                      "annotations",
-                                      "annotation_arguments",
-                                      "annotation",
-                                      "solve",
-                                      YY_NULLPTR};
+static const char *const yytname[] =
+{
+  "\"end of file\"", "error", "\"invalid token\"", "ARRAY", "TOKEN_BOOL",
+  "CONSTRAINT", "TOKEN_FLOAT", "TOKEN_INT", "MAXIMIZE", "MINIMIZE", "OF",
+  "PREDICATE", "SATISFY", "SET", "SOLVE", "VAR", "DOTDOT", "COLONCOLON",
+  "IVALUE", "SVALUE", "IDENTIFIER", "DVALUE", "';'", "'('", "')'", "','",
+  "':'", "'['", "']'", "'='", "'{'", "'}'", "$accept", "model",
+  "predicates", "predicate", "predicate_arguments", "predicate_argument",
+  "predicate_array_argument", "predicate_ints",
+  "variable_or_constant_declarations", "variable_or_constant_declaration",
+  "optional_var_or_value", "optional_var_or_value_array",
+  "var_or_value_array", "var_or_value", "int_domain", "set_domain",
+  "float_domain", "domain", "integers", "integer", "floats", "float",
+  "const_literal", "const_literals", "constraints", "constraint",
+  "arguments", "argument", "annotations", "annotation_arguments",
+  "annotation", "solve", YY_NULLPTR
+};
 
-static const char* yysymbol_name(yysymbol_kind_t yysymbol) {
+static const char *
+yysymbol_name (yysymbol_kind_t yysymbol)
+{
   return yytname[yysymbol];
 }
 #endif
@@ -2148,7 +2137,9 @@ yyreduce:
       std::vector<Annotation>* const annotations = (yyvsp[0].annotations);
 
       model->AddConstraint(identifier, arguments,
-                           ContainsId(annotations, "domain"));
+                           ContainsId(annotations, "domain"),
+                           ContainsId(annotations, "symmetry_breaking"),
+                           ContainsId(annotations, "redundant"));
       delete annotations;
       delete (yyvsp[-2].args);
     }

@@ -532,7 +532,7 @@ TEST(BinaryRelationRepositoryTest, Build) {
   const IntegerVariable z = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2(NegationOf(x), y, 1, 1), 2, 8);
@@ -836,7 +836,7 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
@@ -861,7 +861,7 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
   const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
   const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(lit_a, LinearExpression2(x, y, -1, 1), -5,
                  10);  // lit_a => y => x - 5
   root_level_bounds->Add(LinearExpression2(x, y, -1, 1), 2,
@@ -888,7 +888,7 @@ TEST(BinaryRelationRepositoryTest,
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   repository.Add(lit_a, LinearExpression2::Difference(y, x), -5,
                  10);  // lit_a => y => x - 5
   repository.Add(lit_b, LinearExpression2::Difference(y, x), 2,
@@ -911,7 +911,7 @@ TEST(BinaryRelationRepositoryTest,
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
@@ -934,7 +934,7 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository;
+  BinaryRelationRepository repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 8,

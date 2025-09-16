@@ -14,381 +14,35 @@
 #include "ortools/sat/cp_constraints.h"
 
 #include <algorithm>
-#include <functional>
-#include <ostream>
 #include <utility>
 #include <vector>
 
-#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/stl_util.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
-
-std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e) {
-  switch (e) {
-    case EnforcementStatus::IS_FALSE:
-      os << "IS_FALSE";
-      break;
-    case EnforcementStatus::CANNOT_PROPAGATE:
-      os << "CANNOT_PROPAGATE";
-      break;
-    case EnforcementStatus::CAN_PROPAGATE:
-      os << "CAN_PROPAGATE";
-      break;
-    case EnforcementStatus::IS_ENFORCED:
-      os << "IS_ENFORCED";
-      break;
-  }
-  return os;
-}
-
-EnforcementPropagator::EnforcementPropagator(Model* model)
-    : SatPropagator("EnforcementPropagator"),
-      trail_(*model->GetOrCreate<Trail>()),
-      assignment_(trail_.Assignment()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      rev_int_repository_(model->GetOrCreate<RevIntRepository>()) {
-  // Note that this will be after the integer trail since rev_int_repository_
-  // depends on IntegerTrail.
-  model->GetOrCreate<SatSolver>()->AddPropagator(this);
-
-  // Sentinel - also start of next Register().
-  starts_.push_back(0);
-}
-
-bool EnforcementPropagator::Propagate(Trail* /*trail*/) {
-  rev_int_repository_->SaveStateWithStamp(&rev_stack_size_, &rev_stamp_);
-  while (propagation_trail_index_ < trail_.Index()) {
-    const Literal literal = trail_[propagation_trail_index_++];
-    if (literal.Index() >= static_cast<int>(watcher_.size())) continue;
-
-    int new_size = 0;
-    auto& watch_list = watcher_[literal.Index()];
-    for (const EnforcementId id : watch_list) {
-      const LiteralIndex index = ProcessIdOnTrue(literal, id);
-      if (index == kNoLiteralIndex) {
-        // We keep the same watcher.
-        watch_list[new_size++] = id;
-      } else {
-        // Change the watcher.
-        CHECK_NE(index, literal.Index());
-        watcher_[index].push_back(id);
-      }
-    }
-    watch_list.resize(new_size);
-
-    // We also mark some constraint false.
-    for (const EnforcementId id : watcher_[literal.NegatedIndex()]) {
-      ChangeStatus(id, EnforcementStatus::IS_FALSE);
-    }
-  }
-  rev_stack_size_ = static_cast<int>(untrail_stack_.size());
-
-  // Compute the enforcement status of any constraint added at a positive level.
-  // This is only needed until we are back to level zero.
-  for (const EnforcementId id : ids_to_fix_until_next_root_level_) {
-    ChangeStatus(id, DebugStatus(id));
-  }
-  if (trail_.CurrentDecisionLevel() == 0) {
-    ids_to_fix_until_next_root_level_.clear();
-  }
-
-  return true;
-}
-
-void EnforcementPropagator::Untrail(const Trail& /*trail*/, int trail_index) {
-  // Simply revert the status change.
-  const int size = static_cast<int>(untrail_stack_.size());
-  for (int i = size - 1; i >= rev_stack_size_; --i) {
-    const auto [id, status] = untrail_stack_[i];
-    statuses_[id] = status;
-    if (callbacks_[id] != nullptr) callbacks_[id](id, status);
-  }
-  untrail_stack_.resize(rev_stack_size_);
-  propagation_trail_index_ = trail_index;
-}
-
-// Adds a new constraint to the class and returns the constraint id.
-//
-// Note that we accept empty enforcement list so that client code can be used
-// regardless of the presence of enforcement or not. A negative id means the
-// constraint is never enforced, and should be ignored.
-EnforcementId EnforcementPropagator::Register(
-    absl::Span<const Literal> enforcement,
-    std::function<void(EnforcementId, EnforcementStatus)> callback) {
-  int num_true = 0;
-  int num_false = 0;
-  temp_literals_.clear();
-  const int level = trail_.CurrentDecisionLevel();
-  for (const Literal l : enforcement) {
-    // Make sure we always have enough room for the literal and its negation.
-    const int size = std::max(l.Index().value(), l.NegatedIndex().value()) + 1;
-    if (size > static_cast<int>(watcher_.size())) {
-      watcher_.resize(size);
-    }
-    if (assignment_.LiteralIsTrue(l)) {
-      if (level == 0 || trail_.Info(l.Variable()).level == 0) continue;
-      ++num_true;
-    } else if (assignment_.LiteralIsFalse(l)) {
-      ++num_false;
-    }
-    temp_literals_.push_back(l);
-  }
-  gtl::STLSortAndRemoveDuplicates(&temp_literals_);
-
-  // Return special index if always enforced.
-  if (temp_literals_.empty()) {
-    if (callback != nullptr)
-      callback(EnforcementId(-1), EnforcementStatus::IS_ENFORCED);
-    return EnforcementId(-1);
-  }
-
-  const EnforcementId id(static_cast<int>(callbacks_.size()));
-  callbacks_.push_back(std::move(callback));
-
-  CHECK(!temp_literals_.empty());
-  buffer_.insert(buffer_.end(), temp_literals_.begin(), temp_literals_.end());
-  starts_.push_back(buffer_.size());  // Sentinel/next-start.
-
-  // The default status at level zero.
-  statuses_.push_back(temp_literals_.size() == 1
-                          ? EnforcementStatus::CAN_PROPAGATE
-                          : EnforcementStatus::CANNOT_PROPAGATE);
-
-  if (temp_literals_.size() == 1) {
-    watcher_[temp_literals_[0].Index()].push_back(id);
-  } else {
-    // Make sure we watch correct literals.
-    const auto span = GetSpan(id);
-    int num_not_true = 0;
-    for (int i = 0; i < span.size(); ++i) {
-      if (assignment_.LiteralIsTrue(span[i])) continue;
-      std::swap(span[num_not_true], span[i]);
-      ++num_not_true;
-      if (num_not_true == 2) break;
-    }
-
-    // We need to watch one of the literals at highest level.
-    if (num_not_true == 1) {
-      int max_level = trail_.Info(span[1].Variable()).level;
-      for (int i = 2; i < span.size(); ++i) {
-        const int level = trail_.Info(span[i].Variable()).level;
-        if (level > max_level) {
-          max_level = level;
-          std::swap(span[1], span[i]);
-        }
-      }
-    }
-
-    watcher_[span[0].Index()].push_back(id);
-    watcher_[span[1].Index()].push_back(id);
-  }
-
-  // Change status, call callback and set up untrail if the status is different
-  // from EnforcementStatus::CANNOT_PROPAGATE.
-  if (num_false > 0) {
-    ChangeStatus(id, EnforcementStatus::IS_FALSE);
-  } else if (num_true == temp_literals_.size()) {
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-  } else if (num_true + 1 == temp_literals_.size()) {
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
-    // Because this is the default status, we still need to call the callback.
-    if (temp_literals_.size() == 1) {
-      if (callbacks_[id] != nullptr) {
-        callbacks_[id](id, EnforcementStatus::CAN_PROPAGATE);
-      }
-    }
-  }
-
-  // Tricky: if we added something at a positive level, and its status is
-  // not CANNOT_PROPAGATE, then we might need to fix it on backtrack.
-  if (trail_.CurrentDecisionLevel() > 0 &&
-      statuses_[id] != EnforcementStatus::CANNOT_PROPAGATE) {
-    ids_to_fix_until_next_root_level_.push_back(id);
-  }
-
-  return id;
-}
-
-EnforcementId EnforcementPropagator::Register(
-    absl::Span<const Literal> enforcement_literals,
-    GenericLiteralWatcher* watcher, int literal_watcher_id) {
-  return Register(enforcement_literals,
-                  [=](EnforcementId, EnforcementStatus status) {
-                    if (status == EnforcementStatus::CAN_PROPAGATE ||
-                        status == EnforcementStatus::IS_ENFORCED) {
-                      watcher->CallOnNextPropagate(literal_watcher_id);
-                    }
-                  });
-}
-
-// Add the enforcement reason to the given vector.
-void EnforcementPropagator::AddEnforcementReason(
-    EnforcementId id, std::vector<Literal>* reason) const {
-  for (const Literal l : GetSpan(id)) {
-    reason->push_back(l.Negated());
-  }
-}
-
-// Try to propagate when the enforced constraint is not satisfiable.
-// This is currently in O(enforcement_size);
-bool EnforcementPropagator::PropagateWhenFalse(
-    EnforcementId id, absl::Span<const Literal> literal_reason,
-    absl::Span<const IntegerLiteral> integer_reason) {
-  temp_reason_.clear();
-  LiteralIndex unique_unassigned = kNoLiteralIndex;
-  for (const Literal l : GetSpan(id)) {
-    if (assignment_.LiteralIsFalse(l)) return true;
-    if (assignment_.LiteralIsTrue(l)) {
-      temp_reason_.push_back(l.Negated());
-      continue;
-    }
-    if (unique_unassigned != kNoLiteralIndex) return true;
-    unique_unassigned = l.Index();
-  }
-
-  temp_reason_.insert(temp_reason_.end(), literal_reason.begin(),
-                      literal_reason.end());
-  if (unique_unassigned == kNoLiteralIndex) {
-    return integer_trail_->ReportConflict(temp_reason_, integer_reason);
-  }
-
-  // We also change the status right away.
-  ChangeStatus(id, EnforcementStatus::IS_FALSE);
-  integer_trail_->EnqueueLiteral(Literal(unique_unassigned).Negated(),
-                                 temp_reason_, integer_reason);
-  return true;
-}
-
-bool EnforcementPropagator::SafeEnqueue(
-    EnforcementId id, IntegerLiteral i_lit,
-    absl::Span<const IntegerLiteral> integer_reason) {
-  temp_reason_.clear();
-  AddEnforcementReason(id, &temp_reason_);
-  return integer_trail_->SafeEnqueue(i_lit, temp_reason_, integer_reason);
-}
-
-bool EnforcementPropagator::ReportConflict(
-    EnforcementId id, absl::Span<const IntegerLiteral> integer_reason) {
-  temp_reason_.clear();
-  AddEnforcementReason(id, &temp_reason_);
-  return integer_trail_->ReportConflict(temp_reason_, integer_reason);
-}
-
-absl::Span<Literal> EnforcementPropagator::GetSpan(EnforcementId id) {
-  if (id < 0) return {};
-  DCHECK_LE(id + 1, starts_.size());
-  const int size = starts_[id + 1] - starts_[id];
-  DCHECK_NE(size, 0);
-  return absl::MakeSpan(&buffer_[starts_[id]], size);
-}
-
-absl::Span<const Literal> EnforcementPropagator::GetSpan(
-    EnforcementId id) const {
-  if (id < 0) return {};
-  DCHECK_LE(id + 1, starts_.size());
-  const int size = starts_[id + 1] - starts_[id];
-  DCHECK_NE(size, 0);
-  return absl::MakeSpan(&buffer_[starts_[id]], size);
-}
-
-LiteralIndex EnforcementPropagator::ProcessIdOnTrue(Literal watched,
-                                                    EnforcementId id) {
-  const EnforcementStatus status = statuses_[id];
-  if (status == EnforcementStatus::IS_FALSE) return kNoLiteralIndex;
-
-  const auto span = GetSpan(id);
-  if (span.size() == 1) {
-    CHECK_EQ(status, EnforcementStatus::CAN_PROPAGATE);
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-    return kNoLiteralIndex;
-  }
-
-  const int watched_pos = (span[0] == watched) ? 0 : 1;
-  CHECK_EQ(span[watched_pos], watched);
-  if (assignment_.LiteralIsFalse(span[watched_pos ^ 1])) {
-    ChangeStatus(id, EnforcementStatus::IS_FALSE);
-    return kNoLiteralIndex;
-  }
-
-  for (int i = 2; i < span.size(); ++i) {
-    const Literal l = span[i];
-    if (assignment_.LiteralIsFalse(l)) {
-      ChangeStatus(id, EnforcementStatus::IS_FALSE);
-      return kNoLiteralIndex;
-    }
-    if (!assignment_.LiteralIsAssigned(l)) {
-      // Replace the watched literal. Note that if the other watched literal is
-      // true, it should be processed afterwards. We do not change the status
-      std::swap(span[watched_pos], span[i]);
-      return span[watched_pos].Index();
-    }
-  }
-
-  // All literal with index > 1 are true. Two case.
-  if (assignment_.LiteralIsTrue(span[watched_pos ^ 1])) {
-    // All literals are true.
-    ChangeStatus(id, EnforcementStatus::IS_ENFORCED);
-    return kNoLiteralIndex;
-  } else {
-    // The other watched literal is the last unassigned
-    CHECK_EQ(status, EnforcementStatus::CANNOT_PROPAGATE);
-    ChangeStatus(id, EnforcementStatus::CAN_PROPAGATE);
-    return kNoLiteralIndex;
-  }
-}
-
-void EnforcementPropagator::ChangeStatus(EnforcementId id,
-                                         EnforcementStatus new_status) {
-  const EnforcementStatus old_status = statuses_[id];
-  if (old_status == new_status) return;
-  if (trail_.CurrentDecisionLevel() != 0) {
-    untrail_stack_.push_back({id, old_status});
-  }
-  statuses_[id] = new_status;
-  if (callbacks_[id] != nullptr) callbacks_[id](id, new_status);
-}
-
-EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
-  if (id < 0) return EnforcementStatus::IS_ENFORCED;
-
-  int num_true = 0;
-  for (const Literal l : GetSpan(id)) {
-    if (assignment_.LiteralIsFalse(l)) {
-      return EnforcementStatus::IS_FALSE;
-    }
-    if (assignment_.LiteralIsTrue(l)) ++num_true;
-  }
-  const int size = GetSpan(id).size();
-  if (num_true == size) return EnforcementStatus::IS_ENFORCED;
-  if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE;
-  return EnforcementStatus::CANNOT_PROPAGATE;
-}
 
 BooleanXorPropagator::BooleanXorPropagator(
     absl::Span<const Literal> enforcement_literals,
     const std::vector<Literal>& literals, bool value, Model* model)
     : literals_(literals),
       value_(value),
-      trail_(model->GetOrCreate<Trail>()),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()) {
+      trail_(*model->GetOrCreate<Trail>()),
+      integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  enforcement_id_ = enforcement_propagator_->Register(
-      enforcement_literals, watcher, RegisterWith(watcher));
+  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
+                                                 RegisterWith(watcher));
 }
 
 bool BooleanXorPropagator::Propagate() {
-  const EnforcementStatus status =
-      enforcement_propagator_->Status(enforcement_id_);
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
   if (status == EnforcementStatus::IS_FALSE ||
       status == EnforcementStatus::CANNOT_PROPAGATE) {
     return true;
@@ -398,9 +52,9 @@ bool BooleanXorPropagator::Propagate() {
   int unassigned_index = -1;
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    if (trail_->Assignment().LiteralIsFalse(l)) {
+    if (trail_.Assignment().LiteralIsFalse(l)) {
       sum ^= false;
-    } else if (trail_->Assignment().LiteralIsTrue(l)) {
+    } else if (trail_.Assignment().LiteralIsTrue(l)) {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
@@ -409,29 +63,23 @@ bool BooleanXorPropagator::Propagate() {
     }
   }
 
-  // Propagates?
-  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
+  auto fill_literal_reason = [&]() {
     literal_reason_.clear();
-    enforcement_propagator_->AddEnforcementReason(enforcement_id_,
-                                                  &literal_reason_);
     for (int i = 0; i < literals_.size(); ++i) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
-          trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
+          trail_.Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
+  };
+
+  // Propagates?
+  if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
+    fill_literal_reason();
     const Literal u = literals_[unassigned_index];
-    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
-                                   literal_reason_, {});
-    return true;
-  }
-  if (status == EnforcementStatus::CAN_PROPAGATE && unassigned_index == -1 &&
-      sum != value_) {
-    return enforcement_propagator_->PropagateWhenFalse(enforcement_id_,
-                                                       literals_,
-                                                       /*integer_reason=*/{});
-  }
-  if (status != EnforcementStatus::IS_ENFORCED || unassigned_index != -1) {
+    enforcement_helper_.EnqueueLiteral(
+        enforcement_id_, sum == value_ ? u.Negated() : u, literal_reason_,
+        /*integer_reason=*/{});
     return true;
   }
 
@@ -439,14 +87,17 @@ bool BooleanXorPropagator::Propagate() {
   if (sum == value_) return true;
 
   // Conflict.
-  std::vector<Literal>* conflict = trail_->MutableConflict();
-  conflict->clear();
-  enforcement_propagator_->AddEnforcementReason(enforcement_id_, conflict);
-  for (const Literal& l : literals_) {
-    conflict->push_back(trail_->Assignment().LiteralIsFalse(l) ? l
-                                                               : l.Negated());
+  if (status == EnforcementStatus::IS_ENFORCED) {
+    fill_literal_reason();
+    return enforcement_helper_.ReportConflict(enforcement_id_, literal_reason_,
+                                              /*integer_reason=*/{});
+  } else if (unassigned_index == -1) {
+    fill_literal_reason();
+    return enforcement_helper_.PropagateWhenFalse(
+        enforcement_id_, literal_reason_, /*integer_reason=*/{});
+  } else {
+    return true;
   }
-  return false;
 }
 
 int BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {

@@ -78,8 +78,7 @@ TEST(ElementalTest, HaveNames) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // Typed tests do not work with non-type template parameters, so we need to
-// wrap the values with a type. See
-// 8947385822189977600
+// wrap the values with a type. See yaqs/8947385822189977600.
 template <ElementType e>
 class ElementTypeProxy {
  public:

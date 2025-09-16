@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Solves a scheduling problem with a min and max profile for the work load."""
 
 import io
@@ -282,3 +283,4 @@ def main(_) -> None:
 
 if __name__ == "__main__":
     app.run(main)
+# [END program]

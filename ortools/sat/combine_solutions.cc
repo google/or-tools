@@ -22,6 +22,7 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/model.h"
@@ -80,7 +81,7 @@ std::optional<std::vector<int64_t>> FindCombinedSolution(
 
 PushedSolutionPointers PushAndMaybeCombineSolution(
     SharedResponseManager* response_manager, const CpModelProto& model_proto,
-    absl::Span<const int64_t> new_solution, const std::string& solution_info,
+    absl::Span<const int64_t> new_solution, absl::string_view solution_info,
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
         base_solution) {
   PushedSolutionPointers result = {nullptr, nullptr};
@@ -88,7 +89,7 @@ PushedSolutionPointers PushAndMaybeCombineSolution(
       new_solution, solution_info, nullptr,
       base_solution == nullptr ? -1 : base_solution->source_id);
   if (base_solution != nullptr) {
-    std::string combined_solution_info = solution_info;
+    std::string combined_solution_info(solution_info);
     std::optional<std::vector<int64_t>> combined_solution =
         FindCombinedSolution(model_proto, new_solution,
                              base_solution->variable_values, response_manager,

@@ -127,8 +127,8 @@ class RouteRelationsHelper {
   // (node_expr[head] - node_expr[tail]) for each arc, assuming the arc is taken
   // (its literal is true).
   static std::unique_ptr<RouteRelationsHelper> Create(
-      int num_nodes, const std::vector<int>& tails,
-      const std::vector<int>& heads, const std::vector<Literal>& literals,
+      int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+      absl::Span<const Literal> literals,
       absl::Span<const AffineExpression> flat_node_dim_expressions,
       const BinaryRelationRepository& binary_relation_repository, Model* model);
 

@@ -234,27 +234,16 @@ variable_or_constant_declaration:
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
-  // Declaration of a (named) constant array: See rule above.
+  // Declaration of a (named) set constant array: See rule above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64_t num_constants = $5;
-  const Domain& domain = $8;
+  const int64_t num_domains = $5;
+  // const Domain& domain = $8;
   const std::string& identifier = $10;
   const std::vector<Domain>* const assignments = $14;
   const std::vector<Annotation>* const annotations = $11;
   CHECK(assignments != nullptr);
-  CHECK_EQ(num_constants, assignments->size());
-
-  if (!AllDomainsHaveOneValue(*assignments)) {
-    context->domain_array_map[identifier] = *assignments;
-    // TODO(user): check that all assignments are included in the domain.
-  } else {
-    std::vector<int64_t> values(num_constants);
-    for (int i = 0; i < num_constants; ++i) {
-      values[i] = (*assignments)[i].values.front();
-      CHECK(domain.Contains(values[i]));
-    }
-    context->integer_array_map[identifier] = values;
-  }
+  CHECK_EQ(num_domains, assignments->size());
+  context->domain_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
 }
@@ -549,7 +538,9 @@ constraint :
   const std::vector<Argument>& arguments = *$4;
   std::vector<Annotation>* const annotations = $6;
 
-  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"));
+  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"),
+                       ContainsId(annotations, "symmetry_breaking"),
+                       ContainsId(annotations, "redundant"));
   delete annotations;
   delete $4;
 }

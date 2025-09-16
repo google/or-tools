@@ -1235,11 +1235,39 @@ bool IntegerTrail::RootLevelEnqueue(IntegerLiteral i_lit) {
     return true;
   }
 
-  // We update right away the level zero bounds, but delay the actual enqueue
-  // until we are back at level zero. This allow to properly push any associated
-  // literal.
+  // If the new level zero bounds is greater than or equal to our best bound, we
+  // "clear" all entries associated to this variables and only keep the level
+  // zero entry.
+  //
+  // TODO(user): We could still "clear" just a subset of the entries event
+  // if the recent ones are still needed.
+  if (i_lit.bound >= var_lbs_[i_lit.var]) {
+    int index = var_trail_index_[i_lit.var];
+    const int num_vars = var_lbs_.size();
+    while (index >= num_vars) {
+      integer_trail_[index].var = kNoIntegerVariable;
+      index = integer_trail_[index].prev_trail_index;
+    }
+    DCHECK_EQ(index, i_lit.var.value());
+
+    // Point to the level zero entry.
+    DCHECK_GE(i_lit.bound, var_lbs_[i_lit.var]);
+    var_lbs_[i_lit.var] = i_lit.bound;
+    var_trail_index_[i_lit.var] = index;
+
+    // TODO(user): we might update this twice, but it is important to at least
+    // increase this as this counter can be used for "timestamping" and here
+    // we did change a bound.
+    ++num_enqueues_;
+  }
+
+  // Update the level-zero bound in any case.
   integer_trail_[i_lit.var.value()].bound = i_lit.bound;
+
+  // Make sure we will update InitialVariableDomain() when we are back
+  // at level zero.
   delayed_to_fix_->integer_literal_to_fix.push_back(i_lit);
+
   return true;
 }
 
@@ -1395,6 +1423,18 @@ void IntegerTrail::EnqueueLiteral(
     Literal literal, absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
   EnqueueLiteralInternal(literal, false, literal_reason, integer_reason);
+}
+
+bool IntegerTrail::SafeEnqueueLiteral(
+    Literal literal, absl::Span<const Literal> literal_reason,
+    absl::Span<const IntegerLiteral> integer_reason) {
+  if (trail_->Assignment().LiteralIsTrue(literal)) {
+    return true;
+  } else if (trail_->Assignment().LiteralIsFalse(literal)) {
+    return ReportConflict(literal_reason, integer_reason);
+  }
+  EnqueueLiteralInternal(literal, false, literal_reason, integer_reason);
+  return true;
 }
 
 void IntegerTrail::EnqueueLiteralInternal(
@@ -1870,6 +1910,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
     DCHECK_GE(trail_index, var_lbs_.size());
     DCHECK_LT(trail_index, integer_trail_.size());
     const TrailEntry& entry = integer_trail_[trail_index];
+    DCHECK_NE(entry.var, kNoIntegerVariable);
     tmp_var_to_trail_index_in_queue_[entry.var] =
         std::max(tmp_var_to_trail_index_in_queue_[entry.var], trail_index);
   }
@@ -1892,6 +1933,7 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
     // Skip any stale queue entry. Amongst all the entry referring to a given
     // variable, only the latest added to the queue is valid and we detect it
     // using its trail index.
+    DCHECK_NE(entry.var, kNoIntegerVariable);
     if (tmp_var_to_trail_index_in_queue_[entry.var] != trail_index) {
       continue;
     }
@@ -1974,6 +2016,11 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
       DCHECK_LT(next_trail_index, trail_index);
       const TrailEntry& next_entry = integer_trail_[next_trail_index];
 
+      // Tricky: we cache trail_index in Dependencies() but it is possible
+      // via RootLevelEnqueue() that some of the trail index listed here are
+      // "stale", so we skip any entry with a kNoIntegerVariable.
+      if (next_entry.var == kNoIntegerVariable) continue;
+
       // Only add literals that are not "implied" by the ones already present.
       // For instance, do not add (x >= 4) if we already have (x >= 7). This
       // translate into only adding a trail index if it is larger than the one
@@ -2051,6 +2098,13 @@ absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
   DCHECK(tmp_queue_.empty());
   for (const int prev_trail_index : Dependencies(reason_index)) {
     DCHECK_GE(prev_trail_index, var_lbs_.size());
+
+    // Tricky: we cache trail_index in Dependencies() but it is possible
+    // via RootLevelEnqueue() that some of the trail indices listed here are
+    // "stale", so we skip any entry with a kNoIntegerVariable.
+    const TrailEntry& next_entry = integer_trail_[prev_trail_index];
+    if (next_entry.var == kNoIntegerVariable) continue;
+
     tmp_queue_.push_back(prev_trail_index);
   }
   MergeReasonIntoInternal(reason, conflict_id);

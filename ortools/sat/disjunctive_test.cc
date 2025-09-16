@@ -157,7 +157,7 @@ bool TestDisjunctivePropagation(absl::Span<const TaskWithDuration> input,
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
 
   const int initial_num_enqueues = integer_trail->num_enqueues();
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
   if (!model.GetOrCreate<SatSolver>()->Propagate()) return false;
   CHECK_EQ(input.size(), expected.size());
   for (int i = 0; i < input.size(); ++i) {
@@ -261,7 +261,7 @@ TEST(DisjunctiveConstraintTest, Precedences) {
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
   ids.push_back(model.Add(NewInterval(kStart, kHorizon, 10)));
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
 
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   for (const IntervalVariable i : ids) {
@@ -291,7 +291,7 @@ TEST(SchedulingTest, Permutations) {
         model.Add(NewInterval(0, kNumIntervals, 1));
     intervals.push_back(interval);
   }
-  AddDisjunctive(intervals, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   IntervalsRepository* repository = model.GetOrCreate<IntervalsRepository>();
@@ -337,8 +337,9 @@ TEST(SchedulingTest, Permutations) {
 // Random tests with comparison with a simple time-decomposition encoding.
 // ============================================================================
 
-void AddDisjunctiveTimeDecomposition(absl::Span<const IntervalVariable> vars,
-                                     Model* model) {
+void AddDisjunctiveTimeDecomposition(
+    absl::Span<const Literal> /*enforcement_literals*/,
+    absl::Span<const IntervalVariable> vars, Model* model) {
   const int num_tasks = vars.size();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -414,7 +415,8 @@ std::vector<OptionalTasksWithDuration> GenerateRandomInstance(
 
 int CountAllSolutions(
     absl::Span<const OptionalTasksWithDuration> instance,
-    const std::function<void(const std::vector<IntervalVariable>&, Model*)>&
+    const std::function<void(const std::vector<Literal>&,
+                             const std::vector<IntervalVariable>&, Model*)>&
         add_disjunctive) {
   Model model;
   std::vector<IntervalVariable> intervals;
@@ -428,7 +430,7 @@ int CountAllSolutions(
           model.Add(NewInterval(task.min_start, task.max_end, task.duration)));
     }
   }
-  add_disjunctive(intervals, &model);
+  add_disjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   int num_solutions_found = 0;
   while (true) {
@@ -464,7 +466,12 @@ TEST(DisjunctiveTest, RandomComparisonWithSimpleEncoding) {
         << InstanceDebugString(instance);
     EXPECT_EQ(
         CountAllSolutions(instance, AddDisjunctive),
-        CountAllSolutions(instance, AddDisjunctiveWithBooleanPrecedencesOnly))
+        CountAllSolutions(
+            instance,
+            [](const std::vector<Literal>& /*enforcement_literals*/,
+               const std::vector<IntervalVariable>& intervals, Model* model) {
+              AddDisjunctiveWithBooleanPrecedencesOnly(intervals, model);
+            }))
         << InstanceDebugString(instance);
   }
 }
@@ -506,7 +513,7 @@ TEST(DisjunctiveTest, Precedences) {
   std::vector<IntervalVariable> ids;
   ids.push_back(model.Add(NewInterval(0, 7, 3)));
   ids.push_back(model.Add(NewInterval(0, 7, 2)));
-  AddDisjunctive(ids, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, ids, &model);
 
   const IntegerVariable var = model.Add(NewIntegerVariable(0, 10));
   IntervalsRepository* intervals = model.GetOrCreate<IntervalsRepository>();
@@ -527,7 +534,7 @@ TEST(DisjunctiveTest, OptionalIntervalsWithLinkedPresence) {
   intervals.push_back(model.Add(NewOptionalInterval(0, 6, 2, alternative)));
   intervals.push_back(
       model.Add(NewOptionalInterval(0, 6, 4, alternative.Negated())));
-  AddDisjunctive(intervals, &model);
+  AddDisjunctive(/*enforcement_literals=*/{}, intervals, &model);
 
   int num_solutions_found = 0;
   while (true) {

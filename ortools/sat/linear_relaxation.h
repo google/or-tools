@@ -112,8 +112,9 @@ void AppendExactlyOneRelaxation(const ConstraintProto& ct, Model* model,
 // Reference: "Strong mixed-integer programming formulations for trained neural
 // networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
-void AppendLinMaxRelaxationPart1(const ConstraintProto& ct, Model* model,
-                                 LinearRelaxation* relaxation);
+void AppendLinMaxRelaxationPart1(
+    const ConstraintProto& ct, Model* model, LinearRelaxation* relaxation,
+    ActivityBoundHelper* activity_helper = nullptr);
 
 void AppendLinMaxRelaxationPart2(IntegerVariable target,
                                  absl::Span<const Literal> alternative_literals,
@@ -122,7 +123,8 @@ void AppendLinMaxRelaxationPart2(IntegerVariable target,
 
 // Note: This only works if all affine expressions share the same variable.
 void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
-                               LinearRelaxation* relaxation);
+                               LinearRelaxation* relaxation,
+                               ActivityBoundHelper* activity_helper = nullptr);
 
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
@@ -133,7 +135,10 @@ void AppendMaxAffineRelaxation(const ConstraintProto& ct, Model* model,
 // Where implied_lb and implied_ub are trivial lower and upper bounds of the
 // constraint.
 void AppendLinearConstraintRelaxation(
-    const ConstraintProto& ct, bool linearize_enforced_constraints,
+    const ConstraintProto& ct, Model* model, LinearRelaxation* relaxation,
+    ActivityBoundHelper* activity_helper = nullptr);
+void AppendLinearConstraintRelaxation(
+    absl::Span<const int> enforcement, LinearConstraint&& linear_constraint,
     Model* model, LinearRelaxation* relaxation,
     ActivityBoundHelper* activity_helper = nullptr);
 

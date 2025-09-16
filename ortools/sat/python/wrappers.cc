@@ -337,7 +337,8 @@ class Generator {
         []($1 self) { return self->mutable_$2(); },
         py::return_value_policy::reference, py::keep_alive<0, 1>()))",
           field.name(), current_context_.self_mutable_name, field.name());
-      // We'll need to generate the wrapping for `proto2::RepeatedPtrField<$3>`.
+      // We'll need to generate the wrapping for
+      // `google::protobuf::RepeatedPtrField<$3>`.
       repeated_ptr_types_.insert(msg_type);
       // We'll need to generate the wrapping for this message type.
       message_stack_.push_back(ABSL_DIE_IF_NULL(field.message_type()));
@@ -350,7 +351,8 @@ class Generator {
         py::return_value_policy::reference, py::keep_alive<0, 1>()))",
                                 field.name(),
                                 current_context_.self_mutable_name);
-      // We'll need to generate the wrapping for `proto2::RepeatedField<$2>`.
+      // We'll need to generate the wrapping for
+      // `google::protobuf::RepeatedField<$2>`.
       repeated_scalar_types_.insert(GetCppType(field.cpp_type(), field));
     }
   }

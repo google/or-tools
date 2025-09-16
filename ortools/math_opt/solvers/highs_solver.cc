@@ -219,7 +219,7 @@ absl::StatusOr<std::unique_ptr<HighsOptions>> MakeOptions(
   if (parameters.has_threads()) {
     // Do not assign result.threads = parameters.threads() here, this is
     // requires global synchronization. See
-    // cs/highs/src/lp_data/Highs.cpp:607
+    // highs/src/lp_data/Highs.cpp:607
     return util::InvalidArgumentErrorBuilder()
            << "threads not supported for HiGHS solver, this must be set using "
               "globals, see HiGHS documentation";

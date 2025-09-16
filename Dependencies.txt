@@ -1,6 +1,6 @@
 ZLIB=1.3.1
-abseil-cpp=20250512.0
-Protobuf=v31.1
+abseil-cpp=20250814.0
+Protobuf=v32.0
 Eigen=3.4.0
 Re2=2024-07-02
 CoinUtils=2.11.12

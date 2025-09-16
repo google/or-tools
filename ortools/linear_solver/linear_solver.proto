@@ -576,7 +576,6 @@ enum MPSolverResponseStatus {
   // Implementation error: the requested solver implementation is not
   // available (see MPModelRequest.solver_type).
   // The linear solver binary was probably not linked with the required library,
-  // eg //ortools/linear_solver:linear_solver_scip for SCIP.
   MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
   // Some of the selected options were incompatible, e.g. a cancellable solve
   // was requested via SolverClient::SolveMipRemotely() with an underlying

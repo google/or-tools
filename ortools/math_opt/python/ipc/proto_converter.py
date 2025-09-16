@@ -16,7 +16,7 @@
 
 Provides several conversion functions to transform from/to protos exposed in the
 Operations Research API to the internal protos in
-/ortools/math_opt/.*.proto.
+ortools/math_opt/.*.proto.
 """
 
 from google.protobuf import message

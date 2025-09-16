@@ -49,8 +49,6 @@ def code_sample_py(name):
             requirement("absl-py"),
             requirement("numpy"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
     py_test(
@@ -63,8 +61,6 @@ def code_sample_py(name):
             requirement("absl-py"),
             requirement("numpy"),
         ],
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_cc_py(name):

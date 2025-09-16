@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The channeling_sample_sat command is a simple example of a channeling constraint.
 package main
 
@@ -80,3 +81,5 @@ func main() {
 		log.Exitf("channelingSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

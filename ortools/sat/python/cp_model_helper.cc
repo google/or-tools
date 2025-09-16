@@ -1547,6 +1547,15 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def(
           "__radd__",
           [](std::shared_ptr<SumArray> expr,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
+            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+          },
+          py::arg("other").none(false),
+          DOC(operations_research, sat, python, LinearExpr, Add))
+      .def(
+          "__radd__",
+          [](std::shared_ptr<SumArray> expr,
              int64_t cst) -> std::shared_ptr<LinearExpr> {
             const int num_uses = Py_REFCNT(py::cast(expr).ptr());
             return (num_uses == 4) ? expr->AddIntInPlace(cst)

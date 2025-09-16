@@ -53,6 +53,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/version.h"
+#include "ortools/port/os.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -91,10 +93,7 @@
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/random_engine.h"
-#if !defined(__EMBEDDED_PLATFORM__)
 #include "ortools/util/sigint.h"
-#endif  // __EMBEDDED_PLATFORM__
-#include "ortools/base/version.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
@@ -119,9 +118,6 @@ ABSL_FLAG(bool, cp_model_dump_response, false,
 ABSL_FLAG(std::string, cp_model_params, "",
           "This is interpreted as a text SatParameters proto. The "
           "specified fields will override the normal ones for all solves.");
-
-ABSL_FLAG(bool, debug_model_copy, false,
-          "If true, copy the input model as if with no basic presolve");
 
 ABSL_FLAG(bool, cp_model_ignore_objective, false,
           "If true, ignore the objective.");
@@ -305,12 +301,18 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     // We split the linear constraints into 3 buckets has it gives more insight
     // on the type of problem we are facing.
     char const* name;
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+    if (ct.constraint_case() == ConstraintProto::kLinear) {
       if (ct.linear().vars_size() == 0) name = "kLinear0";
       if (ct.linear().vars_size() == 1) name = "kLinear1";
       if (ct.linear().vars_size() == 2) name = "kLinear2";
       if (ct.linear().vars_size() == 3) name = "kLinear3";
       if (ct.linear().vars_size() > 3) name = "kLinearN";
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd &&
+               ct.enforcement_literal().size() > 1) {
+      // BoolAnd of the form "n literals => m literals" with n > 1 are just a
+      // compact way to encode m clauses of size n + 1. We report them
+      // separately as they are not handled in the same way internally.
+      name = "kBoolAndClauses";
     } else {
       name = ConstraintCaseName(ct.constraint_case()).data();
     }
@@ -1185,7 +1187,7 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ ABSL_GUARDED_BY(mutex_) = true;
 };
 
-#if !defined(__EMBEDDED_PLATFORM__)
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 class FeasibilityPumpSolver : public SubSolver {
  public:
@@ -1720,8 +1722,6 @@ class LnsSolver : public SubSolver {
 
 void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
-  CHECK(!params.enumerate_all_solutions())
-      << "Enumerating all solutions in parallel is not supported.";
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
   // If specified by the user, we might disable some parameters based on their
@@ -2191,7 +2191,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   LaunchSubsolvers(params, shared, subsolvers, name_filter.AllIgnored());
 }
 
-#endif  // !defined(__EMBEDDED_PLATFORM__)
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
 // If the option use_sat_inprocessing is true, then before post-solving a
 // solution, we need to make sure we add any new clause required for postsolving
@@ -2439,13 +2439,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Initialize the time limit from the parameters.
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
 
-#if !defined(__EMBEDDED_PLATFORM__)
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
   // Register SIGINT handler if requested by the parameters.
   if (params.catch_sigint_signal()) {
     model->GetOrCreate<SigintHandler>()->Register(
         [shared_time_limit]() { shared_time_limit->Stop(); });
   }
-#endif  // __EMBEDDED_PLATFORM__
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
@@ -2493,10 +2493,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 
-  if (absl::GetFlag(FLAGS_debug_model_copy)) {
-    *new_cp_model_proto = model_proto;
-  } else if (!ImportModelWithBasicPresolveIntoContext(model_proto,
-                                                      context.get())) {
+  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
     const std::string info = "Problem proven infeasible during initial copy.";
     SOLVER_LOG(logger, info);
     CpSolverResponse status_response;
@@ -2940,15 +2937,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LoadDebugSolution(*new_cp_model_proto, model);
 
   if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
-#if defined(__EMBEDDED_PLATFORM__)
-    if (/* DISABLES CODE */ (false)) {
-      // We ignore the multithreading parameter in this case.
-#else   // __EMBEDDED_PLATFORM__
+#if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
     if (params.num_workers() > 1 || params.interleave_search() ||
         !params.subsolvers().empty() || !params.filter_subsolvers().empty() ||
         params.use_ls_only()) {
       SolveCpModelParallel(&shared, model);
-#endif  // __EMBEDDED_PLATFORM__
+#else   // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
+    if (/* DISABLES CODE */ (false)) {
+      // We ignore the multithreading parameter in this case.
+#endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
     } else {
       shared_response_manager->SetUpdateGapIntegralOnEachChange(true);
 

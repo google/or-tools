@@ -196,6 +196,7 @@ function(ortools_cxx_test)
   target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
+    ${PROJECT_NAMESPACE}::base_gmock
     ${TEST_LINK_LIBRARIES}
   )
   target_link_options(${TEST_NAME} PRIVATE ${TEST_LINK_OPTIONS})

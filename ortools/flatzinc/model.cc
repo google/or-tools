@@ -809,13 +809,15 @@ std::string Variable::DebugString() const {
 // ----- Constraint -----
 
 std::string Constraint::DebugString() const {
-  const std::string strong = strong_propagation ? "strong propagation" : "";
+  const std::string strong = strong_propagation ? " strong propagation" : "";
   const std::string presolve_status_str =
-      active ? ""
-             : (presolve_propagation_done ? "[propagated during presolve]"
-                                          : "[removed during presolve]");
-  return absl::StrFormat("%s(%s)%s %s", type, JoinDebugString(arguments, ", "),
-                         strong, presolve_status_str);
+      active ? "" : " [removed during presolve]";
+  const std::string symmetric_breaking_str =
+      is_symmetric_breaking ? " symmetric breaking" : "";
+  const std::string redundant_str = is_redundant ? " redundant" : "";
+  return absl::StrCat(type, "(", JoinDebugString(arguments, ", "), ")", strong,
+                      presolve_status_str, symmetric_breaking_str,
+                      redundant_str);
 }
 
 void Constraint::RemoveArg(int arg_pos) {
@@ -1056,15 +1058,15 @@ Variable* Model::AddFloatConstant(double value) {
 }
 
 void Model::AddConstraint(absl::string_view id, std::vector<Argument> arguments,
-                          bool is_domain) {
+                          bool is_domain, bool symmetry, bool redundant) {
   Constraint* const constraint =
-      new Constraint(id, std::move(arguments), is_domain);
+      new Constraint(id, std::move(arguments), is_domain, symmetry, redundant);
   constraints_.push_back(constraint);
 }
 
 void Model::AddConstraint(absl::string_view id,
                           std::vector<Argument> arguments) {
-  AddConstraint(id, std::move(arguments), false);
+  AddConstraint(id, std::move(arguments), false, false, false);
 }
 
 void Model::AddOutput(SolutionOutputSpecs output) {
@@ -1146,32 +1148,59 @@ void ModelStatistics::PrintStatistics() const {
   SOLVER_LOG(logger_, "Model ", model_.name());
 
   // Variables.
-  int num_int_var = 0;
-  int num_float_var = 0;
-  int num_set_var = 0;
+  int num_bool_vars = 0;
+  int num_int_vars = 0;
+  int num_float_vars = 0;
+  int num_set_vars = 0;
   for (Variable* var : model_.variables()) {
     if (var->domain.is_float) {
-      ++num_float_var;
+      ++num_float_vars;
     } else if (var->domain.is_a_set) {
-      ++num_set_var;
+      ++num_set_vars;
+    } else if (var->domain.display_as_boolean) {
+      ++num_bool_vars;
     } else {
-      ++num_int_var;
+      ++num_int_vars;
     }
   }
-  if (num_int_var > 0) {
-    SOLVER_LOG(logger_, "  - integer variables:", num_int_var);
+  if (num_bool_vars > 0) {
+    SOLVER_LOG(logger_, "  - boolean variables:", num_bool_vars);
   }
-  if (num_float_var > 0) {
-    SOLVER_LOG(logger_, "  - float variables:", num_float_var);
+  if (num_int_vars > 0) {
+    SOLVER_LOG(logger_, "  - integer variables:", num_int_vars);
   }
-  if (num_set_var > 0) {
-    SOLVER_LOG(logger_, "  - set variables:", num_set_var);
+  if (num_float_vars > 0) {
+    SOLVER_LOG(logger_, "  - float variables:", num_float_vars);
+  }
+  if (num_set_vars > 0) {
+    SOLVER_LOG(logger_, "  - set variables:", num_set_vars);
   }
   SOLVER_LOG(logger_);
 
   // Constraints.
+  int num_redundant_constraints = 0;
+  int num_symmetry_breaking_constraints = 0;
+  for (Constraint* const ct : model_.constraints()) {
+    if (ct != nullptr && ct->active) {
+      if (ct->is_redundant) {
+        ++num_redundant_constraints;
+      }
+      if (ct->is_symmetric_breaking) {
+        ++num_symmetry_breaking_constraints;
+      }
+    }
+  }
   for (const auto& it : constraints_per_type_) {
     SOLVER_LOG(logger_, "  - ", it.first, ": ", it.second.size());
+  }
+  SOLVER_LOG(logger_);
+  if (num_redundant_constraints > 0) {
+    SOLVER_LOG(logger_,
+               "  -  redundant constraints: ", num_redundant_constraints);
+  }
+  if (num_symmetry_breaking_constraints > 0) {
+    SOLVER_LOG(logger_, "  - symmetry breaking constraints: ",
+               num_symmetry_breaking_constraints);
   }
   if (model_.objective() == nullptr) {
     SOLVER_LOG(logger_, "  - Satisfaction problem");

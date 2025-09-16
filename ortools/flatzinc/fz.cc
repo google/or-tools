@@ -68,6 +68,10 @@ ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
           "Display solutions in the flatzinc format");
 ABSL_FLAG(bool, fz_check_all_solutions, DEBUG_MODE,
           "Checks all solutions returned by the solver.");
+ABSL_FLAG(bool, ignore_redundant_constraints, false,
+          "Ignore redundant constraints.");
+ABSL_FLAG(bool, ignore_symmetry_breaking_constraints, false,
+          "Ignore symmetry breaking constraints.");
 
 namespace operations_research {
 namespace fz {
@@ -161,6 +165,28 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
   *parse_duration = timer.GetDuration();
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
              " parsed in ", absl::ToInt64Milliseconds(*parse_duration), " ms");
+
+  int num_redundant_constraints = 0;
+  int num_symmetry_breaking_constraints = 0;
+  for (Constraint* ct : model.constraints()) {
+    if (ct->is_redundant && absl::GetFlag(FLAGS_ignore_redundant_constraints)) {
+      ++num_redundant_constraints;
+      ct->MarkAsInactive();
+    }
+    if (ct->is_symmetric_breaking &&
+        absl::GetFlag(FLAGS_ignore_symmetry_breaking_constraints)) {
+      ++num_symmetry_breaking_constraints;
+      ct->MarkAsInactive();
+    }
+  }
+  if (num_redundant_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored redundant constraints: ",
+               num_redundant_constraints);
+  }
+  if (num_symmetry_breaking_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored symmetry breaking constraints: ",
+               num_symmetry_breaking_constraints);
+  }
   SOLVER_LOG(logger, "");
 
   // Print statistics.

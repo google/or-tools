@@ -162,11 +162,6 @@ std::string ValidateParameters(const SatParameters& params) {
   TEST_POSITIVE(share_glue_clauses_dtime);
 
   if (params.enumerate_all_solutions() &&
-      (params.num_search_workers() > 1 || params.num_workers() > 1)) {
-    return "Enumerating all solutions does not work in parallel";
-  }
-
-  if (params.enumerate_all_solutions() &&
       (!params.subsolvers().empty() || !params.extra_subsolvers().empty() ||
        !params.ignore_subsolvers().empty())) {
     return "Enumerating all solutions does not work with custom subsolvers";

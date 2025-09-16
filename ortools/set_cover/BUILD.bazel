@@ -38,6 +38,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "set_cover_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":set_cover_proto"],
 )
 

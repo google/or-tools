@@ -234,7 +234,7 @@ py_library(
         ":variables",
         "//ortools/math_opt:result_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
-        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
     ],
 )
 
@@ -288,7 +288,7 @@ py_library(
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
-        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
     ],
@@ -308,7 +308,7 @@ py_test(
         "//ortools/math_opt/solvers:gurobi_py_pb2",
         "//ortools/math_opt/solvers:highs_py_pb2",
         "//ortools/math_opt/solvers:osqp_py_pb2",
-        "//ortools/math_opt/solvers/gscip:gscip_proto_py_pb2",
+        "//ortools/math_opt/solvers/gscip:gscip_py_pb2",
         "//ortools/pdlp:solvers_py_pb2",
         "//ortools/sat:sat_parameters_py_pb2",
     ],

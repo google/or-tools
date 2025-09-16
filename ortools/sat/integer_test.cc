@@ -402,21 +402,22 @@ TEST(IntegerTrailTest, RelaxLinearReason) {
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 10));
+  const Literal reason = Literal(model.Add(NewBooleanVariable()), true);
 
-  Trail* trail = model.GetOrCreate<Trail>();
-  trail->SetDecisionLevel(1);
-  EXPECT_TRUE(integer_trail->Propagate(trail));
+  auto* sat_solver = model.GetOrCreate<SatSolver>();
+  EXPECT_TRUE(sat_solver->EnqueueDecisionIfNotConflicting(reason.Negated()));
+  EXPECT_TRUE(sat_solver->Propagate());
 
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(1)), {}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(1)), {reason}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(2)), {}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(2)), {reason}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(b, IntegerValue(1)), {}, {}));
+      IntegerLiteral::GreaterOrEqual(b, IntegerValue(1)), {reason}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(a, IntegerValue(3)), {}, {}));
+      IntegerLiteral::GreaterOrEqual(a, IntegerValue(3)), {reason}, {}));
   EXPECT_TRUE(integer_trail->Enqueue(
-      IntegerLiteral::GreaterOrEqual(b, IntegerValue(3)), {}, {}));
+      IntegerLiteral::GreaterOrEqual(b, IntegerValue(3)), {reason}, {}));
 
   std::vector<IntegerValue> coeffs(2, IntegerValue(1));
   std::vector<IntegerLiteral> reasons{

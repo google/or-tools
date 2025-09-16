@@ -61,7 +61,7 @@ SharedStatTables::SharedStatTables() {
                              "Overflow", "Bad", "BadScaling"});
 
   lp_manager_table_.push_back({"Lp pool", "Constraints", "Updates", "Simplif",
-                               "Merged", "Shortened", "Split", "Strenghtened",
+                               "Merged", "Shortened", "Split", "Strengthened",
                                "Cuts/Call"});
 
   lns_table_.push_back(
@@ -129,7 +129,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
   int64_t num_merged_constraints = 0;
   int64_t num_shortened_constraints = 0;
   int64_t num_split_constraints = 0;
-  int64_t num_coeff_strenghtening = 0;
+  int64_t num_coeff_strengthening = 0;
   int64_t num_cuts = 0;
   int64_t num_add_cut_calls = 0;
 
@@ -187,7 +187,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
     num_merged_constraints += manager.num_merged_constraints();
     num_shortened_constraints += manager.num_shortened_constraints();
     num_split_constraints += manager.num_split_constraints();
-    num_coeff_strenghtening += manager.num_coeff_strenghtening();
+    num_coeff_strengthening += manager.num_coeff_strenghtening();
     num_cuts += manager.num_cuts();
     num_add_cut_calls += manager.num_add_cut_calls();
 
@@ -222,7 +222,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
                                FormatCounter(num_merged_constraints),
                                FormatCounter(num_shortened_constraints),
                                FormatCounter(num_split_constraints),
-                               FormatCounter(num_coeff_strenghtening),
+                               FormatCounter(num_coeff_strengthening),
                                absl::StrCat(FormatCounter(num_cuts), "/",
                                             FormatCounter(num_add_cut_calls))});
 }

@@ -46,7 +46,7 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
                                          Highs& highs);
 
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
-    LazyMutableCopy<MPModelRequest> request) {
+    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
@@ -260,6 +260,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         }
       }
     }
+  }
+
+  if (solve_info != nullptr) {
+    solve_info->mip_node_count = highs.getInfo().mip_node_count;
   }
 
   const absl::Duration solving_duration = absl::Now() - time_before;

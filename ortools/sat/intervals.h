@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -119,10 +120,12 @@ class IntervalsRepository {
   // by setting the Boolean to true. This is used by our scheduling heuristic
   // based on precedences.
   SchedulingConstraintHelper* GetOrCreateHelper(
+      std::vector<Literal> enforcement_literals,
       const std::vector<IntervalVariable>& variables,
       bool register_as_disjunctive_helper = false);
 
   NoOverlap2DConstraintHelper* GetOrCreate2DHelper(
+      std::vector<Literal> enforcement_literals,
       const std::vector<IntervalVariable>& x_variables,
       const std::vector<IntervalVariable>& y_variables);
 
@@ -205,12 +208,14 @@ class IntervalsRepository {
   util_intops::StrongVector<IntervalVariable, AffineExpression> sizes_;
 
   // We can share the helper for all the propagators that work on the same set
-  // of intervals.
-  absl::flat_hash_map<std::vector<IntervalVariable>,
-                      SchedulingConstraintHelper*>
+  // of intervals, and with the same enforcement literals.
+  absl::flat_hash_map<
+      std::pair<std::vector<Literal>, std::vector<IntervalVariable>>,
+      SchedulingConstraintHelper*>
       helper_repository_;
   absl::flat_hash_map<
-      std::pair<std::vector<IntervalVariable>, std::vector<IntervalVariable>>,
+      std::tuple<std::vector<Literal>, std::vector<IntervalVariable>,
+                 std::vector<IntervalVariable>>,
       NoOverlap2DConstraintHelper*>
       no_overlap_2d_helper_repository_;
   absl::flat_hash_map<

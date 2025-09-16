@@ -13,6 +13,7 @@
 
 #include "ortools/sat/intervals.h"
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -336,9 +337,11 @@ Literal IntervalsRepository::GetOrCreatePrecedenceLiteral(AffineExpression x,
 // we cannot since we often use this with a parallel vector of demands. So this
 // "sorting" should happen in the presolver so we can share as much as possible.
 SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
+    std::vector<Literal> enforcement_literals,
     const std::vector<IntervalVariable>& variables,
     bool register_as_disjunctive_helper) {
-  const auto it = helper_repository_.find(variables);
+  std::sort(enforcement_literals.begin(), enforcement_literals.end());
+  const auto it = helper_repository_.find({enforcement_literals, variables});
   if (it != helper_repository_.end()) return it->second;
   std::vector<AffineExpression> starts;
   std::vector<AffineExpression> ends;
@@ -365,8 +368,9 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
   SchedulingConstraintHelper* helper = new SchedulingConstraintHelper(
       std::move(starts), std::move(ends), std::move(sizes),
       std::move(reason_for_presence), model_);
-  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
-  helper_repository_[variables] = helper;
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>(),
+                       enforcement_literals);
+  helper_repository_[{enforcement_literals, variables}] = helper;
   model_->TakeOwnership(helper);
   if (register_as_disjunctive_helper) {
     disjunctive_helpers_.push_back(helper);
@@ -375,10 +379,12 @@ SchedulingConstraintHelper* IntervalsRepository::GetOrCreateHelper(
 }
 
 NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
+    std::vector<Literal> enforcement_literals,
     const std::vector<IntervalVariable>& x_variables,
     const std::vector<IntervalVariable>& y_variables) {
-  const auto it =
-      no_overlap_2d_helper_repository_.find({x_variables, y_variables});
+  std::sort(enforcement_literals.begin(), enforcement_literals.end());
+  const auto it = no_overlap_2d_helper_repository_.find(
+      {enforcement_literals, x_variables, y_variables});
   if (it != no_overlap_2d_helper_repository_.end()) return it->second;
 
   std::vector<AffineExpression> x_starts;
@@ -415,8 +421,10 @@ NoOverlap2DConstraintHelper* IntervalsRepository::GetOrCreate2DHelper(
       std::move(x_starts), std::move(x_ends), std::move(x_sizes),
       std::move(x_reason_for_presence), std::move(y_starts), std::move(y_ends),
       std::move(y_sizes), std::move(y_reason_for_presence), model_);
-  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>());
-  no_overlap_2d_helper_repository_[{x_variables, y_variables}] = helper;
+  helper->RegisterWith(model_->GetOrCreate<GenericLiteralWatcher>(),
+                       enforcement_literals);
+  no_overlap_2d_helper_repository_[{enforcement_literals, x_variables,
+                                    y_variables}] = helper;
   model_->TakeOwnership(helper);
   return helper;
 }

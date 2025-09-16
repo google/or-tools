@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# [START program]
 """Code sample that encodes the product of a Boolean and an integer variable."""
 
 from ortools.sat.python import cp_model
@@ -71,3 +72,4 @@ def bool_and_int_var_product_sample_sat():
 
 
 bool_and_int_var_product_sample_sat()
+# [END program]

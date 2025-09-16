@@ -36,7 +36,7 @@ LPDecomposer::LPDecomposer()
     : original_problem_(nullptr), clusters_(), mutex_() {}
 
 void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   original_problem_ = linear_problem;
   clusters_.clear();
 
@@ -69,12 +69,12 @@ void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
 }
 
 int LPDecomposer::GetNumberOfProblems() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return clusters_.size();
 }
 
 const LinearProgram& LPDecomposer::original_problem() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return *original_problem_;
 }
 
@@ -85,7 +85,7 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
 
   lp->Clear();
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const std::vector<ColIndex>& cluster = clusters_[problem_index];
   StrictITIVector<ColIndex, ColIndex> global_to_local(
       original_problem_->num_variables(), kInvalidCol);
@@ -143,7 +143,7 @@ DenseRow LPDecomposer::AggregateAssignments(
     absl::Span<const DenseRow> assignments) const {
   CHECK_EQ(assignments.size(), clusters_.size());
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   DenseRow global_assignment(original_problem_->num_variables(),
                              Fractional(0.0));
   for (int problem = 0; problem < assignments.size(); ++problem) {
@@ -163,7 +163,7 @@ DenseRow LPDecomposer::ExtractLocalAssignment(int problem_index,
   CHECK_LT(problem_index, clusters_.size());
   CHECK_EQ(assignment.size(), original_problem_->num_variables());
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const std::vector<ColIndex>& cluster = clusters_[problem_index];
   DenseRow local_assignment(ColIndex(cluster.size()), Fractional(0.0));
   for (int i = 0; i < cluster.size(); ++i) {

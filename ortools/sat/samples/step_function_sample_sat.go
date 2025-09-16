@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The step_function_sample_sat command is an example of an implementation of a step function.
 package main
 
@@ -98,3 +99,5 @@ func main() {
 		log.Exitf("stepFunctionSampleSat returned with error: %v", err)
 	}
 }
+
+// [END program]

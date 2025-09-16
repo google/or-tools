@@ -1749,8 +1749,8 @@ std::pair<IntegerValue, IntegerValue> GetDifferenceBounds(
 }
 
 std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals,
+    int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
+    absl::Span<const Literal> literals,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
     const BinaryRelationRepository& binary_relation_repository, Model* model) {
   CHECK(model != nullptr);
@@ -1851,7 +1851,8 @@ int ToNodeVariableIndex(IntegerVariable var) {
 // in routes constraints.
 BinaryRelationRepository ComputePartialBinaryRelationRepository(
     const CpModelProto& model) {
-  BinaryRelationRepository repository;
+  Model empty_model;
+  BinaryRelationRepository repository(&empty_model);
   for (const ConstraintProto& ct : model.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const absl::Span<const int> vars = ct.linear().vars();
@@ -1861,7 +1862,6 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
                                   ToPositiveIntegerVariable(vars[0]),
                                   ToPositiveIntegerVariable(vars[1]));
   }
-  Model empty_model;
   repository.Build();
   return repository;
 }

@@ -129,7 +129,7 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
 namespace {
 
 // This will be optimized into one division. I tested that in other places:
-// 3/ortools/sat/integer_test.cc;l=1223-1228;bpv=0
+// https://source.corp.google.com/piper///depot/ortools/sat/integer_test.cc;l=1223-1228;bpv=0
 //
 // Note that I am not 100% sure we need the indirection for the optimization
 // to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.
@@ -1014,7 +1014,40 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
                                        absl::Span<const int64_t> distances,
                                        std::vector<int64_t>& buffer,
                                        int always_pick_mask) {
-  CHECK_LE(n, 20);
+  DCHECK_LE(k, n);
+  std::vector<int> result;
+  result.reserve(k);
+
+  if (k == n) {
+    for (int i = 0; i < n; ++i) result.push_back(i);
+    return result;
+  }
+
+  if (k == n - 1) {
+    // We just exclude the one closer to all the other.
+    int64_t worse = std::numeric_limits<int64_t>::max();
+    int to_exclude = -1;
+    for (int i = 0; i < n; ++i) {
+      if ((always_pick_mask >> i) & 1) continue;
+
+      int64_t score = 0;
+      for (int j = 0; j < n; ++j) {
+        if (i != j) score += distances[i * n + j];
+      }
+      if (score < worse) {
+        worse = score;
+        to_exclude = i;
+      }
+    }
+
+    CHECK_NE(to_exclude, -1);
+    for (int i = 0; i < n; ++i) {
+      if (i != to_exclude) result.push_back(i);
+    }
+    return result;
+  }
+
+  CHECK_LE(n, 25);
   const int limit = 1 << n;
   buffer.assign(limit, 0);
   int best_mask;
@@ -1043,8 +1076,7 @@ std::vector<int> FindMostDiverseSubset(int k, int n,
       best_mask = mask;
     }
   }
-  std::vector<int> result;
-  result.reserve(k);
+
   for (int i = 0; i < n; ++i) {
     if ((best_mask >> i) & 1) {
       result.push_back(i);

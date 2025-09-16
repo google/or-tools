@@ -12,6 +12,7 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_java//java:java_library.bzl", "java_library")
 
 # Utilities to load native libraries in java or-tools.
 cc_binary(

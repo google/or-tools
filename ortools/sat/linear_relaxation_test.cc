@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -386,6 +387,41 @@ TEST(TryToLinearizeConstraint, LinMaxLevel1Bis) {
   EXPECT_EQ(relaxation.linear_constraints[2].DebugString(), "-1*X2 -1*X3 <= 0");
 }
 
+TEST(TryToLinearizeConstraint, EnforcedLinMaxLevel2) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 5 ] }
+    variables { domain: [ -1, 7 ] }
+    variables { domain: [ -2, 9 ] }
+    variables { domain: [ -5, 10 ] }
+    variables { domain: [ 0, 1 ] }
+    constraints {
+      enforcement_literal: 4
+      lin_max {
+        target: { vars: 3 coeffs: 1 }
+        exprs: { vars: 0 coeffs: 1 }
+        exprs: { vars: 1 coeffs: 1 }
+        exprs: { vars: 2 coeffs: -1 }
+      }
+    }
+  )pb");
+
+  Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
+  LoadVariables(initial_model, true, &model);
+
+  LinearRelaxation relaxation;
+  TryToLinearizeConstraint(initial_model, initial_model.constraints(0),
+                           /*linearization_level=*/2, &model, &relaxation);
+
+  EXPECT_EQ(relaxation.linear_constraints.size(), 3);
+  EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
+            "1*X0 -1*X3 10*X4 <= 10");
+  EXPECT_EQ(relaxation.linear_constraints[1].DebugString(),
+            "1*X1 -1*X3 12*X4 <= 12");
+  EXPECT_EQ(relaxation.linear_constraints[2].DebugString(),
+            "-1*X2 -1*X3 7*X4 <= 7");
+}
+
 TEST(TryToLinearizeConstraint, LinMaxSmall) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 5 ] }
@@ -627,7 +663,8 @@ void AppendNoOverlapRelaxation(const ConstraintProto& ct, Model* model,
   const IntegerValue one(1);
   std::vector<AffineExpression> demands(intervals.size(), one);
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
@@ -814,7 +851,8 @@ void AppendCumulativeRelaxation(const ConstraintProto& ct, Model* model,
       mapping->Affines(ct.cumulative().demands());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
-  SchedulingConstraintHelper* helper = repository->GetOrCreateHelper(intervals);
+  SchedulingConstraintHelper* helper =
+      repository->GetOrCreateHelper(/*enforcement_literals=*/{}, intervals);
   SchedulingDemandHelper* demands_helper =
       new SchedulingDemandHelper(demands, helper, model);
   model->TakeOwnership(demands_helper);
@@ -960,12 +998,12 @@ TEST(AppendLinearConstraintRelaxation, NoEnforcementLiteral) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
@@ -991,9 +1029,8 @@ TEST(AppendLinearConstraintRelaxation, SmallLinearizationLevel) {
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/false,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }
 
@@ -1015,9 +1052,8 @@ TEST(AppendLinearConstraintRelaxation, PbConstraint) {
   LoadVariables(initial_model, false, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/false,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
             "3 <= 2*X0 1*X1 3*X2 <= 5");
@@ -1038,12 +1074,12 @@ TEST(AppendLinearConstraintRelaxation, SmallConstraint) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }
@@ -1064,12 +1100,12 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralLowerBound) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
@@ -1092,12 +1128,12 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralUpperBound) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 1);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
@@ -1120,12 +1156,12 @@ TEST(AppendLinearConstraintRelaxation, SingleEnforcementLiteralBothBounds) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
@@ -1152,12 +1188,12 @@ TEST(AppendLinearConstraintRelaxation, MultipleEnforcementLiteral) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 2);
   EXPECT_EQ(relaxation.linear_constraints[0].DebugString(),
@@ -1186,12 +1222,12 @@ TEST(AppendLinearConstraintRelaxation, BoundsNotTight) {
   )pb");
 
   Model model;
+  model.GetOrCreate<SatParameters>()->set_linearization_level(2);
   LoadVariables(initial_model, true, &model);
 
   LinearRelaxation relaxation;
-  AppendLinearConstraintRelaxation(initial_model.constraints(0),
-                                   /*linearize_enforced_constraints=*/true,
-                                   &model, &relaxation);
+  AppendLinearConstraintRelaxation(initial_model.constraints(0), &model,
+                                   &relaxation);
 
   EXPECT_EQ(relaxation.linear_constraints.size(), 0);
 }

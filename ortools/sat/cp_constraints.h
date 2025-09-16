@@ -16,141 +16,20 @@
 
 #include <cstdint>
 #include <functional>
-#include <ostream>
-#include <utility>
 #include <vector>
 
-#include "absl/base/attributes.h"
-#include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/util/strong_integers.h"
 
 namespace operations_research {
 namespace sat {
-
-DEFINE_STRONG_INDEX_TYPE(EnforcementId);
-
-// An enforced constraint can be in one of these 4 states.
-// Note that we rely on the integer encoding to take 2 bits for optimization.
-enum class EnforcementStatus {
-  // One enforcement literal is false.
-  IS_FALSE = 0,
-  // More than two literals are unassigned.
-  CANNOT_PROPAGATE = 1,
-  // All enforcement literals are true but one.
-  CAN_PROPAGATE = 2,
-  // All enforcement literals are true.
-  IS_ENFORCED = 3,
-};
-
-std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e);
-
-// This is meant as an helper to deal with enforcement for any constraint.
-class EnforcementPropagator : public SatPropagator {
- public:
-  explicit EnforcementPropagator(Model* model);
-
-  // SatPropagator interface.
-  bool Propagate(Trail* trail) final;
-  void Untrail(const Trail& trail, int trail_index) final;
-
-  // Adds a new constraint to the class and register a callback that will
-  // be called on status change. Note that we also call the callback with the
-  // initial status if different from CANNOT_PROPAGATE when added.
-  //
-  // It is better to not call this for empty enforcement list, but you can. A
-  // negative id means the level zero status will never change, and only the
-  // first call to callback() should be necessary, we don't save it.
-  EnforcementId Register(
-      absl::Span<const Literal> enforcement,
-      std::function<void(EnforcementId, EnforcementStatus)> callback = nullptr);
-
-  // Calls `Register` with a callback calling
-  // `watcher->CallOnNextPropagate(literal_watcher_id)` if a propagation might
-  // be possible.
-  EnforcementId Register(absl::Span<const Literal> enforcement_literals,
-                         GenericLiteralWatcher* watcher,
-                         int literal_watcher_id);
-
-  // Add the enforcement reason to the given vector.
-  void AddEnforcementReason(EnforcementId id,
-                            std::vector<Literal>* reason) const;
-
-  // Try to propagate when the enforced constraint is not satisfiable.
-  // This is currently in O(enforcement_size).
-  ABSL_MUST_USE_RESULT bool PropagateWhenFalse(
-      EnforcementId id, absl::Span<const Literal> literal_reason,
-      absl::Span<const IntegerLiteral> integer_reason);
-
-  ABSL_MUST_USE_RESULT bool SafeEnqueue(
-      EnforcementId id, IntegerLiteral i_lit,
-      absl::Span<const IntegerLiteral> integer_reason);
-
-  bool ReportConflict(EnforcementId id,
-                      absl::Span<const IntegerLiteral> integer_reason);
-
-  EnforcementStatus Status(EnforcementId id) const {
-    if (id < 0) return EnforcementStatus::IS_ENFORCED;
-    return statuses_[id];
-  }
-
-  // Recompute the status from the current assignment.
-  // This should only used in DCHECK().
-  EnforcementStatus DebugStatus(EnforcementId id);
-
-  // Returns the enforcement literals of the given id.
-  absl::Span<const Literal> GetEnforcementLiterals(EnforcementId id) const {
-    if (id < 0) return {};
-    return GetSpan(id);
-  }
-
- private:
-  absl::Span<Literal> GetSpan(EnforcementId id);
-  absl::Span<const Literal> GetSpan(EnforcementId id) const;
-  void ChangeStatus(EnforcementId id, EnforcementStatus new_status);
-
-  // Returns kNoLiteralIndex if nothing need to change or a new literal to
-  // watch. This also calls the registered callback.
-  LiteralIndex ProcessIdOnTrue(Literal watched, EnforcementId id);
-
-  // External classes.
-  const Trail& trail_;
-  const VariablesAssignment& assignment_;
-  IntegerTrail* integer_trail_;
-  RevIntRepository* rev_int_repository_;
-
-  // All enforcement will be copied there, and we will create Span out of this.
-  // Note that we don't store the span so that we are not invalidated on buffer_
-  // resizing.
-  util_intops::StrongVector<EnforcementId, int> starts_;
-  std::vector<Literal> buffer_;
-
-  util_intops::StrongVector<EnforcementId, EnforcementStatus> statuses_;
-  util_intops::StrongVector<
-      EnforcementId, std::function<void(EnforcementId, EnforcementStatus)>>
-      callbacks_;
-
-  // Used to restore status and call callback on untrail.
-  std::vector<std::pair<EnforcementId, EnforcementStatus>> untrail_stack_;
-  int rev_stack_size_ = 0;
-  int64_t rev_stamp_ = 0;
-
-  // We use a two watcher scheme.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
-      watcher_;
-
-  std::vector<Literal> temp_literals_;
-  std::vector<Literal> temp_reason_;
-
-  std::vector<EnforcementId> ids_to_fix_until_next_root_level_;
-};
 
 // Propagate the fact that a XOR of literals is equal to the given value.
 // The complexity is in O(n).
@@ -175,9 +54,9 @@ class BooleanXorPropagator : public PropagatorInterface {
   const std::vector<Literal> literals_;
   const bool value_;
   std::vector<Literal> literal_reason_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  EnforcementPropagator* enforcement_propagator_;
+  const Trail& trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
 };
 

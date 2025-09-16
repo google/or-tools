@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 // The rabbits_and_pheasants_sat command is an example of a simple sat program that
 // solves the rabbits and pheasants problem.
 package main
@@ -62,3 +63,5 @@ func main() {
 		log.Exitf("rabbitsAndPheasants returned with error: %v", err)
 	}
 }
+
+// [END program]

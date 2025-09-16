@@ -69,8 +69,10 @@ if(BUILD_ZLIB)
     GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
     GIT_TAG "v1.3.1"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch")
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch"
+  )
   FetchContent_MakeAvailable(ZLIB)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
@@ -90,6 +92,7 @@ if(BUILD_BZip2)
     GIT_TAG "master"
     # GIT_TAG "bzip2-1.0.8" # CMake support not available
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/bzip2.patch"
   )
@@ -114,10 +117,11 @@ if(BUILD_absl)
   FetchContent_Declare(
     absl
     GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
-    GIT_TAG "20250512.0"
+    GIT_TAG "20250814.0"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250512.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20250814.0.patch"
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(absl)
@@ -139,11 +143,12 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v31.1"
+    GIT_TAG "v32.0"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v31.1.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v32.0.patch"
   )
   FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -162,7 +167,9 @@ if(BUILD_re2)
     GIT_REPOSITORY "https://github.com/google/re2.git"
     GIT_TAG "2024-07-02"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2024-07-02.patch"
+    UPDATE_COMMAND git reset --hard
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2024-07-02.patch"
   )
   FetchContent_MakeAvailable(re2)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -184,7 +191,9 @@ if(BUILD_Eigen3)
     GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
     GIT_TAG "3.4.0"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/eigen3-3.4.0.patch"
+    UPDATE_COMMAND git reset --hard
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/eigen3-3.4.0.patch"
   )
   FetchContent_MakeAvailable(eigen3)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -216,6 +225,7 @@ if(BUILD_PYTHON)
       #GIT_TAG "bd5951b6" # 2024/08/14 TEST FAIL
       GIT_TAG "v2.13.6" # TEST PASS with a1d00916 patch apply
       #GIT_SHALLOW TRUE
+      UPDATE_COMMAND git reset --hard
       PATCH_COMMAND git apply --ignore-whitespace
       "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11-v2.13.6.patch"
     )
@@ -232,7 +242,9 @@ if(BUILD_PYTHON)
       GIT_REPOSITORY "https://github.com/pybind/pybind11_abseil.git" # 2024/01/11
       GIT_TAG "v202402.0"
       GIT_SHALLOW TRUE
-      PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
+      UPDATE_COMMAND git reset --hard
+      PATCH_COMMAND git apply --ignore-whitespace
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_abseil.patch"
     )
     FetchContent_MakeAvailable(pybind11_abseil)
     list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -246,8 +258,10 @@ if(BUILD_PYTHON)
       pybind11_protobuf
       GIT_REPOSITORY "https://github.com/pybind/pybind11_protobuf.git"
       GIT_TAG "f02a2b7653bc50eb5119d125842a3870db95d251" # 2025/02/10
-      #PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
       #GIT_SHALLOW TRUE
+      #UPDATE_COMMAND git reset --hard
+      #PATCH_COMMAND git apply --ignore-whitespace
+      #"${CMAKE_CURRENT_LIST_DIR}/../../patches/pybind11_protobuf.patch"
     )
     FetchContent_MakeAvailable(pybind11_protobuf)
     list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -290,6 +304,7 @@ if(BUILD_HIGHS)
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
     GIT_TAG        "v1.11.0"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.11.0.patch"
   )
@@ -310,7 +325,9 @@ if(BUILD_Boost)
     GIT_TAG "boost-1.87.0"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES_RECURSE TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
+    UPDATE_COMMAND git reset --hard --recurse-submodules
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
   )
   set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)
   option(BOOST_SKIP_INSTALL_RULES NO)
@@ -333,6 +350,7 @@ if(BUILD_soplex)
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
     GIT_TAG        "release-713"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v7.1.3.patch"
   )
@@ -362,6 +380,7 @@ if(BUILD_SCIP)
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
     GIT_TAG        "v922"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v922.patch"
   )
@@ -399,6 +418,7 @@ if(BUILD_CoinUtils)
     GIT_REPOSITORY "https://github.com/Mizux/CoinUtils.git"
     GIT_TAG "cmake/2.11.12"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/coinutils-2.11.patch")
   FetchContent_MakeAvailable(CoinUtils)
@@ -417,6 +437,7 @@ if(BUILD_Osi)
     GIT_REPOSITORY "https://github.com/Mizux/Osi.git"
     GIT_TAG "cmake/0.108.11"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/osi-0.108.patch")
   FetchContent_MakeAvailable(Osi)
@@ -435,6 +456,7 @@ if(BUILD_Clp)
     GIT_REPOSITORY "https://github.com/Mizux/Clp.git"
     GIT_TAG "cmake/1.17.10"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/clp-1.17.patch")
   FetchContent_MakeAvailable(Clp)
@@ -453,6 +475,7 @@ if(BUILD_Cgl)
     GIT_REPOSITORY "https://github.com/Mizux/Cgl.git"
     GIT_TAG "cmake/0.60.9"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/cgl-0.60.patch")
   FetchContent_MakeAvailable(Cgl)
@@ -471,6 +494,7 @@ if(BUILD_Cbc)
     GIT_REPOSITORY "https://github.com/Mizux/Cbc.git"
     GIT_TAG "cmake/2.10.12"
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/cbc-2.10.patch")
   FetchContent_MakeAvailable(Cbc)
@@ -498,6 +522,7 @@ if(BUILD_googletest)
     GIT_REPOSITORY https://github.com/google/googletest.git
     GIT_TAG v1.17.0
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/googletest-v1.17.0.patch"
   )
@@ -533,10 +558,11 @@ if(BUILD_fuzztest)
   FetchContent_Declare(
     fuzztest
     GIT_REPOSITORY https://github.com/google/fuzztest.git
-    GIT_TAG 2025-02-14
+    GIT_TAG 2025-08-05
     GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-02-14.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-08-05.patch"
   )
   FetchContent_MakeAvailable(fuzztest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)

@@ -395,6 +395,12 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   // Called each time we change decision level.
   void SetLevel(int level) final;
 
+  void SetLevelToTrail() {
+    if (trail_->CurrentDecisionLevel() != stored_level_) {
+      SetLevel(trail_->CurrentDecisionLevel());
+    }
+  }
+
   // Returns a set of precedences such that we have a relation
   // of the form vars[index] <= var + offset.
   //
@@ -437,6 +443,7 @@ class EnforcedLinear2Bounds : public ReversibleInterface {
   Linear2Indices* lin2_indices_;
 
   int64_t num_conditional_relation_updates_ = 0;
+  int stored_level_ = 0;
 
   // Conditional stack for push/pop of conditional relations.
   //
@@ -496,12 +503,19 @@ struct Relation {
   }
 };
 
+class ReifiedLinear2Bounds;
+
 // A repository of all the enforced linear constraints of size 1 or 2.
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
 class BinaryRelationRepository {
  public:
+  explicit BinaryRelationRepository(Model* model)
+      : reified_linear2_bounds_(model->GetOrCreate<ReifiedLinear2Bounds>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+  ~BinaryRelationRepository();
+
   int size() const { return relations_.size(); }
 
   // The returned relation is guaranteed to only have positive variables.
@@ -543,8 +557,11 @@ class BinaryRelationRepository {
       absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
 
  private:
+  ReifiedLinear2Bounds* reified_linear2_bounds_;
+  SharedStatistics* shared_stats_;
   bool is_built_ = false;
   int num_enforced_relations_ = 0;
+  int num_encoded_equivalences_ = 0;
   std::vector<Relation> relations_;
   CompactVectorVector<LiteralIndex, int> lit_to_relations_;
 };
@@ -677,7 +694,12 @@ class Linear2Bounds {
         root_level_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
         enforced_bounds_(model->GetOrCreate<EnforcedLinear2Bounds>()),
         linear3_bounds_(model->GetOrCreate<Linear2BoundsFromLinear3>()),
-        lin2_indices_(model->GetOrCreate<Linear2Indices>()) {}
+        lin2_indices_(model->GetOrCreate<Linear2Indices>()),
+        reified_lin2_bounds_(model->GetOrCreate<ReifiedLinear2Bounds>()),
+        trail_(model->GetOrCreate<Trail>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
+  ~Linear2Bounds();
 
   // Returns the best known upper-bound of the given LinearExpression2 at the
   // current decision level. If its explanation is needed, it can be queried
@@ -697,12 +719,29 @@ class Linear2Bounds {
   // the individual variable bounds. This is faster.
   IntegerValue NonTrivialUpperBound(LinearExpression2Index lin2_index) const;
 
+  // Given the new linear2 bounds and its reason, inspect our various repository
+  // to find the strongest way to push this new upper bound.
+  bool EnqueueLowerOrEqual(LinearExpression2 expr, IntegerValue ub,
+                           absl::Span<const Literal> literal_reason,
+                           absl::Span<const IntegerLiteral> integer_reason);
+
  private:
   IntegerTrail* integer_trail_;
   RootLevelLinear2Bounds* root_level_bounds_;
   EnforcedLinear2Bounds* enforced_bounds_;
   Linear2BoundsFromLinear3* linear3_bounds_;
   Linear2Indices* lin2_indices_;
+  ReifiedLinear2Bounds* reified_lin2_bounds_;
+  Trail* trail_;
+  SharedStatistics* shared_stats_;
+
+  int64_t enqueue_trivial_ = 0;
+  int64_t enqueue_degenerate_ = 0;
+  int64_t enqueue_true_at_root_level_ = 0;
+  int64_t enqueue_conflict_false_at_root_level_ = 0;
+  int64_t enqueue_individual_var_bounds_ = 0;
+  int64_t enqueue_literal_encoding_ = 0;
+  int64_t enqueue_integer_linear3_encoding_ = 0;
 };
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the

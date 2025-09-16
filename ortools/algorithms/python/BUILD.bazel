@@ -72,7 +72,6 @@ pybind_extension(
 py_test(
     name = "knapsack_solver_test",
     srcs = ["knapsack_solver_test.py"],
-    python_version = "PY3",
     deps = [
         ":knapsack_solver",
         requirement("absl-py"),

@@ -726,33 +726,6 @@ TEST(ValidateCpModelTest, InvalidNodeExpressionsCount) {
   EXPECT_THAT(ValidateCpModel(model), HasSubstr("must be of size num_nodes:2"));
 }
 
-TEST(ValidateCpModelTest, NonAffineExpressionInRoutesConstraint) {
-  const CpModelProto model = ParseTestProto(R"pb(
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 1 ] }
-    variables { domain: [ 0, 10 ] }
-    variables { domain: [ 0, 10 ] }
-    constraints {
-      routes {
-        tails: [ 0, 1 ]
-        heads: [ 1, 0 ]
-        literals: [ 0, 1 ]
-        dimensions {
-          exprs {
-            vars: [ 2, 3 ]
-            coeffs: [ 1, 2 ]
-          }
-          exprs {
-            vars: [ 3 ]
-            coeffs: [ 1 ]
-          }
-        }
-      }
-    }
-  )pb");
-  EXPECT_THAT(ValidateCpModel(model), HasSubstr("expression must be affine"));
-}
-
 TEST(ValidateCpModelTest, InvalidNodeExpressionInRoutesConstraint) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }

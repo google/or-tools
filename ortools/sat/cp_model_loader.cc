@@ -1512,9 +1512,11 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> expressions =
       mapping->Affines(ct.all_diff().exprs());
-  m->Add(AllDifferentOnBounds(expressions));
+  m->Add(AllDifferentOnBounds(enforcement_literals, expressions));
 }
 
 void LoadAlwaysFalseConstraint(const ConstraintProto& ct, Model* m) {
@@ -1545,11 +1547,16 @@ void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
         if (prod.constant.value() != 1) {
           LoadAlwaysFalseConstraint(ct, m);
         }
-      } else {
+      } else if (enforcement_literals.empty()) {
         if (!integer_trail->Enqueue(prod.LowerOrEqual(1)) ||
             !integer_trail->Enqueue(prod.GreaterOrEqual(1))) {
-          LoadAlwaysFalseConstraint(ct, m);
+          m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
         }
+      } else {
+        LinearConstraintBuilder builder(m, /*lb=*/1, /*ub=*/1);
+        builder.AddTerm(prod, 1);
+        LoadConditionalLinearConstraint(enforcement_literals, builder.Build(),
+                                        m);
       }
       break;
     }
@@ -1611,7 +1618,7 @@ void LoadIntModConstraint(const ConstraintProto& ct, Model* m) {
 
 void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.lin_max().exprs().empty()) {
-    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    LoadAlwaysFalseConstraint(ct, m);
     return;
   }
 
@@ -1624,37 +1631,46 @@ void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
         NegationOf(mapping->GetExprFromProto(ct.lin_max().exprs(i))));
   }
   // TODO(user): Consider replacing the min propagator by max.
-  m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
+  AddIsEqualToMinOf(mapping->Literals(ct.enforcement_literal()),
+                    NegationOf(max), negated_exprs, m);
 }
 
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  AddDisjunctive(mapping->Intervals(ct.no_overlap().intervals()), m);
+  AddDisjunctive(mapping->Literals(ct.enforcement_literal()),
+                 mapping->Intervals(ct.no_overlap().intervals()), m);
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.no_overlap_2d().x_intervals().empty()) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   const std::vector<IntervalVariable> y_intervals =
       mapping->Intervals(ct.no_overlap_2d().y_intervals());
-  AddNonOverlappingRectangles(x_intervals, y_intervals, m);
+  AddNonOverlappingRectangles(enforcement_literals, x_intervals, y_intervals,
+                              m);
 }
 
 void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const AffineExpression capacity = mapping->Affine(ct.cumulative().capacity());
   const std::vector<AffineExpression> demands =
       mapping->Affines(ct.cumulative().demands());
-  m->Add(Cumulative(intervals, demands, capacity));
+  m->Add(Cumulative(enforcement_literals, intervals, demands, capacity));
 }
 
 void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
   const std::vector<AffineExpression> times =
       mapping->Affines(ct.reservoir().time_exprs());
   const std::vector<AffineExpression> level_changes =
@@ -1668,7 +1684,7 @@ void LoadReservoirConstraint(const ConstraintProto& ct, Model* m) {
       presences.push_back(encoder->GetTrueLiteral());
     }
   }
-  AddReservoirConstraint(times, level_changes, presences,
+  AddReservoirConstraint(enforcement_literals, times, level_changes, presences,
                          ct.reservoir().min_level(), ct.reservoir().max_level(),
                          m);
 }
@@ -1679,10 +1695,13 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
 
   std::vector<int> tails(circuit.tails().begin(), circuit.tails().end());
   std::vector<int> heads(circuit.heads().begin(), circuit.heads().end());
-  std::vector<Literal> literals =
-      m->GetOrCreate<CpModelMapping>()->Literals(circuit.literals());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+  const std::vector<Literal> literals = mapping->Literals(circuit.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m);
+  LoadSubcircuitConstraint(num_nodes, tails, heads, enforcement_literals,
+                           literals, m);
 }
 
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
@@ -1691,10 +1710,13 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
 
   std::vector<int> tails(routes.tails().begin(), routes.tails().end());
   std::vector<int> heads(routes.heads().begin(), routes.heads().end());
-  std::vector<Literal> literals =
-      m->GetOrCreate<CpModelMapping>()->Literals(routes.literals());
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const std::vector<Literal> enforcement_literals =
+      mapping->Literals(ct.enforcement_literal());
+  std::vector<Literal> literals = mapping->Literals(routes.literals());
   const int num_nodes = ReindexArcs(&tails, &heads);
-  LoadSubcircuitConstraint(num_nodes, tails, heads, literals, m,
+  LoadSubcircuitConstraint(num_nodes, tails, heads, enforcement_literals,
+                           literals, m,
                            /*multiple_subcircuit_through_zero=*/true);
 }
 

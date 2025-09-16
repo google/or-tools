@@ -20,27 +20,6 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
-)
-
 # ---------------------------------------------------------------------------
 # Baseline flatzinc model.
 # ---------------------------------------------------------------------------
@@ -88,9 +67,8 @@ cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
-        "on_linux": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_macos": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_windows": [],
+        "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
+        "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
     }),
     deps = [

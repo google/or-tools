@@ -16,21 +16,6 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
 filegroup(
     name = "base_swig",
     srcs = [
@@ -72,19 +57,16 @@ cc_library(
     hdrs = [
         "commandlineflags.h",
         "init_google.h",
-        "stl_logging.h",
         "types.h",
         "version.h",
     ],
     copts = [
         "-DOR_TOOLS_MAJOR=9",
-        "-DOR_TOOLS_MINOR=14",
+        "-DOR_TOOLS_MINOR=15",
         "-DOR_TOOLS_PATCH=9999",
     ],
     linkopts = select({
-        "on_linux": [],
-        "on_macos": ["-framework CoreFoundation"],
-        "on_windows": [],
+        "@platforms//os:macos": ["-framework CoreFoundation"],
         "//conditions:default": [],
     }),
     deps = [
@@ -123,13 +105,6 @@ cc_library(
     name = "bitmap",
     srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
-)
-
-cc_library(
-    name = "case",
-    srcs = ["case.cc"],
-    hdrs = ["case.h"],
-    deps = [":base"],
 )
 
 cc_library(
@@ -180,9 +155,7 @@ cc_library(
     name = "dump_vars",
     hdrs = ["dump_vars.h"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
@@ -197,9 +170,7 @@ cc_test(
     size = "small",
     srcs = ["dump_vars_test.cc"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
     deps = [
@@ -250,19 +221,6 @@ cc_library(
 )
 
 cc_library(
-    name = "fuzztest",
-    testonly = 1,
-    hdrs = ["fuzztest.h"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-        "@fuzztest//fuzztest",
-        "@fuzztest//fuzztest:googletest_fixture_adapter",
-        "@fuzztest//fuzztest:init_fuzztest",
-        "@protobuf",
-    ],
-)
-
-cc_library(
     name = "gmock",
     hdrs = ["gmock.h"],
     deps = [
@@ -305,15 +263,9 @@ cc_library(
 
 cc_library(
     name = "hash",
-    srcs = [
-        "hash.cc",
-    ],
-    hdrs = [
-        "hash.h",
-    ],
-    deps = [
-        "@abseil-cpp//absl/strings",
-    ],
+    srcs = ["hash.cc"],
+    hdrs = ["hash.h"],
+    deps = ["@abseil-cpp//absl/strings"],
 )
 
 cc_library(
@@ -470,6 +422,7 @@ cc_library(
 
 cc_library(
     name = "protocol-buffer-matchers",
+    srcs = ["protocol-buffer-matchers.cc"],
     hdrs = ["protocol-buffer-matchers.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
@@ -500,11 +453,6 @@ cc_library(
 )
 
 cc_library(
-    name = "ptr_util",
-    hdrs = ["ptr_util.h"],
-)
-
-cc_library(
     name = "recordio",
     srcs = ["recordio.cc"],
     hdrs = ["recordio.h"],
@@ -517,12 +465,6 @@ cc_library(
         "@protobuf",
         "@zlib",
     ],
-)
-
-cc_library(
-    name = "small_map",
-    hdrs = ["small_map.h"],
-    deps = [":base"],
 )
 
 cc_library(
