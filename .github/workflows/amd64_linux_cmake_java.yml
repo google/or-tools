@@ -1,30 +1,69 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 Linux CMake Java
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  CCACHE_BASEDIR: ${{github.workspace}}
+  CCACHE_DIR: ${{github.workspace}}/.ccache
+
 jobs:
   native:
     name: amd64•Linux•CMake•Java
     runs-on: ubuntu-latest
+    env:
+      deps_src_key: amd64_linux_java_deps_src
+      deps_build_key: amd64_linux_java_deps_build
+      ccache_key: amd64_linux_java_ccache
     steps:
       - uses: actions/checkout@v5
-      - name: Swig install
+      - name: Install Dependencies
         run: |
-          sudo apt install -y swig
+          sudo apt update
+          sudo apt install -y ninja-build ccache swig
           swig -version
       - name: Check java
         run: java -version
+
+      # RESTORING CACHES
+      - name: Restore CMake dependency source code
+        uses: actions/cache/restore@v4
+        id: deps_src_restore
+        with:
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Restore CMake dependency build
+        uses: actions/cache/restore@v4
+        id: deps_build_restore
+        with:
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Restore CCache
+        uses: actions/cache/restore@v4
+        id: ccache_restore
+        with:
+          key: ${{env.ccache_key}}-${{github.sha}}
+          restore-keys: ${{env.ccache_key}}-
+          path: ${{env.CCACHE_DIR}}
+
       - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
           cmake -S. -Bbuild
+          -G "Ninja"
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
           -DBUILD_JAVA=ON -DSKIP_GPG=ON
@@ -48,6 +87,32 @@ jobs:
           --config Release
           --target install
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
+
+      # SAVING CACHES
+      - name: Save CCache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
+          path: ${{env.CCACHE_DIR}}
+      - name: Save CMake dependency build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
 
   amd64_linux_cmake_java:
     runs-on: ubuntu-latest

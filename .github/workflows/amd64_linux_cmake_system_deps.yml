@@ -1,14 +1,19 @@
 # Test or-tools using system wide install dependencies.
 name: amd64 Linux CMake System Dependencies
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
 jobs:
-  native:
+  docker:
     strategy:
       matrix:
         distro: [system_deps]

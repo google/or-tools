@@ -1,75 +1,135 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 Linux CMake SCIP OFF
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
   cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  CCACHE_BASEDIR: ${{github.workspace}}
+  CCACHE_DIR: ${{github.workspace}}/.ccache
+
 jobs:
   native:
-    strategy:
-      matrix:
-        cmake: [
-          {language: 'C++', args: '-DBUILD_CXX=ON'},
-          {language: '.Net', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'},
-          {language: 'Java', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON'},
-          {language: 'Python', args: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'},
-        ]
-      fail-fast: false
-    name: amd64•Linux•CMake•${{matrix.cmake.language}}•SCIP=OFF
+    name: amd64•Linux•CMake•SCIP=OFF
     runs-on: ubuntu-latest
+    env:
+      deps_src_key: amd64_linux_scip_deps_src
+      deps_build_key: amd64_linux_scip_deps_build
+      ccache_key: amd64_linux_scip_ccache
     steps:
-    - uses: actions/checkout@v5
-      # Install SWIG
-    - name: Swig install
-      run: sudo apt install -y swig
-    - name: Check swig
-      run: swig -version
-      # Install .NET SDKs
-    - name: Setup .NET 8.0
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-    - name: Check dotnet
-      run: dotnet --info
-      # Install Java
-    - name: Check java
-      run: java -version
-      # Install Python
-    - name: Install python3 venv
-      run: sudo apt-get install python3-venv
-    - name: Update Path
-      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-      # CMake
-    - name: Check cmake
-      run: cmake --version
-    - name: Configure
-      run: >
-        cmake -S. -Bbuild
-        -DCMAKE_BUILD_TYPE=Release
-        -DBUILD_DEPS=ON
-        -DUSE_SCIP=OFF
-        ${{matrix.cmake.args}}
-    - name: Build
-      run: >
-        cmake --build build
-        --config Release
-        --target all
-        -v -j2
-    - name: Test
-      run: >
-        CTEST_OUTPUT_ON_FAILURE=1
-        cmake --build build
-        --config Release
-        --target test
-        -v
-    - name: Install
-      run: >
-        cmake --build build
-        --config Release
-        --target install
-        -v
-        -- DESTDIR=install
+      - uses: actions/checkout@v5
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ninja-build ccache swig
+          swig -version
+        # Install .NET SDKs
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+      - name: Check dotnet
+        run: dotnet --info
+        # Install Java
+      - name: Check java
+        run: java -version
+        # Install Python
+      - name: Install python3 venv
+        run: sudo apt-get install python3-venv
+      - name: Update Path
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # RESTORING CACHES
+      - name: Restore CMake dependency source code
+        uses: actions/cache/restore@v4
+        id: deps_src_restore
+        with:
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Restore CMake dependency build
+        uses: actions/cache/restore@v4
+        id: deps_build_restore
+        with:
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Restore CCache
+        uses: actions/cache/restore@v4
+        id: ccache_restore
+        with:
+          key: ${{env.ccache_key}}-${{github.sha}}
+          restore-keys: ${{env.ccache_key}}-
+          path: ${{env.CCACHE_DIR}}
+
+      - name: Check CMake
+        run: cmake --version
+      - name: Configure
+        run: >
+          cmake -S. -Bbuild
+          -G "Ninja"
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_DOTNET=ON -DBUILD_JAVA=ON -DBUILD_PYTHON=ON
+          -DUSE_COINOR=OFF -DUSE_GLPK=OFF
+          -DUSE_SCIP=OFF
+          -DCMAKE_INSTALL_PREFIX=install
+      - name: Build
+        run: >
+          cmake --build build
+          --config Release
+          --target all
+          -v -j2
+      - name: Test
+        run: >
+          CTEST_OUTPUT_ON_FAILURE=1
+          cmake --build build
+          --config Release
+          --target test
+          -v
+      - name: Install
+        run: >
+          cmake --build build
+          --config Release
+          --target install
+          -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
+
+      # SAVING CACHES
+      - name: Save CCache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
+          path: ${{env.CCACHE_DIR}}
+      - name: Save CMake dependency build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
+
+  amd64_linux_cmake_scip:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v5
