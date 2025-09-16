@@ -168,18 +168,10 @@ struct VarValue {
 namespace {
 
 // TODO(user): Save this somewhere instead of recomputing it.
-bool ModelHasSchedulingConstraints(const CpModelProto& cp_model_proto,
-                                   const SatParameters& params) {
-  const bool use_cumulative_relaxation_for_no_overlap_2d =
-      params.use_timetabling_in_no_overlap_2d() ||
-      params.use_energetic_reasoning_in_no_overlap_2d();
-
+bool ModelHasSchedulingConstraints(const CpModelProto& cp_model_proto) {
   for (const ConstraintProto& ct : cp_model_proto.constraints()) {
     if (ct.constraint_case() == ConstraintProto::kNoOverlap) return true;
     if (ct.constraint_case() == ConstraintProto::kCumulative) return true;
-    if (ct.constraint_case() == ConstraintProto::kNoOverlap2D &&
-        use_cumulative_relaxation_for_no_overlap_2d)
-      return true;
   }
   return false;
 }
@@ -197,8 +189,6 @@ void AddExtraSchedulingPropagators(SatParameters& new_params) {
   new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
   new_params.set_no_overlap_2d_boolean_relations_limit(100);
-  new_params.set_use_dynamic_precedence_in_cumulative(true);
-  new_params.set_use_dynamic_precedence_in_disjunctive(true);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -361,12 +351,12 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
   };
 }
 
-// TODO(user): Implement a routing search.
+// TODO(user): Implement a routing search strategy.
 std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model) {
-  const auto& params = *model->GetOrCreate<SatParameters>();
-  if (ModelHasSchedulingConstraints(cp_model_proto, params)) {
+  if (ModelHasSchedulingConstraints(cp_model_proto)) {
     std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
+    const auto& params = *model->GetOrCreate<SatParameters>();
     bool possible_new_constraints = false;
     if (params.use_dynamic_precedence_in_disjunctive()) {
       possible_new_constraints = true;
@@ -387,9 +377,10 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     }
 
     heuristics.push_back(SchedulingSearchHeuristic(model));
+    CHECK(!heuristics.empty());
     return SequentialSearch(std::move(heuristics));
   }
-  return PseudoCost(model);
+  return nullptr;
 }
 
 std::function<BooleanOrIntegerLiteral()>
@@ -440,7 +431,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
 std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     std::function<BooleanOrIntegerLiteral()> user_search,
     std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion) {
+    std::function<BooleanOrIntegerLiteral()> integer_completion, Model* model) {
   // We start by the user specified heuristic.
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
   if (user_search != nullptr) {
@@ -449,11 +440,14 @@ std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
   if (heuristic_search != nullptr) {
     heuristics.push_back(heuristic_search);
   }
+  if (heuristics.empty()) {
+    heuristics.push_back(PseudoCost(model));
+  }
   if (integer_completion != nullptr) {
     heuristics.push_back(integer_completion);
   }
 
-  return SequentialSearch(heuristics);
+  return SequentialSearch(std::move(heuristics));
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
@@ -688,6 +682,29 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["fixed_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["fixed_max_lp"] = new_params;
+  }
+
+  // Portfolio search.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+    strategies["portfolio"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["portfolio_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["portfolio_max_lp"] = new_params;
   }
 
   // Quick restart.
@@ -841,9 +858,8 @@ std::vector<SatParameters> GetFullWorkerParameters(
   // TODO(user): For scheduling, this is important to find good first solution
   // but afterwards it is not really great and should probably be replaced by a
   // LNS worker.
-  const bool use_fixed_strategy =
-      !cp_model.search_strategy().empty() ||
-      ModelHasSchedulingConstraints(cp_model, base_params);
+  const bool use_fixed_strategy = !cp_model.search_strategy().empty() ||
+                                  ModelHasSchedulingConstraints(cp_model);
 
   // Our current set of strategies
   //

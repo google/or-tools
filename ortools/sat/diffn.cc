@@ -46,6 +46,7 @@
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -158,9 +159,6 @@ void AddDiffnCumulativeRelationOnX(
       model->GetOrCreate<IntervalsRepository>()->GetOrCreateDemandHelper(
           x, y->Sizes());
 
-  model->GetOrCreate<IntervalsRepository>()->RegisterCumulative(
-      {.capacity = capacity, .task_helper = x, .demand_helper = demands});
-
   // Propagator responsible for applying Timetabling filtering rule. It
   // increases the minimum of the start variables, decrease the maximum of the
   // end variables, and increase the minimum of the capacity variable.
@@ -177,6 +175,23 @@ void AddDiffnCumulativeRelationOnX(
   if (params.use_energetic_reasoning_in_no_overlap_2d()) {
     AddCumulativeOverloadChecker(capacity, x, demands, model);
   }
+}
+
+bool AddAtMostOne(absl::Span<const Literal> enforcement_literals,
+                  absl::Span<const Literal> literals, Model* model) {
+  if (enforcement_literals.empty()) {
+    return model->GetOrCreate<BinaryImplicationGraph>()->AddAtMostOne(literals);
+  }
+  std::vector<Literal> enforcement(enforcement_literals.begin(),
+                                   enforcement_literals.end());
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  return model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/false, Coefficient(0),
+      /*use_upper_bound=*/true, Coefficient(1), &enforcement, &cst);
 }
 
 }  // namespace
@@ -283,14 +298,8 @@ void AddNonOverlappingRectangles(
   // of the general repository, however, as we add constraints, this
   // propagates which might swap/change the underlying x_helper and
   // y_helper...
-  //
-  // TODO(user): add support for enforcement_literals. The
-  // AddProblemClause below is easy to extend, but the AddAtMostOne calls
-  // are trickier...
   const int num_boxes = x.size();
-  if (num_boxes < params.no_overlap_2d_boolean_relations_limit() &&
-      enforcement_literals.empty()) {
-    auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
+  if (num_boxes < params.no_overlap_2d_boolean_relations_limit()) {
     auto* sat_solver = model->GetOrCreate<SatSolver>();
     auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
@@ -320,7 +329,7 @@ void AddNonOverlappingRectangles(
             repository->End(x[j]), repository->Start(x[i]));
         if ((integer_trail->LowerBound(repository->Size(x[i])) > 0 ||
              integer_trail->LowerBound(repository->Size(x[j])) > 0) &&
-            !implications->AddAtMostOne({x_ij, x_ji})) {
+            !AddAtMostOne(enforcement_literals, {x_ij, x_ji}, model)) {
           sat_solver->NotifyThatModelIsUnsat();
           return;
         }
@@ -333,7 +342,7 @@ void AddNonOverlappingRectangles(
             repository->End(y[j]), repository->Start(y[i]));
         if ((integer_trail->LowerBound(repository->Size(y[i])) > 0 ||
              integer_trail->LowerBound(repository->Size(y[j])) > 0) &&
-            !implications->AddAtMostOne({y_ij, y_ji})) {
+            !AddAtMostOne(enforcement_literals, {y_ij, y_ji}, model)) {
           sat_solver->NotifyThatModelIsUnsat();
           return;
         }
@@ -352,9 +361,8 @@ void AddNonOverlappingRectangles(
         if (repository->IsOptional(y[j])) {
           clause.push_back(repository->PresenceLiteral(y[j]).Negated());
         }
-        if (!sat_solver->AddProblemClause(clause)) {
-          return;
-        }
+        model->Add(EnforcedClause(enforcement_literals, clause));
+        if (sat_solver->ModelIsUnsat()) return;
       }
     }
   }

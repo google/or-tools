@@ -24,10 +24,10 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -125,8 +125,13 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
                                        Coefficient bound_shift,
                                        Coefficient max_value);
 
-// Returns true iff the Boolean linear expression is in canonical form.
-bool BooleanLinearExpressionIsCanonical(absl::Span<const LiteralWithCoeff> cst);
+// Returns true iff the enforced Boolean linear expression is in canonical form.
+// The enforcement literals must be sorted and unique, and cst must be in the
+// form returned by ComputeBooleanLinearExpressionCanonicalForm(). Moreover the
+// enforcement literals should not appear in cst.
+bool BooleanLinearExpressionIsCanonical(
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const LiteralWithCoeff> cst);
 
 // Given a Boolean linear constraint in canonical form, simplify its
 // coefficients using simple heuristics.
@@ -211,7 +216,7 @@ class MutableUpperBoundedLinearConstraint {
   //
   // If we take a constraint sum ci.xi <= rhs, take its negation and add max_sum
   // on both side, we have sum ci.(1 - xi) >= max_sum - rhs
-  // So every ci > (max_sum - rhs) can be replacend by (max_sum - rhs).
+  // So every ci > (max_sum - rhs) can be replaced by (max_sum - rhs).
   // Not that this operation also change the original rhs of the constraint.
   void ReduceCoefficients();
 
@@ -240,7 +245,7 @@ class MutableUpperBoundedLinearConstraint {
   // This allow to DCHECK some assumptions on what coefficients can be reduced
   // or not.
   //
-  // TODO(user): Ideally the slack should be maitainable incrementally.
+  // TODO(user): Ideally the slack should be maintainable incrementally.
   Coefficient ReduceCoefficientsAndComputeSlackForTrailPrefix(
       const Trail& trail, int trail_index);
 
@@ -385,11 +390,20 @@ struct PbConstraintsEnqueueHelper {
 class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
-  explicit UpperBoundedLinearConstraint(
-      const std::vector<LiteralWithCoeff>& cst);
+  UpperBoundedLinearConstraint(const std::vector<Literal>& enforcement_literals,
+                               const std::vector<LiteralWithCoeff>& cst);
 
-  // Returns true if the given terms are the same as the one in this constraint.
-  bool HasIdenticalTerms(absl::Span<const LiteralWithCoeff> cst);
+  EnforcementId enforcement_id() const { return enforcement_id_; };
+  void set_enforcement_id(EnforcementId enforcement_id) {
+    enforcement_id_ = enforcement_id;
+  }
+
+  // Returns true if the given terms and enforcement literals are the same as
+  // the one in this constraint.
+  bool HasIdenticalTermsAndEnforcement(
+      absl::Span<const Literal> enforcement_literals,
+      absl::Span<const LiteralWithCoeff> cst,
+      EnforcementPropagator* enforcement_propagator);
   Coefficient Rhs() const { return rhs_; }
 
   // Sets the rhs of this constraint. Compute the initial threshold value using
@@ -398,7 +412,9 @@ class UpperBoundedLinearConstraint {
   //
   // Returns false if the preconditions described in
   // PbConstraints::AddConstraint() are not meet.
-  bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient* threshold,
+  bool InitializeRhs(EnforcementStatus enforcement_status,
+                     absl::Span<const Literal> enforcement_literals,
+                     Coefficient rhs, int trail_index, Coefficient* threshold,
                      Trail* trail, PbConstraintsEnqueueHelper* helper);
 
   // Tests for propagation and enqueues propagated literals on the trail.
@@ -415,7 +431,10 @@ class UpperBoundedLinearConstraint {
   //
   // The threshold is updated to its new value.
   bool Propagate(int trail_index, Coefficient* threshold, Trail* trail,
-                 PbConstraintsEnqueueHelper* helper);
+                 EnforcementStatus enforcement_status,
+                 absl::Span<const Literal> enforcement_literals,
+                 PbConstraintsEnqueueHelper* helper,
+                 bool* need_untrail_inspection = nullptr);
 
   // Updates the given threshold and the internal state. This is the opposite of
   // Propagate(). Each time a literal in unassigned, the threshold value must
@@ -424,7 +443,7 @@ class UpperBoundedLinearConstraint {
   void Untrail(Coefficient* threshold, int trail_index);
 
   // Provided that the literal with given source_trail_index was the one that
-  // propagated the conflict or the literal we wants to explain, then this will
+  // propagated the conflict or the literal we want to explain, then this will
   // compute the reason.
   //
   // Some properties of the reason:
@@ -439,6 +458,7 @@ class UpperBoundedLinearConstraint {
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
   void FillReason(const Trail& trail, int source_trail_index,
+                  absl::Span<const Literal> enforcement_literals,
                   BooleanVariable propagated_variable,
                   std::vector<Literal>* reason);
 
@@ -470,7 +490,10 @@ class UpperBoundedLinearConstraint {
 
   // Only learned constraints are considered for deletion during the constraint
   // cleanup phase. We also can't delete variables used as a reason.
-  void set_is_learned(bool is_learned) { is_learned_ = is_learned; }
+  void set_is_learned(bool is_learned) {
+    CHECK(!is_learned || enforcement_id_ < 0);
+    is_learned_ = is_learned;
+  }
   bool is_learned() const { return is_learned_; }
   bool is_used_as_a_reason() const { return first_reason_trail_index_ != -1; }
 
@@ -488,7 +511,7 @@ class UpperBoundedLinearConstraint {
   int already_propagated_end() const { return already_propagated_end_; }
 
  private:
-  Coefficient GetSlackFromThreshold(Coefficient threshold) {
+  Coefficient GetSlackFromThreshold(Coefficient threshold) const {
     return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
   }
   void Update(Coefficient slack, Coefficient* threshold) {
@@ -514,6 +537,7 @@ class UpperBoundedLinearConstraint {
   // - coeffs_ contains unique increasing coefficients.
   // - starts_[i] is the index in literals_ of the first literal with
   //   coefficient coeffs_[i].
+  EnforcementId enforcement_id_;
   std::vector<Coefficient> coeffs_;
   std::vector<int> starts_;
   std::vector<Literal> literals_;
@@ -528,6 +552,7 @@ class PbConstraints : public SatPropagator {
  public:
   explicit PbConstraints(Model* model)
       : SatPropagator("PbConstraints"),
+        enforcement_propagator_(model->GetOrCreate<EnforcementPropagator>()),
         conflicting_constraint_index_(-1),
         num_learned_constraint_before_cleanup_(0),
         constraint_activity_increment_(1.0),
@@ -577,6 +602,11 @@ class PbConstraints : public SatPropagator {
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+                     Trail* trail) {
+    return AddConstraint(/*enforcement_literals=*/{}, cst, rhs, trail);
+  }
+  bool AddConstraint(const std::vector<Literal>& enforcement_literals,
+                     const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
                      Trail* trail);
 
   // Same as AddConstraint(), but also marks the added constraint as learned
@@ -623,7 +653,12 @@ class PbConstraints : public SatPropagator {
   int64_t num_threshold_updates() const { return num_threshold_updates_; }
 
  private:
+  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
+
   bool PropagateNext(Trail* trail);
+  bool PropagateConstraint(ConstraintIndex index, Trail* trail,
+                           int source_trail_index,
+                           bool* need_untrail_inspection = nullptr);
 
   // Same function as the clause related one is SatSolver().
   // TODO(user): Remove duplication.
@@ -642,7 +677,6 @@ class PbConstraints : public SatPropagator {
   // about two times faster with this implementation than one with direct
   // pointer to an UpperBoundedLinearConstraint. The main reason for this is
   // probably that the thresholds_ vector is a lot more efficient cache-wise.
-  DEFINE_STRONG_INDEX_TYPE(ConstraintIndex);
   struct ConstraintIndexWithCoeff {
     ConstraintIndexWithCoeff() = default;  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)
@@ -663,6 +697,10 @@ class PbConstraints : public SatPropagator {
   util_intops::StrongVector<LiteralIndex, std::vector<ConstraintIndexWithCoeff>>
       to_update_;
 
+  // The indices of the constraints that need to be updated because of an
+  // enforcement status change.
+  SparseBitset<ConstraintIndex> enforcement_status_changed_;
+
   // Bitset used to optimize the Untrail() function.
   SparseBitset<ConstraintIndex> to_untrail_;
 
@@ -673,6 +711,8 @@ class PbConstraints : public SatPropagator {
 
   // Helper to enqueue propagated literals on the trail and store their reasons.
   PbConstraintsEnqueueHelper enqueue_helper_;
+
+  EnforcementPropagator* enforcement_propagator_;
 
   // Last conflicting PB constraint index. This is reset to -1 when
   // ClearConflictingConstraint() is called.

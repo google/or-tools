@@ -2703,50 +2703,6 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
   if (!keep_after_expansion) ct->Clear();
 }
 
-template <typename T>
-void ExpandCircuitOrRoutes(absl::Span<const int> enforcement_literals,
-                           const T& graph_proto, PresolveContext* context,
-                           bool multiple_subcircuit_through_zero) {
-  // The constraints added below are added by LoadSubcircuitConstraint() when
-  // enforcement_literals is empty.
-  // TODO(user): ideally we don't want to do that here, but only create
-  // these constraints at loading time so that the presolve does not have to
-  // deal with redundant constraints.
-  if (enforcement_literals.empty()) return;
-  const int num_arcs = graph_proto.tails_size();
-  // At this point the node indices can have arbitrary values.
-  absl::flat_hash_map<int, int> dense_node_index;
-  for (int arc = 0; arc < num_arcs; arc++) {
-    dense_node_index.insert({graph_proto.tails(arc), dense_node_index.size()});
-    dense_node_index.insert({graph_proto.heads(arc), dense_node_index.size()});
-  }
-  const int num_nodes = dense_node_index.size();
-  std::vector<std::vector<int>> exactly_one_incoming(num_nodes);
-  std::vector<std::vector<int>> exactly_one_outgoing(num_nodes);
-  for (int arc = 0; arc < num_arcs; arc++) {
-    const int tail = dense_node_index[graph_proto.tails(arc)];
-    const int head = dense_node_index[graph_proto.heads(arc)];
-    exactly_one_outgoing[tail].push_back(graph_proto.literals(arc));
-    exactly_one_incoming[head].push_back(graph_proto.literals(arc));
-  }
-  for (int i = 0; i < exactly_one_incoming.size(); ++i) {
-    if (i == 0 && multiple_subcircuit_through_zero) continue;
-    ConstraintProto* const new_ct = context->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = {enforcement_literals.begin(),
-                                              enforcement_literals.end()};
-    LiteralsToLinear(exactly_one_incoming[i], /*lb=*/1, /*ub=*/1,
-                     new_ct->mutable_linear());
-  }
-  for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
-    if (i == 0 && multiple_subcircuit_through_zero) continue;
-    ConstraintProto* const new_ct = context->working_model->add_constraints();
-    *new_ct->mutable_enforcement_literal() = {enforcement_literals.begin(),
-                                              enforcement_literals.end()};
-    LiteralsToLinear(exactly_one_outgoing[i], /*lb=*/1, /*ub=*/1,
-                     new_ct->mutable_linear());
-  }
-}
-
 }  // namespace
 
 void ExpandCpModel(PresolveContext* context) {
@@ -2823,14 +2779,6 @@ void ExpandCpModel(PresolveContext* context) {
       case ConstraintProto::kAllDiff:
         has_all_diffs = true;
         skip = true;
-        break;
-      case ConstraintProto::kCircuit:
-        ExpandCircuitOrRoutes(ct->enforcement_literal(), ct->circuit(), context,
-                              /*multiple_subcircuit_through_zero=*/false);
-        break;
-      case ConstraintProto::kRoutes:
-        ExpandCircuitOrRoutes(ct->enforcement_literal(), ct->routes(), context,
-                              /*multiple_subcircuit_through_zero=*/true);
         break;
       default:
         skip = true;

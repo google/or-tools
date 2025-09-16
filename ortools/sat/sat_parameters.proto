@@ -1219,7 +1219,7 @@ message SatParameters {
   // the same subtrees as one another.
   // Specifying a negative number uses a heuristic to select an appropriate
   // number of shared tree workeres based on the total number of workers.
-  optional int32 shared_tree_num_workers = 235 [default = 0];
+  optional int32 shared_tree_num_workers = 235 [default = -1];
 
   // Set on shared subtree workers. Users should not set this directly.
   optional bool use_shared_tree_search = 236 [default = false];

@@ -232,7 +232,7 @@ absl::Span<const ProtoLiteral> ProtoTrail::Implications(int level) const {
 
 SharedTreeManager::SharedTreeManager(Model* model)
     : params_(*model->GetOrCreate<SatParameters>()),
-      num_workers_(params_.shared_tree_num_workers()),
+      num_workers_(std::max(0, params_.shared_tree_num_workers())),
       max_path_depth_(MaxPossibleLeafDepth(params_)),
       shared_response_manager_(model->GetOrCreate<SharedResponseManager>()),
       num_splits_wanted_(
@@ -242,7 +242,6 @@ SharedTreeManager::SharedTreeManager(Model* model)
                   std::numeric_limits<int>::max() / std::max(num_workers_, 1)
               ? std::numeric_limits<int>::max()
               : num_workers_ * params_.shared_tree_max_nodes_per_worker()) {
-  CHECK_GE(num_workers_, 0);
   // Create the root node with a fake literal.
   nodes_.push_back(
       {.literal = ProtoLiteral(),

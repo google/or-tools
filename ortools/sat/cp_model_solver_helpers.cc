@@ -180,7 +180,7 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
 
   // We also register a DEBUG callback to check our reasons.
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  const auto checker = [mapping, encoder, debug_sol, model](
+  const auto checker = [mapping = mapping, encoder, debug_sol, model](
                            absl::Span<const Literal> clause,
                            absl::Span<const IntegerLiteral> integers) {
     bool is_satisfied = false;
@@ -257,7 +257,8 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
     }
     return is_satisfied;
   };
-  const auto lit_checker = [checker](absl::Span<const Literal> clause) {
+  const auto lit_checker = [checker =
+                                checker](absl::Span<const Literal> clause) {
     return checker(clause, {});
   };
 
@@ -779,8 +780,8 @@ void RegisterVariableBoundsLevelZeroImport(
   const int id = shared_bounds_manager->RegisterNewId();
 
   const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          name, sat_solver, integer_trail,
-                                          trail, id, mapping]() {
+                                          name = name, sat_solver,
+                                          integer_trail, trail, id, mapping]() {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
     std::vector<int64_t> new_upper_bounds;
@@ -941,8 +942,8 @@ void RegisterObjectiveBoundsImport(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* objective = model->GetOrCreate<ObjectiveDefinition>();
   const std::string name = model->Name();
-  const auto import_objective_bounds = [name, solver, integer_trail, objective,
-                                        shared_response_manager]() {
+  const auto import_objective_bounds = [name = name, solver, integer_trail,
+                                        objective, shared_response_manager]() {
     if (solver->AssumptionLevel() != 0) return true;
     bool tighter_bounds = false;
 
@@ -1102,6 +1103,7 @@ int RegisterClausesLevelZeroImport(int id,
       }
     }
     clause_manager->SetAddClauseCallback(std::move(callback));
+    if (new_clauses > 0 && !sat_solver->FinishPropagation()) return false;
     if (minimize_shared_clauses && new_clauses > 0) {
       // The new clauses may be subsumed, so try to minimize them to reduce
       // overhead of sharing.
@@ -1596,7 +1598,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
                                                objective_var, model);
   search_heuristics->fixed_search = ConstructFixedSearchStrategy(
       search_heuristics->user_search, search_heuristics->heuristic_search,
-      search_heuristics->integer_completion_search);
+      search_heuristics->integer_completion_search, model);
   if (VLOG_IS_ON(3)) {
     search_heuristics->fixed_search =
         InstrumentSearchStrategy(model_proto, mapping->GetVariableMapping(),
@@ -1803,8 +1805,10 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
   parameters->set_search_branching(SatParameters::HINT_SEARCH);
   parameters->set_optimize_with_core(false);
   parameters->set_use_sat_inprocessing(false);
-  auto cleanup = ::absl::MakeCleanup(
-      [parameters, saved_params]() { *parameters = saved_params; });
+  auto cleanup =
+      ::absl::MakeCleanup([parameters, saved_params = saved_params]() {
+        *parameters = saved_params;
+      });
 
   // Solve decision problem.
   ConfigureSearchHeuristics(model);

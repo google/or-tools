@@ -128,8 +128,8 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
 
 namespace {
 
-// This will be optimized into one division. I tested that in other places:
-// https://source.corp.google.com/piper///depot/ortools/sat/integer_test.cc;l=1223-1228;bpv=0
+// This will be optimized into one division. I tested that in
+// `BM_DivisionAndRemainderAlternative` (sat/integer_test.cc)
 //
 // Note that I am not 100% sure we need the indirection for the optimization
 // to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.

@@ -94,7 +94,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
 std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
     std::function<BooleanOrIntegerLiteral()> user_search,
     std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion);
+    std::function<BooleanOrIntegerLiteral()> integer_completion, Model* model);
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented

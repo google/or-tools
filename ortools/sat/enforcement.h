@@ -77,6 +77,10 @@ class EnforcementPropagator : public SatPropagator {
     return statuses_[id];
   }
 
+  // This recomputes the current status by scanning the given list.
+  // It thus has a linear complexity and should not be used in hot loops.
+  EnforcementStatus Status(absl::Span<const Literal> enforcement) const;
+
   // Recompute the status from the current assignment.
   // This should only used in DCHECK().
   EnforcementStatus DebugStatus(EnforcementId id);

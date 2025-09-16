@@ -281,12 +281,24 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
 }
 
 bool SatSolver::AddLinearConstraintInternal(
+    const std::vector<Literal>& enforcement_literals,
     const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
     Coefficient max_value) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(BooleanLinearExpressionIsCanonical(cst));
-  if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
-  if (rhs >= max_value) return true;    // Always satisfied constraint.
+  DCHECK(BooleanLinearExpressionIsCanonical(enforcement_literals, cst));
+  if (rhs < 0) {
+    // Unsatisfiable constraint if enforced.
+    if (enforcement_literals.empty()) {
+      return SetModelUnsat();
+    } else {
+      literals_scratchpad_.clear();
+      for (const Literal& literal : enforcement_literals) {
+        literals_scratchpad_.push_back(literal.Negated());
+      }
+      return AddProblemClauseInternal(literals_scratchpad_);
+    }
+  }
+  if (rhs >= max_value) return true;  // Always satisfied constraint.
 
   // Since the constraint is in canonical form, the coefficients are sorted.
   const Coefficient min_coeff = cst.front().coefficient;
@@ -296,17 +308,28 @@ bool SatSolver::AddLinearConstraintInternal(
   // assignment is the one where all the literals are true.
   if (max_value - min_coeff <= rhs) {
     // This constraint is actually a clause. It is faster to treat it as one.
-    literals_scratchpad_.clear();
-    for (const LiteralWithCoeff& term : cst) {
-      literals_scratchpad_.push_back(term.literal.Negated());
+    if (enforcement_literals.empty()) {
+      literals_scratchpad_.clear();
+      for (const LiteralWithCoeff& term : cst) {
+        literals_scratchpad_.push_back(term.literal.Negated());
+      }
+      return AddProblemClauseInternal(literals_scratchpad_);
+    } else {
+      std::vector<Literal> literals;
+      for (const Literal& literal : enforcement_literals) {
+        literals.push_back(literal.Negated());
+      }
+      for (const LiteralWithCoeff& term : cst) {
+        literals.push_back(term.literal.Negated());
+      }
+      return AddProblemClause(literals);
     }
-    return AddProblemClauseInternal(literals_scratchpad_);
   }
 
   // Detect at most one constraints. Note that this use the fact that the
   // coefficient are sorted.
   if (!parameters_->use_pb_resolution() && max_coeff <= rhs &&
-      2 * min_coeff > rhs) {
+      2 * min_coeff > rhs && enforcement_literals.empty()) {
     literals_scratchpad_.clear();
     for (const LiteralWithCoeff& term : cst) {
       literals_scratchpad_.push_back(term.literal);
@@ -317,9 +340,13 @@ bool SatSolver::AddLinearConstraintInternal(
     return true;
   }
 
+  // TODO(user): fix literals with coefficient larger than rhs to false, or
+  // add implication enforcement => not(literal) (and remove them from the
+  // constraint)?
+
   // TODO(user): If this constraint forces all its literal to false (when rhs is
   // zero for instance), we still add it. Optimize this?
-  return pb_constraints_->AddConstraint(cst, rhs, trail_);
+  return pb_constraints_->AddConstraint(enforcement_literals, cst, rhs, trail_);
 }
 
 void SatSolver::CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
@@ -355,10 +382,24 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
                                     Coefficient lower_bound,
                                     bool use_upper_bound,
                                     Coefficient upper_bound,
+                                    std::vector<Literal>* enforcement_literals,
                                     std::vector<LiteralWithCoeff>* cst) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
+
+  gtl::STLSortAndRemoveDuplicates(enforcement_literals);
+  int num_enforcement_literals = 0;
+  for (int i = 0; i < enforcement_literals->size(); ++i) {
+    const Literal literal = (*enforcement_literals)[i];
+    if (trail_->Assignment().LiteralIsFalse(literal)) {
+      return true;
+    }
+    if (!trail_->Assignment().LiteralIsTrue(literal)) {
+      (*enforcement_literals)[num_enforcement_literals++] = literal;
+    }
+  }
+  enforcement_literals->resize(num_enforcement_literals);
 
   Coefficient bound_shift(0);
 
@@ -367,7 +408,8 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     CanonicalizeLinear(cst, &bound_shift, &max_value);
     const Coefficient rhs =
         ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
-    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) {
+    if (!AddLinearConstraintInternal(*enforcement_literals, *cst, rhs,
+                                     max_value)) {
       return SetModelUnsat();
     }
   }
@@ -384,7 +426,8 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     }
     const Coefficient rhs =
         ComputeNegatedCanonicalRhs(lower_bound, bound_shift, max_value);
-    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) {
+    if (!AddLinearConstraintInternal(*enforcement_literals, *cst, rhs,
+                                     max_value)) {
       return SetModelUnsat();
     }
   }
