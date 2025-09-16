@@ -458,13 +458,11 @@ bool LinearPropagator::AddConstraint(
 
   // Propagate this new constraint.
   // TODO(user): Do we want to do that?
-  num_terms_for_dtime_update_ = 0;
-  const auto cleanup = ::absl::MakeCleanup([this]() {
-    time_limit_->AdvanceDeterministicTime(
-        static_cast<double>(num_terms_for_dtime_update_) * 1e-9);
-  });
-  if (!PropagateOneConstraint(id)) return false;
-  return true;
+  //
+  // Tricky: we cannot just call PropagateOneConstraint(id) if some variable
+  // bounds where modified since the last time we propagated, otherwise we
+  // might wrongly detect cycles for instance.
+  return Propagate();
 }
 
 absl::Span<IntegerValue> LinearPropagator::GetCoeffs(

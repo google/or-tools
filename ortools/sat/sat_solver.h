@@ -138,7 +138,16 @@ class SatSolver {
   // TODO(user): Instead of failing, implement an error handling code.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<Literal>* enforcement_literals,
                            std::vector<LiteralWithCoeff>* cst);
+
+  bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
+                           bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<LiteralWithCoeff>* cst) {
+    std::vector<Literal> enforcement_literals;
+    return AddLinearConstraint(use_lower_bound, lower_bound, use_upper_bound,
+                               upper_bound, &enforcement_literals, cst);
+  }
 
   // Returns true if the model is UNSAT. Note that currently the status is
   // "sticky" and once this happen, nothing else can be done with the solver.
@@ -600,8 +609,10 @@ class SatSolver {
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
   // action.
-  bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
-                                   Coefficient rhs, Coefficient max_value);
+  bool AddLinearConstraintInternal(
+      const std::vector<Literal>& enforcement_literals,
+      const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+      Coefficient max_value);
 
   // Makes sure a pseudo boolean constraint is in canonical form.
   void CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,

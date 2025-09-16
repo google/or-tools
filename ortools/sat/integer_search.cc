@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <functional>
 #include <random>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -259,7 +260,7 @@ std::function<BooleanOrIntegerLiteral()> LpPseudoCostHeuristic(Model* model) {
       if (info.score > best_score) {
         best_score = info.score;
 
-        // This direction works better than the inverse in the benchs. But
+        // This direction works better than the inverse in the benchmarks. But
         // always branching up seems even better. TODO(user): investigate.
         if (info.down_score > info.up_score) {
           decision = BooleanOrIntegerLiteral(info.down_branch);
@@ -296,6 +297,9 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
     std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics) {
+  for (const auto& h : heuristics) {
+    CHECK(h != nullptr);
+  }
   return [heuristics]() {
     for (const auto& h : heuristics) {
       const BooleanOrIntegerLiteral decision = h();
@@ -990,10 +994,21 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     weights.push_back(1);
   }
 
-  // Always add heuristic search.
-  policies.push_back(SequentialSearch({heuristics.heuristic_search, sat_policy,
-                                       heuristics.integer_completion_search}));
-  weights.push_back(1);
+  // Add heuristic search if present.
+  if (heuristics.heuristic_search != nullptr) {
+    policies.push_back(
+        SequentialSearch({heuristics.heuristic_search, sat_policy,
+                          heuristics.integer_completion_search}));
+    weights.push_back(1);
+  }
+
+  if (policies.size() == 1) {
+    CHECK(heuristics.fixed_search != nullptr);
+    policies.push_back(
+        SequentialSearch({heuristics.fixed_search, sat_policy,
+                          heuristics.integer_completion_search}));
+    weights.push_back(1);
+  }
 
   // The higher weight for the sat policy is because this policy actually
   // contains a lot of variation as we randomize the sat parameters.

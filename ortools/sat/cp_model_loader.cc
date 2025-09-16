@@ -29,11 +29,9 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/mathutil.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/all_different.h"
@@ -1380,8 +1378,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   // Note that the domain/enforcement of the main constraint do not change.
   // Same for the min/sum and max_sum. The intermediate variables are always
   // equal to the intermediate sum, independently of the enforcement.
-  const bool pseudo_boolean = !HasEnforcementLiteral(ct) &&
-                              ct.linear().domain_size() == 2 && all_booleans;
+  const bool pseudo_boolean = ct.linear().domain_size() == 2 && all_booleans;
   if (!pseudo_boolean &&
       ct.linear().vars().size() > params.linear_split_size()) {
     const auto& domain = ct.linear().domain();
@@ -1393,11 +1390,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.linear().domain_size() == 2) {
     const int64_t lb = ct.linear().domain(0);
     const int64_t ub = ct.linear().domain(1);
-    const std::vector<Literal> enforcement_literals =
+    std::vector<Literal> enforcement_literals =
         mapping->Literals(ct.enforcement_literal());
-    if (all_booleans && enforcement_literals.empty()) {
-      // TODO(user): we should probably also implement an
-      // half-reified version of this constraint.
+    if (all_booleans) {
       std::vector<LiteralWithCoeff> cst;
       for (int i = 0; i < vars.size(); ++i) {
         const int ref = ct.linear().vars(i);
@@ -1405,7 +1400,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       }
       m->GetOrCreate<SatSolver>()->AddLinearConstraint(
           /*use_lower_bound=*/(min_sum < lb), lb,
-          /*use_upper_bound=*/(max_sum > ub), ub, &cst);
+          /*use_upper_bound=*/(max_sum > ub), ub, &enforcement_literals, &cst);
     } else {
       if (min_sum < lb) {
         AddWeightedSumGreaterOrEqual(enforcement_literals, vars, coeffs, lb, m);

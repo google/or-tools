@@ -3184,7 +3184,7 @@ bool CpModelPresolver::PresolveDiophantine(ConstraintProto* ct) {
   // TODO(user): Make sure the newly generated linear constraint
   // satisfy our no-overflow precondition on the min/max activity.
   // We should check that the model still satisfy conditions in
-  // https://source.corp.google.com/piper///depot/ortools/sat/cp_model_checker.cc;l=165;bpv=0
+  // `PossibleIntegerOverflow` (sat/cp_model_checker.cc)
 
   // Create new variables.
   std::vector<int> new_variables(num_new_variables);

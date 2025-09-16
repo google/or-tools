@@ -28,6 +28,7 @@
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/strong_integers.h"
@@ -696,6 +697,25 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
+namespace {
+bool AddAtMostOne(absl::Span<const Literal> enforcement_literals,
+                  absl::Span<const Literal> literals, Model* model) {
+  if (enforcement_literals.empty()) {
+    return model->GetOrCreate<BinaryImplicationGraph>()->AddAtMostOne(literals);
+  }
+  std::vector<Literal> enforcement(enforcement_literals.begin(),
+                                   enforcement_literals.end());
+  std::vector<LiteralWithCoeff> cst;
+  cst.reserve(literals.size());
+  for (const Literal l : literals) {
+    cst.emplace_back(l, Coefficient(1));
+  }
+  return model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/false, Coefficient(0),
+      /*use_upper_bound=*/true, Coefficient(1), &enforcement, &cst);
+}
+}  // namespace
+
 void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
                               absl::Span<const int> heads,
                               absl::Span<const Literal> enforcement_literals,
@@ -709,39 +729,32 @@ void LoadSubcircuitConstraint(int num_nodes, absl::Span<const int> tails,
   // If a node has no outgoing or no incoming arc, the model will be unsat
   // as soon as we add the corresponding ExactlyOneConstraint().
   auto sat_solver = model->GetOrCreate<SatSolver>();
-  auto implications = model->GetOrCreate<BinaryImplicationGraph>();
 
-  if (enforcement_literals.empty()) {
-    // TODO(user): how to generalize this to support enforcement literals?
-    // (we can easily add the negated enforcement literals to AddProblemClause()
-    // calls, but the AddAtMostOne() calls are trickier). For now this is done
-    // with additional constraints added by ExpandCircuit() during expansion.
-    std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
-    std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
-    for (int arc = 0; arc < num_arcs; arc++) {
-      const int tail = tails[arc];
-      const int head = heads[arc];
-      exactly_one_outgoing[tail].push_back(literals[arc]);
-      exactly_one_incoming[head].push_back(literals[arc]);
+  std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
+  std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
+  for (int arc = 0; arc < num_arcs; arc++) {
+    const int tail = tails[arc];
+    const int head = heads[arc];
+    exactly_one_outgoing[tail].push_back(literals[arc]);
+    exactly_one_incoming[head].push_back(literals[arc]);
+  }
+  for (int i = 0; i < exactly_one_incoming.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
+    if (!AddAtMostOne(enforcement_literals, exactly_one_incoming[i], model)) {
+      sat_solver->NotifyThatModelIsUnsat();
+      return;
     }
-    for (int i = 0; i < exactly_one_incoming.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
-      if (!implications->AddAtMostOne(exactly_one_incoming[i])) {
-        sat_solver->NotifyThatModelIsUnsat();
-        return;
-      }
-      sat_solver->AddProblemClause(exactly_one_incoming[i]);
-      if (sat_solver->ModelIsUnsat()) return;
+    model->Add(EnforcedClause(enforcement_literals, exactly_one_incoming[i]));
+    if (sat_solver->ModelIsUnsat()) return;
+  }
+  for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
+    if (i == 0 && multiple_subcircuit_through_zero) continue;
+    if (!AddAtMostOne(enforcement_literals, exactly_one_outgoing[i], model)) {
+      sat_solver->NotifyThatModelIsUnsat();
+      return;
     }
-    for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
-      if (!implications->AddAtMostOne(exactly_one_outgoing[i])) {
-        sat_solver->NotifyThatModelIsUnsat();
-        return;
-      }
-      sat_solver->AddProblemClause(exactly_one_outgoing[i]);
-      if (sat_solver->ModelIsUnsat()) return;
-    }
+    model->Add(EnforcedClause(enforcement_literals, exactly_one_outgoing[i]));
+    if (sat_solver->ModelIsUnsat()) return;
   }
 
   CircuitPropagator::Options options;

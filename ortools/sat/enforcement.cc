@@ -293,20 +293,24 @@ void EnforcementPropagator::ChangeStatus(EnforcementId id,
   if (callbacks_[id] != nullptr) callbacks_[id](id, new_status);
 }
 
-EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
-  if (id < 0) return EnforcementStatus::IS_ENFORCED;
-
+EnforcementStatus EnforcementPropagator::Status(
+    absl::Span<const Literal> enforcement) const {
   int num_true = 0;
-  for (const Literal l : GetSpan(id)) {
+  for (const Literal l : enforcement) {
     if (assignment_.LiteralIsFalse(l)) {
       return EnforcementStatus::IS_FALSE;
     }
     if (assignment_.LiteralIsTrue(l)) ++num_true;
   }
-  const int size = GetSpan(id).size();
+  const int size = enforcement.size();
   if (num_true == size) return EnforcementStatus::IS_ENFORCED;
   if (num_true + 1 == size) return EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT;
   return EnforcementStatus::CANNOT_PROPAGATE;
+}
+
+EnforcementStatus EnforcementPropagator::DebugStatus(EnforcementId id) {
+  if (id < 0) return EnforcementStatus::IS_ENFORCED;
+  return Status(GetSpan(id));
 }
 
 }  // namespace sat
