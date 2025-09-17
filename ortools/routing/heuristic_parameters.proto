@@ -15,6 +15,10 @@
 
 syntax = "proto3";
 
+option java_package = "com.google.ortools.routing";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Routing";
+
 package operations_research.routing;
 
 // Parameters used to configure local cheapest insertion heuristics.
