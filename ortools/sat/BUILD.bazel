@@ -2342,7 +2342,10 @@ cc_test(
         ":sat_solver",
         "//ortools/base:gmock_main",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/types:span",
     ],
 )

@@ -916,10 +916,6 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context,
   const int index_var = index.vars(0);
   const LinearExpressionProto& target = element.linear_target();
 
-  // This BoolOrs implements the deduction that if all index literals pointing
-  // to the same value in the constant array are false, then this value is no
-  // no longer valid for the target variable. They are created only for values
-  // that have multiples literals supporting them.
   absl::btree_map<int64_t, std::vector<int>> supports;
   for (const int64_t v : reduced_index_var_domain.Values()) {
     const int64_t index_value = AffineExpressionValueAt(index, v);
@@ -927,34 +923,21 @@ void ExpandConstantArrayElement(ConstraintProto* ct, PresolveContext* context,
     supports[expr_value].push_back(v);
   }
 
-  // While this is not strictly needed since all value in the index will be
-  // covered, it allows to easily detect this fact in the presolve.
-  //
-  // TODO(user): Do we need the support part ? Is this discovered by probing?
-  ConstraintProto* const exactly_one =
-      context->working_model->add_constraints();
+  // This is redundant, but it seems to help.
+  ConstraintProto* exactly_one = context->working_model->add_constraints();
   *exactly_one->mutable_enforcement_literal() = ct->enforcement_literal();
+
   for (const auto& [expr_value, support] : supports) {
+    // enforcement => exactly_one(target != expr_value, index in support)
     const int target_literal =
         context->GetOrCreateAffineValueEncoding(target, expr_value);
-    // enforcement_literal && not(indices supporting value) => target != value
-    ConstraintProto* const bool_or = context->working_model->add_constraints();
-    *bool_or->mutable_enforcement_literal() = ct->enforcement_literal();
-    bool_or->mutable_bool_or()->add_literals(NegatedRef(target_literal));
+    ConstraintProto* link = context->working_model->add_constraints();
+    *link->mutable_enforcement_literal() = ct->enforcement_literal();
+    link->mutable_exactly_one()->add_literals(NegatedRef(target_literal));
     for (const int64_t v : support) {
       const int index_literal =
           context->GetOrCreateVarValueEncoding(index_var, v);
-      bool_or->mutable_bool_or()->add_literals(index_literal);
-
-      // enforcement_literal && index == v => target == value
-      if (index_literal != target_literal) {
-        ConstraintProto* const eq = context->working_model->add_constraints();
-        *eq->mutable_enforcement_literal() = ct->enforcement_literal();
-        eq->add_enforcement_literal(index_literal);
-        eq->mutable_bool_and()->add_literals(target_literal);
-      }
-
-      // Helps presolve.
+      link->mutable_exactly_one()->add_literals(index_literal);
       exactly_one->mutable_exactly_one()->add_literals(index_literal);
     }
   }
@@ -1106,6 +1089,22 @@ void LinkLiteralsAndValues(absl::Span<const int> enforcement_literals,
 
   for (int i = 0; i < values.size(); ++i) {
     encoding_lit_to_support[encoding.at(values[i])].push_back(literals[i]);
+  }
+
+  if (enforcement_literals.empty()) {
+    // Using an exactly one convey more structure and has a better linear
+    // relaxation. Even if we could theorically infer it back from the other
+    // encoding.
+    for (const auto& [encoding_lit, support] : encoding_lit_to_support) {
+      CHECK(!support.empty());
+      ConstraintProto* ct = context->working_model->add_constraints();
+      BoolArgumentProto* exo = ct->mutable_exactly_one();
+      exo->add_literals(NegatedRef(encoding_lit));
+      for (const int lit : support) {
+        exo->add_literals(lit);
+      }
+    }
+    return;
   }
 
   for (const auto& [encoding_lit, support] : encoding_lit_to_support) {
@@ -1599,50 +1598,79 @@ void ProcessOneCompressedColumn(
     std::optional<int> table_is_active_literal, PresolveContext* context) {
   DCHECK_EQ(tuple_literals.size(), values.size());
 
+  // Some precomputations.
   // Collect pairs of value-literal.
-  // Add the constraint literal => one of values.
-  //
-  // TODO(user): If we have n - 1 values, we could add the constraint that
-  // tuple literal => not(last_value) instead?
-  std::vector<std::pair<int64_t, int>> pairs;
+  absl::flat_hash_set<int64_t> value_is_multiple;
   std::vector<int> any_values_literals;
+  std::vector<std::pair<int64_t, int>> pairs;
   for (int i = 0; i < values.size(); ++i) {
     if (values[i].empty()) {
       any_values_literals.push_back(tuple_literals[i]);
+      continue;
+    }
+    for (const int64_t v : values[i]) {
+      pairs.emplace_back(v, tuple_literals[i]);
+    }
+    if (values[i].size() > 1) {
+      value_is_multiple.insert(values[i].begin(), values[i].end());
+    }
+  }
+
+  // Try to use exactly one in the encoding if we can.
+  bool use_exo = true;
+  if (table_is_active_literal.has_value()) use_exo = false;
+  if (!any_values_literals.empty()) use_exo = false;
+
+  // Add the constraint literal => one of values.
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i].empty()) continue;
+
+    if (use_exo && values[i].size() == 1 &&
+        !value_is_multiple.contains(values[i][0])) {
+      // nothing to do here since the implication is covered by the exactly one.
       continue;
     }
 
     ConstraintProto* ct = context->working_model->add_constraints();
     ct->add_enforcement_literal(tuple_literals[i]);
 
-    // It is slightly better to use a bool_and if size is 1 instead of
-    // reconverting it at a later stage.
-    auto* literals =
-        values[i].size() == 1 ? ct->mutable_bool_and() : ct->mutable_bool_or();
+    if (values[i].size() == 1) {
+      // It is slightly better to use a bool_and if size is 1 instead of
+      // reconverting it at a later stage.
+      const int v = values[i][0];
+      ct->mutable_bool_and()->add_literals(
+          context->GetOrCreateVarValueEncoding(variable, v));
+      continue;
+    }
+
+    // TODO(user): If we have n - 1 values, we could add the constraint that
+    // tuple literal => not(last_value) instead?
+    auto* literals = ct->mutable_bool_or();
     for (const int64_t v : values[i]) {
       DCHECK(context->DomainContains(variable, v));
       literals->add_literals(context->GetOrCreateVarValueEncoding(variable, v));
-      pairs.emplace_back(v, tuple_literals[i]);
     }
   }
 
   // Regroup literal with the same value and add for each the clause: If all the
   // tuples containing a value are false, then this value must be false too.
-  std::vector<int> selected;
   std::sort(pairs.begin(), pairs.end());
   for (int i = 0; i < pairs.size();) {
-    selected.clear();
     const int64_t value = pairs[i].first;
-    for (; i < pairs.size() && pairs[i].first == value; ++i) {
-      selected.push_back(pairs[i].second);
-    }
 
     // A value is supported if one tuple is still active, or a covering 'any'
     // tuple is still active, or the table can still be inactive.
+    //
+    // Note that if a value only appear individually in each tuple, and the
+    // table is not enforced, then we have an exactly one. This seems to helps a
+    // bit, especially the linear relaxation.
     BoolArgumentProto* no_support =
-        context->working_model->add_constraints()->mutable_bool_or();
-    for (const int lit : selected) {
-      no_support->add_literals(lit);
+        use_exo && !value_is_multiple.contains(value)
+            ? context->working_model->add_constraints()->mutable_exactly_one()
+            : context->working_model->add_constraints()->mutable_bool_or();
+
+    for (; i < pairs.size() && pairs[i].first == value; ++i) {
+      no_support->add_literals(pairs[i].second);
     }
     for (const int lit : any_values_literals) {
       no_support->add_literals(lit);

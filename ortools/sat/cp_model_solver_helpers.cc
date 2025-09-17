@@ -226,6 +226,7 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       }
     }
     for (const IntegerLiteral i_lit : integers) {
+      if (i_lit.IsAlwaysFalse()) continue;
       const int proto_var = mapping.GetProtoVariableFromIntegerVariable(
           PositiveVariable(i_lit.var));
       if (proto_var == -1) {
@@ -1596,9 +1597,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   search_heuristics->integer_completion_search =
       ConstructIntegerCompletionSearchStrategy(mapping->GetVariableMapping(),
                                                objective_var, model);
-  search_heuristics->fixed_search = ConstructFixedSearchStrategy(
-      search_heuristics->user_search, search_heuristics->heuristic_search,
-      search_heuristics->integer_completion_search, model);
+  ConstructFixedSearchStrategy(search_heuristics, model);
   if (VLOG_IS_ON(3)) {
     search_heuristics->fixed_search =
         InstrumentSearchStrategy(model_proto, mapping->GetVariableMapping(),
