@@ -48,4 +48,8 @@ if(BUILD_TESTING)
       FILE_NAME ${FILE_NAME}
       COMPONENT_NAME math_opt)
   endforeach()
+  if(MSVC AND USE_SCIP)
+    # Test fail on windows, due to pybind_abseil not loading its own library.
+    set_tests_properties(python_math_opt_solver_test PROPERTIES DISABLED TRUE)
+  endif()
 endif()
