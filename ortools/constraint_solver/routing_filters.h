@@ -81,6 +81,11 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 IntVarLocalSearchFilter* MakeActiveNodeGroupFilter(
     const RoutingModel& routing_model);
 
+/// Returns a filter ensuring that for each ordered activity group,
+/// if nodes[i] is active then nodes[i-1] is active.
+IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
+    const RoutingModel& routing_model);
+
 /// Returns a filter ensuring that node disjunction constraints are enforced.
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
     const RoutingModel& routing_model, bool filter_cost);

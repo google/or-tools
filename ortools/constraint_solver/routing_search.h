@@ -14,8 +14,6 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_SEARCH_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_SEARCH_H_
 
-#include <sys/types.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

@@ -2981,6 +2981,15 @@ void RoutingModel::CloseModelWithParameters(
   solver_->AddConstraint(solver_->MakePathPrecedenceConstraint(
       nexts_, pickup_delivery_precedences, lifo_vehicles, fifo_vehicles));
 
+  // Add ordered activity group constraints.
+  for (const auto& nodes : ordered_activity_groups_) {
+    if (nodes.size() <= 1) continue;
+    for (int i = 1; i < nodes.size(); ++i) {
+      solver_->AddConstraint(solver_->MakeLessOrEqual(ActiveVar(nodes[i]),
+                                                      ActiveVar(nodes[i - 1])));
+    }
+  }
+
   // Detect constraints
   enable_deep_serialization_ = false;
   std::unique_ptr<RoutingModelInspector> inspector(
@@ -5354,6 +5363,10 @@ RoutingModel::CreateLocalSearchFilters(
       filter_events.push_back(
           {MakeActiveNodeGroupFilter(*this), kAccept, priority});
     }
+    if (!GetOrderedActivityGroups().empty()) {
+      filter_events.push_back(
+          {MakeOrderedActivityGroupFilter(*this), kAccept, priority});
+    }
 
     if (!disjunctions_.empty()) {
       if (options.filter_objective || HasMandatoryDisjunctions() ||
@@ -6858,7 +6871,7 @@ void RoutingDimension::InitializeTransits(
   InitializeTransitVariables(slack_max);
 }
 
-// TODO(user): Apply -pointer-following.
+// TODO(user): Apply http://go/minimize-pointer-following.
 void FillPathEvaluation(absl::Span<const int64_t> path,
                         const RoutingModel::TransitCallback2& evaluator,
                         std::vector<int64_t>* values) {

@@ -26,11 +26,13 @@ target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
 target_link_libraries(${NAME} PRIVATE
+  ZLIB::ZLIB
   absl::memory
   absl::strings
   absl::status
   absl::str_format
   protobuf::libprotobuf
   ${RE2_DEPS}
-  ${PROJECT_NAMESPACE}::ortools_proto)
+  ${PROJECT_NAMESPACE}::ortools_proto
+)
 #add_library(${PROJECT_NAMESPACE}::routing_parsers ALIAS ${NAME})

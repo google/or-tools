@@ -314,6 +314,7 @@ cc_library(
         ":routing_enums_cc_proto",
         ":routing_heuristic_parameters_cc_proto",
         ":routing_ils_cc_proto",
+        ":routing_ils_parameters_utils",
         ":routing_parameters_cc_proto",
         ":routing_parameters_utils",
         ":solver_parameters_cc_proto",
@@ -326,6 +327,7 @@ cc_library(
         "//ortools/util:optional_boolean_cc_proto",
         "//ortools/util:testing_utils",
         "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
@@ -342,6 +344,17 @@ cc_library(
         ":routing_parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "routing_ils_parameters_utils",
+    srcs = ["routing_ils_parameters_utils.cc"],
+    hdrs = ["routing_ils_parameters_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":routing_enums_cc_proto",
+        ":routing_ils_cc_proto",
     ],
 )
 

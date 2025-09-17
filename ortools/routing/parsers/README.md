@@ -6,6 +6,7 @@ and utilities directly related to these file formats.
 `solution_serializer.h` contains a generic serializer for routing solutions for
 many formats.
 
+<!-- mdformat off(go/g3mark doesn't support multiline tables, b/267197123) -->
 | Problem type | File format | Corresponding parser | Data storage | Data sets |
 | ------------ | ----------- | -------------------- | ------------ | --------- |
 | TSP | TSPLIB | `tsplib_parser.h` | | [TSPLIB95][tsplib95] |
@@ -17,6 +18,7 @@ many formats.
 | NEARP | NEARPLIB | `nearplib_parser.h` | | [NEARPLIB][nearplib] |
 | PDPTW | LiLim | `lilim_parser.h` | | [LiLim][lilim] |
 | MCND | Dow | `dow_parser.h` | `capacity_planning.proto` | [Canad][canad] |
+<!-- mdformat on -->
 
 In the future, this folder will contain the whole routing solver.
 

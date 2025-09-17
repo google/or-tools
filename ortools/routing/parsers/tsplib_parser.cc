@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -23,16 +25,25 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/file.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/numbers.h"
+#include "ortools/base/options.h"
 #include "ortools/base/path.h"
+#include "ortools/base/status_builder.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/zipfile.h"
+#include "ortools/routing/parsers/simple_graph.h"
 #include "ortools/util/filelineiter.h"
 #include "re2/re2.h"
 
@@ -158,8 +169,8 @@ std::shared_ptr<zipfile::ZipArchive> OpenZipArchiveIfItExists(
 
 TspLibParser::TspLibParser()
     : size_(0),
-      capacity_(kint64max),
-      max_distance_(kint64max),
+      capacity_(std::numeric_limits<int64_t>::max()),
+      max_distance_(std::numeric_limits<int64_t>::max()),
       distance_function_(nullptr),
       explicit_costs_(),
       depot_(0),
@@ -171,28 +182,45 @@ TspLibParser::TspLibParser()
       edge_column_(0),
       to_read_(0) {}
 
-bool TspLibParser::LoadFile(absl::string_view file_name) {
+namespace {
+absl::StatusOr<File*> OpenFile(absl::string_view file_name) {
+  File* file = nullptr;
+  RETURN_IF_ERROR(file::Open(file_name, "r", &file, file::Defaults()));
+  return file;
+}
+}  // namespace
+
+absl::Status TspLibParser::LoadFile(absl::string_view file_name) {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
+  valid_section_found_ = false;
+  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);
   }
   FinalizeEdgeWeights();
-  return true;
+  if (!valid_section_found_) {
+    return util::InvalidArgumentErrorBuilder()
+           << "Could not find any valid sections in " << file_name;
+  }
+  return absl::OkStatus();
 }
 
-int TspLibParser::SizeFromFile(absl::string_view file_name) const {
+absl::StatusOr<int> TspLibParser::SizeFromFile(
+    absl::string_view file_name) const {
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
+  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   int size = 0;
   for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     if (RE2::PartialMatch(line, "DIMENSION\\s*:\\s*(\\d+)", &size)) {
-      break;
+      return size;
     }
   }
-  return size;
+  return util::InvalidArgumentErrorBuilder()
+         << "Could not determine problem size from " << file_name;
 }
 
 void TspLibParser::ParseExplicitFullMatrix(
@@ -398,12 +426,12 @@ void TspLibParser::FinalizeEdgeWeights() {
   }
 }
 
-void TspLibParser::ParseSections(absl::Span<const std::string> words) {
+bool TspLibParser::ParseSections(absl::Span<const std::string> words) {
   const int words_size = words.size();
   CHECK_GT(words_size, 0);
   if (!gtl::FindCopy(*kSections, words[0], &section_)) {
     LOG(WARNING) << "Unknown section: " << words[0];
-    return;
+    return false;
   }
   const std::string& last_word = words[words_size - 1];
   switch (section_) {
@@ -483,7 +511,7 @@ void TspLibParser::ParseSections(absl::Span<const std::string> words) {
       break;
     }
     case FIXED_EDGES_SECTION: {
-      to_read_ = kint64max;
+      to_read_ = std::numeric_limits<int64_t>::max();
       break;
     }
     case NODE_COORD_TYPE: {
@@ -501,7 +529,7 @@ void TspLibParser::ParseSections(absl::Span<const std::string> words) {
       break;
     }
     case DEPOT_SECTION: {
-      to_read_ = kint64max;
+      to_read_ = std::numeric_limits<int64_t>::max();
       break;
     }
     case DEMAND_SECTION: {
@@ -516,6 +544,7 @@ void TspLibParser::ParseSections(absl::Span<const std::string> words) {
       LOG(WARNING) << "Unknown section: " << words[0];
     }
   }
+  return true;
 }
 
 void TspLibParser::ProcessNewLine(const std::string& line) {
@@ -653,7 +682,9 @@ void TspLibParser::ProcessNewLine(const std::string& line) {
         }
       }
     } else {
-      ParseSections(words);
+      // TODO(user): Check that proper sections were read (necessary and
+      // non-overlapping ones).
+      valid_section_found_ |= ParseSections(words);
     }
   }
 }
@@ -745,19 +776,18 @@ const absl::flat_hash_map<std::string, TspLibParser::EdgeWeightFormats>* const
 
 TspLibTourParser::TspLibTourParser() : section_(UNDEFINED_SECTION), size_(0) {}
 
-// TODO(user): Return false when issues were encountered while parsing the
-// file.
-bool TspLibTourParser::LoadFile(absl::string_view file_name) {
+absl::Status TspLibTourParser::LoadFile(absl::string_view file_name) {
   section_ = UNDEFINED_SECTION;
   comments_.clear();
   tour_.clear();
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
+  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);
   }
-  return true;
+  return absl::OkStatus();
 }
 
 void TspLibTourParser::ProcessNewLine(const std::string& line) {
@@ -816,18 +846,17 @@ const absl::flat_hash_map<std::string, TspLibTourParser::Sections>* const
 
 CVRPToursParser::CVRPToursParser() : cost_(0) {}
 
-// TODO(user): Return false when issues were encountered while parsing the
-// file.
-bool CVRPToursParser::LoadFile(absl::string_view file_name) {
+absl::Status CVRPToursParser::LoadFile(absl::string_view file_name) {
   tours_.clear();
   cost_ = 0;
   std::shared_ptr<zipfile::ZipArchive> zip_archive(
       OpenZipArchiveIfItExists(file_name));
+  ASSIGN_OR_RETURN(File* const file, OpenFile(file_name));
   for (const std::string& line :
-       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+       FileLines(file_name, file, FileLineIterator::REMOVE_INLINE_CR)) {
     ProcessNewLine(line);
   }
-  return true;
+  return absl::OkStatus();
 }
 
 void CVRPToursParser::ProcessNewLine(const std::string& line) {

@@ -23,7 +23,6 @@
 #include "ortools/base/base_export.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/constraint_solver/routing_types.h"
-
 namespace operations_research {
 
 /// Manager for any NodeIndex <-> variable index conversion. The routing solver

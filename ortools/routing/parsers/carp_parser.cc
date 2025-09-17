@@ -14,11 +14,14 @@
 #include "ortools/routing/parsers/carp_parser.h"
 
 #include <array>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"

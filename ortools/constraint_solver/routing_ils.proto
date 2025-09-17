@@ -151,6 +151,7 @@ message RuinStrategy {
 message RecreateParameters {
   oneof parameters {
     LocalCheapestInsertionParameters local_cheapest_insertion = 1;
+    SavingsParameters savings = 2;
   }
 }
 

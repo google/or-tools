@@ -227,12 +227,151 @@ IntVarLocalSearchFilter* MakeMaxActiveVehiclesFilter(
 
 namespace {
 
+class SameActivityGroupManager {
+ public:
+  explicit SameActivityGroupManager(const RoutingModel& routing_model)
+      : routing_model_(routing_model) {}
+  int NumberOfGroups() const {
+    return routing_model_.GetSameActivityGroupsCount();
+  }
+  absl::Span<const int> GetGroupsFromNode(int node) const {
+    return absl::MakeConstSpan(routing_model_.GetSameActivityGroups())
+        .subspan(node, 1);
+  }
+  const std::vector<int>& GetGroupNodes(int group) const {
+    return routing_model_.GetSameActivityIndicesOfGroup(group);
+  }
+  void Revert() {}
+  bool CheckGroup(int group, int active, int unknown,
+                  const CommittableArray<bool>& /*node_is_active*/,
+                  const CommittableArray<bool>& /*node_is_unknown*/) const {
+    const int group_size = GetGroupNodes(group).size();
+    // The group constraint is respected iff either 0 or group size is inside
+    // interval [num_active, num_active + num_unknown],
+    if (active == 0) return true;
+    if (active <= group_size && group_size <= active + unknown) {
+      return true;
+    }
+    return false;
+  }
+
+ private:
+  const RoutingModel& routing_model_;
+};
+
+class OrderedActivityGroupManager {
+ public:
+  explicit OrderedActivityGroupManager(const RoutingModel& routing_model)
+      : groups_(routing_model.GetOrderedActivityGroups()),
+        group_bounds_(routing_model.GetOrderedActivityGroups().size(), {0, 0}) {
+    node_groups_.resize(routing_model.Size());
+    for (int group = 0; group < groups_.size(); ++group) {
+      for (int node : groups_[group]) {
+        node_groups_[node].push_back(group);
+      }
+      group_bounds_.Set(group, std::make_pair(0, groups_[group].size() - 1));
+    }
+    group_bounds_.Commit();
+  }
+  int NumberOfGroups() const { return groups_.size(); }
+  absl::Span<const int> GetGroupsFromNode(int node) const {
+    return node_groups_[node];
+  }
+  const std::vector<int>& GetGroupNodes(int group) const {
+    return groups_[group];
+  }
+  void Revert() {
+    group_bounds_.Revert();
+    touched_nodes_.clear();
+  }
+  bool CheckGroup(int group, int active, int unknown,
+                  CommittableArray<bool>& node_is_active,
+                  CommittableArray<bool>& node_is_unknown) {
+    if (active == 0) return true;
+    auto& [min_rank, max_rank] = group_bounds_.GetMutable(group);
+    for (int rank = min_rank; rank <= max_rank; ++rank) {
+      const int node = groups_[group][rank];
+      if (node_is_unknown.Get(node)) continue;
+      if (!node_is_active.Get(node)) {
+        touched_nodes_.push_back(node);
+        break;
+      }
+    }
+    for (int rank = max_rank; rank >= min_rank; --rank) {
+      const int node = groups_[group][rank];
+      if (node_is_unknown.Get(node)) continue;
+      if (node_is_active.Get(node)) {
+        touched_nodes_.push_back(node);
+        break;
+      }
+    }
+    while (!touched_nodes_.empty()) {
+      const int node = touched_nodes_.back();
+      touched_nodes_.pop_back();
+      if (!Propagate(node, node_is_active, node_is_unknown)) {
+        return false;
+      }
+#ifndef NDEBUG
+      for (int n : touched_nodes_) DCHECK_NE(n, node);
+#endif  // NDEBUG
+    }
+    return true;
+  }
+  bool Propagate(int node, CommittableArray<bool>& node_is_active,
+                 CommittableArray<bool>& node_is_unknown) {
+    for (int group_index : node_groups_[node]) {
+      const std::vector<int>& group = groups_[group_index];
+      auto& [min_rank, max_rank] = group_bounds_.GetMutable(group_index);
+      if (max_rank < min_rank) continue;
+      if (node_is_active.Get(node)) {
+        // Make all active between min_rank and node.
+        int rank = min_rank;
+        while (group[rank] != node) {
+          const int current_node = group[rank];
+          if (node_is_unknown.Get(current_node)) {
+            node_is_active.Set(current_node, true);
+            node_is_unknown.Set(current_node, false);
+            touched_nodes_.push_back(current_node);
+          } else if (!node_is_active.Get(current_node)) {
+            return false;
+          }
+          rank++;
+        }
+        min_rank = rank + 1;
+      } else {
+        // Make all inactive between node and max_rank.
+        int rank = max_rank;
+        while (group[rank] != node) {
+          const int current_node = group[rank];
+          if (node_is_unknown.Get(current_node)) {
+            node_is_active.Set(current_node, false);
+            node_is_unknown.Set(current_node, false);
+            touched_nodes_.push_back(current_node);
+          } else if (node_is_active.Get(current_node)) {
+            return false;
+          }
+          rank--;
+        }
+        max_rank = rank - 1;
+      }
+    }
+    return true;
+  }
+
+ private:
+  const std::vector<std::vector<int>>& groups_;
+  std::vector<std::vector<int>> node_groups_;
+  CommittableArray<std::pair<int, int>> group_bounds_;
+  std::vector<int> touched_nodes_;
+};
+
+template <typename GroupAccessor>
 class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
  public:
   explicit ActiveNodeGroupFilter(const RoutingModel& routing_model)
       : IntVarLocalSearchFilter(routing_model.Nexts()),
-        routing_model_(routing_model),
-        active_count_per_group_(routing_model.GetSameActivityGroupsCount(),
+        group_accessor_(routing_model),
+        active_count_per_group_(group_accessor_.NumberOfGroups(),
                                 {.active = 0, .unknown = 0}),
         node_is_active_(routing_model.Nexts().size(), false),
         node_is_unknown_(routing_model.Nexts().size(), false) {}
@@ -240,35 +379,43 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t /*objective_max*/) override {
     active_count_per_group_.Revert();
+    node_is_active_.Revert();
+    node_is_unknown_.Revert();
+    group_accessor_.Revert();
     const Assignment::IntContainer& container = delta->IntVarContainer();
+    // Updating group counters.
     for (const IntVarElement& new_element : container.elements()) {
       IntVar* const var = new_element.Var();
       int64_t index = -1;
       if (!FindIndex(var, &index)) continue;
-      const int group = routing_model_.GetSameActivityGroupOfIndex(index);
-      ActivityCounts counts = active_count_per_group_.Get(group);
-      // Change contribution to counts: remove old state, add new state.
-      if (node_is_unknown_[index]) --counts.unknown;
-      if (node_is_active_[index]) --counts.active;
-      if (new_element.Min() != new_element.Max()) {
-        ++counts.unknown;
-      } else if (new_element.Min() != index) {
-        ++counts.active;
+      for (const int group : group_accessor_.GetGroupsFromNode(index)) {
+        ActivityCounts counts = active_count_per_group_.Get(group);
+        // Change contribution to counts: remove old state, add new state.
+        if (node_is_unknown_.Get(index)) --counts.unknown;
+        if (node_is_active_.Get(index)) --counts.active;
+        if (new_element.Min() != new_element.Max()) {
+          ++counts.unknown;
+        } else if (new_element.Min() != index) {
+          ++counts.active;
+        }
+        active_count_per_group_.Set(group, counts);
       }
-      active_count_per_group_.Set(group, counts);
+    }
+    // Updating node states.
+    for (const IntVarElement& new_element : container.elements()) {
+      IntVar* const var = new_element.Var();
+      int64_t index = -1;
+      if (!FindIndex(var, &index)) continue;
+      node_is_unknown_.Set(index, new_element.Min() != new_element.Max());
+      node_is_active_.Set(index, new_element.Min() == new_element.Max() &&
+                                     new_element.Min() != index);
     }
     for (const int group : active_count_per_group_.ChangedIndices()) {
       const ActivityCounts counts = active_count_per_group_.Get(group);
-      const int group_size =
-          routing_model_.GetSameActivityIndicesOfGroup(group).size();
-      // The group constraint is respected iff either 0 or group size is inside
-      // interval [num_active, num_active + num_unknown],
-      if (counts.active == 0) continue;
-      if (counts.active <= group_size &&
-          group_size <= counts.active + counts.unknown) {
-        continue;
+      if (!group_accessor_.CheckGroup(group, counts.active, counts.unknown,
+                                      node_is_active_, node_is_unknown_)) {
+        return false;
       }
-      return false;
     }
     return true;
   }
@@ -276,27 +423,29 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
 
  private:
   void OnSynchronize(const Assignment* /*delta*/) override {
-    const int num_groups = routing_model_.GetSameActivityGroupsCount();
+    const int num_groups = group_accessor_.NumberOfGroups();
     for (int group = 0; group < num_groups; ++group) {
       ActivityCounts counts = {.active = 0, .unknown = 0};
-      for (int node : routing_model_.GetSameActivityIndicesOfGroup(group)) {
+      for (int node : group_accessor_.GetGroupNodes(group)) {
         if (IsVarSynced(node)) {
           const bool is_active = (Value(node) != node);
-          node_is_active_[node] = is_active;
-          node_is_unknown_[node] = false;
+          node_is_active_.Set(node, is_active);
+          node_is_unknown_.Set(node, false);
           counts.active += is_active ? 1 : 0;
         } else {
           ++counts.unknown;
-          node_is_unknown_[node] = true;
-          node_is_active_[node] = false;
+          node_is_unknown_.Set(node, true);
+          node_is_active_.Set(node, false);
         }
       }
       active_count_per_group_.Set(group, counts);
     }
     active_count_per_group_.Commit();
+    node_is_active_.Commit();
+    node_is_unknown_.Commit();
   }
 
-  const RoutingModel& routing_model_;
+  GroupAccessor group_accessor_;
   struct ActivityCounts {
     int active;
     int unknown;
@@ -304,10 +453,10 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
   CommittableArray<ActivityCounts> active_count_per_group_;
   // node_is_active_[node] is true iff node was synced and active at last
   // Synchronize().
-  std::vector<bool> node_is_active_;
+  CommittableArray<bool> node_is_active_;
   // node_is_unknown_[node] is true iff node was not synced at last
   // Synchronize().
-  std::vector<bool> node_is_unknown_;
+  CommittableArray<bool> node_is_unknown_;
 };
 
 }  // namespace
@@ -315,7 +464,13 @@ class ActiveNodeGroupFilter : public IntVarLocalSearchFilter {
 IntVarLocalSearchFilter* MakeActiveNodeGroupFilter(
     const RoutingModel& routing_model) {
   return routing_model.solver()->RevAlloc(
-      new ActiveNodeGroupFilter(routing_model));
+      new ActiveNodeGroupFilter<SameActivityGroupManager>(routing_model));
+}
+
+IntVarLocalSearchFilter* MakeOrderedActivityGroupFilter(
+    const RoutingModel& routing_model) {
+  return routing_model.solver()->RevAlloc(
+      new ActiveNodeGroupFilter<OrderedActivityGroupManager>(routing_model));
 }
 
 namespace {

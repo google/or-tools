@@ -24,16 +24,17 @@
 #ifndef OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 #define OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 
-#include <functional>
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/types.h"
 #include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
@@ -45,9 +46,9 @@ class TspLibParser final {
 
   TspLibParser();
   // Loads and parses a routing problem from a given file.
-  bool LoadFile(absl::string_view file_name);
+  absl::Status LoadFile(absl::string_view file_name);
   // Returns the number of nodes in the routing problem stored in a given file.
-  int SizeFromFile(absl::string_view file_name) const;
+  absl::StatusOr<int> SizeFromFile(absl::string_view file_name) const;
   // Returns a function returning edge weights between nodes.
   EdgeWeights GetEdgeWeights() const { return distance_function_; }
   // Returns the index of the depot.
@@ -150,7 +151,7 @@ class TspLibParser final {
   void ParseNodeCoord(absl::Span<const std::string> words);
   void SetUpEdgeWeightSection();
   void FinalizeEdgeWeights();
-  void ParseSections(absl::Span<const std::string> words);
+  bool ParseSections(absl::Span<const std::string> words);
   void ProcessNewLine(const std::string& line);
   void SetExplicitCost(int from, int to, int64_t cost) {
     if (explicit_costs_.size() != size_ * size_) {
@@ -190,6 +191,7 @@ class TspLibParser final {
   std::string name_;
   std::string comments_;
   int64_t to_read_;
+  bool valid_section_found_ = false;
 };
 
 // Class parsing tour (solution) data in TSLIB95 format.
@@ -198,7 +200,7 @@ class TspLibTourParser final {
  public:
   TspLibTourParser();
   // Loads and parses a given tour file.
-  bool LoadFile(absl::string_view file_name);
+  absl::Status LoadFile(absl::string_view file_name);
   // Returns a vector corresponding to the sequence of nodes of the tour.
   const std::vector<int>& tour() const { return tour_; }
   // Returns the size of the tour.
@@ -237,7 +239,7 @@ class CVRPToursParser final {
  public:
   CVRPToursParser();
   // Loads and parses a given tours file.
-  bool LoadFile(absl::string_view file_name);
+  absl::Status LoadFile(absl::string_view file_name);
   // Returns a vector corresponding to the sequence of nodes of tours.
   const std::vector<std::vector<int>>& tours() const { return tours_; }
   int64_t cost() const { return cost_; }

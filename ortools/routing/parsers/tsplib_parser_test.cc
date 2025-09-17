@@ -21,10 +21,12 @@
 
 #include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/memfile.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"
@@ -34,6 +36,9 @@
 
 namespace operations_research::routing {
 namespace {
+
+using ::testing::Gt;
+using ::testing::status::IsOkAndHolds;
 
 TEST(TspLibParserTest, GeneratedDataSets) {
   static const char kName[] = "GoogleTest";
@@ -187,8 +192,9 @@ TEST(TspLibParserTest, GeneratedDataSets) {
             const std::string kMMFileName{std::tmpnam(nullptr)};
             RegisteredMemFile registered(kMMFileName, data);
             TspLibParser parser;
-            EXPECT_TRUE(parser.LoadFile(kMMFileName));
-            EXPECT_EQ(kDimension, parser.SizeFromFile(kMMFileName));
+            EXPECT_OK(parser.LoadFile(kMMFileName));
+            EXPECT_THAT(parser.SizeFromFile(kMMFileName),
+                        IsOkAndHolds(kDimension));
           }
         }
       }
@@ -210,8 +216,8 @@ TEST(TspLibParserTest, ParseHCPEdgeList) {
   const std::string kMMFileName{std::tmpnam(nullptr)};
   RegisteredMemFile registered(kMMFileName, kData);
   TspLibParser parser;
-  EXPECT_TRUE(parser.LoadFile(kMMFileName));
-  EXPECT_EQ(3, parser.SizeFromFile(kMMFileName));
+  EXPECT_OK(parser.LoadFile(kMMFileName));
+  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
   EXPECT_EQ(2, parser.edges()[0].size());
   EXPECT_EQ(1, parser.edges()[0][0]);
   EXPECT_EQ(2, parser.edges()[0][1]);
@@ -232,8 +238,8 @@ TEST(TspLibParserTest, ParseHCPAdjList) {
   const std::string kMMFileName{std::tmpnam(nullptr)};
   RegisteredMemFile registered(kMMFileName, kData);
   TspLibParser parser;
-  EXPECT_TRUE(parser.LoadFile(kMMFileName));
-  EXPECT_EQ(3, parser.SizeFromFile(kMMFileName));
+  EXPECT_OK(parser.LoadFile(kMMFileName));
+  EXPECT_THAT(parser.SizeFromFile(kMMFileName), IsOkAndHolds(3));
   EXPECT_EQ(1, parser.edges()[0].size());
   EXPECT_EQ(2, parser.edges()[0][0]);
   EXPECT_EQ(1, parser.edges()[1].size());
@@ -247,13 +253,25 @@ TEST(TspLibParserTest, ParseKytojoki33Depot) {
       ::testing::SrcDir(), ROOT_DIR "ortools/routing/parsers/testdata/",
       "tsplib_Kytojoki_33.vrp");
   TspLibParser parser;
-  EXPECT_TRUE(parser.LoadFile(file_name));
+  EXPECT_OK(parser.LoadFile(file_name));
   // The depot is a new node, given by its coordinates, instead of an existing
   // node in the graph.
   EXPECT_EQ(2400, parser.depot());
   EXPECT_EQ(0, parser.edges().size());
   EXPECT_EQ(0.0, parser.coordinates()[parser.depot()].x);
   EXPECT_EQ(0.0, parser.coordinates()[parser.depot()].y);
+}
+
+// Make sure we properly fail when reading an invalid file. To test this,
+// reading from a raw tar file instead of the included subfiles.
+TEST(TspLibParserTest, ReadFailOnInvalidFile) {
+  std::string file_name =
+      file::JoinPath(::testing::SrcDir(), ROOT_DIR
+                     "operations_research_data/operations_research_data/"
+                     "TSPLIB95/ALL_tsp.tar.gz");
+  TspLibParser parser;
+  EXPECT_THAT(parser.LoadFile(file_name),
+              testing::status::StatusIs(absl::StatusCode::kInvalidArgument));
 }
 
 TEST(TspLibTourParserTest, LoadAllDataSets) {
@@ -300,7 +318,7 @@ TEST(TspLibTourParserTest, LoadAllDataSets) {
           .ok()) {
     for (const std::string& match : matches) {
       TspLibTourParser parser;
-      EXPECT_TRUE(parser.LoadFile(match));
+      EXPECT_OK(parser.LoadFile(match));
       EXPECT_EQ(kExpectedComments[file_index], parser.comments());
       file_index++;
     }
@@ -335,7 +353,7 @@ TEST(CVRPToursParserTest, LoadAllDataSets) {
           .ok()) {
     for (const std::string& match : matches) {
       CVRPToursParser parser;
-      EXPECT_TRUE(parser.LoadFile(match));
+      EXPECT_OK(parser.LoadFile(match));
       EXPECT_EQ(kExpectedCosts[file_index], parser.cost());
       file_index++;
     }
