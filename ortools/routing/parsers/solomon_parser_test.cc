@@ -17,7 +17,6 @@
 
 #include "absl/flags/flag.h"
 #include "gtest/gtest.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 

@@ -21,24 +21,11 @@
 
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/gzipfile.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/numbers.h"
-#include "ortools/base/path.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {
-namespace {
-File* OpenReadOnly(absl::string_view file_name) {
-  File* file = nullptr;
-  if (file::Open(file_name, "r", &file, file::Defaults()).ok() &&
-      file::Extension(file_name) == "gz") {
-    file = GZipFileReader(file_name, file, TAKE_OWNERSHIP);
-  }
-  return file;
-}
-}  // namespace
 
 PdTspParser::PdTspParser() : section_(SIZE_SECTION) {}
 
