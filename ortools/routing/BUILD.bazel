@@ -110,6 +110,7 @@ cc_library(
         ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
         ":ils_cc_proto",
+        ":ils_parameters_utils",
         ":parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:proto_enum_utils",
@@ -136,10 +137,23 @@ cc_library(
     hdrs = ["parameters_utils.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
+        ":ils_cc_proto",
         ":parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "ils_parameters_utils",
+    srcs = ["ils_parameters_utils.cc"],
+    hdrs = ["ils_parameters_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":enums_cc_proto",
+        ":ils_cc_proto",
     ],
 )
 
@@ -254,6 +268,7 @@ cc_library(
         ":types",
         ":utils",
         "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",

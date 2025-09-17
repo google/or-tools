@@ -38,6 +38,7 @@
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/heuristic_parameters.pb.h"
 #include "ortools/routing/ils.pb.h"
+#include "ortools/routing/ils_parameters_utils.h"
 #include "ortools/routing/parameters.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/optional_boolean.pb.h"
@@ -304,6 +305,32 @@ void FindErrorsInLocalCheapestInsertionParameters(
   }
 }
 
+// Searches for errors in SavingsParameters and appends them to the given
+// `errors` vector.
+void FindErrorsInSavingsParameters(const absl::string_view prefix,
+                                   const SavingsParameters& savings_parameters,
+                                   std::vector<std::string>& errors) {
+  using absl::StrCat;
+
+  if (const double ratio = savings_parameters.neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat(
+        prefix, " - Invalid savings_parameters.neighbors_ratio: ", ratio));
+  }
+  if (const double max_memory = savings_parameters.max_memory_usage_bytes();
+      std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
+    errors.emplace_back(StrCat(
+        prefix,
+        " - Invalid savings_parameters.max_memory_usage_bytes: ", max_memory));
+  }
+  if (const double coefficient = savings_parameters.arc_coefficient();
+      std::isnan(coefficient) || coefficient <= 0 || std::isinf(coefficient)) {
+    errors.emplace_back(
+        StrCat(prefix,
+               " - Invalid savings_parameters.arc_coefficient: ", coefficient));
+  }
+}
+
 void FindErrorsInRecreateParameters(
     const FirstSolutionStrategy::Value heuristic,
     const RecreateParameters& parameters, std::vector<std::string>& errors) {
@@ -317,18 +344,13 @@ void FindErrorsInRecreateParameters(
           prefix, parameters.local_cheapest_insertion(), errors);
       break;
     }
+    case RecreateParameters::kSavings:
+      FindErrorsInSavingsParameters("Savings (recreate heuristic)",
+                                    parameters.savings(), errors);
+      break;
     default:
       LOG(DFATAL) << "Unsupported unset recreate parameters.";
       break;
-  }
-}
-
-std::string GetRecreateParametersName(const RecreateParameters& parameters) {
-  switch (parameters.parameters_case()) {
-    case RecreateParameters::kLocalCheapestInsertion:
-      return "local_cheapest_insertion";
-    case RecreateParameters::PARAMETERS_NOT_SET:
-      return "PARAMETERS_NOT_SET";
   }
 }
 
@@ -462,32 +484,20 @@ void FindErrorsInIteratedLocalSearchParameters(
           rr.recreate_strategy().parameters();
       if (recreate_params.parameters_case() ==
           RecreateParameters::PARAMETERS_NOT_SET) {
-        errors.emplace_back(
-            StrCat("Invalid value for "
-                   "iterated_local_search_parameters.ruin_recreate_parameters."
-                   "recreate_strategy.parameters: ",
-                   GetRecreateParametersName(recreate_params)));
+        errors.emplace_back(StrCat(
+            "Invalid value for "
+            "iterated_local_search_parameters.ruin_recreate_parameters."
+            "recreate_strategy.parameters: ",
+            GetRecreateParametersName(recreate_params.parameters_case())));
       } else {
-        const absl::flat_hash_map<FirstSolutionStrategy::Value,
-                                  RecreateParameters::ParametersCase>
-            strategy_to_parameters_case_map = {
-                {FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION,
-                 RecreateParameters::kLocalCheapestInsertion},
-                {FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION,
-                 RecreateParameters::kLocalCheapestInsertion}};
-
-        const RecreateParameters& recreate_params =
-            rr.recreate_strategy().parameters();
-
-        if (const auto params =
-                strategy_to_parameters_case_map.find(recreate_heuristic);
-            params == strategy_to_parameters_case_map.end() ||
-            recreate_params.parameters_case() != params->second) {
-          errors.emplace_back(
-              StrCat("recreate_strategy.heuristic is set to ",
-                     FirstSolutionStrategy::Value_Name(recreate_heuristic),
-                     " but recreate_strategy.parameters define ",
-                     GetRecreateParametersName(recreate_params)));
+        if (const RecreateParameters::ParametersCase params =
+                GetParameterCaseForRecreateHeuristic(recreate_heuristic);
+            recreate_params.parameters_case() != params) {
+          errors.emplace_back(StrCat(
+              "recreate_strategy.heuristic is set to ",
+              FirstSolutionStrategy::Value_Name(recreate_heuristic),
+              " but recreate_strategy.parameters define ",
+              GetRecreateParametersName(recreate_params.parameters_case())));
         } else {
           FindErrorsInRecreateParameters(recreate_heuristic, recreate_params,
                                          errors);
@@ -598,24 +608,8 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
     }
   }
 #endif  // !__ANDROID__ && !__wasm__
-  if (const double ratio =
-          search_parameters.savings_parameters().neighbors_ratio();
-      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(
-        StrCat("Invalid savings_parameters.neighbors_ratio: ", ratio));
-  }
-  if (const double max_memory =
-          search_parameters.savings_parameters().max_memory_usage_bytes();
-      std::isnan(max_memory) || max_memory <= 0 || max_memory > 1e10) {
-    errors.emplace_back(StrCat(
-        "Invalid savings_parameters.max_memory_usage_bytes: ", max_memory));
-  }
-  if (const double coefficient =
-          search_parameters.savings_parameters().arc_coefficient();
-      std::isnan(coefficient) || coefficient <= 0 || std::isinf(coefficient)) {
-    errors.emplace_back(
-        StrCat("Invalid savings_parameters.arc_coefficient: ", coefficient));
-  }
+  FindErrorsInSavingsParameters("Savings (first solution heuristic)",
+                                search_parameters.savings_parameters(), errors);
   if (const double ratio =
           search_parameters.cheapest_insertion_farthest_seeds_ratio();
       std::isnan(ratio) || ratio < 0 || ratio > 1) {

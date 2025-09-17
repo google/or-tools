@@ -1923,6 +1923,14 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return same_vehicle_groups_[same_vehicle_group_[node]];
   }
+  void AddSameActivityGroup(const std::vector<int>& nodes) {
+    DCHECK(!closed_);
+    if (nodes.size() <= 1) return;
+    for (auto it = nodes.begin() + 1; it != nodes.end(); ++it) {
+      solver_->AddConstraint(
+          solver_->MakeEquality(ActiveVar(*it), ActiveVar(*(it - 1))));
+    }
+  }
   /// Returns variable indices of nodes constrained to have the same activity.
   const std::vector<int>& GetSameActivityIndicesOfIndex(int node) const {
     DCHECK(closed_);
@@ -1932,6 +1940,11 @@ class OR_DLL RoutingModel {
   int GetSameActivityGroupOfIndex(int node) const {
     DCHECK(closed_);
     return same_active_var_group_[node];
+  }
+  /// Returns same activity groups of all nodes.
+  const std::vector<int>& GetSameActivityGroups() const {
+    DCHECK(closed_);
+    return same_active_var_group_;
   }
   /// Returns the number of same activity groups.
   int GetSameActivityGroupsCount() const {
@@ -1943,7 +1956,19 @@ class OR_DLL RoutingModel {
     DCHECK(closed_);
     return same_active_var_groups_[group];
   }
-
+  /// Adds an ordered activity group. This enforces that if nodes[i] is active,
+  /// then nodes[i-1] must be active.
+  void AddOrderedActivityGroup(std::vector<int> nodes) {
+    DCHECK(!closed_);
+    if (nodes.size() <= 1) return;
+    ordered_activity_groups_.push_back(std::move(nodes));
+  }
+#ifndef SWIG
+  /// Returns all ordered activity groups.
+  const std::vector<std::vector<int>>& GetOrderedActivityGroups() const {
+    return ordered_activity_groups_;
+  }
+#endif  // SWIG
   const VehicleTypeContainer& GetVehicleTypeContainer() const {
     DCHECK(closed_);
     return vehicle_type_container_;
@@ -2620,6 +2645,8 @@ class OR_DLL RoutingModel {
   std::vector<int> same_active_var_group_;
   // Same active var groups.
   std::vector<std::vector<int>> same_active_var_groups_;
+  // Ordered activity groups.
+  std::vector<std::vector<int>> ordered_activity_groups_;
   // Node visit types
   // Variable index to visit type index.
   std::vector<int> index_to_visit_type_;
