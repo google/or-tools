@@ -102,8 +102,7 @@ int main(int argc, char* argv[]) {
 """Vehicle Routing example."""
 
 from ortools.routing import enums_pb2
-from ortools.routing.python import pywraprouting
-from ortools.routing.python import pywraproutingindexmanager
+from ortools.routing import pywraprouting
 
 
 def main():
@@ -114,7 +113,7 @@ def main():
   depot = 0
 
   # Create the routing index manager.
-  manager = pywraproutingindexmanager.RoutingIndexManager(
+  manager = pywraprouting.RoutingIndexManager(
       num_locations, num_vehicles, depot
   )
 

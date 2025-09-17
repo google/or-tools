@@ -21,10 +21,12 @@
 
 #include "absl/base/macros.h"
 #include "absl/container/btree_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
 #include "ortools/base/filesystem.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/memfile.h"
 #include "ortools/base/options.h"
 #include "ortools/base/path.h"

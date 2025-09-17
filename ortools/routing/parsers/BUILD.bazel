@@ -263,6 +263,7 @@ cc_test(
         ":tsplib_parser",
         "//ortools/base",
         "//ortools/base:file",
+        "//ortools/base:gmock",
         "//ortools/base:memfile",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",

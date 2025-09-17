@@ -13,8 +13,6 @@
 
 #include "ortools/routing/parsers/dow_parser.h"
 
-#include <string>
-
 #include "absl/status/status.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"

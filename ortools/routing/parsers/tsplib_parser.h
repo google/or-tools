@@ -24,13 +24,15 @@
 #ifndef OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 #define OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 
-#include <functional>
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/types.h"
