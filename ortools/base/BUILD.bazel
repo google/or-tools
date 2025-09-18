@@ -167,12 +167,6 @@ cc_test(
 )
 
 cc_library(
-    name = "encodingutils",
-    hdrs = ["encodingutils.h"],
-    deps = [":base"],
-)
-
-cc_library(
     name = "flags",
     hdrs = ["flags.h"],
     deps = ["@abseil-cpp//absl/flags:flag"],
