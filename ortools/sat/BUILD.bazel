@@ -3706,6 +3706,10 @@ cc_test(
     name = "diffn_util_test",
     size = "small",
     srcs = ["diffn_util_test.cc"],
+    target_compatible_with = select({
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":2d_orthogonal_packing_testing",
         ":diffn_util",
