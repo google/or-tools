@@ -38,7 +38,6 @@ cc_library(
 
 cc_library(
     name = "array",
-    srcs = ["array_internal.h"],
     hdrs = ["array.h"],
     deps = ["@abseil-cpp//absl/utility"],
 )
