@@ -209,16 +209,18 @@ cc_library(
 
 cc_library(
     name = "gmock",
+    testonly = True,
     hdrs = ["gmock.h"],
     deps = [
         ":protocol-buffer-matchers",
-        ":status-matchers",
+        "@abseil-cpp//absl/status:status_matchers",
         "@googletest//:gtest",
     ],
 )
 
 cc_library(
     name = "gmock_main",
+    testonly = True,
     deps = [
         ":gmock",
         "@googletest//:gtest_main",
@@ -378,6 +380,7 @@ cc_library(
 
 cc_library(
     name = "parse_test_proto",
+    testonly = True,
     hdrs = ["parse_test_proto.h"],
     deps = [
         ":gmock",
@@ -461,18 +464,6 @@ cc_library(
         ":base",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "status-matchers",
-    hdrs = ["status-matchers.h"],
-    deps = [
-        ":base",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
     ],
 )
 
