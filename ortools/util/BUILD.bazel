@@ -167,11 +167,8 @@ cc_library(
     hdrs = ["stats.h"],
     deps = [
         "//ortools/base",
-        "//ortools/base:stl_util",
         "//ortools/base:timer",
-        "//ortools/base:types",
         "//ortools/port:sysinfo",
-        "//ortools/port:utf8",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",

@@ -44,12 +44,6 @@ cc_library(
 )
 
 cc_library(
-    name = "utf8",
-    hdrs = ["utf8.h"],
-    deps = ["//ortools/base:encodingutils"],
-)
-
-cc_library(
     name = "file",
     srcs = ["file.cc"],
     hdrs = ["file.h"],
