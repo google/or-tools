@@ -78,7 +78,5 @@ java_library(
         "@platforms//os:osx": ["//ortools/java/com/google/ortools:libjniortools.dylib"],
         "@platforms//os:windows": ["//ortools/java/com/google/ortools:jniortools.dll"],
     }),
-    deps = [
-        "@maven//:net_java_dev_jna_jna",
-    ],
+    deps = ["@maven//:net_java_dev_jna_jna"],
 )

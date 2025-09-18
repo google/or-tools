@@ -208,9 +208,7 @@ cc_library(
     srcs = ["status.cc"],
     hdrs = ["status.h"],
     copts = SAFE_FP_CODE,
-    deps = [
-        "//ortools/base",
-    ],
+    deps = ["//ortools/base"],
 )
 
 # Glop parameters.

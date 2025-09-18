@@ -27,9 +27,7 @@ java_wrap_cc(
         "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/linear_solver/wrappers:model_builder_helper",
-    ],
+    deps = ["//ortools/linear_solver/wrappers:model_builder_helper"],
 )
 
 java_junit5_test(

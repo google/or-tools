@@ -55,7 +55,5 @@ cc_library(
             "//ortools/linear_solver:use_glpk": [],
             "//conditions:default": ["@platforms//:incompatible"],
         }),
-    deps = [
-        "@glpk",
-    ],
+    deps = ["@glpk"],
 )

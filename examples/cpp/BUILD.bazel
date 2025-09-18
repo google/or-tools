@@ -18,9 +18,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 # Constraint solver examples.
 cc_binary(
     name = "binpacking_2d_sat",
-    srcs = [
-        "binpacking_2d_sat.cc",
-    ],
+    srcs = ["binpacking_2d_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:path",
@@ -37,9 +35,7 @@ cc_binary(
 cc_test(
     name = "binpacking_2d_sat_class01_instance2_test",
     size = "medium",
-    srcs = [
-        "binpacking_2d_sat.cc",
-    ],
+    srcs = ["binpacking_2d_sat.cc"],
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
     data = ["//ortools/packing/testdata:Class_01.2bp"],
     deps = [
@@ -90,9 +86,7 @@ cc_test(
     name = "costas_array_sat_model1_test",
     size = "medium",
     srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=1",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=1"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -108,9 +102,7 @@ cc_test(
     name = "costas_array_sat_model2_test",
     size = "medium",
     srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=2",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=2"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -126,9 +118,7 @@ cc_test(
     name = "costas_array_sat_model3_test",
     size = "medium",
     srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=3",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=3"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -219,9 +209,7 @@ cc_test(
 
 cc_binary(
     name = "knapsack_2d_sat",
-    srcs = [
-        "knapsack_2d_sat.cc",
-    ],
+    srcs = ["knapsack_2d_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/packing:binpacking_2d_parser",
@@ -236,9 +224,7 @@ cc_binary(
 cc_test(
     name = "knapsack_2d_sat_class01_instance2_test",
     size = "medium",
-    srcs = [
-        "knapsack_2d_sat.cc",
-    ],
+    srcs = ["knapsack_2d_sat.cc"],
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
     data = ["//ortools/packing/testdata:Class_01.2bp"],
     deps = [
@@ -253,9 +239,7 @@ cc_test(
 
 cc_binary(
     name = "jobshop_sat",
-    srcs = [
-        "jobshop_sat.cc",
-    ],
+    srcs = ["jobshop_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -273,9 +257,7 @@ cc_binary(
 cc_test(
     name = "jobshop_sat_ft06",
     size = "small",
-    srcs = [
-        "jobshop_sat.cc",
-    ],
+    srcs = ["jobshop_sat.cc"],
     args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
     data = ["//ortools/scheduling/testdata:ft06"],
     deps = [
@@ -321,9 +303,7 @@ cc_test(
 
 cc_binary(
     name = "multi_knapsack_sat",
-    srcs = [
-        "multi_knapsack_sat.cc",
-    ],
+    srcs = ["multi_knapsack_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -334,9 +314,7 @@ cc_binary(
 cc_test(
     name = "multi_knapsack_sat_test",
     size = "medium",
-    srcs = [
-        "multi_knapsack_sat.cc",
-    ],
+    srcs = ["multi_knapsack_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -346,9 +324,7 @@ cc_test(
 
 cc_binary(
     name = "shift_minimization_sat",
-    srcs = [
-        "shift_minimization_sat.cc",
-    ],
+    srcs = ["shift_minimization_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -364,9 +340,7 @@ cc_binary(
 cc_test(
     name = "shift_minimization_sat_test",
     size = "medium",
-    srcs = [
-        "shift_minimization_sat.cc",
-    ],
+    srcs = ["shift_minimization_sat.cc"],
     args = ["--input $(rootpath //examples/cpp:shift_minimization.dat)"],
     data = ["//examples/cpp:shift_minimization.dat"],
     deps = [
@@ -383,9 +357,7 @@ cc_test(
 
 cc_binary(
     name = "weighted_tardiness_sat",
-    srcs = [
-        "weighted_tardiness_sat.cc",
-    ],
+    srcs = ["weighted_tardiness_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -409,9 +381,7 @@ cc_binary(
 cc_test(
     name = "weighted_tardiness_sat_test",
     size = "medium",
-    srcs = [
-        "weighted_tardiness_sat.cc",
-    ],
+    srcs = ["weighted_tardiness_sat.cc"],
     args = ["--input $(rootpath //examples/cpp:wt40.txt)"],
     data = ["//examples/cpp:wt40.txt"],
     deps = [

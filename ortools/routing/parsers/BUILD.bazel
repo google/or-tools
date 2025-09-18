@@ -32,9 +32,7 @@ cc_library(
     name = "simple_graph",
     srcs = ["simple_graph.cc"],
     hdrs = ["simple_graph.h"],
-    deps = [
-        "@abseil-cpp//absl/hash",
-    ],
+    deps = ["@abseil-cpp//absl/hash"],
 )
 
 cc_test(

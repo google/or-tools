@@ -25,7 +25,5 @@ java_wrap_cc(
         "//ortools/util/java:absl_string_view.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/init",
-    ],
+    deps = ["//ortools/init"],
 )

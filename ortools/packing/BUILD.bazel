@@ -37,9 +37,7 @@ cc_library(
 
 cc_library(
     name = "arc_flow_solver",
-    srcs = [
-        "arc_flow_solver.cc",
-    ],
+    srcs = ["arc_flow_solver.cc"],
     hdrs = ["arc_flow_solver.h"],
     deps = [
         ":arc_flow_builder",
@@ -80,9 +78,7 @@ cc_library(
 
 cc_binary(
     name = "vector_bin_packing",
-    srcs = [
-        "vector_bin_packing_main.cc",
-    ],
+    srcs = ["vector_bin_packing_main.cc"],
     deps = [
         "//ortools/base",
         "//ortools/base:file",
@@ -99,9 +95,7 @@ cc_binary(
 cc_test(
     name = "vector_bin_packing_test",
     size = "medium",
-    srcs = [
-        "vector_bin_packing_main.cc",
-    ],
+    srcs = ["vector_bin_packing_main.cc"],
     args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
     data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
     deps = [
