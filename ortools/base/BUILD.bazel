@@ -88,11 +88,6 @@ cc_library(
 )
 
 cc_library(
-    name = "basictypes",
-    hdrs = ["basictypes.h"],
-)
-
-cc_library(
     name = "bitmap",
     srcs = ["bitmap.cc"],
     hdrs = ["bitmap.h"],
@@ -233,7 +228,6 @@ cc_library(
     hdrs = ["gzipfile.h"],
     deps = [
         ":base",
-        ":basictypes",
         ":file",
         ":path",
         "@abseil-cpp//absl/strings",
@@ -613,7 +607,6 @@ cc_library(
     srcs = ["zipfile.cc"],
     hdrs = ["zipfile.h"],
     deps = [
-        ":basictypes",
         ":file",
         ":path",
         ":stl_util",
