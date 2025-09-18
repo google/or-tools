@@ -71,7 +71,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
-        "//ortools/base:typeid",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/meta:type_traits",
