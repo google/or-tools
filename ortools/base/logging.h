@@ -28,7 +28,12 @@
 #include "absl/strings/str_cat.h"      // IWYU pragma: export
 #include "absl/strings/string_view.h"  // IWYU pragma: export
 #include "ortools/base/base_export.h"  // IWYU pragma: export
-#include "ortools/base/macros.h"       // IWYU pragma: export
+
+#ifdef NDEBUG
+const bool DEBUG_MODE = false;
+#else   // NDEBUG
+const bool DEBUG_MODE = true;
+#endif  // NDEBUG
 
 namespace operations_research {
 

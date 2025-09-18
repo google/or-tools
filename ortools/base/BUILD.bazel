@@ -285,7 +285,7 @@ cc_library(
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
     deps = [
-        ":macros",
+        ":base_export",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:usage",
@@ -299,12 +299,6 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
-)
-
-cc_library(
-    name = "macros",
-    hdrs = ["macros.h"],
-    deps = [":base_export"],
 )
 
 cc_library(
