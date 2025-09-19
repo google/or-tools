@@ -516,6 +516,10 @@ class SatSolver {
     clauses_propagator_->EnsureNewClauseIndexInitialized();
   }
 
+  void EnableChronologicalBacktracking(bool value) {
+    trail_->EnableChronologicalBacktracking(value);
+  }
+
  private:
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
@@ -564,8 +568,8 @@ class SatSolver {
   // Sets model_is_unsat_ to true and return false.
   bool SetModelUnsat();
 
-  // Returns the decision level of a given variable.
-  int DecisionLevel(BooleanVariable var) const {
+  // Returns the decision level at which the given variable is assigned.
+  int AssignmentLevel(BooleanVariable var) const {
     return trail_->Info(var).level;
   }
 
@@ -701,9 +705,9 @@ class SatSolver {
   // - There is no literal with a decision level of zero.
   bool IsConflictValid(absl::Span<const Literal> literals);
 
-  // Given the learned clause after a conflict, this computes the correct
-  // backtrack level to call Backtrack() with.
-  int ComputeBacktrackLevel(absl::Span<const Literal> literals);
+  // Given the learned clause after a conflict, this computes the level at which
+  // the new clause will propagate.
+  int ComputePropagationLevel(absl::Span<const Literal> literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
   // levels at which the literals of the clause were assigned. Note that we

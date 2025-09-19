@@ -134,6 +134,11 @@ class PresolveContext {
   int GetTrueLiteral();
   int GetFalseLiteral();
 
+  // Shortcuts to create enforced constraints.
+  ConstraintProto* AddEnforcedConstraint(
+      absl::Span<const int> enforcement_literals);
+  ConstraintProto* AddEnforcedConstraint(ConstraintProto* ct);
+
   // a => b.
   void AddImplication(int a, int b);
 
@@ -307,7 +312,7 @@ class PresolveContext {
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
-  void UpdateRuleStats(const std::string& name, int num_times = 1);
+  void UpdateRuleStats(std::string_view name, int num_times = 1);
 
   // Updates the constraints <-> variables graph. This needs to be called each
   // time a constraint is modified.

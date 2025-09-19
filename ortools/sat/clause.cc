@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -190,8 +191,20 @@ bool ClauseManager::PropagateOnFalse(Literal false_literal, Trail* trail) {
       // clause using this convention.
       literals[0] = other_watched_literal;
       literals[1] = false_literal;
+
+      int propagation_level = trail->CurrentDecisionLevel();
+      if (trail->ChronologicalBacktrackingEnabled()) {
+        const int size = it->clause->size();
+        propagation_level = trail->AssignmentLevel(false_literal);
+        for (int i = 2; i < size; ++i) {
+          propagation_level = std::max<int>(
+              propagation_level, trail->AssignmentLevel(literals[i]));
+        }
+      }
+
       reasons_[trail->Index()] = it->clause;
-      trail->Enqueue(other_watched_literal, propagator_id_);
+      trail->EnqueueAtLevel(other_watched_literal, propagator_id_,
+                            propagation_level);
       *new_it++ = *it;
     }
   }
@@ -213,6 +226,18 @@ absl::Span<const Literal> ClauseManager::Reason(const Trail& /*trail*/,
                                                 int trail_index,
                                                 int64_t /*conflict_id*/) const {
   return reasons_[trail_index]->PropagationReason();
+}
+
+void ClauseManager::Reimply(Trail* trail, int old_trail_index) {
+  const Literal literal = (*trail)[old_trail_index];
+  const int level = trail->AssignmentLevel(literal);
+  CHECK_LE(trail->Index(), old_trail_index);
+  reasons_[trail->Index()] = reasons_[old_trail_index];
+  DCHECK(absl::c_all_of(
+      reasons_[trail->Index()]->PropagationReason(),
+      [&](Literal l) { return trail->AssignmentLevel(l) <= level; }));
+  DCHECK_EQ(reasons_[trail->Index()]->FirstLiteral(), literal);
+  trail->EnqueueAtLevel(literal, propagator_id_, level);
 }
 
 SatClause* ClauseManager::ReasonClause(int trail_index) const {
@@ -272,9 +297,9 @@ bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
   if (num_literal_not_false == 1) {
     // To maintain the validity of the 2-watcher algorithm, we need to watch
     // the false literal with the highest decision level.
-    int max_level = trail->Info(literals[1].Variable()).level;
+    int max_level = trail->AssignmentLevel(literals[1]);
     for (int i = 2; i < size; ++i) {
-      const int level = trail->Info(literals[i].Variable()).level;
+      const int level = trail->AssignmentLevel(literals[i]);
       if (level > max_level) {
         max_level = level;
         std::swap(literals[1], literals[i]);
@@ -283,8 +308,12 @@ bool ClauseManager::AttachAndPropagate(SatClause* clause, Trail* trail) {
 
     // Propagates literals[0] if it is unassigned.
     if (!trail->Assignment().LiteralIsTrue(literals[0])) {
+      DCHECK(absl::c_all_of(clause->PropagationReason(), [&](Literal l) {
+        return trail->AssignmentLevel(l) <= max_level &&
+               trail->Assignment().LiteralIsFalse(l);
+      }));
       reasons_[trail->Index()] = clause;
-      trail->Enqueue(literals[0], propagator_id_);
+      trail->EnqueueAtLevel(literals[0], propagator_id_, max_level);
     }
   }
 
@@ -616,12 +645,12 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
         if (assignment.LiteralIsFalse(b)) return false;
       } else {
         reasons_[trail_->Index()] = a;
-        trail_->Enqueue(b, propagator_id_);
+        trail_->EnqueueAtLevel(b, propagator_id_, trail_->AssignmentLevel(a));
       }
     } else if (assignment.LiteralIsFalse(b)) {
       if (!assignment.LiteralIsAssigned(a)) {
         reasons_[trail_->Index()] = b;
-        trail_->Enqueue(a, propagator_id_);
+        trail_->EnqueueAtLevel(a, propagator_id_, trail_->AssignmentLevel(b));
       }
     }
   }
@@ -829,6 +858,8 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     DCHECK(assignment.LiteralIsTrue(true_literal));
     if (!implies_something[true_literal]) continue;
 
+    const int level = trail->AssignmentLevel(true_literal);
+
     // Note(user): This update is not exactly correct because in case of
     // conflict we don't inspect that much clauses. But doing ++num_inspections_
     // inside the loop does slow down the code by a few percent.
@@ -852,7 +883,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
       } else {
         // Propagation.
         reasons_[trail->Index()] = true_literal.Negated();
-        trail->FastEnqueue(literal);
+        trail->EnqueueAtLevel(literal, propagator_id_, level);
       }
     }
 
@@ -880,7 +911,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
         } else {
           // Propagation.
           reasons_[trail->Index()] = true_literal.Negated();
-          trail->FastEnqueue(literal.Negated());
+          trail->EnqueueAtLevel(literal.Negated(), propagator_id_, level);
         }
       }
     }
@@ -892,6 +923,13 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
 absl::Span<const Literal> BinaryImplicationGraph::Reason(
     const Trail& /*trail*/, int trail_index, int64_t /*conflict_id*/) const {
   return {&reasons_[trail_index], 1};
+}
+
+void BinaryImplicationGraph::Reimply(Trail* trail, int old_trail_index) {
+  const Literal literal = (*trail)[old_trail_index];
+  const int level = trail->AssignmentLevel(literal);
+  reasons_[trail->Index()] = reasons_[old_trail_index];
+  trail->EnqueueAtLevel(literal, propagator_id_, level);
 }
 
 // Here, we remove all the literal whose negation are implied by the negation of
@@ -1088,12 +1126,12 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
   int index = 1;
   for (int i = 1; i < conflict->size(); ++i) {
     const Literal lit = (*conflict)[i];
-    const int lit_level = trail.Info(lit.Variable()).level;
+    const int lit_level = trail.AssignmentLevel(lit);
     bool keep_literal = true;
     for (const Literal implied : implications_and_amos_[lit].literals()) {
       if (is_marked_[implied]) {
         DCHECK_LE(lit_level, trail.Info(implied.Variable()).level);
-        if (lit_level == trail.Info(implied.Variable()).level &&
+        if (lit_level == trail.AssignmentLevel(implied) &&
             is_simplified_[implied]) {
           continue;
         }

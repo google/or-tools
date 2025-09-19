@@ -20,6 +20,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -372,6 +373,9 @@ struct PbConstraintsEnqueueHelper {
     UpperBoundedLinearConstraint* pb_constraint;
   };
   std::vector<ReasonInfo> reasons;
+
+  // A temporary vector of tuples used in FillReason().
+  mutable std::vector<std::tuple<int, int, int>> temporary_tuples;
 };
 
 // This class contains half the propagation logic for a constraint of the form
@@ -444,7 +448,8 @@ class UpperBoundedLinearConstraint {
 
   // Provided that the literal with given source_trail_index was the one that
   // propagated the conflict or the literal we want to explain, then this will
-  // compute the reason.
+  // compute the reason. temporary_tuples is only used as a temporary storage to
+  // avoid allocating a vector at each call.
   //
   // Some properties of the reason:
   // - Literals of level 0 are removed.
@@ -460,6 +465,7 @@ class UpperBoundedLinearConstraint {
   void FillReason(const Trail& trail, int source_trail_index,
                   absl::Span<const Literal> enforcement_literals,
                   BooleanVariable propagated_variable,
+                  std::vector<std::tuple<int, int, int>>* temporary_tuples,
                   std::vector<Literal>* reason);
 
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is

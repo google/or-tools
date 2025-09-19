@@ -318,6 +318,12 @@ class Trail {
     SetCurrentPropagatorId(propagator_id);
     FastEnqueue(true_literal);
   }
+  void EnqueueAtLevel(Literal true_literal, int propagator_id, int level) {
+    Enqueue(true_literal, propagator_id);
+    if (use_chronological_backtracking_) {
+      info_[true_literal.Variable()].level = level;
+    }
+  }
 
   // Specific Enqueue() version for the search decision.
   void EnqueueSearchDecision(Literal true_literal) {
@@ -326,7 +332,7 @@ class Trail {
 
   // Specific Enqueue() version for a fixed variable.
   void EnqueueWithUnitReason(Literal true_literal) {
-    Enqueue(true_literal, AssignmentType::kUnitReason);
+    EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
   }
 
   // Some constraints propagate a lot of literals at once. In these cases, it is
@@ -336,6 +342,9 @@ class Trail {
                                BooleanVariable reference_var) {
     reference_var_with_same_reason_as_[true_literal.Variable()] = reference_var;
     Enqueue(true_literal, AssignmentType::kSameReasonAs);
+    if (ChronologicalBacktrackingEnabled()) {
+      info_[true_literal.Variable()].level = Info(reference_var).level;
+    }
   }
 
   // Enqueues the given literal using the current content of
@@ -357,6 +366,14 @@ class Trail {
     reasons_[var] = reasons_repository_[info_[var].trail_index];
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;
+    DCHECK_EQ(old_type_[var], AssignmentType::kCachedReason);
+    if (ChronologicalBacktrackingEnabled()) {
+      uint32_t level = 0;
+      for (const Literal literal : reasons_[var]) {
+        level = std::max(level, Info(literal.Variable()).level);
+      }
+      info_[var].level = level;
+    }
     return true;
   }
 
@@ -420,6 +437,9 @@ class Trail {
       assignment_.UnassignLiteral(trail_[i]);
     }
     current_info_.trail_index = target_trail_index;
+    if (use_chronological_backtracking_) {
+      ReimplyAll(index);
+    }
   }
 
   // Changes the decision level used by the next Enqueue().
@@ -466,6 +486,8 @@ class Trail {
     return info_[var];
   }
 
+  int AssignmentLevel(Literal lit) const { return Info(lit.Variable()).level; }
+
   // Print the current literals on the trail.
   std::string DebugString() const {
     std::string result;
@@ -481,7 +503,23 @@ class Trail {
     debug_checker_ = std::move(checker);
   }
 
+  bool ChronologicalBacktrackingEnabled() const {
+    return use_chronological_backtracking_;
+  }
+
+  void EnableChronologicalBacktracking(bool enable) {
+    CHECK_EQ(CurrentDecisionLevel(), 0);
+    use_chronological_backtracking_ = enable;
+  }
+
  private:
+  // Finds all literals between the current trail index and the given one
+  // assigned at the current level or lower, and re-enqueues them with the same
+  // reason.
+  void ReimplyAll(int old_trail_index);
+
+  bool use_chronological_backtracking_ = false;
+  int64_t num_reimplied_literals_ = 0;
   int64_t num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
@@ -568,6 +606,16 @@ class SatPropagator {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }
 
+  // Called if the implication at `old_trail_index` remains true after
+  // backtracking. If this propagator supports reimplication it should call
+  // `trail->EnqueueAtLevel`.
+  // This will be called after Untrail() when backtracking.
+  virtual void Reimply(Trail* /*trail*/, int /*old_trail_index*/) {
+    // It is inefficient and unexpected to call this on a propagator that
+    // doesn't support reimplication.
+    LOG(DFATAL) << "Reimply not implemented for " << name_ << ".";
+  }
+
   // Explains why the literal at given trail_index was propagated by returning a
   // reason for this propagation. This will only be called for literals that are
   // on the trail and were propagated by this class.
@@ -623,7 +671,7 @@ inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
     return false;
   }
   if (propagation_trail_index_ < trail.Index() &&
-      trail.Info(trail[propagation_trail_index_].Variable()).level !=
+      trail.Info(trail[propagation_trail_index_].Variable()).level >
           trail.CurrentDecisionLevel()) {
     LOG(INFO) << "Issue in '" << name_ << "':"
               << " propagation_trail_index_=" << propagation_trail_index_
@@ -713,6 +761,39 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
     CHECK(debug_checker_(clause));
   }
   return reasons_[var];
+}
+
+inline void Trail::ReimplyAll(int old_trail_index) {
+  for (int i = Index(); i < old_trail_index; ++i) {
+    const Literal literal = trail_[i];
+    const AssignmentInfo& info = Info(literal.Variable());
+    if (info.level > current_info_.level) continue;
+    CHECK_LE(Index(), i);
+    CHECK(!Assignment().VariableIsAssigned(literal.Variable()));
+    if (info.type == AssignmentType::kSameReasonAs) {
+      // The reference variable must already be re-implied at this level, so we
+      // can just re-enqueue it without having to tell the propagator.
+      DCHECK_EQ(Info(ReferenceVarWithSameReason(literal.Variable())).level,
+                info.level);
+      DCHECK_LT(
+          Info(ReferenceVarWithSameReason(literal.Variable())).trail_index,
+          Index());
+      EnqueueAtLevel(literal, AssignmentType::kSameReasonAs, info.level);
+    } else {
+      const int original_type = AssignmentType(literal.Variable());
+      if (original_type >= AssignmentType::kFirstFreePropagationId) {
+        propagators_[original_type]->Reimply(this, i);
+      } else if (original_type == AssignmentType::kCachedReason) {
+        std::swap(reasons_repository_[Index()], reasons_repository_[i]);
+        reasons_[literal.Variable()] = reasons_repository_[Index()];
+        EnqueueAtLevel(literal, original_type, info.level);
+      } else if (info.type == AssignmentType::kUnitReason || info.level == 0) {
+        CHECK(!Assignment().LiteralIsFalse(literal));
+        EnqueueAtLevel(literal, AssignmentType::kUnitReason, info.level);
+      }
+    }
+    num_reimplied_literals_ += assignment_.LiteralIsTrue(literal);
+  }
 }
 
 }  // namespace sat
