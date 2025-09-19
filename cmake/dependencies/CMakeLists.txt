@@ -110,6 +110,9 @@ if(BUILD_absl)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
   # We want Abseil to declare what C++ standard it was compiled with.
   set(ABSL_PROPAGATE_CXX_STD ON)
+  set(ABSL_BUILD_TEST_HELPERS ON)
+  set(ABSL_USE_EXTERNAL_GOOGLETEST ON)
+  set(ABSL_FIND_GOOGLETEST OFF)
   # We want Abseil to keep the INSTALL rules enabled, even though it is a
   # subproject. Otherwise the install rules in this project break.
   set(ABSL_ENABLE_INSTALL ON)
@@ -527,8 +530,8 @@ if(BUILD_googletest)
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/googletest-v1.17.0.patch"
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  set(INSTALL_GTEST OFF)
   set(GTEST_HAS_ABSL ON)
+  set(INSTALL_GTEST ON)
   FetchContent_MakeAvailable(googletest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")

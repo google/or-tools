@@ -1,5 +1,18 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1e7c856..a3c3dae 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -145,7 +145,7 @@ if((BUILD_TESTING AND ABSL_BUILD_TESTING) OR ABSL_BUILD_TEST_HELPERS)
+         add_library(GTest::gmock ALIAS gmock)
+         add_library(GTest::gmock_main ALIAS gmock_main)
+       else()
+-        message(FATAL_ERROR "ABSL_USE_EXTERNAL_GOOGLETEST is ON and ABSL_FIND_GOOGLETEST is OFF, which means that the top-level project must build the Google Test project. However, the target gtest was not found.")
++        message(WARNING "ABSL_USE_EXTERNAL_GOOGLETEST is ON and ABSL_FIND_GOOGLETEST is OFF, which means that the top-level project must build the Google Test project. However, the target gtest was not found.")
+       endif()
+     endif()
+   else()
 diff --git a/absl/flags/declare.h b/absl/flags/declare.h
-index 8d2a856e..a1540467 100644
+index 8d2a856..a154046 100644
 --- a/absl/flags/declare.h
 +++ b/absl/flags/declare.h
 @@ -59,10 +59,15 @@ ABSL_NAMESPACE_END
@@ -19,7 +32,7 @@ index 8d2a856e..a1540467 100644
  
  #endif  // ABSL_FLAGS_DECLARE_H_
 diff --git a/absl/log/CMakeLists.txt b/absl/log/CMakeLists.txt
-index eb19bec0..13b2d240 100644
+index eb19bec..13b2d24 100644
 --- a/absl/log/CMakeLists.txt
 +++ b/absl/log/CMakeLists.txt
 @@ -47,6 +47,7 @@ absl_cc_library(
@@ -31,7 +44,7 @@ index eb19bec0..13b2d240 100644
      absl::log_internal_nullguard
      absl::log_internal_nullstream
 diff --git a/absl/log/check_test_impl.inc b/absl/log/check_test_impl.inc
-index 5a7caf47..7bcedd40 100644
+index 5a7caf4..7bcedd4 100644
 --- a/absl/log/check_test_impl.inc
 +++ b/absl/log/check_test_impl.inc
 @@ -13,6 +13,8 @@
@@ -63,7 +76,7 @@ index 5a7caf47..7bcedd40 100644
  enum { CASE_A, CASE_B };
  
 diff --git a/absl/log/internal/BUILD.bazel b/absl/log/internal/BUILD.bazel
-index 1ba9d766..005861f9 100644
+index 1ba9d76..005861f 100644
 --- a/absl/log/internal/BUILD.bazel
 +++ b/absl/log/internal/BUILD.bazel
 @@ -82,6 +82,7 @@ cc_library(
@@ -75,7 +88,7 @@ index 1ba9d766..005861f9 100644
  )
  
 diff --git a/absl/log/internal/check_op.h b/absl/log/internal/check_op.h
-index 4554475d..c6078640 100644
+index 4554475..c607864 100644
 --- a/absl/log/internal/check_op.h
 +++ b/absl/log/internal/check_op.h
 @@ -40,6 +40,7 @@
