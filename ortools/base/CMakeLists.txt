@@ -58,6 +58,7 @@ ortools_cxx_library(
   LINK_LIBRARIES
     absl::log
     absl::strings
+    absl::status_matchers
     GTest::gtest
     GTest::gmock
     protobuf::libprotobuf
