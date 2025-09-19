@@ -88,7 +88,6 @@ target_sources(glop PRIVATE
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/sysinfo.cc
   ortools/base/sysinfo.h
   ortools/base/timer.h
@@ -307,7 +306,6 @@ install(FILES
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/recordio.h
   ortools/base/strong_int.h
   ortools/base/strong_vector.h
