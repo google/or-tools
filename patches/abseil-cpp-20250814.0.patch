@@ -1,3 +1,16 @@
+diff --git a/CMake/AbseilHelpers.cmake b/CMake/AbseilHelpers.cmake
+index 624a3c7..8d0493d 100644
+--- a/CMake/AbseilHelpers.cmake
++++ b/CMake/AbseilHelpers.cmake
+@@ -345,7 +345,7 @@ Cflags: -I\${includedir}${PC_CFLAGS}\n")
+     endif()
+   endif()
+ 
+-  if(ABSL_ENABLE_INSTALL)
++  if(ABSL_ENABLE_INSTALL AND NOT ABSL_CC_LIB_TESTONLY)
+     install(TARGETS ${_NAME} EXPORT ${PROJECT_NAME}Targets
+           RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+           LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index 1e7c856..a3c3dae 100644
 --- a/CMakeLists.txt
