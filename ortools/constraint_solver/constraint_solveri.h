@@ -431,7 +431,6 @@ class SmallRevBitSet {
 class RevBitSet {
  public:
   explicit RevBitSet(int64_t size);
-  ~RevBitSet();
 
   /// Sets the 'index' bit.
   void SetToOne(Solver* solver, int64_t index);
@@ -458,8 +457,8 @@ class RevBitSet {
   void Save(Solver* solver, int offset);
   const int64_t size_;
   const int64_t length_;
-  uint64_t* bits_;
-  uint64_t* stamps_;
+  std::unique_ptr<uint64_t[]> bits_;
+  std::unique_ptr<uint64_t[]> stamps_;
 };
 
 /// Matrix version of the RevBitSet class.

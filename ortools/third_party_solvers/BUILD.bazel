@@ -23,52 +23,37 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
-        "//ortools/base",
         "//ortools/base:logging",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "gurobi_environment",
-    srcs = [
-        "gurobi_environment.cc",
-    ],
-    hdrs = [
-        "gurobi_environment.h",
-    ],
+    srcs = ["gurobi_environment.cc"],
+    hdrs = ["gurobi_environment.h"],
     deps = [
         ":dynamic_library",
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:status_macros",
-        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:no_destructor",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/types:optional",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
 cc_library(
     name = "xpress_environment",
-    srcs = [
-        "xpress_environment.cc",
-    ],
-    hdrs = [
-        "xpress_environment.h",
-    ],
+    srcs = ["xpress_environment.cc"],
+    hdrs = ["xpress_environment.h"],
     deps = [
         ":dynamic_library",
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:status_macros",
-        "@abseil-cpp//absl/flags:flag",
+        "//ortools/base:base_export",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
-        "@abseil-cpp//absl/types:optional",
     ],
 )

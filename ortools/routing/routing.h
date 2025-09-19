@@ -1092,7 +1092,7 @@ class OR_DLL RoutingModel {
   /// Set the node visit types and incompatibilities/requirements between the
   /// types (see below).
   ///
-  /// NOTE: Before adding any incompatibilities and/or requirements on types
+  /// NOTE: Before adding any incompatibilities and/or requirements on types,
   /// all corresponding node types must have been set.
   ///
   /// The following enum is used to describe how a node with a given type 'T'

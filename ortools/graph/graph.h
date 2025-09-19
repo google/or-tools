@@ -636,6 +636,12 @@ struct GraphTraits {
 //   + (ArcIndexType + NodeIndexType) * arc_capacity().
 // - Has an efficient Tail() but need an extra NodeIndexType/arc memory for it.
 // - Never changes the initial arc index returned by AddArc().
+//
+// OutgoingArcs(), OutgoingArcsStartingFrom(), and the [] operator are all
+// deterministic. Specifically, for two graphs constructed from the same
+// sequence of node and arc creation calls, these iterators will return the
+// result in the same order).
+//
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
 class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;

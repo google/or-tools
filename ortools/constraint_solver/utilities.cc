@@ -65,13 +65,8 @@ RevBitSet::RevBitSet(int64_t size)
       bits_(new uint64_t[length_]),
       stamps_(new uint64_t[length_]) {
   DCHECK_GE(size, 1);
-  memset(bits_, 0, sizeof(*bits_) * length_);
-  memset(stamps_, 0, sizeof(*stamps_) * length_);
-}
-
-RevBitSet::~RevBitSet() {
-  delete[] bits_;
-  delete[] stamps_;
+  memset(bits_.get(), 0, sizeof(bits_[0]) * length_);
+  memset(stamps_.get(), 0, sizeof(stamps_[0]) * length_);
 }
 
 void RevBitSet::Save(Solver* const solver, int offset) {
@@ -107,7 +102,7 @@ void RevBitSet::SetToZero(Solver* const solver, int64_t index) {
 bool RevBitSet::IsSet(int64_t index) const {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
-  return IsBitSet64(bits_, index);
+  return IsBitSet64(bits_.get(), index);
 }
 
 int64_t RevBitSet::Cardinality() const {
@@ -146,7 +141,7 @@ bool RevBitSet::IsCardinalityOne() const {
 }
 
 int64_t RevBitSet::GetFirstBit(int start) const {
-  return LeastSignificantBitPosition64(bits_, start, size_ - 1);
+  return LeastSignificantBitPosition64(bits_.get(), start, size_ - 1);
 }
 
 void RevBitSet::ClearAll(Solver* const solver) {
@@ -189,7 +184,7 @@ int64_t RevBitMatrix::Cardinality(int row) const {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   const int start = row * columns_;
-  return BitCountRange64(bits_, start, start + columns_ - 1);
+  return BitCountRange64(bits_.get(), start, start + columns_ - 1);
 }
 
 bool RevBitMatrix::IsCardinalityOne(int row) const {
@@ -199,7 +194,7 @@ bool RevBitMatrix::IsCardinalityOne(int row) const {
 
 bool RevBitMatrix::IsCardinalityZero(int row) const {
   const int start = row * columns_;
-  return IsEmptyRange64(bits_, start, start + columns_ - 1);
+  return IsEmptyRange64(bits_.get(), start, start + columns_ - 1);
 }
 
 int64_t RevBitMatrix::GetFirstBit(int row, int start) const {
@@ -210,7 +205,7 @@ int64_t RevBitMatrix::GetFirstBit(int row, int start) const {
   const int beginning = row * columns_;
   const int end = beginning + columns_ - 1;
   int64_t position =
-      LeastSignificantBitPosition64(bits_, beginning + start, end);
+      LeastSignificantBitPosition64(bits_.get(), beginning + start, end);
   if (position == -1) {
     return -1;
   } else {
