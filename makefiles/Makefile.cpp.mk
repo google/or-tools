@@ -561,7 +561,7 @@ test_cc_cpp: \
  ARGS="--input=$(subst $S,/,$(OR_ROOT_FULL))/examples/cpp/shift_minimization.dat"
 
 rfz_%: cpp
-	$(INSTALL_DIR)$Sbin$Sfzn-ortools$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn
+	$(INSTALL_DIR)$Sbin$Sfzn-cp-sat$E $(OR_ROOT_FULL)/examples/flatzinc/$*.fzn
 
 ###############
 ##  Archive  ##
