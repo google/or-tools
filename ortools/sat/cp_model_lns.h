@@ -156,25 +156,25 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns the list of "active" variables.
   std::vector<int> ActiveVariables() const {
     std::vector<int> result;
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     result = active_variables_;
     return result;
   }
 
   int NumActiveVariables() const {
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     return active_variables_.size();
   }
 
   std::vector<int> ActiveObjectiveVariables() const {
     std::vector<int> result;
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     result = active_objective_variables_;
     return result;
   }
 
   bool DifficultyMeansFullNeighborhood(double difficulty) const {
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     const int target_size =
         static_cast<int>(std::ceil(difficulty * active_variables_.size()));
     return target_size == active_variables_.size();
@@ -470,7 +470,7 @@ class NeighborhoodGenerator {
   double GetUCBScore(int64_t total_num_calls) const;
 
   void AddSolveData(SolveData data) {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     solve_data_.push_back(data);
   }
 
@@ -484,19 +484,19 @@ class NeighborhoodGenerator {
 
   // Number of times this generator was called.
   int64_t num_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_calls_;
   }
 
   // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
   int64_t num_fully_solved_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_fully_solved_calls_;
   }
 
   // Out of num_calls(), how many improved the given solution.
   int64_t num_improving_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_improving_calls_;
   }
 
@@ -504,19 +504,19 @@ class NeighborhoodGenerator {
   // the best solution. Note that this count improvement to the best known
   // solution not the base one used to generate one neighborhood.
   int64_t num_consecutive_non_improving_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_consecutive_non_improving_calls_;
   }
 
   // The current difficulty of this generator
   double difficulty() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return difficulty_.value();
   }
 
   // The current time limit that the sub-solve should use on this generator.
   double deterministic_limit() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return deterministic_limit_;
   }
 

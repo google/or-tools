@@ -1879,6 +1879,7 @@ class CpModelTest(absltest.TestCase):
         model.maximize(x + 2 * y)
 
         solver = cp_model.CpSolver()
+        solver.parameters.num_workers = 1
         status = solver.solve(model)
         self.assertEqual(cp_model.OPTIMAL, status)
         self.assertEqual(solver.num_booleans, 0)

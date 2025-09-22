@@ -31,6 +31,7 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
+#include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -40,7 +41,6 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "ortools/algorithms/sparse_permutation.h"
@@ -49,6 +49,7 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
@@ -126,6 +127,14 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
   if (shared_response == nullptr) return;
   if (shared_response->DebugSolution().empty()) return;
 
+  if (!SolutionIsFeasible(model_proto, shared_response->DebugSolution())) {
+    // TODO(user): we should probably CHECK-fail.
+    SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
+               "Debug solution is not feasible.");
+    return;
+  }
+  SOLVER_LOG(model->GetOrCreate<SolverLogger>(), "Debug solution is feasible.");
+
   // Copy the proto values.
   DebugSolution& debug_sol = *model->GetOrCreate<DebugSolution>();
   debug_sol.proto_values = shared_response->DebugSolution();
@@ -161,40 +170,64 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
   // it in the sat solver for debugging too.
   if (boolean_solution.size() == debug_sol.proto_values.size() &&
       !model_proto.has_objective()) {
-    LOG(INFO) << "Loaded pure Boolean debugging solution.";
+    SOLVER_LOG(model->GetOrCreate<SolverLogger>(),
+               "Loaded pure Boolean debugging solution.");
     model->GetOrCreate<SatSolver>()->LoadDebugSolution(boolean_solution);
   }
 
   // The objective variable is usually not part of the proto, but it is still
   // nice to have it, so we recompute it here.
   auto* objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def != nullptr) {
-    const IntegerVariable objective_var = objective_def->objective_var;
-    const int64_t objective_value =
-        ComputeInnerObjective(model_proto.objective(), debug_sol.proto_values);
-    debug_sol.ivar_has_value[objective_var] = true;
-    debug_sol.ivar_has_value[NegationOf(objective_var)] = true;
-    debug_sol.ivar_values[objective_var] = objective_value;
-    debug_sol.ivar_values[NegationOf(objective_var)] = -objective_value;
+  if (objective_def != nullptr &&
+      objective_def->objective_var != kNoIntegerVariable) {
+    if (absl::c_all_of(objective_def->vars, [&debug_sol](IntegerVariable var) {
+          return var < debug_sol.ivar_has_value.end_index() &&
+                 debug_sol.ivar_has_value[var];
+        })) {
+      const IntegerVariable objective_var = objective_def->objective_var;
+      if (objective_var + 1 >= debug_sol.ivar_has_value.size()) {
+        debug_sol.ivar_has_value.resize(objective_var + 2, false);
+        debug_sol.ivar_values.resize(objective_var + 2, 0);
+      }
+      IntegerValue objective_value = 0;
+      for (int i = 0; i < objective_def->vars.size(); ++i) {
+        objective_value += objective_def->coeffs[i] *
+                           debug_sol.ivar_values[objective_def->vars[i]];
+      }
+      SOLVER_LOG(
+          model->GetOrCreate<SolverLogger>(),
+          absl::StrCat("Debug solution objective value: ",
+                       objective_def->ScaleIntegerObjective(objective_value)));
+      debug_sol.ivar_has_value[objective_var] = true;
+      debug_sol.ivar_has_value[NegationOf(objective_var)] = true;
+      debug_sol.ivar_values[objective_var] = objective_value;
+      debug_sol.ivar_values[NegationOf(objective_var)] = -objective_value;
+      debug_sol.inner_objective_value = objective_value;
+    }
   }
 
   // We also register a DEBUG callback to check our reasons.
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  const auto checker = [mapping = mapping, encoder, debug_sol, model](
+  const auto checker = [mapping = &mapping, encoder, model](
                            absl::Span<const Literal> clause,
                            absl::Span<const IntegerLiteral> integers) {
+    const DebugSolution* debug_sol = model->Get<DebugSolution>();
+    if (!debug_sol || debug_sol->proto_values.empty()) return true;
+
     bool is_satisfied = false;
     int num_bools = 0;
     int num_ints = 0;
-    std::vector<std::tuple<Literal, IntegerLiteral, int>> to_print;
+    std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>> to_print;
     for (const Literal l : clause) {
       // First case, this Boolean is mapped.
       {
         const int proto_var =
-            mapping.GetProtoVariableFromBooleanVariable(l.Variable());
+            mapping->GetProtoVariableFromBooleanVariable(l.Variable());
         if (proto_var != -1) {
-          to_print.push_back({l, IntegerLiteral(), proto_var});
-          if (debug_sol.proto_values[proto_var] == (l.IsPositive() ? 1 : 0)) {
+          CHECK_LT(proto_var, debug_sol->proto_values.size());
+          to_print.push_back(
+              {l, IntegerLiteral(), debug_sol->proto_values[proto_var]});
+          if (debug_sol->proto_values[proto_var] == (l.IsPositive() ? 1 : 0)) {
             is_satisfied = true;
             break;
           }
@@ -207,13 +240,13 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       // We can use any of them, so if one is false, we use this one.
       bool all_true = true;
       for (const IntegerLiteral associated : encoder->GetIntegerLiterals(l)) {
-        const int proto_var = mapping.GetProtoVariableFromIntegerVariable(
-            PositiveVariable(associated.var));
-        if (proto_var == -1) break;
-        int64_t value = debug_sol.proto_values[proto_var];
-        to_print.push_back({l, associated, proto_var});
+        if (associated.var >= debug_sol->ivar_has_value.end_index() ||
+            !debug_sol->ivar_has_value[associated.var]) {
+          break;
+        }
+        const IntegerValue value = debug_sol->ivar_values[associated.var];
+        to_print.push_back({l, associated, value});
 
-        if (!VariableIsPositive(associated.var)) value = -value;
         if (value < associated.bound) {
           ++num_ints;
           all_true = false;
@@ -226,20 +259,18 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       }
     }
     for (const IntegerLiteral i_lit : integers) {
-      const int proto_var = mapping.GetProtoVariableFromIntegerVariable(
-          PositiveVariable(i_lit.var));
-      if (proto_var == -1) {
+      DCHECK(!i_lit.IsAlwaysFalse());
+      if (i_lit.IsAlwaysTrue()) continue;
+      if (i_lit.var >= debug_sol->ivar_has_value.end_index() ||
+          !debug_sol->ivar_has_value[i_lit.var]) {
         is_satisfied = true;
         break;
       }
 
-      int64_t value = debug_sol.proto_values[proto_var];
-      to_print.push_back({Literal(kNoLiteralIndex), i_lit, proto_var});
+      const IntegerValue value = debug_sol->ivar_values[i_lit.var];
+      to_print.push_back({Literal(kNoLiteralIndex), i_lit, value});
 
-      if (!VariableIsPositive(i_lit.var)) value = -value;
-      // Note the sign is inversed, we cannot have all literal false and all
-      // integer literal true.
-      if (value >= i_lit.bound) {
+      if (value < i_lit.bound) {
         is_satisfied = true;
         break;
       }
@@ -250,9 +281,12 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
                 << model->GetOrCreate<SatSolver>()->CurrentDecisionLevel();
       LOG(INFO) << "literals (neg): " << clause;
       LOG(INFO) << "integer literals: " << integers;
-      for (const auto [l, i_lit, proto_var] : to_print) {
-        LOG(INFO) << l << " " << i_lit << " var=" << proto_var
-                  << " value_in_sol=" << debug_sol.proto_values[proto_var];
+      for (const auto [l, i_lit, solution_value] : to_print) {
+        const int proto_var =
+            mapping->GetProtoVariableFromIntegerVariable(i_lit.var);
+        LOG(INFO) << l << " " << i_lit << " var="
+                  << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
+                  << " value_in_sol=" << solution_value;
       }
     }
     return is_satisfied;
@@ -1596,9 +1630,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   search_heuristics->integer_completion_search =
       ConstructIntegerCompletionSearchStrategy(mapping->GetVariableMapping(),
                                                objective_var, model);
-  search_heuristics->fixed_search = ConstructFixedSearchStrategy(
-      search_heuristics->user_search, search_heuristics->heuristic_search,
-      search_heuristics->integer_completion_search, model);
+  ConstructFixedSearchStrategy(search_heuristics, model);
   if (VLOG_IS_ON(3)) {
     search_heuristics->fixed_search =
         InstrumentSearchStrategy(model_proto, mapping->GetVariableMapping(),

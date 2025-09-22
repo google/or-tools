@@ -63,13 +63,13 @@ bool ObjectiveShavingSolver::TaskIsAvailable() {
   if (shared_->SearchIsDone()) return false;
 
   // We only support one task at the time.
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return !task_in_flight_;
 }
 
 std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     stop_current_chunk_.store(false);
     task_in_flight_ = true;
     objective_lb_ = shared_->response->GetInnerObjectiveLowerBound();
@@ -92,13 +92,13 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
         }
         shared_->response->NewSolution(solution_values, Info());
       } else if (local_response.status() == CpSolverStatus::INFEASIBLE) {
-        absl::MutexLock mutex_lock(&mutex_);
+        absl::MutexLock mutex_lock(mutex_);
         shared_->response->UpdateInnerObjectiveBounds(
             Info(), current_objective_target_ub_ + 1, objective_ub_);
       }
     }
 
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     task_in_flight_ = false;
     if (local_sat_model_ != nullptr) {
       const double dtime = local_sat_model_->GetOrCreate<TimeLimit>()
@@ -110,7 +110,7 @@ std::function<void()> ObjectiveShavingSolver::GenerateTask(int64_t task_id) {
 }
 
 void ObjectiveShavingSolver::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (!task_in_flight_) return;
 
   // We are just waiting for the inner code to check the time limit or
@@ -172,7 +172,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   IntegerValue objective_lb;
   IntegerValue chosen_objective_ub;
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     objective_lb = objective_lb_;
     if (objective_ub_ - objective_lb <=
         local_params_.shaving_search_threshold()) {
@@ -240,7 +240,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping_);
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
       shared_->response->UpdateInnerObjectiveBounds(
           Info(), chosen_objective_ub + 1, kMaxIntegerValue);
       return false;
@@ -272,7 +272,7 @@ VariablesShavingSolver::VariablesShavingSolver(
     shared_bounds_id_ = shared_->bounds->RegisterNewId();
   }
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const IntegerVariableProto& var_proto : model_proto_.variables()) {
     var_domains_.push_back(ReadDomainFromProto(var_proto));
   }
@@ -284,7 +284,7 @@ VariablesShavingSolver::~VariablesShavingSolver() {
   if (!VLOG_IS_ON(1)) return;
   if (shared_ == nullptr || shared_->stats == nullptr) return;
   std::vector<std::pair<std::string, int64_t>> stats;
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   stats.push_back({"variable_shaving/num_vars_tried", num_vars_tried_});
   stats.push_back({"variable_shaving/num_vars_shaved", num_vars_shaved_});
   stats.push_back(
@@ -303,7 +303,7 @@ void VariablesShavingSolver::ProcessLocalResponse(
     if (local_response.status() == CpSolverStatus::INFEASIBLE) return;
     const int64_t obj_lb = local_response.inner_objective_lower_bound();
 
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     const Domain domain = var_domains_[state.var_index];
     if (state.minimize) {
       const int64_t lb = obj_lb;
@@ -328,7 +328,7 @@ void VariablesShavingSolver::ProcessLocalResponse(
   }
 
   if (local_response.status() != CpSolverStatus::INFEASIBLE) return;
-  absl::MutexLock lock(&mutex_);
+  absl::MutexLock lock(mutex_);
   const Domain domain = var_domains_[state.var_index];
   Domain new_domain = domain;
   ++num_infeasible_found_;
@@ -362,7 +362,7 @@ std::function<void()> VariablesShavingSolver::GenerateTask(int64_t task_id) {
       ProcessLocalResponse(local_response, state);
     }
 
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     const double dtime =
         local_sat_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime();
     AddTaskDeterministicDuration(dtime);
@@ -371,7 +371,7 @@ std::function<void()> VariablesShavingSolver::GenerateTask(int64_t task_id) {
 }
 
 void VariablesShavingSolver::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   // We are just waiting for the inner code to check the time limit or
   // to return nicely.
   if (stop_current_chunk_) return;
@@ -624,7 +624,7 @@ bool VariablesShavingSolver::ResetAndSolveModel(int64_t task_id, State* state,
 
   bool has_no_overlap_2d = false;
   {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     if (!FindNextVar(state)) return false;
     CopyModelConnectedToVar(state, local_model, shaving_proto,
                             &has_no_overlap_2d);

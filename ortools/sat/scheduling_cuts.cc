@@ -210,8 +210,8 @@ struct EnergyEvent {
   std::string DebugString() const {
     return absl::StrCat(
         "EnergyEvent(start_min = ", start_min, ", start_max = ", start_max,
-        ", end_min = ", end_min, ", end_max = ", end_max,
-        ", demand = ", demand.DebugString(), ", energy = ",
+        ", end_min = ", end_min, ", end_max = ", end_max, ", demand = ", demand,
+        ", energy = ",
         decomposed_energy.empty()
             ? "{}"
             : absl::StrCat(decomposed_energy.size(), " terms"),
@@ -1104,10 +1104,9 @@ std::string CompletionTimeEvent::DebugString() const {
   return absl::StrCat(
       "CompletionTimeEvent(task_index = ", task_index,
       ", start_min = ", start_min, ", start_max = ", start_max,
-      ", size_min = ", size_min, ", end = ", end.DebugString(),
-      ", lp_end = ", lp_end, ", size_min = ", size_min,
-      " demand_min = ", demand_min, ", demand_is_fixed = ", demand_is_fixed,
-      ", energy_min = ", energy_min,
+      ", size_min = ", size_min, ", end = ", end, ", lp_end = ", lp_end,
+      ", size_min = ", size_min, " demand_min = ", demand_min,
+      ", demand_is_fixed = ", demand_is_fixed, ", energy_min = ", energy_min,
       ", use_decomposed_energy_min = ", use_decomposed_energy_min,
       ", lifted = ", lifted, ", decomposed_energy = [",
       absl::StrJoin(decomposed_energy, ", ",

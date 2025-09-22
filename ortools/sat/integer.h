@@ -731,7 +731,8 @@ class IntegerTrail final : public SatPropagator {
   // simply do: return integer_trail_->ReportConflict(...);
   bool ReportConflict(absl::Span<const Literal> literal_reason,
                       absl::Span<const IntegerLiteral> integer_reason) {
-    DCHECK(ReasonIsValid(literal_reason, integer_reason));
+    DCHECK(ReasonIsValid(IntegerLiteral::FalseLiteral(), literal_reason,
+                         integer_reason));
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->assign(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, conflict);

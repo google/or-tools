@@ -128,8 +128,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
         ", x_start_max = ", x_start_max.value(),
         ", x_end_min = ", x_end_min.value(),
         ", x_end_max = ", x_end_max.value(), ", y_min = ", y_min.value(),
-        ", y_max = ", y_max.value(), ", y_size = ", y_size.DebugString(),
-        ", energy = ",
+        ", y_max = ", y_max.value(), ", y_size = ", y_size, ", energy = ",
         decomposed_energy.empty()
             ? "{}"
             : absl::StrCat(decomposed_energy.size(), " terms"),
@@ -373,15 +372,14 @@ DiffnCtEvent::DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper)
     : DiffnBaseEvent(t, x_helper) {}
 
 std::string DiffnCtEvent::DebugString() const {
-  return absl::StrCat("DiffnCtEvent(x_end = ", x_end.DebugString(),
-                      ", x_start_min = ", x_start_min.value(),
-                      ", x_start_max = ", x_start_max.value(),
-                      ", x_size_min = ", x_size_min.value(),
-                      ", x_lp_end = ", x_lp_end, ", y_min = ", y_min.value(),
-                      ", y_max = ", y_max.value(),
-                      ", y_size_min = ", y_size_min.value(),
-                      ", energy_min = ", energy_min.value(),
-                      ", use_energy = ", use_energy, ", lifted = ", lifted);
+  return absl::StrCat(
+      "DiffnCtEvent(x_end = ", x_end, ", x_start_min = ", x_start_min.value(),
+      ", x_start_max = ", x_start_max.value(),
+      ", x_size_min = ", x_size_min.value(), ", x_lp_end = ", x_lp_end,
+      ", y_min = ", y_min.value(), ", y_max = ", y_max.value(),
+      ", y_size_min = ", y_size_min.value(),
+      ", energy_min = ", energy_min.value(), ", use_energy = ", use_energy,
+      ", lifted = ", lifted);
 }
 
 // We generate the cut from the Smith's rule from:

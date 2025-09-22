@@ -1388,12 +1388,21 @@ bool IntegerTrail::ReasonIsValid(
 
   std::vector<Literal> clause;
   clause.assign(literal_reason.begin(), literal_reason.end());
-  std::vector<IntegerLiteral> lits;
-  lits.assign(integer_reason.begin(), integer_reason.end());
-  MergeReasonInto(lits, &clause);
-  if (!debug_checker_(clause, {i_lit})) {
+  std::vector<IntegerLiteral> lits = {integer_reason.begin(),
+                                      integer_reason.end()};
+  const IntegerLiteral negated_i_lit =
+      i_lit.IsAlwaysFalse() ? IntegerLiteral::TrueLiteral() : i_lit.Negated();
+  lits.push_back(negated_i_lit);
+  if (!debug_checker_(clause, lits)) {
     LOG(INFO) << "Invalid reason for loaded solution: " << i_lit << " "
               << literal_reason << " " << integer_reason;
+    return false;
+  }
+  lits.pop_back();
+  MergeReasonInto(lits, &clause);
+  if (!debug_checker_(clause, {negated_i_lit})) {
+    LOG(INFO) << "Invalid reason for loaded solution after merging: " << i_lit
+              << " " << literal_reason << " " << integer_reason;
     return false;
   }
   return true;

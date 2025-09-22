@@ -297,8 +297,10 @@ UnassignedVarWithLowestMinAtItsMinHeuristic(
 
 std::function<BooleanOrIntegerLiteral()> SequentialSearch(
     std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics) {
-  for (const auto& h : heuristics) {
-    CHECK(h != nullptr);
+  if (DEBUG_MODE) {
+    for (const auto& h : heuristics) {
+      DCHECK(h != nullptr);
+    }
   }
   return [heuristics]() {
     for (const auto& h : heuristics) {
@@ -994,19 +996,16 @@ std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
     weights.push_back(1);
   }
 
-  // Add heuristic search if present.
+  // Add model based heuristic search if present.
   if (heuristics.heuristic_search != nullptr) {
     policies.push_back(
         SequentialSearch({heuristics.heuristic_search, sat_policy,
                           heuristics.integer_completion_search}));
     weights.push_back(1);
-  }
-
-  if (policies.size() == 1) {
-    CHECK(heuristics.fixed_search != nullptr);
-    policies.push_back(
-        SequentialSearch({heuristics.fixed_search, sat_policy,
-                          heuristics.integer_completion_search}));
+  } else if (heuristics.user_search == nullptr) {
+    // Add pseudo cost search if nothing else is present.
+    policies.push_back(SequentialSearch(
+        {PseudoCost(model), sat_policy, heuristics.integer_completion_search}));
     weights.push_back(1);
   }
 

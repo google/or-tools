@@ -1064,7 +1064,7 @@ class FullProblemSolver : public SubSolver {
     // parameter provided by the user).
     if (shared_->SearchIsDone()) return false;
 
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     if (previous_task_is_completed_) {
       if (solving_first_chunk_) return true;
       if (split_in_chunks_) return true;
@@ -1074,7 +1074,7 @@ class FullProblemSolver : public SubSolver {
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     {
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
       previous_task_is_completed_ = false;
     }
     return [this]() {
@@ -1132,7 +1132,7 @@ class FullProblemSolver : public SubSolver {
         solving_first_chunk_ = false;
 
         // Make sure we count the loading/hint dtime.
-        absl::MutexLock mutex_lock(&mutex_);
+        absl::MutexLock mutex_lock(mutex_);
         dtime_since_last_sync_ +=
             time_limit->GetElapsedDeterministicTime() - init_dtime;
 
@@ -1155,7 +1155,7 @@ class FullProblemSolver : public SubSolver {
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
       SolveLoadedCpModel(shared_->model_proto, &local_model_);
 
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
       previous_task_is_completed_ = true;
       dtime_since_last_sync_ +=
           time_limit->GetElapsedDeterministicTime() - saved_dtime;
@@ -1166,7 +1166,7 @@ class FullProblemSolver : public SubSolver {
   // happen here (bound sharing, RINS neighborhood, objective). Fix that so we
   // can have a deterministic parallel mode.
   void Synchronize() override {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     AddTaskDeterministicDuration(dtime_since_last_sync_);
     shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
     dtime_since_last_sync_ = 0.0;
@@ -1211,18 +1211,18 @@ class FeasibilityPumpSolver : public SubSolver {
 
   bool TaskIsAvailable() override {
     if (shared_->SearchIsDone()) return false;
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return previous_task_is_completed_;
   }
 
   std::function<void()> GenerateTask(int64_t /*task_id*/) override {
     {
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
       previous_task_is_completed_ = false;
     }
     return [this]() {
       {
-        absl::MutexLock mutex_lock(&mutex_);
+        absl::MutexLock mutex_lock(mutex_);
         if (solving_first_chunk_) {
           LoadFeasibilityPump(shared_->model_proto, local_model_.get());
           // No new task will be scheduled for this worker if there is no
@@ -1243,7 +1243,7 @@ class FeasibilityPumpSolver : public SubSolver {
       }
 
       {
-        absl::MutexLock mutex_lock(&mutex_);
+        absl::MutexLock mutex_lock(mutex_);
         dtime_since_last_sync_ +=
             time_limit->GetElapsedDeterministicTime() - saved_dtime;
       }
@@ -1254,13 +1254,13 @@ class FeasibilityPumpSolver : public SubSolver {
         return;
       }
 
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
       previous_task_is_completed_ = true;
     };
   }
 
   void Synchronize() override {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     AddTaskDeterministicDuration(dtime_since_last_sync_);
     shared_->time_limit->AdvanceDeterministicTime(dtime_since_last_sync_);
     dtime_since_last_sync_ = 0.0;
@@ -1393,7 +1393,7 @@ class LnsSolver : public SubSolver {
       // Presolve and solve the LNS fragment.
       size_t buffer_size;
       {
-        absl::MutexLock l(&next_arena_size_mutex_);
+        absl::MutexLock l(next_arena_size_mutex_);
         buffer_size = next_arena_size_;
       }
       google::protobuf::Arena arena(
@@ -1687,7 +1687,7 @@ class LnsSolver : public SubSolver {
             ", p:", fully_solved_proportion, "]");
       }
       {
-        absl::MutexLock l(&next_arena_size_mutex_);
+        absl::MutexLock l(next_arena_size_mutex_);
         next_arena_size_ = arena.SpaceUsed();
       }
     };

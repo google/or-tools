@@ -148,6 +148,20 @@ int PresolveContext::GetTrueLiteral() {
 
 int PresolveContext::GetFalseLiteral() { return NegatedRef(GetTrueLiteral()); }
 
+ConstraintProto* PresolveContext::AddEnforcedConstraint(
+    absl::Span<const int> enforcement_literals) {
+  ConstraintProto* const new_ct = working_model->add_constraints();
+  *new_ct->mutable_enforcement_literal() = {enforcement_literals.begin(),
+                                            enforcement_literals.end()};
+  return new_ct;
+}
+
+ConstraintProto* PresolveContext::AddEnforcedConstraint(ConstraintProto* ct) {
+  ConstraintProto* const new_ct = working_model->add_constraints();
+  *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
+  return new_ct;
+}
+
 // a => b.
 void PresolveContext::AddImplication(int a, int b) {
   if (a == b) return;
@@ -618,7 +632,9 @@ bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
   return contains_one_free_literal;
 }
 
-void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
+void PresolveContext::UpdateRuleStats(std::string_view name, int num_times) {
+  DCHECK(!name.empty());
+
   // Hack: we don't want to count TODO rules as this is used to decide if
   // we loop again.
   const bool is_todo = name.size() >= 4 && name.substr(0, 4) == "TODO";

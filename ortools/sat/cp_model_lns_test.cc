@@ -568,7 +568,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
 
   // No change since not synchronized.
   {
-    absl::ReaderMutexLock lock(&helper.graph_mutex_);
+    absl::ReaderMutexLock lock(helper.graph_mutex_);
     EXPECT_TRUE(helper.IsActive(0));
   }
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),
@@ -577,7 +577,7 @@ TEST(NeighborhoodGeneratorHelperTest, BoundAreUpdatedOnSynchronize) {
 
   // New bound are properly there.
   {
-    absl::ReaderMutexLock lock(&helper.graph_mutex_);
+    absl::ReaderMutexLock lock(helper.graph_mutex_);
     EXPECT_FALSE(helper.IsActive(0));
   }
   EXPECT_EQ(ReadDomainFromProto(helper.FullNeighborhood().delta.variables(0)),

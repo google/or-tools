@@ -17,7 +17,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
@@ -335,11 +334,12 @@ TEST(UpperBoundedLinearConstraintTest, CompactReason) {
   EXPECT_EQ(trail.Index(), 4);
   EXPECT_EQ(trail[3], Literal(-4));
 
-  // -1 do not need to be in the reason since {-3, -2} propagates exactly
+  // -2 do not need to be in the reason since {-3, -1} propagates exactly
   // the same way.
   cst.FillReason(trail, source_trail_index, /*enforcement_literals=*/{},
-                 Literal(-4).Variable(), &helper.conflict);
-  EXPECT_THAT(helper.conflict, LiteralsAre(-3, -2));
+                 Literal(-4).Variable(), &helper.temporary_tuples,
+                 &helper.conflict);
+  EXPECT_THAT(helper.conflict, LiteralsAre(-3, -1));
 }
 
 TEST(UpperBoundedLinearConstraintTest, ConflictAfterEnforcementStatusChange) {
@@ -375,9 +375,9 @@ TEST(UpperBoundedLinearConstraintTest, ConflictAfterEnforcementStatusChange) {
                              EnforcementStatus::IS_ENFORCED,
                              enforcement_literals, &helper));
 
-  // -1 do not need to be in the reason since {-4, -3, -2} propagates exactly
+  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
   // the same way.
-  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -3, -2, -4));
+  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -4, -3, -1));
 }
 
 TEST(UpperBoundedLinearConstraintTest, PropagateEnforcementAfterStatusChange) {
@@ -415,12 +415,13 @@ TEST(UpperBoundedLinearConstraintTest, PropagateEnforcementAfterStatusChange) {
   EXPECT_EQ(trail.Index(), 6);
   EXPECT_EQ(trail[5], Literal(-8));
 
-  // -1 do not need to be in the reason since {-4, -3, -2} propagates exactly
+  // -2 do not need to be in the reason since {-4, -3, -1} propagates exactly
   // the same way.
   const PbConstraintsEnqueueHelper::ReasonInfo& reason = helper.reasons[5];
   cst.FillReason(trail, reason.source_trail_index, enforcement_literals,
-                 Literal(-8).Variable(), &helper.conflict);
-  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -3, -2, -4));
+                 Literal(-8).Variable(), &helper.temporary_tuples,
+                 &helper.conflict);
+  EXPECT_THAT(helper.conflict, LiteralsAre(-9, -4, -3, -1));
 }
 
 TEST(UpperBoundedLinearConstraintTest,
@@ -457,8 +458,9 @@ TEST(UpperBoundedLinearConstraintTest,
 
   const PbConstraintsEnqueueHelper::ReasonInfo& reason = helper.reasons[2];
   cst.FillReason(trail, reason.source_trail_index, enforcement_literals,
-                 Literal(-9).Variable(), &helper.conflict);
-  EXPECT_THAT(helper.conflict, LiteralsAre(-1, -2));
+                 Literal(-9).Variable(), &helper.temporary_tuples,
+                 &helper.conflict);
+  EXPECT_THAT(helper.conflict, LiteralsAre(-2, -1));
 }
 
 TEST(PbConstraintsTest, Duplicates) {
@@ -511,8 +513,8 @@ TEST(PbConstraintsTest, BasicPropagation) {
 
   // Test the reason for each assignment.
   EXPECT_THAT(trail.Reason(Literal(-2).Variable()), LiteralsAre(+1));
-  EXPECT_THAT(trail.Reason(Literal(-3).Variable()), LiteralsAre(+2, +1));
-  EXPECT_THAT(trail.Reason(Literal(-4).Variable()), LiteralsAre(+3, +2, +1));
+  EXPECT_THAT(trail.Reason(Literal(-3).Variable()), LiteralsAre(+1, +2));
+  EXPECT_THAT(trail.Reason(Literal(-4).Variable()), LiteralsAre(+1, +2, +3));
 
   // Untrail, and repropagate everything.
   csts.Untrail(trail, 0);

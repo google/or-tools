@@ -2255,9 +2255,9 @@ TEST(CreateStronglyConnectedGraphCutGeneratorTest, AnotherExample) {
   // However as an heuristic, we will wait another round to generate {1, 2, 3}.
   ASSERT_EQ(manager.num_cuts(), 2);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
-              ::testing::StartsWith("1 <= 1*X3 1*X6"));
+              ::testing::StartsWith("1 <= 1*I3 1*I6"));
   EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
-              ::testing::StartsWith("1 <= 1*X1 1*X3"));
+              ::testing::StartsWith("1 <= 1*I1 1*I3"));
 }
 
 TEST(GenerateInterestingSubsetsTest, BasicExample) {
@@ -2333,9 +2333,9 @@ TEST(CreateFlowCutGeneratorTest, BasicExample) {
   // The sets {2} and {3} will generate incoming flow cuts.
   EXPECT_EQ(manager.num_cuts(), 2);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
-              ::testing::StartsWith("1 <= 1*X2"));
+              ::testing::StartsWith("1 <= 1*I2"));
   EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
-              ::testing::StartsWith("1 <= 1*X1 1*X3"));
+              ::testing::StartsWith("1 <= 1*I1 1*I3"));
 }
 
 TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
@@ -2377,7 +2377,7 @@ TEST(CreateFlowCutGeneratorTest, WithMinusOneArcs) {
   // We artificially put bad LP values so that {1} generate outgoing flow cut.
   EXPECT_EQ(manager.num_cuts(), 1);
   EXPECT_THAT(manager.AllConstraints().front().constraint.DebugString(),
-              ::testing::StartsWith("1 <= 1*X1 1*X2"));
+              ::testing::StartsWith("1 <= 1*I1 1*I2"));
 }
 
 TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
@@ -2451,7 +2451,7 @@ TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
 
   // Arcs with ID 2 (1->2) and ID 4 (2->3) should be in the cut.
   EXPECT_THAT(manager.AllConstraints().back().constraint.DebugString(),
-              ::testing::StartsWith("0 <= 1*X2 1*X4 <= 1"));
+              ::testing::StartsWith("0 <= 1*I2 1*I4 <= 1"));
 }
 
 }  // namespace

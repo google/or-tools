@@ -377,7 +377,6 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     }
 
     heuristics.push_back(SchedulingSearchHeuristic(model));
-    CHECK(!heuristics.empty());
     return SequentialSearch(std::move(heuristics));
   }
   return nullptr;
@@ -428,26 +427,22 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
   return FollowHint(vars, values, model);
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    std::function<BooleanOrIntegerLiteral()> user_search,
-    std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion, Model* model) {
+void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model) {
   // We start by the user specified heuristic.
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
-  if (user_search != nullptr) {
-    heuristics.push_back(user_search);
+  if (h->user_search != nullptr) {
+    heuristics.push_back(h->user_search);
   }
-  if (heuristic_search != nullptr) {
-    heuristics.push_back(heuristic_search);
-  }
-  if (heuristics.empty()) {
+  if (h->heuristic_search != nullptr) {
+    heuristics.push_back(h->heuristic_search);
+  } else {
     heuristics.push_back(PseudoCost(model));
   }
-  if (integer_completion != nullptr) {
-    heuristics.push_back(integer_completion);
+  if (h->integer_completion_search != nullptr) {
+    heuristics.push_back(h->integer_completion_search);
   }
 
-  return SequentialSearch(std::move(heuristics));
+  h->fixed_search = SequentialSearch(std::move(heuristics));
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(

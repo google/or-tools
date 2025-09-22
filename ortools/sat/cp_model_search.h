@@ -89,12 +89,9 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
     const CpModelProto& cp_model_proto, CpModelMapping* mapping, Model* model);
 
 // Constructs our "fixed" search strategy which start with
-// ConstructUserSearchStrategy() but is completed by a couple of automatic
-// heuristics.
-std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    std::function<BooleanOrIntegerLiteral()> user_search,
-    std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion, Model* model);
+// ConstructUserSearchStrategy() if present, but is completed by a couple of
+// automatic heuristics.
+void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model);
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented

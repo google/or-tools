@@ -299,7 +299,8 @@ class CpModelPresolver {
   void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
-  void MergeNoOverlapConstraints();
+  bool MergeNoOverlapConstraints();
+  bool MergeNoOverlap2DConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the
@@ -347,8 +348,8 @@ class CpModelPresolver {
   bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
-  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(
-      ConstraintProto* ct, const std::string& reason = "");
+  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
+                                                  std::string_view reason);
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;

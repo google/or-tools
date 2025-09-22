@@ -14,6 +14,7 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -27,10 +28,17 @@
 #include "ortools/port/os.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/cp_model_test_utils.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/drat_checker.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -5449,6 +5457,42 @@ TEST(PresolveCpModelTest, SolutionCrushBug) {
   params.set_cp_model_presolve(true);
   response = SolveWithParameters(cp_model, params);
   EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+}
+
+TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
+  int num_infeasible = 0;
+  for (int i = 0; i < 100; ++i) {
+    Model model;
+    SatSolver& solver = *model.GetOrCreate<SatSolver>();
+    auto drat_proof_handler = std::make_unique<DratProofHandler>();
+    solver.SetDratProofHandler(drat_proof_handler.get());
+
+    const int kNumVariables = 100;
+    CpModelProto model_proto = Random3SatProblem(kNumVariables);
+
+    drat_proof_handler->SetNumVariables(model_proto.variables_size());
+    for (const ConstraintProto& ct : model_proto.constraints()) {
+      if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
+        std::vector<Literal> clause;
+        for (const int ref : ct.bool_or().literals()) {
+          clause.push_back(
+              Literal(BooleanVariable(PositiveRef(ref)), RefIsPositive(ref)));
+        }
+        drat_proof_handler->AddProblemClause(clause);
+      }
+    }
+
+    LoadCpModel(model_proto, &model);
+    SolveLoadedCpModel(model_proto, &model);
+    if (model.GetOrCreate<SharedResponseManager>()->GetResponse().status() ==
+        CpSolverStatus::INFEASIBLE) {
+      ++num_infeasible;
+      EXPECT_EQ(drat_proof_handler->Check(/*max_time_in_seconds=*/60),
+                DratChecker::Status::VALID);
+    }
+  }
+  LOG(INFO) << "num_infeasible: " << num_infeasible;
+  EXPECT_GT(num_infeasible, 0);
 }
 
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS

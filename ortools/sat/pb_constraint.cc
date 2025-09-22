@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
@@ -599,7 +598,8 @@ bool UpperBoundedLinearConstraint::Propagate(
     } else {
       // Conflict.
       FillReason(*trail, trail_index, enforcement_literals,
-                 /*propagated_variable=*/kNoBooleanVariable, &helper->conflict);
+                 /*propagated_variable=*/kNoBooleanVariable,
+                 &helper->temporary_tuples, &helper->conflict);
       return false;
     }
   }
@@ -614,11 +614,14 @@ bool UpperBoundedLinearConstraint::Propagate(
   for (int i = starts_[index_ + 1]; i < already_propagated_end_; ++i) {
     if (trail->Assignment().LiteralIsFalse(literals_[i])) continue;
     if (trail->Assignment().LiteralIsTrue(literals_[i])) {
-      if (trail->Info(literals_[i].Variable()).trail_index > trail_index) {
+      const int literal_trail_index =
+          trail->Info(literals_[i].Variable()).trail_index;
+      if (literal_trail_index > trail_index) {
         if (enforcement_status == EnforcementStatus::IS_ENFORCED) {
           // Conflict.
           FillReason(*trail, trail_index, enforcement_literals,
-                     literals_[i].Variable(), &helper->conflict);
+                     literals_[i].Variable(), &helper->temporary_tuples,
+                     &helper->conflict);
           helper->conflict.push_back(literals_[i].Negated());
           Update(slack, threshold);
           return false;
@@ -626,7 +629,8 @@ bool UpperBoundedLinearConstraint::Propagate(
           // Propagate the unique unassigned enforcement literal.
           for (const Literal literal : enforcement_literals) {
             if (!trail->Assignment().LiteralIsAssigned(literal)) {
-              helper->Enqueue(literal.Negated(), trail_index, this, trail);
+              helper->Enqueue(literal.Negated(), literal_trail_index, this,
+                              trail);
               break;
             }
           }
@@ -659,7 +663,9 @@ bool UpperBoundedLinearConstraint::Propagate(
 void UpperBoundedLinearConstraint::FillReason(
     const Trail& trail, int source_trail_index,
     absl::Span<const Literal> enforcement_literals,
-    BooleanVariable propagated_variable, std::vector<Literal>* reason) {
+    BooleanVariable propagated_variable,
+    std::vector<std::tuple<int, int, int>>* temporary_tuples,
+    std::vector<Literal>* reason) {
   bool enforcement_propagation = false;
   reason->clear();
   for (const Literal literal : enforcement_literals) {
@@ -669,29 +675,36 @@ void UpperBoundedLinearConstraint::FillReason(
       enforcement_propagation = true;
     }
   }
-  const int enforcement_reason_size = reason->size();
-
-  Coefficient slack = rhs_;
-  Coefficient propagated_variable_coefficient(0);
-  Literal extra_literal_reason;
-  // Optimization: This will be set to the index of the last literal in the
-  // reason (they are sorted in decreasing coefficient order).
-  int last_i = 0;
-  int last_coeff_index = 0;
 
   // propagated_variable is set to kNoBooleanVariable when the constraint
   // becomes enforced when the slack is already negative. In this case, or when
-  // the enforcement can be propagated, the reason must include all the terms
-  // explaining the negative slack. The code below does that (while the 'else'
-  // part computes a reason for propagated_variable). extra_literal_reason is
-  // the literal which makes the slack become negative.
-  if (enforcement_propagation || propagated_variable == kNoBooleanVariable) {
+  // the enforcement can be propagated, the reason must include the literal
+  // which makes the slack become negative, called the "extra literal reason".
+  const bool add_extra_literal_reason =
+      enforcement_propagation || propagated_variable == kNoBooleanVariable;
+
+  // Optimization for an "at most one" constraint. Note that the
+  // source_trail_index set by InitializeRhs() is ok in this case.
+  if (rhs_ == 1 && !add_extra_literal_reason) {
+    reason->push_back(trail[source_trail_index].Negated());
+    return;
+  }
+
+  // Compute all the literals of the constraint that were assigned to true at
+  // the time of the propagation, sorted by trail index.
+  // Vector of (trail_index, literal_index, coeff_index) tuples.
+  std::vector<std::tuple<int, int, int>>& true_literals = *temporary_tuples;
+  true_literals.clear();
+  Coefficient propagated_variable_coefficient(0);
+  {
     int literal_index = 0;
     int coeff_index = 0;
-    // Vector of (trail_index, literal_index, coeff_index) tuples.
-    std::vector<std::tuple<int, int, int>> true_literals;
     for (Literal literal : literals_) {
-      if (trail.Assignment().LiteralIsTrue(literal)) {
+      if (literal.Variable() == propagated_variable) {
+        propagated_variable_coefficient = coeffs_[coeff_index];
+      }
+      if (trail.Assignment().LiteralIsTrue(literal) &&
+          trail.Info(literal.Variable()).trail_index <= source_trail_index) {
         true_literals.push_back({trail.Info(literal.Variable()).trail_index,
                                  literal_index, coeff_index});
       }
@@ -699,101 +712,54 @@ void UpperBoundedLinearConstraint::FillReason(
       if (literal_index == starts_[coeff_index + 1]) ++coeff_index;
     }
     std::sort(true_literals.begin(), true_literals.end());
-    // Vector of (literal_index, coeff_index) pairs.
-    std::vector<std::pair<int, int>> reason_indices;
-    for (const auto& [trail_index, literal_index, coeff_index] :
-         true_literals) {
-      const Literal literal = literals_[literal_index];
-      const Coefficient coeff = coeffs_[coeff_index];
-      if (coeff > slack) {
-        propagated_variable_coefficient = coeff;
-        // This literal is added to the reason at the very end (see the cleanup
-        // below) because the code minimizing the reason assumes that it is not
-        // part of it. Another solution would be insert it at the beginning (and
-        // to increment enforcement_reason_size), but this is less efficient.
-        extra_literal_reason = literal.Negated();
-        break;
-      }
-      if (trail.Info(literal.Variable()).level > 0) {
-        reason_indices.push_back({literal_index, coeff_index});
-      }
-      slack -= coeff.value();
-    }
-    std::sort(reason_indices.begin(), reason_indices.end(), std::greater<>());
-    for (const auto& [literal_index, coeff_index] : reason_indices) {
-      reason->push_back(literals_[literal_index].Negated());
-    }
-    if (!reason_indices.empty()) {
-      last_i = reason_indices.back().first;
-      last_coeff_index = reason_indices.back().second;
-    }
-  } else {
-    // Optimization for an "at most one" constraint. Note that the
-    // source_trail_index set by InitializeRhs() is ok in this case.
-    if (rhs_ == 1) {
-      reason->push_back(trail[source_trail_index].Negated());
-      return;
-    }
-
-    // Compute the initial reason which is formed by all the literals of the
-    // constraint that were assigned to true at the time of the propagation.
-    // We remove literals with a level of 0 since they are not needed.
-    // We also compute the slack at the time.
-    int coeff_index = coeffs_.size() - 1;
-    for (int i = literals_.size() - 1; i >= 0; --i) {
-      const Literal literal = literals_[i];
-      if (literal.Variable() == propagated_variable) {
-        propagated_variable_coefficient = coeffs_[coeff_index];
-      } else {
-        if (trail.Assignment().LiteralIsTrue(literal) &&
-            trail.Info(literal.Variable()).trail_index <= source_trail_index) {
-          if (trail.Info(literal.Variable()).level > 0) {
-            reason->push_back(literal.Negated());
-            last_i = i;
-            last_coeff_index = coeff_index;
-          }
-          slack -= coeffs_[coeff_index];
-        }
-      }
-      if (i == starts_[coeff_index]) {
-        --coeff_index;
-      }
-    }
   }
+
+  // Compute the initial reason which is formed by all the literals of the
+  // constraint that were assigned to true at the time of the propagation. We
+  // remove literals with a level of 0 since they are not needed. We also
+  // compute the slack at the time.
+  Coefficient slack = rhs_;
+  int new_size = 0;
+  for (int i = 0; i < true_literals.size(); ++i) {
+    auto [trail_index, literal_index, coeff_index] = true_literals[i];
+    const Literal literal = literals_[literal_index];
+    const Coefficient coeff = coeffs_[coeff_index];
+    if (coeff > slack) {
+      propagated_variable_coefficient = coeff;
+      if (add_extra_literal_reason) {
+        reason->push_back(literal.Negated());
+      }
+      break;
+    }
+    if (trail.Info(literal.Variable()).level > 0) {
+      true_literals[new_size++] = {trail_index, literal_index, coeff_index};
+    }
+    slack -= coeff.value();
+  }
+  true_literals.resize(new_size);
   DCHECK_GT(propagated_variable_coefficient, slack);
   DCHECK_GE(propagated_variable_coefficient, 0);
-  auto cleanup = absl::MakeCleanup([&] {
-    if (enforcement_propagation || propagated_variable == kNoBooleanVariable) {
-      reason->push_back(extra_literal_reason);
-    }
-  });
 
   // In both cases, we can't minimize the reason further.
-  if (reason->size() <= enforcement_reason_size + 1 || coeffs_.size() == 1) {
+  if (true_literals.size() <= 1 || coeffs_.size() == 1) {
+    for (const auto& [unused1, literal_index, unused2] : true_literals) {
+      reason->push_back(literals_[literal_index].Negated());
+    }
     return;
   }
 
+  // Remove literals with high trail indices from the reason as long as the
+  // limit is strictly positive.
   Coefficient limit = propagated_variable_coefficient - slack;
   DCHECK_GE(limit, 1);
-
-  // Remove literals with small coefficients from the reason as long as the
-  // limit is still strictly positive.
-  int coeff_index = last_coeff_index;
-  if (coeffs_[coeff_index] >= limit) {
-    return;
-  }
-  for (int i = last_i; i < literals_.size(); ++i) {
-    const Literal literal = literals_[i];
-    if (i == starts_[coeff_index + 1]) {
-      ++coeff_index;
-      if (coeffs_[coeff_index] >= limit) break;
+  for (int i = true_literals.size() - 1; i >= 0; --i) {
+    const auto [_, literal_index, coeff_index] = true_literals[i];
+    const Coefficient coeff = coeffs_[coeff_index];
+    if (coeff < limit) {
+      limit -= coeff.value();
+    } else {
+      reason->push_back(literals_[literal_index].Negated());
     }
-    DCHECK_GT(reason->size(), enforcement_reason_size);
-    if (literal.Negated() != reason->back()) continue;
-    limit -= coeffs_[coeff_index];
-    reason->pop_back();
-    if (reason->size() == enforcement_reason_size) break;
-    if (coeffs_[coeff_index] >= limit) break;
   }
   DCHECK_GE(limit, 1);
 }
@@ -1175,7 +1141,7 @@ absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
       trail, reason_info.source_trail_index,
       enforcement_propagator_->GetEnforcementLiterals(
           reason_info.pb_constraint->enforcement_id()),
-      trail[trail_index].Variable(), reason);
+      trail[trail_index].Variable(), &enqueue_helper_.temporary_tuples, reason);
   return *reason;
 }
 

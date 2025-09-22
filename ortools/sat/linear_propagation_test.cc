@@ -15,8 +15,13 @@
 
 #include <stdint.h>
 
+#include <iterator>
 #include <vector>
 
+#include "absl/algorithm/container.h"
+#include "absl/log/check.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/sat/integer.h"
@@ -198,6 +203,71 @@ TEST(ReifiedWeightedSumTest, BoundToReifFalseLe) {
   AddWeightedSumLowerOrEqualReified(r, {var}, {1}, 3, &model);
   EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
   EXPECT_FALSE(model.Get(Value(r)));
+}
+
+TEST(AddWeightedSumLowerOrEqual, RandomTest) {
+  const int kNumTests = 10000;
+  absl::BitGen random;
+  for (int test = 0; test < kNumTests; ++test) {
+    const int num_variables = absl::Uniform(random, 1, 20);
+    std::vector<int> solution(num_variables, 0);
+    for (int i = 0; i < num_variables; ++i) {
+      solution[i] = absl::Uniform(random, 0, 100);
+    }
+    Model model;
+    std::vector<IntegerVariable> all_variables(num_variables);
+    std::vector<int> all_variables_idx(num_variables);
+    for (int i = 0; i < num_variables; ++i) {
+      all_variables_idx[i] = i;
+      all_variables[i] = model.Add(
+          NewIntegerVariable(solution[i] - absl::Uniform(random, 0, 100),
+                             solution[i] + absl::Uniform(random, 0, 100)));
+    }
+    const int num_constraints = absl::Uniform(random, 1, 100);
+    for (int j = 0; j < num_constraints; ++j) {
+      const int num_vars = absl::Uniform(random, 1, num_variables);
+      std::vector<int> var_idx;
+      absl::c_sample(all_variables_idx, std::back_inserter(var_idx), num_vars,
+                     random);
+      std::vector<IntegerVariable> vars(num_vars);
+      for (int k = 0; k < num_vars; ++k) {
+        vars[k] = all_variables[var_idx[k]];
+      }
+      std::vector<int> coeffs(num_vars);
+      int64_t activity = 0;
+      for (int k = 0; k < num_vars; ++k) {
+        coeffs[k] = absl::Uniform(random, -10, 9);
+        if (coeffs[k] == 0) coeffs[k]++;
+        activity += coeffs[k] * solution[var_idx[k]];
+      }
+      CHECK_EQ(coeffs.size(), vars.size());
+      AddWeightedSumLowerOrEqual(
+          vars, coeffs, activity + absl::Uniform(random, 0, 40), &model);
+      if (absl::Bernoulli(random, 0.1)) {
+        CHECK(model.GetOrCreate<SatSolver>()->Propagate());
+      }
+      if (absl::Bernoulli(random, 0.1)) {
+        CHECK(model.GetOrCreate<LinearPropagator>()->Propagate());
+      }
+      if (absl::Bernoulli(random, 0.1)) {
+        IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+        const int var_idx = absl::Uniform(random, 0, num_variables);
+        const IntegerVariable var = all_variables[var_idx];
+        if (absl::Bernoulli(random, 0.5)) {
+          if (integer_trail->UpperBound(var) > solution[var_idx]) {
+            CHECK(integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
+                var, integer_trail->UpperBound(var) - 1)));
+          }
+        } else {
+          if (integer_trail->LowerBound(var) < solution[var_idx]) {
+            CHECK(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
+                var, integer_trail->LowerBound(var) + 1)));
+          }
+        }
+      }
+      CHECK(!model.GetOrCreate<SatSolver>()->ModelIsUnsat());
+    }
+  }
 }
 
 }  // namespace

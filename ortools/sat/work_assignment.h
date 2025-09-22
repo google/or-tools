@@ -230,7 +230,7 @@ class SharedTreeManager {
       ABSL_LOCKS_EXCLUDED(mu_);
 
   void Restart() {
-    absl::MutexLock l(&mu_);
+    absl::MutexLock l(mu_);
     RestartLockHeld();
   }
 

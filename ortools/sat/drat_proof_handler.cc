@@ -81,7 +81,7 @@ void DratProofHandler::AddProblemClause(absl::Span<const Literal> clause) {
 void DratProofHandler::AddClause(absl::Span<const Literal> clause) {
   MapClause(clause);
   if (drat_checker_ != nullptr) {
-    drat_checker_->AddInferedClause(values_);
+    drat_checker_->AddInferredClause(values_);
   }
   if (drat_writer_ != nullptr) {
     drat_writer_->AddClause(values_);
@@ -101,7 +101,7 @@ void DratProofHandler::DeleteClause(absl::Span<const Literal> clause) {
 DratChecker::Status DratProofHandler::Check(double max_time_in_seconds) {
   if (drat_checker_ != nullptr) {
     // The empty clause is not explicitly added by the solver.
-    drat_checker_->AddInferedClause({});
+    drat_checker_->AddInferredClause({});
     return drat_checker_->Check(max_time_in_seconds);
   }
   return DratChecker::Status::UNKNOWN;

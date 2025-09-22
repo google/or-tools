@@ -111,7 +111,7 @@ class LastSolutionPrinter {
  public:
   // Note that is prints the solution in the PB competition format.
   void MaybePrintLastSolution() {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     if (last_solution_printed_) return;
     last_solution_printed_ = true;
 
@@ -140,7 +140,7 @@ class LastSolutionPrinter {
   void set_num_variables(int num_variables) { num_variables_ = num_variables; }
 
   void set_last_solution(absl::Span<const int64_t> solution) {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     if (last_solution_printed_) return;
     last_solution_.assign(solution.begin(), solution.end());
   }
@@ -148,7 +148,7 @@ class LastSolutionPrinter {
   // Returns false if the solution has already been printed, else mark it as
   // printed by caller code.
   bool mark_last_solution_printed() {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     if (last_solution_printed_) {
       return false;
     }

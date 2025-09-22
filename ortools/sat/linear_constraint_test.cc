@@ -240,44 +240,44 @@ TEST(LinearConstraintBuilderTest, AddLiterals) {
   const BooleanVariable d = model.Add(NewBooleanVariable());
 
   // Create integer views.
-  model.Add(NewIntegerVariableFromLiteral(Literal(b, true)));   // X0
-  model.Add(NewIntegerVariableFromLiteral(Literal(b, false)));  // X1
-  model.Add(NewIntegerVariableFromLiteral(Literal(c, false)));  // X2
-  model.Add(NewIntegerVariableFromLiteral(Literal(d, false)));  // X3
-  model.Add(NewIntegerVariableFromLiteral(Literal(d, true)));   // X4
+  model.Add(NewIntegerVariableFromLiteral(Literal(b, true)));   // I0
+  model.Add(NewIntegerVariableFromLiteral(Literal(b, false)));  // I1
+  model.Add(NewIntegerVariableFromLiteral(Literal(c, false)));  // I2
+  model.Add(NewIntegerVariableFromLiteral(Literal(d, false)));  // I3
+  model.Add(NewIntegerVariableFromLiteral(Literal(d, true)));   // I4
 
   // When we have both view, we use the lowest IntegerVariable.
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(b, true), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "1*X0 <= 1");
+    EXPECT_EQ(builder.Build().DebugString(), "1*I0 <= 1");
   }
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(b, false), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "-1*X0 <= 0");
+    EXPECT_EQ(builder.Build().DebugString(), "-1*I0 <= 0");
   }
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(d, true), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "-1*X3 <= 0");
+    EXPECT_EQ(builder.Build().DebugString(), "-1*I3 <= 0");
   }
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(d, false), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "1*X3 <= 1");
+    EXPECT_EQ(builder.Build().DebugString(), "1*I3 <= 1");
   }
 
   // When we have just one view, we use the one we have.
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(c, true), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "-1*X2 <= 0");
+    EXPECT_EQ(builder.Build().DebugString(), "-1*I2 <= 0");
   }
   {
     LinearConstraintBuilder builder(&model, kMinIntegerValue, IntegerValue(1));
     EXPECT_TRUE(builder.AddLiteralTerm(Literal(c, false), IntegerValue(1)));
-    EXPECT_EQ(builder.Build().DebugString(), "1*X2 <= 1");
+    EXPECT_EQ(builder.Build().DebugString(), "1*I2 <= 1");
   }
 }
 
@@ -288,31 +288,31 @@ TEST(LinearConstraintBuilderTest, AddConstant) {
   builder1.AddTerm(IntegerVariable(0), IntegerValue(5));
   builder1.AddTerm(IntegerVariable(2), IntegerValue(10));
   builder1.AddConstant(IntegerValue(3));
-  EXPECT_EQ(builder1.Build().DebugString(), "5*X0 10*X1 <= 7");
+  EXPECT_EQ(builder1.Build().DebugString(), "5*I0 10*I1 <= 7");
 
   LinearConstraintBuilder builder2(&model, IntegerValue(4), kMaxIntegerValue);
   builder2.AddTerm(IntegerVariable(0), IntegerValue(5));
   builder2.AddTerm(IntegerVariable(2), IntegerValue(10));
   builder2.AddConstant(IntegerValue(-3));
-  EXPECT_EQ(builder2.Build().DebugString(), "7 <= 5*X0 10*X1");
+  EXPECT_EQ(builder2.Build().DebugString(), "7 <= 5*I0 10*I1");
 
   LinearConstraintBuilder builder3(&model, kMinIntegerValue, IntegerValue(10));
   builder3.AddTerm(IntegerVariable(0), IntegerValue(5));
   builder3.AddTerm(IntegerVariable(2), IntegerValue(10));
   builder3.AddConstant(IntegerValue(-3));
-  EXPECT_EQ(builder3.Build().DebugString(), "5*X0 10*X1 <= 13");
+  EXPECT_EQ(builder3.Build().DebugString(), "5*I0 10*I1 <= 13");
 
   LinearConstraintBuilder builder4(&model, IntegerValue(4), kMaxIntegerValue);
   builder4.AddTerm(IntegerVariable(0), IntegerValue(5));
   builder4.AddTerm(IntegerVariable(2), IntegerValue(10));
   builder4.AddConstant(IntegerValue(3));
-  EXPECT_EQ(builder4.Build().DebugString(), "1 <= 5*X0 10*X1");
+  EXPECT_EQ(builder4.Build().DebugString(), "1 <= 5*I0 10*I1");
 
   LinearConstraintBuilder builder5(&model, IntegerValue(4), IntegerValue(10));
   builder5.AddTerm(IntegerVariable(0), IntegerValue(5));
   builder5.AddTerm(IntegerVariable(2), IntegerValue(10));
   builder5.AddConstant(IntegerValue(3));
-  EXPECT_EQ(builder5.Build().DebugString(), "1 <= 5*X0 10*X1 <= 7");
+  EXPECT_EQ(builder5.Build().DebugString(), "1 <= 5*I0 10*I1 <= 7");
 }
 
 TEST(CleanTermsAndFillConstraintTest, VarAndItsNegation) {
@@ -321,7 +321,7 @@ TEST(CleanTermsAndFillConstraintTest, VarAndItsNegation) {
   terms.push_back({IntegerVariable(5), IntegerValue(4)});
   LinearConstraint constraint;
   CleanTermsAndFillConstraint(&terms, &constraint);
-  EXPECT_EQ(constraint.DebugString(), "0 <= 3*X2 <= 0");
+  EXPECT_EQ(constraint.DebugString(), "0 <= 3*I2 <= 0");
 }
 
 TEST(LinearConstraintBuilderTest, AddQuadraticLowerBound) {
@@ -333,7 +333,7 @@ TEST(LinearConstraintBuilderTest, AddQuadraticLowerBound) {
   LinearConstraintBuilder builder1(&model, kMinIntegerValue, IntegerValue(10));
   AffineExpression a0(x0, IntegerValue(3), IntegerValue(2));  // 3 * x0 + 2.
   builder1.AddQuadraticLowerBound(a0, x1, integer_trail);
-  EXPECT_EQ(builder1.Build().DebugString(), "9*X0 8*X1 <= 28");
+  EXPECT_EQ(builder1.Build().DebugString(), "9*I0 8*I1 <= 28");
 }
 
 TEST(LinearConstraintBuilderTest, AddQuadraticLowerBoundAffineIsVar) {
@@ -344,7 +344,7 @@ TEST(LinearConstraintBuilderTest, AddQuadraticLowerBoundAffineIsVar) {
   IntegerVariable x1 = model.Add(NewIntegerVariable(3, 6));
   LinearConstraintBuilder builder1(&model, kMinIntegerValue, IntegerValue(10));
   builder1.AddQuadraticLowerBound(x0, x1, integer_trail);
-  EXPECT_EQ(builder1.Build().DebugString(), "3*X0 2*X1 <= 16");
+  EXPECT_EQ(builder1.Build().DebugString(), "3*I0 2*I1 <= 16");
 }
 
 TEST(LinearConstraintBuilderTest, AddQuadraticLowerBoundAffineIsConstant) {
@@ -354,7 +354,7 @@ TEST(LinearConstraintBuilderTest, AddQuadraticLowerBoundAffineIsConstant) {
   IntegerVariable x0 = model.Add(NewIntegerVariable(2, 5));
   LinearConstraintBuilder builder1(&model, kMinIntegerValue, IntegerValue(10));
   builder1.AddQuadraticLowerBound(IntegerValue(4), x0, integer_trail);
-  EXPECT_EQ(builder1.Build().DebugString(), "4*X0 <= 10");
+  EXPECT_EQ(builder1.Build().DebugString(), "4*I0 <= 10");
 }
 
 TEST(LinExprTest, Bounds) {

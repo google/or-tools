@@ -167,7 +167,7 @@ TEST(CoverCutHelperTest, SimpleExample) {
   Model model;
   CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TrySimpleKnapsack(data));
-  EXPECT_EQ(GetCutString(helper), "1*X0 1*X1 1*X2 <= 1");
+  EXPECT_EQ(GetCutString(helper), "1*I0 1*I1 1*I2 <= 1");
   EXPECT_EQ(helper.Info(), "lift=1");
 }
 
@@ -193,7 +193,7 @@ TEST(CoverCutHelperTest, WeirdExampleWithViolatedConstraint) {
   Model model;
   CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TrySimpleKnapsack(data));
-  EXPECT_EQ(GetCutString(helper), "1*X0 1*X1 <= 9");
+  EXPECT_EQ(GetCutString(helper), "1*I0 1*I1 <= 9");
   EXPECT_EQ(helper.Info(), "lift=1");
 }
 
@@ -221,7 +221,7 @@ TEST(CoverCutHelperTest, LetchfordSouliLifting) {
   CoverCutHelper helper(&model);
   EXPECT_TRUE(helper.TryWithLetchfordSouliLifting(data));
   EXPECT_EQ(GetCutString(helper),
-            "1*X0 1*X1 1*X2 1*X3 3*X4 3*X5 2*X6 1*X7 1*X8 1*X9 <= 3");
+            "1*I0 1*I1 1*I2 1*I3 3*I4 3*I5 2*I6 1*I7 1*I8 1*I9 <= 3");
 
   // For now, we only support Booleans in the cover.
   // Note that we don't care for variable not in the cover though.
@@ -270,7 +270,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample1) {
   options.max_scaling = 2;
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       options, rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "2*X0 1*X1 <= 2");
+  EXPECT_EQ(constraint.DebugString(), "2*I0 1*I1 <= 2");
 }
 
 TEST(IntegerRoundingCutTest, LetchfordLodiExample1Modified) {
@@ -290,7 +290,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample1Modified) {
   // Note that the cut is only valid because the bound of x1 is one here.
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "1*X0 1*X1 <= 1");
+  EXPECT_EQ(constraint.DebugString(), "1*I0 1*I1 <= 1");
 }
 
 TEST(IntegerRoundingCutTest, LetchfordLodiExample2) {
@@ -306,7 +306,7 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample2) {
   std::vector<double> lp_values{0.0, 2.25};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "3*X0 2*X1 <= 4");
+  EXPECT_EQ(constraint.DebugString(), "3*I0 2*I1 <= 4");
 }
 
 TEST(IntegerRoundingCutTest, LetchfordLodiExample2WithNegatedCoeff) {
@@ -323,10 +323,10 @@ TEST(IntegerRoundingCutTest, LetchfordLodiExample2WithNegatedCoeff) {
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
 
-  // We actually do not return like in the example "3*X0 -2*X1 <= 4"
-  // But the simpler X0 - X1 <= 2 which has the same violation (0.25) but a
+  // We actually do not return like in the example "3*I0 -2*I1 <= 4"
+  // But the simpler I0 - I1 <= 2 which has the same violation (0.25) but a
   // better norm.
-  EXPECT_EQ(constraint.DebugString(), "1*X0 -1*X1 <= 2");
+  EXPECT_EQ(constraint.DebugString(), "1*I0 -1*I1 <= 2");
 }
 
 // This used to trigger a failure with a wrong implied bound code path.
@@ -349,7 +349,7 @@ TEST(IntegerRoundingCutTest, TestCaseUsedForDebugging) {
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
 
-  EXPECT_EQ(constraint.DebugString(), "-2*X0 -1*X1 -2*X2 -2*X3 2*X4 <= -2");
+  EXPECT_EQ(constraint.DebugString(), "-2*I0 -1*I1 -2*I2 -2*I3 2*I4 <= -2");
 }
 
 // The algo should find a "divisor" 2 when it lead to a good cut.
@@ -373,7 +373,7 @@ TEST(IntegerRoundingCutTest, ZeroHalfCut) {
   std::vector<double> lp_values{0.25, 1.25, 0.3125, 0.0};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "3*X0 2*X1 4*X2 3*X3 <= 4");
+  EXPECT_EQ(constraint.DebugString(), "3*I0 2*I1 4*I2 3*I3 <= 4");
 }
 
 TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision) {
@@ -386,12 +386,12 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision) {
   std::vector<IntegerVariable> vars = {x0, x1};
   std::vector<IntegerValue> coeffs = {IntegerValue(1e6), IntegerValue(-1)};
 
-  // Note thate without adjustement, this returns 2 * X0 - X1 <= 2.
+  // Note thate without adjustement, this returns 2 * I0 - I1 <= 2.
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.5, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "1*X0 <= 1");
+  EXPECT_EQ(constraint.DebugString(), "1*I0 <= 1");
 }
 
 TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision2) {
@@ -404,12 +404,12 @@ TEST(IntegerRoundingCutTest, LargeCoeffWithSmallImprecision2) {
   std::vector<IntegerVariable> vars = {x0, x1};
   std::vector<IntegerValue> coeffs = {IntegerValue(1e6), IntegerValue(999999)};
 
-  // Note thate without adjustement, this returns 2 * X0 + X1 <= 2.
+  // Note thate without adjustement, this returns 2 * I0 + I1 <= 2.
   // TODO(user): expose parameters so this can be verified other than manually?
   std::vector<double> lp_values{1.49, 0.1};
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       RoundingOptions(), rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "1*X0 1*X1 <= 1");
+  EXPECT_EQ(constraint.DebugString(), "1*I0 1*I1 <= 1");
 }
 
 TEST(IntegerRoundingCutTest, MirOnLargerConstraint) {
@@ -433,7 +433,7 @@ TEST(IntegerRoundingCutTest, MirOnLargerConstraint) {
   options.max_scaling = 4;
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       options, rhs, vars, coeffs, lp_values, &model);
-  EXPECT_EQ(constraint.DebugString(), "1*X6 2*X7 3*X8 4*X9 <= 4");
+  EXPECT_EQ(constraint.DebugString(), "1*I6 2*I7 3*I8 4*I9 <= 4");
 }
 
 TEST(IntegerRoundingCutTest, MirOnLargerConstraint2) {
@@ -457,7 +457,7 @@ TEST(IntegerRoundingCutTest, MirOnLargerConstraint2) {
   LinearConstraint constraint = IntegerRoundingCutWithBoundsFromTrail(
       options, rhs, vars, coeffs, lp_values, &model);
   EXPECT_EQ(constraint.DebugString(),
-            "2*X1 3*X2 4*X3 6*X4 6*X5 8*X6 9*X7 10*X8 12*X9 <= 18");
+            "2*I1 3*I2 4*I3 6*I4 6*I5 8*I6 9*I7 10*I8 12*I9 <= 18");
 }
 
 std::vector<IntegerValue> ToIntegerValues(const std::vector<int64_t> input) {
@@ -550,7 +550,7 @@ TEST(SquareCutGeneratorTest, TestBelowCut) {
   square.generate_cuts(manager);
   EXPECT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-5*X0 1*X1 <= 0"));
+              EndsWith("-5*I0 1*I1 <= 0"));
 }
 
 TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
@@ -564,7 +564,7 @@ TEST(SquareCutGeneratorTest, TestBelowCutWithOffset) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("-6*X0 1*X1 <= -5"));
+              EndsWith("-6*I0 1*I1 <= -5"));
 }
 
 TEST(SquareCutGeneratorTest, TestNoBelowCut) {
@@ -590,7 +590,7 @@ TEST(SquareCutGeneratorTest, TestAboveCut) {
   square.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("-6 <= -5*X0 1*X1"));
+              StartsWith("-6 <= -5*I0 1*I1"));
 }
 
 TEST(SquareCutGeneratorTest, TestNearlyAboveCut) {
@@ -618,7 +618,7 @@ TEST(MultiplicationCutGeneratorTest, TestCut1) {
   mult.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("2*X0 1*X1 -1*X2 <= 2"));
+              EndsWith("2*I0 1*I1 -1*I2 <= 2"));
 }
 
 TEST(MultiplicationCutGeneratorTest, TestCut2) {
@@ -634,7 +634,7 @@ TEST(MultiplicationCutGeneratorTest, TestCut2) {
   mult.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("3*X0 5*X1 -1*X2 <= 15"));
+              EndsWith("3*I0 5*I1 -1*I2 <= 15"));
 }
 
 TEST(MultiplicationCutGeneratorTest, TestCut3) {
@@ -650,9 +650,9 @@ TEST(MultiplicationCutGeneratorTest, TestCut3) {
   mult.generate_cuts(manager);
   ASSERT_EQ(2, manager->num_cuts());
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("3 <= 3*X0 1*X1 -1*X2"));
+              StartsWith("3 <= 3*I0 1*I1 -1*I2"));
   EXPECT_THAT(manager->AllConstraints().back().constraint.DebugString(),
-              StartsWith("10 <= 2*X0 5*X1 -1*X2"));
+              StartsWith("10 <= 2*I0 5*I1 -1*I2"));
 }
 
 TEST(MultiplicationCutGeneratorTest, TestNoCut1) {
@@ -698,7 +698,7 @@ TEST(AllDiffCutGeneratorTest, TestCut) {
   all_diff.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
   EXPECT_EQ(manager->AllConstraints().front().constraint.DebugString(),
-            "50 <= 1*X0 1*X1 1*X2 <= 50");
+            "50 <= 1*I0 1*I1 1*I2 <= 50");
 }
 
 TEST(AllDiffCutGeneratorTest, TestCut2) {
@@ -716,9 +716,9 @@ TEST(AllDiffCutGeneratorTest, TestCut2) {
   all_diff.generate_cuts(manager);
   ASSERT_EQ(2, manager->num_cuts());
   EXPECT_EQ(manager->AllConstraints().front().constraint.DebugString(),
-            "25 <= 1*X1 1*X2 <= 40");
+            "25 <= 1*I1 1*I2 <= 40");
   EXPECT_EQ(manager->AllConstraints().back().constraint.DebugString(),
-            "50 <= 1*X0 1*X1 1*X2 <= 50");
+            "50 <= 1*I0 1*I1 1*I2 <= 50");
 }
 
 // We model the maximum of 3 affine functions:
@@ -767,11 +767,11 @@ TEST(LinMaxCutsTest, BasicCuts1) {
   max_cuts.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
 
-  // x vars are X0,X1 respectively, target is X2, z_vars are X3,X4,X5
+  // x vars are I0,I1 respectively, target is I2, z_vars are I3,I4,I5
   // respectively.
   // Most violated inequality is 2.
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("0 <= -2*X1 -1*X2 3*X3 1*X4 4*X5"));
+              StartsWith("0 <= -2*I1 -1*I2 3*I3 1*I4 4*I5"));
 
   InitializeLpValues({-1.0, -1.0, 2.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0},
                      &model);
@@ -779,7 +779,7 @@ TEST(LinMaxCutsTest, BasicCuts1) {
   ASSERT_EQ(2, manager->num_cuts());
   // Most violated inequality is 3.
   EXPECT_THAT(manager->AllConstraints().back().constraint.DebugString(),
-              StartsWith("0 <= 1*X1 -1*X2 2*X3 4*X4 1*X5"));
+              StartsWith("0 <= 1*I1 -1*I2 2*I3 4*I4 1*I5"));
 }
 
 // We model the maximum of 3 affine functions:
@@ -806,7 +806,7 @@ TEST(LinMaxCutsTest, AffineCuts1) {
       BuildMaxAffineUpConstraint(target_expr, x, affines, &model, &builder));
 
   // Note, the cut is not normalized.
-  EXPECT_EQ(builder.Build().DebugString(), "20*X1 <= 200");
+  EXPECT_EQ(builder.Build().DebugString(), "20*I1 <= 200");
 }
 
 // We model the maximum of 3 affine functions:
@@ -832,7 +832,7 @@ TEST(LinMaxCutsTest, AffineCuts2) {
   ASSERT_TRUE(
       BuildMaxAffineUpConstraint(target_expr, x, affines, &model, &builder));
 
-  EXPECT_EQ(builder.Build().DebugString(), "-9*X0 11*X1 <= 20");
+  EXPECT_EQ(builder.Build().DebugString(), "-9*I0 11*I1 <= 20");
 }
 
 // We model the maximum of 3 affine functions:
@@ -1080,7 +1080,7 @@ TEST(CutDataTest, SimpleExample) {
   cut.FillFromParallelVectors(rhs, vars, coeffs, lp_values, lbs, ubs);
   cut.ComplementForSmallerLpValues();
 
-  // 6 (X0' + 7) - 4 (X1' - 3) <= 9
+  // 6 (I0' + 7) - 4 (I1' - 3) <= 9
   ASSERT_EQ(cut.terms.size(), 2);
   EXPECT_EQ(cut.rhs, 9 - 4 * 3 - 6 * 7);
   EXPECT_EQ(cut.terms[0].coeff, 6);
