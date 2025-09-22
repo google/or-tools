@@ -104,6 +104,7 @@ build:asan --copt -fno-omit-frame-pointer
 build:asan --linkopt -fsanitize=address
 
 ###############################################################################
-# Put user-specific options in .bazelrc.user
+# Put user-specific options in user.bazelrc
+# See https://bazel.build/configure/best-practices#bazelrc-file
 ################################################################################
-try-import %workspace%/.bazelrc.user
+try-import %workspace%/user.bazelrc
