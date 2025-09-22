@@ -299,7 +299,8 @@ class CpModelPresolver {
   void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
-  void MergeNoOverlapConstraints();
+  bool MergeNoOverlapConstraints();
+  bool MergeNoOverlap2DConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the

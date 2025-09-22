@@ -8876,10 +8876,38 @@ void CpModelPresolver::ExpandObjective() {
   timer.AddCounter("issues", num_issues);
 }
 
-void CpModelPresolver::MergeNoOverlapConstraints() {
+namespace {
+bool MaxCliqueHasMadeSomeChanges(
+    int old_num_constraints, int old_num_entries,
+    const std::vector<std::vector<Literal>>& cliques, bool no_overlaps) {
+  int new_num_constraints = 0;
+  int new_num_entries = 0;
+  for (const std::vector<Literal>& clique : cliques) {
+    if (clique.empty()) continue;
+    new_num_constraints++;
+    new_num_entries += clique.size();
+  }
+  if (old_num_constraints != new_num_constraints ||
+      old_num_entries != new_num_entries) {
+    const std::string_view ct_name =
+        no_overlaps ? "no-overlaps" : "no-overlap_2ds";
+    const std::string_view entry_name =
+        no_overlaps ? "intervals" : "rectangles";
+    VLOG(1) << absl::StrCat("Merged ", old_num_constraints, " ", ct_name, " (",
+                            old_num_entries, " ", entry_name, ") into ",
+                            new_num_constraints, " ", ct_name, " (",
+                            new_num_entries, " ", entry_name, ").");
+    return true;
+  }
+  return false;
+}
+
+}  // namespace
+
+bool CpModelPresolver::MergeNoOverlapConstraints() {
   PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
-  if (context_->ModelIsUnsat()) return;
-  if (time_limit_->LimitReached()) return;
+  if (context_->ModelIsUnsat()) return false;
+  if (time_limit_->LimitReached()) return true;
 
   const int num_constraints = context_->working_model->constraints_size();
   int old_num_no_overlaps = 0;
@@ -8904,7 +8932,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
     old_num_no_overlaps++;
     old_num_intervals += clique.size();
   }
-  if (old_num_no_overlaps == 0) return;
+  if (old_num_no_overlaps == 0) return true;
 
   // We reuse the max-clique code from sat.
   Model local_model;
@@ -8924,16 +8952,10 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
 
   time_limit_->ResetHistory();
 
-  int new_num_no_overlaps = 0;
-  int new_num_intervals = 0;
-  for (int i = 0; i < cliques.size(); ++i) {
-    new_num_no_overlaps++;
-    new_num_intervals += cliques[i].size();
-  }
-
-  if (old_num_intervals == new_num_intervals &&
-      old_num_no_overlaps == new_num_no_overlaps) {
-    return;
+  if (!MaxCliqueHasMadeSomeChanges(old_num_no_overlaps, old_num_intervals,
+                                   cliques,
+                                   /*no_overlaps=*/true)) {
+    return true;
   }
 
   // Remove previous no_overlap constraints and add the new recomputed ones.
@@ -8952,12 +8974,93 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
       ct->mutable_no_overlap()->add_intervals(l.Variable().value());
     }
   }
-  VLOG(1) << absl::StrCat("Merged ", old_num_no_overlaps, " no-overlaps (",
-                          old_num_intervals, " intervals) into ",
-                          new_num_no_overlaps, " no-overlaps (",
-                          new_num_intervals, " intervals).");
   context_->UpdateRuleStats("no_overlap: merged constraints");
   context_->UpdateNewConstraintsVariableUsage();
+  return true;
+}
+
+bool CpModelPresolver::MergeNoOverlap2DConstraints() {
+  PresolveTimer timer("MergeNoOverlap2D", logger_, time_limit_);
+  if (context_->ModelIsUnsat()) return false;
+  if (time_limit_->LimitReached()) return true;
+
+  const int num_constraints = context_->working_model->constraints_size();
+  int old_num_no_overlap_2ds = 0;
+  int old_num_rectangles = 0;
+
+  // Extract the no-overlap constraints with no enforcement literals.
+  // TODO(user): generalize this to merge constraints with the same
+  // enforcement literals?
+  std::vector<int> no_overlap2d_index;
+  std::vector<std::vector<Literal>> cliques;
+  absl::flat_hash_map<std::pair<int, int>, int> rectangle_to_index;
+  std::vector<std::pair<int, int>> index_to_rectangle;
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() != ConstraintProto::kNoOverlap2D) continue;
+    if (HasEnforcementLiteral(ct)) continue;
+    std::vector<Literal> clique;
+    for (int i = 0; i < ct.no_overlap_2d().x_intervals_size(); ++i) {
+      const std::pair<int, int> rect = {ct.no_overlap_2d().x_intervals(i),
+                                        ct.no_overlap_2d().y_intervals(i)};
+      const auto [it, inserted] =
+          rectangle_to_index.insert({rect, rectangle_to_index.size()});
+      if (inserted) index_to_rectangle.push_back(rect);
+      clique.push_back(Literal(BooleanVariable(it->second), true));
+    }
+    cliques.push_back(clique);
+    no_overlap2d_index.push_back(c);
+
+    old_num_no_overlap_2ds++;
+    old_num_rectangles += clique.size();
+  }
+  if (old_num_no_overlap_2ds == 0) return true;
+
+  // We reuse the max-clique code from sat.
+  Model local_model;
+  local_model.GetOrCreate<Trail>()->Resize(num_constraints);
+  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
+  graph->Resize(num_constraints);
+  for (const std::vector<Literal>& clique : cliques) {
+    // All variables at false is always a valid solution of the local model,
+    // so this should never return UNSAT.
+    CHECK(graph->AddAtMostOne(clique));
+  }
+  CHECK(graph->DetectEquivalences());
+  graph->TransformIntoMaxCliques(
+      &cliques,
+      SafeDoubleToInt64(context_->params().merge_no_overlap_work_limit()));
+
+  time_limit_->ResetHistory();
+
+  if (!MaxCliqueHasMadeSomeChanges(old_num_no_overlap_2ds, old_num_rectangles,
+                                   cliques,
+                                   /*no_overlaps=*/false)) {
+    return true;
+  }
+
+  // Remove previous no_overlap constraints and add the new recomputed ones.
+  for (int i = 0; i < cliques.size(); ++i) {
+    const int ct_index = no_overlap2d_index[i];
+    if (RemoveConstraint(
+            context_->working_model->mutable_constraints(ct_index))) {
+      context_->UpdateConstraintVariableUsage(ct_index);
+    }
+  }
+  for (int i = 0; i < cliques.size(); ++i) {
+    if (cliques[i].empty()) continue;
+    ConstraintProto* ct = context_->working_model->add_constraints();
+    for (const Literal l : cliques[i]) {
+      CHECK(l.IsPositive());
+      const std::pair<int, int> rect = index_to_rectangle[l.Variable().value()];
+      ct->mutable_no_overlap_2d()->add_x_intervals(rect.first);
+      ct->mutable_no_overlap_2d()->add_y_intervals(rect.second);
+    }
+  }
+  context_->UpdateRuleStats("no_overlap_2d: merged constraints");
+  context_->UpdateNewConstraintsVariableUsage();
+  return true;
 }
 
 // TODO(user): Should we take into account the exactly_one constraints? note
@@ -13823,9 +13926,8 @@ CpSolverStatus CpModelPresolver::Presolve() {
   }
   if (context_->ModelIsUnsat()) return InfeasibleStatus();
 
-  // Regroup no-overlaps into max-cliques.
-  MergeNoOverlapConstraints();
-  if (context_->ModelIsUnsat()) return InfeasibleStatus();
+  if (!MergeNoOverlapConstraints()) return InfeasibleStatus();
+  if (!MergeNoOverlap2DConstraints()) return InfeasibleStatus();
 
   // Tries to spread the objective amongst many variables.
   // We re-do a canonicalization with the final linear expression.

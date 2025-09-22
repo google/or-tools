@@ -95,7 +95,7 @@ SharedSolutionPool::Add(SharedSolutionRepository<int64_t>::Solution solution) {
 void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
   // Update the "seeds" for the aternative path.
   if (alternative_path_.num_solutions_to_keep() > 0) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
 
     auto process_solution =
         [this](const SharedSolutionRepository<int64_t>::Solution& solution)
@@ -187,7 +187,7 @@ void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
 
     // If we restarted, or we are at the beginning, pick a seed for the path.
     if (alternative_path_.NumSolutions() == 0) {
-      absl::MutexLock mutex_lock(&mutex_);
+      absl::MutexLock mutex_lock(mutex_);
 
       // Pick random bucket with bias. If the bucket is empty, we will scan
       // "worse" bucket until we find a solution. We never pick bucket 0.
@@ -226,7 +226,7 @@ void SharedLPSolutionRepository::NewLPSolution(
 
   // We always prefer to keep the solution from the last synchronize batch.
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     solution->rank = -num_synchronization_;
     ++num_added_;
     new_solutions_.push_back(solution);
@@ -235,19 +235,19 @@ void SharedLPSolutionRepository::NewLPSolution(
 
 void SharedIncompleteSolutionManager::AddSolution(
     const std::vector<double>& lp_solution) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   ++num_added_;
   solutions_.push_back(lp_solution);
   if (solutions_.size() > 100) solutions_.pop_front();
 }
 
 bool SharedIncompleteSolutionManager::HasSolution() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return !solutions_.empty();
 }
 
 std::vector<double> SharedIncompleteSolutionManager::PopLast() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (solutions_.empty()) return {};
 
   ++num_queried_;
@@ -292,7 +292,7 @@ std::string SatProgressMessage(absl::string_view event_or_solution_count,
 void SharedResponseManager::FillSolveStatsInResponse(
     Model* model, CpSolverResponse* response) {
   if (model == nullptr) return;
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const auto& set_stats : statistics_postprocessors_) {
     set_stats(model, response);
   }
@@ -300,14 +300,14 @@ void SharedResponseManager::FillSolveStatsInResponse(
 
 void SharedResponseManager::LogMessage(absl::string_view prefix,
                                        absl::string_view message) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
                                       wall_timer_.Get(), message));
 }
 
 void SharedResponseManager::LogMessageWithThrottling(
     absl::string_view prefix, absl::string_view message) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   int id;
   auto it = throttling_ids_.find(prefix);
@@ -321,7 +321,7 @@ void SharedResponseManager::LogMessageWithThrottling(
 }
 
 bool SharedResponseManager::LoggingIsEnabled() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   return logger_->LoggingIsEnabled();
 }
@@ -340,17 +340,17 @@ void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
 }
 
 void SharedResponseManager::SetSynchronizationMode(bool always_synchronize) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   always_synchronize_ = always_synchronize;
 }
 
 void SharedResponseManager::SetUpdateGapIntegralOnEachChange(bool set) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   update_integral_on_each_change_ = set;
 }
 
 void SharedResponseManager::UpdateGapIntegral() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   UpdateGapIntegralInternal();
 }
 
@@ -380,7 +380,7 @@ void SharedResponseManager::UpdateGapIntegralInternal() {
 
 void SharedResponseManager::SetGapLimitsFromParameters(
     const SatParameters& parameters) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (objective_or_null_ == nullptr) return;
   absolute_gap_limit_ = parameters.absolute_gap_limit();
   relative_gap_limit_ = parameters.relative_gap_limit();
@@ -427,7 +427,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& update_info, IntegerValue lb, IntegerValue ub) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CHECK(objective_or_null_ != nullptr);
 
   // The problem is already solved!
@@ -504,7 +504,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 // UNKNOWN -> INFEASIBLE
 void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     absl::string_view worker_info) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (best_status_ == CpSolverStatus::FEASIBLE ||
       best_status_ == CpSolverStatus::OPTIMAL) {
     // We also use this status to indicate that we enumerated all solutions to
@@ -524,24 +524,24 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   unsat_cores_ = core;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_inner_objective_lower_bound_;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_inner_objective_upper_bound_;
 }
 
 void SharedResponseManager::Synchronize() {
   solution_pool_.Synchronize(*random_);
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   synchronized_inner_objective_lower_bound_ =
       IntegerValue(inner_objective_lower_bound_);
   synchronized_inner_objective_upper_bound_ =
@@ -554,49 +554,49 @@ void SharedResponseManager::Synchronize() {
 }
 
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return IntegerValue(best_solution_objective_value_);
 }
 
 double SharedResponseManager::GapIntegral() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return gap_integral_;
 }
 
 void SharedResponseManager::AddSolutionPostprocessor(
     std::function<void(std::vector<int64_t>*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   solution_postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddFinalResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   final_postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddStatisticsPostprocessor(
     std::function<void(Model*, CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   statistics_postprocessors_.push_back(postprocessor);
 }
 
 int SharedResponseManager::AddSolutionCallback(
     std::function<void(const CpSolverResponse&)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_callback_id_++;
   callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < callbacks_.size(); ++i) {
     if (callbacks_[i].first == callback_id) {
       callbacks_.erase(callbacks_.begin() + i);
@@ -608,14 +608,14 @@ void SharedResponseManager::UnregisterCallback(int callback_id) {
 
 int SharedResponseManager::AddLogCallback(
     std::function<std::string(const CpSolverResponse&)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_search_log_callback_id_++;
   search_log_callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterLogCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < search_log_callbacks_.size(); ++i) {
     if (search_log_callbacks_[i].first == callback_id) {
       search_log_callbacks_.erase(search_log_callbacks_.begin() + i);
@@ -627,14 +627,14 @@ void SharedResponseManager::UnregisterLogCallback(int callback_id) {
 
 int SharedResponseManager::AddBestBoundCallback(
     std::function<void(double)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_best_bound_callback_id_++;
   best_bound_callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < best_bound_callbacks_.size(); ++i) {
     if (best_bound_callbacks_[i].first == callback_id) {
       best_bound_callbacks_.erase(best_bound_callbacks_.begin() + i);
@@ -693,7 +693,7 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
 }
 
 CpSolverResponse SharedResponseManager::GetResponse() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CpSolverResponse result;
   if (solution_pool_.BestSolutions().NumSolutions() == 0) {
     result = GetResponseInternal({}, "");
@@ -728,7 +728,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
 
 void SharedResponseManager::AppendResponseToBeMerged(
     const CpSolverResponse& response) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return subsolver_responses_.push_back(response);
 }
 
@@ -768,7 +768,7 @@ std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
 SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                    absl::string_view solution_info,
                                    Model* model, int source_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
   // For SAT problems, we add the solution to the solution pool for retrieval
@@ -912,7 +912,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_best_status_ == CpSolverStatus::OPTIMAL ||
          synchronized_best_status_ == CpSolverStatus::INFEASIBLE;
 }
@@ -953,7 +953,7 @@ void SharedResponseManager::RegisterObjectiveBoundImprovement(
 }
 
 void SharedResponseManager::DisplayImprovementStatistics() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (!primal_improvements_count_.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back(
@@ -1043,7 +1043,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   int num_improvements = 0;
   int num_symmetric_improvements = 0;
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < variables.size(); ++i) {
     int var = variables[i];
     if (var >= num_variables_) continue;
@@ -1119,7 +1119,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
     absl::Span<const int> variables_to_fix) {
   // This function shouldn't be called if we has symmetry.
   CHECK(!has_symmetry_);
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   // Abort if incompatible. Note that we only check the position that we are
   // about to fix. This should be enough. Otherwise we might never accept any
@@ -1163,7 +1163,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
 }
 
 void SharedBoundsManager::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const int var :
        changed_variables_since_last_synchronize_.PositionsSetAtLeastOnce()) {
     DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
@@ -1177,7 +1177,7 @@ void SharedBoundsManager::Synchronize() {
 }
 
 int SharedBoundsManager::RegisterNewId() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_changed_variables_.size();
   id_to_changed_variables_.resize(id + 1);
   id_to_changed_variables_[id].ClearAndResize(num_variables_);
@@ -1202,7 +1202,7 @@ void SharedBoundsManager::GetChangedBounds(
   new_upper_bounds->clear();
 
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     for (const int var :
          id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
       DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
@@ -1245,7 +1245,7 @@ void SharedBoundsManager::GetChangedBounds(
 }
 
 void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CHECK_EQ(domains->size(), synchronized_lower_bounds_.size());
   for (int var = 0; var < domains->size(); ++var) {
     (*domains)[var] = (*domains)[var].IntersectionWith(Domain(
@@ -1254,7 +1254,7 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
 }
 
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (!bounds_exported_.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back({"Improving bounds shared", "Num", "Sym"});
@@ -1268,7 +1268,7 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
 }
 
 int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const auto it = bounds_exported_.find(worker_name);
   if (it == bounds_exported_.end()) return 0;
   return it->second.num_exported;
@@ -1388,7 +1388,7 @@ SharedClausesManager::SharedClausesManager(bool always_synchronize)
 
 int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
                                         bool may_terminate_early) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   num_full_workers_ += may_terminate_early ? 0 : 1;
   const int id = id_to_last_processed_binary_clause_.size();
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
@@ -1401,7 +1401,7 @@ int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
 }
 
 int SharedLinear2Bounds::RegisterNewId(std::string worker_name) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_worker_name_.size();
 
   id_to_stats_.resize(id + 1);
@@ -1418,7 +1418,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   if (lit2 < lit1) std::swap(lit1, lit2);
   const auto p = std::make_pair(lit1, lit2);
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
   if (inserted) {
     added_binary_clauses_.push_back(p);
@@ -1435,7 +1435,7 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
 }
 
 void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   id_to_num_exported_[id] += batch.size();
   pending_batches_.push_back(std::move(batch));
 }
@@ -1443,7 +1443,7 @@ void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
 const CompactVectorVector<int>& SharedClausesManager::GetUnseenClauses(int id) {
   std::vector<absl::Span<const int>> result;
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     id_to_last_finished_batch_[id] = id_to_last_returned_batch_[id];
     if (id_to_last_returned_batch_[id] + 1 < batches_.size()) {
       id_to_last_returned_batch_[id] += 1;
@@ -1458,7 +1458,7 @@ const CompactVectorVector<int>& SharedClausesManager::GetUnseenClauses(int id) {
 void SharedClausesManager::GetUnseenBinaryClauses(
     int id, std::vector<std::pair<int, int>>* new_clauses) {
   new_clauses->clear();
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
   if (last_binary_clause_seen >= last_visible_binary_clause_) return;
 
@@ -1469,7 +1469,7 @@ void SharedClausesManager::GetUnseenBinaryClauses(
 }
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   absl::btree_map<std::string, int64_t> name_to_table_line;
   for (int id = 0; id < id_to_num_exported_.size(); ++id) {
     if (id_to_num_exported_[id] == 0) continue;
@@ -1489,7 +1489,7 @@ void SharedClausesManager::LogStatistics(SolverLogger* logger) {
 // could merge small table with few columns. I am thinking list (row_name,
 // col_name, count) + function that create table?
 void SharedLinear2Bounds::LogStatistics(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   absl::btree_map<std::string, Stats> name_to_table_line;
   for (int id = 0; id < id_to_stats_.size(); ++id) {
     const Stats stats = id_to_stats_[id];
@@ -1516,7 +1516,7 @@ void SharedLinear2Bounds::LogStatistics(SolverLogger* logger) {
 void SharedClausesManager::Synchronize() {
   std::vector<CompactVectorVector<int>> batches_to_merge;
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     last_visible_binary_clause_ = added_binary_clauses_.size();
     const int num_workers = id_to_last_processed_binary_clause_.size();
     if (num_workers <= 1) return;
@@ -1551,7 +1551,7 @@ void SharedClausesManager::Synchronize() {
     }
   }
   if (next_batch.NumBufferedLiterals() > 0) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     VLOG(2) << "Merging batch";
     batches_.push_back(next_batch.NextBatch());
   }
@@ -1561,7 +1561,7 @@ void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
                               IntegerValue ub) {
   DCHECK(expr.IsCanonicalized()) << expr;
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   auto [it, inserted] = shared_bounds_.insert({expr, {lb, ub}});
   if (inserted) {
     // It is new.
@@ -1582,7 +1582,7 @@ void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
 }
 
 int SharedLinear2Bounds::RegisterNewImportId(std::string name) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int import_id = import_id_to_index_.size();
   import_id_to_name_.push_back(name);
   import_id_to_index_.push_back(0);
@@ -1595,7 +1595,7 @@ std::vector<
 SharedLinear2Bounds::NewlyUpdatedBounds(int import_id) {
   std::vector<std::pair<Key, std::pair<IntegerValue, IntegerValue>>> result;
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   MaybeCompressNewlyUpdateKeys();
   const int size = newly_updated_keys_.size();
   for (int i = import_id_to_index_[import_id]; i < size; ++i) {
@@ -1622,14 +1622,14 @@ void SharedLinear2Bounds::MaybeCompressNewlyUpdateKeys() {
 
 void SharedStatistics::AddStats(
     absl::Span<const std::pair<std::string, int64_t>> stats) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const auto& [key, count] : stats) {
     stats_[key] += count;
   }
 }
 
 void SharedStatistics::Log(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (stats_.empty()) return;
 
   SOLVER_LOG(logger, "Stats across workers (summed):");

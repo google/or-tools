@@ -130,7 +130,7 @@ TEST(SchedulingDemandHelperTest, LinearizedDemandWithAffineExpression) {
 
   LinearConstraintBuilder builder(&model);
   ASSERT_TRUE(demands_helper.AddLinearizedDemand(0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "2*X3 + 5");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "2*I3 + 5");
 }
 
 TEST(SchedulingDemandHelperTest, LinearizedDemandWithDecomposedEnergy) {
@@ -166,7 +166,7 @@ TEST(SchedulingDemandHelperTest, LinearizedDemandWithDecomposedEnergy) {
   demands_helper.CacheAllEnergyValues();
   LinearConstraintBuilder builder(&model);
   ASSERT_TRUE(demands_helper.AddLinearizedDemand(0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "4*X4 2*X5");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "4*I4 2*I5");
 }
 
 TEST(SchedulingDemandHelperTest, FilteredDecomposedEnergy) {

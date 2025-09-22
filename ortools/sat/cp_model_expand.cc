@@ -1054,7 +1054,8 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 //  enforcement_literals && literals[i] true => encoding[values[i]] true
 //  enforcement_literals => one of literals[i in I(j)] true || encoding[j] false
 // where I(j) = {i | values[i] = j}. This also implicitly uses the fact that
-// exactly one alternative is true.
+// exactly one literals is true. Note that we will use exactly_one in the
+// encoding if possible.
 void LinkLiteralsAndValues(absl::Span<const int> enforcement_literals,
                            absl::Span<const int> literals,
                            absl::Span<const int64_t> values,

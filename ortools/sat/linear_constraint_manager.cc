@@ -957,17 +957,23 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
 
 bool LinearConstraintManager::DebugCheckConstraint(
     const LinearConstraint& cut) {
-  if (model_->Get<DebugSolution>() == nullptr) return true;
-  const auto& debug_solution = *(model_->Get<DebugSolution>());
+  const DebugSolution* debug_solution = model_->Get<DebugSolution>();
+  if (debug_solution == nullptr || debug_solution->proto_values.empty()) {
+    return true;
+  }
 
-  IntegerValue activity(0);
+  absl::int128 activity(0);
   for (int i = 0; i < cut.num_terms; ++i) {
     const IntegerVariable var = cut.vars[i];
     const IntegerValue coeff = cut.coeffs[i];
-    CHECK(debug_solution.ivar_has_value[var]);
-    activity += coeff * debug_solution.ivar_values[var];
+    if (var >= debug_solution->ivar_has_value.size() ||
+        !debug_solution->ivar_has_value[var]) {
+      return true;
+    }
+    activity +=
+        absl::int128(coeff.value()) * debug_solution->ivar_values[var].value();
   }
-  if (activity > cut.ub || activity < cut.lb) {
+  if (activity > cut.ub.value() || activity < cut.lb.value()) {
     LOG(INFO) << cut.DebugString();
     LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
               << cut.ub << "]";

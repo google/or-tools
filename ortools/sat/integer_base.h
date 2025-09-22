@@ -193,7 +193,7 @@ inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
 inline std::string IntegerTermDebugString(IntegerVariable var,
                                           IntegerValue coeff) {
   coeff = VariableIsPositive(var) ? coeff : -coeff;
-  return absl::StrCat(coeff.value(), "*X", var.value() / 2);
+  return absl::StrCat(coeff.value(), "*I", GetPositiveOnlyIndex(var));
 }
 
 // Returns the vector of the negated variables.
@@ -325,13 +325,14 @@ struct AffineExpression {
 
   bool IsConstant() const { return var == kNoIntegerVariable; }
 
-  std::string DebugString() const {
-    if (var == kNoIntegerVariable) return absl::StrCat(constant.value());
-    if (constant == 0) {
-      return absl::StrCat("(", coeff.value(), " * X", var.value(), ")");
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const AffineExpression& expr) {
+    if (expr.constant == 0) {
+      absl::Format(&sink, "(%v)", IntegerTermDebugString(expr.var, expr.coeff));
     } else {
-      return absl::StrCat("(", coeff.value(), " * X", var.value(), " + ",
-                          constant.value(), ")");
+      absl::Format(&sink, "(%v + %d)",
+                   IntegerTermDebugString(expr.var, expr.coeff),
+                   expr.constant.value());
     }
   }
 
@@ -434,9 +435,18 @@ struct LinearExpression2 {
 
   template <typename Sink>
   friend void AbslStringify(Sink& sink, const LinearExpression2& expr) {
-    absl::Format(&sink, "%d X%d + %d X%d", expr.coeffs[0].value(),
-                 expr.vars[0].value(), expr.coeffs[1].value(),
-                 expr.vars[1].value());
+    if (expr.coeffs[0] == 0) {
+      if (expr.coeffs[1] == 0) {
+        absl::Format(&sink, "0");
+      } else {
+        absl::Format(&sink, "%v",
+                     IntegerTermDebugString(expr.vars[1], expr.coeffs[1]));
+      }
+    } else {
+      absl::Format(&sink, "%v + %v",
+                   IntegerTermDebugString(expr.vars[0], expr.coeffs[0]),
+                   IntegerTermDebugString(expr.vars[1], expr.coeffs[1]));
+    }
   }
 };
 
@@ -525,10 +535,18 @@ struct IntegerDomains
 // can check that various derived constraint do not exclude this solution (if it
 // is a known optimal solution for instance).
 struct DebugSolution {
+  void Clear() {
+    proto_values.clear();
+    ivar_has_value.clear();
+    ivar_values.clear();
+  }
+
   // This is the value of all proto variables.
   // It should be of the same size of the PRESOLVED model and should correspond
   // to a solution to the presolved model.
   std::vector<int64_t> proto_values;
+
+  IntegerValue inner_objective_value = kMinIntegerValue;
 
   // This is filled from proto_values at load-time, and using the
   // cp_model_mapping, we cache the solution of the integer variables that are

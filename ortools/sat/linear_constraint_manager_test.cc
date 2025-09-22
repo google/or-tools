@@ -112,7 +112,7 @@ TEST(LinearConstraintManagerTest, DuplicateDetection) {
 
   EXPECT_EQ(manager.AllConstraints().size(), 1);
   EXPECT_EQ(manager.AllConstraints().front().constraint.DebugString(),
-            "0 <= 1*X0 <= 3");
+            "0 <= 1*I0 <= 3");
 }
 
 void SetLpValue(IntegerVariable v, double value, Model* model) {
@@ -142,7 +142,7 @@ TEST(LinearConstraintManagerTest, DuplicateDetectionCuts) {
 
   EXPECT_EQ(manager.AllConstraints().size(), 1);
   EXPECT_EQ(manager.AllConstraints().front().constraint.DebugString(),
-            "0 <= 1*X0 <= 3");
+            "0 <= 1*I0 <= 3");
 }
 
 TEST(LinearConstraintManagerTest, DuplicateDetectionCauseLpChange) {
@@ -171,7 +171,7 @@ TEST(LinearConstraintManagerTest, DuplicateDetectionCauseLpChange) {
 
   EXPECT_EQ(manager.AllConstraints().size(), 1);
   EXPECT_EQ(manager.AllConstraints().front().constraint.DebugString(),
-            "0 <= 1*X0 <= 3");
+            "0 <= 1*I0 <= 3");
 }
 
 TEST(LinearConstraintManagerTest, OnlyAddInfeasibleConstraints) {
@@ -351,7 +351,7 @@ TEST(LinearConstraintManagerTest, SimplificationRemoveFixedVariable) {
   }
 
   const LinearConstraintManager::ConstraintIndex index(0);
-  EXPECT_EQ("0 <= 3*X0 -4*X1 7*X2 <= 11",
+  EXPECT_EQ("0 <= 3*I0 -4*I1 7*I2 <= 11",
             manager.AllConstraints()[index].constraint.DebugString());
 
   // ChangeLp will trigger the simplification.
@@ -360,7 +360,7 @@ TEST(LinearConstraintManagerTest, SimplificationRemoveFixedVariable) {
   glop::BasisState state;
   EXPECT_TRUE(manager.ChangeLp(&state));
   EXPECT_EQ(1, manager.num_shortened_constraints());
-  EXPECT_EQ("20 <= 3*X0 7*X2 <= 31",
+  EXPECT_EQ("20 <= 3*I0 7*I2 <= 31",
             manager.AllConstraints()[index].constraint.DebugString());
 
   // We also test that the constraint equivalence work with the change.
@@ -372,7 +372,7 @@ TEST(LinearConstraintManagerTest, SimplificationRemoveFixedVariable) {
     manager.Add(ct.Build());
   }
   EXPECT_EQ(manager.AllConstraints().size(), 1);
-  EXPECT_EQ("20 <= 3*X0 7*X2 <= 21",
+  EXPECT_EQ("20 <= 3*I0 7*I2 <= 21",
             manager.AllConstraints()[index].constraint.DebugString());
 }
 
@@ -392,7 +392,7 @@ TEST(LinearConstraintManagerTest, SimplificationStrenghtenUb) {
   const LinearConstraintManager::ConstraintIndex index(0);
   EXPECT_EQ(2, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
-              EndsWith("3*X0 -5*X1 5*X2 <= 75"));
+              EndsWith("3*I0 -5*I1 5*I2 <= 75"));
 }
 
 TEST(LinearConstraintManagerTest, SimplificationStrenghtenLb) {
@@ -411,7 +411,7 @@ TEST(LinearConstraintManagerTest, SimplificationStrenghtenLb) {
   const LinearConstraintManager::ConstraintIndex index(0);
   EXPECT_EQ(2, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
-              StartsWith("-45 <= 3*X0 -5*X1 5*X2"));
+              StartsWith("-45 <= 3*I0 -5*I1 5*I2"));
 }
 
 TEST(LinearConstraintManagerTest, AdvancedStrenghtening1) {
@@ -430,7 +430,7 @@ TEST(LinearConstraintManagerTest, AdvancedStrenghtening1) {
   const LinearConstraintManager::ConstraintIndex index(0);
   EXPECT_EQ(3, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
-              StartsWith("2 <= 1*X0 1*X1 1*X2"));
+              StartsWith("2 <= 1*I0 1*I1 1*I2"));
 }
 
 TEST(LinearConstraintManagerTest, AdvancedStrenghtening2) {
@@ -449,7 +449,7 @@ TEST(LinearConstraintManagerTest, AdvancedStrenghtening2) {
   const LinearConstraintManager::ConstraintIndex index(0);
   EXPECT_EQ(2, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
-              StartsWith("16 <= 9*X0 7*X1 9*X2"));
+              StartsWith("16 <= 9*I0 7*I1 9*I2"));
 }
 
 TEST(LinearConstraintManagerTest, AdvancedStrenghtening3) {
@@ -466,12 +466,12 @@ TEST(LinearConstraintManagerTest, AdvancedStrenghtening3) {
   manager.Add(ct.Build());
 
   // TODO(user): Technically, because the 5 are "enforcement" the inner
-  // constraint is 4*X2 >= 5 which can be rewriten and X2 >= 2, and we could
-  // instead have 2X0 + 2X1 + X2 >= 2 which should be tighter.
+  // constraint is 4*I2 >= 5 which can be rewriten and I2 >= 2, and we could
+  // instead have 2I0 + 2I1 + I2 >= 2 which should be tighter.
   const LinearConstraintManager::ConstraintIndex index(0);
   EXPECT_EQ(1, manager.num_coeff_strenghtening());
   EXPECT_THAT(manager.AllConstraints()[index].constraint.DebugString(),
-              StartsWith("5 <= 5*X0 5*X1 3*X2"));
+              StartsWith("5 <= 5*I0 5*I1 3*I2"));
 }
 
 }  // namespace

@@ -98,9 +98,9 @@ TEST(CumulativeEnergyCutGenerator, TestCutTimeTableGenerator) {
   cumulative.generate_cuts(manager);
   ASSERT_EQ(1, manager->num_cuts());
 
-  // 3*X3 1*X7 -1*X9 <= 0 -> Normalized to 3*X3 1*X7 <= 10
+  // 3*I3 1*I7 -1*I9 <= 0 -> Normalized to 3*I3 1*I7 <= 10
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("3*X3 1*X7 <= 10"));
+              EndsWith("3*I3 1*I7 <= 10"));
 }
 
 TEST(CumulativeEnergyCutGenerator, SameDemand) {
@@ -169,23 +169,23 @@ TEST(CumulativeEnergyCutGenerator, SameDemand) {
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(0)]
           .constraint.DebugString(),
-      EndsWith("1*X9 <= 5"));
+      EndsWith("1*I9 <= 5"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(1)]
           .constraint.DebugString(),
-      EndsWith("1*X9 1*X10 <= 10"));
+      EndsWith("1*I9 1*I10 <= 10"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(2)]
           .constraint.DebugString(),
-      EndsWith("3*X9 2*X10 <= 30"));
+      EndsWith("3*I9 2*I10 <= 30"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(3)]
           .constraint.DebugString(),
-      EndsWith("5*X9 2*X10 <= 40"));
+      EndsWith("5*I9 2*I10 <= 40"));
   EXPECT_THAT(
       manager->AllConstraints()[LinearConstraintManager::ConstraintIndex(4)]
           .constraint.DebugString(),
-      EndsWith("2*X9 3*X10 <= 30"));
+      EndsWith("2*I9 3*I10 <= 30"));
 }
 
 TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
@@ -241,12 +241,12 @@ TEST(CumulativeEnergyCutGenerator, SameDemandTimeTableGenerator) {
   cumulative.generate_cuts(manager);
   ASSERT_EQ(2, manager->num_cuts());
 
-  // 1*X9 1*X9 <= X11 -> Normalized to 1*X9 <= 5
+  // 1*I9 1*I9 <= I11 -> Normalized to 1*I9 <= 5
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X9 <= 5"));
-  // 1*X9 1*X10 <= X11 -> Normalized to 1*X9 1*X10 <= 10
+              EndsWith("1*I9 <= 5"));
+  // 1*I9 1*I10 <= I11 -> Normalized to 1*I9 1*I10 <= 10
   EXPECT_THAT(manager->AllConstraints().back().constraint.DebugString(),
-              EndsWith("1*X9 1*X10 <= 10"));
+              EndsWith("1*I9 1*I10 <= 10"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
@@ -288,7 +288,7 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedence) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X0 -1*X1 <= -3"));
+              EndsWith("1*I0 -1*I1 <= -3"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
@@ -331,7 +331,7 @@ TEST(CumulativeEnergyCutGenerator, DetectedPrecedenceRev) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              EndsWith("1*X0 -1*X1 <= -3"));
+              EndsWith("1*I0 -1*I1 <= -3"));
 }
 
 TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
@@ -374,7 +374,7 @@ TEST(CumulativeEnergyCutGenerator, DisjunctionOnStart) {
   ASSERT_EQ(1, manager->num_cuts());
 
   EXPECT_THAT(manager->AllConstraints().front().constraint.DebugString(),
-              StartsWith("15 <= 2*X0 5*X1"));
+              StartsWith("15 <= 2*I0 5*I1"));
 }
 
 TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {

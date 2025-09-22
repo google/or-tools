@@ -234,6 +234,17 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
       return SatSolver::LIMIT_REACHED;
     }
 
+    // The solver usually always solve a "restricted decision problem"
+    // obj < current_best. So when we have an optimal solution, then the
+    // problem is UNSAT, and any clauses we learn can break the debug solution.
+    // So we disable this checks once we found an optimal solution.
+    if (DEBUG_MODE) {
+      const DebugSolution* debug_sol = model->Get<DebugSolution>();
+      if (debug_sol && objective <= debug_sol->inner_objective_value) {
+        model->GetOrCreate<DebugSolution>()->Clear();
+      }
+    }
+
     // Restrict the objective.
     sat_solver->Backtrack(0);
     if (!integer_trail->Enqueue(

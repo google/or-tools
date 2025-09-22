@@ -886,7 +886,7 @@ void AddCumulativeRelaxation(const AffineExpression& capacity,
   if (sizes_gcd != 1 && !makespan.has_value()) {
     VLOG(2) << "Cumulative relaxation: sizes_gcd = " << sizes_gcd
             << ", demands_gcd = " << demands_gcd
-            << ", no makespan, capacity is " << capacity.DebugString();
+            << ", no makespan, capacity is " << capacity;
     // We can simplify the capacity only if it is fixed.
     // TODO(user): We could use (capacity / demands_gcd) * demands_gcd.
     if (!integer_trail->IsFixed(capacity)) demands_gcd = 1;

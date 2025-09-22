@@ -142,30 +142,30 @@ class SharedSolutionRepository {
   void Synchronize(std::function<void(const Solution& solution)> f = nullptr);
 
   std::vector<std::string> TableLineStats() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return {FormatName(name_), FormatCounter(num_added_),
             FormatCounter(num_queried_), FormatCounter(num_synchronization_)};
   }
 
   int64_t NumRecentlyNonImproving() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return num_non_improving_;
   }
 
   void ClearSolutionsAndIncreaseSourceId() {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     new_solutions_.clear();
     solutions_.clear();
     ++source_id_;
   }
 
   int source_id() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return source_id_;
   }
 
   int num_queried() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return num_queried_;
   }
 
@@ -321,7 +321,7 @@ class SharedIncompleteSolutionManager {
   std::vector<double> PopLast();
 
   std::vector<std::string> TableLineStats() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return {FormatName("pump"), FormatCounter(num_added_),
             FormatCounter(num_queried_)};
   }
@@ -959,7 +959,7 @@ class SharedLinear2Bounds {
   // bounds that were not already known by the worker at the time of the import,
   // and we don't have this information here.
   void NotifyNumImported(int import_id, int num) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     import_id_to_num_imported_[import_id] += num;
   }
 
@@ -1018,14 +1018,14 @@ class SharedStatistics {
 
 template <typename ValueType>
 int SharedSolutionRepository<ValueType>::NumSolutions() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return solutions_.size();
 }
 
 template <typename ValueType>
 std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetSolution(int i) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (i >= solutions_.size()) return nullptr;
   ++num_queried_;
   return solutions_[i];
@@ -1033,7 +1033,7 @@ SharedSolutionRepository<ValueType>::GetSolution(int i) const {
 
 template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (solutions_.empty()) return std::numeric_limits<int64_t>::max();
   return solutions_[0]->rank;
 }
@@ -1042,7 +1042,7 @@ template <typename ValueType>
 std::vector<std::shared_ptr<
     const typename SharedSolutionRepository<ValueType>::Solution>>
 SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   // Sorted by rank and unique.
   DCHECK(absl::c_is_sorted(solutions_,
                            [](const std::shared_ptr<const Solution>& a,
@@ -1066,7 +1066,7 @@ SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
 template <typename ValueType>
 ValueType SharedSolutionRepository<ValueType>::GetVariableValueInSolution(
     int var_index, int solution_index) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return solutions_[solution_index]->variable_values[var_index];
 }
 
@@ -1075,7 +1075,7 @@ template <typename ValueType>
 std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     absl::BitGenRef random) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (solutions_.empty()) return nullptr;
   ++num_queried_;
   int index = 0;
@@ -1122,7 +1122,7 @@ SharedSolutionRepository<ValueType>::Add(Solution solution) {
       std::make_shared<Solution>(std::move(solution));
   if (num_solutions_to_keep_ <= 0) return std::move(solution_ptr);
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     ++num_added_;
     solution_ptr->source_id = source_id_;
     new_solutions_.push_back(solution_ptr);
@@ -1133,7 +1133,7 @@ SharedSolutionRepository<ValueType>::Add(Solution solution) {
 template <typename ValueType>
 void SharedSolutionRepository<ValueType>::Synchronize(
     std::function<void(const Solution& solution)> f) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (new_solutions_.empty()) {
     const int64_t diff = num_queried_ - num_queried_at_last_sync_;
     num_non_improving_ += diff;

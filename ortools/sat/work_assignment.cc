@@ -251,12 +251,12 @@ SharedTreeManager::SharedTreeManager(Model* model)
 }
 
 int SharedTreeManager::NumNodes() const {
-  absl::MutexLock mutex_lock(&mu_);
+  absl::MutexLock mutex_lock(mu_);
   return nodes_.size();
 }
 
 bool SharedTreeManager::SyncTree(ProtoTrail& path) {
-  absl::MutexLock mutex_lock(&mu_);
+  absl::MutexLock mutex_lock(mu_);
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
   if (!IsValid(path)) {
     path.Clear();
@@ -309,7 +309,7 @@ int SharedTreeManager::TrySplitTree(absl::Span<const ProtoLiteral> decisions,
                                     ProtoTrail& path) {
   decisions = decisions.subspan(0, max_path_depth_ - path.MaxLevel());
   if (decisions.empty()) return 0;
-  absl::MutexLock l(&mu_);
+  absl::MutexLock l(mu_);
   for (int i = 0; i < decisions.size(); ++i) {
     if (!TrySplitTreeLockHeld(decisions[i], path)) return i;
   }
@@ -375,7 +375,7 @@ bool SharedTreeManager::TrySplitTreeLockHeld(ProtoLiteral decision,
 }
 
 void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
-  absl::MutexLock mutex_lock(&mu_);
+  absl::MutexLock mutex_lock(mu_);
   std::vector<std::pair<Node*, int>> nodes = GetAssignedNodes(path);
   if (nodes.back().first->children[0] == nullptr &&
       !nodes.back().first->closed && nodes.size() > 1) {
@@ -545,7 +545,7 @@ SharedTreeManager::GetAssignedNodes(const ProtoTrail& path) {
 }
 
 void SharedTreeManager::CloseTree(ProtoTrail& path, int level) {
-  absl::MutexLock mutex_lock(&mu_);
+  absl::MutexLock mutex_lock(mu_);
   const int node_id_to_close = path.NodeIds(level).front();
   path.Clear();
   if (node_id_to_close < node_id_offset_) return;

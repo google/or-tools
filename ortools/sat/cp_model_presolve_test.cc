@@ -2504,6 +2504,410 @@ TEST(PresolveCpModelTest, NoOverlap2DSplitSingletonBoxes) {
   EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
 }
 
+TEST(PresolveCpModelTest, NoOverlap2DMerge) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3 ]
+        y_intervals: [ 0, 1, 2, 3 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 4, 5 ]
+        y_intervals: [ 0, 1, 4, 5 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 2, 3, 4, 5 ]
+        y_intervals: [ 2, 3, 4, 5 ]
+      }
+    }
+  )pb");
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3, 5, 4 ]
+        y_intervals: [ 0, 1, 2, 3, 5, 4 ]
+      }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, NoOverlap2DMergePartial) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3, 4 ]
+        y_intervals: [ 0, 1, 2, 3, 4 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 3, 4, 5 ]
+        y_intervals: [ 0, 1, 3, 4, 5 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 1, 3, 4, 5 ]
+        y_intervals: [ 1, 3, 4, 5 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3, 4 ]
+        y_intervals: [ 0, 1, 2, 3, 4 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 3, 4, 5 ]
+        y_intervals: [ 0, 1, 3, 4, 5 ]
+      }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
+}
+
+TEST(PresolveCpModelTest, NoOverlap2DMergeWithOverlaps) {
+  const CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3, 4 ]
+        y_intervals: [ 0, 1, 2, 3, 4 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 4, 5 ]
+        y_intervals: [ 0, 1, 2, 4, 5 ]
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 1, 3, 4, 5 ]
+        y_intervals: [ 1, 3, 4, 5 ]
+      }
+    }
+  )pb");
+
+  const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    variables { domain: [ 0, 10 ] }
+    constraints {
+      interval {
+        start { vars: 0 coeffs: 1 }
+        end { vars: 0 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 1 coeffs: 1 }
+        end { vars: 1 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 2 coeffs: 1 }
+        end { vars: 2 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 3 coeffs: 1 }
+        end { vars: 3 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 4 coeffs: 1 }
+        end { vars: 4 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      interval {
+        start { vars: 5 coeffs: 1 }
+        end { vars: 5 coeffs: 1 offset: 5 }
+        size { offset: 5 }
+      }
+    }
+    constraints {
+      no_overlap_2d {
+        x_intervals: [ 0, 1, 2, 3, 4, 5 ]
+        y_intervals: [ 0, 1, 2, 3, 4, 5 ]
+      }
+    }
+  )pb");
+
+  SatParameters params;
+  params.set_keep_all_feasible_solutions_in_presolve(true);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
+  EXPECT_THAT(presolved_model, testing::EqualsProto(expected_presolved_model));
+}
+
 TEST(PresolveCpModelTest, IntProdWithLeftConstant) {
   const CpModelProto initial_model = ParseTestProto(R"pb(
     variables {
