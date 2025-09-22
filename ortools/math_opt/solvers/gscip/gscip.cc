@@ -383,7 +383,7 @@ void GScip::InterruptSolveFromCallbackOnCallbackError(
     absl::Status error_status) {
   CHECK(!error_status.ok());
   {
-    const absl::MutexLock lock(&callback_status_mutex_);
+    const absl::MutexLock lock(callback_status_mutex_);
     if (!callback_status_.ok()) {
       return;
     }
@@ -1024,7 +1024,7 @@ absl::StatusOr<GScipResult> GScip::Solve(
   }
   absl::Status callback_status;
   {
-    const absl::MutexLock callback_status_lock(&callback_status_mutex_);
+    const absl::MutexLock callback_status_lock(callback_status_mutex_);
     callback_status = util::StatusBuilder(callback_status_)
                       << "error in a callback that interrupted the solve";
   }
@@ -1191,7 +1191,7 @@ absl::Status GScip::CheckScipFinite(double d) {
 }
 
 bool GScip::InErrorState() {
-  const absl::MutexLock lock(&callback_status_mutex_);
+  const absl::MutexLock lock(callback_status_mutex_);
   return !callback_status_.ok();
 }
 
