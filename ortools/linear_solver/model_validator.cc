@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
-#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -24,15 +23,14 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/map_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/file.h"
