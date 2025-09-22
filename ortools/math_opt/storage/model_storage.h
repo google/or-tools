@@ -155,10 +155,7 @@ namespace math_opt {
 // the modifications since the previous call to
 // ModelStorage::AdvanceCheckpoint(). Note that, for newly initialized models,
 // before the first checkpoint, there is no additional memory overhead from
-// tracking changes. See
-// g3doc/ortools/math_opt/g3doc/model_building_complexity.md
-// for details.
-//
+// tracking changes.
 // On bad input:
 //
 // Using a bad variable id or constraint id (an id not in the current model,

@@ -146,7 +146,7 @@ TEST_P(MessageCallbackTest, EmptyIfNotSupported) {
   absl::Mutex mutex;
   std::vector<std::string> callback_messages;
   const auto callback = [&](absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     for (const auto& message : messages) {
       callback_messages.push_back(message);
     }
@@ -173,7 +173,7 @@ TEST_P(MessageCallbackTest, ObjectiveValueAndEndingSubstring) {
       .parameters = GetParam().solve_parameters,
       .message_callback =
           [&](absl::Span<const std::string> messages) {
-            const absl::MutexLock lock(&mutex);
+            const absl::MutexLock lock(mutex);
             for (const auto& message : messages) {
               callback_messages.push_back(message);
             }
@@ -268,7 +268,7 @@ TEST_P(MessageCallbackTest, InterruptAtFirstMessage) {
   SolveInterrupter interrupter;
   args.interrupter = &interrupter;
   args.message_callback = [&](absl::Span<const std::string> messages) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     for (const auto& message : messages) {
       callback_messages.push_back(message);
     }
@@ -303,7 +303,7 @@ TEST_P(CallbackTest, EventPresolve) {
   absl::Mutex mutex;
   std::optional<CallbackData> last_presolve_data;  // Guarded by mutex.
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     last_presolve_data = callback_data;
     return CallbackResult();
   };
@@ -348,7 +348,7 @@ TEST_P(CallbackTest, EventSimplex) {
   absl::Mutex mutex;
   std::vector<CallbackDataProto::SimplexStats> stats;  // Guarded-by mutex.
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     stats.push_back(callback_data.simplex_stats);
     return CallbackResult();
   };
@@ -387,7 +387,7 @@ TEST_P(CallbackTest, EventBarrier) {
   absl::Mutex mutex;
   std::vector<CallbackDataProto::BarrierStats> stats;  // Guarded-by mutex.
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     stats.push_back(callback_data.barrier_stats);
     return CallbackResult();
   };
@@ -421,7 +421,7 @@ TEST_P(CallbackTest, EventSolutionAlwaysCalled) {
   bool cb_called = false;
   bool cb_called_on_optimal = false;
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     cb_called = true;
     EXPECT_EQ(callback_data.event, CallbackEvent::kMipSolution);
     if (!callback_data.solution.has_value()) {
@@ -498,7 +498,7 @@ TEST_P(CallbackTest, EventSolutionCalledMoreThanOnce) {
   bool cb_called_on_y = false;
   bool cb_called_on_z = false;
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     EXPECT_EQ(callback_data.event, CallbackEvent::kMipSolution);
     if (!callback_data.solution.has_value()) {
       ADD_FAILURE() << "callback_data.solution should always be set at event "
@@ -649,7 +649,7 @@ TEST_P(CallbackTest, EventSolutionFilter) {
   bool cb_called = false;
   bool cb_called_on_optimal = false;
   args.callback = [&](const CallbackData& callback_data) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     cb_called = true;
     EXPECT_EQ(callback_data.event, CallbackEvent::kMipSolution);
     if (!callback_data.solution.has_value()) {
@@ -780,7 +780,7 @@ TEST_P(CallbackTest, EventNodeFilter) {
   int empty_solution_count = 0;
   args.callback = [&](const CallbackData& callback_data) {
     EXPECT_EQ(callback_data.event, CallbackEvent::kMipNode);
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     if (!callback_data.solution.has_value()) {
       empty_solution_count++;
     } else {
@@ -820,7 +820,7 @@ TEST_P(CallbackTest, StatusPropagation) {
   absl::Mutex mutex;
   bool added_cut = false;  // Guarded by mutex.
   args.callback = [&](const CallbackData& /*callback_data*/) {
-    const absl::MutexLock lock(&mutex);
+    const absl::MutexLock lock(mutex);
     CallbackResult result;
     if (!added_cut) {
       result.AddLazyConstraint(x + y <= -kInf);
