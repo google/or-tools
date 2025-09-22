@@ -31,12 +31,8 @@ cc_library(
 
 cc_library(
     name = "gurobi_environment",
-    srcs = [
-        "gurobi_environment.cc",
-    ],
-    hdrs = [
-        "gurobi_environment.h",
-    ],
+    srcs = ["gurobi_environment.cc"],
+    hdrs = ["gurobi_environment.h"],
     deps = [
         ":dynamic_library",
         "//ortools/base",
@@ -53,12 +49,8 @@ cc_library(
 
 cc_library(
     name = "xpress_environment",
-    srcs = [
-        "xpress_environment.cc",
-    ],
-    hdrs = [
-        "xpress_environment.h",
-    ],
+    srcs = ["xpress_environment.cc"],
+    hdrs = ["xpress_environment.h"],
     deps = [
         ":dynamic_library",
         "//ortools/base",

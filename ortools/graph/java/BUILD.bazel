@@ -22,9 +22,7 @@ java_wrap_cc(
     srcs = ["graph.swig"],
     module = "graph",
     package = "com.google.ortools.graph",
-    swig_includes = [
-        "//ortools/base:base_swig",
-    ],
+    swig_includes = ["//ortools/base:base_swig"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/graph:assignment",

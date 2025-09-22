@@ -25,7 +25,5 @@ java_wrap_cc(
         "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
-    ],
+    deps = ["//ortools/algorithms:knapsack_solver_lib"],
 )

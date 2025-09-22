@@ -21,9 +21,7 @@ package(default_visibility = ["//visibility:public"])
 proto_library(
     name = "jobshop_scheduling_proto",
     srcs = ["jobshop_scheduling.proto"],
-    deps = [
-        "@protobuf//:wrappers_proto",
-    ],
+    deps = ["@protobuf//:wrappers_proto"],
 )
 
 cc_proto_library(

@@ -32,9 +32,7 @@ pybind_extension(
 py_test(
     name = "rcpsp_test",
     srcs = ["rcpsp_test.py"],
-    data = [
-        "//ortools/scheduling/testdata:j301_1.sm",
-    ],
+    data = ["//ortools/scheduling/testdata:j301_1.sm"],
     deps = [
         ":rcpsp",
         "//ortools/scheduling:rcpsp_py_proto",

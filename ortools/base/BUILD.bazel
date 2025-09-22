@@ -18,9 +18,7 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "base_swig",
-    srcs = [
-        "base.i",
-    ],
+    srcs = ["base.i"],
     visibility = ["//visibility:public"],
 )
 
@@ -35,25 +33,19 @@ cc_library(
         "adjustable_priority_queue.h",
         "adjustable_priority_queue-inl.h",
     ],
-    deps = [
-        ":base",
-    ],
+    deps = [":base"],
 )
 
 cc_library(
     name = "array",
     srcs = ["array_internal.h"],
     hdrs = ["array.h"],
-    deps = [
-        "@abseil-cpp//absl/utility",
-    ],
+    deps = ["@abseil-cpp//absl/utility"],
 )
 
 cc_library(
     name = "base",
-    srcs = [
-        "version.cc",
-    ],
+    srcs = ["version.cc"],
     hdrs = [
         "commandlineflags.h",
         "init_google.h",
@@ -109,9 +101,7 @@ cc_library(
 
 cc_library(
     name = "commandlineflags",
-    srcs = [
-        "commandlineflags.cc",
-    ],
+    srcs = ["commandlineflags.cc"],
     hdrs = ["commandlineflags.h"],
     deps = [
         "@abseil-cpp//absl/flags:flag",
@@ -191,9 +181,7 @@ cc_library(
 cc_library(
     name = "flags",
     hdrs = ["flags.h"],
-    deps = [
-        "@abseil-cpp//absl/flags:flag",
-    ],
+    deps = ["@abseil-cpp//absl/flags:flag"],
 )
 
 cc_library(
@@ -222,6 +210,7 @@ cc_library(
 
 cc_library(
     name = "gmock",
+    testonly = True,
     hdrs = ["gmock.h"],
     deps = [
         ":protocol-buffer-matchers",
@@ -232,6 +221,7 @@ cc_library(
 
 cc_library(
     name = "gmock_main",
+    testonly = True,
     deps = [
         ":gmock",
         "@googletest//:gtest_main",
@@ -342,9 +332,7 @@ cc_library(
     name = "mathutil",
     srcs = ["mathutil.cc"],
     hdrs = ["mathutil.h"],
-    deps = [
-        ":base",
-    ],
+    deps = [":base"],
 )
 
 cc_library(
@@ -355,9 +343,7 @@ cc_library(
 cc_library(
     name = "memutil",
     hdrs = ["memutil.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-    ],
+    deps = ["@abseil-cpp//absl/strings"],
 )
 
 cc_library(
@@ -397,6 +383,7 @@ cc_library(
 
 cc_library(
     name = "parse_test_proto",
+    testonly = True,
     hdrs = ["parse_test_proto.h"],
     deps = [
         ":gmock",
@@ -571,9 +558,7 @@ cc_library(
     name = "sysinfo",
     srcs = ["sysinfo.cc"],
     hdrs = ["sysinfo.h"],
-    deps = [
-        "@abseil-cpp//absl/strings",
-    ],
+    deps = ["@abseil-cpp//absl/strings"],
 )
 
 cc_library(

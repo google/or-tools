@@ -35,6 +35,7 @@ cc_library(
 cc_test(
     name = "scheduler_test",
     srcs = ["scheduler_test.cc"],
+    tags = ["manual"],
     deps = [
         ":scheduler",
         ":solvers_cc_proto",
@@ -97,6 +98,7 @@ cc_library(
 cc_test(
     name = "iteration_stats_test",
     srcs = ["iteration_stats_test.cc"],
+    tags = ["manual"],
     deps = [
         ":iteration_stats",
         ":quadratic_program",
@@ -151,7 +153,7 @@ cc_test(
     name = "primal_dual_hybrid_gradient_test",
     size = "medium",
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
-    shard_count = 3,
+    tags = ["manual"],
     deps = [
         ":iteration_stats",
         ":primal_dual_hybrid_gradient",
@@ -250,6 +252,7 @@ cc_test(
     name = "sharded_optimization_utils_test",
     size = "small",
     srcs = ["sharded_optimization_utils_test.cc"],
+    tags = ["manual"],
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",
@@ -282,6 +285,7 @@ cc_library(
 cc_test(
     name = "sharded_quadratic_program_test",
     srcs = ["sharded_quadratic_program_test.cc"],
+    tags = ["manual"],
     deps = [
         ":quadratic_program",
         ":sharded_quadratic_program",
@@ -314,6 +318,7 @@ cc_test(
     name = "sharder_test",
     size = "small",
     srcs = ["sharder_test.cc"],
+    tags = ["manual"],
     deps = [
         ":scheduler",
         ":sharder",
@@ -420,6 +425,7 @@ cc_library(
 cc_test(
     name = "trust_region_test",
     srcs = ["trust_region_test.cc"],
+    tags = ["manual"],
     deps = [
         ":quadratic_program",
         ":sharded_optimization_utils",

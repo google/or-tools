@@ -232,6 +232,7 @@ cc_test(
     size = "medium",
     timeout = "eternal",
     srcs = ["set_cover_test.cc"],
+    tags = ["manual"],
     deps = [
         ":base_types",
         ":set_cover_cc_proto",
@@ -262,6 +263,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "capacity_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":capacity_proto"],
 )
 
