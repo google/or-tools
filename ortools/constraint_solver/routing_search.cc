@@ -4828,9 +4828,9 @@ bool ChristofidesFilteredHeuristic::BuildSolutionInternal() {
             ChristofidesPathSolver<int64_t, int64_t, int, Cost>::
                 MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING);
       }
-      if (christofides_solver.Solve()) {
+      if (christofides_solver.Solve().ok()) {
         path_per_cost_class[cost_class] =
-            christofides_solver.TravelingSalesmanPath();
+            christofides_solver.TravelingSalesmanPath().value();
       }
     }
   }

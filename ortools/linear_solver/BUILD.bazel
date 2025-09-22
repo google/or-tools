@@ -352,6 +352,7 @@ cc_library(
     srcs = ["gurobi_util.cc"],
     hdrs = ["gurobi_util.h"],
     deps = [
+        "//ortools/base:status_macros",
         "//ortools/third_party_solvers:gurobi_environment",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",

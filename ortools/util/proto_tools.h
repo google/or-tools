@@ -16,9 +16,6 @@
 
 #include <string>
 
-#include "absl/base/casts.h"
-#include "absl/container/flat_hash_map.h"
-#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
@@ -65,34 +62,6 @@ void ExploreAndCountAllProtoPathsInInstance(
     // several proto instances to build a global count of proto paths.
     absl::flat_hash_map<std::string, int>* proto_path_counts);
 
-// This recursive function lists all the fields of a given proto *type*
-// (not a proto instance), up to the given depth of nested sub-messages, and
-// inserts their proto paths into `proto_paths`.
-//
-// SIMPLE EXAMPLE: with this .proto message definition:
-//   message YY { repeated int z; }
-//   message XX { int a; int b; repeated int c; repeated YY d; },
-// ExploreAndInsertAllProtoPathsInType(
-//     XX().GetDescriptor(), {}, {}, /*max_depth=*/3)
-// Returns: {"a", "b", "c", "d", "d.z"}.
-// See the unit test for more complex examples.
-absl::flat_hash_set<std::string> ExploreAndInsertAllProtoPathsInType(
-    const google::protobuf::Descriptor* descriptor,
-    // ADVANCED USAGE: Pruning the proto tree exploration with two possible
-    // mechanisms: 1) based on proto path, or 2) based on proto type.
-    // 1) List of proto paths to skip: those fields will not be output nor
-    //    explored, meaning that their descendants is also skipped.
-    const absl::flat_hash_set<std::string>& skip_these_proto_paths,
-    // 2) Maps a field's full *type* name (as in Descriptor::full_name(), e.g.,
-    //    "operations_research.MyProto") to the subset of its child field names
-    //    that may be explored.
-    const absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>>&
-        proto_type_names_to_field_name_allowlist,
-    // The maximum depth, when diving into sub-messages. Note that some protos
-    // may have infinite potential depth, e.g. message X { X x; }, so we must
-    // limit the recursion depth.
-    int max_depth);
-
 // =============================================================================
 // Implementation of function templates.
 
@@ -102,7 +71,8 @@ absl::StatusOr<Proto*> SafeProtoDownCast(google::protobuf::Message* proto) {
       Proto::default_instance().GetDescriptor();
   const google::protobuf::Descriptor* actual_descriptor =
       proto->GetDescriptor();
-  if (actual_descriptor == expected_descriptor) return reinterpret_cast<Proto*>(proto);
+  if (actual_descriptor == expected_descriptor)
+    return reinterpret_cast<Proto*>(proto);
   return absl::InvalidArgumentError(absl::StrFormat(
       "Expected message type '%s', but got type '%s'",
       expected_descriptor->full_name(), actual_descriptor->full_name()));

@@ -38,7 +38,6 @@ cc_library(
 
 cc_library(
     name = "array",
-    srcs = ["array_internal.h"],
     hdrs = ["array.h"],
     deps = ["@abseil-cpp//absl/utility"],
 )
@@ -86,11 +85,6 @@ cc_library(
 cc_library(
     name = "base_export",
     hdrs = ["base_export.h"],
-)
-
-cc_library(
-    name = "basictypes",
-    hdrs = ["basictypes.h"],
 )
 
 cc_library(
@@ -173,12 +167,6 @@ cc_test(
 )
 
 cc_library(
-    name = "encodingutils",
-    hdrs = ["encodingutils.h"],
-    deps = [":base"],
-)
-
-cc_library(
     name = "flags",
     hdrs = ["flags.h"],
     deps = ["@abseil-cpp//absl/flags:flag"],
@@ -214,7 +202,7 @@ cc_library(
     hdrs = ["gmock.h"],
     deps = [
         ":protocol-buffer-matchers",
-        ":status-matchers",
+        "@abseil-cpp//absl/status:status_matchers",
         "@googletest//:gtest",
     ],
 )
@@ -234,7 +222,6 @@ cc_library(
     hdrs = ["gzipfile.h"],
     deps = [
         ":base",
-        ":basictypes",
         ":file",
         ":path",
         "@abseil-cpp//absl/strings",
@@ -298,7 +285,7 @@ cc_library(
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
     deps = [
-        ":macros",
+        ":base_export",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:usage",
@@ -311,14 +298,6 @@ cc_library(
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
-    ],
-)
-
-cc_library(
-    name = "macros",
-    hdrs = ["macros.h"],
-    deps = [
-        ":base_export",
     ],
 )
 
@@ -471,18 +450,6 @@ cc_library(
 )
 
 cc_library(
-    name = "status-matchers",
-    hdrs = ["status-matchers.h"],
-    deps = [
-        ":base",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
-    ],
-)
-
-cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
     deps = [
@@ -614,11 +581,6 @@ cc_library(
 )
 
 cc_library(
-    name = "typeid",
-    hdrs = ["typeid.h"],
-)
-
-cc_library(
     name = "types",
     hdrs = ["types.h"],
 )
@@ -628,7 +590,6 @@ cc_library(
     srcs = ["zipfile.cc"],
     hdrs = ["zipfile.h"],
     deps = [
-        ":basictypes",
         ":file",
         ":path",
         ":stl_util",

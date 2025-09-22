@@ -272,13 +272,13 @@ cc_library(
         ":minimum_spanning_tree",
         ":perfect_matching",
         "//ortools/base",
-        "//ortools/base:types",
         "//ortools/graph",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -289,7 +289,7 @@ cc_test(
         ":christofides",
         "//ortools/base",
         "//ortools/base:gmock_main",
-        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
         "@google_benchmark//:benchmark",

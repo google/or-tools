@@ -21,20 +21,25 @@
 #include <type_traits>
 
 #include "absl/utility/utility.h"
-#include "ortools/base/array_internal.h"
 
 namespace gtl {
 
-/// A utility function to build `std::array` objects from built-in arrays
-/// without specifying their size.
-///
-/// Example:
-/// @code{.cpp}
-/// auto b = gtl::to_array<std::pair<int, int>>({
-///     {1, 2},
-///     {3, 4},
-/// });
-/// @endcode
+namespace internal_array {
+
+template <typename T, std::size_t N, std::size_t... Idx>
+constexpr std::array<std::remove_cv_t<T>, N> to_array_internal(
+    T (&ts)[N], absl::index_sequence<Idx...>) {
+  return {{ts[Idx]...}};
+}
+
+template <typename T, std::size_t N, std::size_t... Idx>
+constexpr std::array<std::remove_cv_t<T>, N> to_array_internal(
+    T (&&ts)[N], absl::index_sequence<Idx...>) {
+  return {{std::move(ts[Idx])...}};
+}
+
+}  // namespace internal_array
+
 template <typename T, std::size_t N>
 constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&ts)[N]) {
   return internal_array::to_array_internal(ts, absl::make_index_sequence<N>{});

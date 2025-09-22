@@ -219,7 +219,7 @@ class HeldWolfeCrowderEvaluator {
     // bounds lead to faster convergence.
     ChristofidesPathSolver<CostType, int64_t, int, CostFunction> solver(
         number_of_nodes, cost);
-    upper_bound_ = solver.TravelingSalesmanCost();
+    upper_bound_ = solver.TravelingSalesmanCost().value();
   }
 
   bool Next() {

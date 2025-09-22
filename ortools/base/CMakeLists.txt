@@ -14,7 +14,6 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
-list(FILTER _SRCS EXCLUDE REGEX "/status-matchers\.h")
 list(FILTER _SRCS EXCLUDE REGEX "/protocol-buffer-matchers\..*")
 
 set(NAME ${PROJECT_NAME}_base)
@@ -54,12 +53,12 @@ ortools_cxx_library(
     "gmock.h"
     "protocol-buffer-matchers.cc"
     "protocol-buffer-matchers.h"
-    "status-matchers.h"
   TYPE
     STATIC
   LINK_LIBRARIES
     absl::log
     absl::strings
+    absl::status_matchers
     GTest::gtest
     GTest::gmock
     protobuf::libprotobuf

@@ -17,9 +17,13 @@
 #include <zlib.h>  // for Z_DEFAULT_COMPRESSION
 
 #include "absl/strings/string_view.h"
-#include "ortools/base/basictypes.h"  // for Ownership enum
 
 class File;
+
+// Argument type used in interfaces that can optionally take ownership
+// of a passed in argument.  If TAKE_OWNERSHIP is passed, the called
+// object takes ownership of the argument.  Otherwise it does not.
+enum Ownership { DO_NOT_TAKE_OWNERSHIP, TAKE_OWNERSHIP };
 
 // Argument type used in interfaces that can optionally accept appended
 // compressed streams.  If kConcatenateStreams is passed, the output will

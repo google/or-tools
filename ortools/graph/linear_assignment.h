@@ -160,7 +160,7 @@
 // possible.
 //
 // We don't use the interface from
-// operations_research/algorithms/hungarian.h because we want to be
+// cs/ortools/algorithms/hungarian.h because we want to be
 // able to express sparse problems efficiently.
 //
 // When asked to solve the given assignment problem we return a

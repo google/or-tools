@@ -81,7 +81,6 @@ add_library(glop)
 target_sources(glop PRIVATE
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
-  ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
@@ -89,7 +88,6 @@ target_sources(glop PRIVATE
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/sysinfo.cc
   ortools/base/sysinfo.h
   ortools/base/timer.h
@@ -302,14 +300,12 @@ install(DIRECTORY ortools/glop
 install(FILES
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
-  ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.h
   ortools/base/gzipstring.h
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/recordio.h
   ortools/base/strong_int.h
   ortools/base/strong_vector.h
