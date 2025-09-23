@@ -14,9 +14,9 @@
 #include "ortools/base/dump_vars.h"
 
 #include <optional>
-#include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 

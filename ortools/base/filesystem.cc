@@ -13,11 +13,18 @@
 
 #include "ortools/base/filesystem.h"
 
+#include <algorithm>
+#include <exception>   // IWYU pragma: keep
 #include <filesystem>  // NOLINT(build/c++17)
 #include <regex>       // NOLINT
+#include <string>
+#include <string_view>
+#include <system_error>  // NOLINT
+#include <vector>
 
 #include "absl/status/status.h"
 #include "absl/strings/str_replace.h"
+#include "ortools/base/file.h"
 
 namespace fs = std::filesystem;
 
