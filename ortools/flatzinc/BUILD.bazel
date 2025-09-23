@@ -159,5 +159,7 @@ cc_binary(
         "//ortools/base:path",
         "//ortools/base:threadpool",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:flags",
     ],
 )

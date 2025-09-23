@@ -118,6 +118,7 @@ cc_library(
     srcs = ["scip_params.cc"],
     hdrs = ["scip_params.h"],
     deps = [
+        "//ortools/base:logging",
         "//ortools/linear_solver:scip_helper_macros",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",

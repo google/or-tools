@@ -41,8 +41,6 @@
 #include <string>
 #include <type_traits>
 
-#include "absl/base/port.h"
-
 namespace gtl {
 
 // Several policy classes below determine how LogRangeToStream will
