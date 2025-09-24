@@ -381,11 +381,11 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v922"
+    GIT_TAG        "v923"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v922.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v923.patch"
   )
   set(SHARED ON CACHE BOOL "Scip param" FORCE)
   set(ZLIB ON CACHE BOOL "Scip param" FORCE)
