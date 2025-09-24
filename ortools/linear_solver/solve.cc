@@ -50,18 +50,20 @@
 //       2>/tmp/foo.err
 
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
 
-#include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
+#include "absl/log/flags.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/base/file.h"
 #include "ortools/base/helpers.h"

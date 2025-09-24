@@ -405,6 +405,8 @@ cc_binary(
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:sol_reader",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
