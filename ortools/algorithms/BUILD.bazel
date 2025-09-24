@@ -280,6 +280,33 @@ cc_test(
 )
 
 cc_library(
+    name = "space_saving_most_frequent",
+    hdrs = ["space_saving_most_frequent.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "space_saving_most_frequent_test",
+    srcs = ["space_saving_most_frequent_test.cc"],
+    deps = [
+        ":space_saving_most_frequent",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
     name = "sparse_permutation",
     srcs = ["sparse_permutation.cc"],
     hdrs = ["sparse_permutation.h"],
