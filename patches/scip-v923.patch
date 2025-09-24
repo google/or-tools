@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 38ac7845..9b0d4fcb 100644
+index 38917b8e..a8dff6e9 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -38,9 +38,11 @@ set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
@@ -105,21 +105,10 @@ index 559552f9..682ac40a 100644
  set(SCIP_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
  set(SCIP_FOUND TRUE)
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index d6dd3acf..a146ddec 100644
+index be3760c4..b764f0b4 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -5,8 +5,8 @@ include(GNUInstallDirs)
- 
- function(setLibProperties targetname outputname)
-     set_target_properties(${targetname} PROPERTIES
--        OUTPUT_NAME ${outputname}
--        MACOSX_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-+      OUTPUT_NAME ${outputname}
-+    )
- endfunction(setLibProperties)
- 
- set(CMAKE_C_STANDARD 99)
-@@ -1112,6 +1112,13 @@ target_link_libraries(scip
+@@ -1115,6 +1115,13 @@ target_link_libraries(scip
  add_dependencies(libscip scip_update_githash)
  add_dependencies(scip scip_update_githash)
  
@@ -133,7 +122,7 @@ index d6dd3acf..a146ddec 100644
  set_target_properties(libscip PROPERTIES
      VERSION ${SCIP_VERSION_MAJOR}.${SCIP_VERSION_MINOR}.${SCIP_VERSION_PATCH}.${SCIP_VERSION_SUB}
      SOVERSION ${SCIP_VERSION_MAJOR}.${SCIP_VERSION_MINOR}
-@@ -1150,17 +1157,8 @@ install(TARGETS scip libscip EXPORT scip-targets
+@@ -1153,17 +1160,8 @@ install(TARGETS scip libscip EXPORT scip-targets
          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
  
  # Add all targets to the build-tree export set
@@ -153,7 +142,7 @@ index d6dd3acf..a146ddec 100644
  
  # configure the config file for the build tree
  set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
-@@ -1176,18 +1174,16 @@ ${PROJECT_BINARY_DIR}/scip-config-version.cmake
+@@ -1179,18 +1177,16 @@ ${PROJECT_BINARY_DIR}/scip-config-version.cmake
  
  #configure the config file for the install
  set(CONF_INCLUDE_DIRS "\${CMAKE_CURRENT_LIST_DIR}/../../../include")
