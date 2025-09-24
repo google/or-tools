@@ -18,11 +18,9 @@
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
 
-OR_TOOLS_VERSION = "10.0"
-
 module(
     name = "or-tools",
-    version = OR_TOOLS_VERSION,
+    version = "10.0",
 )
 
 # see https://registry.bazel.build/
