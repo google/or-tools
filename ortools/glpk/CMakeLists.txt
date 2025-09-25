@@ -35,25 +35,6 @@ target_link_libraries(${NAME} PRIVATE
 #add_library(${PROJECT_NAMESPACE}::glpk ALIAS ${NAME})
 
 if(BUILD_TESTING)
-ortools_cxx_library(
-  NAME
-    base_gmock
-  SOURCES
-    "gmock.h"
-    "protocol-buffer-matchers.cc"
-    "protocol-buffer-matchers.h"
-  TYPE
-    STATIC
-  LINK_LIBRARIES
-    absl::log
-    absl::strings
-    absl::status_matchers
-    GTest::gtest
-    GTest::gmock
-    protobuf::libprotobuf
-  TESTING
-)
-
   file(GLOB _TEST_SRCS "*_test.cc")
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
