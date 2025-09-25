@@ -16,8 +16,6 @@
 
 #include <string>
 
-#include "absl/base/port.h"
-
 namespace operations_research {
 namespace glop {
 
