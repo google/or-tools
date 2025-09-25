@@ -16,7 +16,7 @@ if(NOT USE_GLPK)
 endif()
 
 file(GLOB _SRCS "*.h" "*.cc")
-
+list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
 set(NAME ${PROJECT_NAME}_glpk)
 
 # Will be merge in libortools.so
@@ -33,3 +33,22 @@ target_link_libraries(${NAME} PRIVATE
   absl::str_format
   $<$<BOOL:${USE_GLPK}>:GLPK::GLPK>)
 #add_library(${PROJECT_NAMESPACE}::glpk ALIAS ${NAME})
+
+if(BUILD_TESTING)
+  file(GLOB _TEST_SRCS "*_test.cc")
+  foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
+    get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
+    get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)
+    ortools_cxx_test(
+      NAME
+        glpk_${_NAME}
+      SOURCES
+        ${_FILE_NAME}
+      LINK_LIBRARIES
+        benchmark::benchmark
+        base_gmock
+        GTest::gtest
+        GTest::gtest_main
+    )
+  endforeach()
+endif()
