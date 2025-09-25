@@ -12,9 +12,9 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
-# Code specific to Glpk solver used by linear_solver/ and math_opt/.
-package(default_visibility = ["//ortools:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "glpk_env_deleter",
@@ -26,7 +26,7 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "@glpk",
     ],
 )
@@ -41,9 +41,24 @@ cc_library(
             "//conditions:default": ["@platforms//:incompatible"],
         }),
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "@abseil-cpp//absl/strings",
         "@glpk",
+    ],
+)
+
+cc_test(
+    name = "glpk_formatters_test",
+    srcs = ["glpk_formatters_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+    deps = [
+        ":glpk_formatters",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
