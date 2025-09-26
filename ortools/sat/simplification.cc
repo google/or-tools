@@ -37,6 +37,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -354,11 +355,11 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num removable Booleans: ", num_removable, " / ",
-               can_be_removed.size());
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num trivial clauses: ", num_trivial_clauses_);
+    SOLVER_LOG(logger_, "[SAT presolve] num removable Booleans: ",
+               FormatCounter(num_removable), " / ",
+               FormatCounter(can_be_removed.size()));
+    SOLVER_LOG(logger_, "[SAT presolve] num trivial clauses: ",
+               FormatCounter(num_trivial_clauses_));
     DisplayStats(0);
   }
 
@@ -975,10 +976,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
     }
   }
   SOLVER_LOG(logger_, "[SAT presolve] [", elapsed_seconds, "s]",
-             " clauses:", num_clauses, " literals:", num_literals,
-             " vars:", num_vars, " one_side_vars:", num_one_side,
-             " simple_definition:", num_simple_definition,
-             " singleton_clauses:", num_singleton_clauses);
+             " clauses:", FormatCounter(num_clauses),
+             " literals:", FormatCounter(num_literals),
+             " vars:", FormatCounter(num_vars), " one_side_vars:", num_one_side,
+             " simple_definition:", FormatCounter(num_simple_definition),
+             " singleton_clauses:", FormatCounter(num_singleton_clauses));
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
@@ -1292,10 +1294,12 @@ void ProbeAndFindEquivalentLiteral(
   }
 
   if (logger != nullptr) {
-    SOLVER_LOG(logger, "[Pure SAT probing] fixed ", num_already_fixed_vars,
-               " + ", solver->LiteralTrail().Index() - num_already_fixed_vars,
-               " equiv ", num_equiv / 2, " total ", solver->NumVariables(),
-               " wtime: ", timer.Get());
+    SOLVER_LOG(
+        logger, "[Pure SAT probing] fixed ",
+        FormatCounter(num_already_fixed_vars), " + ",
+        FormatCounter(solver->LiteralTrail().Index() - num_already_fixed_vars),
+        " equiv ", FormatCounter(num_equiv / 2), " total ",
+        FormatCounter(solver->NumVariables()), " wtime: ", timer.Get());
   } else {
     const bool log_info =
         solver->parameters().log_search_progress() || VLOG_IS_ON(1);

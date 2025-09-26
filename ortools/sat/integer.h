@@ -395,6 +395,8 @@ class LazyReasonInterface {
   LazyReasonInterface() = default;
   virtual ~LazyReasonInterface() = default;
 
+  virtual std::string LazyReasonName() const = 0;
+
   // When called, this must fill the two vectors so that literals contains any
   // Literal part of the reason and dependencies contains the trail index of any
   // IntegerLiteral that is also part of the reason.

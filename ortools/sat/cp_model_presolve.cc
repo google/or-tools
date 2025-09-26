@@ -3089,6 +3089,12 @@ bool CpModelPresolver::PresolveLinearOfSizeTwo(ConstraintProto* ct) {
           "linear2: implied ax + by = cte has only one solution");
       context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
+    } else {
+      context_->UpdateRuleStats(
+          "TODO linear2: implied ax + by = cte has multiple solutions");
+      VLOG(2) << "ExpandLinear2EqCst with " << reduced_domain.Size()
+              << " values";
+      return false;
     }
   }
 
@@ -8193,6 +8199,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   Model local_model;
   local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
   auto* sat_solver = local_model.GetOrCreate<SatSolver>();
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   sat_solver->SetNumVariables(num_variables);
 
   // Fix variables if any. Because we might not have reached the presove "fixed
@@ -8213,6 +8220,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
   std::vector<Literal> clause;
   int num_removed_constraints = 0;
   int num_ignored_constraints = 0;
+  const bool load_amo = context_->params().load_at_most_ones_in_sat_presolve();
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
     const ConstraintProto& ct = context_->working_model->constraints(i);
 
@@ -8227,6 +8235,39 @@ bool CpModelPresolver::PresolvePureSatPart() {
       }
       sat_solver->AddProblemClause(clause);
 
+      context_->working_model->mutable_constraints(i)->Clear();
+      context_->UpdateConstraintVariableUsage(i);
+      continue;
+    }
+
+    // TODO(user): we should probably make sure we don't have empty amo.
+    if (load_amo && ct.constraint_case() == ConstraintProto::kAtMostOne &&
+        ct.enforcement_literal().empty() &&
+        !ct.at_most_one().literals().empty()) {
+      clause.clear();
+      for (const int ref : ct.at_most_one().literals()) {
+        clause.push_back(convert(ref));
+      }
+      if (!graph->AddAtMostOne(clause)) return false;
+
+      ++num_removed_constraints;
+      context_->working_model->mutable_constraints(i)->Clear();
+      context_->UpdateConstraintVariableUsage(i);
+      continue;
+    }
+
+    if (load_amo && ct.constraint_case() == ConstraintProto::kExactlyOne &&
+        ct.enforcement_literal().empty()) {
+      clause.clear();
+      for (const int ref : ct.exactly_one().literals()) {
+        clause.push_back(convert(ref));
+      }
+
+      // We load it as two constraints.
+      if (!graph->AddAtMostOne(clause)) return false;
+      sat_solver->AddProblemClause(clause);
+
+      ++num_removed_constraints;
       context_->working_model->mutable_constraints(i)->Clear();
       context_->UpdateConstraintVariableUsage(i);
       continue;
@@ -8359,6 +8400,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
     ProbeAndFindEquivalentLiteral(sat_solver, &sat_postsolver,
                                   /*drat_proof_handler=*/nullptr, &equiv_map,
                                   logger_);
+
     if (sat_solver->ModelIsUnsat()) return false;
   } else {
     // TODO(user): BVA takes time and does not seems to help on the minizinc
@@ -8380,6 +8422,35 @@ bool CpModelPresolver::PresolvePureSatPart() {
   if (!sat_solver->ResetToLevelZero()) return false;
   time_limit_->AdvanceDeterministicTime(
       local_model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+
+  // The "old" SAT presolve do not read at_most_ones.
+  // So extract them back from the sat_solver, and only continue with submodel.
+  graph->CleanupAllRemovedAndFixedVariables();
+  graph->ResetAtMostOneIterator();
+  while (true) {
+    absl::Span<const Literal> amo = graph->NextAtMostOne();
+    if (amo.empty()) break;
+
+    // Re-add the amo to the proto.
+    ConstraintProto* ct = context_->working_model->add_constraints();
+    ct->mutable_at_most_one()->mutable_literals()->Reserve(amo.size());
+    for (Literal l : amo) {
+      // TODO(user): ProbeAndFindEquivalentLiteral() do not register newly
+      // found equivalence to the BinaryImplicationGraph, It should so that
+      // we already get cleaned AMO here.
+      if (l.Index() < equiv_map.size()) {
+        l = Literal(equiv_map[l]);
+      }
+
+      const int var = new_to_old_index[l.Variable().value()];
+      ct->mutable_at_most_one()->add_literals(l.IsPositive() ? var
+                                                             : NegatedRef(var));
+
+      // These cannot be removed anymore by the old SAT presolver.
+      can_be_removed[l.Variable().value()] = false;
+    }
+  }
+  context_->UpdateNewConstraintsVariableUsage();
 
   // Apply the "old" SAT presolve.
   SatPresolver sat_presolver(&sat_postsolver, logger_);
@@ -9174,6 +9245,164 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   }
 }
 
+void CpModelPresolver::TransformClausesToExactlyOne() {
+  if (context_->ModelIsUnsat()) return;
+  if (!context_->params().find_clauses_that_are_exactly_one()) return;
+  PresolveTimer timer(__FUNCTION__, logger_, time_limit_);
+
+  auto convert = [](int ref) {
+    if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
+    return Literal(BooleanVariable(NegatedRef(ref)), false);
+  };
+  const int num_constraints = context_->working_model->constraints_size();
+
+  // We reuse the BinaryImplicationGraph code to "propagate" 2-SAT.
+  Model local_model;
+  const int num_variables = context_->working_model->variables().size();
+  local_model.GetOrCreate<Trail>()->Resize(num_variables);
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
+  graph->Resize(num_variables);
+
+  // Extract the bool_and and at_most_one constraints.
+  // TODO(user): use probing info?
+  int num_amos = 0;
+  std::vector<Literal> tmp_clique;
+  std::vector<int> clause_indices;
+  std::vector<std::vector<Literal>> clauses;
+  for (int c = 0; c < num_constraints; ++c) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    if (ct->constraint_case() == ConstraintProto::kAtMostOne) {
+      tmp_clique.clear();
+      for (const int ref : ct->at_most_one().literals()) {
+        tmp_clique.push_back(convert(ref));
+      }
+      ++num_amos;
+      if (!graph->AddAtMostOne(tmp_clique)) {
+        return (void)context_->NotifyThatModelIsUnsat();
+      }
+    } else if (ct->constraint_case() == ConstraintProto::kBoolAnd) {
+      if (ct->enforcement_literal().size() != 1) continue;
+      const Literal enforcement = convert(ct->enforcement_literal(0));
+      for (const int ref : ct->bool_and().literals()) {
+        if (ref == ct->enforcement_literal(0)) continue;
+        ++num_amos;
+        if (!graph->AddAtMostOne({enforcement, convert(ref).Negated()})) {
+          return (void)context_->NotifyThatModelIsUnsat();
+        }
+      }
+    } else if (ct->constraint_case() == ConstraintProto::kBoolOr) {
+      if (!ct->enforcement_literal().empty()) continue;
+      clause_indices.push_back(c);
+      std::vector<Literal> clause;
+      clause.reserve(ct->bool_or().literals().size());
+      for (const int ref : ct->bool_or().literals()) {
+        clause.push_back(convert(ref));
+      }
+      clauses.push_back(std::move(clause));
+    }
+  }
+
+  if (!graph->DetectEquivalences()) {
+    return (void)context_->NotifyThatModelIsUnsat();
+  }
+
+  // Add the Boolean variable equivalence detected by DetectEquivalences().
+  // Those are needed because TransformIntoMaxCliques() will replace all
+  // variable by its representative.
+  for (int var = 0; var < num_variables; ++var) {
+    const Literal l = Literal(BooleanVariable(var), true);
+    if (graph->RepresentativeOf(l) != l) {
+      const Literal r = graph->RepresentativeOf(l);
+      if (!context_->StoreBooleanEqualityRelation(
+              var, r.IsPositive() ? r.Variable().value()
+                                  : NegatedRef(r.Variable().value()))) {
+        return;
+      }
+    }
+  }
+
+  auto signature = [](absl::Span<const Literal> literals) {
+    uint64_t result = 0;
+    for (const Literal l : literals) {
+      result |= (l.Index().value()) & 63;
+    }
+    return result;
+  };
+  auto implied_signature = [](absl::Span<const Literal> literals) {
+    uint64_t result = literals[0].Index().value() & 63;
+    for (const Literal l : literals.subspan(1)) {
+      result |= (l.NegatedIndex().value()) & 63;
+    }
+    return result;
+  };
+
+  // Probe variables (using only amo graph) and filter clauses.
+  //
+  // TODO(user): be faster. with one "probing" we can look at all the clauses
+  // containing that literal and filter them.
+  int num_transformed = 0;
+  int num_checked = 0;
+  util_intops::StrongVector<LiteralIndex, int> count(2 * num_variables, 0);
+  util_intops::StrongVector<LiteralIndex, int> signatures(2 * num_variables, 0);
+  for (int i = 0; i < clauses.size(); ++i) {
+    ++num_checked;
+    bool is_exo = true;
+    const int clause_size = clauses[i].size();
+
+    // First heuristic scan.
+    timer.TrackSimpleLoop(clause_size);
+    const uint64_t clause_signature = signature(clauses[i]);
+    for (const Literal l : clauses[i]) {
+      if (count[l] == 0) continue;
+      if (count[l] < clause_size || (clause_signature & ~signatures[l])) {
+        is_exo = false;
+        break;
+      }
+    }
+    if (!is_exo) continue;
+
+    timer.TrackSimpleLoop(clause_size);
+    for (const Literal l : clauses[i]) {
+      graph->ResetWorkDone();
+      absl::Span<const Literal> implied = graph->GetAllImpliedLiterals(l);
+      CHECK_GT(implied.size(), 0);  // Always contain l.
+      count[l] = implied.size();
+      signatures[l] = implied_signature(implied);
+      timer.AddToWork(graph->WorkDone() * 1e-9);
+      if (implied.size() < clause_size || (clause_signature & ~signatures[l])) {
+        is_exo = false;
+        break;
+      }
+      timer.TrackSimpleLoop(clause_size);
+      for (const Literal o : clauses[i]) {
+        if (o == l) continue;
+        if (!graph->LiteralIsImplied(o.Negated())) {
+          is_exo = false;
+          break;
+        }
+      }
+      if (!is_exo) break;
+    }
+    if (is_exo) {
+      ++num_transformed;
+      context_->UpdateRuleStats("clauses: transformed into exactly one");
+      google::protobuf::RepeatedField<int32_t> tmp =
+          context_->working_model->constraints(clause_indices[i])
+              .bool_or()
+              .literals();
+      *(context_->working_model->mutable_constraints(clause_indices[i])
+            ->mutable_exactly_one()
+            ->mutable_literals()) = tmp;
+    }
+    if (timer.WorkLimitIsReached()) break;
+  }
+
+  timer.AddCounter("num_amos", num_amos);
+  timer.AddCounter("num_clauses", clauses.size());
+  timer.AddCounter("num_transformed", num_transformed);
+  timer.AddCounter("num_checked", num_checked);
+}
+
 bool CpModelPresolver::PresolveOneConstraint(int c) {
   if (context_->ModelIsUnsat()) return false;
   ConstraintProto* ct = context_->working_model->mutable_constraints(c);
@@ -9515,6 +9744,10 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
 // TODO(user): TransformIntoMaxCliques() convert the bool_and to
 // at_most_one, but maybe also duplicating them into bool_or would allow this
 // function to do more presolving.
+//
+// TODO(user): If an exactly_one of size n and a clause/amo share n - 1 terms,
+// then we can simplify the clause by using the last term of the exactly_one
+// inside it instead.
 void CpModelPresolver::ProcessSetPPC() {
   if (time_limit_->LimitReached()) return;
   if (context_->ModelIsUnsat()) return;
@@ -13882,6 +14115,7 @@ CpSolverStatus CpModelPresolver::Presolve() {
     DetectDominatedLinearConstraints();
     DetectDifferentVariables();
     ProcessSetPPC();
+    TransformClausesToExactlyOne();
 
     // These operations might break symmetry. Or at the very least, the newly
     // created variable must be incorporated in the generators.

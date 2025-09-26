@@ -514,6 +514,10 @@ Domain PresolveContext::DomainOf(int ref) const {
   return result;
 }
 
+int64_t PresolveContext::DomainSize(int ref) const {
+  return DomainOf(ref).Size();
+}
+
 bool PresolveContext::DomainContains(int ref, int64_t value) const {
   if (!RefIsPositive(ref)) {
     return domains_[PositiveRef(ref)].Contains(-value);
@@ -1744,6 +1748,14 @@ bool PresolveContext::IsFullyEncoded(const LinearExpressionProto& expr) const {
   CHECK_LE(expr.vars_size(), 1);
   if (IsFixed(expr)) return true;
   return IsFullyEncoded(expr.vars(0));
+}
+
+bool PresolveContext::IsMostlyFullyEncoded(int ref) const {
+  const int var = PositiveRef(ref);
+  const int64_t size = domains_[var].Size();
+  if (size <= 2) return true;
+  const auto& it = encoding_.find(var);
+  return it == encoding_.end() ? false : size < 2 * it->second.size();
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {

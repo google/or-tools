@@ -49,6 +49,7 @@
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/file.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/options.h"
@@ -69,6 +70,8 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/drat_checker.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
@@ -123,7 +126,27 @@ ABSL_FLAG(bool, cp_model_ignore_objective, false,
           "If true, ignore the objective.");
 ABSL_FLAG(bool, cp_model_ignore_hints, false,
           "If true, ignore any supplied hints.");
+ABSL_FLAG(bool, cp_model_use_hint_for_debug_only, false,
+          "If true, ignore any supplied hints, but if the hint is valid and "
+          "complete, validate that no buggy propagator make it infeasible.");
 ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
+
+ABSL_FLAG(std::string, cp_model_drat_output, "",
+          "If non-empty, a proof in DRAT format will be written to this file. "
+          "This will only be used for pure-SAT problems. And, as of September "
+          "2025, only works with a single worker, no presolve, and symmetry "
+          "level 0 or 1.");
+
+ABSL_FLAG(bool, cp_model_drat_check, false,
+          "If true, a proof in DRAT format will be stored in memory and "
+          "checked if the problem is UNSAT. This will only be used for "
+          "pure-SAT problems. And, as of September 2025, only works with a "
+          "single worker, no presolve, and symmetry level 0 or 1.");
+
+ABSL_FLAG(double, cp_model_max_drat_time_in_seconds,
+          std::numeric_limits<double>::infinity(),
+          "Maximum time in seconds to check the DRAT proof. This will only "
+          "be used is the cp_model_drat_check flag is enabled.");
 
 ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
           "When true, all intermediate solutions found by the solver will be "
@@ -154,7 +177,7 @@ void DumpModelProto(const M& proto, absl::string_view name) {
                             ".pb.txt");
     LOG(INFO) << "Dumping " << name << " text proto to '" << filename << "'.";
   } else {
-    const std::string filename =
+    filename =
         absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix), name, ".bin");
     LOG(INFO) << "Dumping " << name << " binary proto to '" << filename << "'.";
   }
@@ -1007,7 +1030,8 @@ class FullProblemSolver : public SubSolver {
  public:
   FullProblemSolver(absl::string_view name,
                     const SatParameters& local_parameters, bool split_in_chunks,
-                    SharedClasses* shared, bool stop_at_first_solution = false)
+                    SharedClasses* shared, DratProofHandler* drat_proof_handler,
+                    bool stop_at_first_solution = false)
       : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
@@ -1027,6 +1051,11 @@ class FullProblemSolver : public SubSolver {
     // TODO(user): For now we do not count LNS statistics. We could easily
     // by registering the SharedStatistics class with LNS local model.
     shared_->RegisterSharedClassesInLocalModel(&local_model_);
+
+    if (drat_proof_handler != nullptr) {
+      local_model_.GetOrCreate<SatSolver>()->SetDratProofHandler(
+          drat_proof_handler);
+    }
 
     // Setup the local logger, in multi-thread log_search_progress should be
     // false by default, but we might turn it on for debugging. It is on by
@@ -1787,7 +1816,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
              num_shared_tree_workers)) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
-          /*split_in_chunks=*/params.interleave_search(), shared));
+          /*split_in_chunks=*/params.interleave_search(), shared,
+          /*drat_proof_handler=*/nullptr));
     }
   }
 
@@ -1810,7 +1840,8 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
-        /*split_in_chunks=*/params.interleave_search(), shared));
+        /*split_in_chunks=*/params.interleave_search(), shared,
+        /*drat_proof_handler=*/nullptr));
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2158,6 +2189,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FullProblemSolver>(
                 local_params.name(), local_params,
                 /*split_in_chunks=*/local_params.interleave_search(), shared,
+                /*drat_proof_handler=*/nullptr,
                 /*stop_on_first_solution=*/true));
       }
     }
@@ -2330,6 +2362,87 @@ void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
   }
 }
 
+std::unique_ptr<DratProofHandler> MaybeCreateDratProofHandler(
+    const CpModelProto& model_proto,
+    SharedResponseManager* shared_response_manager, SolverLogger* logger) {
+  std::unique_ptr<DratProofHandler> drat_proof_handler;
+  if (!absl::GetFlag(FLAGS_cp_model_drat_output).empty() ||
+      absl::GetFlag(FLAGS_cp_model_drat_check)) {
+    if (!absl::GetFlag(FLAGS_cp_model_drat_output).empty()) {
+      File* output;
+      CHECK_OK(file::Open(absl::GetFlag(FLAGS_cp_model_drat_output), "w",
+                          &output, file::Defaults()));
+      drat_proof_handler = std::make_unique<DratProofHandler>(
+          /*in_binary_format=*/false, output,
+          absl::GetFlag(FLAGS_cp_model_drat_check));
+    } else {
+      drat_proof_handler = std::make_unique<DratProofHandler>();
+    }
+    if (!LoadCpModelInDratProofHandler(model_proto, drat_proof_handler.get())) {
+      SOLVER_LOG(logger,
+                 "Model is not pure SAT: cannot output nor check DRAT proof");
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+  shared_response_manager->AddFinalResponsePostprocessor(
+      [logger, drat_proof_handler =
+                   drat_proof_handler.get()](CpSolverResponse* response) {
+        if (absl::GetFlag(FLAGS_cp_model_drat_check) &&
+            response->status() == CpSolverStatus::INFEASIBLE) {
+          WallTimer drat_timer;
+          drat_timer.Start();
+          DratChecker::Status drat_status = drat_proof_handler->Check(
+              absl::GetFlag(FLAGS_cp_model_max_drat_time_in_seconds));
+          switch (drat_status) {
+            case DratChecker::UNKNOWN:
+              SOLVER_LOG(logger, "DRAT_status: UNKNOWN");
+              break;
+            case DratChecker::VALID:
+              SOLVER_LOG(logger, "DRAT_status: VALID");
+              break;
+            case DratChecker::INVALID:
+              SOLVER_LOG(logger, "DRAT_status: INVALID");
+              break;
+            default:
+              // Should not happen.
+              break;
+          }
+          SOLVER_LOG(logger, "DRAT_walltime: ", drat_timer.Get());
+        } else {
+          // Always log a DRAT status to make it easier to extract it from a
+          // multirun result with awk.
+          SOLVER_LOG(logger, "DRAT_status: NA");
+          SOLVER_LOG(logger, "DRAT_walltime: NA");
+        }
+      });
+  return drat_proof_handler;
+}
+
+void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
+                             PresolveContext* context, SolverLogger* logger) {
+  SOLVER_LOG(logger, "Fixing ", solution_hint.vars().size(),
+             " variables to their value in the solution hints.");
+  for (int i = 0; i < solution_hint.vars_size(); ++i) {
+    const int var = solution_hint.vars(i);
+    const int64_t value = solution_hint.values(i);
+    if (!context->IntersectDomainWith(var, Domain(value))) {
+      const IntegerVariableProto& var_proto =
+          context->working_model->variables(var);
+      const std::string var_name = var_proto.name().empty()
+                                       ? absl::StrCat("var(", var, ")")
+                                       : var_proto.name();
+
+      const Domain var_domain = ReadDomainFromProto(var_proto);
+      SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
+                 var_name, "' with domain", var_domain.ToString(),
+                 " the value ", value);
+      break;
+    }
+  }
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2478,6 +2591,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
 
+  std::unique_ptr<DratProofHandler> drat_proof_handler =
+      MaybeCreateDratProofHandler(model_proto, shared_response_manager, logger);
+
   // Presolve and expansions.
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger,
@@ -2549,25 +2665,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Checks for hints early in case they are forced to be hard constraints.
   if (params.fix_variables_to_their_hinted_value() &&
       model_proto.has_solution_hint()) {
-    SOLVER_LOG(logger, "Fixing ", model_proto.solution_hint().vars().size(),
-               " variables to their value in the solution hints.");
-    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-      const int var = model_proto.solution_hint().vars(i);
-      const int64_t value = model_proto.solution_hint().values(i);
-      if (!context->IntersectDomainWith(var, Domain(value))) {
-        const IntegerVariableProto& var_proto =
-            context->working_model->variables(var);
-        const std::string var_name = var_proto.name().empty()
-                                         ? absl::StrCat("var(", var, ")")
-                                         : var_proto.name();
-
-        const Domain var_domain = ReadDomainFromProto(var_proto);
-        SOLVER_LOG(logger, "Hint found infeasible when assigning variable '",
-                   var_name, "' with domain", var_domain.ToString(),
-                   " the value ", value);
-        break;
-      }
-    }
+    FixVariablesToHintValue(model_proto.solution_hint(), context.get(), logger);
   }
 
   // If the hint is complete, we can use the solution checker to do more
@@ -2715,6 +2813,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Presolved ", CpModelStats(*new_cp_model_proto));
+
+  std::vector<int64_t> debug_solution_from_hint;
+  if (absl::GetFlag(FLAGS_cp_model_use_hint_for_debug_only) &&
+      hint_feasible_before_presolve) {
+    SOLVER_LOG(logger, "Using solution hint only as debug solution");
+    debug_solution_from_hint.resize(
+        new_cp_model_proto->solution_hint().values_size());
+    for (int i = 0; i < new_cp_model_proto->solution_hint().values_size();
+         ++i) {
+      debug_solution_from_hint[new_cp_model_proto->solution_hint().vars(i)] =
+          new_cp_model_proto->solution_hint().values(i);
+    }
+    new_cp_model_proto->clear_solution_hint();
+  }
 
   // Detect the symmetry of the presolved model.
   // Note that this needs to be done before SharedClasses are created.
@@ -2865,10 +2977,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // If the model is convertible to a pure SAT one, we dump it too.
       std::string cnf_string;
       if (ConvertCpModelProtoToCnf(*new_cp_model_proto, &cnf_string)) {
+        const std::string suffix =
+            new_cp_model_proto->has_objective() ? "_no_objective" : "";
         const std::string filename =
             absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
-                         "presolved_cnf_model.cnf");
-        LOG(INFO) << "Dumping cnf model to '" << filename << "'.";
+                         "presolved_cnf_model", suffix, ".cnf");
+        LOG(INFO) << "Dumping presolved cnf model to '" << filename << "'.";
+        const absl::Status status =
+            file::SetContents(filename, cnf_string, file::Defaults());
+        if (!status.ok()) LOG(ERROR) << status;
+      } else if (ConvertCpModelProtoToWCnf(*new_cp_model_proto, &cnf_string)) {
+        const std::string filename =
+            absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
+                         "presolved_wcnf_model.wcnf");
+        LOG(INFO) << "Dumping presolved wcnf model to '" << filename << "'.";
         const absl::Status status =
             file::SetContents(filename, cnf_string, file::Defaults());
         if (!status.ok()) LOG(ERROR) << status;
@@ -2934,7 +3056,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     LOG(FATAL) << "Presolve broke a feasible hint";
   }
 
-  LoadDebugSolution(*new_cp_model_proto, model);
+  if (!debug_solution_from_hint.empty()) {
+    model->GetOrCreate<SharedResponseManager>()->LoadDebugSolution(
+        debug_solution_from_hint);
+  } else {
+    LoadDebugSolution(*new_cp_model_proto, model);
+  }
 
   if (!model->GetOrCreate<TimeLimit>()->LimitReached()) {
 #if ORTOOLS_TARGET_OS_SUPPORTS_THREADS
@@ -2953,7 +3080,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // the multi-thread architecture.
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          "main", params, /*split_in_chunks=*/false, &shared));
+          "main", params, /*split_in_chunks=*/false, &shared,
+          drat_proof_handler.get()));
       LaunchSubsolvers(params, &shared, subsolvers, {});
     }
   }

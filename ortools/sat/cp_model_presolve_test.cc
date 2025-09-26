@@ -7671,7 +7671,9 @@ TEST(PresolveCpModelTest, RemoveUnusedEncodingWithObjective) {
       }
     }
   )pb");
-  const CpModelProto presolved_model = PresolveForTest(initial_model);
+  SatParameters params;
+  params.set_cp_model_use_sat_presolve(false);
+  const CpModelProto presolved_model = PresolveForTest(initial_model, params);
   const CpModelProto expected_presolved_model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }

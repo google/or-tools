@@ -160,6 +160,7 @@ class PresolveContext {
   int64_t FixedValue(int ref) const;
   bool DomainContains(int ref, int64_t value) const;
   Domain DomainOf(int ref) const;
+  int64_t DomainSize(int ref) const;
   absl::Span<const Domain> AllDomains() const { return domains_; }
 
   // Helper to query the state of an interval.
@@ -468,6 +469,11 @@ class PresolveContext {
   // It returns true iff the expression is constant or its one variable is full
   // encoded.
   bool IsFullyEncoded(const LinearExpressionProto& expr) const;
+
+  // TODO(user): If the domain was shrunk, we can have a false positive.
+  // Still it means that the number of values removed is greater than the number
+  // of values not encoded.
+  bool IsMostlyFullyEncoded(int ref) const;
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.

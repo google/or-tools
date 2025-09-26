@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -304,6 +305,8 @@ TEST(IntegerTrailTest, BasicReason) {
 
 struct LazyReasonForTest : public LazyReasonInterface {
   bool called = false;
+
+  std::string LazyReasonName() const override { return "LazyReasonForTest"; }
 
   void Explain(int /*id*/, IntegerValue /*propagation_slack*/,
                IntegerVariable /*variable_to_explain*/, int /*trail_index*/,

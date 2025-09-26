@@ -312,6 +312,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
+        ":drat_proof_handler",
         ":sat_base",
         "//ortools/base:file",
         "//ortools/base:hash",
@@ -793,6 +794,8 @@ cc_library(
         ":cp_model_utils",
         ":cuts",
         ":diffn_util",
+        ":drat_checker",
+        ":drat_proof_handler",
         ":feasibility_jump",
         ":feasibility_pump",
         ":implied_bounds",
@@ -1677,6 +1680,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":util",
         "//ortools/algorithms:dynamic_partition",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
@@ -1745,6 +1749,8 @@ cc_library(
         "//ortools/base:strong_vector",
         "//ortools/util:stats",
         "//ortools/util:strong_integers",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -4154,6 +4160,34 @@ cc_library(
 )
 
 cc_library(
+    name = "lrat_checker",
+    srcs = ["lrat_checker.cc"],
+    hdrs = ["lrat_checker.h"],
+    deps = [
+        ":sat_base",
+        ":util",
+        "//ortools/base:intops",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lrat_checker_test",
+    srcs = ["lrat_checker_test.cc"],
+    deps = [
+        ":lrat_checker",
+        ":sat_base",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "opb_reader",
     hdrs = ["opb_reader.h"],
     deps = [
@@ -4460,6 +4494,7 @@ cc_library(
     srcs = ["work_assignment.cc"],
     hdrs = ["work_assignment.h"],
     deps = [
+        ":clause",
         ":cp_model_mapping",
         ":cp_model_utils",
         ":integer",

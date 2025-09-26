@@ -286,17 +286,20 @@ bool Prober::ProbeBooleanVariables(
     if (num_new_literals_fixed_ > 0) {
       SOLVER_LOG(logger_,
                  "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
-                 " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
+                 " (", FormatCounter(num_fixed), "/",
+                 FormatCounter(sat_solver_->NumVariables()), ")");
     }
     if (num_new_holes_ > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ", num_new_holes_);
+      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ",
+                 FormatCounter(num_new_holes_));
     }
     if (num_new_integer_bounds_ > 0) {
-      SOLVER_LOG(logger_,
-                 "[Probing]  - new integer bounds: ", num_new_integer_bounds_);
+      SOLVER_LOG(logger_, "[Probing]  - new integer bounds: ",
+                 FormatCounter(num_new_integer_bounds_));
     }
     if (num_new_binary_ > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ", num_new_binary_);
+      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ",
+                 FormatCounter(num_new_binary_));
     }
   }
 
@@ -490,8 +493,9 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
     const int num_fixed = sat_solver->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
     const int num_variables = sat_solver->NumVariables();
-    SOLVER_LOG(logger, "[Random exploration]", " num_fixed: +", num_newly_fixed,
-               " (", num_fixed, "/", num_variables, ")",
+    SOLVER_LOG(logger, "[Random exploration]", " num_fixed: +",
+               FormatCounter(num_newly_fixed), " (", FormatCounter(num_fixed),
+               "/", FormatCounter(num_variables), ")",
                " dtime: ", elapsed_dtime, "/", deterministic_time_limit,
                " wtime: ", wall_timer.Get(),
                (limit_reached ? " (Aborted)" : ""));

@@ -776,6 +776,7 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     lns_params.set_cp_model_probing_level(0);
     lns_params.set_symmetry_level(0);
     lns_params.set_find_big_linear_overlap(false);
+    lns_params.set_find_clauses_that_are_exactly_one(false);
 
     lns_params.set_log_search_progress(false);
     lns_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.

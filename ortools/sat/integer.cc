@@ -2095,9 +2095,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output,
 
 // TODO(user): If this is called many time on the same variables, it could be
 // made faster by using some caching mechanism.
-absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
-                                               int trail_index,
-                                               int64_t conflict_id) const {
+absl::Span<const Literal> IntegerTrail::Reason(
+    const Trail& trail, int trail_index, int64_t /* conflict_id */) const {
   std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   added_variables_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
 
@@ -2116,7 +2115,18 @@ absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
 
     tmp_queue_.push_back(prev_trail_index);
   }
-  MergeReasonIntoInternal(reason, conflict_id);
+  // TODO(user): fix or remove the conflict_id optimization.
+  MergeReasonIntoInternal(reason, -1);
+
+  if (DEBUG_MODE && debug_checker_ != nullptr) {
+    reason->push_back(trail[trail_index]);
+    CHECK(debug_checker_(*reason, {}))
+        << (reason_index >= 0 ? ""
+                              : absl::StrCat("lazy reason for propagator ",
+                                             lazy_reasons_[-reason_index - 1]
+                                                 .explainer->LazyReasonName()));
+    reason->pop_back();
+  }
   return *reason;
 }
 

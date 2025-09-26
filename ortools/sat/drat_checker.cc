@@ -40,7 +40,7 @@
 namespace operations_research {
 namespace sat {
 
-DratChecker::Clause::Clause(int first_literal_index, int num_literals)
+DratChecker::Clause::Clause(size_t first_literal_index, int num_literals)
     : first_literal_index(first_literal_index), num_literals(num_literals) {}
 
 std::size_t DratChecker::ClauseHash::operator()(
@@ -103,7 +103,7 @@ void DratChecker::AddInferredClause(absl::Span<const Literal> clause) {
 }
 
 ClauseIndex DratChecker::MaybeAddClause(absl::Span<const Literal> clause) {
-  const int first_literal_index = literals_.size();
+  const size_t first_literal_index = literals_.size();
   literals_.insert(literals_.end(), clause.begin(), clause.end());
   // Sort the input clause in strictly increasing order (by sorting and then
   // removing the duplicate literals).
@@ -112,7 +112,7 @@ ClauseIndex DratChecker::MaybeAddClause(absl::Span<const Literal> clause) {
       std::unique(literals_.begin() + first_literal_index, literals_.end()),
       literals_.end());
 
-  for (int i = first_literal_index + 1; i < literals_.size(); ++i) {
+  for (size_t i = first_literal_index + 1; i < literals_.size(); ++i) {
     if (literals_[i] == literals_[i - 1].Negated()) {
       literals_.resize(first_literal_index);
       return kNoClauseIndex;
@@ -244,7 +244,7 @@ std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
       const absl::Span<const Literal>& literals = Literals(clause);
       result.emplace_back(literals.begin(), literals.end());
       if (clause.rat_literal_index != kNoLiteralIndex) {
-        const int rat_literal_clause_index =
+        const size_t rat_literal_clause_index =
             std::find(literals.begin(), literals.end(),
                       Literal(clause.rat_literal_index)) -
             literals.begin();
@@ -468,14 +468,14 @@ void DratChecker::LogStatistics(int64_t duration_nanos) const {
       }
     }
   }
-  LOG(INFO) << problem_clauses_needed_for_proof
-            << " problem clauses needed for proof, out of "
-            << first_inferred_clause_index_;
-  LOG(INFO) << inferred_clauses_needed_for_proof
-            << " inferred clauses needed for proof, out of "
-            << clauses_.size() - first_inferred_clause_index_;
-  LOG(INFO) << num_rat_checks_ << " RAT inferred clauses";
-  LOG(INFO) << "verification time: " << 1e-9 * duration_nanos << " s";
+  VLOG(1) << problem_clauses_needed_for_proof
+          << " problem clauses needed for proof, out of "
+          << first_inferred_clause_index_;
+  VLOG(1) << inferred_clauses_needed_for_proof
+          << " inferred clauses needed for proof, out of "
+          << clauses_.size() - first_inferred_clause_index_;
+  VLOG(1) << num_rat_checks_ << " RAT inferred clauses";
+  VLOG(1) << "verification time: " << 1e-9 * duration_nanos << " s";
 }
 
 bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal) {

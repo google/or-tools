@@ -272,6 +272,10 @@ class CpModelPresolver {
   // transforms them into maximal cliques.
   void TransformIntoMaxCliques();
 
+  // Checks if there are any clauses that can be transformed to an at most
+  // one constraint.
+  void TransformClausesToExactlyOne();
+
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 

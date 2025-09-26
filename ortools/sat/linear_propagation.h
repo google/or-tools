@@ -239,6 +239,8 @@ class LinearPropagator : public PropagatorInterface,
   bool Propagate() final;
   void SetLevel(int level) final;
 
+  std::string LazyReasonName() const override { return "LinearPropagator"; }
+
   // Adds a new constraint to the propagator.
   // We support adding constraint at a positive level:
   //  - This will push new propagation right away.
