@@ -40,6 +40,7 @@
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/logging.h"
@@ -163,11 +164,13 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
   // TODO(user): Maintain the total number of literals in the watched clauses.
   SOLVER_LOG(
-      logger_, "[Pure SAT presolve]", " num_fixed: ", trail_->Index(),
-      " num_redundant: ", implication_graph_->num_redundant_literals() / 2, "/",
-      sat_solver_->NumVariables(),
-      " num_implications: ", implication_graph_->ComputeNumImplicationsForLog(),
-      " num_watched_clauses: ", clause_manager_->num_watched_clauses(),
+      logger_, "[Pure SAT presolve]",
+      " num_fixed: ", FormatCounter(trail_->Index()), " num_redundant: ",
+      FormatCounter(implication_graph_->num_redundant_literals() / 2), "/",
+      FormatCounter(sat_solver_->NumVariables()), " num_implications: ",
+      FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
+      " num_watched_clauses: ",
+      FormatCounter(clause_manager_->num_watched_clauses()),
       " dtime: ", time_limit_->GetElapsedDeterministicTime() - start_dtime, "/",
       options.deterministic_time_limit, " wtime: ", wall_timer.Get(),
       " non-probing time: ", (wall_timer.Get() - probing_time));

@@ -105,119 +105,116 @@ void ClauseManager::AttachOnFalse(Literal literal, Literal blocking_literal,
   watchers_on_false_[literal].push_back(Watcher(clause, blocking_literal));
 }
 
-bool ClauseManager::PropagateOnFalse(Literal false_literal, Trail* trail) {
+bool ClauseManager::Propagate(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(is_clean_);
-  std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
-  const auto assignment = AssignmentView(trail->Assignment());
+  Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
-  // Note(user): It sounds better to inspect the list in order, this is because
-  // small clauses like binary or ternary clauses will often propagate and thus
-  // stay at the beginning of the list.
-  auto new_it = watchers.begin();
-  const auto end = watchers.end();
-  while (new_it != end && assignment.LiteralIsTrue(new_it->blocking_literal)) {
-    ++new_it;
-  }
-  for (auto it = new_it; it != end; ++it) {
-    // Don't even look at the clause memory if the blocking literal is true.
-    if (assignment.LiteralIsTrue(it->blocking_literal)) {
-      *new_it++ = *it;
-      continue;
-    }
-    ++num_inspected_clauses_;
+  const int old_index = trail->Index();
+  while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
+    const Literal false_literal =
+        (*trail)[propagation_trail_index_++].Negated();
+    std::vector<Watcher>& watchers = watchers_on_false_[false_literal];
 
-    // If the other watched literal is true, just change the blocking literal.
-    // Note that we use the fact that the first two literals of the clause are
-    // the ones currently watched.
-    Literal* literals = it->clause->literals();
-    const Literal other_watched_literal(
-        LiteralIndex(literals[0].Index().value() ^ literals[1].Index().value() ^
-                     false_literal.Index().value()));
-    if (assignment.LiteralIsTrue(other_watched_literal)) {
-      *new_it = *it;
-      new_it->blocking_literal = other_watched_literal;
+    // Note(user): It sounds better to inspect the list in order, this is
+    // because small clauses like binary or ternary clauses will often propagate
+    // and thus stay at the beginning of the list.
+    auto new_it = watchers.begin();
+    const auto end = watchers.end();
+    while (new_it != end && helper.LiteralIsTrue(new_it->blocking_literal)) {
       ++new_it;
-      ++num_inspected_clause_literals_;
-      continue;
     }
-
-    // Look for another literal to watch. We go through the list in a cyclic
-    // fashion from start. The first two literals can be ignored as they are the
-    // watched ones.
-    {
-      const int start = it->start_index;
-      const int size = it->clause->size();
-      DCHECK_GE(start, 2);
-
-      int i = start;
-      while (i < size && assignment.LiteralIsFalse(literals[i])) ++i;
-      num_inspected_clause_literals_ += i - start + 2;
-      if (i >= size) {
-        i = 2;
-        while (i < start && assignment.LiteralIsFalse(literals[i])) ++i;
-        num_inspected_clause_literals_ += i - 2;
-        if (i >= start) i = size;
-      }
-      if (i < size) {
-        // literal[i] is unassigned or true, it's now the new literal to watch.
-        // Note that by convention, we always keep the two watched literals at
-        // the beginning of the clause.
-        literals[0] = other_watched_literal;
-        literals[1] = literals[i];
-        literals[i] = false_literal;
-        watchers_on_false_[literals[1]].emplace_back(
-            it->clause, other_watched_literal, i + 1);
+    for (auto it = new_it; it != end; ++it) {
+      // Don't even look at the clause memory if the blocking literal is true.
+      if (helper.LiteralIsTrue(it->blocking_literal)) {
+        *new_it++ = *it;
         continue;
       }
-    }
+      ++num_inspected_clauses_;
 
-    // At this point other_watched_literal is either false or unassigned, all
-    // other literals are false.
-    if (assignment.LiteralIsFalse(other_watched_literal)) {
-      // Conflict: All literals of it->clause are false.
-      //
-      // Note(user): we could avoid a copy here, but the conflict analysis
-      // complexity will be a lot higher than this anyway.
-      trail->MutableConflict()->assign(it->clause->begin(), it->clause->end());
-      trail->SetFailingSatClause(it->clause);
-      num_inspected_clause_literals_ += it - watchers.begin() + 1;
-      watchers.erase(new_it, it);
-      return false;
-    } else {
-      // Propagation: other_watched_literal is unassigned, set it to true and
-      // put it at position 0. Note that the position 0 is important because
-      // we will need later to recover the literal that was propagated from the
-      // clause using this convention.
-      literals[0] = other_watched_literal;
-      literals[1] = false_literal;
+      // If the other watched literal is true, just change the blocking literal.
+      // Note that we use the fact that the first two literals of the clause are
+      // the ones currently watched.
+      Literal* literals = it->clause->literals();
+      const Literal other_watched_literal(LiteralIndex(
+          literals[0].Index().value() ^ literals[1].Index().value() ^
+          false_literal.Index().value()));
+      if (helper.LiteralIsTrue(other_watched_literal)) {
+        *new_it = *it;
+        new_it->blocking_literal = other_watched_literal;
+        ++new_it;
+        ++num_inspected_clause_literals_;
+        continue;
+      }
 
-      int propagation_level = trail->CurrentDecisionLevel();
-      if (trail->ChronologicalBacktrackingEnabled()) {
+      // Look for another literal to watch. We go through the list in a cyclic
+      // fashion from start. The first two literals can be ignored as they are
+      // the watched ones.
+      {
+        const int start = it->start_index;
         const int size = it->clause->size();
-        propagation_level = trail->AssignmentLevel(false_literal);
-        for (int i = 2; i < size; ++i) {
-          propagation_level = std::max<int>(
-              propagation_level, trail->AssignmentLevel(literals[i]));
+        DCHECK_GE(start, 2);
+
+        int i = start;
+        while (i < size && helper.LiteralIsFalse(literals[i])) ++i;
+        num_inspected_clause_literals_ += i - start + 2;
+        if (i >= size) {
+          i = 2;
+          while (i < start && helper.LiteralIsFalse(literals[i])) ++i;
+          num_inspected_clause_literals_ += i - 2;
+          if (i >= start) i = size;
+        }
+        if (i < size) {
+          // literal[i] is unassigned or true, it's now the new literal to
+          // watch. Note that by convention, we always keep the two watched
+          // literals at the beginning of the clause.
+          literals[0] = other_watched_literal;
+          literals[1] = literals[i];
+          literals[i] = false_literal;
+          watchers_on_false_[literals[1]].emplace_back(
+              it->clause, other_watched_literal, i + 1);
+          continue;
         }
       }
 
-      reasons_[trail->Index()] = it->clause;
-      trail->EnqueueAtLevel(other_watched_literal, propagator_id_,
-                            propagation_level);
-      *new_it++ = *it;
-    }
-  }
-  num_inspected_clause_literals_ += watchers.size();  // The blocking ones.
-  watchers.erase(new_it, end);
-  return true;
-}
+      // At this point other_watched_literal is either false or unassigned, all
+      // other literals are false.
+      if (helper.LiteralIsFalse(other_watched_literal)) {
+        // Conflict: All literals of it->clause are false.
+        //
+        // Note(user): we could avoid a copy here, but the conflict analysis
+        // complexity will be a lot higher than this anyway.
+        trail->MutableConflict()->assign(it->clause->begin(),
+                                         it->clause->end());
+        trail->SetFailingSatClause(it->clause);
+        num_inspected_clause_literals_ += it - watchers.begin() + 1;
+        watchers.erase(new_it, it);
+        return false;
+      } else {
+        // Propagation: other_watched_literal is unassigned, set it to true and
+        // put it at position 0. Note that the position 0 is important because
+        // we will need later to recover the literal that was propagated from
+        // the clause using this convention.
+        literals[0] = other_watched_literal;
+        literals[1] = false_literal;
 
-bool ClauseManager::Propagate(Trail* trail) {
-  const int old_index = trail->Index();
-  while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
-    const Literal literal = (*trail)[propagation_trail_index_++];
-    if (!PropagateOnFalse(literal.Negated(), trail)) return false;
+        int propagation_level = trail->CurrentDecisionLevel();
+        if (trail->ChronologicalBacktrackingEnabled()) {
+          const int size = it->clause->size();
+          propagation_level = trail->AssignmentLevel(false_literal);
+          for (int i = 2; i < size; ++i) {
+            propagation_level = std::max<int>(
+                propagation_level, trail->AssignmentLevel(literals[i]));
+          }
+        }
+
+        reasons_[trail->Index()] = it->clause;
+        helper.EnqueueAtLevel(other_watched_literal, propagation_level);
+        *new_it++ = *it;
+      }
+    }
+    num_inspected_clause_literals_ += watchers.size();  // The blocking ones.
+    watchers.erase(new_it, end);
   }
   return true;
 }
@@ -847,15 +844,14 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     propagation_trail_index_ = trail->Index();
     return true;
   }
-  trail->SetCurrentPropagatorId(propagator_id_);
+  Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
-  const auto assignment = AssignmentView(trail->Assignment());
   const auto implies_something = implies_something_.view();
   auto* implications = implications_and_amos_.data();
 
   while (propagation_trail_index_ < trail->Index()) {
     const Literal true_literal = (*trail)[propagation_trail_index_++];
-    DCHECK(assignment.LiteralIsTrue(true_literal));
+    DCHECK(helper.LiteralIsTrue(true_literal));
     if (!implies_something[true_literal]) continue;
 
     const int level = trail->AssignmentLevel(true_literal);
@@ -866,7 +862,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
     const auto implied = implications[true_literal.Index().value()].literals();
     num_inspections_ += implied.size();
     for (const Literal literal : implied) {
-      if (assignment.LiteralIsTrue(literal)) {
+      if (helper.LiteralIsTrue(literal)) {
         // Note(user): I tried to update the reason here if the literal was
         // enqueued after the true_literal on the trail. This property is
         // important for ComputeFirstUIPConflict() to work since it needs the
@@ -876,14 +872,14 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
       }
 
       ++num_propagations_;
-      if (assignment.LiteralIsFalse(literal)) {
+      if (helper.LiteralIsFalse(literal)) {
         // Conflict.
         *(trail->MutableConflict()) = {true_literal.Negated(), literal};
         return false;
       } else {
         // Propagation.
         reasons_[trail->Index()] = true_literal.Negated();
-        trail->EnqueueAtLevel(literal, propagator_id_, level);
+        helper.EnqueueAtLevel(literal, level);
       }
     }
 
@@ -900,10 +896,10 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
           }
           continue;
         }
-        if (assignment.LiteralIsFalse(literal)) continue;
+        if (helper.LiteralIsFalse(literal)) continue;
 
         ++num_propagations_;
-        if (assignment.LiteralIsTrue(literal)) {
+        if (helper.LiteralIsTrue(literal)) {
           // Conflict.
           *(trail->MutableConflict()) = {true_literal.Negated(),
                                          literal.Negated()};
@@ -911,7 +907,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
         } else {
           // Propagation.
           reasons_[trail->Index()] = true_literal.Negated();
-          trail->EnqueueAtLevel(literal.Negated(), propagator_id_, level);
+          helper.EnqueueAtLevel(literal.Negated(), level);
         }
       }
     }
@@ -1027,7 +1023,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     // TODO(user): if this is false, then we actually have a conflict of size 2.
     // This can only happen if the binary clause was not propagated properly
-    // if for instance we do chronological bactracking without re-enqueuing the
+    // if for instance we do chronological backtracking without re-enqueuing the
     // consequence of a binary clause.
     if (trail.Assignment().LiteralIsTrue(Literal(i))) {
       marked->Set(Literal(i).Variable());
@@ -1783,11 +1779,10 @@ BinaryImplicationGraph::FilterAndSortAtMostOnes(
 
     index_size_vector.push_back({index, clique.size()});
   }
-  std::stable_sort(
-      index_size_vector.begin(), index_size_vector.end(),
-      [](const std::pair<int, int> a, const std::pair<int, int>& b) {
-        return a.second > b.second;
-      });
+  absl::c_stable_sort(index_size_vector, [](const std::pair<int, int> a,
+                                            const std::pair<int, int> b) {
+    return a.second > b.second;
+  });
   return index_size_vector;
 }
 
@@ -2308,7 +2303,7 @@ BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
       // Expand and add clique.
       //
       // TODO(user): Expansion is pretty slow. Given that the base clique can
-      // share literal beeing part of the same amo, we should be able to speed
+      // share literal being part of the same amo, we should be able to speed
       // that up, we don't want to scan an amo twice basically.
       tmp_cuts_.push_back(ExpandAtMostOneWithWeight(
           at_most_one, can_be_included, heuristic_weights));
@@ -2831,6 +2826,7 @@ absl::Span<const Literal> BinaryImplicationGraph::NextAtMostOne() {
   }
 
   const absl::Span<const Literal> result = AtMostOne(at_most_one_iterator_);
+  DCHECK(!result.empty());
   at_most_one_iterator_ += result.size() + 1;
   return result;
 }

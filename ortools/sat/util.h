@@ -173,6 +173,13 @@ class CompactVectorVector {
 template <typename T>
 class FixedCapacityVector {
  public:
+  FixedCapacityVector() = default;
+  explicit FixedCapacityVector(absl::Span<const T> span) {
+    size_ = span.size();
+    data_.reset(new T[size_]);
+    std::copy(span.begin(), span.end(), data_.get());
+  }
+
   void ClearAndReserve(size_t size) {
     size_ = 0;
     data_.reset(new T[size]);

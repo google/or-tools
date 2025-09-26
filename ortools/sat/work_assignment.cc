@@ -32,6 +32,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
@@ -381,8 +382,7 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
       !nodes.back().first->closed && nodes.size() > 1) {
     Node* leaf = nodes.back().first;
     VLOG(2) << "Returning leaf to be replaced";
-    GetTrailInfo(leaf)->phase.assign(path.TargetPhase().begin(),
-                                     path.TargetPhase().end());
+    GetTrailInfo(leaf)->phase = path.TakeTargetPhase();
     unassigned_leaves_.push_back(leaf);
   }
   path.Clear();
@@ -392,7 +392,7 @@ void SharedTreeManager::ReplaceTree(ProtoTrail& path) {
     if (!leaf->closed && leaf->children[0] == nullptr) {
       num_leaves_assigned_since_restart_ += 1;
       AssignLeaf(path, leaf);
-      path.SetTargetPhase(GetTrailInfo(leaf)->phase);
+      path.SetTargetPhase(std::move(GetTrailInfo(leaf)->phase));
       return;
     }
   }
@@ -427,8 +427,8 @@ void SharedTreeManager::Split(std::vector<std::pair<Node*, int>>& nodes,
   parent->children[1] = MakeSubtree(parent, lit.Negated());
   NodeTrailInfo* trail_info = GetTrailInfo(parent);
   if (trail_info != nullptr) {
-    parent->children[0]->trail_info = std::make_unique<NodeTrailInfo>(
-        NodeTrailInfo{.phase = trail_info->phase});
+    parent->children[0]->trail_info =
+        std::make_unique<NodeTrailInfo>(NodeTrailInfo{});
     parent->children[1]->trail_info = std::make_unique<NodeTrailInfo>(
         NodeTrailInfo{.phase = std::move(trail_info->phase)});
   }
@@ -612,6 +612,7 @@ SharedTreeWorker::SharedTreeWorker(Model* model)
       mapping_(model->GetOrCreate<CpModelMapping>()),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       trail_(model->GetOrCreate<Trail>()),
+      binary_propagator_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       objective_(model->Get<ObjectiveDefinition>()),
@@ -695,15 +696,18 @@ bool SharedTreeWorker::SyncWithLocalTrail() {
     if (!helper_->BeforeTakingDecision()) return false;
     const int level = sat_solver_->CurrentDecisionLevel();
     if (parameters_->shared_tree_worker_enable_trail_sharing() && level > 0 &&
-        level <= assigned_tree_.MaxLevel()) {
+        level <= assigned_tree_.MaxLevel() &&
+        reversible_trail_index_ < trail_->Index()) {
+      const int binary_propagator_id = binary_propagator_->PropagatorId();
       // Add implications from the local trail to share with other workers.
       reversible_int_repository_->SaveState(&reversible_trail_index_);
       for (int i = trail_->Index() - 1; i >= reversible_trail_index_; --i) {
         const Literal lit = (*trail_)[i];
-        if (trail_->AssignmentType(lit.Variable()) ==
-            AssignmentType::kSearchDecision) {
-          break;
-        }
+        const int assignment_type = trail_->AssignmentType(lit.Variable());
+        if (assignment_type == AssignmentType::kSearchDecision) break;
+        // Avoid sharing implications from binary clauses - these are always
+        // shared, so the implication will be propagated anyway.
+        if (assignment_type == binary_propagator_id) continue;
         std::optional<ProtoLiteral> encoded = EncodeDecision(lit);
         if (!encoded.has_value()) continue;
         assigned_tree_.AddImplication(level, *encoded);
@@ -810,8 +814,11 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         !decision_policy_->GetBestPartialAssignment().empty()) {
       assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
-        // Skip saving the phase for anything assigned at the root.
-        if (trail_->Assignment().LiteralIsAssigned(lit)) continue;
+        // If `lit` was last assigned at a shared level, it is implied in the
+        // tree, no need to share its phase.
+        if (trail_->Info(lit.Variable()).level <= assigned_tree_.MaxLevel()) {
+          continue;
+        }
         // Only set the phase for booleans to avoid creating literals on other
         // workers.
         auto encoded = ProtoLiteral::EncodeLiteral(lit, mapping_);

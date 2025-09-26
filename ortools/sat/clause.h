@@ -204,7 +204,7 @@ class ClauseManager : public SatPropagator {
   // Detaches the given clause right away.
   //
   // TODO(user): It might be better to have a "slower" mode in
-  // PropagateOnFalse() that deal with detached clauses in the watcher list and
+  // Propagate() that deal with detached clauses in the watcher list and
   // is activated until the next CleanUpWatchers() calls.
   void Detach(SatClause* clause);
 
@@ -233,7 +233,7 @@ class ClauseManager : public SatPropagator {
     return &clauses_info_;
   }
 
-  // Total number of clauses inspected during calls to PropagateOnFalse().
+  // Total number of clauses inspected during calls to Propagate().
   int64_t num_inspected_clauses() const { return num_inspected_clauses_; }
   int64_t num_inspected_clause_literals() const {
     return num_inspected_clause_literals_;
@@ -348,13 +348,9 @@ class ClauseManager : public SatPropagator {
   // enqueued on the trail. Returns false if a contradiction was encountered.
   bool AttachAndPropagate(SatClause* clause, Trail* trail);
 
-  // Launches all propagation when the given literal becomes false.
-  // Returns false if a contradiction was encountered.
-  bool PropagateOnFalse(Literal false_literal, Trail* trail);
-
   // Attaches the given clause to the event: the given literal becomes false.
   // The blocking_literal can be any literal from the clause, it is used to
-  // speed up PropagateOnFalse() by skipping the clause if it is true.
+  // speed up Propagate() by skipping the clause if it is true.
   void AttachOnFalse(Literal literal, Literal blocking_literal,
                      SatClause* clause);
 
@@ -822,7 +818,10 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Returns all the literals that are implied directly or indirectly by `root`.
   // The result must be used before the next call to this function.
+  // It is also possible to use LiteralIsImplied() to find in O(1) if one
+  // literal is in the list.
   absl::Span<const Literal> GetAllImpliedLiterals(Literal root);
+  bool LiteralIsImplied(Literal l) const { return is_marked_[l]; }
 
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   template <bool use_weight = true>

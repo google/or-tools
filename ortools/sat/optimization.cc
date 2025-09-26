@@ -220,6 +220,18 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   while (true) {
+    if (DEBUG_MODE) {
+      // The solver usually always solve a "restricted decision problem"
+      // obj < current_best. So when we have an optimal solution, then the
+      // problem is UNSAT, and any clauses we learn can break the debug
+      // solution. So we disable this checks once we found an optimal solution.
+      const DebugSolution* debug_sol = model->Get<DebugSolution>();
+      if (debug_sol && integer_trail->LowerBound(objective_var) <=
+                           debug_sol->inner_objective_value) {
+        model->GetOrCreate<DebugSolution>()->Clear();
+      }
+    }
+
     const SatSolver::Status result = search->SolveIntegerProblem();
     if (result != SatSolver::FEASIBLE) return result;
 
@@ -232,17 +244,6 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     }
     if (parameters.stop_after_first_solution()) {
       return SatSolver::LIMIT_REACHED;
-    }
-
-    // The solver usually always solve a "restricted decision problem"
-    // obj < current_best. So when we have an optimal solution, then the
-    // problem is UNSAT, and any clauses we learn can break the debug solution.
-    // So we disable this checks once we found an optimal solution.
-    if (DEBUG_MODE) {
-      const DebugSolution* debug_sol = model->Get<DebugSolution>();
-      if (debug_sol && objective <= debug_sol->inner_objective_value) {
-        model->GetOrCreate<DebugSolution>()->Clear();
-      }
     }
 
     // Restrict the objective.

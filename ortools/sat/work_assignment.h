@@ -34,6 +34,7 @@
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
@@ -149,6 +150,11 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
+
+  // Returns the target phase and clears it.
+  std::vector<ProtoLiteral> TakeTargetPhase() {
+    return std::move(target_phase_);
+  }
   void ClearTargetPhase() { target_phase_.clear(); }
   // Appends a literal to the target phase, returns false if the phase is full.
   bool AddPhase(const ProtoLiteral& lit) {
@@ -158,11 +164,8 @@ class ProtoTrail {
     }
     return true;
   }
-  void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
-    ClearTargetPhase();
-    for (const ProtoLiteral& lit : phase) {
-      if (!AddPhase(lit)) break;
-    }
+  void SetTargetPhase(std::vector<ProtoLiteral> phase) {
+    target_phase_ = std::move(phase);
   }
   bool IsAssigned(const ProtoLiteral& lit) const {
     return assigned_at_level_.contains(lit) ||
@@ -170,7 +173,7 @@ class ProtoTrail {
   }
 
  private:
-  // 256 ProtoLiterals take up 4KiB
+  // Store up to 4 KiB of literals in the target phase.
   static constexpr int kMaxPhaseSize = 256;
 
   std::vector<ProtoLiteral>& MutableImplications(int level) {
@@ -349,6 +352,7 @@ class SharedTreeWorker {
   CpModelMapping* mapping_;
   SatSolver* sat_solver_;
   Trail* trail_;
+  BinaryImplicationGraph* binary_propagator_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   const ObjectiveDefinition* objective_;

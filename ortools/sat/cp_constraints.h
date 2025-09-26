@@ -85,6 +85,10 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
   GreaterThanAtLeastOneOfPropagator& operator=(
       const GreaterThanAtLeastOneOfPropagator&) = delete;
 
+  std::string LazyReasonName() const override {
+    return "GreaterThanAtLeastOneOfPropagator";
+  }
+
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 

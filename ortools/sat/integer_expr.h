@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -84,6 +85,10 @@ class LinearConstraintPropagator : public PropagatorInterface,
   // directly. It Only uses the upper bound. Id does not support
   // enforcement_literals.
   LinearConstraintPropagator(LinearConstraint ct, Model* model);
+
+  std::string LazyReasonName() const override {
+    return use_int128 ? "IntegerSumLE128" : "IntegerSumLE";
+  }
 
   // We propagate:
   // - If the sum of the individual lower-bound is > upper_bound, we fail.
@@ -255,6 +260,10 @@ class GreaterThanMinOfExprsPropagator : public PropagatorInterface,
       delete;
   GreaterThanMinOfExprsPropagator& operator=(
       const GreaterThanMinOfExprsPropagator&) = delete;
+
+  std::string LazyReasonName() const override {
+    return "GreaterThanMinOfExprsPropagator";
+  }
 
   bool Propagate() final;
 

@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "ortools/sat/drat_proof_handler.h"
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
@@ -423,7 +425,16 @@ H AbslHashValue(H h, const LinearConstraintProto& m) {
   return h;
 }
 
-bool ConvertCpModelProtoToCnf(const CpModelProto& cp_mode, std::string* out);
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out);
+
+// This returns a wcnf model in the 2022 (new) format:
+//     https://maxsat-evaluations.github.io/2022/rules.html
+bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
+
+// Loads the model in the DratProofHandler and returns true if successful.
+// Returns false if the model is not pure SAT.
+bool LoadCpModelInDratProofHandler(const CpModelProto& cp_model,
+                                   DratProofHandler* drat_proof_handler);
 
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);

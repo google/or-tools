@@ -207,6 +207,10 @@ class VariablesAssignment {
 
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
+  // Expose internal for performance critical code.
+  // You should not use this in normal code.
+  Bitset64<LiteralIndex>::View GetBitsetView() { return assignment_.view(); }
+
  private:
   // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
@@ -304,25 +308,58 @@ class Trail {
 
   // Enqueues the assignment that make the given literal true on the trail. This
   // should only be called on unassigned variables.
-  void SetCurrentPropagatorId(int propagator_id) {
-    current_info_.type = propagator_id;
-  }
-  void FastEnqueue(Literal true_literal) {
+  void Enqueue(Literal true_literal, int propagator_id) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
+    current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
     ++current_info_.trail_index;
-  }
-  void Enqueue(Literal true_literal, int propagator_id) {
-    SetCurrentPropagatorId(propagator_id);
-    FastEnqueue(true_literal);
   }
   void EnqueueAtLevel(Literal true_literal, int propagator_id, int level) {
     Enqueue(true_literal, propagator_id);
     if (use_chronological_backtracking_) {
       info_[true_literal.Variable()].level = level;
     }
+  }
+
+  // Using this is faster as it caches all the vectors data.
+  // Warning: call to this cannot be interleaved with normal enqueue.
+  // only use in hot-loops.
+  class EnqueueHelper {
+   public:
+    EnqueueHelper(Literal* trail_ptr, AssignmentInfo* current_info,
+                  AssignmentInfo* info_ptr, VariablesAssignment* assignment)
+        : trail_ptr_(trail_ptr),
+          current_info_(current_info),
+          info_ptr_(info_ptr),
+          bitset_(assignment->GetBitsetView()) {}
+
+    void EnqueueAtLevel(Literal true_literal, int level) {
+      bitset_.Set(true_literal);
+      AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
+      *info = *current_info_;
+      info->level = level;
+      trail_ptr_[current_info_->trail_index++] = true_literal;
+    }
+
+    bool LiteralIsTrue(Literal literal) const {
+      return bitset_[literal.Index()];
+    }
+    bool LiteralIsFalse(Literal literal) const {
+      return bitset_[literal.NegatedIndex()];
+    }
+
+   private:
+    Literal* trail_ptr_;
+    AssignmentInfo* current_info_;
+    AssignmentInfo* info_ptr_;
+    Bitset64<LiteralIndex>::View bitset_;
+  };
+  EnqueueHelper GetEnqueueHelper(int propagator_id) {
+    current_info_.type = propagator_id;
+    return EnqueueHelper(trail_.data(), &current_info_, info_.data(),
+                         &assignment_);
   }
 
   // Specific Enqueue() version for the search decision.
@@ -646,6 +683,8 @@ class SatPropagator {
     return propagation_trail_index_ == trail.Index();
   }
 
+  const std::string& name() const { return name_; }
+
   // Small optimization: If a propagator does not contain any "constraints"
   // there is no point calling propagate on it. Before each propagation, the
   // solver will checks for emptiness, and construct an optimized list of
@@ -701,6 +740,8 @@ inline void Trail::RegisterPropagator(SatPropagator* propagator) {
     propagators_.resize(AssignmentType::kFirstFreePropagationId);
   }
   CHECK_LT(propagators_.size(), 16);
+  VLOG(2) << "Registering propagator " << propagator->name() << " with id "
+          << propagators_.size();
   propagator->SetPropagatorId(propagators_.size());
   propagators_.push_back(propagator);
 }
@@ -737,7 +778,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
       std::vector<Literal> clause;
       clause.assign(reasons_[var].begin(), reasons_[var].end());
       clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-      CHECK(debug_checker_(clause));
+      CHECK(debug_checker_(clause)) << " for cached reason";
     }
     return reasons_[var];
   }
@@ -758,7 +799,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
     std::vector<Literal> clause;
     clause.assign(reasons_[var].begin(), reasons_[var].end());
     clause.push_back(assignment_.GetTrueLiteralForAssignedVariable(var));
-    CHECK(debug_checker_(clause));
+    CHECK(debug_checker_(clause)) << "for propagator_id=" << old_type_[var];
   }
   return reasons_[var];
 }

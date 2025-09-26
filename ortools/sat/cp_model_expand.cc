@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
 #include <limits>
 #include <optional>
@@ -962,6 +963,10 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
                                     imply->mutable_linear()->coeffs()))
         << google::protobuf::ShortFormat(*imply);
   }
+  VLOG(2) << "Expanded element: |index| = " << reduced_index_var_domain.Size()
+          << " |target| = "
+          << (target.vars().empty() ? 1
+                                    : context->DomainOf(target.vars(0)).Size());
 
   context->UpdateRuleStats("element: expanded");
   ct->Clear();
@@ -2246,45 +2251,24 @@ bool AllDiffShouldBeExpanded(const Domain& union_of_domains,
   return false;
 }
 
-// Replaces a constraint literal => ax + by != cte by a set of clauses.
-// This is performed if the domains are small enough, and the variables are
-// fully encoded.
-//
-// We do it during the expansion as we want the first pass of the presolve to be
-// complete.
-void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
+void ExpandLinear2NeCst(ConstraintProto* ct, int64_t fixed_ne_value,
+                        PresolveContext* context) {
   const LinearConstraintProto& arg = ct->linear();
-  if (arg.vars_size() != 2) return;
-
   const int var1 = arg.vars(0);
   const int var2 = arg.vars(1);
-  if (context->IsFixed(var1) || context->IsFixed(var2)) return;
 
   const int64_t coeff1 = arg.coeffs(0);
   const int64_t coeff2 = arg.coeffs(1);
-  const Domain reachable_rhs_superset =
-      context->DomainOf(var1)
-          .MultiplicationBy(coeff1)
-          .RelaxIfTooComplex()
-          .AdditionWith(context->DomainOf(var2)
-                            .MultiplicationBy(coeff2)
-                            .RelaxIfTooComplex());
-  const Domain infeasible_reachable_values =
-      reachable_rhs_superset.IntersectionWith(
-          ReadDomainFromProto(arg).Complement());
-
-  // We only deal with != cte constraints.
-  if (infeasible_reachable_values.Size() != 1) return;
 
   // coeff1 * v1 + coeff2 * v2 != cte.
   int64_t a = coeff1;
   int64_t b = coeff2;
-  int64_t cte = infeasible_reachable_values.FixedValue();
+  int64_t cte = fixed_ne_value;
   int64_t x0 = 0;
   int64_t y0 = 0;
   if (!SolveDiophantineEquationOfSizeTwo(a, b, cte, x0, y0)) {
     // no solution.
-    context->UpdateRuleStats("linear: expand always feasible ax + by != cte");
+    context->UpdateRuleStats("linear2: expand always feasible ax + by != cte");
     ct->Clear();
     return;
   }
@@ -2296,53 +2280,161 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
                                 .AdditionWith(Domain(-y0))
                                 .InverseMultiplicationBy(-a));
 
-  if (reduced_domain.Size() > 16) return;
-
-  // Check if all the needed values are encoded.
-  // TODO(user): Do we force encoding for very small domains? Current
-  // experiments says no, but revisit later.
-  const int64_t size1 = context->DomainOf(var1).Size();
-  const int64_t size2 = context->DomainOf(var2).Size();
-  for (const int64_t z : reduced_domain.Values()) {
-    const int64_t value1 = x0 + b * z;
-    const int64_t value2 = y0 - a * z;
-    DCHECK(context->DomainContains(var1, value1)) << "value1 = " << value1;
-    DCHECK(context->DomainContains(var2, value2)) << "value2 = " << value2;
-    DCHECK_EQ(coeff1 * value1 + coeff2 * value2,
-              infeasible_reachable_values.FixedValue());
-    // TODO(user): Presolve if one or two variables are Boolean.
-    if (!context->HasVarValueEncoding(var1, value1, nullptr) || size1 == 2) {
-      return;
-    }
-    if (!context->HasVarValueEncoding(var2, value2, nullptr) || size2 == 2) {
-      return;
-    }
-  }
-
-  // All encoding literals already exist and the number of clauses to create
-  // is small enough. We can encode the constraint using just clauses.
+  // The number of clauses to create is small enough. We can encode the
+  // constraint using just clauses.
   for (const int64_t z : reduced_domain.Values()) {
     const int64_t value1 = x0 + b * z;
     const int64_t value2 = y0 - a * z;
     // We cannot have both lit1 and lit2 true.
     const int lit1 = context->GetOrCreateVarValueEncoding(var1, value1);
     const int lit2 = context->GetOrCreateVarValueEncoding(var2, value2);
-    auto* bool_or =
-        context->working_model->add_constraints()->mutable_bool_or();
+    auto* bool_or = context->AddEnforcedConstraint(ct)->mutable_bool_or();
     bool_or->add_literals(NegatedRef(lit1));
     bool_or->add_literals(NegatedRef(lit2));
-    for (const int lit : ct->enforcement_literal()) {
-      bool_or->add_literals(NegatedRef(lit));
-    }
   }
 
-  context->UpdateRuleStats("linear: expand small ax + by != cte");
+  VLOG(2) << "ExpandLinear2NeCst: |enforcements| = "
+          << ct->enforcement_literal_size()
+          << ", |domain1| = " << context->DomainSize(var1)
+          << ", |domain2| = " << context->DomainSize(var2)
+          << ", coeff1 = " << coeff1 << ", coeff2 = " << coeff2
+          << ", num_clauses = " << reduced_domain.Size();
+
+  context->UpdateRuleStats("linear2: expand small ax + by != cte");
   ct->Clear();
 }
 
+void ExpandLinear2EqCst(ConstraintProto* ct, int64_t fixed_eq_value,
+                        PresolveContext* context) {
+  if (ct->enforcement_literal().empty()) return;
+  const LinearConstraintProto& arg = ct->linear();
+
+  const int var1 = arg.vars(0);
+  const int64_t coeff1 = arg.coeffs(0);
+  const Domain d1 = context->DomainOf(var1);
+
+  const int var2 = arg.vars(1);
+  const int64_t coeff2 = arg.coeffs(1);
+  const Domain d2 = context->DomainOf(var2);
+
+  int num_imply1 = 0;
+  int num_imply2 = 0;
+  const auto imply_one_direction = [ct, context, &num_imply1, &num_imply2](
+                                       const Domain& domain1,
+                                       const Domain& domain2, int var1,
+                                       int var2, int64_t coeff1, int64_t coeff2,
+                                       int64_t cte) {
+    for (const int64_t value : domain1.Values()) {
+      const int lit1 = context->GetOrCreateVarValueEncoding(var1, value);
+      const int64_t residual = cte - coeff1 * value;
+      const int64_t implied_value = residual / coeff2;
+      if (residual % coeff2 != 0 || !domain2.Contains(implied_value)) {
+        context->AddEnforcedConstraint(ct)->mutable_bool_and()->add_literals(
+            NegatedRef(lit1));
+        ++num_imply1;
+      } else {
+        const int lit2 =
+            context->GetOrCreateVarValueEncoding(var2, implied_value);
+        ConstraintProto* imply_value = context->AddEnforcedConstraint(ct);
+        imply_value->add_enforcement_literal(lit1);
+        imply_value->mutable_bool_and()->add_literals(lit2);
+        ++num_imply2;
+      }
+    }
+  };
+
+  imply_one_direction(d1, d2, var1, var2, coeff1, coeff2, fixed_eq_value);
+  if (d1.Size() > 2 || d2.Size() > 2 || num_imply1 > 0) {
+    imply_one_direction(d2, d1, var2, var1, coeff2, coeff1, fixed_eq_value);
+  }
+
+  VLOG(2) << "ExpandLinear2EqCst: |enforcements| = "
+          << ct->enforcement_literal_size() << ", |domain1| = " << d1.Size()
+          << ", |domain2| = " << d2.Size() << ", coeff1 = " << coeff1
+          << ", coeff2 = " << coeff2 << ", num_imply1 = " << num_imply1
+          << ", num_imply2 = " << num_imply2;
+
+  context->UpdateRuleStats("linear2: expand small ax + by == cte");
+  ct->Clear();
+}
+
+// Replaces a constraint literal => ax + by ==/!= cte by a set of clauses.
+// This is performed if the domains are small enough, and the variables are
+// mostly fully encoded.
+//
+// We do it during the expansion as we want the first pass of the presolve to
+// be complete.
+void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
+  const int64_t max_domain_size =
+      context->params().max_domain_size_for_linear2_expansion();
+  const LinearConstraintProto& arg = ct->linear();
+  if (arg.vars_size() != 2) return;
+
+  const int var1 = arg.vars(0);
+  const int var2 = arg.vars(1);
+
+  // This should have been presolved away, unless presolve is off.
+  if (context->IsFixed(var1) || context->IsFixed(var2)) return;
+
+  const int64_t coeff1 = arg.coeffs(0);
+  const int64_t coeff2 = arg.coeffs(1);
+  const Domain rhs = ReadDomainFromProto(arg);
+  const Domain reachable_rhs_superset =
+      context->DomainOf(var1)
+          .MultiplicationBy(coeff1)
+          .RelaxIfTooComplex()
+          .AdditionWith(context->DomainOf(var2)
+                            .MultiplicationBy(coeff2)
+                            .RelaxIfTooComplex());
+  const Domain infeasible_reachable_values =
+      reachable_rhs_superset.IntersectionWith(rhs.Complement());
+
+  // Let's check we will not create encoding literals for variables that are too
+  // large, or have little encoding literals.
+  const bool small_enough = context->DomainSize(var1) <= max_domain_size &&
+                            context->DomainSize(var2) <= max_domain_size &&
+                            context->IsMostlyFullyEncoded(var1) &&
+                            context->IsMostlyFullyEncoded(var2);
+
+  // [e => ] a * x + b * y != cte.
+  if (infeasible_reachable_values.Size() == 1) {
+    if (small_enough) {
+      ExpandLinear2NeCst(ct, infeasible_reachable_values.FixedValue(), context);
+      return;
+    } else {
+      VLOG(2) << "TODO ExpandLinear2NeCst: |enforcements| = "
+              << ct->enforcement_literal_size()
+              << ", |domain1| = " << context->DomainSize(var1)
+              << ", |domain2| = " << context->DomainSize(var2)
+              << ", coeff1 = " << coeff1 << ", coeff2 = " << coeff2
+              << ", rhs = " << infeasible_reachable_values.FixedValue();
+      ;
+    }
+  }
+
+  // e => a * x + b * y == cte.
+  // Note that a general method is applied during presolve. This one works
+  // well for small domains. It makes no sense without enforcement literals as
+  // this would be an affine relation.
+  if (rhs.IsFixed() && !ct->enforcement_literal().empty()) {
+    if (small_enough) {
+      ExpandLinear2EqCst(ct, rhs.FixedValue(), context);
+      return;
+    } else if (std::abs(coeff1) != 1 || std::abs(coeff2) != 1 ||
+               coeff1 + coeff2 != 0) {
+      VLOG(2) << "TODO ExpandLinear2EqCst: |enforcements| = "
+              << ct->enforcement_literal_size()
+              << ", |domain1| = " << context->DomainSize(var1)
+              << ", |domain2| = " << context->DomainSize(var2)
+              << ", coeff1 = " << coeff1 << ", coeff2 = " << coeff2
+              << ", rhs = " << rhs.FixedValue();
+    }
+  }
+}
+
 // Note that we used to do that at loading time, but we prefer to do that as
-// part of the presolve so that all variables are available for sharing between
-// subworkers and also are accessible by the linear relaxation.
+// part of the presolve so that all variables are available for sharing
+// between subworkers and also are accessible by the linear relaxation.
 //
 // TODO(user): Note that currently both encoding introduce extra solutions
 // if the constraint has some enforcement literal(). We can either fix this by
@@ -2350,10 +2442,10 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
 // fix all new Boolean to false if the initial constraint is not enforced.
 void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
                                    PresolveContext* context) {
-  // TODO(user): We treat the linear of size 1 differently because we need them
-  // as is to recognize value encoding. Try to still creates needed Boolean now
-  // so that we can share more between the different workers. Or revisit how
-  // linear1 are propagated.
+  // TODO(user): We treat the linear of size 1 differently because we need
+  // them as is to recognize value encoding. Try to still creates needed
+  // Boolean now so that we can share more between the different workers. Or
+  // revisit how linear1 are propagated.
   if (ct->linear().domain().size() <= 2) return;
   if (ct->linear().vars().size() == 1) return;
 
@@ -2376,8 +2468,8 @@ void ExpandComplexLinearConstraint(int c, ConstraintProto* ct,
     int single_bool;
     BoolArgumentProto* clause = nullptr;
     if (ct->enforcement_literal().empty() && ct->linear().domain_size() == 4) {
-      // We cover the special case of no enforcement and two choices by creating
-      // a single Boolean.
+      // We cover the special case of no enforcement and two choices by
+      // creating a single Boolean.
       single_bool = context->NewBoolVar("complex linear expansion");
     } else {
       clause = context->working_model->add_constraints()->mutable_bool_or();
@@ -2475,7 +2567,8 @@ bool IsVarEqOrNeqValue(PresolveContext* context,
 //
 // Expand is selected if the variable is fully encoded, or will be when
 //   expanding other constraints: index of element, table, automaton.
-//   It will check AllDiffShouldBeExpanded() before doing the actual expansion.
+//   It will check AllDiffShouldBeExpanded() before doing the actual
+//   expansion.
 // Keep is forced is the variable appears in a linear equation with at least 3
 // terms, and with a tight domain ( == cst).
 // TODO(user): The above rule is complex. Revisit.
@@ -2654,9 +2747,9 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
 
   const bool is_a_permutation = num_exprs == union_of_domains.Size();
 
-  // Collect all possible variables that can take each value, and add one linear
-  // equation per value stating that this value can be assigned at most once, or
-  // exactly once in case of permutation.
+  // Collect all possible variables that can take each value, and add one
+  // linear equation per value stating that this value can be assigned at most
+  // once, or exactly once in case of permutation.
   for (const int64_t v : union_of_domains.Values()) {
     // Collect references which domain contains v.
     std::vector<LinearExpressionProto> possible_exprs;
@@ -2695,8 +2788,8 @@ void MaybeExpandAllDiff(ConstraintProto* ct, PresolveContext* context,
       if (!context->DomainContains(expr, v)) continue;
 
       // If the expression is fixed, the created literal will be the true
-      // literal. We still need to fail if two expressions are fixed to the same
-      // value.
+      // literal. We still need to fail if two expressions are fixed to the
+      // same value.
       const int encoding = context->GetOrCreateAffineValueEncoding(expr, v);
       at_most_or_equal_one->add_literals(encoding);
     }

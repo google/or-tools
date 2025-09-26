@@ -242,7 +242,7 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       for (const IntegerLiteral associated : encoder->GetIntegerLiterals(l)) {
         if (associated.var >= debug_sol->ivar_has_value.end_index() ||
             !debug_sol->ivar_has_value[associated.var]) {
-          break;
+          continue;
         }
         const IntegerValue value = debug_sol->ivar_values[associated.var];
         to_print.push_back({l, associated, value});
@@ -282,11 +282,19 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       LOG(INFO) << "literals (neg): " << clause;
       LOG(INFO) << "integer literals: " << integers;
       for (const auto [l, i_lit, solution_value] : to_print) {
-        const int proto_var =
-            mapping->GetProtoVariableFromIntegerVariable(i_lit.var);
-        LOG(INFO) << l << " " << i_lit << " var="
-                  << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
-                  << " value_in_sol=" << solution_value;
+        if (i_lit.IsAlwaysTrue()) {
+          const int proto_var =
+              mapping->GetProtoVariableFromBooleanVariable(l.Variable());
+          LOG(INFO) << l << " (bool in model) var=" << proto_var
+                    << " value_in_sol=" << solution_value;
+        } else {
+          const int proto_var = mapping->GetProtoVariableFromIntegerVariable(
+              PositiveVariable(i_lit.var));
+          LOG(INFO) << l << " " << i_lit << " var="
+                    << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
+                    << (VariableIsPositive(i_lit.var) ? "" : " (negated)")
+                    << " value_in_sol=" << solution_value;
+        }
       }
     }
     return is_satisfied;
@@ -1460,6 +1468,11 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // so this might take more time than wanted.
   if (parameters.cp_model_probing_level() > 1) {
     Prober* prober = model->GetOrCreate<Prober>();
+
+    // TODO(user): This always add new binary clauses ! there can be a lot
+    // of them. We get away because of the time limit, but it might not be
+    // good to just have more binary for the first few variables we where able
+    // to probe on large problems !
     if (!prober->ProbeBooleanVariables(/*deterministic_time_limit=*/1.0)) {
       return unsat();
     }

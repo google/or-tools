@@ -100,7 +100,7 @@ class DratChecker {
   // order *before Check() is called*.
   struct Clause {
     // The index of the first literal of this clause in 'literals_'.
-    int first_literal_index;
+    size_t first_literal_index;
     // The number of literals of this clause.
     int num_literals;
 
@@ -135,7 +135,7 @@ class DratChecker {
     // MarkAsNeededForProof() that uses it temporarily.
     bool tmp_is_needed_for_proof_step = false;
 
-    Clause(int first_literal_index, int num_literals);
+    Clause(size_t first_literal_index, int num_literals);
 
     // Returns true if this clause is deleted before the given clause.
     bool IsDeleted(ClauseIndex clause_index) const;

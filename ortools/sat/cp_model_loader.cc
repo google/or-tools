@@ -229,14 +229,16 @@ void LoadVariables(const CpModelProto& model_proto,
   integer_trail->ReserveSpaceForNumVariables(reservation_size);
   m->GetOrCreate<GenericLiteralWatcher>()->ReserveSpaceForNumVariables(
       reservation_size);
-  mapping->reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(),
+  mapping->reverse_integer_map_.resize(var_to_instantiate_as_integer.size(),
                                        -1);
   for (const int i : var_to_instantiate_as_integer) {
     const auto& var_proto = model_proto.variables(i);
     mapping->integers_[i] =
         integer_trail->AddIntegerVariable(ReadDomainFromProto(var_proto));
-    DCHECK_LT(mapping->integers_[i], mapping->reverse_integer_map_.size());
-    mapping->reverse_integer_map_[mapping->integers_[i]] = i;
+    DCHECK(VariableIsPositive(mapping->integers_[i]));
+    const PositiveOnlyIndex index = GetPositiveOnlyIndex(mapping->integers_[i]);
+    DCHECK_LT(index, mapping->reverse_integer_map_.size());
+    mapping->reverse_integer_map_[index] = i;
   }
 
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
@@ -297,32 +299,11 @@ void LoadBooleanSymmetries(const CpModelProto& model_proto, Model* m) {
     if (!mapping->IsBoolean(v)) can_be_used_in_symmetry[v] = false;
   }
 
-  // Tricky: Moreover, some constraint will causes extra Boolean to be created
-  // and linked with the Boolean in the constraints. We can't use any of the
-  // symmetry that touch these since we potentially miss the component that will
-  // map these extra Booleans between each other.
-  //
-  // TODO(user): We could add these extra Boolean during expansion/presolve so
-  // that we have the symmetry involing them. Or maybe comes up with a different
-  // solution.
-  const int num_constraints = model_proto.constraints().size();
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = model_proto.constraints(c);
-    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
-    if (ct.linear().domain().size() <= 2) continue;
-
-    // A linear with a complex domain might need extra Booleans to be loaded.
-    // Note that it should be fine for the Boolean(s) in enforcement_literal
-    // though.
-    for (const int ref : ct.linear().vars()) {
-      can_be_used_in_symmetry[PositiveRef(ref)] = false;
-    }
-  }
-
   auto* sat_solver = m->GetOrCreate<SatSolver>();
   auto* symmetry_handler = m->GetOrCreate<SymmetryPropagator>();
   sat_solver->AddPropagator(symmetry_handler);
   const int num_literals = 2 * sat_solver->NumVariables();
+  symmetry_handler->SetNumLiterals(num_literals);
 
   for (const SparsePermutationProto& perm : symmetry.permutations()) {
     bool can_be_used = true;

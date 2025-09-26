@@ -164,8 +164,10 @@ class CpModelMapping {
     return reverse_boolean_map_[var];
   }
   int GetProtoVariableFromIntegerVariable(IntegerVariable var) const {
-    if (var.value() >= reverse_integer_map_.size()) return -1;
-    return reverse_integer_map_[var];
+    DCHECK(VariableIsPositive(var));
+    const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+    if (index >= reverse_integer_map_.end_index()) return -1;
+    return reverse_integer_map_[index];
   }
 
   // This one should only be used when we have a mapping.
@@ -247,7 +249,7 @@ class CpModelMapping {
   // index. The value of -1 is used to indicate that there is no correspondence
   // (i.e. this variable is only used internally).
   util_intops::StrongVector<BooleanVariable, int> reverse_boolean_map_;
-  util_intops::StrongVector<IntegerVariable, int> reverse_integer_map_;
+  util_intops::StrongVector<PositiveOnlyIndex, int> reverse_integer_map_;
 
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().
