@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -303,6 +304,9 @@ class CpModelPresolver {
   void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
+  bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
+                                    std::string_view entry_name,
+                                    PresolveTimer& timer);
   bool MergeNoOverlapConstraints();
   bool MergeNoOverlap2DConstraints();
 

@@ -5603,6 +5603,11 @@ class UniqueNonNegativeValue {
   int value_ = -1;
 };
 
+std::string Plural(int n, std::string_view s) {
+  return n <= 1 ? absl::StrCat(n, " ", s)
+                : absl::StrCat(FormatCounter(n), " ", s, "s");
+};
+
 }  // namespace
 
 bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
@@ -8121,11 +8126,11 @@ void CpModelPresolver::Probe() {
 
     if (num_old_cliques != num_new_cliques ||
         num_literals_before != num_literals_after) {
-      timer.AddMessage(absl::StrCat(
-          "Merged ", FormatCounter(num_old_cliques), "(",
-          FormatCounter(num_literals_before), " literals) into ",
-          FormatCounter(num_new_cliques), "(",
-          FormatCounter(num_literals_after), " literals) at_most_ones. "));
+      timer.AddMessage(
+          absl::StrCat("Merged ", Plural(num_old_cliques, "constraint"),
+                       " with ", Plural(num_literals_before, "literal"),
+                       " into ", Plural(num_new_cliques, "constraint"),
+                       " with ", Plural(num_literals_after, "literal")));
     }
   }
 }
@@ -8947,63 +8952,16 @@ void CpModelPresolver::ExpandObjective() {
   timer.AddCounter("issues", num_issues);
 }
 
-namespace {
-bool MaxCliqueHasMadeSomeChanges(
-    int old_num_constraints, int old_num_entries,
-    const std::vector<std::vector<Literal>>& cliques, bool no_overlaps) {
-  int new_num_constraints = 0;
-  int new_num_entries = 0;
-  for (const std::vector<Literal>& clique : cliques) {
-    if (clique.empty()) continue;
-    new_num_constraints++;
-    new_num_entries += clique.size();
-  }
-  if (old_num_constraints != new_num_constraints ||
-      old_num_entries != new_num_entries) {
-    const std::string_view ct_name =
-        no_overlaps ? "no-overlaps" : "no-overlap_2ds";
-    const std::string_view entry_name =
-        no_overlaps ? "intervals" : "rectangles";
-    VLOG(1) << absl::StrCat("Merged ", old_num_constraints, " ", ct_name, " (",
-                            old_num_entries, " ", entry_name, ") into ",
-                            new_num_constraints, " ", ct_name, " (",
-                            new_num_entries, " ", entry_name, ").");
-    return true;
-  }
-  return false;
-}
-
-}  // namespace
-
-bool CpModelPresolver::MergeNoOverlapConstraints() {
-  PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
-  if (context_->ModelIsUnsat()) return false;
-  if (time_limit_->LimitReached()) return true;
-
+bool CpModelPresolver::MergeCliqueConstraintsHelper(
+    std::vector<std::vector<Literal>>& cliques, std::string_view entry_name,
+    PresolveTimer& timer) {
+  if (cliques.empty()) return false;  // Nothing has changed.
   const int num_constraints = context_->working_model->constraints_size();
-  int old_num_no_overlaps = 0;
-  int old_num_intervals = 0;
-
-  // Extract the no-overlap constraints with no enforcement literals.
-  // TODO(user): generalize this to merge constraints with the same
-  // enforcement literals?
-  std::vector<int> disjunctive_index;
-  std::vector<std::vector<Literal>> cliques;
-  for (int c = 0; c < num_constraints; ++c) {
-    const ConstraintProto& ct = context_->working_model->constraints(c);
-    if (ct.constraint_case() != ConstraintProto::kNoOverlap) continue;
-    if (HasEnforcementLiteral(ct)) continue;
-    std::vector<Literal> clique;
-    for (const int i : ct.no_overlap().intervals()) {
-      clique.push_back(Literal(BooleanVariable(i), true));
-    }
-    cliques.push_back(clique);
-    disjunctive_index.push_back(c);
-
-    old_num_no_overlaps++;
-    old_num_intervals += clique.size();
+  int old_num_clique_constraints = cliques.size();
+  int old_num_entries = 0;
+  for (const std::vector<Literal>& clique : cliques) {
+    old_num_entries += clique.size();
   }
-  if (old_num_no_overlaps == 0) return true;
 
   // We reuse the max-clique code from sat.
   Model local_model;
@@ -9023,10 +8981,53 @@ bool CpModelPresolver::MergeNoOverlapConstraints() {
 
   time_limit_->ResetHistory();
 
-  if (!MaxCliqueHasMadeSomeChanges(old_num_no_overlaps, old_num_intervals,
-                                   cliques,
-                                   /*no_overlaps=*/true)) {
+  // Update the number of constraints and entries after the max-clique.
+  int new_num_clique_constraints = 0;
+  int new_num_entries = 0;
+  for (const std::vector<Literal>& clique : cliques) {
+    if (clique.empty()) continue;
+    new_num_clique_constraints++;
+    new_num_entries += clique.size();
+  }
+
+  if (old_num_clique_constraints != new_num_clique_constraints ||
+      old_num_entries != new_num_entries) {
+    timer.AddMessage(absl::StrCat(
+        "Merged ", Plural(old_num_clique_constraints, "constraint"), " with ",
+        Plural(old_num_entries, entry_name), " into ",
+        Plural(new_num_clique_constraints, "constraint"), " with ",
+        Plural(new_num_entries, entry_name)));
     return true;
+  }
+
+  return false;  // Nothing has changed.
+}
+
+bool CpModelPresolver::MergeNoOverlapConstraints() {
+  PresolveTimer timer("MergeNoOverlap", logger_, time_limit_);
+  if (context_->ModelIsUnsat()) return false;
+  if (time_limit_->LimitReached()) return true;
+
+  const int num_constraints = context_->working_model->constraints_size();
+  // Extract the no-overlap constraints with no enforcement literals.
+  // TODO(user): generalize this to merge constraints with the same
+  // enforcement literals?
+  std::vector<int> disjunctive_index;
+  std::vector<std::vector<Literal>> cliques;
+  for (int c = 0; c < num_constraints; ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() != ConstraintProto::kNoOverlap) continue;
+    if (HasEnforcementLiteral(ct)) continue;
+    std::vector<Literal> clique;
+    for (const int i : ct.no_overlap().intervals()) {
+      clique.push_back(Literal(BooleanVariable(i), true));
+    }
+    cliques.push_back(clique);
+    disjunctive_index.push_back(c);
+  }
+
+  if (!MergeCliqueConstraintsHelper(cliques, "interval", timer)) {
+    return true;  // Nothing to do, and model is SAT.
   }
 
   // Remove previous no_overlap constraints and add the new recomputed ones.
@@ -9056,9 +9057,6 @@ bool CpModelPresolver::MergeNoOverlap2DConstraints() {
   if (time_limit_->LimitReached()) return true;
 
   const int num_constraints = context_->working_model->constraints_size();
-  int old_num_no_overlap_2ds = 0;
-  int old_num_rectangles = 0;
-
   // Extract the no-overlap constraints with no enforcement literals.
   // TODO(user): generalize this to merge constraints with the same
   // enforcement literals?
@@ -9081,34 +9079,10 @@ bool CpModelPresolver::MergeNoOverlap2DConstraints() {
     }
     cliques.push_back(clique);
     no_overlap2d_index.push_back(c);
-
-    old_num_no_overlap_2ds++;
-    old_num_rectangles += clique.size();
   }
-  if (old_num_no_overlap_2ds == 0) return true;
 
-  // We reuse the max-clique code from sat.
-  Model local_model;
-  local_model.GetOrCreate<Trail>()->Resize(num_constraints);
-  local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(time_limit_);
-  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
-  graph->Resize(num_constraints);
-  for (const std::vector<Literal>& clique : cliques) {
-    // All variables at false is always a valid solution of the local model,
-    // so this should never return UNSAT.
-    CHECK(graph->AddAtMostOne(clique));
-  }
-  CHECK(graph->DetectEquivalences());
-  graph->TransformIntoMaxCliques(
-      &cliques,
-      SafeDoubleToInt64(context_->params().merge_no_overlap_work_limit()));
-
-  time_limit_->ResetHistory();
-
-  if (!MaxCliqueHasMadeSomeChanges(old_num_no_overlap_2ds, old_num_rectangles,
-                                   cliques,
-                                   /*no_overlaps=*/false)) {
-    return true;
+  if (!MergeCliqueConstraintsHelper(cliques, "rectangle", timer)) {
+    return true;  // Nothing to do, and model is SAT.
   }
 
   // Remove previous no_overlap constraints and add the new recomputed ones.
@@ -9239,7 +9213,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 
   if (num_old_cliques != num_new_cliques ||
       num_literals_before != num_literals_after) {
-    SOLVER_LOG(logger_, "[MaxClique] Merged ", num_old_cliques, "(",
+    SOLVER_LOG(logger_, "[MaxClique] Merged ", num_old_cliques, " with ",
                num_literals_before, " literals) into ", num_new_cliques, "(",
                num_literals_after, " literals) at_most_ones.");
   }
