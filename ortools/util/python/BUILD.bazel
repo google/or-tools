@@ -81,9 +81,7 @@ pybind_extension(
     srcs = ["pybind_solve_interrupter.cc"],
     # This library is not meant to be consumed end users; only pybind11 code
     # that needs a SolverInterrupter.
-    visibility = [
-        "//ortools/math_opt/core/python:__subpackages__",
-    ],
+    visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_lib"],
 )
 
@@ -91,6 +89,7 @@ pybind_extension(
     name = "pybind_solve_interrupter_testing",
     testonly = True,
     srcs = ["pybind_solve_interrupter_testing.cc"],
+    visibility = ["//visibility:public"],
     deps = [":py_solve_interrupter_testing_lib"],
 )
 

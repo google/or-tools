@@ -20,6 +20,7 @@ package(default_visibility = ["//visibility:public"])
 pybind_extension(
     name = "mps_converter",
     srcs = ["mps_converter.cc"],
+    visibility = ["//visibility:public"],
     deps =
         [
             "//ortools/math_opt:model_cc_proto",

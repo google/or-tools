@@ -285,7 +285,7 @@ cc_library(
     deps = [
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
-        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log:check",
     ],
@@ -299,6 +299,7 @@ cc_test(
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/random:distributions",

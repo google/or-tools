@@ -39,7 +39,7 @@ pybind_extension(
     srcs = [
         "elemental.cc",
     ],
-    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_macros",
         "//ortools/math_opt/elemental",

@@ -22,7 +22,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/nullability.h"
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/hash/hash.h"
 #include "absl/log/check.h"
 
@@ -59,8 +59,6 @@ class DoubleLinkedList;
 //     http://dimacs.rutgers.edu/~graham/pubs/papers/freqvldbj.pdf
 //
 // This class is thread-compatible.
-//
-// TODO(user): Support move-only types.
 template <typename T, typename Hash = absl::Hash<T>,
           typename Eq = std::equal_to<T>>
 class SpaceSavingMostFrequent {
@@ -81,6 +79,9 @@ class SpaceSavingMostFrequent {
   // Complexity: O(1).
   void FullyRemove(const T& value);
 
+  // Returns the `num_samples` most frequent elements in the data structure
+  // sorted by decreasing count. Note: this does not work with non-copyable
+  // types.
   // TODO(user): Replace this by an iterator with a begin() and end().
   std::vector<std::pair<T, int64_t>> GetMostFrequent(int num_samples) const;
 
@@ -120,6 +121,12 @@ class SpaceSavingMostFrequent {
     }
   }
 
+  void RemoveFromLinkedList(Item* absl_nonnull item) {
+    Bucket* absl_nonnull bucket = item->bucket;
+    item_alloc_.Return(bucket->items.erase(item));
+    RemoveIfEmpty(bucket);
+  }
+
   Bucket* absl_nonnull GetBucketForCountOne() {
     if (!buckets_.empty() && buckets_.back()->count == 1) {
       return buckets_.back();
@@ -134,7 +141,29 @@ class SpaceSavingMostFrequent {
   ssmf_internal::BoundedAllocator<Item> item_alloc_;
   ssmf_internal::BoundedAllocator<Bucket> bucket_alloc_;
   BucketList buckets_;  // front with highest count.
-  absl::flat_hash_map<T, Item* absl_nonnull, Hash, Eq> elem_to_item_;
+
+  struct HashItemPtr {
+    using is_transparent = void;
+    size_t operator()(const Item* absl_nonnull value) const {
+      return Hash()(value->value);
+    }
+    size_t operator()(const T& value) const { return Hash()(value); }
+  };
+
+  struct EqItemPtr {
+    using is_transparent = void;
+    bool operator()(const Item* absl_nonnull a,
+                    const Item* absl_nonnull b) const {
+      return Eq()(a->value, b->value);
+    }
+    bool operator()(const Item* absl_nonnull a, const T& b) const {
+      return Eq()(a->value, b);
+    }
+    bool operator()(const T& a, const Item* absl_nonnull b) const {
+      return Eq()(a, b->value);
+    }
+  };
+  absl::flat_hash_set<Item* absl_nonnull, HashItemPtr, EqItemPtr> item_ptr_set_;
 };
 
 template <typename T, typename Hash, typename Eq>
@@ -143,7 +172,7 @@ SpaceSavingMostFrequent<T, Hash, Eq>::SpaceSavingMostFrequent(int storage_size)
       item_alloc_(storage_size),
       bucket_alloc_(storage_size + 1) {
   CHECK_GT(storage_size, 0);
-  elem_to_item_.reserve(storage_size + 1);
+  item_ptr_set_.reserve(2 * storage_size);
 }
 
 // Properly return all buckets and items to their allocators to ensure proper
@@ -169,21 +198,21 @@ void SpaceSavingMostFrequent<T, Hash, Eq>::Add(T value) {
   if (buckets_.empty()) {
     // We are adding an element to an empty data structure.
     DCHECK(item_alloc_.empty());
-    DCHECK(elem_to_item_.empty());
+    DCHECK(item_ptr_set_.empty());
     Bucket* absl_nonnull bucket = buckets_.insert_back(bucket_alloc_.New());
     Item* absl_nonnull const item =
         bucket->items.insert_front(item_alloc_.New());
     item->bucket = bucket;
-    item->value = value;
+    item->value = std::move(value);
     bucket->count = 1;
-    elem_to_item_.emplace(value, item);
+    item_ptr_set_.emplace(item);
     return;
   }
 
   DCHECK(!buckets_.empty());
 
-  auto [it, inserted] = elem_to_item_.try_emplace(value);
-  if (inserted) {
+  auto it = item_ptr_set_.find(value);
+  if (it == item_ptr_set_.end()) {
     // We are adding a new element. First, check if we are full, and if so,
     // remove the least frequent element.
     if (item_alloc_.full()) {
@@ -193,18 +222,18 @@ void SpaceSavingMostFrequent<T, Hash, Eq>::Add(T value) {
       // the real least frequent of the bucket since it was unseen for longer.
       Item* absl_nonnull recycled_item = last_bucket->items.front();
       // Reclaim its storage for the newly added element.
-      elem_to_item_.erase(recycled_item->value);
+      item_ptr_set_.erase(recycled_item);
       item_alloc_.Return(last_bucket->items.pop_front());
       RemoveIfEmpty(last_bucket);
     }
     Bucket* absl_nonnull bucket = GetBucketForCountOne();
     DCHECK_EQ(bucket->count, 1);
     Item* absl_nonnull item = bucket->items.insert_back(item_alloc_.New());
-    item->value = value;
+    item->value = std::move(value);
     item->bucket = bucket;
-    it->second = item;  // set item pointer back in map.
+    item_ptr_set_.emplace_hint(it, item);
   } else {
-    Item* absl_nonnull item = it->second;
+    Item* absl_nonnull item = *it;
     Bucket* absl_nonnull bucket = item->bucket;
     ItemList& current_bucket_items = bucket->items;
     const int64_t new_count = bucket->count + 1;
@@ -239,13 +268,9 @@ void SpaceSavingMostFrequent<T, Hash, Eq>::Add(T value) {
 
 template <typename T, typename Hash, typename Eq>
 void SpaceSavingMostFrequent<T, Hash, Eq>::FullyRemove(const T& value) {
-  auto it = elem_to_item_.find(value);
-  if (it == elem_to_item_.end()) return;
-  Item* absl_nonnull item = it->second;
-  Bucket* absl_nonnull bucket = item->bucket;
-  item_alloc_.Return(bucket->items.erase(item));
-  RemoveIfEmpty(bucket);
-  elem_to_item_.erase(it);
+  auto node = item_ptr_set_.extract(value);
+  if (node.empty()) return;
+  RemoveFromLinkedList(node.value());
 }
 
 template <typename T, typename Hash, typename Eq>
@@ -269,8 +294,11 @@ SpaceSavingMostFrequent<T, Hash, Eq>::GetMostFrequent(int num_samples) const {
 template <typename T, typename Hash, typename Eq>
 T SpaceSavingMostFrequent<T, Hash, Eq>::PopMostFrequent() {
   CHECK(!buckets_.empty());
-  const T value = buckets_.front()->items.back()->value;
-  FullyRemove(value);
+  Item* absl_nonnull item = buckets_.front()->items.back();
+  DCHECK(item_ptr_set_.contains(item));
+  item_ptr_set_.erase(item);
+  T value = std::move(item->value);
+  RemoveFromLinkedList(item);
   return value;
 }
 
