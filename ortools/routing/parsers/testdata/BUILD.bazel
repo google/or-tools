@@ -11,23 +11,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+package(default_visibility = ["//visibility:public"])
+
 exports_files([
     "c1_10_2-90-42222.96.txt",
+    "C1_10_2.TXT",
     "carp_gdb19.dat",  # https://github.com/vidalt/HGS-CARP/blob/master/Instances/CARP/gdb19.dat
     # https://www.sciencedirect.com/science/article/abs/pii/0305054883900266
     "carp_gdb19_diferente_deposito.dat",
-    "carp_gdb19_incorrecto_vertices.dat",
     "carp_gdb19_incorrecta_lista_aristas_req.dat",
     "carp_gdb19_incorrecto_arinoreq.dat",
     "carp_gdb19_incorrecto_arireq.dat",
+    "carp_gdb19_incorrecto_arista.dat",
     "carp_gdb19_incorrecto_capacidad.dat",
     "carp_gdb19_incorrecto_coste.dat",
     "carp_gdb19_incorrecto_deposito.dat",
     "carp_gdb19_incorrecto_tipo.dat",
     "carp_gdb19_incorrecto_vehiculos.dat",
+    "carp_gdb19_incorrecto_vertices.dat",
     "carp_gdb19_mixed_arcs.dat",
     "carp_gdb19_no_arista_req.dat",
     "carp_toy.dat",
+    "carp_toy.sol",
     "lilim.zip",
     "n20w20.001.txt",
     "n20w20.002.txt",
@@ -39,6 +44,7 @@ exports_files([
     "rc201.0",
     "solomon_bp_c101.mps",
     "solomon_bp_c101.pb",
+    "solomon_check_id.md",
     "solomon_check_id.txt",
     "solomon_google2.delivery_at_depot_location.pb.txt",
     "solomon_google2.delivery_only.pb.txt",
@@ -48,5 +54,6 @@ exports_files([
     "solomon.zip",
     "tsplib_ar9152.tour",
     "tsplib_ar9152.tsp",
+    "tsplib_F-n45-k4.vrp",
     "tsplib_Kytojoki_33.vrp",
 ])

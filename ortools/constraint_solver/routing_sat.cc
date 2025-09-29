@@ -53,8 +53,6 @@ using operations_research::sat::CpObjectiveProto;
 using operations_research::sat::CpSolverResponse;
 using operations_research::sat::CpSolverStatus;
 using operations_research::sat::IntegerVariableProto;
-using operations_research::sat::kMaxIntegerValue;
-using operations_research::sat::kMinIntegerValue;
 using operations_research::sat::LinearConstraintProto;
 using operations_research::sat::Model;
 using operations_research::sat::NewSatParameters;

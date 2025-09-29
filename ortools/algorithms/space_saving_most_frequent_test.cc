@@ -13,8 +13,10 @@
 
 #include "ortools/algorithms/space_saving_most_frequent.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <random>
 #include <string>
@@ -24,6 +26,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -414,6 +417,55 @@ TEST(SpaceSavingMostFrequent, RandomInstances) {
     }
     most_frequent.CheckIdenticalResults(num_samples);
   }
+}
+
+TEST(SpaceSavingMostFrequent, WorksWithUniquePtr) {
+  SpaceSavingMostFrequentNaive<std::string> naive_most_frequent(5);
+
+  struct StringPtrHash {
+    std::size_t operator()(const std::unique_ptr<std::string>& s) const {
+      return absl::Hash<std::string>()(*s);
+    }
+  };
+  struct StringPtrEq {
+    bool operator()(const std::unique_ptr<std::string>& a,
+                    const std::unique_ptr<std::string>& b) const {
+      return *a == *b;
+    }
+  };
+  SpaceSavingMostFrequent<std::unique_ptr<std::string>, StringPtrHash,
+                          StringPtrEq>
+      most_frequent(5);
+
+  auto add = [&](const std::string& value) {
+    most_frequent.Add(std::make_unique<std::string>(value));
+    naive_most_frequent.Add(value);
+  };
+
+  add("a");
+  add("b");
+  add("c");
+  add("d");
+  add("e");
+  add("a");
+  add("a");
+  add("a");
+
+  add("b");
+  add("c");
+  add("d");
+  add("e");
+  add("f");
+  add("g");
+
+  std::vector<std::pair<std::string, int64_t>> res;
+  for (int i = 0; i < 10; ++i) {
+    const int64_t count = most_frequent.CountOfMostFrequent();
+    if (count == 0) break;
+    res.push_back({*most_frequent.PopMostFrequent(), count});
+  }
+
+  EXPECT_EQ(res, naive_most_frequent.GetMostFrequent(10));
 }
 
 template <int kElementSize>

@@ -14,7 +14,10 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
-package(default_visibility = ["//visibility:public"])
+package(
+    # Code specific to Glpk solver used by linear_solver/ and math_opt/.
+    default_visibility = ["//visibility:public"],
+)
 
 cc_library(
     name = "glpk_env_deleter",
