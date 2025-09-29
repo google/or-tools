@@ -515,7 +515,7 @@ message SatParameters {
   optional bool expand_reservoir_constraints = 182 [default = true];
 
   // Max domain size for expanding linear2 constraints (ax + by ==/!= c).
-  optional int32 max_domain_size_for_linear2_expansion = 336 [default = 32];
+  optional int32 max_domain_size_for_linear2_expansion = 336 [default = 8];
 
   // Mainly useful for testing.
   //

@@ -125,9 +125,11 @@ inline std::vector<IntegerValue> ToIntegerValueVector(
 
 // Enforces the XOR of a set of literals to be equal to the given value.
 inline std::function<void(Model*)> LiteralXorIs(
-    const std::vector<Literal>& enforcement_literals,
+    absl::Span<const Literal> enforcement_literals,
     const std::vector<Literal>& literals, bool value) {
-  return [=](Model* model) {
+  return [=, enforcement_literals = std::vector<Literal>(
+                 enforcement_literals.begin(), enforcement_literals.end())](
+             Model* model) {
     model->TakeOwnership(
         new BooleanXorPropagator(enforcement_literals, literals, value, model));
   };
