@@ -18,6 +18,7 @@ package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 pybind_extension(
     name = "solver",
     srcs = ["solver.cc"],
+    visibility = ["//visibility:public"],
     deps =
         select({
             "//ortools/linear_solver:use_cp_sat": ["//ortools/math_opt/solvers:cp_sat_solver"],
