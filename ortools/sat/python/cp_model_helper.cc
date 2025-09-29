@@ -1682,7 +1682,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
       .def("__bool__",
            [](std::shared_ptr<Literal> /*self*/) {
              ThrowError(PyExc_NotImplementedError,
-                        "Evaluating a Literal as a Boolean valueis "
+                        "Evaluating a Literal as a Boolean value is "
                         "not supported.");
            })
       .def("__hash__", &Literal::Hash)

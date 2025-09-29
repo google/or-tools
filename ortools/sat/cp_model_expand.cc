@@ -2390,7 +2390,7 @@ void ExpandSomeLinearOfSizeTwo(ConstraintProto* ct, PresolveContext* context) {
       reachable_rhs_superset.IntersectionWith(rhs.Complement());
 
   // Let's check we will not create encoding literals for variables that are too
-  // large, or have little encoding literals.
+  // large, or have few encoding literals.
   const bool small_enough = context->DomainSize(var1) <= max_domain_size &&
                             context->DomainSize(var2) <= max_domain_size &&
                             context->IsMostlyFullyEncoded(var1) &&

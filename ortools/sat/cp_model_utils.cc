@@ -1091,7 +1091,7 @@ bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out) {
 
   absl::StrAppend(out, "p cnf ", num_vars, " ", num_clauses, "\n");
   ConvertSatCpModelProtoToClauses(
-      cp_model, [&out](const std::vector<Literal>& clause) {
+      cp_model, [&out](absl::Span<const Literal> clause) {
         for (const Literal lit : clause) {
           absl::StrAppend(out, lit.SignedValue(), " ");
         }
