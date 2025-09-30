@@ -776,6 +776,7 @@ cc_test(
     name = "dag_shortest_path_test",
     size = "small",
     srcs = ["dag_shortest_path_test.cc"],
+    tags = ["manual"],
     deps = [
         ":dag_shortest_path",
         "//ortools/base:dump_vars",

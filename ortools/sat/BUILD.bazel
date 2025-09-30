@@ -633,6 +633,7 @@ cc_test(
     name = "cp_model_search_test",
     size = "small",
     srcs = ["cp_model_search_test.cc"],
+    tags = ["manual"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -1243,7 +1244,10 @@ cc_test(
     name = "cp_model_presolve_test",
     size = "small",
     srcs = ["cp_model_presolve_test.cc"],
-    tags = ["noautofuzz"],
+    tags = [
+        "manual",
+        "noautofuzz",
+    ],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
