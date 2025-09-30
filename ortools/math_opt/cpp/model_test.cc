@@ -32,7 +32,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/parse_text_proto.h"
-#include "ortools/base/string_view_migration.h"
 #include "ortools/math_opt/constraints/indicator/indicator_constraint.h"
 #include "ortools/math_opt/constraints/quadratic/quadratic_constraint.h"
 #include "ortools/math_opt/constraints/second_order_cone/second_order_cone_constraint.h"
@@ -600,8 +599,7 @@ std::vector<std::string> SortedValueNames(
     const google::protobuf::Map<int64_t, T>& messages) {
   std::vector<std::pair<int64_t, std::string>> sorted_entries;
   for (const auto& [id, message] : messages) {
-    sorted_entries.push_back(
-        {id, google::protobuf::StringCopy(message.name())});
+    sorted_entries.push_back({id, message.name()});
   }
   absl::c_sort(sorted_entries);
   std::vector<std::string> result;

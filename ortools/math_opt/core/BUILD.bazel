@@ -64,7 +64,6 @@ cc_library(
     deps = [
         "//ortools/base:linked_hash_map",
         "//ortools/base:status_macros",
-        "//ortools/base:string_view_migration",
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "@abseil-cpp//absl/algorithm:container",

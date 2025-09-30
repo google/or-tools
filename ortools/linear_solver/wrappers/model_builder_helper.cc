@@ -30,7 +30,6 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
-#include "ortools/base/string_view_migration.h"
 #include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -184,7 +183,7 @@ double ModelBuilderHelper::VarObjectiveCoefficient(int var_index) const {
 }
 
 std::string ModelBuilderHelper::VarName(int var_index) const {
-  return google::protobuf::StringCopy(model_.variable(var_index).name());
+  return model_.variable(var_index).name();
 }
 
 int ModelBuilderHelper::AddLinearConstraint() {
@@ -260,7 +259,7 @@ double ModelBuilderHelper::ConstraintUpperBound(int ct_index) const {
 }
 
 std::string ModelBuilderHelper::ConstraintName(int ct_index) const {
-  return google::protobuf::StringCopy(model_.constraint(ct_index).name());
+  return model_.constraint(ct_index).name();
 }
 
 std::vector<int> ModelBuilderHelper::ConstraintVarIndices(int ct_index) const {
@@ -400,8 +399,7 @@ double ModelBuilderHelper::EnforcedConstraintUpperBound(int ct_index) const {
 
 std::string ModelBuilderHelper::EnforcedConstraintName(int ct_index) const {
   DCHECK(IsEnforcedConstraint(ct_index));
-  return google::protobuf::StringCopy(
-      model_.general_constraint(ct_index).name());
+  return model_.general_constraint(ct_index).name();
 }
 
 std::vector<int> ModelBuilderHelper::EnforcedConstraintVarIndices(
@@ -438,9 +436,7 @@ int ModelBuilderHelper::num_constraints() const {
   return model_.constraint_size() + model_.general_constraint_size();
 }
 
-std::string ModelBuilderHelper::name() const {
-  return google::protobuf::StringCopy(model_.name());
-}
+std::string ModelBuilderHelper::name() const { return model_.name(); }
 
 void ModelBuilderHelper::SetName(const std::string& name) {
   model_.set_name(name);
@@ -745,7 +741,7 @@ double ModelSolverHelper::activity(int ct_index) {
 
 std::string ModelSolverHelper::status_string() const {
   if (!has_response()) return "";
-  return google::protobuf::StringCopy(response_.value().status_str());
+  return response_.value().status_str();
 }
 
 double ModelSolverHelper::wall_time() const {

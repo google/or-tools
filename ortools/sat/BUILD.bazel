@@ -35,7 +35,6 @@ cc_library(
         ":cp_model_utils",
         ":model",
         ":sat_parameters_cc_proto",
-        "//ortools/base:string_view_migration",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log:check",

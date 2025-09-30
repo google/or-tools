@@ -27,7 +27,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/string_view_migration.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/fp_roundtrip_conv.h"
@@ -800,7 +799,7 @@ std::string IntVar::name() const {
   if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
     return "";
   }
-  return google::protobuf::StringCopy(model_proto_->variables(index_).name());
+  return model_proto_->variables(index_).name();
 }
 
 void IntVar::SetName(absl::string_view name) {
