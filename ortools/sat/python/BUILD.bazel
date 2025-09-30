@@ -31,7 +31,6 @@ cc_library(
     srcs = ["linear_expr.cc"],
     hdrs = ["linear_expr.h"],
     deps = [
-        "//ortools/base:string_view_migration",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",

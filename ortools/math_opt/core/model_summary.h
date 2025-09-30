@@ -32,7 +32,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/string_view_migration.h"
 #include "ortools/math_opt/model.pb.h"
 #include "ortools/math_opt/model_update.pb.h"
 
@@ -257,8 +256,7 @@ absl::Status UpdateBiMapFromMappedData(
   }
   absl::c_sort(new_ids);
   for (const int64_t id : new_ids) {
-    RETURN_IF_ERROR(bimap.Insert(
-        id, google::protobuf::StringCopy(proto_map.at(id).name())));
+    RETURN_IF_ERROR(bimap.Insert(id, proto_map.at(id).name()));
   }
   return absl::OkStatus();
 }

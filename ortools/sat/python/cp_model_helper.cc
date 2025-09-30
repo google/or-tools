@@ -30,7 +30,6 @@
 #include "absl/strings/escaping.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "ortools/base/string_view_migration.h"
 #include "ortools/port/proto_utils.h"  // IWYU: keep
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"

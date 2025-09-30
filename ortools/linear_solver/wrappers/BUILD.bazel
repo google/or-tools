@@ -30,7 +30,6 @@ cc_library(
     ],
     deps = [
         "//ortools/base:file",
-        "//ortools/base:string_view_migration",
         "//ortools/linear_solver",
         "//ortools/linear_solver:gurobi_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
