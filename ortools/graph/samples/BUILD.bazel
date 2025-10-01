@@ -11,60 +11,381 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc", "code_sample_cc_py", "code_sample_java")
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_java//java:java_test.bzl", "java_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
-code_sample_java(name = "AssignmentLinearSumAssignment")
+cc_test(
+    name = "assignment_linear_sum_assignment_test",
+    srcs = ["assignment_linear_sum_assignment.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:assignment",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc_py(name = "assignment_linear_sum_assignment")
+py_test(
+    name = "assignment_linear_sum_assignment_py3",
+    srcs = ["assignment_linear_sum_assignment.py"],
+    main = "assignment_linear_sum_assignment.py",
+    deps = [
+        requirement("numpy"),
+        "//ortools/graph/python:linear_sum_assignment",
+    ],
+)
 
-code_sample_java(name = "AssignmentMinFlow")
+java_test(
+    name = "AssignmentLinearSumAssignment",
+    srcs = ["AssignmentLinearSumAssignment.java"],
+    main_class = "com.google.ortools.graph.samples.AssignmentLinearSumAssignment",
+    test_class = "com.google.ortools.graph.samples.AssignmentLinearSumAssignment",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
 
-code_sample_cc_py(name = "assignment_min_flow")
+cc_test(
+    name = "assignment_min_flow_test",
+    srcs = ["assignment_min_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:min_cost_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_java(name = "BalanceMinFlow")
+py_test(
+    name = "assignment_min_flow_py3",
+    srcs = ["assignment_min_flow.py"],
+    main = "assignment_min_flow.py",
+    deps = ["//ortools/graph/python:min_cost_flow"],
+)
 
-code_sample_cc_py(name = "balance_min_flow")
+java_test(
+    name = "AssignmentMinFlow",
+    srcs = ["AssignmentMinFlow.java"],
+    main_class = "com.google.ortools.graph.samples.AssignmentMinFlow",
+    test_class = "com.google.ortools.graph.samples.AssignmentMinFlow",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
 
-code_sample_cc(name = "bfs_directed")
+cc_test(
+    name = "balance_min_flow_test",
+    srcs = ["balance_min_flow.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:min_cost_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "bfs_one_to_all")
+py_test(
+    name = "balance_min_flow_py3",
+    srcs = ["balance_min_flow.py"],
+    main = "balance_min_flow.py",
+    deps = ["//ortools/graph/python:min_cost_flow"],
+)
 
-code_sample_cc(name = "bfs_undirected")
+java_test(
+    name = "BalanceMinFlow",
+    srcs = ["BalanceMinFlow.java"],
+    main_class = "com.google.ortools.graph.samples.BalanceMinFlow",
+    test_class = "com.google.ortools.graph.samples.BalanceMinFlow",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
 
-code_sample_cc(name = "dag_shortest_path_one_to_all")
+cc_test(
+    name = "simple_max_flow_program_test",
+    srcs = ["simple_max_flow_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:max_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "dag_shortest_path_sequential")
+py_test(
+    name = "simple_max_flow_program_py3",
+    srcs = ["simple_max_flow_program.py"],
+    main = "simple_max_flow_program.py",
+    deps = [
+        requirement("numpy"),
+        "//ortools/graph/python:max_flow",
+    ],
+)
 
-code_sample_cc(name = "dag_simple_shortest_path")
+java_test(
+    name = "SimpleMaxFlowProgram",
+    srcs = ["SimpleMaxFlowProgram.java"],
+    main_class = "com.google.ortools.graph.samples.SimpleMaxFlowProgram",
+    test_class = "com.google.ortools.graph.samples.SimpleMaxFlowProgram",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
 
-code_sample_cc(name = "dag_multiple_shortest_paths_one_to_all")
+cc_test(
+    name = "simple_min_cost_flow_program_test",
+    srcs = ["simple_min_cost_flow_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:min_cost_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "dag_multiple_shortest_paths_sequential")
+py_test(
+    name = "simple_min_cost_flow_program_py3",
+    srcs = ["simple_min_cost_flow_program.py"],
+    main = "simple_min_cost_flow_program.py",
+    deps = [
+        requirement("numpy"),
+        "//ortools/graph/python:min_cost_flow",
+    ],
+)
 
-code_sample_cc(name = "dag_simple_multiple_shortest_paths")
+java_test(
+    name = "SimpleMinCostFlowProgram",
+    srcs = ["SimpleMinCostFlowProgram.java"],
+    main_class = "com.google.ortools.graph.samples.SimpleMinCostFlowProgram",
+    test_class = "com.google.ortools.graph.samples.SimpleMinCostFlowProgram",
+    deps = [
+        "//ortools/graph/java:graph",
+        "//ortools/java/com/google/ortools:Loader",
+    ],
+)
 
-code_sample_cc(name = "dag_constrained_shortest_path_sequential")
+cc_binary(
+    name = "dijkstra_directed",
+    srcs = ["dijkstra_directed.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:bounded_dijkstra",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "dag_simple_constrained_shortest_path")
+cc_binary(
+    name = "dijkstra_undirected",
+    srcs = ["dijkstra_undirected.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:bounded_dijkstra",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "dijkstra_all_pairs_shortest_paths")
+cc_binary(
+    name = "dijkstra_one_to_all",
+    srcs = ["dijkstra_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:bounded_dijkstra",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "dijkstra_directed")
+cc_binary(
+    name = "dijkstra_sequential",
+    srcs = ["dijkstra_sequential.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:bounded_dijkstra",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "dijkstra_one_to_all")
+cc_binary(
+    name = "dijkstra_all_pairs_shortest_paths",
+    srcs = ["dijkstra_all_pairs_shortest_paths.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:bounded_dijkstra",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/time",
+    ],
+)
 
-code_sample_cc(name = "dijkstra_sequential")
+cc_binary(
+    name = "dag_simple_shortest_path",
+    srcs = ["dag_simple_shortest_path.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:dag_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "dijkstra_undirected")
+cc_binary(
+    name = "dag_shortest_path_one_to_all",
+    srcs = ["dag_shortest_path_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph",
+        "//ortools/graph:dag_shortest_path",
+        "//ortools/graph:topologicalsorter",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "root_a_tree")
+cc_binary(
+    name = "dag_shortest_path_sequential",
+    srcs = ["dag_shortest_path_sequential.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:dag_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc(name = "rooted_tree_paths")
+cc_binary(
+    name = "bfs_directed",
+    srcs = ["bfs_directed.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_java(name = "SimpleMaxFlowProgram")
+cc_binary(
+    name = "bfs_undirected",
+    srcs = ["bfs_undirected.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc_py(name = "simple_max_flow_program")
+cc_binary(
+    name = "bfs_one_to_all",
+    srcs = ["bfs_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph:bfs",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_java(name = "SimpleMinCostFlowProgram")
+cc_binary(
+    name = "root_a_tree",
+    srcs = ["root_a_tree.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph",
+        "//ortools/graph:rooted_tree",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
 
-code_sample_cc_py(name = "simple_min_cost_flow_program")
+cc_binary(
+    name = "rooted_tree_paths",
+    srcs = ["rooted_tree_paths.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph:rooted_tree",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "dag_simple_multiple_shortest_paths",
+    srcs = ["dag_simple_multiple_shortest_paths.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:dag_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "dag_multiple_shortest_paths_one_to_all",
+    srcs = ["dag_multiple_shortest_paths_one_to_all.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:status_macros",
+        "//ortools/graph",
+        "//ortools/graph:dag_shortest_path",
+        "//ortools/graph:topologicalsorter",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "dag_multiple_shortest_paths_sequential",
+    srcs = ["dag_multiple_shortest_paths_sequential.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:dag_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "dag_simple_constrained_shortest_path",
+    srcs = ["dag_simple_constrained_shortest_path.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph:dag_constrained_shortest_path",
+        "//ortools/graph:dag_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "dag_constrained_shortest_path_sequential",
+    srcs = ["dag_constrained_shortest_path_sequential.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/graph",
+        "//ortools/graph:dag_constrained_shortest_path",
+        "@abseil-cpp//absl/strings",
+    ],
+)
