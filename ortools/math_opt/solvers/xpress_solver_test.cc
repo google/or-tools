@@ -96,7 +96,7 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalLpTest);
 INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
                          testing::Values(MessageCallbackTestParams(
                              SolverType::kXpress,
-                             /*support_message_callback=*/false,
+                             /*support_message_callback=*/true,
                              /*support_interrupter=*/false,
                              /*integer_variables=*/false, "")));
 
