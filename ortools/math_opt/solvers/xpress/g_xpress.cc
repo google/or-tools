@@ -84,6 +84,16 @@ void XPRS_CC Xpress::printXpressMessage(XPRSprob, void*, const char* sMsg, int,
   }
 }
 
+absl::Status Xpress::addCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata, int prio)
+{
+  return ToStatus(XPRSaddcbmessage(xpress_model_, cb, cbdata, prio));
+}
+
+absl::Status Xpress::removeCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata)
+{
+  return ToStatus(XPRSremovecbmessage(xpress_model_, cb, cbdata));
+}
+
 Xpress::~Xpress() {
   CHECK_EQ(kXpressOk, XPRSdestroyprob(xpress_model_));
   CHECK_EQ(kXpressOk, XPRSfree());

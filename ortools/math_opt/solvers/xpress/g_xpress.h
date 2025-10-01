@@ -110,6 +110,9 @@ class Xpress {
                                          const char* sMsg, int nLen,
                                          int nMsgLvl);
 
+  absl::Status addCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata, int prio = 0);
+  absl::Status removeCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata = nullptr);
+
   int GetNumberOfConstraints() const;
   int GetNumberOfVariables() const;
 

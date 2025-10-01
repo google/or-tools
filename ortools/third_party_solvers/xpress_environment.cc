@@ -106,6 +106,7 @@ std::function<int(XPRSprob prob, int objidx)> XPRSdelobj = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p, int priority)> XPRSaddcbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p)> XPRSremovecbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage = nullptr;
+std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p)> XPRSremovecbmessage = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize = nullptr;
@@ -181,6 +182,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbintsol, "XPRSaddcbintsol");
   xpress_dynamic_library->GetFunction(&XPRSremovecbintsol, "XPRSremovecbintsol");
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
+  xpress_dynamic_library->GetFunction(&XPRSremovecbmessage, "XPRSremovecbmessage");
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
   xpress_dynamic_library->GetFunction(&XPRSoptimize, "XPRSoptimize");

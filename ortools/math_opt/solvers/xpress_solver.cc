@@ -35,6 +35,7 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/cpp/message_callback.h"
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
@@ -46,6 +47,73 @@
 namespace operations_research {
 namespace math_opt {
 namespace {
+
+/** Message callback support.
+ * Destructor unregisters the callback so that we can rely on RAII for
+ * cleanup.
+ */
+class ScopedMessageCallback {
+  // C-style callback function that is registered with Xpress.
+  static void XPRS_CC callback(XPRSprob, void *cbdata, char const *msg, int len, int type) {
+    if ( type != 1 && // info message
+	 type != 3 && // warning message
+	 type != 4 ) // error message
+      // message type 2 is not used, negative values mean "flush"
+      return;
+    ScopedMessageCallback *cb = reinterpret_cast<ScopedMessageCallback *>(cbdata);
+    if ( len == 0 ) {
+      cb->cb(std::vector<std::string>{{""}});
+    }
+    else {
+      std::vector<std::string> lines;
+      int start = 0;
+      // There are a few Xpress messages that span multiple lines.
+      // The MessageCallback contract says that messages must not contain
+      // newlines, so we have to split on newline.
+      while (start <= len) { // <= rather than < to catch message ending in '\n'
+	int end = start;
+	while (end < len && msg[end] != '\n')
+	  ++end;
+	if (start < len)
+	  lines.push_back(std::string(msg, start, end - start));
+	else
+	  lines.push_back("");
+	start = end + 1;
+      }
+      cb->cb(lines);
+    }
+  }
+  Xpress *const prob;  /**< Problem with which callback is registered. */
+  MessageCallback cb;  /**< ortools callback function to which messages are
+			*   forwarded.
+			*/
+  bool attached;       /**< Whether the callback was attached. */
+public:
+  /** Install message callback cb into prob.
+   * If cb is nullptr then nothing happens.
+   * Callback will be automatically removed by destructor.
+   */
+  ScopedMessageCallback(Xpress *prob, MessageCallback cb)
+    : prob(prob)
+    , cb(cb)
+    , attached(false)
+  {
+  }
+  // This is not part of the constructor so that we can handle errors by
+  // return value rather than exception.
+  absl::Status attach() {
+    if ( !attached && cb ) {
+      RETURN_IF_ERROR(prob->addCbMessage(callback, reinterpret_cast<void *>(this), 0));
+      attached = true;
+    }
+    return absl::OkStatus();
+  }
+  ~ScopedMessageCallback() {
+    if ( attached ) {
+      CHECK_OK(prob->removeCbMessage(callback, reinterpret_cast<void *>(this)));
+    }
+  }
+};
 
 absl::Status CheckParameters(const SolveParametersProto& parameters) {
   std::vector<std::string> warnings;
@@ -241,7 +309,8 @@ absl::Status XpressSolver::ChangeCoefficients(
 
 absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     const SolveParametersProto& parameters,
-    const ModelSolveParametersProto& model_parameters, MessageCallback,
+    const ModelSolveParametersProto& model_parameters,
+    MessageCallback message_callback,
     const CallbackRegistrationProto& callback_registration, Callback,
     const SolveInterrupter*) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
@@ -252,6 +321,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
                                                 /*supported_events=*/{}));
 
   RETURN_IF_ERROR(CheckParameters(parameters));
+
+  ScopedMessageCallback cbMessage(xpress_.get(), message_callback);
+  RETURN_IF_ERROR(cbMessage.attach());
 
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
@@ -718,8 +790,10 @@ absl::StatusOr<bool> XpressSolver::Update(const ModelUpdateProto&) {
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
-                                         MessageCallback,
+                                         MessageCallback message_callback,
                                          const SolveInterrupter*) {
+  ScopedMessageCallback cbMessage(xpress_.get(), message_callback);
+  RETURN_IF_ERROR(cbMessage.attach());
   return absl::UnimplementedError(
       "XPRESS does not provide a method to compute an infeasible subsystem");
 }
