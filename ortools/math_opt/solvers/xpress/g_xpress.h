@@ -106,10 +106,6 @@ class Xpress {
   absl::Status SetStartingBasis(std::vector<int>& rowBasis,
                                 std::vector<int>& colBasis) const;
 
-  static void XPRS_CC printXpressMessage(XPRSprob prob, void* data,
-                                         const char* sMsg, int nLen,
-                                         int nMsgLvl);
-
   absl::Status addCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata, int prio = 0);
   absl::Status removeCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata = nullptr);
 

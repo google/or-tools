@@ -64,7 +64,6 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(absl::string_view) {
   CHECK(correctlyLoaded);
   XPRSprob model;
   CHECK_EQ(kXpressOk, XPRScreateprob(&model));
-  CHECK_EQ(kXpressOk, XPRSaddcbmessage(model, printXpressMessage, nullptr, 0));
   return absl::WrapUnique(new Xpress(model));
 }
 
@@ -75,13 +74,6 @@ absl::Status Xpress::SetProbName(absl::string_view name) {
     truncated = truncated.substr(0, maxLength.value_or(INT_MAX));
   }
   return ToStatus(XPRSsetprobname(xpress_model_, truncated.c_str()));
-}
-
-void XPRS_CC Xpress::printXpressMessage(XPRSprob, void*, const char* sMsg, int,
-                                        int) {
-  if (sMsg) {
-    LOG(INFO) << sMsg;
-  }
 }
 
 absl::Status Xpress::addCbMessage(void (XPRS_CC *cb)(XPRSprob, void *, char const *, int, int), void *cbdata, int prio)
