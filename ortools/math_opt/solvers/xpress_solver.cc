@@ -54,11 +54,20 @@ namespace {
  * In particular, it would bypass any cleanup code implemented in the C code
  * of the solver. So we must capture exceptions, interrupt the solve and
  * handle the exception once the solver returned.
+ * A captured exception can be reraised either by explicitly calling
+ * reraise() or by letting the destructor throw it.
  */
 class ExceptionInCallback {
-  mutable absl::Mutex mutex;
-  std::exception_ptr ex;
+  absl::Mutex mutable mutex;
+  std::exception_ptr mutable ex;
 public:
+  /** If there is a captured exception that was not yet reraised then
+   * it is reraised now.
+   */
+  ~ExceptionInCallback() {
+    if (ex)
+      std::rethrow_exception(ex);
+  }
   /** Store a new exception from a callback.
    * Will not overwrite an existing exception.
    */
@@ -67,18 +76,22 @@ public:
     if ( !ex )
       ex = exception;
   }
-  /** Create a status from the captured exception.
-   * If there is no exception captured then the status is Ok.
+  /** If there is a captured exception then reraise it now.
    */
-  absl::Status toStatus() const {
+  void reraise() const {
     if ( ex ) {
-      return util::StatusBuilder(absl::StatusCode::kUnknown)
-	<< "exception in Xpress callback, check log for details ";
-    }
-    else {
-      return absl::OkStatus();
+      std::exception_ptr old = ex;
+      ex = nullptr;
+      std::rethrow_exception(old);
     }
   }
+};
+
+/** Exception that is raised when registration of a callback failed. */
+class CallbackRegistrationException {
+public:
+  absl::Status error; /**< The error returned from callback registration. */
+  CallbackRegistrationException(absl::Status const &error) : error(error) {}
 };
 
 /** Base class for scoped callbacks. */
@@ -151,18 +164,14 @@ public:
     : ScopedCallback(prob, ex)
     , cb(cb)
   {
-  }
-  // This is not part of the constructor so that we can handle errors by
-  // return value rather than exception.
-  absl::Status attach() {
-    if ( !attached && cb ) {
-      RETURN_IF_ERROR(prob->addCbMessage(callback, reinterpret_cast<void *>(this), 0));
-      attached = true;
+    if (cb) {
+      absl::Status status = prob->addCbMessage(callback, reinterpret_cast<void *>(this), 0);
+      if (status.code() != absl::StatusCode::kOk)
+	throw CallbackRegistrationException(status);
     }
-    return absl::OkStatus();
   }
   ~ScopedMessageCallback() {
-    if ( attached ) {
+    if ( cb ) {
       CHECK_OK(prob->removeCbMessage(callback, reinterpret_cast<void *>(this)));
     }
   }
@@ -376,9 +385,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   RETURN_IF_ERROR(CheckParameters(parameters));
 
   ExceptionInCallback callbackException;
-  ScopedMessageCallback cbMessage(xpress_.get(), &callbackException,
-				  message_callback);
-  RETURN_IF_ERROR(cbMessage.attach());
+  try {
+  ScopedMessageCallback const cbMessage(xpress_.get(), &callbackException,
+					message_callback);
 
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
@@ -394,14 +403,17 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   }
 
   RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
-
-  RETURN_IF_ERROR(callbackException.toStatus());
+  callbackException.reraise();
 
   ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
       ExtractSolveResultProto(start, model_parameters, parameters));
 
   return solve_result;
+  }
+  catch (CallbackRegistrationException const &cbRegistrationException) {
+    return cbRegistrationException.error;
+  }
 }
 
 std::string XpressSolver::GetLpOptimizationFlags(
@@ -850,12 +862,16 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                          MessageCallback message_callback,
                                          const SolveInterrupter*) {
   ExceptionInCallback callbackException;
-  ScopedMessageCallback cbMessage(xpress_.get(), &callbackException,
-				  message_callback);
-  RETURN_IF_ERROR(cbMessage.attach());
-  RETURN_IF_ERROR(callbackException.toStatus());
+  try {
+  ScopedMessageCallback const cbMessage(xpress_.get(), &callbackException,
+					message_callback);
+
   return absl::UnimplementedError(
       "XPRESS does not provide a method to compute an infeasible subsystem");
+  }
+  catch (CallbackRegistrationException const &cbRegistrationException) {
+    return cbRegistrationException.error;
+  }
 }
 
 absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {
