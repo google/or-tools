@@ -93,84 +93,150 @@ class CallbackRegistrationException {
   CallbackRegistrationException(absl::Status const& error) : error(error) {}
 };
 
-/** Base class for scoped callbacks. */
-class ScopedCallback {
- protected:
-  Xpress* const prob;            /**< Problem in which callback is installed. */
-  ExceptionInCallback* const ex; /**< Callback exception handler. */
-  bool attached;                 /**< Whether the callback was attached. */
-  ScopedCallback(Xpress* prob, ExceptionInCallback* ex)
-      : prob(prob), ex(ex), attached(false) {}
-  virtual ~ScopedCallback() {}
-};
-
-/** Message callback support.
- * Destructor unregisters the callback so that we can rely on RAII for
- * cleanup.
+/** Registered callback that is auto-removed in the destructor.
+ * This implements a singleton pattern for which moving is ok: ownership
+ * will be transferred to the destination and the source will be marked so
+ * that it will not remove the callback in the destructor.
  */
-class ScopedMessageCallback : public ScopedCallback {
-  MessageCallback cb; /**< ortools callback function to which messages are
-                       *   forwarded.
-                       */
-  /** C-style callback function that is registered with Xpress. */
-  static void XPRS_CC callback(XPRSprob cbprob, void* cbdata, char const* msg,
-                               int len, int type) {
-    ScopedMessageCallback* cb =
-        reinterpret_cast<ScopedMessageCallback*>(cbdata);
-    try {
-      if (type == 1 ||  // info message
-          type == 3 ||  // warning message
-          type == 4)    // error message
-      // message type 2 is not used, negative values mean "flush"
-      {
-        if (len == 0) {
-          cb->cb(std::vector<std::string>{{""}});
-        } else {
-          std::vector<std::string> lines;
-          int start = 0;
-          // There are a few Xpress messages that span multiple lines.
-          // The MessageCallback contract says that messages must not contain
-          // newlines, so we have to split on newline.
-          while (start <=
-                 len) {  // <= rather than < to catch message ending in '\n'
-            int end = start;
-            while (end < len && msg[end] != '\n') ++end;
-            if (start < len)
-              lines.emplace_back(std::string(msg, start, end - start));
-            else
-              lines.push_back("");
-            start = end + 1;
-          }
-          cb->cb(lines);
-        }
-      }
-    } catch (...) {
-      XPRSinterrupt(cbprob, XPRS_STOP_USER);
-      cb->ex->setException(std::current_exception());
-    }
-  }
+template<typename T>
+class ScopedCallback {
+private:
+  ScopedCallback(ScopedCallback<T> const &) = delete;
+  ScopedCallback<T> &operator=(ScopedCallback<T> const &) = delete;
+  ScopedCallback<T> &operator=(ScopedCallback<T> &&) = delete;
+  Xpress* prob;                       /**< Where callback is installed. */
+  typename T::FunctionType callback;  /**< Low-level callback function. */
+  absl::Status status;                /**< Status from adding the callback. */
+public:
 
- public:
-  /** Install message callback cb into prob.
-   * If cb is nullptr then nothing happens.
-   * Callback will be automatically removed by destructor.
+  ExceptionInCallback* ex;            /**< Callback exception handler. */
+  typename T::DataType  callbackData; /**< OR tools callback function. */
+  ScopedCallback(Xpress* prob, ExceptionInCallback* ex,
+		 typename T::FunctionType callback, typename T::DataType)
+    : prob(prob), callback(callback), ex(ex),
+      callbackData(callbackData)
+  {
+    if ( callbackData )
+      status = T::add(prob, callback, reinterpret_cast<void *>(this));
+    else
+      status = absl::OkStatus();
+  }
+  /** Transfers responsibility for removing the callback from other to this
+   * instance.
    */
-  ScopedMessageCallback(Xpress* prob, ExceptionInCallback* ex,
-                        MessageCallback cb)
-      : ScopedCallback(prob, ex), cb(cb) {
-    if (cb) {
-      absl::Status status =
-          prob->addCbMessage(callback, reinterpret_cast<void*>(this), 0);
-      if (status.code() != absl::StatusCode::kOk)
-        throw CallbackRegistrationException(status);
-    }
+  ScopedCallback(ScopedCallback<T> && other)
+    : prob(other.prob)
+    , callback(other.callback)
+    , status(other.status)
+    , ex(other.ex)
+    , callbackData(other.callbackData)
+  {
+    other.callbackData = nullptr; // Do not remove callback in other's dtor.
   }
-  ~ScopedMessageCallback() {
-    if (cb) {
-      CHECK_OK(prob->removeCbMessage(callback, reinterpret_cast<void*>(this)));
-    }
+  virtual ~ScopedCallback() {
+    if (callbackData && status.code() == absl::StatusCode::kOk)
+      T::remove(prob, callback, reinterpret_cast<void *>(this));
   }
+  absl::Status getStatus() const { return status; }
 };
+
+/** Helper to register a callback and create a guard.
+ * Returns either an error status or a callback guard that will unregister
+ * the callback in its destructor.
+ * This is called from the AddXXXCallback function generated by the
+ * DEFINE_CALLBACK macro below.
+ */
+template<typename T>
+absl::StatusOr<ScopedCallback<T>>
+AddCallback(Xpress *xpress, ExceptionInCallback *ex,
+	    typename T::FunctionType callback,
+	    typename T::DataType callbackData)
+{
+  ScopedCallback<T> guard(xpress, ex, callback, callbackData);
+  if (guard.getStatus().code() == absl::StatusCode::kOk)
+    return std::move(guard);
+  else
+    return guard.getStatus();
+}
+
+/** Define everything required for supporting a callback of type name.
+ * Use like so
+ *    DEFINE_CALLBACK(CallbackName, ORToolsCallback, XpressReturn, (...)) {
+ *        <code>
+ *    }
+ * where
+ *    CallbackName  is the name of the callback (Message, ...)
+ *    ORToolsCallback  the OR tools callback we are wrapping
+ *    XpressReturn     return type of the low-level Xpress callback
+ *    (...)            arguments to the Xpress low-level callback.
+ *    <code>           code for the low-level Xpress callback
+ * The effect of the macro is a function Add##name##Callback that adds
+ * the callback and returns either an error or a guard that will remove the
+ * callback in its destructor. Use this like
+ *   ASSIGN_OR_RETURN(auto guard, Add##name##Callback(...));
+ */
+#define DEFINE_CALLBACK(name,datatype,ret,args)	\
+  struct name##Traits {				\
+    typedef datatype DataType;			\
+    typedef ret (*FunctionType) args;					\
+    static absl::Status add(Xpress *xpress, ret (*fptr)args, void *data) { \
+      return xpress->addCb##name(fptr, data, 0);			\
+    }									\
+    static void remove(Xpress *xpress, ret (*fptr)args, void *data) {	\
+      CHECK_OK(xpress->removeCb##name(fptr, data));			\
+    }									\
+  };									\
+  static ret xpress##name args;						\
+  auto Add##name##Callback(Xpress *xpress,				\
+			   ExceptionInCallback *ex,			\
+			   datatype callbackArg)			\
+  {									\
+    return AddCallback<name##Traits>(xpress, ex,			\
+				     xpress##name, callbackArg);	\
+  }									\
+  static ret xpress##name args
+
+/** Define the message callback. */
+DEFINE_CALLBACK(Message,
+		MessageCallback,
+		void,
+		(XPRSprob cbprob, void* cbdata, char const* msg,
+		 int len, int type))
+{
+  ScopedCallback<MessageTraits> *cb =
+    reinterpret_cast<ScopedCallback<MessageTraits> *>(cbdata);
+  try {
+    if (type == 1 ||  // info message
+	type == 3 ||  // warning message
+	type == 4)    // error message
+      // message type 2 is not used by Xpress, negative values mean "flush"
+    {
+      if (len == 0) {
+	cb->callbackData(std::vector<std::string>{{""}});
+      } else {
+	std::vector<std::string> lines;
+	int start = 0;
+	// There are a few Xpress messages that span multiple lines.
+	// The MessageCallback contract says that messages must not contain
+	// newlines, so we have to split on newline.
+	while (start <=
+	       len) {  // <= rather than < to catch message ending in '\n'
+	  int end = start;
+	  while (end < len && msg[end] != '\n') ++end;
+	  if (start < len)
+	    lines.emplace_back(std::string(msg, start, end - start));
+	  else
+	    lines.push_back("");
+	  start = end + 1;
+	}
+	cb->callbackData(lines);
+      }
+    }
+  } catch (...) {
+    XPRSinterrupt(cbprob, XPRS_STOP_USER);
+    cb->ex->setException(std::current_exception());
+  }
+}
 
 absl::Status CheckParameters(const SolveParametersProto& parameters) {
   std::vector<std::string> warnings;
@@ -381,8 +447,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
 
   ExceptionInCallback callbackException;
   try {
-    ScopedMessageCallback const cbMessage(xpress_.get(), &callbackException,
-                                          message_callback);
+    ASSIGN_OR_RETURN(auto cbMessage, AddMessageCallback(xpress_.get(),
+							&callbackException,
+							message_callback));
 
     // Check that bounds are not inverted just before solve
     // XPRESS returns "infeasible" when bounds are inverted
@@ -857,8 +924,9 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                          const SolveInterrupter*) {
   ExceptionInCallback callbackException;
   try {
-    ScopedMessageCallback const cbMessage(xpress_.get(), &callbackException,
-                                          message_callback);
+    ASSIGN_OR_RETURN(auto cbMessage, AddMessageCallback(xpress_.get(),
+							&callbackException,
+							message_callback));
 
     return absl::UnimplementedError(
         "XPRESS does not provide a method to compute an infeasible subsystem");
