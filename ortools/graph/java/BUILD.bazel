@@ -41,6 +41,7 @@ java_junit5_test(
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",
         "@maven//:com_google_truth_truth",
+        "@or-tools//:ortools-junit",
         artifact("org.junit.jupiter:junit-jupiter-api"),
         artifact("org.junit.jupiter:junit-jupiter-params"),
         artifact("org.junit.jupiter:junit-jupiter-engine"),

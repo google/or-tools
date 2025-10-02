@@ -40,6 +40,7 @@ java_junit5_test(
         "//ortools/java/com/google/ortools/modelbuilder",
         "//ortools/linear_solver/java:modelbuilder",
         "@maven//:com_google_truth_truth",
+        "@or-tools//:ortools-junit",
         artifact("org.junit.jupiter:junit-jupiter-api"),
         artifact("org.junit.jupiter:junit-jupiter-params"),
         artifact("org.junit.jupiter:junit-jupiter-engine"),
