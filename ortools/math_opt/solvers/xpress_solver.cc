@@ -128,7 +128,7 @@ class ScopedMessageCallback : public ScopedCallback {
 	    while (end < len && msg[end] != '\n')
 	      ++end;
 	    if (start < len)
-	      lines.push_back(std::string(msg, start, end - start));
+	      lines.emplace_back(std::string(msg, start, end - start));
 	    else
 	      lines.push_back("");
 	    start = end + 1;
