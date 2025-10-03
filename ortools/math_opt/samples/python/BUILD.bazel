@@ -100,6 +100,15 @@ py_binary(
 )
 
 py_binary(
+    name = "spillover",
+    srcs = ["spillover.py"],
+    deps = [
+        requirement("absl-py"),
+        "//ortools/math_opt/python:mathopt",
+    ],
+)
+
+py_binary(
     name = "time_indexed_scheduling",
     srcs = ["time_indexed_scheduling.py"],
     deps = [

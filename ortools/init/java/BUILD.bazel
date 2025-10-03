@@ -13,6 +13,7 @@
 
 # Description: java wrapping of the C++ code at ../
 
+load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
 java_wrap_cc(
@@ -26,4 +27,19 @@ java_wrap_cc(
     ],
     visibility = ["//visibility:public"],
     deps = ["//ortools/init"],
+)
+
+java_junit5_test(
+    name = "InitTest",
+    srcs = ["InitTest.java"],
+    test_class = "com.google.ortools.init.InitTest",
+    deps = [
+        ":init",
+        "//ortools/java/com/google/ortools:Loader",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
+    ],
 )

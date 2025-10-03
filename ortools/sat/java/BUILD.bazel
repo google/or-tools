@@ -14,7 +14,6 @@
 # Description: java wrapping of the code in ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
 java_wrap_cc(
@@ -43,60 +42,56 @@ java_wrap_cc(
 
 java_junit5_test(
     name = "CpModelTest",
+    size = "medium",
     srcs = ["CpModelTest.java"],
     test_class = "com.google.ortools.sat.CpModelTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
 
 java_junit5_test(
     name = "CpSolverTest",
+    size = "medium",
     srcs = ["CpSolverTest.java"],
     test_class = "com.google.ortools.sat.CpSolverTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
 
 java_junit5_test(
     name = "LinearExprTest",
+    size = "medium",
     srcs = ["LinearExprTest.java"],
     test_class = "com.google.ortools.sat.LinearExprTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )

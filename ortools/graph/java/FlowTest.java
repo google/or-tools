@@ -13,16 +13,20 @@
 
 package com.google.ortools.graph;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import com.google.ortools.Loader;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /** Test the Min/Max Flow solver java interface. */
+@RunWith(JUnit4.class)
 public final class FlowTest {
-  @BeforeEach
+  @SuppressWarnings("EmptyMethods")
+  @Before
   public void setUp() {
     Loader.loadNativeLibraries();
   }
