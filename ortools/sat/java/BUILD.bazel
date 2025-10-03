@@ -51,7 +51,11 @@ java_junit5_test(
         "//ortools/sat:cp_model_java_proto",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        "@or-tools//:ortools-junit",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
 
@@ -66,7 +70,11 @@ java_junit5_test(
         "//ortools/sat:cp_model_java_proto",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        "@or-tools//:ortools-junit",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
 
@@ -80,6 +88,10 @@ java_junit5_test(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/util/java:sorted_interval_list",
         "@maven//:com_google_truth_truth",
-        "@or-tools//:ortools-junit",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
