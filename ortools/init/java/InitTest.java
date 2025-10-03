@@ -20,12 +20,12 @@ import com.google.ortools.Loader;
 import com.google.ortools.init.CppBridge;
 import com.google.ortools.init.CppFlags;
 import com.google.ortools.init.OrToolsVersion;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.jupiter.api.Test;
 
 /** Tests the Init java interface. */
 public final class InitTest {
-  @Before
+  @BeforeClass
   public void setUp() {
     Loader.loadNativeLibraries();
   }
