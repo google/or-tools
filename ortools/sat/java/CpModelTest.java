@@ -977,7 +977,7 @@ public final class CpModelTest {
     StringBuilder logBuilder = new StringBuilder();
     Consumer<String> appendToLog = (String message) -> {
       System.out.println("Current Thread Name:" + Thread.currentThread().getName()
-          + " Id:" + Thread.currentThread().threadId() + " msg:" + message);
+          + " Id:" + Thread.currentThread().getId() + " msg:" + message);
       logBuilder.append(message).append('\n');
     };
     solver.setLogCallback(appendToLog);
