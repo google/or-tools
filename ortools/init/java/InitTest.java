@@ -17,16 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.google.ortools.Loader;
-import com.google.ortools.init.CppBridge;
-import com.google.ortools.init.CppFlags;
-import com.google.ortools.init.OrToolsVersion;
 import org.junit.BeforeClass;
 import org.junit.jupiter.api.Test;
 
 /** Tests the Init java interface. */
 public final class InitTest {
   @BeforeClass
-  public void setUp() {
+  public static void onlyOnce() {
     Loader.loadNativeLibraries();
   }
 
