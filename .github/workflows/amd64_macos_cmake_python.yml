@@ -35,7 +35,7 @@ jobs:
         ]
       fail-fast: false
     name: amd64•MacOS•CMake(${{matrix.cmake.name}})•Python-${{matrix.python.version}}
-    runs-on: macos-13 # last macos intel based runner
+    runs-on: macos-15-intel
     env:
       deps_src_key: amd64_macos_python_deps_src
       deps_build_key: amd64_macos_python_deps_build_${{matrix.cmake.name}}
