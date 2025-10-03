@@ -52,7 +52,7 @@ jobs:
           },
           {
             platform: amd64,
-            runner: "macos-13", # last macos intel based runner
+            runner: "macos-15-intel",
             generator: "Xcode",
             config: Release,
             build_target: ALL_BUILD,
