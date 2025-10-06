@@ -231,7 +231,7 @@ endfunction()
 # Parameters:
 # NAME: CMake target name
 # SOURCES: List of source files
-# [TYPE]: SHARED or STATIC
+# [TYPE]: SHARED, STATIC or INTERFACE
 # [COMPILE_DEFINITIONS]: List of private compile definitions
 # [COMPILE_OPTIONS]: List of private compile options
 # [LINK_LIBRARIES]: List of **public** libraries to use when linking
@@ -275,16 +275,18 @@ function(ortools_cxx_library)
   message(STATUS "Configuring library ${LIBRARY_NAME} ...")
 
   add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} "")
-  target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
-  target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
-  target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
-  target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
-  target_link_libraries(${LIBRARY_NAME} PUBLIC
-    ${PROJECT_NAMESPACE}::ortools
-    ${LIBRARY_LINK_LIBRARIES}
-  )
-  target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
+  if(LIBRARY_TYPE STREQUAL "INTERFACE")
+    target_include_directories(${LIBRARY_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(${LIBRARY_NAME} INTERFACE ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
+  else()
+    target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
+    target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
+    target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
+    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
+    target_link_libraries(${LIBRARY_NAME} PUBLIC ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
+    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
+  endif()
 
   include(GNUInstallDirs)
   if(APPLE)

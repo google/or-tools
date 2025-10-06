@@ -14,7 +14,6 @@
 file(GLOB _SRCS "*.h" "*.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/.*_test.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/gmock\.h")
-list(FILTER _SRCS EXCLUDE REGEX "/protocol-buffer-matchers\..*")
 
 set(NAME ${PROJECT_NAME}_base)
 
@@ -51,10 +50,8 @@ ortools_cxx_library(
     base_gmock
   SOURCES
     "gmock.h"
-    "protocol-buffer-matchers.cc"
-    "protocol-buffer-matchers.h"
   TYPE
-    STATIC
+    INTERFACE
   LINK_LIBRARIES
     absl::log
     absl::strings
@@ -62,6 +59,7 @@ ortools_cxx_library(
     GTest::gtest
     GTest::gmock
     protobuf::libprotobuf
+    protobuf-matchers
   TESTING
 )
 
