@@ -97,7 +97,7 @@ INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
                          testing::Values(MessageCallbackTestParams(
                              SolverType::kXpress,
                              /*support_message_callback=*/true,
-                             /*support_interrupter=*/false,
+                             /*support_interrupter=*/true,
                              /*integer_variables=*/false, "")));
 
 INSTANTIATE_TEST_SUITE_P(

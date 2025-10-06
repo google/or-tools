@@ -106,11 +106,15 @@ class Xpress {
   absl::Status SetStartingBasis(std::vector<int>& rowBasis,
                                 std::vector<int>& colBasis) const;
 
-  absl::Status addCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*, int,
+  absl::Status AddCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*, int,
                                               int),
                             void* cbdata, int prio = 0);
-  absl::Status removeCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*,
+  absl::Status RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*,
                                                  int, int),
+                               void* cbdata = nullptr);
+  absl::Status AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
+                            void* cbdata, int prio = 0);
+  absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
                                void* cbdata = nullptr);
 
   int GetNumberOfConstraints() const;

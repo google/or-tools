@@ -88,6 +88,16 @@ absl::Status Xpress::removeCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
   return ToStatus(XPRSremovecbmessage(xpress_model_, cb, cbdata));
 }
 
+absl::Status Xpress::addCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
+				    void* cbdata, int prio) {
+  return ToStatus(XPRSaddcbchecktime(xpress_model_, cb, cbdata, prio));
+}
+
+absl::Status Xpress::removeCbMessage(int(XPRS_CC* cb)(XPRSprob, void*),
+                                     void* cbdata) {
+  return ToStatus(XPRSremovecbchecktime(xpress_model_, cb, cbdata));
+}
+
 Xpress::~Xpress() {
   CHECK_EQ(kXpressOk, XPRSdestroyprob(xpress_model_));
   CHECK_EQ(kXpressOk, XPRSfree());
