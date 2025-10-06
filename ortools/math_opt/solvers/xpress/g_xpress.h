@@ -112,10 +112,10 @@ class Xpress {
   absl::Status RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*, char const*,
                                                  int, int),
                                void* cbdata = nullptr);
-  absl::Status AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-                            void* cbdata, int prio = 0);
+  absl::Status AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*), void* cbdata,
+                              int prio = 0);
   absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-                               void* cbdata = nullptr);
+                                 void* cbdata = nullptr);
 
   int GetNumberOfConstraints() const;
   int GetNumberOfVariables() const;
