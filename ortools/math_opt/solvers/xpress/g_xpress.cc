@@ -320,4 +320,8 @@ absl::StatusOr<std::vector<double>> Xpress::GetVarUb() const {
   return bounds;
 }
 
+absl::Status Xpress::Interrupt(int reason) {
+  return ToStatus(XPRSinterrupt(xpress_model_, reason));
+}
+
 }  // namespace operations_research::math_opt

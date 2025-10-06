@@ -119,6 +119,8 @@ class Xpress {
   absl::StatusOr<std::vector<double>> GetVarLb() const;
   absl::StatusOr<std::vector<double>> GetVarUb() const;
 
+  absl::Status Interrupt(int reason);
+
  private:
   XPRSprob xpress_model_;
 
