@@ -367,29 +367,27 @@ TEST(ModelDeathTest, VariableByIdDeleted) {
                AllOf(HasSubstr("variable"), HasSubstr("0")));
 }
 
+// Old versions of `EXPECT_DEATH` don't support `absl::string_view`.
+// `absl::string_view::str()` does not guarantee null terminated string so we
+// create a copy for the purpose of the test.
+#define EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(expression) \
+  EXPECT_DEATH(expression, std::string(internal::kObjectsFromOtherModelStorage))
+
 TEST(ModelDeathTest, VariableAccessorsInvalidModel) {
   Model model_a("a");
   const Variable a_a = model_a.AddVariable("a_a");
 
   Model model_b("b");
 
-  EXPECT_DEATH(model_b.name(a_a), internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.lower_bound(a_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.upper_bound(a_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.is_integer(a_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_lower_bound(a_a, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_upper_bound(a_a, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_is_integer(a_a, true),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_continuous(a_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_integer(a_a),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.name(a_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.lower_bound(a_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.upper_bound(a_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.is_integer(a_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_lower_bound(a_a, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_upper_bound(a_a, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_is_integer(a_a, true));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_continuous(a_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_integer(a_a));
 }
 
 TEST(ModelTest, LinearConstraintGetters) {
@@ -531,29 +529,22 @@ TEST(ModelDeathTest, LinearConstraintAccessorsInvalidModel) {
   const Variable x_b = model_b.AddVariable("x_b");
   const LinearConstraint c_b = model_b.AddLinearConstraint("c_b");
 
-  EXPECT_DEATH(model_b.name(c_a), internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.lower_bound(c_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.upper_bound(c_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_lower_bound(c_a, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_upper_bound(c_a, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_coefficient(c_a, x_b, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.set_coefficient(c_b, x_a, 0.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.coefficient(c_a, x_b),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.coefficient(c_b, x_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.is_coefficient_nonzero(c_a, x_b),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.is_coefficient_nonzero(c_b, x_a),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.RowNonzeros(c_a),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.name(c_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.lower_bound(c_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.upper_bound(c_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_lower_bound(c_a, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.set_upper_bound(c_a, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_b.set_coefficient(c_a, x_b, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_b.set_coefficient(c_b, x_a, 0.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.coefficient(c_a, x_b));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.coefficient(c_b, x_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_b.is_coefficient_nonzero(c_a, x_b));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_b.is_coefficient_nonzero(c_b, x_a));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.RowNonzeros(c_a));
 }
 
 TEST_F(ModelingTest, ModelProperties) {
@@ -667,16 +658,14 @@ TEST(ModelDeathTest, ColumnNonzerosOtherModel) {
   Model model_a("a");
   Model model_b("b");
   const Variable b_x = model_b.AddVariable("x");
-  EXPECT_DEATH(model_a.ColumnNonzeros(b_x),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.ColumnNonzeros(b_x));
 }
 
 TEST(ModelDeathTest, RowNonzerosOtherModel) {
   Model model_a("a");
   Model model_b("b");
   const LinearConstraint b_c = model_b.AddLinearConstraint("c");
-  EXPECT_DEATH(model_a.RowNonzeros(b_c),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.RowNonzeros(b_c));
 }
 
 TEST_F(ModelingTest, DeleteVariable) {
@@ -806,8 +795,8 @@ TEST(ModelDeathTest, AddLinearConstraintOtherModel) {
   const Variable b_x = model_b.AddVariable("x");
   const Variable b_y = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.AddLinearConstraint(2 <= 2 * b_x - b_y + 2, "c"),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddLinearConstraint(2 <= 2 * b_x - b_y + 2, "c"));
 }
 
 TEST(ModelTest, AddLinearConstraintWithoutVariables) {
@@ -952,10 +941,10 @@ TEST(ObjectiveDeathTest, AddToObjectiveOtherModel) {
   const Variable x_b = model_b.AddVariable("x");
   const Variable y_b = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.AddToObjective(5.0 * x_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_a.AddToObjective(5.0 * x_b * x_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddToObjective(5.0 * x_b - y_b + 7.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddToObjective(5.0 * x_b * x_b - y_b + 7.0));
 }
 
 TEST(ModelTest, AddToObjectiveConstant) {
@@ -1051,10 +1040,10 @@ TEST(ModelDeathTest, MinimizeOtherModel) {
   const Variable x_b = model_b.AddVariable("x");
   const Variable y_b = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.Minimize(5.0 * x_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_a.Minimize(5.0 * x_b * y_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.Minimize(5.0 * x_b - y_b + 7.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.Minimize(5.0 * x_b * y_b - y_b + 7.0));
 }
 
 TEST(ModelTest, MaximizeLinear) {
@@ -1128,10 +1117,10 @@ TEST(ModelDeathTest, MaximizeOtherModel) {
   const Variable x_b = model_b.AddVariable("x");
   const Variable y_b = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.Maximize(5.0 * x_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_a.Maximize(5.0 * x_b * y_b - y_b + 7.0),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.Maximize(5.0 * x_b - y_b + 7.0));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.Maximize(5.0 * x_b * y_b - y_b + 7.0));
 }
 
 TEST(ModelTest, SetObjectiveLinear) {
@@ -1205,10 +1194,10 @@ TEST(ModelDeathTest, SetObjectiveOtherModel) {
   const Variable x_b = model_b.AddVariable("x");
   const Variable y_b = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.SetObjective(5.0 * x_b + 7.0, true),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_a.SetObjective(5.0 * x_b * y_b + 7.0, true),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.SetObjective(5.0 * x_b + 7.0, true));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.SetObjective(5.0 * x_b * y_b + 7.0, true));
 }
 
 TEST(ModelTest, SetObjectiveAsConstant) {
@@ -1939,10 +1928,8 @@ TEST(AuxiliaryObjectiveDeathTest, SetObjectiveOtherModel) {
   Model model_b("b");
   const Variable x_b = model_b.AddVariable();
 
-  EXPECT_DEATH(model_a.SetObjective(o_a, x_b, false),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.SetObjective(o_a, x_b, false),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.SetObjective(o_a, x_b, false));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.SetObjective(o_a, x_b, false));
 }
 
 TEST(AuxiliaryObjectiveDeathTest, AddToObjectiveOtherModel) {
@@ -1952,10 +1939,8 @@ TEST(AuxiliaryObjectiveDeathTest, AddToObjectiveOtherModel) {
   Model model_b("b");
   const Variable x_b = model_b.AddVariable();
 
-  EXPECT_DEATH(model_a.AddToObjective(o_a, x_b),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_b.AddToObjective(o_a, x_b),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.AddToObjective(o_a, x_b));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_b.AddToObjective(o_a, x_b));
 }
 
 TEST(AuxiliaryObjectiveTest, NonzeroVariablesInLinarObjective) {
@@ -2119,8 +2104,8 @@ TEST(QuadraticConstraintDeathTest, AddConstraintOtherModel) {
   const Variable b_x = model_b.AddVariable("x");
   const Variable b_y = model_b.AddVariable("y");
 
-  EXPECT_DEATH(model_a.AddQuadraticConstraint(2 <= 2 * b_x * b_y + 2, "c"),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddQuadraticConstraint(2 <= 2 * b_x * b_y + 2, "c"));
 }
 
 // --------------------- Second-order cone constraints -------------------------
@@ -2284,10 +2269,10 @@ TEST(SecondOrderConeConstraintDeathTest, AddConstraintOtherModel) {
   Model model_b("b");
   const Variable b_x = model_b.AddVariable("x");
 
-  EXPECT_DEATH(model_a.AddSecondOrderConeConstraint({b_x}, 1.0, "c"),
-               internal::kObjectsFromOtherModelStorage);
-  EXPECT_DEATH(model_a.AddSecondOrderConeConstraint({1.0}, b_x, "c"),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddSecondOrderConeConstraint({b_x}, 1.0, "c"));
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddSecondOrderConeConstraint({1.0}, b_x, "c"));
 }
 
 // --------------------------- SOS1 constraints --------------------------------
@@ -2377,8 +2362,7 @@ TEST(SimpleSos1ConstraintDeathTest, AddConstraintOtherModel) {
   Model model_b("b");
   const Variable b_x = model_b.AddVariable("x");
 
-  EXPECT_DEATH(model_a.AddSos1Constraint({b_x}, {}),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.AddSos1Constraint({b_x}, {}));
 }
 
 // --------------------------- SOS2 constraints --------------------------------
@@ -2468,8 +2452,7 @@ TEST(SimpleSos2ConstraintDeathTest, AddConstraintOtherModel) {
   Model model_b("b");
   const Variable b_x = model_b.AddVariable("x");
 
-  EXPECT_DEATH(model_a.AddSos2Constraint({b_x}, {}),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(model_a.AddSos2Constraint({b_x}, {}));
 }
 
 // ------------------------ Indicator constraints ------------------------------
@@ -2572,12 +2555,12 @@ TEST(SimpleIndicatorConstraintDeathTest, AddConstraintOtherModel) {
   const Variable b_x = model_b.AddVariable("x");
 
   // The indicator variable should trigger the crash.
-  EXPECT_DEATH(model_a.AddIndicatorConstraint(b_x, a_x <= 1),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddIndicatorConstraint(b_x, a_x <= 1));
 
   // The implied constraint should trigger the crash.
-  EXPECT_DEATH(model_a.AddIndicatorConstraint(a_x, b_x <= 1),
-               internal::kObjectsFromOtherModelStorage);
+  EXPECT_DEATH_OBJECT_FROM_OTHER_STORAGE(
+      model_a.AddIndicatorConstraint(a_x, b_x <= 1));
 }
 
 }  // namespace
