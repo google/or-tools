@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 63f8581..9b7b207 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,7 +5,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+ list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+ 
+ find_package(Protobuf REQUIRED)
+-find_package(GTest REQUIRED)
++find_package(absl REQUIRED)
+ 
+ add_library(protobuf-matchers protobuf-matchers/protocol-buffer-matchers.cc)
+ target_include_directories(protobuf-matchers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

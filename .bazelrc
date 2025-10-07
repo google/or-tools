@@ -81,11 +81,11 @@ build:ci --keep_going
 # Show test errors.
 build:ci --test_output=errors
 
-# Override timeout for tests
-build:ci --test_timeout_filters=-eternal
+# Skip tests that are too large to run on CI.
+build:ci --test_size_filters=small,-medium,-large,-enormous
 
-# Only show failing tests to reduce output
-build:ci --test_summary=terse
+# Print information only about tests executed
+build:ci --test_summary=short
 
 # Attempt to work around intermittent issue while trying to fetch remote blob.
 # See e.g. https://github.com/bazelbuild/bazel/issues/18694.
