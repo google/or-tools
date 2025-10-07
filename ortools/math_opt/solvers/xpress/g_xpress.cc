@@ -76,25 +76,25 @@ absl::Status Xpress::SetProbName(absl::string_view name) {
   return ToStatus(XPRSsetprobname(xpress_model_, truncated.c_str()));
 }
 
-absl::Status Xpress::addCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
+absl::Status Xpress::AddCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
                                                     char const*, int, int),
                                   void* cbdata, int prio) {
   return ToStatus(XPRSaddcbmessage(xpress_model_, cb, cbdata, prio));
 }
 
-absl::Status Xpress::removeCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
+absl::Status Xpress::RemoveCbMessage(void(XPRS_CC* cb)(XPRSprob, void*,
                                                        char const*, int, int),
                                      void* cbdata) {
   return ToStatus(XPRSremovecbmessage(xpress_model_, cb, cbdata));
 }
 
-absl::Status Xpress::addCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
+absl::Status Xpress::AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
                                     void* cbdata, int prio) {
   return ToStatus(XPRSaddcbchecktime(xpress_model_, cb, cbdata, prio));
 }
 
-absl::Status Xpress::removeCbMessage(int(XPRS_CC* cb)(XPRSprob, void*),
-                                     void* cbdata) {
+absl::Status Xpress::RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
+				       void* cbdata) {
   return ToStatus(XPRSremovecbchecktime(xpress_model_, cb, cbdata));
 }
 
