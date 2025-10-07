@@ -352,20 +352,17 @@ class ScopedSolverContext {
       switch (parameters.presolve()) {
         case EMPHASIS_OFF:
           break;
-        case EMPHASIS_UNSPECIFIED:
+        case EMPHASIS_LOW:
           presolve = 2;
           break;
-        case EMPHASIS_LOW:
+        case EMPHASIS_MEDIUM:
           presolve = 3;
           break;
-        case EMPHASIS_MEDIUM:
+        case EMPHASIS_HIGH:
           presolve = 4;
           break;
-        case EMPHASIS_HIGH:
-          presolve = 5;
-          break;
         case EMPHASIS_VERY_HIGH:
-          presolve = 6;
+          presolve = 5;
           break;
       }
       if (presolve > 0) RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolve));
@@ -373,20 +370,19 @@ class ScopedSolverContext {
     if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
       switch (parameters.cuts()) {
         case EMPHASIS_OFF:
-          RETURN_IF_ERROR(Set(XPRS_GOMCUTS, 0));
-          RETURN_IF_ERROR(Set(XPRS_TREEGOMCUTS, 0));
-          RETURN_IF_ERROR(Set(XPRS_COVERCUTS, 0));
-          RETURN_IF_ERROR(Set(XPRS_TREECOVERCUTS, 0));
+          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 0));
           break;
-        case EMPHASIS_UNSPECIFIED: /** TODO */
+        case EMPHASIS_LOW:
+	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 1));
           break;
-        case EMPHASIS_LOW: /** TODO */
+        case EMPHASIS_MEDIUM:
+	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 2));
           break;
-        case EMPHASIS_MEDIUM: /** TODO */
+        case EMPHASIS_HIGH:
+	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));
           break;
-        case EMPHASIS_HIGH: /** TODO */
-          break;
-        case EMPHASIS_VERY_HIGH: /** TODO */
+        case EMPHASIS_VERY_HIGH:
+	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3)); // Same as high
           break;
       }
     }
