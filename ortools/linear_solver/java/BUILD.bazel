@@ -14,7 +14,6 @@
 # Description: java wrapping of the C++ code at ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
 java_wrap_cc(
@@ -40,10 +39,10 @@ java_junit5_test(
         "//ortools/java/com/google/ortools/modelbuilder",
         "//ortools/linear_solver/java:modelbuilder",
         "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
