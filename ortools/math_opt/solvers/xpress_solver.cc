@@ -48,7 +48,7 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-class SolveContext; // forward
+class SolveContext;  // forward
 
 /** Registered callback that is auto-removed in the destructor.
  * Use Add() to add a callback to a solve context.

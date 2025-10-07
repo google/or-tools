@@ -94,7 +94,7 @@ absl::Status Xpress::AddCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
 }
 
 absl::Status Xpress::RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
-				       void* cbdata) {
+                                       void* cbdata) {
   return ToStatus(XPRSremovecbchecktime(xpress_model_, cb, cbdata));
 }
 
