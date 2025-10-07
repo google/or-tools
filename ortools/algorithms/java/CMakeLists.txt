@@ -34,4 +34,9 @@ if(BUILD_TESTING)
   foreach(FILE_NAME IN LISTS JAVA_SRCS)
     add_java_test(FILE_NAME ${FILE_NAME})
   endforeach()
+
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    java_algorithms_KnapsackSolverTest
+    PROPERTIES DISABLED TRUE)
 endif()

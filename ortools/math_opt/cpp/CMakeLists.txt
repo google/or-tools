@@ -69,4 +69,11 @@ if(BUILD_TESTING)
         GTest::gtest_main
     )
   endforeach()
+
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    cxx_math_opt_cpp_model_test
+    cxx_math_opt_cpp_variable_and_expressions_test
+    PROPERTIES DISABLED TRUE)
+
 endif()

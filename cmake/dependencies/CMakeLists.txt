@@ -152,6 +152,7 @@ if(BUILD_Protobuf)
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v32.0.patch"
+    OVERRIDE_FIND_PACKAGE # Make package visible for "protobuf-matchers" below
   )
   FetchContent_MakeAvailable(Protobuf)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -533,6 +534,23 @@ if(BUILD_googletest)
   set(GTEST_HAS_ABSL ON)
   set(INSTALL_GTEST ON)
   FetchContent_MakeAvailable(googletest)
+  list(POP_BACK CMAKE_MESSAGE_INDENT)
+  message(CHECK_PASS "fetched")
+endif()
+
+if(BUILD_protobuf_matchers)
+  message(CHECK_START "Fetching protobuf-matchers")
+  list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  FetchContent_Declare(
+    protobuf-matchers
+    GIT_REPOSITORY https://github.com/inazarenko/protobuf-matchers.git
+    GIT_TAG v0.1.1
+    GIT_SHALLOW TRUE
+    UPDATE_COMMAND git reset --hard
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-matchers-v0.1.1.patch"
+  )
+  FetchContent_MakeAvailable(protobuf-matchers)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()

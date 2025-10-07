@@ -182,9 +182,9 @@ cc_library(
     testonly = True,
     hdrs = ["gmock.h"],
     deps = [
-        ":protocol-buffer-matchers",
         "@abseil-cpp//absl/status:status_matchers",
         "@googletest//:gtest",
+        "@protobuf-matchers//protobuf-matchers",
     ],
 )
 
@@ -369,19 +369,6 @@ cc_library(
     hdrs = ["protobuf_util.h"],
     deps = [
         "@abseil-cpp//absl/log:check",
-        "@protobuf",
-    ],
-)
-
-cc_library(
-    name = "protocol-buffer-matchers",
-    testonly = True,
-    srcs = ["protocol-buffer-matchers.cc"],
-    hdrs = ["protocol-buffer-matchers.h"],
-    deps = [
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/strings",
-        "@googletest//:gtest",
         "@protobuf",
     ],
 )
