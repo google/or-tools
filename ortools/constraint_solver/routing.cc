@@ -1411,9 +1411,13 @@ void RoutingModel::FinalizeAllowedVehicles() {
     for (int node = 0; node < Size(); ++node) {
       if (IsStart(node)) continue;
       for (int callback_index : dimension->class_evaluators_) {
-        max_node_transit = std::max(
-            max_node_transit,
-            std::abs(UnaryTransitCallbackOrNull(callback_index)(node)));
+        // Only consider positive transits for capacity checks.
+        // Negative transits are used for reload/load tracking and should not
+        // trigger vehicle exclusions based on capacity.
+        const int64_t transit = UnaryTransitCallbackOrNull(callback_index)(node);
+        if (transit > 0) {
+          max_node_transit = std::max(max_node_transit, transit);
+        }
       }
     }
   }
@@ -1437,7 +1441,11 @@ void RoutingModel::FinalizeAllowedVehicles() {
           // The vehicle is already forbidden for this node.
           continue;
         }
-        if (std::abs(transit_evaluator(node)) <= capacity) continue;
+        // Fix for issue #4133: Skip capacity check for negative transits.
+        // Negative transits are used for reload dimensions and load tracking,
+        // not actual cargo requirements.
+        const int64_t transit = transit_evaluator(node);
+        if (transit <= 0 || transit <= capacity) continue;
 
         // 'node' can't be served by 'vehicle', so we remove the 'vehicle'
         // from the node's set of allowed_vehicles_.
