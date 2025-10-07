@@ -373,16 +373,16 @@ class ScopedSolverContext {
           RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 0));
           break;
         case EMPHASIS_LOW:
-	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 1));
+          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 1));
           break;
         case EMPHASIS_MEDIUM:
-	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 2));
+          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 2));
           break;
         case EMPHASIS_HIGH:
-	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));
+          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));
           break;
         case EMPHASIS_VERY_HIGH:
-	  RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3)); // Same as high
+          RETURN_IF_ERROR(Set(XPRS_CUTSTRATEGY, 3));  // Same as high
           break;
       }
     }
@@ -484,7 +484,7 @@ ScopedCallback<T>::~ScopedCallback() {
 }  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
-    .integer_variables = SupportType::kNotSupported,
+    .integer_variables = SupportType::kSupported,
     .multi_objectives = SupportType::kNotSupported,
     .quadratic_objectives = SupportType::kSupported,
     .quadratic_constraints = SupportType::kNotSupported,
@@ -529,10 +529,6 @@ absl::Status XpressSolver::AddNewVariables(
     gtl::InsertOrDie(&variables_map_, id, j + n_variables);
     variable_type[j] =
         new_variables.integers(j) ? XPRS_INTEGER : XPRS_CONTINUOUS;
-    if (new_variables.integers(j)) {
-      is_mip_ = true;
-      return absl::UnimplementedError("XpressSolver does not handle MIPs yet");
-    }
   }
   RETURN_IF_ERROR(xpress_->AddVars({}, new_variables.lower_bounds(),
                                    new_variables.upper_bounds(),

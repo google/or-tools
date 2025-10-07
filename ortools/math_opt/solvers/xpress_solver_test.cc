@@ -98,12 +98,12 @@ INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
                              SolverType::kXpress,
                              /*support_message_callback=*/true,
                              /*support_interrupter=*/true,
-                             /*integer_variables=*/false, "")));
+                             /*integer_variables=*/true, "")));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
     testing::Values(CallbackTestParams(SolverType::kXpress,
-                                       /*integer_variables=*/false,
+                                       /*integer_variables=*/true,
                                        /*add_lazy_constraints=*/false,
                                        /*add_cuts=*/false,
                                        /*supported_events=*/{},
