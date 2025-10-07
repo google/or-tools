@@ -16,7 +16,23 @@
 
 #include "absl/status/status_matchers.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/protocol-buffer-matchers.h"  // IWYU pragma: export
+#include "protobuf-matchers/protocol-buffer-matchers.h"
+
+namespace testing {
+using ::protobuf_matchers::EqualsProto;
+using ::protobuf_matchers::EquivToProto;
+namespace proto {
+using ::protobuf_matchers::proto::Approximately;
+using ::protobuf_matchers::proto::IgnoringFieldPaths;
+using ::protobuf_matchers::proto::IgnoringFields;
+using ::protobuf_matchers::proto::IgnoringRepeatedFieldOrdering;
+using ::protobuf_matchers::proto::Partially;
+using ::protobuf_matchers::proto::TreatingNaNsAsEqual;
+using ::protobuf_matchers::proto::WhenDeserialized;
+using ::protobuf_matchers::proto::WhenDeserializedAs;
+using ::protobuf_matchers::proto::WithDifferencerConfig;
+}  // namespace proto
+}  // namespace testing
 
 namespace testing::status {
 using ::absl_testing::IsOk;

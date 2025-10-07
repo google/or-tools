@@ -93,6 +93,7 @@ cc_library(
 
 cc_test(
     name = "radix_sort_test",
+    size = "medium",
     srcs = ["radix_sort_test.cc"],
     copts = select({
         "@platforms//os:windows": ["/Zc:preprocessor"],
