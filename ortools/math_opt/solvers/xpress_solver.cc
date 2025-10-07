@@ -226,6 +226,16 @@ class ScopedSolverContext {
   ChecktimeScopedCb checktimeCallback;
   /** If we installed an interrupter callback then this removes it. */
   std::function<void()> removeInterrupterCallback;
+  /** A single control that must be reset in the destructor. */
+  struct OneControl {
+    enum { INT_CONTROL, DBL_CONTROL, STR_CONTROL } type;
+    int id;
+    long long l;
+    double d;
+    std::string s;
+  };
+  /** Controls to be reset in the destructor. */
+  std::vector<OneControl> modifiedControls;
 
  public:
   ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
@@ -269,10 +279,44 @@ class ScopedSolverContext {
    */
 
   ~ScopedSolverContext() {
+  ~SolveContext() {
+    for (auto it = modifiedControls.rbegin(); it != modifiedControls.rend();
+         ++it) {
+      switch (it->type) {
+        case OneControl::INT_CONTROL:
+          CHECK_OK(xpress->SetIntControl64(it->id, it->l));
+          break;
+        case OneControl::DBL_CONTROL:
+          CHECK_OK(xpress->SetDblControl(it->id, it->d));
+          break;
+        case OneControl::STR_CONTROL:
+          CHECK_OK(xpress->SetStrControl(it->id, it->s.c_str()));
+          break;
+      }
+    }
     if (removeInterrupterCallback) removeInterrupterCallback();
     // If pending callback exception was not reraised yet then do it now
     if (shared_ctx.callbackException)
       std::rethrow_exception(shared_ctx.callbackException);
+  }
+
+  absl::Status set(int id, long long const& value) {
+    ASSIGN_OR_RETURN(long long old, xpress->GetIntControl64(id));
+    modifiedControls.push_back({OneControl::INT_CONTROL, id, old, 0.0, ""});
+    RETURN_IF_ERROR(xpress->SetIntControl64(id, value));
+    return absl::OkStatus();
+  }
+  absl::Status set(int id, double const& value) {
+    ASSIGN_OR_RETURN(double old, xpress->GetDblControl(id));
+    modifiedControls.push_back({OneControl::DBL_CONTROL, id, 0LL, old, ""});
+    RETURN_IF_ERROR(xpress->SetDblControl(id, value));
+    return absl::OkStatus();
+  }
+  absl::Status set(int id, std::string const& value) {
+    ASSIGN_OR_RETURN(std::string old, xpress->GetStrControl(id));
+    modifiedControls.push_back({OneControl::STR_CONTROL, id, 0LL, 0.0, old});
+    RETURN_IF_ERROR(xpress->SetStrControl(id, value));
+    return absl::OkStatus();
   }
 };
 
