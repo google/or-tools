@@ -688,15 +688,6 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   }  
   RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
   RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
-
-  if (!is_mip_) {
-    ASSIGN_OR_RETURN(int primal_status, xpress_->GetIntAttr(XPRS_LPSTATUS));
-    // Note: dual_status will be one of XPRS_SOLAVAILABLE_NOTFOUND,
-    //       XPRS_SOLAVAILABLE_OPTIMAL, XPRS_SOLAVAILABLE_FEASIBLE
-    int dual_status;
-    RETURN_IF_ERROR(xpress_->GetDuals(&dual_status, nullptr, 0, -1));
-    xpress_lp_status_ = {primal_status, dual_status};
-  }
   RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
 
   ASSIGN_OR_RETURN(
@@ -704,39 +695,6 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
       ExtractSolveResultProto(start, model_parameters, parameters));
 
   return solve_result;
-}
-
-std::string XpressSolver::GetLpOptimizationFlags(
-    const SolveParametersProto& parameters) {
-  switch (parameters.lp_algorithm()) {
-    case LP_ALGORITHM_PRIMAL_SIMPLEX:
-      lp_algorithm_ = LP_ALGORITHM_PRIMAL_SIMPLEX;
-      return "p";
-    case LP_ALGORITHM_DUAL_SIMPLEX:
-      lp_algorithm_ = LP_ALGORITHM_DUAL_SIMPLEX;
-      return "d";
-    case LP_ALGORITHM_BARRIER:
-      lp_algorithm_ = LP_ALGORITHM_BARRIER;
-      return "b";
-    default:
-      // this makes XPRESS use default algorithm (XPRS_DEFAULTALG)
-      // but we have to figure out what it is for solution processing
-      auto default_alg = xpress_->GetIntControl(XPRS_DEFAULTALG);
-      switch (default_alg.value_or(-1)) {
-        case XPRS_ALG_PRIMAL:
-          lp_algorithm_ = LP_ALGORITHM_PRIMAL_SIMPLEX;
-          break;
-        case XPRS_ALG_DUAL:
-          lp_algorithm_ = LP_ALGORITHM_DUAL_SIMPLEX;
-          break;
-        case XPRS_ALG_BARRIER:
-          lp_algorithm_ = LP_ALGORITHM_BARRIER;
-          break;
-        default:
-          lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
-      }
-      return "";
-  }
 }
 
 absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
@@ -900,29 +858,13 @@ SolutionStatusProto XpressSolver::getPrimalSolutionStatus() const {
 }
 
 SolutionStatusProto XpressSolver::getDualSolutionStatus() const {
-  // When using dual simplex algorithm, if we interrupt it, dual_status
-  // is "not found" even if there is a solution. Using the following
-  // as a workaround for now
-  if (isDualFeasible()) {
+  if (dual_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL ||
+      dual_sol_avail_ == XPRS_SOLAVAILABLE_FEASIBLE)
     return SOLUTION_STATUS_FEASIBLE;
-  }
-  switch (xpress_lp_status_.dual_status) {
-    case XPRS_SOLSTATUS_OPTIMAL:
-    case XPRS_SOLSTATUS_FEASIBLE:
-      return SOLUTION_STATUS_FEASIBLE;
-    case XPRS_SOLSTATUS_INFEASIBLE:
-      return SOLUTION_STATUS_INFEASIBLE;
-    case XPRS_SOLSTATUS_UNBOUNDED:
-      // when primal is unbounded, XPRESS returns unbounded for dual also (known
-      // issue). this is a temporary workaround
-      return (xpress_lp_status_.primal_status == XPRS_LP_UNBOUNDED)
-                 ? SOLUTION_STATUS_INFEASIBLE
-                 : SOLUTION_STATUS_UNDETERMINED;
-    case XPRS_SOLSTATUS_NOTFOUND:
-      return SOLUTION_STATUS_UNDETERMINED;
-    default:
-      return SOLUTION_STATUS_UNSPECIFIED;
-  }
+  /** TODO: Should we be more specific here? If primal is unbounded we
+   *        know that dual is infeasible.
+   */
+  return SOLUTION_STATUS_UNDETERMINED;
 }
 
 inline BasisStatusProto XpressToMathOptBasisStatus(const int status,

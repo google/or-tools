@@ -135,8 +135,6 @@ class XpressSolver : public SolverInterface {
 
   absl::Status LoadModel(const ModelProto& input_model);
 
-  std::string GetLpOptimizationFlags(const SolveParametersProto& parameters);
-
   // Fills in result with the values in xpress_values aided by the index
   // conversion from map which should be either variables_map_ or
   // linear_constraints_map_ as appropriate. Only key/value pairs that passes
@@ -167,17 +165,11 @@ class XpressSolver : public SolverInterface {
   absl::Status SetXpressStartingBasis(const BasisProto& basis);
 
   bool is_mip_ = false;
+  // Results of the last solve
   int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   int solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
   int solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
-
-  struct LpStatus {
-    int primal_status = 0;
-    int dual_status = 0;
-  };
-  LpStatus xpress_lp_status_;
-  LPAlgorithmProto lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
 };
 
 }  // namespace operations_research::math_opt
