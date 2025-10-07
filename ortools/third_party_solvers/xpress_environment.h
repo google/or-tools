@@ -77,6 +77,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_STOP_SOLVECOMPLETE 10
 #define XPRS_STOP_LICENSELOST 11
 #define XPRS_STOP_NUMERICALERROR 13
+#define XPRS_STOP_WORKLIMIT 14
 // ***************************************************************************
 // * values related to Set/GetControl/Attribinfo                             *
 // ***************************************************************************
@@ -90,11 +91,39 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 // ***************************************************************************
 #define XPRS_NAMES_ROW 1
 #define XPRS_NAMES_COLUMN 2
+// ***************************************************************************
+// * values related to SOLAVAILABLE                                          *
+// ***************************************************************************
+#define XPRS_SOLAVAILABLE_NOTFOUND                 0
+#define XPRS_SOLAVAILABLE_OPTIMAL                  1
+#define XPRS_SOLAVAILABLE_FEASIBLE                 2
+// ***************************************************************************
+// * values related to SOLVESTATUS                                           *
+// ***************************************************************************
+#define XPRS_SOLVESTATUS_UNSTARTED                0
+#define XPRS_SOLVESTATUS_STOPPED                  1
+#define XPRS_SOLVESTATUS_FAILED                   2
+#define XPRS_SOLVESTATUS_COMPLETED                3
+// ***************************************************************************
+// * values related to DEFAULTALG and ALGORITHM                              *
+// ***************************************************************************
+#define XPRS_ALG_DEFAULT                  1
+#define XPRS_ALG_DUAL                     2
+#define XPRS_ALG_PRIMAL                   3
+#define XPRS_ALG_BARRIER                  4
+#define XPRS_ALG_NETWORK                  5
 
 #define XPRS_PLUSINFINITY 1.0e+20
 #define XPRS_MINUSINFINITY -1.0e+20
 #define XPRS_MAXBANNERLENGTH 512
-#define XPVERSION 41
+#define XPVERSION 45 // >= 45 for XPRS_SOLAVAILABLE flags, XPRSgetduals(), etc.
+#define XPRS_MIPENTS 1032
+#define XPRS_ALGORITHM 1049
+#define XPRS_STOPSTATUS 1179
+#define XPRS_SOLVESTATUS 1394
+#define XPRS_OBJVAL 2118
+#define XPRS_BARPRIMALOBJ 4001
+#define XPRS_BARDUALOBJ 4002
 #define XPRS_MPSRHSNAME 6001
 #define XPRS_MPSOBJNAME 6002
 #define XPRS_MPSRANGENAME 6003
@@ -429,6 +458,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_SOLSTATUS_FEASIBLE 2
 #define XPRS_SOLSTATUS_INFEASIBLE 3
 #define XPRS_SOLSTATUS_UNBOUNDED 4
+#define XPRS_SOLSTATUS 1053
 #define XPRS_LPSTATUS 1010
 #define XPRS_MIPSTATUS 1011
 #define XPRS_NODES 1013
@@ -506,6 +536,7 @@ OR_DLL extern std::function<int(XPRSprob prob, double rng[], int first, int last
 OR_DLL extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
 OR_DLL extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
 OR_DLL extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
+extern std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSsolution;
 extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
 extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;

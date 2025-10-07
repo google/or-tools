@@ -55,8 +55,8 @@ class Xpress {
   absl::Status SetIntControl(int control, int value);
   absl::Status ResetIntControl(int control);  // reset to default value
 
-  absl::StatusOr<long long> GetIntControl64(int control) const;
-  absl::Status SetIntControl64(int control, long long value);
+  absl::StatusOr<int64_t> GetIntControl64(int control) const;
+  absl::Status SetIntControl64(int control, int64_t value);
 
   absl::StatusOr<double> GetDblControl(int control) const;
   absl::Status SetDblControl(int control, double value);
@@ -107,6 +107,9 @@ class Xpress {
   absl::Status GetLpSol(absl::Span<double> primals, absl::Span<double> duals,
                         absl::Span<double> reducedCosts);
   absl::Status MipOptimize();
+  absl::Status Optimize(std::string const& flags = "",
+                        int* p_solvestatus = nullptr,
+                        int* p_solstatus = nullptr);
   absl::Status PostSolve();
 
   void Terminate();
@@ -135,6 +138,10 @@ class Xpress {
   absl::StatusOr<std::vector<double>> GetVarUb() const;
 
   absl::Status Interrupt(int reason);
+
+  absl::StatusOr<bool> IsMIP() const;
+  absl::Status GetDuals(int* p_status, double* duals, int first, int last);
+  absl::Status GetSolution(int* p_status, double* x, int first, int last);
 
  private:
   XPRSprob xpress_model_;

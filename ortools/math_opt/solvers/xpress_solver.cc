@@ -211,6 +211,11 @@ DEFINE_SCOPED_CB(Checktime, SolveInterrupter const*, int,
   return cb->or_tools_cb->IsInterrupted() ? 1 : 0;
 }
 
+/** An ortools message callback that prints everything to stdout. */
+static void stdoutMessageCallback(std::vector<std::string> const& lines) {
+  for (auto& l : lines) std::cout << l << std::endl;
+}
+
 /** Temporary settings for a solve.
  * Instances of this class capture settings in the XPRSprob instance that are
  * made only temporarily for a solve.
@@ -230,7 +235,7 @@ class ScopedSolverContext {
   struct OneControl {
     enum { INT_CONTROL, DBL_CONTROL, STR_CONTROL } type;
     int id;
-    long long l;
+    int64_t l;
     double d;
     std::string s;
   };
@@ -269,9 +274,145 @@ class ScopedSolverContext {
     }
     return absl::OkStatus();
   }
-  /** TODO: Implement this.
-   * absl::Status ApplyParameters(const SolveParametersProto& parameters);
-   */
+  /** Setup model specific parameters. */
+  absl::Status ApplyParameters(const SolveParametersProto& parameters,
+                               MessageCallback message_callback) {
+    std::vector<std::string> warnings;
+    ASSIGN_OR_RETURN(bool const isMIP, xpress->IsMIP());
+    if (parameters.enable_output()) {
+      // This is considered only if no message callback is set.
+      if (!message_callback) {
+        RETURN_IF_ERROR(messageCallback.Add(this, stdoutMessageCallback));
+      }
+    }
+    absl::Duration time_limit = absl::InfiniteDuration();
+    if (parameters.has_time_limit()) {
+      ASSIGN_OR_RETURN(
+          time_limit, util_time::DecodeGoogleApiProto(parameters.time_limit()));
+    }
+    if (time_limit < absl::InfiniteDuration()) {
+      RETURN_IF_ERROR(Set(XPRS_TIMELIMIT, absl::ToDoubleSeconds(time_limit)));
+    }
+    if (parameters.has_iteration_limit()) {
+      RETURN_IF_ERROR(Set(XPRS_LPITERLIMIT, parameters.iteration_limit()));
+      RETURN_IF_ERROR(Set(XPRS_BARITERLIMIT, parameters.iteration_limit()));
+    }
+    if (parameters.has_node_limit()) {
+      RETURN_IF_ERROR(Set(XPRS_MAXNODE, parameters.node_limit()));
+    }
+    if (parameters.has_cutoff_limit()) {
+      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
+    }
+    if (parameters.has_objective_limit()) {
+      /** TODO */
+    }
+    if (parameters.has_best_bound_limit()) {
+      /** TODO */
+    }
+    if (parameters.has_solution_limit()) {
+      RETURN_IF_ERROR(Set(XPRS_MAXMIPSOL, parameters.solution_limit()));
+    }
+    if (parameters.has_threads() && parameters.threads() > 1)
+      RETURN_IF_ERROR(Set(XPRS_THREADS, parameters.threads()));
+    if (parameters.has_random_seed()) {
+      RETURN_IF_ERROR(Set(XPRS_RANDOMSEED, parameters.random_seed()));
+    }
+    if (parameters.has_absolute_gap_tolerance())
+      RETURN_IF_ERROR(
+          Set(XPRS_MIPABSSTOP, parameters.absolute_gap_tolerance()));
+    if (parameters.has_relative_gap_tolerance())
+      RETURN_IF_ERROR(
+          Set(XPRS_MIPRELSTOP, parameters.relative_gap_tolerance()));
+    if (parameters.has_solution_pool_size()) {
+      warnings.emplace_back("XpressSolver does not support solution_pool_size");
+    }
+    // According to the documentation, LP algorithm is only for LPs
+    if (!isMIP && parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED) {
+      switch (parameters.lp_algorithm()) {
+        case LP_ALGORITHM_PRIMAL_SIMPLEX:
+          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 1));
+          break;
+        case LP_ALGORITHM_DUAL_SIMPLEX:
+          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 0));
+          break;
+        case LP_ALGORITHM_BARRIER:
+          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
+          break;
+        case LP_ALGORITHM_FIRST_ORDER:
+          RETURN_IF_ERROR(Set(XPRS_LPFLAGS, 1 << 2));
+          RETURN_IF_ERROR(Set(XPRS_BARALG, 4));
+          break;
+          // Note: Xpress also supports network simplex, but that is not
+          //       supported by ortools.
+      }
+    }
+    if (parameters.presolve() != EMPHASIS_UNSPECIFIED) {
+      // default value for XPRS_PRESOLVEPASSES is 1
+      int presolve = -1;
+      switch (parameters.presolve()) {
+        case EMPHASIS_OFF:
+          break;
+        case EMPHASIS_UNSPECIFIED:
+          presolve = 2;
+          break;
+        case EMPHASIS_LOW:
+          presolve = 3;
+          break;
+        case EMPHASIS_MEDIUM:
+          presolve = 4;
+          break;
+        case EMPHASIS_HIGH:
+          presolve = 5;
+          break;
+        case EMPHASIS_VERY_HIGH:
+          presolve = 6;
+          break;
+      }
+      if (presolve > 0) RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolve));
+    }
+    if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
+      switch (parameters.cuts()) {
+        case EMPHASIS_OFF:
+          RETURN_IF_ERROR(Set(XPRS_GOMCUTS, 0));
+          RETURN_IF_ERROR(Set(XPRS_TREEGOMCUTS, 0));
+          RETURN_IF_ERROR(Set(XPRS_COVERCUTS, 0));
+          RETURN_IF_ERROR(Set(XPRS_TREECOVERCUTS, 0));
+          break;
+        case EMPHASIS_UNSPECIFIED: /** TODO */
+          break;
+        case EMPHASIS_LOW: /** TODO */
+          break;
+        case EMPHASIS_MEDIUM: /** TODO */
+          break;
+        case EMPHASIS_HIGH: /** TODO */
+          break;
+        case EMPHASIS_VERY_HIGH: /** TODO */
+          break;
+      }
+    }
+    if (parameters.heuristics() != EMPHASIS_UNSPECIFIED) {
+      switch (parameters.heuristics()) {
+        case EMPHASIS_OFF:
+          break;
+        case EMPHASIS_UNSPECIFIED:
+          break;
+        case EMPHASIS_LOW:  // fallthrough
+        case EMPHASIS_MEDIUM:
+          RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 1));
+          break;
+        case EMPHASIS_HIGH:  // fallthrough
+        case EMPHASIS_VERY_HIGH:
+          RETURN_IF_ERROR(Set(XPRS_HEUREMPHASIS, 2));
+          break;
+      }
+    }
+    /** TODO: Add XpressParameters to structure and apply settings. */
+
+    if (!warnings.empty()) {
+      return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
+    }
+    return absl::OkStatus();
+  }
   /** TODO: Implement this (only for Solve(), not for
    *        ComputeInfeasibleSubsystem())
    * absl::Status ApplyParameters(const ModelSolveParametersProto&
@@ -300,19 +441,22 @@ class ScopedSolverContext {
       std::rethrow_exception(shared_ctx.callbackException);
   }
 
-  absl::Status set(int id, long long const& value) {
-    ASSIGN_OR_RETURN(long long old, xpress->GetIntControl64(id));
+  absl::Status Set(int id, int32_t const& value) {
+    return Set(id, int64_t(value));
+  }
+  absl::Status Set(int id, int64_t const& value) {
+    ASSIGN_OR_RETURN(int64_t old, xpress->GetIntControl64(id));
     modifiedControls.push_back({OneControl::INT_CONTROL, id, old, 0.0, ""});
     RETURN_IF_ERROR(xpress->SetIntControl64(id, value));
     return absl::OkStatus();
   }
-  absl::Status set(int id, double const& value) {
+  absl::Status Set(int id, double const& value) {
     ASSIGN_OR_RETURN(double old, xpress->GetDblControl(id));
     modifiedControls.push_back({OneControl::DBL_CONTROL, id, 0LL, old, ""});
     RETURN_IF_ERROR(xpress->SetDblControl(id, value));
     return absl::OkStatus();
   }
-  absl::Status set(int id, std::string const& value) {
+  absl::Status Set(int id, std::string const& value) {
     ASSIGN_OR_RETURN(std::string old, xpress->GetStrControl(id));
     modifiedControls.push_back({OneControl::STR_CONTROL, id, 0LL, 0.0, old});
     RETURN_IF_ERROR(xpress->SetStrControl(id, value));
@@ -320,34 +464,26 @@ class ScopedSolverContext {
   }
 };
 
-absl::Status CheckParameters(const SolveParametersProto& parameters) {
-  std::vector<std::string> warnings;
-  if (parameters.has_threads() && parameters.threads() > 1) {
-    warnings.push_back(absl::StrCat(
-        "XpressSolver only supports parameters.threads = 1; value ",
-        parameters.threads(), " is not supported"));
-  }
-  if (parameters.lp_algorithm() != LP_ALGORITHM_UNSPECIFIED &&
-      parameters.lp_algorithm() != LP_ALGORITHM_PRIMAL_SIMPLEX &&
-      parameters.lp_algorithm() != LP_ALGORITHM_DUAL_SIMPLEX &&
-      parameters.lp_algorithm() != LP_ALGORITHM_BARRIER) {
-    warnings.emplace_back(absl::StrCat(
-        "XpressSolver does not support the 'lp_algorithm' parameter value: ",
-        ProtoEnumToString(parameters.lp_algorithm())));
-  }
-  if (parameters.has_objective_limit()) {
-    warnings.emplace_back("XpressSolver does not support objective_limit yet");
-  }
-  if (parameters.has_best_bound_limit()) {
-    warnings.emplace_back("XpressSolver does not support best_bound_limit yet");
-  }
-  if (parameters.has_cutoff_limit()) {
-    warnings.emplace_back("XpressSolver does not support cutoff_limit yet");
-  }
-  if (!warnings.empty()) {
-    return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));
-  }
+template <typename T>
+absl::Status ScopedCallback<T>::Add(SolveContext* ctx,
+                                    typename T::DataType data) {
+  RETURN_IF_ERROR(T::Add(ctx->xpress, reinterpret_cast<void*>(this)));
+  callbackData = data;
+  context = ctx;
   return absl::OkStatus();
+}
+template <typename T>
+void ScopedCallback<T>::Interrupt(int reason) {
+  context->Interrupt(reason);
+}
+template <typename T>
+void ScopedCallback<T>::SetCallbackException(std::exception_ptr ex) {
+  context->SetCallbackException(ex);
+}
+
+template <typename T>
+ScopedCallback<T>::~ScopedCallback() {
+  if (context) T::Remove(context->xpress, reinterpret_cast<void*>(this));
 }
 }  // namespace
 
@@ -465,7 +601,6 @@ absl::Status XpressSolver::AddNewLinearConstraints(
 absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
   // Sense
   RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
-  is_maximize_ = objective.maximize();
   // Linear terms
   std::vector<int> index;
   index.reserve(objective.linear_coefficients().ids_size());
@@ -518,14 +653,17 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     MessageCallback message_callback,
     const CallbackRegistrationProto& callback_registration, Callback,
     const SolveInterrupter* interrupter) {
+  primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
+  solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kXpressSupportedStructures, "XPRESS"));
+  ASSIGN_OR_RETURN(is_mip_, xpress_->IsMIP());
   const absl::Time start = absl::Now();
 
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
                                                 /*supported_events=*/{}));
-
-  RETURN_IF_ERROR(CheckParameters(parameters));
 
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
@@ -545,8 +683,25 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   {
     ScopedSolverContext solveContext(xpress_.get());
     RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-    RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
+    RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
+    // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
+    // the best algorithm. Note that we do not pass flags to the function either.
+    // We assume that algorithms are configured via controls like LPFLAGS.
+
+    RETURN_IF_ERROR(xpress_->Optimize("", &solvestatus_, &solstatus_));
+  }  
+  RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
+  RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
+
+  if (!is_mip_) {
+    ASSIGN_OR_RETURN(int primal_status, xpress_->GetIntAttr(XPRS_LPSTATUS));
+    // Note: dual_status will be one of XPRS_SOLAVAILABLE_NOTFOUND,
+    //       XPRS_SOLAVAILABLE_OPTIMAL, XPRS_SOLAVAILABLE_FEASIBLE
+    int dual_status;
+    RETURN_IF_ERROR(xpress_->GetDuals(&dual_status, nullptr, 0, -1));
+    xpress_lp_status_ = {primal_status, dual_status};
   }
+  RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
 
   ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
@@ -587,58 +742,6 @@ std::string XpressSolver::GetLpOptimizationFlags(
       return "";
   }
 }
-absl::Status XpressSolver::CallXpressSolve(
-    const SolveParametersProto& parameters) {
-  // Enable screen output right before solve
-  if (parameters.enable_output()) {
-    RETURN_IF_ERROR(xpress_->SetIntControl(XPRS_OUTPUTLOG, 1))
-        << "Unable to enable XPRESS logs";
-  }
-  // Solve
-  if (is_mip_) {
-    RETURN_IF_ERROR(xpress_->MipOptimize());
-    ASSIGN_OR_RETURN(xpress_mip_status_, xpress_->GetIntAttr(XPRS_MIPSTATUS));
-  } else {
-    RETURN_IF_ERROR(SetLpIterLimits(parameters))
-        << "Could not set iteration limits.";
-    RETURN_IF_ERROR(xpress_->LpOptimize(GetLpOptimizationFlags(parameters)));
-    ASSIGN_OR_RETURN(int primal_status, xpress_->GetIntAttr(XPRS_LPSTATUS));
-    ASSIGN_OR_RETURN(int dual_status, xpress_->GetDualStatus());
-    xpress_lp_status_ = {primal_status, dual_status};
-  }
-  // Post-solve
-  if (!(is_mip_ ? (xpress_mip_status_ == XPRS_MIP_OPTIMAL)
-                : (xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL))) {
-    RETURN_IF_ERROR(xpress_->PostSolve()) << "Post-solve failed in XPRESS";
-  }
-  // Disable screen output right after solve
-  if (parameters.enable_output()) {
-    RETURN_IF_ERROR(xpress_->SetIntControl(XPRS_OUTPUTLOG, 0))
-        << "Unable to disable XPRESS logs";
-  }
-  return absl::OkStatus();
-}
-
-absl::Status XpressSolver::SetLpIterLimits(
-    const SolveParametersProto& parameters) {
-  // If the user has set no limits, we still have to reset the limits
-  // explicitly to their default values, else the parameters could be kept
-  // between solves.
-  if (parameters.has_iteration_limit()) {
-    RETURN_IF_ERROR(xpress_->SetIntControl(
-        XPRS_LPITERLIMIT, static_cast<int>(parameters.iteration_limit())))
-        << "Could not set XPRS_LPITERLIMIT";
-    RETURN_IF_ERROR(xpress_->SetIntControl(
-        XPRS_BARITERLIMIT, static_cast<int>(parameters.iteration_limit())))
-        << "Could not set XPRS_BARITERLIMIT";
-  } else {
-    RETURN_IF_ERROR(xpress_->ResetIntControl(XPRS_LPITERLIMIT))
-        << "Could not reset XPRS_LPITERLIMIT to its default value";
-    RETURN_IF_ERROR(xpress_->ResetIntControl(XPRS_BARITERLIMIT))
-        << "Could not reset XPRS_BARITERLIMIT to its default value";
-  }
-  return absl::OkStatus();
-}
 
 absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
     absl::Time start, const ModelSolveParametersProto& model_parameters,
@@ -657,32 +760,56 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
 }
 
 absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
-  if ((lp_algorithm_ == LP_ALGORITHM_PRIMAL_SIMPLEX) &&
-      (isPrimalFeasible() ||
-       xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL)) {
-    // When primal simplex algorithm is used, XPRESS uses LPOBJVAL to store the
-    // primal problem's objective value
-    return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
+  if (is_mip_) {
+    return xpress_->GetDoubleAttr(XPRS_OBJVAL);
+  } else if (primal_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL ||
+             primal_sol_avail_ == XPRS_SOLAVAILABLE_FEASIBLE) {
+    return xpress_->GetDoubleAttr(XPRS_OBJVAL);
   }
-  return is_maximize_ ? kMinusInf : kPlusInf;
+  // No primal bound available, return infinity.
+  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  return objsen * kPlusInf;
 }
 
 absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
-  if ((lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX) &&
-      (isPrimalFeasible() ||
-       xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL)) {
-    // When dual simplex algorithm is used, XPRESS uses LPOBJVAL to store the
-    // dual problem's objective value
-    return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
+  if (is_mip_) {
+    return xpress_->GetDoubleAttr(XPRS_BESTBOUND);
   }
-  return is_maximize_ ? kPlusInf : kMinusInf;
+  // Xpress does not have an attribute to report the best dual bound from
+  // simplex
+  else {
+    ASSIGN_OR_RETURN(int const alg, xpress_->GetIntAttr(XPRS_ALGORITHM));
+    if (alg == XPRS_ALG_BARRIER)
+      return xpress_->GetDoubleAttr(XPRS_BARDUALOBJ);
+    else if (primal_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL)
+      return xpress_->GetDoubleAttr(XPRS_OBJVAL);
+  }
+  // No dual bound available, return infinity.
+  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  return objsen * kMinusInf;
 }
 
 absl::StatusOr<SolutionProto> XpressSolver::GetSolution(
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) {
   if (is_mip_) {
-    return absl::UnimplementedError("XpressSolver does not handle MIPs yet");
+    int nVars = xpress_->GetNumberOfVariables();
+    std::vector<double> x(nVars);
+    int avail;
+    RETURN_IF_ERROR(xpress_->GetSolution(&avail, x.data(), 0, nVars - 1));
+    SolutionProto solution{};
+    if (avail != XPRS_SOLAVAILABLE_NOTFOUND) {
+      solution.mutable_primal_solution()->set_feasibility_status(
+          getPrimalSolutionStatus());
+      ASSIGN_OR_RETURN(const double objval,
+                       xpress_->GetDoubleAttr(XPRS_OBJVAL));
+      solution.mutable_primal_solution()->set_objective_value(objval);
+      XpressVectorToSparseDoubleVector(
+          x, variables_map_,
+          *solution.mutable_primal_solution()->mutable_variable_values(),
+          model_parameters.variable_values_filter());
+    }
+    return solution;
   } else {
     return GetLpSolution(model_parameters, solve_parameters);
   }
@@ -709,7 +836,7 @@ absl::StatusOr<SolutionProto> XpressSolver::GetLpSolution(
   if (isPrimalFeasible()) {
     // Handle primal solution
     solution.mutable_primal_solution()->set_feasibility_status(
-        getLpSolutionStatus());
+        getPrimalSolutionStatus());
     ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
     solution.mutable_primal_solution()->set_objective_value(primalBound);
     XpressVectorToSparseDoubleVector(
@@ -743,44 +870,37 @@ absl::StatusOr<SolutionProto> XpressSolver::GetLpSolution(
 }
 
 bool XpressSolver::isPrimalFeasible() const {
-  if (is_mip_) {
-    return xpress_mip_status_ == XPRS_MIP_OPTIMAL ||
-           xpress_mip_status_ == XPRS_MIP_SOLUTION;
-  } else {
-    return xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL ||
-           xpress_lp_status_.primal_status == XPRS_LP_UNFINISHED;
-  }
+  return primal_sol_avail_ == XPRS_SOLAVAILABLE_FEASIBLE ||
+         primal_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL;
 }
 
 bool XpressSolver::isDualFeasible() const {
-  if (is_mip_) {
-    return isPrimalFeasible();
-  }
-  return xpress_lp_status_.dual_status == XPRS_SOLSTATUS_OPTIMAL ||
-         xpress_lp_status_.dual_status == XPRS_SOLSTATUS_FEASIBLE ||
-         // When using dual simplex algorithm, if we interrupt it, dual_status
-         // is "not found" even if there is a solution. Using the following
-         // as a workaround for now
-         (lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX && isPrimalFeasible());
+  /** TODO: For MIP, should we return true if we are optimal? */
+  return dual_sol_avail_ == XPRS_SOLAVAILABLE_FEASIBLE ||
+         dual_sol_avail_ == XPRS_SOLAVAILABLE_OPTIMAL;
 }
 
-SolutionStatusProto XpressSolver::getLpSolutionStatus() const {
-  switch (xpress_lp_status_.primal_status) {
-    case XPRS_LP_OPTIMAL:
-    case XPRS_LP_UNFINISHED:
-      return SOLUTION_STATUS_FEASIBLE;
-    case XPRS_LP_INFEAS:
-    case XPRS_LP_CUTOFF:
-    case XPRS_LP_CUTOFF_IN_DUAL:
-    case XPRS_LP_NONCONVEX:
-      return SOLUTION_STATUS_INFEASIBLE;
-    case XPRS_LP_UNSTARTED:
-    case XPRS_LP_UNBOUNDED:
-    case XPRS_LP_UNSOLVED:
+SolutionStatusProto XpressSolver::getPrimalSolutionStatus() const {
+  switch (solvestatus_) {
+    case XPRS_SOLVESTATUS_UNSTARTED:
       return SOLUTION_STATUS_UNDETERMINED;
-    default:
-      return SOLUTION_STATUS_UNSPECIFIED;
+    case XPRS_SOLVESTATUS_STOPPED:    // fallthrough
+    case XPRS_SOLVESTATUS_FAILED:     // fallthrough
+    case XPRS_SOLVESTATUS_COMPLETED:  // fallthrough
+      break;
   }
+  switch (solstatus_) {
+    case XPRS_SOLSTATUS_NOTFOUND:
+      return SOLUTION_STATUS_UNDETERMINED;
+    case XPRS_SOLSTATUS_OPTIMAL:  // fallthrough
+    case XPRS_SOLSTATUS_FEASIBLE:
+      return SOLUTION_STATUS_FEASIBLE;
+    case XPRS_SOLSTATUS_INFEASIBLE:
+      return SOLUTION_STATUS_INFEASIBLE;
+    case XPRS_SOLSTATUS_UNBOUNDED:
+      return SOLUTION_STATUS_UNDETERMINED;
+  }
+  return SOLUTION_STATUS_UNSPECIFIED;
 }
 
 SolutionStatusProto XpressSolver::getDualSolutionStatus() const {
@@ -945,50 +1065,141 @@ void XpressSolver::XpressVectorToSparseDoubleVector(
 
 absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
     double best_primal_bound, double best_dual_bound) const {
+  ASSIGN_OR_RETURN(double const objsen, xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+  ASSIGN_OR_RETURN(int const stopStatus, xpress_->GetIntAttr(XPRS_STOPSTATUS));
+  bool const isMax = objsen < 0.0;
+  bool checkSolStatus = false;
+
   if (!is_mip_) {
-    switch (xpress_lp_status_.primal_status) {
+    // Handle some special LP termination reasons.
+    ASSIGN_OR_RETURN(int const lpstatus, xpress_->GetIntAttr(XPRS_LPSTATUS));
+    switch (lpstatus) {
       case XPRS_LP_UNSTARTED:
-        return TerminateForReason(
-            is_maximize_, TERMINATION_REASON_OTHER_ERROR,
-            "Problem solve has not started (XPRS_LP_UNSTARTED)");
+        break;
       case XPRS_LP_OPTIMAL:
-        return OptimalTerminationProto(best_primal_bound, best_dual_bound);
+        break;
       case XPRS_LP_INFEAS:
-        return InfeasibleTerminationProto(
-            is_maximize_, isDualFeasible() ? FEASIBILITY_STATUS_FEASIBLE
-                                           : FEASIBILITY_STATUS_UNDETERMINED);
+        break;
       case XPRS_LP_CUTOFF:
-        return CutoffTerminationProto(
-            is_maximize_, "Objective worse than cutoff (XPRS_LP_CUTOFF)");
+        break;
       case XPRS_LP_UNFINISHED:
-        // TODO: add support for more limit types here (this only works for LP
-        // iterations limit for now)
-        return FeasibleTerminationProto(
-            is_maximize_, LIMIT_ITERATION, best_primal_bound, best_dual_bound,
-            "Solve did not finish (XPRS_LP_UNFINISHED)");
+        break;
       case XPRS_LP_UNBOUNDED:
-        return UnboundedTerminationProto(is_maximize_,
-                                         "Xpress status XPRS_LP_UNBOUNDED");
+        break;
       case XPRS_LP_CUTOFF_IN_DUAL:
         return CutoffTerminationProto(
-            is_maximize_, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
+            isMax, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
       case XPRS_LP_UNSOLVED:
-        return TerminateForReason(
-            is_maximize_, TERMINATION_REASON_NUMERICAL_ERROR,
-            "Problem could not be solved due to numerical issues "
-            "(XPRS_LP_UNSOLVED)");
+        break;
       case XPRS_LP_NONCONVEX:
-        return TerminateForReason(is_maximize_, TERMINATION_REASON_OTHER_ERROR,
+        return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
                                   "Problem contains quadratic data, which is "
                                   "not convex (XPRS_LP_NONCONVEX)");
-      default:
-        return absl::InternalError(
-            absl::StrCat("Missing Xpress LP status code case: ",
-                         xpress_lp_status_.primal_status));
     }
-  } else {
-    return absl::UnimplementedError("XpressSolver does not handle MIPs yet");
   }
+
+  // First check how far the solve actually got.
+  switch (solvestatus_) {
+    case XPRS_SOLVESTATUS_UNSTARTED:
+      return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                                "Problem solve has not started");
+      break;
+    case XPRS_SOLVESTATUS_STOPPED:
+      checkSolStatus = true;
+      break;
+    case XPRS_SOLVESTATUS_FAILED:
+      switch (stopStatus) {
+        case XPRS_STOP_GENERICERROR:
+          return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                                    "Generic error");
+        case XPRS_STOP_MEMORYERROR:
+          return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                                    "Memory error");
+        case XPRS_STOP_LICENSELOST:
+          return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                                    "License lost");
+        case XPRS_STOP_NUMERICALERROR:
+          return TerminateForReason(isMax, TERMINATION_REASON_NUMERICAL_ERROR,
+                                    "Numerical issues");
+        default:
+          return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                                    "Problem solve failed");
+      }
+      break;
+    case XPRS_SOLVESTATUS_COMPLETED:
+      checkSolStatus = true;
+      break;
+  }
+  if (checkSolStatus) {
+    // Algorithm finished or was stopped on purpose
+    switch (solstatus_) {
+      case XPRS_SOLSTATUS_NOTFOUND:
+        switch (stopStatus) {
+          case XPRS_STOP_TIMELIMIT:
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_TIME, std::nullopt, /** TODO: bound? */
+                "Time limit hit");
+          case XPRS_STOP_CTRLC:  // fallthrough
+          case XPRS_STOP_USER:
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_INTERRUPTED, std::nullopt, /** TODO: bound? */
+                "Interrupted");
+          case XPRS_STOP_NODELIMIT:
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_NODE, std::nullopt, /** TODO: bound? */
+                "Node limit hit");
+          case XPRS_STOP_ITERLIMIT:
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_ITERATION, std::nullopt, /** TODO: bound? */
+                "Node limit hit");
+          case XPRS_STOP_WORKLIMIT:
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_OTHER, std::nullopt, /** TODO: bound? */
+                "Work limit hit");
+          default:
+            return TerminateForReason(isMax,
+                                      TERMINATION_REASON_NO_SOLUTION_FOUND);
+        }
+        break;
+      case XPRS_SOLSTATUS_OPTIMAL:
+        return OptimalTerminationProto(best_primal_bound, best_dual_bound);
+        break;
+      case XPRS_SOLSTATUS_FEASIBLE:
+        switch (stopStatus) {
+          case XPRS_STOP_TIMELIMIT:
+            return FeasibleTerminationProto(isMax, LIMIT_TIME,
+                                            best_primal_bound, best_dual_bound,
+                                            "Time limit hit");
+          case XPRS_STOP_CTRLC:  // fallthrough
+          case XPRS_STOP_USER:
+            return FeasibleTerminationProto(isMax, LIMIT_INTERRUPTED,
+                                            best_primal_bound, best_dual_bound,
+                                            "Interrupted");
+          case XPRS_STOP_NODELIMIT:
+            return FeasibleTerminationProto(isMax, LIMIT_NODE,
+                                            best_primal_bound, best_dual_bound,
+                                            "Node limit hit");
+          case XPRS_STOP_ITERLIMIT:
+            return FeasibleTerminationProto(isMax, LIMIT_ITERATION,
+                                            best_primal_bound, best_dual_bound,
+                                            "Node limit hit");
+          case XPRS_STOP_WORKLIMIT:
+            return FeasibleTerminationProto(isMax, LIMIT_OTHER,
+                                            best_primal_bound, best_dual_bound,
+                                            "Work limit hit");
+          default:
+            return FeasibleTerminationProto(isMax, LIMIT_UNDETERMINED,
+                                            best_primal_bound, best_dual_bound);
+        }
+        break;
+      case XPRS_SOLSTATUS_INFEASIBLE:
+        return TerminateForReason(isMax, TERMINATION_REASON_INFEASIBLE);
+      case XPRS_SOLSTATUS_UNBOUNDED:
+        return UnboundedTerminationProto(isMax);
+    }
+  }
+  return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
+                            "Unknown error");
 }
 
 absl::StatusOr<bool> XpressSolver::Update(const ModelUpdateProto&) {
@@ -997,11 +1208,12 @@ absl::StatusOr<bool> XpressSolver::Update(const ModelUpdateProto&) {
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
+XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                                          MessageCallback message_callback,
                                          const SolveInterrupter* interrupter) {
   ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
+  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
 
   return absl::UnimplementedError(
       "XPRESS does not provide a method to compute an infeasible subsystem");

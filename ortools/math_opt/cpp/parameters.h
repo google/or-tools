@@ -347,6 +347,7 @@ struct SolveParameters {
   // - Gurobi: [0:GRB_MAXINT] (which as of Gurobi 9.0 is 2x10^9).
   // - GSCIP:  [0:2147483647] (which is MAX_INT or kint32max or 2^31-1).
   // - GLOP:   [0:2147483647] (same as above)
+  // - Xpress: Any 32bit signed integer is allowed
   // In all cases, the solver will receive a value equal to:
   // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
   std::optional<int32_t> random_seed;

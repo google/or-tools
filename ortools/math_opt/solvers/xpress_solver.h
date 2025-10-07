@@ -136,7 +136,6 @@ class XpressSolver : public SolverInterface {
   absl::Status LoadModel(const ModelProto& input_model);
 
   std::string GetLpOptimizationFlags(const SolveParametersProto& parameters);
-  absl::Status CallXpressSolve(const SolveParametersProto& parameters);
 
   // Fills in result with the values in xpress_values aided by the index
   // conversion from map which should be either variables_map_ or
@@ -162,14 +161,16 @@ class XpressSolver : public SolverInterface {
   int get_model_index(const LinearConstraintData& index) const {
     return index.constraint_index;
   }
-  SolutionStatusProto getLpSolutionStatus() const;
+  SolutionStatusProto getPrimalSolutionStatus() const;
   SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
   absl::Status SetXpressStartingBasis(const BasisProto& basis);
-  absl::Status SetLpIterLimits(const SolveParametersProto& parameters);
 
   bool is_mip_ = false;
-  bool is_maximize_ = false;
+  int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  int solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
+  int solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
 
   struct LpStatus {
     int primal_status = 0;
@@ -177,8 +178,6 @@ class XpressSolver : public SolverInterface {
   };
   LpStatus xpress_lp_status_;
   LPAlgorithmProto lp_algorithm_ = LP_ALGORITHM_UNSPECIFIED;
-
-  int xpress_mip_status_ = 0;
 };
 
 }  // namespace operations_research::math_opt

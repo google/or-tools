@@ -234,6 +234,12 @@ absl::Status Xpress::MipOptimize() {
   return ToStatus(XPRSmipoptimize(xpress_model_, nullptr));
 }
 
+absl::Status Xpress::Optimize(std::string const& flags, int* p_solvestatus,
+                              int* p_solstatus) {
+  return ToStatus(
+      XPRSoptimize(xpress_model_, flags.c_str(), p_solvestatus, p_solstatus));
+}
+
 void Xpress::Terminate() { XPRSinterrupt(xpress_model_, XPRS_STOP_USER); };
 
 absl::Status Xpress::GetControlInfo(char const* name, int* p_id,
@@ -262,7 +268,7 @@ absl::Status Xpress::ResetIntControl(int control) {
       ", consider adding it to Xpress::initIntControlDefaults");
 }
 
-absl::StatusOr<long long> Xpress::GetIntControl64(int control) const {
+absl::StatusOr<int64_t> Xpress::GetIntControl64(int control) const {
   XPRSint64 result;
   RETURN_IF_ERROR(
       ToStatus(XPRSgetintcontrol64(xpress_model_, control, &result)))
@@ -270,7 +276,7 @@ absl::StatusOr<long long> Xpress::GetIntControl64(int control) const {
   return result;
 }
 
-absl::Status Xpress::SetIntControl64(int control, long long value) {
+absl::Status Xpress::SetIntControl64(int control, int64_t value) {
   return ToStatus(XPRSsetintcontrol64(xpress_model_, control, value));
 }
 
@@ -376,6 +382,20 @@ absl::StatusOr<std::vector<double>> Xpress::GetVarUb() const {
 
 absl::Status Xpress::Interrupt(int reason) {
   return ToStatus(XPRSinterrupt(xpress_model_, reason));
+}
+
+absl::StatusOr<bool> Xpress::IsMIP() const {
+  ASSIGN_OR_RETURN(auto ents, GetIntAttr(XPRS_MIPENTS));
+  return ents != 0; /** TODO: Check for preintsol callback? */
+}
+
+absl::Status Xpress::GetDuals(int* p_status, double* duals, int first,
+                              int last) {
+  return ToStatus(XPRSgetduals(xpress_model_, p_status, duals, first, last));
+}
+absl::Status Xpress::GetSolution(int* p_status, absl::Span<double> x, int first,
+                                 int last) {
+  return ToStatus(XPRSgetsolution(xpress_model_, p_status, x, first, last));
 }
 
 }  // namespace operations_research::math_opt
