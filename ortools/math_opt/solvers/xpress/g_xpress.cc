@@ -236,6 +236,11 @@ absl::Status Xpress::MipOptimize() {
 
 void Xpress::Terminate() { XPRSinterrupt(xpress_model_, XPRS_STOP_USER); };
 
+absl::Status Xpress::GetControlInfo(char const* name, int* p_id,
+                                    int* p_type) const {
+  return ToStatus(XPRSgetcontrolinfo(xpress_model_, name, p_id, p_type));
+}
+
 absl::StatusOr<int> Xpress::GetIntControl(int control) const {
   int result;
   RETURN_IF_ERROR(ToStatus(XPRSgetintcontrol(xpress_model_, control, &result)))
@@ -255,6 +260,45 @@ absl::Status Xpress::ResetIntControl(int control) {
   return absl::InvalidArgumentError(
       "Default value unknown for control " + std::to_string(control) +
       ", consider adding it to Xpress::initIntControlDefaults");
+}
+
+absl::StatusOr<long long> Xpress::GetIntControl64(int control) const {
+  XPRSint64 result;
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetintcontrol64(xpress_model_, control, &result)))
+      << "Error getting Xpress int64 control: " << control;
+  return result;
+}
+
+absl::Status Xpress::SetIntControl64(int control, long long value) {
+  return ToStatus(XPRSsetintcontrol64(xpress_model_, control, value));
+}
+
+absl::StatusOr<double> Xpress::GetDblControl(int control) const {
+  double result;
+  RETURN_IF_ERROR(ToStatus(XPRSgetdblcontrol(xpress_model_, control, &result)))
+      << "Error getting Xpress double control: " << control;
+  return result;
+}
+
+absl::Status Xpress::SetDblControl(int control, double value) {
+  return ToStatus(XPRSsetdblcontrol(xpress_model_, control, value));
+}
+
+absl::StatusOr<std::string> Xpress::GetStrControl(int control) const {
+  int nbytes;
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetstringcontrol(xpress_model_, control, NULL, 0, &nbytes)));
+  std::vector<char> result(nbytes,
+                           '\0');  // nbytes CONTAINS the terminating nul!
+  RETURN_IF_ERROR(ToStatus(XPRSgetstringcontrol(
+      xpress_model_, control, result.data(), nbytes, &nbytes)))
+      << "Error getting Xpress string control: " << control;
+  return std::string(result.data(), nbytes);
+}
+
+absl::Status Xpress::SetStrControl(int control, std::string const& value) {
+  return ToStatus(XPRSsetstrcontrol(xpress_model_, control, value.c_str()));
 }
 
 absl::StatusOr<int> Xpress::GetIntAttr(int attribute) const {

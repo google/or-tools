@@ -49,9 +49,20 @@ class Xpress {
 
   ~Xpress();
 
+  absl::Status GetControlInfo(char const* name, int* p_id, int* p_type) const;
+
   absl::StatusOr<int> GetIntControl(int control) const;
   absl::Status SetIntControl(int control, int value);
   absl::Status ResetIntControl(int control);  // reset to default value
+
+  absl::StatusOr<long long> GetIntControl64(int control) const;
+  absl::Status SetIntControl64(int control, long long value);
+
+  absl::StatusOr<double> GetDblControl(int control) const;
+  absl::Status SetDblControl(int control, double value);
+
+  absl::StatusOr<std::string> GetStrControl(int control) const;
+  absl::Status SetStrControl(int control, std::string const& value);
 
   absl::StatusOr<int> GetIntAttr(int attribute) const;
 
