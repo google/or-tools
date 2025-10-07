@@ -393,7 +393,7 @@ absl::Status Xpress::GetDuals(int* p_status, double* duals, int first,
                               int last) {
   return ToStatus(XPRSgetduals(xpress_model_, p_status, duals, first, last));
 }
-absl::Status Xpress::GetSolution(int* p_status, absl::Span<double> x, int first,
+absl::Status Xpress::GetSolution(int* p_status, double *x, int first,
                                  int last) {
   return ToStatus(XPRSgetsolution(xpress_model_, p_status, x, first, last));
 }

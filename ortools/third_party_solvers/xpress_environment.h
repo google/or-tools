@@ -536,7 +536,7 @@ OR_DLL extern std::function<int(XPRSprob prob, double rng[], int first, int last
 OR_DLL extern std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb;
 OR_DLL extern std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub;
 OR_DLL extern std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef;
-extern std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSsolution;
+extern std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSgetsolution;
 extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
 extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
