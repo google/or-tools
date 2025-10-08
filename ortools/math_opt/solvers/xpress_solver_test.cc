@@ -117,6 +117,35 @@ INSTANTIATE_TEST_SUITE_P(XpressInvalidInputTest, InvalidInputTest,
                              SolverType::kXpress,
                              /*use_integer_variables=*/false)));
 
+InvalidParameterTestParams InvalidObjectiveLimitParameters() {
+  SolveParameters params;
+  params.objective_limit = 1.5;
+  return InvalidParameterTestParams(
+      SolverType::kXpress, std::move(params),
+      {"XpressSolver does not support objective_limit"});
+}
+
+InvalidParameterTestParams InvalidBestBoundLimitParameters() {
+  SolveParameters params;
+  params.best_bound_limit = 1.5;
+  return InvalidParameterTestParams(
+      SolverType::kXpress, std::move(params),
+      {"XpressSolver does not support best_bound_limit"});
+}
+
+InvalidParameterTestParams InvalidSolutionPoolSizeParameters() {
+  SolveParameters params;
+  params.solution_pool_size = 2;
+  return InvalidParameterTestParams(
+      SolverType::kXpress, std::move(params),
+      {"XpressSolver does not support solution_pool_size"});
+}
+
+INSTANTIATE_TEST_SUITE_P(XpressInvalidParameterTest, InvalidParameterTest,
+                         ValuesIn({InvalidObjectiveLimitParameters(),
+                                   InvalidBestBoundLimitParameters(),
+                                   InvalidSolutionPoolSizeParameters()}));
+
 INSTANTIATE_TEST_SUITE_P(XpressGenericTest, GenericTest,
                          testing::Values(GenericTestParameters(
                              SolverType::kXpress, /*support_interrupter=*/true,
