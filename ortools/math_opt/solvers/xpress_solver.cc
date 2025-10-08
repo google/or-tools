@@ -348,24 +348,26 @@ class ScopedSolverContext {
     }
     if (parameters.presolve() != EMPHASIS_UNSPECIFIED) {
       // default value for XPRS_PRESOLVEPASSES is 1
-      int presolve = -1;
+      int presolvePasses = -1;
       switch (parameters.presolve()) {
         case EMPHASIS_OFF:
+          RETURN_IF_ERROR(Set(XPRS_PRESOLVE, 0));  // Turn presolve off
           break;
         case EMPHASIS_LOW:
-          presolve = 2;
+          presolvePasses = 2;
           break;
         case EMPHASIS_MEDIUM:
-          presolve = 3;
+          presolvePasses = 3;
           break;
         case EMPHASIS_HIGH:
-          presolve = 4;
+          presolvePasses = 4;
           break;
         case EMPHASIS_VERY_HIGH:
-          presolve = 5;
+          presolvePasses = 5;
           break;
       }
-      if (presolve > 0) RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolve));
+      if (presolvePasses > 0)
+        RETURN_IF_ERROR(Set(XPRS_PRESOLVEPASSES, presolvePasses));
     }
     if (parameters.cuts() != EMPHASIS_UNSPECIFIED) {
       switch (parameters.cuts()) {
