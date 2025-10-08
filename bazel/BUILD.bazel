@@ -34,3 +34,10 @@ compile_pip_requirements(
     requirements_in = "notebook_requirements.in",
     requirements_txt = "notebook_requirements.txt",
 )
+
+filegroup(
+    name = "test_runner_template",
+    testonly = 1,
+    srcs = ["test_runner_template.sh"],
+    visibility = ["//visibility:public"],
+)

@@ -16,6 +16,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 cc_test(
     name = "assignment_linear_sum_assignment_test",
@@ -49,6 +50,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "AssignmentLinearSumAssignmentTest",
+    binary = ":AssignmentLinearSumAssignment",
+)
+
 cc_test(
     name = "assignment_min_flow_test",
     srcs = ["assignment_min_flow.cc"],
@@ -77,6 +83,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "AssignmentMinFlowTest",
+    binary = ":AssignmentMinFlow",
+)
+
 cc_test(
     name = "balance_min_flow_test",
     srcs = ["balance_min_flow.cc"],
@@ -103,6 +114,11 @@ java_binary(
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",
     ],
+)
+
+run_binary_test(
+    name = "BalanceMinFlowTest",
+    binary = ":BalanceMinFlow",
 )
 
 cc_test(
@@ -136,6 +152,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "SimpleMaxFlowProgramTest",
+    binary = ":SimpleMaxFlowProgram",
+)
+
 cc_test(
     name = "simple_min_cost_flow_program_test",
     srcs = ["simple_min_cost_flow_program.cc"],
@@ -165,6 +186,11 @@ java_binary(
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",
     ],
+)
+
+run_binary_test(
+    name = "SimpleMinCostFlowProgramTest",
+    binary = ":SimpleMinCostFlowProgram",
 )
 
 cc_binary(
