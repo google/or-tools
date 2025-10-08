@@ -304,10 +304,11 @@ class ScopedSolverContext {
       RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
     }
     if (parameters.has_objective_limit()) {
-      /** TODO */
+      // MIPABSCUTOFF also applies to LPs.
+      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
     }
     if (parameters.has_best_bound_limit()) {
-      /** TODO */
+      warnings.emplace_back("XpressSolver does not support best_bound_limit");
     }
     if (parameters.has_solution_limit()) {
       RETURN_IF_ERROR(Set(XPRS_MAXMIPSOL, parameters.solution_limit()));
@@ -1045,6 +1046,8 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
       case XPRS_LP_INFEAS:
         break;
       case XPRS_LP_CUTOFF:
+        return CutoffTerminationProto(
+            isMax, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
         break;
       case XPRS_LP_UNFINISHED:
         break;

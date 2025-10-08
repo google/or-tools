@@ -68,7 +68,7 @@ INSTANTIATE_TEST_SUITE_P(
                                          // generate enough variability for this
         /*supports_presolve=*/true,
         /*supports_cutoff=*/true,
-        /*supports_objective_limit=*/false,
+        /*supports_objective_limit=*/true,
         /*supports_best_bound_limit=*/false,
         /*reports_limits=*/false)));
 
