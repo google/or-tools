@@ -95,12 +95,13 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalLpTest);
 
-INSTANTIATE_TEST_SUITE_P(
-    XpressMessageCallbackTest, MessageCallbackTest,
-    testing::Values(MessageCallbackTestParams(SolverType::kXpress,
-                                              /*support_message_callback=*/true,
-                                              /*support_interrupter=*/true,
-                                              /*integer_variables=*/true, "")));
+INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
+                         testing::Values(MessageCallbackTestParams(
+                             SolverType::kXpress,
+                             /*support_message_callback=*/true,
+                             /*support_interrupter=*/true,
+                             /*integer_variables=*/true,
+                             /*ending_substring*/ "Optimal solution found")));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
