@@ -568,7 +568,18 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     double rng = 0.0;
     const bool lb_is_xprs_neg_inf = lb <= kMinusInf;
     const bool ub_is_xprs_pos_inf = ub >= kPlusInf;
-    if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
+    if (lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
+      // We have a row
+      //   -inf <= expression <= inf
+      // Xpress has no way to submit this as a ranged constraint. For Xpress
+      // the upper bound of the constraint is just the ub and the lower bound
+      // is computed as ub-abs(lb). This would result in inf-inf=nan if you
+      // use IEEE infinity or XPRS_INFINITY - XPRS_INFINITY = 0. Both are wrong.
+      // So we explicitly register this as free row.
+      sense = XPRS_NONBINDING;
+      rhs = 0.0;
+      rng = 0.0;
+    } else if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
       sense = XPRS_LESS_EQUAL;
       rhs = ub;
     } else if (!lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
