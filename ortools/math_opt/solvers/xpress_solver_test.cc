@@ -62,10 +62,10 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(LpParameterTestParams(SolverType::kXpress,
                                           /*supports_simplex=*/true,
                                           /*supports_barrier=*/true,
-                                          /*supports_first_order=*/false,
-                                          /*supports_random_seed=*/false,
-                                          /*supports_presolve=*/false,
-                                          /*supports_cutoff=*/false,
+                                          /*supports_first_order=*/true,
+                                          /*supports_random_seed=*/true,
+                                          /*supports_presolve=*/true,
+                                          /*supports_cutoff=*/true,
                                           /*supports_objective_limit=*/false,
                                           /*supports_best_bound_limit=*/false,
                                           /*reports_limits=*/false)));
@@ -77,7 +77,7 @@ INSTANTIATE_TEST_SUITE_P(
         /*lp_algorithm=*/LPAlgorithm::kPrimalSimplex,
         /*supports_iteration_limit=*/true, /*supports_initial_basis=*/false,
         /*supports_incremental_solve=*/false, /*supports_basis=*/true,
-        /*supports_presolve=*/false, /*check_primal_objective=*/true,
+        /*supports_presolve=*/true, /*check_primal_objective=*/true,
         /*primal_solution_status_always_set=*/true,
         /*dual_solution_status_always_set=*/true)));
 INSTANTIATE_TEST_SUITE_P(
@@ -87,18 +87,18 @@ INSTANTIATE_TEST_SUITE_P(
         /*lp_algorithm=*/LPAlgorithm::kDualSimplex,
         /*supports_iteration_limit=*/true, /*supports_initial_basis=*/false,
         /*supports_incremental_solve=*/false, /*supports_basis=*/true,
-        /*supports_presolve=*/false, /*check_primal_objective=*/true,
+        /*supports_presolve=*/true, /*check_primal_objective=*/true,
         /*primal_solution_status_always_set=*/true,
         /*dual_solution_status_always_set=*/true)));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalLpTest);
 
-INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
-                         testing::Values(MessageCallbackTestParams(
-                             SolverType::kXpress,
-                             /*support_message_callback=*/true,
-                             /*support_interrupter=*/true,
-                             /*integer_variables=*/true, "")));
+INSTANTIATE_TEST_SUITE_P(
+    XpressMessageCallbackTest, MessageCallbackTest,
+    testing::Values(MessageCallbackTestParams(SolverType::kXpress,
+                                              /*support_message_callback=*/true,
+                                              /*support_interrupter=*/true,
+                                              /*integer_variables=*/true, "")));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
@@ -115,20 +115,10 @@ INSTANTIATE_TEST_SUITE_P(XpressInvalidInputTest, InvalidInputTest,
                              SolverType::kXpress,
                              /*use_integer_variables=*/false)));
 
-InvalidParameterTestParams InvalidThreadsParameters() {
-  SolveParameters params;
-  params.threads = 2;
-  return InvalidParameterTestParams(SolverType::kXpress, std::move(params),
-                                    {"only supports parameters.threads = 1"});
-}
-
-INSTANTIATE_TEST_SUITE_P(XpressInvalidParameterTest, InvalidParameterTest,
-                         ValuesIn({InvalidThreadsParameters()}));
-
 INSTANTIATE_TEST_SUITE_P(XpressGenericTest, GenericTest,
                          testing::Values(GenericTestParameters(
-                             SolverType::kXpress, /*support_interrupter=*/false,
-                             /*integer_variables=*/false,
+                             SolverType::kXpress, /*support_interrupter=*/true,
+                             /*integer_variables=*/true,
                              /*expected_log=*/"Optimal solution found")));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
@@ -151,7 +141,7 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LazyConstraintsTest);
 LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
   return LogicalConstraintTestParameters(
       SolverType::kXpress, SolveParameters(),
-      /*supports_integer_variables=*/false,
+      /*supports_integer_variables=*/true,
       /*supports_sos1=*/false,
       /*supports_sos2=*/false,
       /*supports_indicator_constraints=*/false,
@@ -174,7 +164,7 @@ MultiObjectiveTestParameters GetXpressMultiObjectiveTestParameters() {
       /*supports_auxiliary_objectives=*/false,
       /*supports_incremental_objective_add_and_delete=*/false,
       /*supports_incremental_objective_modification=*/false,
-      /*supports_integer_variables=*/false);
+      /*supports_integer_variables=*/true);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -234,10 +224,10 @@ std::vector<StatusTestParameters> MakeStatusTestConfigs() {
     test_parameters.push_back(StatusTestParameters(
         SolverType::kXpress, solve_parameters,
         /*disallow_primal_or_dual_infeasible=*/false,
-        /*supports_iteration_limit=*/false,
+        /*supports_iteration_limit=*/true,
         /*use_integer_variables=*/false,
-        /*supports_node_limit=*/false,
-        /*support_interrupter=*/false, /*supports_one_thread=*/true));
+        /*supports_node_limit=*/true,
+        /*support_interrupter=*/true, /*supports_one_thread=*/true));
   }
   return test_parameters;
 }
