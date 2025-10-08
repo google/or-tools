@@ -208,7 +208,14 @@ DEFINE_SCOPED_CB(Message, MessageCallback, void,
 DEFINE_SCOPED_CB(Checktime, SolveInterrupter const*, int,
                  (XPRSprob prob, void* cbdata)) {
   auto cb = reinterpret_cast<ChecktimeScopedCb*>(cbdata);
-  return cb->or_tools_cb->IsInterrupted() ? 1 : 0;
+  // Note: we do NOT return non-zero from the callback if the solve was
+  //       interrupted. Returning non-zero from the callback is interpreted
+  //       as hitting a time limit and we would therefore not map correctly
+  //       the resulting stop status to or tools' termination status.
+  if (cb->or_tools_cb->IsInterrupted()) {
+    cb->Interrupt(XPRS_STOP_USER);
+  }
+  return 0;
 }
 
 /** An ortools message callback that prints everything to stdout. */
