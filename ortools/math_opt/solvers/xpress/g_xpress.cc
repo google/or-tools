@@ -393,9 +393,13 @@ absl::Status Xpress::GetDuals(int* p_status, double* duals, int first,
                               int last) {
   return ToStatus(XPRSgetduals(xpress_model_, p_status, duals, first, last));
 }
-absl::Status Xpress::GetSolution(int* p_status, double *x, int first,
+absl::Status Xpress::GetSolution(int* p_status, double* x, int first,
                                  int last) {
   return ToStatus(XPRSgetsolution(xpress_model_, p_status, x, first, last));
+}
+absl::Status Xpress::GetRedCosts(int* p_status, double* dj, int first,
+                                 int last) {
+  return ToStatus(XPRSgetredcosts(xpress_model_, p_status, dj, first, last));
 }
 
 }  // namespace operations_research::math_opt

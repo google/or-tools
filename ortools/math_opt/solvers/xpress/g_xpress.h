@@ -142,6 +142,7 @@ class Xpress {
   absl::StatusOr<bool> IsMIP() const;
   absl::Status GetDuals(int* p_status, double* duals, int first, int last);
   absl::Status GetSolution(int* p_status, double* x, int first, int last);
+  absl::Status GetRedCosts(int* p_status, double* dj, int first, int last);
 
  private:
   XPRSprob xpress_model_;

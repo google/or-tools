@@ -810,9 +810,14 @@ absl::StatusOr<SolutionProto> XpressSolver::GetLpSolution(
           .ok();
 
   SolutionProto solution{};
+  bool storeSolutions = (solvestatus_ == XPRS_SOLVESTATUS_STOPPED ||
+                         solvestatus_ == XPRS_SOLVESTATUS_COMPLETED);
 
   if (isPrimalFeasible()) {
-    // Handle primal solution
+    // The preferred methods for obtaining primal information are
+    // XPRSgetsolution() and XPRSgetslacks() (not used here)
+    RETURN_IF_ERROR(
+        xpress_->GetSolution(nullptr, primals.data(), 0, nVars - 1));
     solution.mutable_primal_solution()->set_feasibility_status(
         getPrimalSolutionStatus());
     ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
@@ -821,12 +826,44 @@ absl::StatusOr<SolutionProto> XpressSolver::GetLpSolution(
         primals, variables_map_,
         *solution.mutable_primal_solution()->mutable_variable_values(),
         model_parameters.variable_values_filter());
+  } else if (storeSolutions) {
+    // Even if we are not primal feasible, store the results we obtained
+    // from XPRSgetlpsolution(). The feasibility status of this vector
+    // is undetermined, though.
+    solution.mutable_primal_solution()->set_feasibility_status(
+        SOLUTION_STATUS_UNDETERMINED);
+    ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
+    solution.mutable_primal_solution()->set_objective_value(primalBound);
+    XpressVectorToSparseDoubleVector(
+        primals, variables_map_,
+        *solution.mutable_primal_solution()->mutable_variable_values(),
+        model_parameters.variable_values_filter());
   }
 
-  if (hasSolution) {
-    // Add dual solution even if not feasible
+  if (isDualFeasible()) {
+    // The preferred methods for obtain dual information are XPRSgetduals()
+    // and XPRSgetredcosts().
+    RETURN_IF_ERROR(xpress_->GetDuals(nullptr, duals.data(), 0, nCons - 1));
+    RETURN_IF_ERROR(
+        xpress_->GetRedCosts(nullptr, reducedCosts.data(), 0, nVars - 1));
     solution.mutable_dual_solution()->set_feasibility_status(
         getDualSolutionStatus());
+    ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
+    solution.mutable_dual_solution()->set_objective_value(dualBound);
+    XpressVectorToSparseDoubleVector(
+        duals, linear_constraints_map_,
+        *solution.mutable_dual_solution()->mutable_dual_values(),
+        model_parameters.dual_values_filter());
+    XpressVectorToSparseDoubleVector(
+        reducedCosts, variables_map_,
+        *solution.mutable_dual_solution()->mutable_reduced_costs(),
+        model_parameters.reduced_costs_filter());
+  } else if (storeSolutions) {
+    // Even if we are not dual feasible, store the results we obtained from
+    // XPRSgetlpsolution(). The feasibility status of this vector
+    // is undetermined, though.
+    solution.mutable_dual_solution()->set_feasibility_status(
+        SOLUTION_STATUS_UNDETERMINED);
     ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
     solution.mutable_dual_solution()->set_objective_value(dualBound);
     XpressVectorToSparseDoubleVector(
@@ -1059,9 +1096,8 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         break;
       case XPRS_LP_CUTOFF:
         // This can happen if you set MIPABSCUTOFF for an LP
-        return LimitTerminationProto(isMax, LIMIT_CUTOFF, best_primal_bound,
-                                     best_dual_bound,
-                                     "Objective limit (LP_CUTOFF)");
+        return NoSolutionFoundTerminationProto(
+            isMax, LIMIT_CUTOFF, std::nullopt, "Objective limit (LP_CUTOFF)");
         break;
       case XPRS_LP_UNFINISHED:
         break;
@@ -1069,9 +1105,9 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         break;
       case XPRS_LP_CUTOFF_IN_DUAL:
         // This can happen if you set MIPABSCUTOFF for an LP
-        return LimitTerminationProto(isMax, LIMIT_CUTOFF, best_primal_bound,
-                                     best_dual_bound,
-                                     "Objective limit (LP_CUTOFF_IN_DUAL)");
+        return NoSolutionFoundTerminationProto(
+            isMax, LIMIT_CUTOFF, std::nullopt,
+            "Objective limit (LP_CUTOFF_IN_DUAL)");
       case XPRS_LP_UNSOLVED:
         break;
       case XPRS_LP_NONCONVEX:
