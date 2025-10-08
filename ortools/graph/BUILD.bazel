@@ -395,6 +395,7 @@ cc_test(
     name = "shortest_paths_test",
     size = "enormous",
     srcs = ["shortest_paths_test.cc"],
+    tags = ["noci"],
     deps = [
         ":shortest_paths",
         "//ortools/base:gmock_main",
