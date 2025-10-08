@@ -1138,7 +1138,9 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         }
         break;
       case XPRS_SOLSTATUS_INFEASIBLE:
-        return TerminateForReason(isMax, TERMINATION_REASON_INFEASIBLE);
+        return InfeasibleTerminationProto(
+            isMax, isDualFeasible() ? FEASIBILITY_STATUS_FEASIBLE
+                                    : FEASIBILITY_STATUS_UNDETERMINED);
       case XPRS_SOLSTATUS_UNBOUNDED:
         return UnboundedTerminationProto(isMax);
     }
