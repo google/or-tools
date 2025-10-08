@@ -59,16 +59,18 @@ INSTANTIATE_TEST_SUITE_P(XpressLpModelSolveParametersTest,
 
 INSTANTIATE_TEST_SUITE_P(
     XpressLpParameterTest, LpParameterTest,
-    testing::Values(LpParameterTestParams(SolverType::kXpress,
-                                          /*supports_simplex=*/true,
-                                          /*supports_barrier=*/true,
-                                          /*supports_first_order=*/true,
-                                          /*supports_random_seed=*/true,
-                                          /*supports_presolve=*/true,
-                                          /*supports_cutoff=*/true,
-                                          /*supports_objective_limit=*/false,
-                                          /*supports_best_bound_limit=*/false,
-                                          /*reports_limits=*/false)));
+    testing::Values(LpParameterTestParams(
+        SolverType::kXpress,
+        /*supports_simplex=*/true,
+        /*supports_barrier=*/true,
+        /*supports_first_order=*/true,
+        /*supports_random_seed=*/false,  // Xpress supports this but it does not
+                                         // generate enough variability for this
+        /*supports_presolve=*/true,
+        /*supports_cutoff=*/true,
+        /*supports_objective_limit=*/false,
+        /*supports_best_bound_limit=*/false,
+        /*reports_limits=*/false)));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressPrimalSimplexLpIncompleteSolveTest, LpIncompleteSolveTest,
