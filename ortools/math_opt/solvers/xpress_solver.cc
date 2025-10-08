@@ -312,7 +312,7 @@ class ScopedSolverContext {
     }
     if (parameters.has_objective_limit()) {
       // MIPABSCUTOFF also applies to LPs.
-      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
+      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.objective_limit()));
     }
     if (parameters.has_best_bound_limit()) {
       warnings.emplace_back("XpressSolver does not support best_bound_limit");
