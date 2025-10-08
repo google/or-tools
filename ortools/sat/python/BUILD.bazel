@@ -140,7 +140,6 @@ py_test(
     name = "cp_model_test",
     size = "small",
     srcs = ["cp_model_test.py"],
-    tags = ["noasan"],  # Times out occasionally in ASAN mode.
     deps = [
         ":cp_model",
         ":cp_model_helper",

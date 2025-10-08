@@ -16,6 +16,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 py_test(
     name = "all_different_except_zero_sample_sat_py3",
@@ -1045,6 +1046,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "AssignmentGroupsSatTest",
+    binary = ":AssignmentGroupsSat",
+)
+
 java_binary(
     name = "AssignmentSat",
     srcs = ["AssignmentSat.java"],
@@ -1054,6 +1060,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "AssignmentSatTest",
+    binary = ":AssignmentSat",
 )
 
 java_binary(
@@ -1067,6 +1078,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "AssignmentTaskSizesSatTest",
+    binary = ":AssignmentTaskSizesSat",
+)
+
 java_binary(
     name = "AssignmentTeamsSat",
     srcs = ["AssignmentTeamsSat.java"],
@@ -1076,6 +1092,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "AssignmentTeamsSatTest",
+    binary = ":AssignmentTeamsSat",
 )
 
 java_binary(
@@ -1089,6 +1110,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "AssumptionsSampleSatTest",
+    binary = ":AssumptionsSampleSat",
+)
+
 java_binary(
     name = "BinPackingProblemSat",
     srcs = ["BinPackingProblemSat.java"],
@@ -1100,6 +1126,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "BinPackingProblemSatTest",
+    binary = ":BinPackingProblemSat",
+)
+
 java_binary(
     name = "BoolOrSampleSat",
     srcs = ["BoolOrSampleSat.java"],
@@ -1108,6 +1139,11 @@ java_binary(
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
     ],
+)
+
+run_binary_test(
+    name = "BoolOrSampleSatTest",
+    binary = ":BoolOrSampleSat",
 )
 
 java_binary(
@@ -1122,6 +1158,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "ChannelingSampleSatTest",
+    binary = ":ChannelingSampleSat",
+)
+
 java_binary(
     name = "CloneModelSampleSat",
     srcs = ["CloneModelSampleSat.java"],
@@ -1131,6 +1172,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "CloneModelSampleSatTest",
+    binary = ":CloneModelSampleSat",
 )
 
 java_binary(
@@ -1144,6 +1190,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "CpIsFunSatTest",
+    binary = ":CpIsFunSat",
+)
+
 java_binary(
     name = "CpSatExample",
     srcs = ["CpSatExample.java"],
@@ -1153,6 +1204,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "CpSatExampleTest",
+    binary = ":CpSatExample",
 )
 
 java_binary(
@@ -1167,6 +1223,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "EarlinessTardinessCostSampleSatTest",
+    binary = ":EarlinessTardinessCostSampleSat",
+)
+
 java_binary(
     name = "IntervalSampleSat",
     srcs = ["IntervalSampleSat.java"],
@@ -1177,6 +1238,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "IntervalSampleSatTest",
+    binary = ":IntervalSampleSat",
+)
+
 java_binary(
     name = "LiteralSampleSat",
     srcs = ["LiteralSampleSat.java"],
@@ -1185,6 +1251,11 @@ java_binary(
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
     ],
+)
+
+run_binary_test(
+    name = "LiteralSampleSatTest",
+    binary = ":LiteralSampleSat",
 )
 
 java_binary(
@@ -1198,6 +1269,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "MinimalJobshopSatTest",
+    binary = ":MinimalJobshopSat",
+)
+
 java_binary(
     name = "MultipleKnapsackSat",
     srcs = ["MultipleKnapsackSat.java"],
@@ -1207,6 +1283,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "MultipleKnapsackSatTest",
+    binary = ":MultipleKnapsackSat",
 )
 
 java_binary(
@@ -1220,6 +1301,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "NQueensSatTest",
+    binary = ":NQueensSat",
+)
+
 java_binary(
     name = "NoOverlapSampleSat",
     srcs = ["NoOverlapSampleSat.java"],
@@ -1229,6 +1315,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "NoOverlapSampleSatTest",
+    binary = ":NoOverlapSampleSat",
 )
 
 java_binary(
@@ -1242,6 +1333,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "NonLinearSatTest",
+    binary = ":NonLinearSat",
+)
+
 java_binary(
     name = "NursesSat",
     srcs = ["NursesSat.java"],
@@ -1253,6 +1349,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "NursesSatTest",
+    binary = ":NursesSat",
+)
+
 java_binary(
     name = "OptionalIntervalSampleSat",
     srcs = ["OptionalIntervalSampleSat.java"],
@@ -1261,6 +1362,11 @@ java_binary(
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
     ],
+)
+
+run_binary_test(
+    name = "OptionalIntervalSampleSatTest",
+    binary = ":OptionalIntervalSampleSat",
 )
 
 java_binary(
@@ -1274,6 +1380,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "RabbitsAndPheasantsSatTest",
+    binary = ":RabbitsAndPheasantsSat",
+)
+
 java_binary(
     name = "RankingSampleSat",
     srcs = ["RankingSampleSat.java"],
@@ -1285,6 +1396,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "RankingSampleSatTest",
+    binary = ":RankingSampleSat",
+)
+
 java_binary(
     name = "ReifiedSampleSat",
     srcs = ["ReifiedSampleSat.java"],
@@ -1293,6 +1409,11 @@ java_binary(
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
     ],
+)
+
+run_binary_test(
+    name = "ReifiedSampleSatTest",
+    binary = ":ReifiedSampleSat",
 )
 
 java_binary(
@@ -1306,6 +1427,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "ScheduleRequestsSatTest",
+    binary = ":ScheduleRequestsSat",
+)
+
 java_binary(
     name = "SearchForAllSolutionsSampleSat",
     srcs = ["SearchForAllSolutionsSampleSat.java"],
@@ -1315,6 +1441,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "SearchForAllSolutionsSampleSatTest",
+    binary = ":SearchForAllSolutionsSampleSat",
 )
 
 java_binary(
@@ -1328,6 +1459,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "SimpleSatProgramTest",
+    binary = ":SimpleSatProgram",
+)
+
 java_binary(
     name = "SolutionHintingSampleSat",
     srcs = ["SolutionHintingSampleSat.java"],
@@ -1337,6 +1473,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "SolutionHintingSampleSatTest",
+    binary = ":SolutionHintingSampleSat",
 )
 
 java_binary(
@@ -1350,6 +1491,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "SolveAndPrintIntermediateSolutionsSampleSatTest",
+    binary = ":SolveAndPrintIntermediateSolutionsSampleSat",
+)
+
 java_binary(
     name = "SolveWithTimeLimitSampleSat",
     srcs = ["SolveWithTimeLimitSampleSat.java"],
@@ -1359,6 +1505,11 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "SolveWithTimeLimitSampleSatTest",
+    binary = ":SolveWithTimeLimitSampleSat",
 )
 
 java_binary(
@@ -1374,6 +1525,11 @@ java_binary(
     ],
 )
 
+run_binary_test(
+    name = "StepFunctionSampleSatTest",
+    binary = ":StepFunctionSampleSat",
+)
+
 java_binary(
     name = "StopAfterNSolutionsSampleSat",
     srcs = ["StopAfterNSolutionsSampleSat.java"],
@@ -1383,4 +1539,9 @@ java_binary(
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
     ],
+)
+
+run_binary_test(
+    name = "StopAfterNSolutionsSampleSatTest",
+    binary = ":StopAfterNSolutionsSampleSat",
 )

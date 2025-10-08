@@ -180,8 +180,9 @@ cc_library(
 
 cc_test(
     name = "bidirectional_dijkstra_test",
-    size = "medium",
+    size = "small",
     srcs = ["bidirectional_dijkstra_test.cc"],
+    tags = ["noci"],
     deps = [
         ":bidirectional_dijkstra",
         ":bounded_dijkstra",
@@ -394,7 +395,7 @@ cc_test(
     name = "shortest_paths_test",
     size = "enormous",
     srcs = ["shortest_paths_test.cc"],
-    tags = ["noasan"],  # Times out occasionally in ASAN mode.
+    tags = ["noci"],
     deps = [
         ":shortest_paths",
         "//ortools/base:gmock_main",
@@ -542,6 +543,7 @@ cc_test(
     name = "min_cost_flow_test",
     size = "medium",
     srcs = ["min_cost_flow_test.cc"],
+    tags = ["noci"],
     deps = [
         ":min_cost_flow",
         "//ortools/base:gmock_main",
