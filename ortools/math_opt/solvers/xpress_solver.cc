@@ -660,6 +660,7 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
   solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
+  algorithm_ = XPRS_ALG_DEFAULT;
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kXpressSupportedStructures, "XPRESS"));
   ASSIGN_OR_RETURN(is_mip_, xpress_->IsMIP());
@@ -695,6 +696,7 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   }  
   RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
   RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
+  ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
   RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
 
   ASSIGN_OR_RETURN(
@@ -978,18 +980,33 @@ absl::StatusOr<SolveStatsProto> XpressSolver::GetSolveStats(
   CHECK_OK(util_time::EncodeGoogleApiProto(absl::Now() - start,
                                            solve_stats.mutable_solve_time()));
 
-  // LP simplex iterations
-  {
-    ASSIGN_OR_RETURN(const int iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
-    solve_stats.set_simplex_iterations(iters);
+  int simplex_iters = 0;
+  int barrier_iters = 0;
+  int first_order_iters = 0;
+  if (algorithm_ == XPRS_ALG_DEFAULT) {
+    // Could be concurrent, so capture simplex and barrier iterations
+    ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
+    ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
+  } else if (algorithm_ == XPRS_ALG_DUAL || algorithm_ == XPRS_ALG_PRIMAL ||
+             algorithm_ == XPRS_ALG_NETWORK) {
+    // Definitely simplex
+    ASSIGN_OR_RETURN(simplex_iters, xpress_->GetIntAttr(XPRS_SIMPLEXITER));
+  } else if (algorithm_ == XPRS_ALG_BARRIER) {
+    // Barrier or first order
+    ASSIGN_OR_RETURN(const int baralg, xpress_->GetIntControl(XPRS_BARALG));
+    if (baralg == 4) {
+      ASSIGN_OR_RETURN(first_order_iters, xpress_->GetIntAttr(XPRS_BARITER));
+    } else {
+      ASSIGN_OR_RETURN(barrier_iters, xpress_->GetIntAttr(XPRS_BARITER));
+    }
   }
-  // LP barrier iterations
-  {
-    ASSIGN_OR_RETURN(const int iters, xpress_->GetIntAttr(XPRS_BARITER));
-    solve_stats.set_barrier_iterations(iters);
+  solve_stats.set_simplex_iterations(simplex_iters);
+  solve_stats.set_barrier_iterations(barrier_iters);
+  solve_stats.set_first_order_iterations(first_order_iters);
+  if (is_mip_) {
+    ASSIGN_OR_RETURN(const int nodes, xpress_->GetIntAttr(XPRS_NODES));
+    solve_stats.set_node_count(nodes);
   }
-
-  // TODO: complete these stats
   return solve_stats;
 }
 

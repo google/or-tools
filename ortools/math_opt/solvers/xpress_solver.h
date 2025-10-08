@@ -170,6 +170,7 @@ class XpressSolver : public SolverInterface {
   int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   int solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
   int solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
+  int algorithm_ = XPRS_ALG_DEFAULT;
 };
 
 }  // namespace operations_research::math_opt
