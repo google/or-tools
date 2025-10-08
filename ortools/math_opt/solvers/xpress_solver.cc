@@ -1053,16 +1053,20 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
       case XPRS_LP_INFEAS:
         break;
       case XPRS_LP_CUTOFF:
-        return CutoffTerminationProto(
-            isMax, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
+        // This can happen if you set MIPABSCUTOFF for an LP
+        return LimitTerminationProto(isMax, LIMIT_OBJECTIVE, best_primal_bound,
+                                     best_dual_bound,
+                                     "Objective limit (LP_CUTOFF)");
         break;
       case XPRS_LP_UNFINISHED:
         break;
       case XPRS_LP_UNBOUNDED:
         break;
       case XPRS_LP_CUTOFF_IN_DUAL:
-        return CutoffTerminationProto(
-            isMax, "Cutoff in dual (XPRS_LP_CUTOFF_IN_DUAL)");
+        // This can happen if you set MIPABSCUTOFF for an LP
+        return LimitTerminationProto(isMax, LIMIT_OBJECTIVE, best_primal_bound,
+                                     best_dual_bound,
+                                     "Objective limit (LP_CUTOFF_IN_DUAL)");
       case XPRS_LP_UNSOLVED:
         break;
       case XPRS_LP_NONCONVEX:
