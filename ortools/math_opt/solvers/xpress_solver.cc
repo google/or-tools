@@ -311,8 +311,13 @@ class ScopedSolverContext {
       RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.cutoff_limit()));
     }
     if (parameters.has_objective_limit()) {
-      // MIPABSCUTOFF also applies to LPs.
-      RETURN_IF_ERROR(Set(XPRS_MIPABSCUTOFF, parameters.objective_limit()));
+      // In Xpress you can apply MIPABSCUTOFF also to LPs.
+      // However, or tools applies both cutoff_limit and objective_limit
+      // to LPs and distinguishes the two, i.e., expect different return
+      // values depending on what is set. Since we cannot easily make this
+      // distinction, we do not support objective_limit. Users should just
+      // use cutoff_limit with LPs as well.
+      warnings.emplace_back("XpressSolver does not support objective_limit");
     }
     if (parameters.has_best_bound_limit()) {
       warnings.emplace_back("XpressSolver does not support best_bound_limit");
@@ -1054,7 +1059,7 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         break;
       case XPRS_LP_CUTOFF:
         // This can happen if you set MIPABSCUTOFF for an LP
-        return LimitTerminationProto(isMax, LIMIT_OBJECTIVE, best_primal_bound,
+        return LimitTerminationProto(isMax, LIMIT_CUTOFF, best_primal_bound,
                                      best_dual_bound,
                                      "Objective limit (LP_CUTOFF)");
         break;
@@ -1064,7 +1069,7 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         break;
       case XPRS_LP_CUTOFF_IN_DUAL:
         // This can happen if you set MIPABSCUTOFF for an LP
-        return LimitTerminationProto(isMax, LIMIT_OBJECTIVE, best_primal_bound,
+        return LimitTerminationProto(isMax, LIMIT_CUTOFF, best_primal_bound,
                                      best_dual_bound,
                                      "Objective limit (LP_CUTOFF_IN_DUAL)");
       case XPRS_LP_UNSOLVED:
