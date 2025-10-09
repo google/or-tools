@@ -37,6 +37,11 @@
 #include "ortools/math_opt/solver_tests/status_tests.h"
 #include "ortools/third_party_solvers/xpress_environment.h"
 
+/** A string in the log file that indicates that the solution process
+ * finished successfully and found the optimal solution.
+ */
+#define OPTIMAL_SOLUTION_FOUND "Optimal solution found"
+
 namespace operations_research {
 namespace math_opt {
 namespace {
@@ -95,27 +100,44 @@ INSTANTIATE_TEST_SUITE_P(
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalLpTest);
 
-INSTANTIATE_TEST_SUITE_P(XpressMessageCallbackTest, MessageCallbackTest,
-                         testing::Values(MessageCallbackTestParams(
-                             SolverType::kXpress,
-                             /*support_message_callback=*/true,
-                             /*support_interrupter=*/true,
-                             /*integer_variables=*/true,
-                             /*ending_substring*/ "Optimal solution found")));
+INSTANTIATE_TEST_SUITE_P(
+    XpressMessageCallbackTest, MessageCallbackTest,
+    testing::ValuesIn(
+        {MessageCallbackTestParams(SolverType::kXpress,
+                                   /*support_message_callback=*/true,
+                                   /*support_interrupter=*/true,
+                                   /*integer_variables=*/false,
+                                   /*ending_substring*/ OPTIMAL_SOLUTION_FOUND),
+         MessageCallbackTestParams(
+             SolverType::kXpress,
+             /*support_message_callback=*/true,
+             /*support_interrupter=*/true,
+             /*integer_variables=*/true,
+             /*ending_substring*/ OPTIMAL_SOLUTION_FOUND)}));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
-    testing::Values(CallbackTestParams(SolverType::kXpress,
-                                       /*integer_variables=*/true,
-                                       /*add_lazy_constraints=*/false,
-                                       /*add_cuts=*/false,
-                                       /*supported_events=*/{},
-                                       /*all_solutions=*/std::nullopt,
-                                       /*reaches_cut_callback*/ std::nullopt)));
+    testing::ValuesIn(
+        {CallbackTestParams(SolverType::kXpress,
+                            /*integer_variables=*/false,
+                            /*add_lazy_constraints=*/false,
+                            /*add_cuts=*/false,
+                            /*supported_events=*/{},
+                            /*all_solutions=*/std::nullopt,
+                            /*reaches_cut_callback*/ std::nullopt),
+         CallbackTestParams(SolverType::kXpress,
+                            /*integer_variables=*/true,
+                            /*add_lazy_constraints=*/false,
+                            /*add_cuts=*/false,
+                            /*supported_events=*/{},
+                            /*all_solutions=*/std::nullopt,
+                            /*reaches_cut_callback*/ std::nullopt)}));
 
 INSTANTIATE_TEST_SUITE_P(XpressInvalidInputTest, InvalidInputTest,
                          testing::Values(InvalidInputTestParameters(
                              SolverType::kXpress,
+                             // Invalid parameters do not depend on integer
+                             // variables
                              /*use_integer_variables=*/false)));
 
 InvalidParameterTestParams InvalidObjectiveLimitParameters() {
@@ -147,11 +169,17 @@ INSTANTIATE_TEST_SUITE_P(XpressInvalidParameterTest, InvalidParameterTest,
                                    InvalidBestBoundLimitParameters(),
                                    InvalidSolutionPoolSizeParameters()}));
 
-INSTANTIATE_TEST_SUITE_P(XpressGenericTest, GenericTest,
-                         testing::Values(GenericTestParameters(
-                             SolverType::kXpress, /*support_interrupter=*/true,
-                             /*integer_variables=*/true,
-                             /*expected_log=*/"Optimal solution found")));
+INSTANTIATE_TEST_SUITE_P(
+    XpressGenericTest, GenericTest,
+    testing::ValuesIn(
+        {GenericTestParameters(SolverType::kXpress,
+                               /*support_interrupter=*/true,
+                               /*integer_variables=*/false,
+                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND),
+         GenericTestParameters(SolverType::kXpress,
+                               /*support_interrupter=*/true,
+                               /*integer_variables=*/true,
+                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND)}));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
 
@@ -207,31 +235,41 @@ INSTANTIATE_TEST_SUITE_P(
     XpressIncrementalMultiObjectiveTest, IncrementalMultiObjectiveTest,
     testing::Values(GetXpressMultiObjectiveTestParameters()));
 
-QpTestParameters GetXpressQpTestParameters() {
-  return QpTestParameters(SolverType::kXpress, SolveParameters(),
-                          /*qp_support=*/QpSupportType::kConvexQp,
-                          /*supports_incrementalism_not_modifying_qp=*/false,
-                          /*supports_qp_incrementalism=*/false,
-                          /*use_integer_variables=*/false);
+std::vector<QpTestParameters> GetXpressQpTestParameters() {
+  std::vector<QpTestParameters> test_parameters;
+  for (int i = 0; i < 2; ++i) {
+    test_parameters.push_back(
+        QpTestParameters(SolverType::kXpress, SolveParameters(),
+                         /*qp_support=*/QpSupportType::kConvexQp,
+                         /*supports_incrementalism_not_modifying_qp=*/false,
+                         /*supports_qp_incrementalism=*/false,
+                         /*use_integer_variables=*/i != 0));
+  }
+  return test_parameters;
 }
 INSTANTIATE_TEST_SUITE_P(XpressSimpleQpTest, SimpleQpTest,
-                         testing::Values(GetXpressQpTestParameters()));
+                         testing::ValuesIn(GetXpressQpTestParameters()));
 INSTANTIATE_TEST_SUITE_P(XpressIncrementalQpTest, IncrementalQpTest,
-                         testing::Values(GetXpressQpTestParameters()));
+                         testing::ValuesIn(GetXpressQpTestParameters()));
 INSTANTIATE_TEST_SUITE_P(XpressQpDualsTest, QpDualsTest,
-                         testing::Values(GetXpressQpTestParameters()));
+                         testing::ValuesIn(GetXpressQpTestParameters()));
 
-QcTestParameters GetXpressQcTestParameters() {
-  return QcTestParameters(SolverType::kXpress, SolveParameters(),
-                          /*supports_qc=*/false,
-                          /*supports_incremental_add_and_deletes=*/false,
-                          /*supports_incremental_variable_deletions=*/false,
-                          /*use_integer_variables=*/false);
+std::vector<QcTestParameters> GetXpressQcTestParameters() {
+  std::vector<QcTestParameters> test_parameters;
+  for (int i = 0; i < 2; ++i) {
+    test_parameters.push_back(
+        QcTestParameters(SolverType::kXpress, SolveParameters(),
+                         /*supports_qc=*/false,
+                         /*supports_incremental_add_and_deletes=*/false,
+                         /*supports_incremental_variable_deletions=*/false,
+                         /*use_integer_variables=*/i != 0));
+  }
+  return test_parameters;
 }
 INSTANTIATE_TEST_SUITE_P(XpressSimpleQcTest, SimpleQcTest,
-                         testing::Values(GetXpressQcTestParameters()));
+                         testing::ValuesIn(GetXpressQcTestParameters()));
 INSTANTIATE_TEST_SUITE_P(XpressIncrementalQcTest, IncrementalQcTest,
-                         testing::Values(GetXpressQcTestParameters()));
+                         testing::ValuesIn(GetXpressQcTestParameters()));
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 
 SecondOrderConeTestParameters GetXpressSecondOrderConeTestParameters() {
