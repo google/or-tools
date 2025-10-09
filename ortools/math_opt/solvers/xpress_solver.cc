@@ -737,9 +737,7 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
     absl::Time start, const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) {
   SolveResultProto result;
-  ASSIGN_OR_RETURN(SolutionProto solution,
-                   GetSolution(model_parameters, solve_parameters));
-  *result.add_solutions() = std::move(solution);
+  RETURN_IF_ERROR(AppendSolution(result, model_parameters, solve_parameters));
   ASSIGN_OR_RETURN(*result.mutable_solve_stats(), GetSolveStats(start));
   ASSIGN_OR_RETURN(const double best_primal_bound, GetBestPrimalBound());
   ASSIGN_OR_RETURN(const double best_dual_bound, GetBestDualBound());
@@ -779,16 +777,17 @@ absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
   return objsen * kMinusInf;
 }
 
-absl::StatusOr<SolutionProto> XpressSolver::GetSolution(
+absl::Status XpressSolver::AppendSolution(
+    SolveResultProto& solve_result,
     const ModelSolveParametersProto& model_parameters,
     const SolveParametersProto& solve_parameters) {
+  int const nVars = xpress_->GetNumberOfVariables();
   if (is_mip_) {
-    int nVars = xpress_->GetNumberOfVariables();
     std::vector<double> x(nVars);
     int avail;
     RETURN_IF_ERROR(xpress_->GetSolution(&avail, x.data(), 0, nVars - 1));
-    SolutionProto solution{};
     if (avail != XPRS_SOLAVAILABLE_NOTFOUND) {
+      SolutionProto solution{};
       solution.mutable_primal_solution()->set_feasibility_status(
           getPrimalSolutionStatus());
       ASSIGN_OR_RETURN(const double objval,
@@ -798,102 +797,96 @@ absl::StatusOr<SolutionProto> XpressSolver::GetSolution(
           x, variables_map_,
           *solution.mutable_primal_solution()->mutable_variable_values(),
           model_parameters.variable_values_filter());
+      *solve_result.add_solutions() = std::move(solution);
     }
-    return solution;
   } else {
-    return GetLpSolution(model_parameters, solve_parameters);
+    // Fetch all results from XPRESS
+    int const nCons = xpress_->GetNumberOfConstraints();
+    std::vector<double> primals(nVars);
+    std::vector<double> duals(nCons);
+    std::vector<double> reducedCosts(nVars);
+
+    auto hasSolution =
+        xpress_
+            ->GetLpSol(absl::MakeSpan(primals), absl::MakeSpan(duals),
+                       absl::MakeSpan(reducedCosts))
+            .ok();
+
+    SolutionProto solution{};
+    bool storeSolutions = (solvestatus_ == XPRS_SOLVESTATUS_STOPPED ||
+                           solvestatus_ == XPRS_SOLVESTATUS_COMPLETED);
+
+    if (isPrimalFeasible()) {
+      // The preferred methods for obtaining primal information are
+      // XPRSgetsolution() and XPRSgetslacks() (not used here)
+      RETURN_IF_ERROR(
+          xpress_->GetSolution(nullptr, primals.data(), 0, nVars - 1));
+      solution.mutable_primal_solution()->set_feasibility_status(
+          getPrimalSolutionStatus());
+      ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
+      solution.mutable_primal_solution()->set_objective_value(primalBound);
+      XpressVectorToSparseDoubleVector(
+          primals, variables_map_,
+          *solution.mutable_primal_solution()->mutable_variable_values(),
+          model_parameters.variable_values_filter());
+    } else if (storeSolutions) {
+      // Even if we are not primal feasible, store the results we obtained
+      // from XPRSgetlpsolution(). The feasibility status of this vector
+      // is undetermined, though.
+      solution.mutable_primal_solution()->set_feasibility_status(
+          SOLUTION_STATUS_UNDETERMINED);
+      ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
+      solution.mutable_primal_solution()->set_objective_value(primalBound);
+      XpressVectorToSparseDoubleVector(
+          primals, variables_map_,
+          *solution.mutable_primal_solution()->mutable_variable_values(),
+          model_parameters.variable_values_filter());
+    }
+
+    if (isDualFeasible()) {
+      // The preferred methods for obtain dual information are XPRSgetduals()
+      // and XPRSgetredcosts().
+      RETURN_IF_ERROR(xpress_->GetDuals(nullptr, duals.data(), 0, nCons - 1));
+      RETURN_IF_ERROR(
+          xpress_->GetRedCosts(nullptr, reducedCosts.data(), 0, nVars - 1));
+      solution.mutable_dual_solution()->set_feasibility_status(
+          getDualSolutionStatus());
+      ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
+      solution.mutable_dual_solution()->set_objective_value(dualBound);
+      XpressVectorToSparseDoubleVector(
+          duals, linear_constraints_map_,
+          *solution.mutable_dual_solution()->mutable_dual_values(),
+          model_parameters.dual_values_filter());
+      XpressVectorToSparseDoubleVector(
+          reducedCosts, variables_map_,
+          *solution.mutable_dual_solution()->mutable_reduced_costs(),
+          model_parameters.reduced_costs_filter());
+    } else if (storeSolutions) {
+      // Even if we are not dual feasible, store the results we obtained from
+      // XPRSgetlpsolution(). The feasibility status of this vector
+      // is undetermined, though.
+      solution.mutable_dual_solution()->set_feasibility_status(
+          SOLUTION_STATUS_UNDETERMINED);
+      ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
+      solution.mutable_dual_solution()->set_objective_value(dualBound);
+      XpressVectorToSparseDoubleVector(
+          duals, linear_constraints_map_,
+          *solution.mutable_dual_solution()->mutable_dual_values(),
+          model_parameters.dual_values_filter());
+      XpressVectorToSparseDoubleVector(
+          reducedCosts, variables_map_,
+          *solution.mutable_dual_solution()->mutable_reduced_costs(),
+          model_parameters.reduced_costs_filter());
+    }
+
+    // Get basis
+    ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable(solve_parameters));
+    if (basis.has_value()) {
+      *solution.mutable_basis() = std::move(*basis);
+    }
+    *solve_result.add_solutions() = std::move(solution);
   }
-}
-
-absl::StatusOr<SolutionProto> XpressSolver::GetLpSolution(
-    const ModelSolveParametersProto& model_parameters,
-    const SolveParametersProto& solve_parameters) {
-  // Fetch all results from XPRESS
-  int nVars = xpress_->GetNumberOfVariables();
-  int nCons = xpress_->GetNumberOfConstraints();
-  std::vector<double> primals(nVars);
-  std::vector<double> duals(nCons);
-  std::vector<double> reducedCosts(nVars);
-
-  auto hasSolution =
-      xpress_
-          ->GetLpSol(absl::MakeSpan(primals), absl::MakeSpan(duals),
-                     absl::MakeSpan(reducedCosts))
-          .ok();
-
-  SolutionProto solution{};
-  bool storeSolutions = (solvestatus_ == XPRS_SOLVESTATUS_STOPPED ||
-                         solvestatus_ == XPRS_SOLVESTATUS_COMPLETED);
-
-  if (isPrimalFeasible()) {
-    // The preferred methods for obtaining primal information are
-    // XPRSgetsolution() and XPRSgetslacks() (not used here)
-    RETURN_IF_ERROR(
-        xpress_->GetSolution(nullptr, primals.data(), 0, nVars - 1));
-    solution.mutable_primal_solution()->set_feasibility_status(
-        getPrimalSolutionStatus());
-    ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
-    solution.mutable_primal_solution()->set_objective_value(primalBound);
-    XpressVectorToSparseDoubleVector(
-        primals, variables_map_,
-        *solution.mutable_primal_solution()->mutable_variable_values(),
-        model_parameters.variable_values_filter());
-  } else if (storeSolutions) {
-    // Even if we are not primal feasible, store the results we obtained
-    // from XPRSgetlpsolution(). The feasibility status of this vector
-    // is undetermined, though.
-    solution.mutable_primal_solution()->set_feasibility_status(
-        SOLUTION_STATUS_UNDETERMINED);
-    ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
-    solution.mutable_primal_solution()->set_objective_value(primalBound);
-    XpressVectorToSparseDoubleVector(
-        primals, variables_map_,
-        *solution.mutable_primal_solution()->mutable_variable_values(),
-        model_parameters.variable_values_filter());
-  }
-
-  if (isDualFeasible()) {
-    // The preferred methods for obtain dual information are XPRSgetduals()
-    // and XPRSgetredcosts().
-    RETURN_IF_ERROR(xpress_->GetDuals(nullptr, duals.data(), 0, nCons - 1));
-    RETURN_IF_ERROR(
-        xpress_->GetRedCosts(nullptr, reducedCosts.data(), 0, nVars - 1));
-    solution.mutable_dual_solution()->set_feasibility_status(
-        getDualSolutionStatus());
-    ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
-    solution.mutable_dual_solution()->set_objective_value(dualBound);
-    XpressVectorToSparseDoubleVector(
-        duals, linear_constraints_map_,
-        *solution.mutable_dual_solution()->mutable_dual_values(),
-        model_parameters.dual_values_filter());
-    XpressVectorToSparseDoubleVector(
-        reducedCosts, variables_map_,
-        *solution.mutable_dual_solution()->mutable_reduced_costs(),
-        model_parameters.reduced_costs_filter());
-  } else if (storeSolutions) {
-    // Even if we are not dual feasible, store the results we obtained from
-    // XPRSgetlpsolution(). The feasibility status of this vector
-    // is undetermined, though.
-    solution.mutable_dual_solution()->set_feasibility_status(
-        SOLUTION_STATUS_UNDETERMINED);
-    ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());
-    solution.mutable_dual_solution()->set_objective_value(dualBound);
-    XpressVectorToSparseDoubleVector(
-        duals, linear_constraints_map_,
-        *solution.mutable_dual_solution()->mutable_dual_values(),
-        model_parameters.dual_values_filter());
-    XpressVectorToSparseDoubleVector(
-        reducedCosts, variables_map_,
-        *solution.mutable_dual_solution()->mutable_reduced_costs(),
-        model_parameters.reduced_costs_filter());
-  }
-
-  // Get basis
-  ASSIGN_OR_RETURN(auto basis, GetBasisIfAvailable(solve_parameters));
-  if (basis.has_value()) {
-    *solution.mutable_basis() = std::move(*basis);
-  }
-  return solution;
+  return absl::OkStatus();
 }
 
 bool XpressSolver::isPrimalFeasible() const {

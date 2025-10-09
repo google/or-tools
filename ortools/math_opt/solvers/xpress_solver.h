@@ -107,9 +107,9 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
-  absl::StatusOr<SolutionProto> GetSolution(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters);
+  absl::Status AppendSolution(SolveResultProto& solve_result,
+                              const ModelSolveParametersProto& model_parameters,
+                              const SolveParametersProto& solve_parameters);
   absl::StatusOr<SolveStatsProto> GetSolveStats(absl::Time start) const;
 
   absl::StatusOr<double> GetBestPrimalBound() const;
@@ -118,9 +118,6 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<TerminationProto> ConvertTerminationReason(
       double best_primal_bound, double best_dual_bound) const;
 
-  absl::StatusOr<SolutionProto> GetLpSolution(
-      const ModelSolveParametersProto& model_parameters,
-      const SolveParametersProto& solve_parameters);
   bool isPrimalFeasible() const;
   bool isDualFeasible() const;
 
