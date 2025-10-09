@@ -68,13 +68,7 @@ class Xpress {
 
   absl::StatusOr<double> GetDoubleAttr(int attribute) const;
 
-  absl::Status AddVars(absl::Span<const double> obj,
-                       absl::Span<const double> lb, absl::Span<const double> ub,
-                       absl::Span<const char> vtype);
-
-  absl::Status AddVars(absl::Span<const int> vbegin, absl::Span<const int> vind,
-                       absl::Span<const double> vval,
-                       absl::Span<const double> obj,
+  absl::Status AddVars(std::size_t count, absl::Span<const double> obj,
                        absl::Span<const double> lb, absl::Span<const double> ub,
                        absl::Span<const char> vtype);
 

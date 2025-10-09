@@ -110,38 +110,62 @@ void Xpress::initIntControlDefaults() {
   }
 }
 
-absl::Status Xpress::AddVars(const absl::Span<const double> obj,
-                             const absl::Span<const double> lb,
-                             const absl::Span<const double> ub,
-                             const absl::Span<const char> vtype) {
-  return AddVars({}, {}, {}, obj, lb, ub, vtype);
-}
-
-absl::Status Xpress::AddVars(const absl::Span<const int> vbegin,
-                             const absl::Span<const int> vind,
-                             const absl::Span<const double> vval,
+// All arguments can be empty to indicate "use default values".
+// Default objective value: 0
+// Default lower bound: 0
+// Default upper bound: infinity
+// Default type: continuous
+absl::Status Xpress::AddVars(std::size_t count,
                              const absl::Span<const double> obj,
                              const absl::Span<const double> lb,
                              const absl::Span<const double> ub,
                              const absl::Span<const char> vtype) {
-  if (checkInt32Overflow(lb.size())) {
+  ASSIGN_OR_RETURN(int const oldCols, GetIntAttr(XPRS_COLS));
+  if (checkInt32Overflow(count) ||
+      checkInt32Overflow(std::size_t(oldCols) + std::size_t(count))) {
     return absl::InvalidArgumentError(
         "XPRESS cannot handle more than 2^31 variables");
   }
-  const int num_vars = static_cast<int>(lb.size());
-  if (vind.size() != vval.size() || ub.size() != num_vars ||
-      vtype.size() != num_vars || (!obj.empty() && obj.size() != num_vars) ||
-      (!vbegin.empty() && vbegin.size() != num_vars)) {
-    return absl::InvalidArgumentError(
-        "Xpress::AddVars arguments are of inconsistent sizes");
-  }
-  double* c_obj = nullptr;
+  const int num_vars = static_cast<int>(count);
+  double const* c_obj = nullptr;
   if (!obj.empty()) {
-    c_obj = const_cast<double*>(obj.data());
+    if (obj.size() != count)
+      return absl::InvalidArgumentError(
+          "Xpress::AddVars objective argument has bad size");
+    c_obj = obj.data();
   }
-  // TODO: look into int64_t support for number of vars (use XPRSaddcols64)
-  return ToStatus(XPRSaddcols(xpress_model_, num_vars, 0, c_obj, nullptr,
-                              nullptr, nullptr, lb.data(), ub.data()));
+  if (!lb.empty() && lb.size() != count)
+    return absl::InvalidArgumentError(
+        "Xpress::AddVars lower bound argument has bad size");
+  if (!ub.empty() && ub.size() != count)
+    return absl::InvalidArgumentError(
+        "Xpress::AddVars upper bound argument has bad size");
+  std::vector<int> colind;
+  if (!vtype.empty()) {
+    if (vtype.size() != count)
+      return absl::InvalidArgumentError(
+          "Xpress::AddVars type argument has bad size");
+    colind.reserve(count);  // So that we don't OOM after adding
+  }
+  // XPRSaddcols64() allows to add variables with more than INT_MAX
+  // non-zero coefficients here. It does NOT allow adding more than INT_MAX
+  // variables.
+  // Since we don't add any non-zeros here, it is safe to use XPRSaddcols().
+  RETURN_IF_ERROR(ToStatus(XPRSaddcols(
+      xpress_model_, num_vars, 0, c_obj, nullptr, nullptr, nullptr,
+      lb.size() ? lb.data() : nullptr, ub.size() ? ub.data() : nullptr)));
+  if (!vtype.empty()) {
+    for (int i = 0; i < num_vars; ++i) colind.push_back(oldCols + i);
+    int const ret =
+        XPRSchgcoltype(xpress_model_, num_vars, colind.data(), vtype.data());
+    if (ret != 0) {
+      // Changing the column type failed. We must roll back XPRSaddcols() and
+      // then return an error.
+      XPRSdelcols(xpress_model_, num_vars, colind.data());
+    }
+    return ToStatus(ret);
+  }
+  return absl::OkStatus();
 }
 
 absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,

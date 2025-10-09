@@ -539,15 +539,27 @@ absl::Status XpressSolver::AddNewVariables(
   const int num_new_variables = new_variables.lower_bounds().size();
   std::vector<char> variable_type(num_new_variables);
   int n_variables = xpress_->GetNumberOfVariables();
+  bool have_integers = false;
   for (int j = 0; j < num_new_variables; ++j) {
     const VarId id = new_variables.ids(j);
     gtl::InsertOrDie(&variables_map_, id, j + n_variables);
-    variable_type[j] =
-        new_variables.integers(j) ? XPRS_INTEGER : XPRS_CONTINUOUS;
+    if (new_variables.integers(j)) {
+      // Note: ortools does not distinguish between binary variables and
+      //       integer variables in {0,1}
+      variable_type[j] = XPRS_INTEGER;
+      have_integers = true;
+    } else {
+      variable_type[j] = XPRS_CONTINUOUS;
+    }
   }
-  RETURN_IF_ERROR(xpress_->AddVars({}, new_variables.lower_bounds(),
-                                   new_variables.upper_bounds(),
-                                   variable_type));
+  if (!have_integers) {
+    // There are no integer variables, so we clear variable_type to
+    // safe the call to XPRSchgcoltype() in AddVars()
+    variable_type.clear();
+  }
+  RETURN_IF_ERROR(
+      xpress_->AddVars(num_new_variables, {}, new_variables.lower_bounds(),
+                       new_variables.upper_bounds(), variable_type));
 
   // Not adding names for performance (have to call XPRSaddnames)
   // TODO: keep names in a cache and add them when needed
