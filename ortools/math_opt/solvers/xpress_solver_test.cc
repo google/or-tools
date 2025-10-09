@@ -38,9 +38,13 @@
 #include "ortools/third_party_solvers/xpress_environment.h"
 
 /** A string in the log file that indicates that the solution process
- * finished successfully and found the optimal solution.
+ * finished successfully and found the optimal solution for LPs.
  */
-#define OPTIMAL_SOLUTION_FOUND "Optimal solution found"
+#define OPTIMAL_SOLUTION_FOUND_LP "Optimal solution found"
+/** A string in the log file that indicates that the solution process
+ * finished successfully and found the optimal solution for MIPs.
+ */
+#define OPTIMAL_SOLUTION_FOUND_MIP "*** Search completed ***"
 
 namespace operations_research {
 namespace math_opt {
@@ -102,18 +106,18 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalLpTest);
 
 INSTANTIATE_TEST_SUITE_P(
     XpressMessageCallbackTest, MessageCallbackTest,
-    testing::ValuesIn(
-        {MessageCallbackTestParams(SolverType::kXpress,
-                                   /*support_message_callback=*/true,
-                                   /*support_interrupter=*/true,
-                                   /*integer_variables=*/false,
-                                   /*ending_substring*/ OPTIMAL_SOLUTION_FOUND),
-         MessageCallbackTestParams(
-             SolverType::kXpress,
-             /*support_message_callback=*/true,
-             /*support_interrupter=*/true,
-             /*integer_variables=*/true,
-             /*ending_substring*/ OPTIMAL_SOLUTION_FOUND)}));
+    testing::ValuesIn({MessageCallbackTestParams(
+                           SolverType::kXpress,
+                           /*support_message_callback=*/true,
+                           /*support_interrupter=*/true,
+                           /*integer_variables=*/false,
+                           /*ending_substring*/ OPTIMAL_SOLUTION_FOUND_LP),
+                       MessageCallbackTestParams(
+                           SolverType::kXpress,
+                           /*support_message_callback=*/true,
+                           /*support_interrupter=*/true,
+                           /*integer_variables=*/true,
+                           /*ending_substring*/ OPTIMAL_SOLUTION_FOUND_MIP)}));
 
 INSTANTIATE_TEST_SUITE_P(
     XpressCallbackTest, CallbackTest,
@@ -175,11 +179,11 @@ INSTANTIATE_TEST_SUITE_P(
         {GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
                                /*integer_variables=*/false,
-                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND),
+                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND_LP),
          GenericTestParameters(SolverType::kXpress,
                                /*support_interrupter=*/true,
                                /*integer_variables=*/true,
-                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND)}));
+                               /*expected_log=*/OPTIMAL_SOLUTION_FOUND_MIP)}));
 
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TimeLimitTest);
 
