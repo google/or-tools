@@ -380,7 +380,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
-        "@protobuf",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 

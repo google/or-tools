@@ -128,6 +128,7 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
         "@protobuf",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 

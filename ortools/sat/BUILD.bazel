@@ -896,6 +896,7 @@ cc_test(
         "//ortools/port:os",
         "//ortools/util:logging",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
     ],

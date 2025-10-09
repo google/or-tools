@@ -34,12 +34,10 @@ java_junit5_test(
     name = "FlowTest",
     size = "small",
     srcs = ["FlowTest.java"],
-    tags = ["unit"],
     test_class = "com.google.ortools.graph.FlowTest",
     deps = [
         "//ortools/graph/java:graph",
         "//ortools/java/com/google/ortools:Loader",
-        "@maven//:com_google_truth_truth",
         "@maven//:org_junit_jupiter_junit_jupiter_api",
         "@maven//:org_junit_jupiter_junit_jupiter_engine",
         "@maven//:org_junit_jupiter_junit_jupiter_params",

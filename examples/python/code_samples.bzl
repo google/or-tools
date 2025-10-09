@@ -22,7 +22,7 @@ PYTHON_DEPS = [
     "//ortools/linear_solver/python:model_builder",
     "//ortools/sat/python:cp_model",
     "//ortools/sat/colab:visualization",
-    "//ortools/scheduling:rcpsp_py_proto",
+    "//ortools/scheduling:rcpsp_py_pb2",
     "//ortools/scheduling/python:rcpsp",
     requirement("absl-py"),
     requirement("numpy"),
