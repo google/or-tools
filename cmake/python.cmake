@@ -493,16 +493,19 @@ add_custom_command(
   OUTPUT python/ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E remove -f ortools_timestamp
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PYTHON_PROJECT}/.libs
+
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_ZLIB}>,copy,true>
     $<${need_unix_zlib_lib}:$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
     $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
     ${PYTHON_PROJECT}/.libs
+
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_BZip2}>,copy,true>
     $<${need_unix_bzip2_lib}:$<TARGET_SONAME_FILE:BZip2::BZip2>>
     $<${need_windows_bzip2_lib}:$<TARGET_FILE:BZip2::BZip2>>
     ${PYTHON_PROJECT}/.libs
+
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
@@ -646,6 +649,7 @@ add_custom_command(
     $<${need_unix_ortools_lib}:$<TARGET_SONAME_FILE:${PROJECT_NAMESPACE}::ortools>>
     $<${need_windows_ortools_lib}:$<TARGET_FILE:${PROJECT_NAMESPACE}::ortools>>
     ${PYTHON_PROJECT}/.libs
+
   COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/python/ortools_timestamp
   MAIN_DEPENDENCY
     ortools/python/setup.py.in
