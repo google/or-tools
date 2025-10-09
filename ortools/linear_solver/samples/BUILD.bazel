@@ -12,9 +12,10 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 # Linear Solver
 
@@ -74,8 +75,8 @@ cc_test(
     srcs = ["basic_example.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver",
         "//ortools/init",
+        "//ortools/linear_solver",
         "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
@@ -208,4 +209,84 @@ py_test(
     srcs = ["simple_mip_program_mb.py"],
     main = "simple_mip_program_mb.py",
     deps = ["//ortools/linear_solver/python:model_builder"],
+)
+
+java_binary(
+    name = "AssignmentMb",
+    srcs = ["AssignmentMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.AssignmentMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "AssignmentMbTest",
+    binary = ":AssignmentMb",
+)
+
+java_binary(
+    name = "BinPackingMb",
+    srcs = ["BinPackingMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.BinPackingMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "BinPackingMbTest",
+    binary = ":BinPackingMb",
+)
+
+java_binary(
+    name = "CloneModelMb",
+    srcs = ["CloneModelMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.CloneModelMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "CloneModelMbTest",
+    binary = ":CloneModelMb",
+)
+
+java_binary(
+    name = "SimpleLpProgramMb",
+    srcs = ["SimpleLpProgramMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.SimpleLpProgramMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "SimpleLpProgramMbTest",
+    binary = ":SimpleLpProgramMb",
+)
+
+java_binary(
+    name = "SimpleMipProgramMb",
+    srcs = ["SimpleMipProgramMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.SimpleMipProgramMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "SimpleMipProgramMbTest",
+    binary = ":SimpleMipProgramMb",
 )
