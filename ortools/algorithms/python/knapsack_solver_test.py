@@ -14,7 +14,6 @@
 
 """knapsack_solver unittest file."""
 
-from absl import app
 from absl.testing import absltest
 from ortools.algorithms.python import knapsack_solver
 
@@ -261,9 +260,5 @@ class PyWrapAlgorithmsKnapsackSolverTest(absltest.TestCase):
         self.assertEqual(optimal_profit, profit)
 
 
-def main(_):
-    absltest.main()
-
-
 if __name__ == "__main__":
-    app.run(main)
+    absltest.main()

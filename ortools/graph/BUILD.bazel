@@ -395,7 +395,7 @@ cc_test(
     name = "shortest_paths_test",
     size = "enormous",
     srcs = ["shortest_paths_test.cc"],
-    tags = ["noci"],
+    tags = ["noci"],  # Times out occasionally in ASAN mode.
     deps = [
         ":shortest_paths",
         "//ortools/base:gmock_main",
