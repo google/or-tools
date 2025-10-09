@@ -261,6 +261,15 @@ std::vector<StatusTestParameters> MakeStatusTestConfigs() {
         /*supports_node_limit=*/true,
         /*support_interrupter=*/true, /*supports_one_thread=*/true));
   }
+  // Add a test with default LP algorithm and integer variables
+  SolveParameters solve_parameters = {.lp_algorithm = std::nullopt};
+  test_parameters.push_back(StatusTestParameters(
+      SolverType::kXpress, solve_parameters,
+      /*disallow_primal_or_dual_infeasible=*/false,
+      /*supports_iteration_limit=*/true,
+      /*use_integer_variables=*/true,
+      /*supports_node_limit=*/true,
+      /*support_interrupter=*/true, /*supports_one_thread=*/true));
   return test_parameters;
 }
 
