@@ -19,20 +19,21 @@ load("//bazel:swig_java.bzl", "java_wrap_cc")
 java_wrap_cc(
     name = "modelbuilder",
     srcs = ["modelbuilder.swig"],
-    module = "modelbuilder",
     package = "com.google.ortools.modelbuilder",
     swig_includes = [
         "//ortools/base:base_swig",
         "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = ["//ortools/linear_solver/wrappers:model_builder_helper"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver/wrappers:model_builder_helper",
+    ],
 )
 
 java_junit5_test(
     name = "ModelBuilderTest",
     srcs = ["ModelBuilderTest.java"],
-    tags = ["unit"],
     test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
