@@ -1132,6 +1132,8 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
           return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
                                     "Generic error");
         case XPRS_STOP_MEMORYERROR:
+          // This can actually not happen since despite its name, this is
+          // not an error but indicates hitting a user defined memory limit
           return TerminateForReason(isMax, TERMINATION_REASON_OTHER_ERROR,
                                     "Memory error");
         case XPRS_STOP_LICENSELOST:
@@ -1175,6 +1177,13 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
             return NoSolutionFoundTerminationProto(
                 isMax, LIMIT_OTHER, std::nullopt, /** TODO: bound? */
                 "Work limit hit");
+          case XPRS_STOP_MEMORYERROR:
+            // Despite its name, MEMORYERROR is not actually an error
+            // but instead indicates that we hit a user defined memory
+            // limit.
+            return NoSolutionFoundTerminationProto(
+                isMax, LIMIT_MEMORY, std::nullopt, /** TODO: bound? */
+                "Memory limit hit");
           default:
             return TerminateForReason(isMax,
                                       TERMINATION_REASON_NO_SOLUTION_FOUND);
@@ -1206,6 +1215,13 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
             return FeasibleTerminationProto(isMax, LIMIT_OTHER,
                                             best_primal_bound, best_dual_bound,
                                             "Work limit hit");
+          case XPRS_STOP_MEMORYERROR:
+            // Despite its name, MEMORYERROR is not actually an error
+            // but instead indicates that we hit a user defined memory
+            // limit.
+            return FeasibleTerminationProto(isMax, LIMIT_MEMORY,
+                                            best_primal_bound, best_dual_bound,
+                                            "Memory limit hit");
           default:
             return FeasibleTerminationProto(isMax, LIMIT_UNDETERMINED,
                                             best_primal_bound, best_dual_bound);
