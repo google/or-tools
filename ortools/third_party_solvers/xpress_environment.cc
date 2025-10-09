@@ -29,6 +29,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 
 namespace operations_research {
@@ -52,6 +53,7 @@ std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg = nullptr;
 std::function<int(int* p_i, char* p_c)> XPRSlicense = nullptr;
 std::function<int(char* banner)> XPRSgetbanner = nullptr;
 std::function<int(char* version)> XPRSgetversion = nullptr;
+std::function<int(int *p_major, int *p_minor, int *p_build)> XPRSgetversionnumbers = nullptr;
 std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname = nullptr;
 std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol = nullptr;
 std::function<int(XPRSprob prob, int reason)> XPRSinterrupt = nullptr;
@@ -132,6 +134,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlicense, "XPRSlicense");
   xpress_dynamic_library->GetFunction(&XPRSgetbanner, "XPRSgetbanner");
   xpress_dynamic_library->GetFunction(&XPRSgetversion, "XPRSgetversion");
+  xpress_dynamic_library->GetFunction(&XPRSgetversionnumbers, "XPRSgetversionnumbers");
   xpress_dynamic_library->GetFunction(&XPRSsetprobname, "XPRSsetprobname");
   xpress_dynamic_library->GetFunction(&XPRSsetdefaultcontrol, "XPRSsetdefaultcontrol");
   xpress_dynamic_library->GetFunction(&XPRSinterrupt, "XPRSinterrupt");
@@ -274,7 +277,21 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
     if (xpress_library->LibraryIsLoaded()) {
       LOG(INFO) << "Loading all Xpress functions";
       LoadXpressFunctions(xpress_library);
-      *xpress_load_status = absl::OkStatus();
+      // Make sure the library we just loaded is recent enough.
+      int major = -1, minor = -1, build = -1;
+      if (!XPRSgetversionnumbers ||
+          XPRSgetversionnumbers(&major, &minor, &build) != 0)
+        *xpress_load_status =
+            util::StatusBuilder(absl::StatusCode::kNotFound)
+            << "Xpress optimizer library too old, need at least version "
+            << XPVERSION;
+      else if (major < XPVERSION)
+        *xpress_load_status = util::StatusBuilder(absl::StatusCode::kNotFound)
+                              << "Xpress optimizer library version " << major
+                              << " too old, need at least version "
+                              << XPVERSION;
+      else
+        *xpress_load_status = absl::OkStatus();
     } else {
       *xpress_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Xpress shared library. Looked in: [",

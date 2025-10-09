@@ -94,29 +94,29 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 // ***************************************************************************
 // * values related to SOLAVAILABLE                                          *
 // ***************************************************************************
-#define XPRS_SOLAVAILABLE_NOTFOUND                 0
-#define XPRS_SOLAVAILABLE_OPTIMAL                  1
-#define XPRS_SOLAVAILABLE_FEASIBLE                 2
+#define XPRS_SOLAVAILABLE_NOTFOUND 0
+#define XPRS_SOLAVAILABLE_OPTIMAL 1
+#define XPRS_SOLAVAILABLE_FEASIBLE 2
 // ***************************************************************************
 // * values related to SOLVESTATUS                                           *
 // ***************************************************************************
-#define XPRS_SOLVESTATUS_UNSTARTED                0
-#define XPRS_SOLVESTATUS_STOPPED                  1
-#define XPRS_SOLVESTATUS_FAILED                   2
-#define XPRS_SOLVESTATUS_COMPLETED                3
+#define XPRS_SOLVESTATUS_UNSTARTED 0
+#define XPRS_SOLVESTATUS_STOPPED 1
+#define XPRS_SOLVESTATUS_FAILED 2
+#define XPRS_SOLVESTATUS_COMPLETED 3
 // ***************************************************************************
 // * values related to DEFAULTALG and ALGORITHM                              *
 // ***************************************************************************
-#define XPRS_ALG_DEFAULT                  1
-#define XPRS_ALG_DUAL                     2
-#define XPRS_ALG_PRIMAL                   3
-#define XPRS_ALG_BARRIER                  4
-#define XPRS_ALG_NETWORK                  5
+#define XPRS_ALG_DEFAULT 1
+#define XPRS_ALG_DUAL 2
+#define XPRS_ALG_PRIMAL 3
+#define XPRS_ALG_BARRIER 4
+#define XPRS_ALG_NETWORK 5
 
 #define XPRS_PLUSINFINITY 1.0e+20
 #define XPRS_MINUSINFINITY -1.0e+20
 #define XPRS_MAXBANNERLENGTH 512
-#define XPVERSION 45 // >= 45 for XPRS_SOLAVAILABLE flags, XPRSgetduals(), etc.
+#define XPVERSION 45  // >= 45 for XPRS_SOLAVAILABLE flags, XPRSgetduals(), etc.
 #define XPRS_MIPENTS 1032
 #define XPRS_ALGORITHM 1049
 #define XPRS_STOPSTATUS 1179
@@ -515,6 +515,7 @@ extern std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg;
 extern std::function<int(int* p_i, char* p_c)> XPRSlicense;
 extern std::function<int(char* banner)> XPRSgetbanner;
 extern std::function<int(char* version)> XPRSgetversion;
+extern std::function<int(int *p_major, int *p_minor, int *p_build)> XPRSgetversionnumbers;
 extern std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname;
 extern std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol;
 extern std::function<int(XPRSprob prob, int reason)> XPRSinterrupt;
