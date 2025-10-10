@@ -22,10 +22,11 @@ jobs:
     strategy:
       matrix:
         python: [
-        #  {version: '3.10'},
-        #  {version: '3.11'},
+          #{version: '3.10'},
+          #{version: '3.11'},
           {version: '3.12'},
-        #  {version: '3.13'},
+          {version: '3.13'},
+          #{version: '3.14'},
         ]
       fail-fast: false # Don't cancel all jobs if one fails.
     env:
@@ -58,9 +59,15 @@ jobs:
           key: ${{env.cache-name}}
           path: ${{env.cache-root}}
       - name: Build
-        run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
+        run: >
+          bazel --output_user_root=${{env.cache-root}} build
+          --config=ci --@rules_python//python/config_settings:python_version=${{matrix.python.version}}
+          //ortools/... //examples/...
       - name: Test
-        run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
+        run: >
+          bazel --output_user_root=${{env.cache-root}} test
+          --config=ci --@rules_python//python/config_settings:python_version=${{matrix.python.version}}
+          //ortools/... //examples/...
       - name: Save Bazel cache for branch main even when Build and Test fail.
         uses: actions/cache/save@v4
         # https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache

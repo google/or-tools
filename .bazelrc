@@ -21,7 +21,7 @@ build --flag_alias=with_xpress=//ortools/linear_solver:with_xpress
 build --define absl=1
 
 # Fix the python version
-build --@rules_python//python/config_settings:python_version=3.12
+build --@rules_python//python/config_settings:python_version=3.13
 
 ###############################################################################
 # Per plaform options
