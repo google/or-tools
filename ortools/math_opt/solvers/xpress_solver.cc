@@ -423,7 +423,44 @@ class ScopedSolverContext {
           break;
       }
     }
-    /** TODO: Add XpressParameters to structure and apply settings. */
+
+    for (const XpressParametersProto::Parameter& parameter :
+         parameters.xpress().parameters()) {
+      std::string const& name = parameter.name();
+      std::string const& value = parameter.value();
+      int id, type;
+      int64_t l;
+      double d;
+      RETURN_IF_ERROR(xpress->GetControlInfo(name.c_str(), &id, &type));
+      switch (type) {
+        case XPRS_TYPE_INT:  // fallthrough
+        case XPRS_TYPE_INT64:
+          if (!absl::SimpleAtoi(value, &l))
+            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                   << "value " << value << " for " << name
+                   << " is not an integer";
+          if (type == XPRS_TYPE_INT && (l > std::numeric_limits<int>::max() ||
+                                        l < std::numeric_limits<int>::min()))
+            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                   << "value " << value << " for " << name
+                   << " is out of range";
+          RETURN_IF_ERROR(Set(id, l));
+          break;
+        case XPRS_TYPE_DOUBLE:
+          if (!absl::SimpleAtod(value, &d))
+            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                   << "value " << value << " for " << name
+                   << " is not a floating pointer number";
+          RETURN_IF_ERROR(Set(id, d));
+          break;
+        case XPRS_TYPE_STRING:
+          RETURN_IF_ERROR(Set(id, value));
+          break;
+        default:
+          return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                 << "bad control type for " << name;
+      }
+    }
 
     if (!warnings.empty()) {
       return absl::InvalidArgumentError(absl::StrJoin(warnings, "; "));

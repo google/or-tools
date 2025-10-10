@@ -149,6 +149,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetintattrib, "XPRSgetintattrib");
   xpress_dynamic_library->GetFunction(&XPRSgetstringattrib, "XPRSgetstringattrib");
   xpress_dynamic_library->GetFunction(&XPRSgetdblattrib, "XPRSgetdblattrib");
+  xpress_dynamic_library->GetFunction(&XPRSgetcontrolinfo, "XPRSgetcontrolinfo");
   xpress_dynamic_library->GetFunction(&XPRSgetobj, "XPRSgetobj");
   xpress_dynamic_library->GetFunction(&XPRSgetrhs, "XPRSgetrhs");
   xpress_dynamic_library->GetFunction(&XPRSgetrhsrange, "XPRSgetrhsrange");

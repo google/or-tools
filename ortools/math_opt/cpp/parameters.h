@@ -254,6 +254,27 @@ struct GlpkParameters {
   static GlpkParameters FromProto(const GlpkParametersProto& proto);
 };
 
+// Xpress specific parameters for solving. See
+//   https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter7.html
+// for a list of possible parameters (called "controls" in Xpress).
+//
+// Example use:
+//   XpressParameters xpress;
+//   xpress.param_values["BarIterLimit"] = "10";
+//
+// Parameters are applied in the following order:
+//  * Any parameters derived from ortools parameters (like LP algorithm).
+//  * param_values in iteration order (insertion order).
+struct XpressParameters {
+  // Parameter name-value pairs to set in insertion order.
+  gtl::linked_hash_map<std::string, std::string> param_values;
+
+  XpressParametersProto Proto() const;
+  static XpressParameters FromProto(const XpressParametersProto& proto);
+
+  bool empty() const { return param_values.empty(); }
+};
+
 // Parameters to control a single solve.
 //
 // Contains both parameters common to all solvers, e.g. time_limit, and
@@ -426,6 +447,7 @@ struct SolveParameters {
 
   GlpkParameters glpk;
   HighsOptionsProto highs;
+  XpressParameters xpress;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(
