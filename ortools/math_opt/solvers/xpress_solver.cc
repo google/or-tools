@@ -223,6 +223,44 @@ static void stdoutMessageCallback(std::vector<std::string> const& lines) {
   for (auto& l : lines) std::cout << l << std::endl;
 }
 
+inline BasisStatusProto XpressToMathOptBasisStatus(const int status,
+                                                   bool isConstraint) {
+  // XPRESS row basis status is that of the slack variable
+  // For example, if the slack variable is at LB, the constraint is at UB
+  switch (status) {
+    case XPRS_BASIC:
+      return BASIS_STATUS_BASIC;
+    case XPRS_AT_LOWER:
+      return isConstraint ? BASIS_STATUS_AT_UPPER_BOUND
+                          : BASIS_STATUS_AT_LOWER_BOUND;
+    case XPRS_AT_UPPER:
+      return isConstraint ? BASIS_STATUS_AT_LOWER_BOUND
+                          : BASIS_STATUS_AT_UPPER_BOUND;
+    case XPRS_FREE_SUPER:
+      return BASIS_STATUS_FREE;
+    default:
+      return BASIS_STATUS_UNSPECIFIED;
+  }
+}
+
+inline int MathOptToXpressBasisStatus(const BasisStatusProto status,
+                                      bool isConstraint) {
+  // XPRESS row basis status is that of the slack variable
+  // For example, if the slack variable is at LB, the constraint is at UB
+  switch (status) {
+    case BASIS_STATUS_BASIC:
+      return XPRS_BASIC;
+    case BASIS_STATUS_AT_LOWER_BOUND:
+      return isConstraint ? XPRS_AT_UPPER : XPRS_AT_LOWER;
+    case BASIS_STATUS_AT_UPPER_BOUND:
+      return isConstraint ? XPRS_AT_LOWER : XPRS_AT_UPPER;
+    case BASIS_STATUS_FREE:
+      return XPRS_FREE_SUPER;
+    default:
+      return XPRS_FREE_SUPER;
+  }
+}
+
 /** Temporary settings for a solve.
  * Instances of this class capture settings in the XPRSprob instance that are
  * made only temporarily for a solve.
@@ -467,11 +505,122 @@ class ScopedSolverContext {
     }
     return absl::OkStatus();
   }
-  /** TODO: Implement this (only for Solve(), not for
-   *        ComputeInfeasibleSubsystem())
-   * absl::Status ApplyParameters(const ModelSolveParametersProto&
-   * model_parameters);
+  absl::Status ApplyModelParameters(
+      ModelSolveParametersProto const& model_parameters,
+      gtl::linked_hash_map<XpressSolver::VarId,
+                           XpressSolver::XpressVariableIndex> const&
+          variables_map,
+      gtl::linked_hash_map<XpressSolver::LinearConstraintId,
+                           XpressSolver::LinearConstraintData> const&
+          linear_constraints_map) {
+    ASSIGN_OR_RETURN(int const cols, xpress->GetIntAttr(XPRS_COLS));
+    ASSIGN_OR_RETURN(int const rows, xpress->GetIntAttr(XPRS_ROWS));
+    // Set initial basis
+    if (model_parameters.has_initial_basis()) {
+      auto const& basis = model_parameters.initial_basis();
+      std::vector<int> xpress_var_basis_status(cols);
+      for (const auto [id, value] : MakeView(basis.variable_status())) {
+        xpress_var_basis_status[variables_map.at(id)] =
+            MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value),
+                                       false);
+      }
+      std::vector<int> xpress_constr_basis_status(rows);
+      for (const auto [id, value] : MakeView(basis.constraint_status())) {
+        xpress_constr_basis_status[linear_constraints_map.at(id)
+                                       .constraint_index] =
+            MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value),
+                                       true);
+      }
+      RETURN_IF_ERROR(xpress->SetStartingBasis(xpress_constr_basis_status,
+                                               xpress_var_basis_status));
+    }
+    std::vector<int> colind;
+
+    // Install solution hints. Xpress does not explicitly have solutions
+    // hints but it supports partial MIP starts. So we just add each solution
+    // hint as MIP start.
+    if (model_parameters.solution_hints_size() > 0) {
+      unsigned int cnt = 0;
+      std::vector<double> mipStart;
+      colind.reserve(cols);
+      mipStart.reserve(cols);
+      for (auto const& hint : model_parameters.solution_hints()) {
+        colind.clear();
+        mipStart.clear();
+        for (const auto [id, value] : MakeView(hint.variable_values())) {
+          colind.push_back(variables_map.at(id));
+          mipStart.push_back(value);
+        }
+        if (mipStart.size() > cols)
+          return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+                 << "more solution hints than columns";
+        RETURN_IF_ERROR(xpress->AddMIPSol(
+            static_cast<int>(mipStart.size()), mipStart.data(), colind.data(),
+            absl::StrCat("SolutionHint", cnt).c_str()));
+        ++cnt;
+      }
+    }
+
+    // Install branching priorities.
+    // Note that in ortools higher priority takes precedence while in Xpress
+    // lower priority takes precedence.
+    if (model_parameters.has_branching_priorities()) {
+      auto const& prios = model_parameters.branching_priorities();
+      colind.clear();
+      colind.reserve(prios.ids_size());
+      std::vector<int> priority;
+      priority.reserve(prios.ids_size());
+      for (const auto [id, prio] : MakeView(prios)) {
+        colind.push_back(variables_map.at(id));
+        /** TODO: Xpress prios must be in [0,1000]. */
+        priority.push_back(
+            -prio);  // Smaller ids have higher precedence in Xpress!
+      }
+
+      if (colind.size() > 0)
+        return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+               << "more branching priorities than columns";
+      RETURN_IF_ERROR(xpress->LoadDirs(static_cast<int>(colind.size()),
+                                       colind.data(), priority.data(), nullptr,
+                                       nullptr, nullptr));
+    }
+
+    /** TODO: Install (multi-)objective parameters. */
+    // ObjectiveMap<ObjectiveParameters> objective_parameters;
+
+    if (model_parameters.lazy_linear_constraint_ids_size() > 0) {
+      std::vector<int> delayedRows;
+      delayedRows.reserve(rows);
+      for (auto const& idx : model_parameters.lazy_linear_constraint_ids()) {
+        delayedRows.push_back(linear_constraints_map.at(idx).constraint_index);
+      }
+      if (delayedRows.size() > rows)
+        return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+               << "more lazy constraints than rows";
+
+      RETURN_IF_ERROR(xpress->LoadDelayedRows(
+          static_cast<int>(delayedRows.size()), delayedRows.data()));
+    }
+
+    return absl::OkStatus();
+  }
+  /** Interrupt the current solve with the given reason. */
+  void Interrupt(int reason) { CHECK_OK(xpress->Interrupt(reason)); }
+  /** Reraise any pending exception from a callback. */
+  void ReraiseCallbackException() {
+    if (callbackException) {
+      std::exception_ptr old = callbackException;
+      callbackException = nullptr;
+      std::rethrow_exception(old);
+    }
+  }
+  /** Set exception raised in callback.
+   * Will not overwrite an existing pending exception.
    */
+  void SetCallbackException(std::exception_ptr ex) {
+    const absl::MutexLock lock(&mutex);
+    if (!callbackException) callbackException = ex;
+  }
 
   ~ScopedSolverContext() {
   ~SolveContext() {
@@ -747,17 +896,14 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     RETURN_IF_ERROR(inverted_bounds.ToStatus());
   }
 
-  // Set initial basis
-  if (model_parameters.has_initial_basis()) {
-    RETURN_IF_ERROR(SetXpressStartingBasis(model_parameters.initial_basis()));
-  }
-
   // Register callbacks and create scoped context to automatically if an
   // exception has been thrown during optimization.
   {
     ScopedSolverContext solveContext(xpress_.get());
     RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
     RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
+    RETURN_IF_ERROR(solveContext.ApplyModelParameters(
+      model_parameters, variables_map_, linear_constraints_map_));
     // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
     // the best algorithm. Note that we do not pass flags to the function either.
     // We assume that algorithms are configured via controls like LPFLAGS.
@@ -974,61 +1120,6 @@ SolutionStatusProto XpressSolver::getDualSolutionStatus() const {
    *        know that dual is infeasible.
    */
   return SOLUTION_STATUS_UNDETERMINED;
-}
-
-inline BasisStatusProto XpressToMathOptBasisStatus(const int status,
-                                                   bool isConstraint) {
-  // XPRESS row basis status is that of the slack variable
-  // For example, if the slack variable is at LB, the constraint is at UB
-  switch (status) {
-    case XPRS_BASIC:
-      return BASIS_STATUS_BASIC;
-    case XPRS_AT_LOWER:
-      return isConstraint ? BASIS_STATUS_AT_UPPER_BOUND
-                          : BASIS_STATUS_AT_LOWER_BOUND;
-    case XPRS_AT_UPPER:
-      return isConstraint ? BASIS_STATUS_AT_LOWER_BOUND
-                          : BASIS_STATUS_AT_UPPER_BOUND;
-    case XPRS_FREE_SUPER:
-      return BASIS_STATUS_FREE;
-    default:
-      return BASIS_STATUS_UNSPECIFIED;
-  }
-}
-
-inline int MathOptToXpressBasisStatus(const BasisStatusProto status,
-                                      bool isConstraint) {
-  // XPRESS row basis status is that of the slack variable
-  // For example, if the slack variable is at LB, the constraint is at UB
-  switch (status) {
-    case BASIS_STATUS_BASIC:
-      return XPRS_BASIC;
-    case BASIS_STATUS_AT_LOWER_BOUND:
-      return isConstraint ? XPRS_AT_UPPER : XPRS_AT_LOWER;
-    case BASIS_STATUS_AT_UPPER_BOUND:
-      return isConstraint ? XPRS_AT_LOWER : XPRS_AT_UPPER;
-    case BASIS_STATUS_FREE:
-      return XPRS_FREE_SUPER;
-    default:
-      return XPRS_FREE_SUPER;
-  }
-}
-
-absl::Status XpressSolver::SetXpressStartingBasis(const BasisProto& basis) {
-  std::vector<int> xpress_var_basis_status(xpress_->GetNumberOfVariables());
-  for (const auto [id, value] : MakeView(basis.variable_status())) {
-    xpress_var_basis_status[variables_map_.at(id)] =
-        MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value), false);
-  }
-  std::vector<int> xpress_constr_basis_status(
-      xpress_->GetNumberOfConstraints());
-  for (const auto [id, value] : MakeView(basis.constraint_status())) {
-    xpress_constr_basis_status[linear_constraints_map_.at(id)
-                                   .constraint_index] =
-        MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value), true);
-  }
-  return xpress_->SetStartingBasis(xpress_constr_basis_status,
-                                   xpress_var_basis_status);
 }
 
 absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable(

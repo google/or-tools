@@ -138,6 +138,12 @@ class Xpress {
   absl::Status GetSolution(int* p_status, double* x, int first, int last);
   absl::Status GetRedCosts(int* p_status, double* dj, int first, int last);
 
+  absl::Status AddMIPSol(int len, double const* vals, int const* colind,
+                         char const* name = nullptr);
+  absl::Status LoadDelayedRows(int len, int const* rows);
+  absl::Status LoadDirs(int len, int const* cols, int const* prio,
+                        char const* dir, double const* up, double const* down);
+
  private:
   XPRSprob xpress_model_;
 

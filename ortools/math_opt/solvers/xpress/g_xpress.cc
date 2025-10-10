@@ -426,4 +426,19 @@ absl::Status Xpress::GetRedCosts(int* p_status, double* dj, int first,
   return ToStatus(XPRSgetredcosts(xpress_model_, p_status, dj, first, last));
 }
 
+absl::Status Xpress::AddMIPSol(int len, double const* vals, int const* colind,
+                               char const* name) {
+  return ToStatus(XPRSaddmipsol(xpress_model_, len, vals, colind, name));
+}
+
+absl::Status Xpress::LoadDelayedRows(int len, int const* rows) {
+  return ToStatus(XPRSloaddelayedrows(xpress_model_, len, rows));
+}
+
+absl::Status Xpress::LoadDirs(int len, int const* cols, int const* prio,
+                              char const* dir, double const* up,
+                              double const* down) {
+  return ToStatus(XPRSloaddirs(xpress_model_, len, cols, prio, dir, up, down));
+}
+
 }  // namespace operations_research::math_opt

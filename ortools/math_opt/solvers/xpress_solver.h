@@ -70,6 +70,7 @@ class XpressSolver : public SolverInterface {
  private:
   explicit XpressSolver(std::unique_ptr<Xpress> g_xpress);
 
+ public:
   // For easing reading the code, we declare these types:
   using VarId = int64_t;
   using AuxiliaryObjectiveId = int64_t;
@@ -88,6 +89,7 @@ class XpressSolver : public SolverInterface {
   using XpressGeneralConstraintIndex = int;
   using XpressAnyConstraintIndex = int;
 
+ private:
   static constexpr XpressVariableIndex kUnspecifiedIndex = -1;
   static constexpr XpressAnyConstraintIndex kUnspecifiedConstraint = -2;
   static constexpr double kPlusInf = XPRS_PLUSINFINITY;
@@ -98,12 +100,14 @@ class XpressSolver : public SolverInterface {
   }
 
   // Data associated with each linear constraint
+ public:
   struct LinearConstraintData {
     XpressLinearConstraintIndex constraint_index = kUnspecifiedConstraint;
     double lower_bound = kMinusInf;
     double upper_bound = kPlusInf;
   };
 
+ private:
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
@@ -159,7 +163,6 @@ class XpressSolver : public SolverInterface {
   SolutionStatusProto getPrimalSolutionStatus() const;
   SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
-  absl::Status SetXpressStartingBasis(const BasisProto& basis);
 
   bool is_mip_ = false;
   // Results of the last solve
