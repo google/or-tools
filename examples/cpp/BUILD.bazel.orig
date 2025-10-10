@@ -21,7 +21,9 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "binpacking_2d_sat",
-    srcs = ["binpacking_2d_sat.cc"],
+    srcs = [
+        "binpacking_2d_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/base:mathutil",
@@ -47,6 +49,12 @@ cc_binary(
 run_binary_test(
     name = "binpacking_2d_sat_class01_instance2_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = [
+        "binpacking_2d_sat.cc",
+    ],
+=======
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
     binary = ":binpacking_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
@@ -91,22 +99,70 @@ cc_binary(
 run_binary_test(
     name = "costas_array_sat_model1_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=1",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+=======
     args = ["--minsize=6 --maxsize=6 --model=1"],
     binary = ":costas_array_sat",
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 run_binary_test(
     name = "costas_array_sat_model2_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=2",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+=======
     args = ["--minsize=6 --maxsize=6 --model=2"],
     binary = ":costas_array_sat",
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 run_binary_test(
     name = "costas_array_sat_model3_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = ["costas_array_sat.cc"],
+    args = [
+        "--minsize=6 --maxsize=6 --model=3",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+=======
     args = ["--minsize=6 --maxsize=6 --model=3"],
     binary = ":costas_array_sat",
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 cc_binary(
@@ -170,7 +226,9 @@ run_binary_test(
 
 cc_binary(
     name = "knapsack_2d_sat",
-    srcs = ["knapsack_2d_sat.cc"],
+    srcs = [
+        "knapsack_2d_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/packing:binpacking_2d_parser",
@@ -191,6 +249,12 @@ cc_binary(
 run_binary_test(
     name = "knapsack_2d_sat_class01_instance2_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = [
+        "knapsack_2d_sat.cc",
+    ],
+=======
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
     binary = ":knapsack_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
@@ -198,7 +262,9 @@ run_binary_test(
 
 cc_binary(
     name = "jobshop_sat",
-    srcs = ["jobshop_sat.cc"],
+    srcs = [
+        "jobshop_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/graph:connected_components",
@@ -226,6 +292,12 @@ cc_binary(
 run_binary_test(
     name = "jobshop_sat_ft06",
     size = "small",
+<<<<<<< HEAD
+    srcs = [
+        "jobshop_sat.cc",
+    ],
+=======
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
     args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
     binary = ":jobshop_sat",
     data = ["//ortools/scheduling/testdata:ft06"],
@@ -254,7 +326,9 @@ run_binary_test(
 
 cc_binary(
     name = "multi_knapsack_sat",
-    srcs = ["multi_knapsack_sat.cc"],
+    srcs = [
+        "multi_knapsack_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -269,12 +343,25 @@ cc_binary(
 run_binary_test(
     name = "multi_knapsack_sat_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = [
+        "multi_knapsack_sat.cc",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/sat:cp_model",
+        "@abseil-cpp//absl/flags:flag",
+    ],
+=======
     binary = ":multi_knapsack_sat",
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 cc_binary(
     name = "shift_minimization_sat",
-    srcs = ["shift_minimization_sat.cc"],
+    srcs = [
+        "shift_minimization_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -294,14 +381,34 @@ cc_binary(
 run_binary_test(
     name = "shift_minimization_sat_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = [
+        "shift_minimization_sat.cc",
+    ],
+    args = ["--input $(rootpath //examples/cpp:shift_minimization.dat)"],
+    data = ["//examples/cpp:shift_minimization.dat"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:model",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
+    ],
+=======
     args = ["--input $(rootpath :shift_minimization.dat)"],
     binary = ":shift_minimization_sat",
     data = [":shift_minimization.dat"],
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 cc_binary(
     name = "weighted_tardiness_sat",
-    srcs = ["weighted_tardiness_sat.cc"],
+    srcs = [
+        "weighted_tardiness_sat.cc",
+    ],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
@@ -324,9 +431,35 @@ cc_binary(
 run_binary_test(
     name = "weighted_tardiness_sat_test",
     size = "medium",
+<<<<<<< HEAD
+    srcs = [
+        "weighted_tardiness_sat.cc",
+    ],
+    args = ["--input $(rootpath //examples/cpp:wt40.txt)"],
+    data = ["//examples/cpp:wt40.txt"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:disjunctive",
+        "//ortools/sat:integer",
+        "//ortools/sat:integer_expr",
+        "//ortools/sat:intervals",
+        "//ortools/sat:model",
+        "//ortools/sat:optimization",
+        "//ortools/sat:precedences",
+        "//ortools/sat:sat_solver",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
+    ],
+=======
     args = ["--input $(rootpath :wt40.txt)"],
     binary = ":weighted_tardiness_sat",
     data = [":wt40.txt"],
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
 )
 
 cc_binary(
@@ -472,6 +605,25 @@ cc_binary(
     name = "random_tsp",
     srcs = ["random_tsp.cc"],
     deps = [
+<<<<<<< HEAD
+        "//ortools/base",
+        "//ortools/constraint_solver:routing",
+        "//ortools/util:random_engine",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
+    ],
+)
+
+cc_binary(
+    name = "pdptw",
+    srcs = ["pdptw.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:mathutil",
+        "//ortools/constraint_solver:routing",
+        "//ortools/routing/parsers:lilim_parser",
+=======
         "//ortools/constraint_solver:cp",
         "//ortools/routing",
         "//ortools/routing:index_manager",
@@ -479,6 +631,7 @@ cc_binary(
         "//ortools/routing:parameters_cc_proto",
         "//ortools/util:random_engine",
         "@abseil-cpp//absl/base:log_severity",
+>>>>>>> 3b384e83a4 ([bazel] Update examples)
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
         "@abseil-cpp//absl/log",

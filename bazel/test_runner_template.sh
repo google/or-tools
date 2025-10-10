@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -x
-exec {binary_path} "$@"
+set -e # Fail on error
+
+declare -r LOGFILE="${TEST_TMPDIR}/log.txt"
+{{binary_path}} "$@" > "${LOGFILE}"
+{{post_script}}
