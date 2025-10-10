@@ -18,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -48,7 +49,21 @@ namespace operations_research {
 namespace math_opt {
 namespace {
 
-class SolveContext;  // forward
+struct SharedSolveContext {
+  Xpress* xpress;
+
+  /** Mutex for accessing callbackException. */
+  absl::Mutex mutex;
+
+  /** Capturing of exceptions in callbacks.
+   * We cannot let exceptions escape from callbacks since that would just
+   * unroll the stack until some function that catches the exception.
+   * In particular, it would bypass any cleanup code implemented in the C code
+   * of the solver. So we must capture exceptions, interrupt the solve and
+   * handle the exception once the solver returned.
+   */
+  std::exception_ptr callbackException;
+};
 
 /** Registered callback that is auto-removed in the destructor.
  * Use Add() to add a callback to a solve context.
@@ -56,112 +71,142 @@ class SolveContext;  // forward
  * and Interrupt() that are required in every callback implementation to
  * capture exceptions from user code and reraise them appropriately.
  */
-template <typename T>
+template <typename ProtoT, typename CbT>
 class ScopedCallback {
- private:
-  ScopedCallback(ScopedCallback<T> const&) = delete;
-  ScopedCallback(ScopedCallback<T>&&) = delete;
-  ScopedCallback<T>& operator=(ScopedCallback<T> const&) = delete;
-  ScopedCallback<T>& operator=(ScopedCallback<T>&&) = delete;
-  SolveContext* context;
+  using proto_type = typename ProtoT::proto_type; 
+  SharedSolveContext* ctx;
+
+  ScopedCallback(ScopedCallback const&) = delete;
+  ScopedCallback(ScopedCallback&&) = delete;
+  ScopedCallback& operator=(ScopedCallback const&) = delete;
+  ScopedCallback& operator=(ScopedCallback&&) = delete;
+
+  // We intercept and store any exception throw by a callback defining a static
+  // wrapper function that invokes the callback within a try/carch block. For
+  // this to work, we need to deduce the callback return type and arguments.
+  template <typename FuncPtr>
+  struct ExWrapper;
+
+  // Specialization to deduce the callback return and arguments types
+  template <typename R, typename... Args>
+  struct ExWrapper<R (*)(XPRSprob, void*, Args...)> {
+    // The static function that will be directly invoked by Xpress
+    static auto low_level_cb(XPRSprob prob, void* cbdata, Args... args) try {
+      return ProtoT::glueFn(prob, cbdata, args...);
+    } catch (...) {
+      // Catch any exception and terminate Xpress gracefully
+      ScopedCallback* cb = reinterpret_cast<ScopedCallback*>(cbdata);
+      cb->Interrupt(XPRS_STOP_USER);
+      cb->SetCallbackException(std::current_exception());
+      if constexpr (std::is_convertible_v<R, int>) return static_cast<int>(1);
+    }
+  };
+  static constexpr proto_type low_level_cb = ExWrapper<proto_type>::low_level_cb;
 
  public:
-  typename T::DataType callbackData; /**< OR tools callback function. */
-  ScopedCallback() : context(nullptr), callbackData(nullptr) {}
-  // Below functions cannot be defined here since they need the definition
-  // of SolveContext available.
-  inline absl::Status Add(SolveContext* ctx, typename T::DataType data);
-  inline void Interrupt(int reason);
-  inline void SetCallbackException(std::exception_ptr ex);
-  ~ScopedCallback();
+  CbT or_tools_cb;
+
+  ScopedCallback() : ctx(nullptr) {}
+
+  inline absl::Status Add(SharedSolveContext* context, CbT cb) {
+    ctx = context;
+    RETURN_IF_ERROR(
+        ProtoT::Add(ctx->xpress, low_level_cb, reinterpret_cast<void*>(this)));
+    return absl::OkStatus();
+  }
+
+  inline void Interrupt(int reason) {
+    CHECK_OK(ctx->xpress->Interrupt(reason));
+  }
+
+  inline void SetCallbackException(std::exception_ptr ex) {
+    const absl::MutexLock lock(&ctx->mutex);
+    if (!ctx->callbackException) ctx->callbackException = ex;
+  }
+
+  ~ScopedCallback() {
+    if (ctx)
+      ProtoT::Remove(ctx->xpress, low_level_cb, reinterpret_cast<void*>(this));
+  }
 };
 
 /** Define everything required for supporting a callback of type name.
  * Use like so
- *    DEFINE_CALLBACK(CallbackName, ORToolsData, XpressReturn, (...)) {
+ *    DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, (...ARGS)) {
  *        <code>
  *    }
  * where
- *    CallbackName  is the name of the callback (Message, Checktime, ...)
- *    ORToolsData   the OR tools data that is required to forward the
- *                  callback invocation from the low-level Xpress callback
- *                  to OR tools.
- *    XpressReturn  return type of the low-level Xpress callback
- *    (...)         arguments to the Xpress low-level callback.
- *    <code>        code for the low-level Xpress callback
- * The effect of the macro is a function Add##name##Callback that adds
- * the callback and returns either an error or a guard that will remove the
- * callback in its destructor. Use this like
- *   ASSIGN_OR_RETURN(auto guard, Add##name##Callback(...));
+ *    CB_NAME      is the name of the callback (Message, Checktime, ...)
+ *    ORTOOLS_CB   the Or-Tools callbacks (function object) that get provided
+ *                 to the low-level static callback as user data, and then
+ *                 invoked.
+ *    CB_RET_TYPE  return type of the low-level Xpress callback.
+ *    (...ARGS)    arguments to the Xpress low-level callback.
+ *    <code>       code for the low-level Xpress callback
+ * The effect of the macro is an alias CB_NAME####ScopedCb = ScopedCallback<...>.
  */
-#define DEFINE_CALLBACK(name, datatype, ret, args)                           \
-  static ret name##Traits_LowLevelCallback args;                             \
-  struct name##Traits {                                                      \
-    typedef datatype DataType;                                               \
-    static absl::Status Add(Xpress* xpress, void* data) {                    \
-      return xpress->AddCb##name(name##Traits_LowLevelCallback, data, 0);    \
-    }                                                                        \
-    static void Remove(Xpress* xpress, void* data) {                         \
-      CHECK_OK(xpress->RemoveCb##name(name##Traits_LowLevelCallback, data)); \
-    }                                                                        \
-  };                                                                         \
-  static ret name##Traits_LowLevelCallback args
+#define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)         \
+  CB_RET_TYPE CB_NAME##GlueFn ARGS;                                      \
+  struct CB_NAME##Traits {                                               \
+    using proto_type = CB_RET_TYPE(XPRS_CC*) ARGS;                       \
+    static constexpr proto_type glueFn = CB_NAME##GlueFn;                \
+    static absl::Status Add(Xpress* xpress, proto_type fn, void* data) { \
+      return xpress->AddCb##CB_NAME(fn, data, 0);                        \
+    }                                                                    \
+    static void Remove(Xpress* xpress, proto_type fn, void* data) {      \
+      CHECK_OK(xpress->RemoveCb##CB_NAME(fn, data));                     \
+    }                                                                    \
+  };                                                                     \
+  using CB_NAME##ScopedCb = ScopedCallback<CB_NAME##Traits, ORTOOLS_CB>; \
+  CB_RET_TYPE CB_NAME##GlueFn ARGS
 
 /** Define the message callback.
  * This forwards messages from Xpress to an ortools message callback.
  */
-DEFINE_CALLBACK(Message, MessageCallback, void,
-                (XPRSprob cbprob, void* cbdata, char const* msg, int len,
-                 int type)) {
-  ScopedCallback<MessageTraits>* cb =
-      reinterpret_cast<ScopedCallback<MessageTraits>*>(cbdata);
-  try {
-    if (type == 1 ||  // info message
-        type == 3 ||  // warning message
-        type == 4)    // error message
+DEFINE_SCOPED_CB(Message, MessageCallback, void,
+                 (XPRSprob prob, void* cbdata, char const* msg, int len,
+                  int type)) {
+  auto cb = reinterpret_cast<MessageScopedCb*>(cbdata);
+
+  if (type != 1 &&  // info message
+      type != 3 &&  // warning message
+      type != 4) {  // error message
     // message type 2 is not used by Xpress, negative values mean "flush"
-    {
-      if (len == 0) {
-        cb->callbackData(std::vector<std::string>{{""}});
-      } else {
-        std::vector<std::string> lines;
-        int start = 0;
-        // There are a few Xpress messages that span multiple lines.
-        // The MessageCallback contract says that messages must not contain
-        // newlines, so we have to split on newline.
-        while (start <=
-               len) {  // <= rather than < to catch message ending in '\n'
-          int end = start;
-          while (end < len && msg[end] != '\n') ++end;
-          if (start < len)
-            lines.emplace_back(std::string(msg, start, end - start));
-          else
-            lines.push_back("");
-          start = end + 1;
-        }
-        cb->callbackData(lines);
-      }
-    }
-  } catch (...) {
-    cb->Interrupt(XPRS_STOP_USER);
-    cb->SetCallbackException(std::current_exception());
+    return;
   }
+
+  if (len == 0) {
+    cb->or_tools_cb(std::vector<std::string>{""});
+    return;
+  }
+
+  std::vector<std::string> lines;
+  int start = 0;
+  // There are a few Xpress messages that span multiple lines.
+  // The MessageCallback contract says that messages must not contain
+  // newlines, so we have to split on newline.
+  while (start <= len) {  // <= rather than < to catch message ending in '\n'
+    int end = start;
+    while (end < len && msg[end] != '\n') {
+      ++end;
+    }
+    if (start < len) {
+      lines.emplace_back(msg, start, end - start);
+    } else {
+      lines.push_back("");
+    }
+    start = end + 1;
+  }
+  cb->or_tools_cb(lines);
 }
 
 /** Define the checktime callback.
  * This callbacks checks an interrupter for whether the solve was interrupted.
  */
-DEFINE_CALLBACK(Checktime, SolveInterrupter const*, int,
-                (XPRSprob cbprob, void* cbdata)) {
-  ScopedCallback<ChecktimeTraits>* cb =
-      reinterpret_cast<ScopedCallback<ChecktimeTraits>*>(cbdata);
-  try {
-    return cb->callbackData->IsInterrupted() ? 1 : 0;
-  } catch (...) {
-    cb->Interrupt(XPRS_STOP_USER);
-    cb->SetCallbackException(std::current_exception());
-    return 1;
-  }
+DEFINE_SCOPED_CB(Checktime, SolveInterrupter const*, int,
+                 (XPRSprob prob, void* cbdata)) {
+  auto cb = reinterpret_cast<ChecktimeScopedCb*>(cbdata);
+  return cb->or_tools_cb->IsInterrupted() ? 1 : 0;
 }
 
 /** Temporary settings for a solve.
@@ -170,32 +215,24 @@ DEFINE_CALLBACK(Checktime, SolveInterrupter const*, int,
  * This includes for example callbacks.
  * This is a RAII class that will undo all settings when it goes out of scope.
  */
-class SolveContext {
-  /** Mutex for accessing callbackException. */
-  absl::Mutex mutable mutex;
-  /** Capturing of exceptions in callbacks.
-   * We cannot let exceptions escape from callbacks since that would just
-   * unroll the stack until some function that catches the exception.
-   * In particular, it would bypass any cleanup code implemented in the C code
-   * of the solver. So we must capture exceptions, interrupt the solve and
-   * handle the exception once the solver returned.
-   */
-  std::exception_ptr mutable callbackException;
+class ScopedSolverContext {
+  /** Solver context data shared by callbacks */
+  SharedSolveContext shared_ctx;
   /** Installed message callback (if any). */
-  ScopedCallback<MessageTraits> messageCallback;
+  MessageScopedCb messageCallback;
   /** Installed interrupter (if any). */
-  ScopedCallback<ChecktimeTraits> checktimeCallback;
+  ChecktimeScopedCb checktimeCallback;
   /** If we installed an interrupter callback then this removes it. */
   std::function<void()> removeInterrupterCallback;
 
  public:
-  Xpress* const xpress;
-  SolveContext(Xpress* xpress)
-      : xpress(xpress), removeInterrupterCallback(nullptr) {}
+  ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
+    shared_ctx.xpress = xpress;
+  }
   absl::Status AddCallbacks(MessageCallback message_callback,
                             const SolveInterrupter* interrupter) {
     if (message_callback)
-      RETURN_IF_ERROR(messageCallback.Add(this, message_callback));
+      RETURN_IF_ERROR(messageCallback.Add(&shared_ctx, message_callback));
     if (interrupter) {
       /* To be extra safe we add two ways to interrupt Xpress:
        * 1. We register a checktime callback that polls the interrupter.
@@ -204,10 +241,10 @@ class SolveContext {
        * Eventually we should assess whether the first thing is a performance
        * hit and if so, remove it.
        */
-      RETURN_IF_ERROR(checktimeCallback.Add(this, interrupter));
+      RETURN_IF_ERROR(checktimeCallback.Add(&shared_ctx, interrupter));
       SolveInterrupter::CallbackId const id =
           interrupter->AddInterruptionCallback(
-              [=] { CHECK_OK(xpress->Interrupt(XPRS_STOP_USER)); });
+              [=] { CHECK_OK(shared_ctx.xpress->Interrupt(XPRS_STOP_USER)); });
       removeInterrupterCallback = [=] {
         interrupter->RemoveInterruptionCallback(id);
       };
@@ -228,52 +265,14 @@ class SolveContext {
    * absl::Status ApplyParameters(const ModelSolveParametersProto&
    * model_parameters);
    */
-  /** Interrupt the current solve with the given reason. */
-  void Interrupt(int reason) { CHECK_OK(xpress->Interrupt(reason)); }
-  /** Reraise any pending exception from a callback. */
-  void ReraiseCallbackException() {
-    if (callbackException) {
-      std::exception_ptr old = callbackException;
-      callbackException = nullptr;
-      std::rethrow_exception(old);
-    }
-  }
-  /** Set exception raised in callback.
-   * Will not overwrite an existing pending exception.
-   */
-  void SetCallbackException(std::exception_ptr ex) {
-    const absl::MutexLock lock(&mutex);
-    if (!callbackException) callbackException = ex;
-  }
 
-  ~SolveContext() {
+  ~ScopedSolverContext() {
     if (removeInterrupterCallback) removeInterrupterCallback();
     // If pending callback exception was not reraised yet then do it now
-    if (callbackException) std::rethrow_exception(callbackException);
+    if (shared_ctx.callbackException)
+      std::rethrow_exception(shared_ctx.callbackException);
   }
 };
-
-template <typename T>
-absl::Status ScopedCallback<T>::Add(SolveContext* ctx,
-                                    typename T::DataType data) {
-  RETURN_IF_ERROR(T::Add(ctx->xpress, reinterpret_cast<void*>(this)));
-  callbackData = data;
-  context = ctx;
-  return absl::OkStatus();
-}
-template <typename T>
-void ScopedCallback<T>::Interrupt(int reason) {
-  context->Interrupt(reason);
-}
-template <typename T>
-void ScopedCallback<T>::SetCallbackException(std::exception_ptr ex) {
-  context->SetCallbackException(ex);
-}
-
-template <typename T>
-ScopedCallback<T>::~ScopedCallback() {
-  if (context) T::Remove(context->xpress, reinterpret_cast<void*>(this));
-}
 
 absl::Status CheckParameters(const SolveParametersProto& parameters) {
   std::vector<std::string> warnings;
@@ -482,9 +481,6 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
 
   RETURN_IF_ERROR(CheckParameters(parameters));
 
-  SolveContext solveContext(xpress_.get());
-  RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
   {
@@ -498,8 +494,13 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     RETURN_IF_ERROR(SetXpressStartingBasis(model_parameters.initial_basis()));
   }
 
-  RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
-  solveContext.ReraiseCallbackException();
+  // Register callbacks and create scoped context to automatically if an
+  // exception has been thrown during optimization.
+  {
+    ScopedSolverContext solveContext(xpress_.get());
+    RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
+    RETURN_IF_ERROR(CallXpressSolve(parameters)) << "Error during XPRESS solve";
+  }
 
   ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
@@ -953,7 +954,7 @@ absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                          MessageCallback message_callback,
                                          const SolveInterrupter* interrupter) {
-  SolveContext solveContext(xpress_.get());
+  ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
 
   return absl::UnimplementedError(
