@@ -13,4 +13,4 @@
 # limitations under the License.
 
 set -x
-exec {binary_path} {args} "$@"
+exec {binary_path} "$@"

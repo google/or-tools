@@ -70,8 +70,9 @@ def run_binary_test(
     binary_pkg, binary_name = parse_label(binary)
     binary_path = "/".join([binary_pkg, binary_name])
 
-    # Include args in the generated shell script, this is to make sure
-    # if the blaze-bin/.../test get run manually, the args are still used.
+    # We would like to Include args in the generated shell script, so the "blaze-bin/.../test" can
+    # be run manually. Unfortunately expand_template does not resolve $(location) and other Make
+    # variables so we only pass them in `sh_test` below.
     expand_template(
         name = name + "_gensh",
         template = template,
@@ -81,7 +82,6 @@ def run_binary_test(
             "{package_name}": native.package_name(),
             "{target}": name,
             "{binary_path}": binary_path,
-            "{args}": " ".join(args),
         },
     )
     sh_test(
@@ -89,5 +89,6 @@ def run_binary_test(
         testonly = 1,
         srcs = [shell_script],
         data = data + [binary],
+        args = args,
         **kwargs
     )
