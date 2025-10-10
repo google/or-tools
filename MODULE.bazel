@@ -34,7 +34,7 @@ bazel_dep(name = "rules_java", version = "8.14.0")
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_python", version = "1.5.1")
+bazel_dep(name = "rules_python", version = "1.6.3")
 bazel_dep(name = "rules_shell", version = "0.6.1")
 
 # OR-Tools C++ dependencies
@@ -87,9 +87,10 @@ SUPPORTED_PYTHON_VERSIONS = [
     "3.11",
     "3.12",
     "3.13",
+    "3.14",
 ]
 
-DEFAULT_PYTHON = "3.11"
+DEFAULT_PYTHON = "3.13"
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 
