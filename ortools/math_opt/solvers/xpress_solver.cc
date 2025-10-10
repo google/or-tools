@@ -301,8 +301,14 @@ class ScopedSolverContext {
       RETURN_IF_ERROR(Set(XPRS_TIMELIMIT, absl::ToDoubleSeconds(time_limit)));
     }
     if (parameters.has_iteration_limit()) {
-      RETURN_IF_ERROR(Set(XPRS_LPITERLIMIT, parameters.iteration_limit()));
-      RETURN_IF_ERROR(Set(XPRS_BARITERLIMIT, parameters.iteration_limit()));
+      if (parameters.lp_algorithm() == LP_ALGORITHM_FIRST_ORDER) {
+        // Iteration limit for PDHG is BARHGMAXRESTARTS
+        RETURN_IF_ERROR(
+            Set(XPRS_BARHGMAXRESTARTS, parameters.iteration_limit()));
+      } else {
+        RETURN_IF_ERROR(Set(XPRS_LPITERLIMIT, parameters.iteration_limit()));
+        RETURN_IF_ERROR(Set(XPRS_BARITERLIMIT, parameters.iteration_limit()));
+      }
     }
     if (parameters.has_node_limit()) {
       RETURN_IF_ERROR(Set(XPRS_MAXNODE, parameters.node_limit()));
