@@ -1401,21 +1401,27 @@ void RoutingModel::AddRouteConstraint(
 void RoutingModel::FinalizeAllowedVehicles() {
   const std::vector<RoutingDimension*> unary_dimensions = GetUnaryDimensions();
 
-  // Pre-process the node transit values to find the maximum transit for each
-  // unary dimension to avoid unnecessary computations below.
-  std::vector<int64_t> dimension_max_node_transit(unary_dimensions.size(), 0);
-  for (int i = 0; i < unary_dimensions.size(); ++i) {
-    int64_t& max_node_transit = dimension_max_node_transit[i];
-    const RoutingDimension* dimension = unary_dimensions[i];
+  // Pre-process the node transit values to find, for each unary dimension, the
+  // maximum positive transit and the most negative transit. These bounds let us
+  // skip per-node checks when a vehicle's capacity and slack dominate them.
+  const int num_dimensions = unary_dimensions.size();
+  std::vector<int64_t> dimension_max_positive_transit(num_dimensions, 0);
+  std::vector<int64_t> dimension_min_transit(num_dimensions, 0);
+  std::vector<int64_t> dimension_slack_max(num_dimensions, 0);
+  for (int i = 0; i < num_dimensions; ++i) {
+    int64_t& max_positive_transit = dimension_max_positive_transit[i];
+    int64_t& min_transit = dimension_min_transit[i];
+    const RoutingDimension* const dimension = unary_dimensions[i];
+    dimension_slack_max[i] = dimension->SlackVar(0)->Max();
     for (int node = 0; node < Size(); ++node) {
       if (IsStart(node)) continue;
       for (int callback_index : dimension->class_evaluators_) {
-        // Only consider positive transits for capacity checks.
-        // Negative transits are used for reload/load tracking and should not
-        // trigger vehicle exclusions based on capacity.
         const int64_t transit = UnaryTransitCallbackOrNull(callback_index)(node);
-        if (transit > 0) {
-          max_node_transit = std::max(max_node_transit, transit);
+        if (transit > max_positive_transit) {
+          max_positive_transit = transit;
+        }
+        if (transit < min_transit) {
+          min_transit = transit;
         }
       }
     }
@@ -1431,7 +1437,13 @@ void RoutingModel::FinalizeAllowedVehicles() {
           dim->GetUnaryTransitEvaluator(vehicle);
       DCHECK(transit_evaluator != nullptr);
       const int64_t capacity = dim->vehicle_capacities()[vehicle];
-      if (capacity >= dimension_max_node_transit[i]) continue;
+      const int64_t slack_max = dimension_slack_max[i];
+      const int64_t min_allowed_transit =
+          CapSub(0, CapAdd(capacity, slack_max));
+      if (capacity >= dimension_max_positive_transit[i] &&
+          dimension_min_transit[i] >= min_allowed_transit) {
+        continue;
+      }
 
       for (int node = 0; node < Size(); ++node) {
         if (IsStart(node)) continue;
@@ -1440,11 +1452,11 @@ void RoutingModel::FinalizeAllowedVehicles() {
           // The vehicle is already forbidden for this node.
           continue;
         }
-        // Fix for issue #4133: Skip capacity check for negative transits.
-        // Negative transits are used for reload dimensions and load tracking,
-        // not actual cargo requirements.
+        // Positive transits must fit within the vehicle capacity. Negative
+        // transits can only decrease the cumul as far as the capacity supplemented
+        // by the dimension slack allows.
         const int64_t transit = transit_evaluator(node);
-        if (transit <= 0 || transit <= capacity) continue;
+        if (transit <= capacity && transit >= min_allowed_transit) continue;
 
         // 'node' can't be served by 'vehicle', so we remove the 'vehicle'
         // from the node's set of allowed_vehicles_.
