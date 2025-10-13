@@ -13,26 +13,19 @@
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
-load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
+
+package(default_visibility = ["//visibility:public"])
 
 py_binary(
     name = "arc_flow_cutting_stock_sat_py3",
     srcs = ["arc_flow_cutting_stock_sat.py"],
     main = "arc_flow_cutting_stock_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
         requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/linear_solver/python:model_builder",
+        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -41,42 +34,15 @@ py_binary(
     srcs = ["assignment_with_constraints_sat.py"],
     main = "assignment_with_constraints_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "assignment_with_constraints_sat_py_test",
     size = "medium",
-    srcs = ["assignment_with_constraints_sat.py"],
-    main = "assignment_with_constraints_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":assignment_with_constraints_sat_py3",
 )
 
 py_binary(
@@ -84,42 +50,15 @@ py_binary(
     srcs = ["balance_group_sat.py"],
     main = "balance_group_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "balance_group_sat_py_test",
     size = "medium",
-    srcs = ["balance_group_sat.py"],
-    main = "balance_group_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":balance_group_sat_py3",
 )
 
 py_binary(
@@ -127,42 +66,16 @@ py_binary(
     srcs = ["bus_driver_scheduling_sat.py"],
     main = "bus_driver_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "bus_driver_scheduling_sat_py_test",
     size = "medium",
-    srcs = ["bus_driver_scheduling_sat.py"],
-    main = "bus_driver_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    args = ["--params=max_time_in_seconds:40"],
+    binary = ":bus_driver_scheduling_sat_py3",
 )
 
 py_binary(
@@ -170,42 +83,15 @@ py_binary(
     srcs = ["car_sequencing_optimization_sat.py"],
     main = "car_sequencing_optimization_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "car_sequencing_optimization_sat_py_test",
-    size = "medium",
-    srcs = ["car_sequencing_optimization_sat.py"],
-    main = "car_sequencing_optimization_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    size = "small",
+    binary = ":car_sequencing_optimization_sat_py3",
 )
 
 py_binary(
@@ -213,42 +99,15 @@ py_binary(
     srcs = ["chemical_balance_sat.py"],
     main = "chemical_balance_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "chemical_balance_sat_py_test",
     size = "medium",
-    srcs = ["chemical_balance_sat.py"],
-    main = "chemical_balance_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":chemical_balance_sat_py3",
 )
 
 py_binary(
@@ -256,42 +115,15 @@ py_binary(
     srcs = ["clustering_sat.py"],
     main = "clustering_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "clustering_sat_py_test",
     size = "medium",
-    srcs = ["clustering_sat.py"],
-    main = "clustering_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":clustering_sat_py3",
 )
 
 py_binary(
@@ -299,85 +131,27 @@ py_binary(
     srcs = ["cover_rectangle_sat.py"],
     main = "cover_rectangle_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "cover_rectangle_sat_py_test",
     size = "medium",
-    srcs = ["cover_rectangle_sat.py"],
-    main = "cover_rectangle_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":cover_rectangle_sat_py3",
 )
 
 py_binary(
     name = "flexible_job_shop_sat_py3",
     srcs = ["flexible_job_shop_sat.py"],
     main = "flexible_job_shop_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    deps = ["//ortools/sat/python:cp_model"],
 )
 
-py_test(
+run_binary_test(
     name = "flexible_job_shop_sat_py_test",
-    size = "medium",
-    srcs = ["flexible_job_shop_sat.py"],
-    main = "flexible_job_shop_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":flexible_job_shop_sat_py3",
 )
 
 py_binary(
@@ -385,42 +159,15 @@ py_binary(
     srcs = ["gate_scheduling_sat.py"],
     main = "gate_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
+        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
     ],
 )
 
-py_test(
+run_binary_test(
     name = "gate_scheduling_sat_py_test",
-    size = "medium",
-    srcs = ["gate_scheduling_sat.py"],
-    main = "gate_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":gate_scheduling_sat_py3",
 )
 
 py_binary(
@@ -428,42 +175,15 @@ py_binary(
     srcs = ["golomb_sat.py"],
     main = "golomb_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "golomb_sat_py_test",
     size = "medium",
-    srcs = ["golomb_sat.py"],
-    main = "golomb_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":golomb_sat_py3",
 )
 
 py_binary(
@@ -471,85 +191,27 @@ py_binary(
     srcs = ["hidato_sat.py"],
     main = "hidato_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
+        requirement("absl-py"),
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
     ],
 )
 
-py_test(
+run_binary_test(
     name = "hidato_sat_py_test",
-    size = "medium",
-    srcs = ["hidato_sat.py"],
-    main = "hidato_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":hidato_sat_py3",
 )
 
 py_binary(
     name = "jobshop_ft06_distance_sat_py3",
     srcs = ["jobshop_ft06_distance_sat.py"],
     main = "jobshop_ft06_distance_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    deps = ["//ortools/sat/python:cp_model"],
 )
 
-py_test(
+run_binary_test(
     name = "jobshop_ft06_distance_sat_py_test",
-    size = "medium",
-    srcs = ["jobshop_ft06_distance_sat.py"],
-    main = "jobshop_ft06_distance_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":jobshop_ft06_distance_sat_py3",
 )
 
 py_binary(
@@ -557,42 +219,14 @@ py_binary(
     srcs = ["jobshop_ft06_sat.py"],
     main = "jobshop_ft06_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
         "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
     ],
 )
 
-py_test(
+run_binary_test(
     name = "jobshop_ft06_sat_py_test",
-    size = "medium",
-    srcs = ["jobshop_ft06_sat.py"],
-    main = "jobshop_ft06_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":jobshop_ft06_sat_py3",
 )
 
 py_binary(
@@ -600,42 +234,15 @@ py_binary(
     srcs = ["jobshop_with_maintenance_sat.py"],
     main = "jobshop_with_maintenance_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "jobshop_with_maintenance_sat_py_test",
     size = "medium",
-    srcs = ["jobshop_with_maintenance_sat.py"],
-    main = "jobshop_with_maintenance_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":jobshop_with_maintenance_sat_py3",
 )
 
 py_binary(
@@ -643,42 +250,17 @@ py_binary(
     srcs = ["knapsack_2d_sat.py"],
     main = "knapsack_2d_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "knapsack_2d_sat_py_test",
     size = "medium",
-    srcs = ["knapsack_2d_sat.py"],
-    main = "knapsack_2d_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":knapsack_2d_sat_py3",
 )
 
 py_binary(
@@ -686,44 +268,17 @@ py_binary(
     srcs = ["line_balancing_sat.py"],
     main = "line_balancing_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "line_balancing_sat_salbp_20_1_py_test",
-    size = "medium",
-    srcs = ["line_balancing_sat.py"],
-    args = ["--input $(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+    args = ["--input=$(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+    binary = ":line_balancing_sat_py3",
     data = ["//examples/python/testdata:salbp_20_1.alb"],
-    main = "line_balancing_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    # test_grep_lines = ["objective: 3"],
 )
 
 py_binary(
@@ -731,42 +286,15 @@ py_binary(
     srcs = ["maximize_combinations_sat.py"],
     main = "maximize_combinations_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "maximize_combinations_sat_py_test",
     size = "medium",
-    srcs = ["maximize_combinations_sat.py"],
-    main = "maximize_combinations_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":maximize_combinations_sat_py3",
 )
 
 py_binary(
@@ -774,42 +302,14 @@ py_binary(
     srcs = ["maze_escape_sat.py"],
     main = "maze_escape_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "maze_escape_sat_py_test",
-    size = "medium",
-    srcs = ["maze_escape_sat.py"],
-    main = "maze_escape_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":maze_escape_sat_py3",
 )
 
 py_binary(
@@ -817,42 +317,14 @@ py_binary(
     srcs = ["music_playlist_sat.py"],
     main = "music_playlist_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+	"//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "music_playlist_sat_py_test",
-    size = "medium",
-    srcs = ["music_playlist_sat.py"],
-    main = "music_playlist_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":music_playlist_sat_py3",
 )
 
 py_binary(
@@ -860,42 +332,15 @@ py_binary(
     srcs = ["no_wait_baking_scheduling_sat.py"],
     main = "no_wait_baking_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "no_wait_baking_scheduling_sat_py_test",
     size = "medium",
-    srcs = ["no_wait_baking_scheduling_sat.py"],
-    main = "no_wait_baking_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":no_wait_baking_scheduling_sat_py3",
 )
 
 py_binary(
@@ -903,42 +348,15 @@ py_binary(
     srcs = ["pell_equation_sat.py"],
     main = "pell_equation_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "pell_equation_sat_py_test",
     size = "medium",
-    srcs = ["pell_equation_sat.py"],
-    main = "pell_equation_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":pell_equation_sat_py3",
 )
 
 py_binary(
@@ -946,42 +364,15 @@ py_binary(
     srcs = ["pentominoes_sat.py"],
     main = "pentominoes_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "pentominoes_sat_py_test",
     size = "medium",
-    srcs = ["pentominoes_sat.py"],
-    main = "pentominoes_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":pentominoes_sat_py3",
 )
 
 py_binary(
@@ -989,42 +380,15 @@ py_binary(
     srcs = ["prize_collecting_tsp_sat.py"],
     main = "prize_collecting_tsp_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "prize_collecting_tsp_sat_py_test",
     size = "medium",
-    srcs = ["prize_collecting_tsp_sat.py"],
-    main = "prize_collecting_tsp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":prize_collecting_tsp_sat_py3",
 )
 
 py_binary(
@@ -1032,42 +396,15 @@ py_binary(
     srcs = ["prize_collecting_vrp_sat.py"],
     main = "prize_collecting_vrp_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "prize_collecting_vrp_sat_py_test",
     size = "medium",
-    srcs = ["prize_collecting_vrp_sat.py"],
-    main = "prize_collecting_vrp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":prize_collecting_vrp_sat_py3",
 )
 
 py_binary(
@@ -1075,42 +412,31 @@ py_binary(
     srcs = ["qubo_sat.py"],
     main = "qubo_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "qubo_sat_py_test",
     size = "medium",
-    srcs = ["qubo_sat.py"],
-    main = "qubo_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":qubo_sat_py3",
+)
+
+run_binary_test(
+    name = "rcpsp_sat_c1510_1_py_test",
+    args = ["--input=$(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
+    binary = ":rcpsp_sat_py3",
+    data = ["//ortools/scheduling/testdata:c1510_1.mm.txt"],
+    # test_grep_lines = ["objective: 21"],
+)
+
+run_binary_test(
+    name = "rcpsp_sat_j301_1_py_test",
+    args = ["--input=$(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
+    binary = ":rcpsp_sat_py3",
+    data = ["//ortools/scheduling/testdata:j301_1.sm"],
+    # test_grep_lines = ["objective: 43"],
 )
 
 py_binary(
@@ -1118,67 +444,10 @@ py_binary(
     srcs = ["rcpsp_sat.py"],
     main = "rcpsp_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
         "//ortools/scheduling:rcpsp_py_pb2",
         "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
-)
-
-py_test(
-    name = "rcpsp_sat_j301_1_py_test",
-    size = "medium",
-    srcs = ["rcpsp_sat.py"],
-    args = ["--input $(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
-    data = ["//ortools/scheduling/testdata:j301_1.sm"],
-    main = "rcpsp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
         "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
-)
-
-py_test(
-    name = "rcpsp_sat_c1510_1_py_test",
-    size = "medium",
-    srcs = ["rcpsp_sat.py"],
-    args = ["--input $(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
-    data = ["//ortools/scheduling/testdata:c1510_1.mm.txt"],
-    main = "rcpsp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
     ],
 )
 
@@ -1187,42 +456,15 @@ py_binary(
     srcs = ["shift_scheduling_sat.py"],
     main = "shift_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "shift_scheduling_sat_py_test",
-    size = "medium",
-    srcs = ["shift_scheduling_sat.py"],
-    main = "shift_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    args = ["--params=max_time_in_seconds:10"],
+    binary = ":shift_scheduling_sat_py3",
 )
 
 py_binary(
@@ -1230,42 +472,15 @@ py_binary(
     srcs = ["single_machine_scheduling_with_setup_release_due_dates_sat.py"],
     main = "single_machine_scheduling_with_setup_release_due_dates_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "single_machine_scheduling_with_setup_release_due_dates_sat_py_test",
     size = "medium",
-    srcs = ["single_machine_scheduling_with_setup_release_due_dates_sat.py"],
-    main = "single_machine_scheduling_with_setup_release_due_dates_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":single_machine_scheduling_with_setup_release_due_dates_sat_py3",
 )
 
 py_binary(
@@ -1273,42 +488,14 @@ py_binary(
     srcs = ["spread_robots_sat.py"],
     main = "spread_robots_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "spread_robots_sat_py_test",
-    size = "medium",
-    srcs = ["spread_robots_sat.py"],
-    main = "spread_robots_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":spread_robots_sat_py3",
 )
 
 py_binary(
@@ -1316,85 +503,26 @@ py_binary(
     srcs = ["steel_mill_slab_sat.py"],
     main = "steel_mill_slab_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "steel_mill_slab_sat_py_test",
-    size = "medium",
-    srcs = ["steel_mill_slab_sat.py"],
-    main = "steel_mill_slab_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":steel_mill_slab_sat_py3",
 )
 
 py_binary(
     name = "sudoku_sat_py3",
     srcs = ["sudoku_sat.py"],
     main = "sudoku_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    deps = ["//ortools/sat/python:cp_model"],
 )
 
-py_test(
+run_binary_test(
     name = "sudoku_sat_py_test",
-    size = "medium",
-    srcs = ["sudoku_sat.py"],
-    main = "sudoku_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":sudoku_sat_py3",
 )
 
 py_binary(
@@ -1402,42 +530,15 @@ py_binary(
     srcs = ["task_allocation_sat.py"],
     main = "task_allocation_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "task_allocation_sat_py_test",
     size = "medium",
-    srcs = ["task_allocation_sat.py"],
-    main = "task_allocation_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":task_allocation_sat_py3",
 )
 
 py_binary(
@@ -1445,42 +546,15 @@ py_binary(
     srcs = ["tasks_and_workers_assignment_sat.py"],
     main = "tasks_and_workers_assignment_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "tasks_and_workers_assignment_sat_py_test",
     size = "medium",
-    srcs = ["tasks_and_workers_assignment_sat.py"],
-    main = "tasks_and_workers_assignment_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":tasks_and_workers_assignment_sat_py3",
 )
 
 py_binary(
@@ -1488,85 +562,29 @@ py_binary(
     srcs = ["test_scheduling_sat.py"],
     main = "test_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
         requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "test_scheduling_sat_py_test",
     size = "medium",
-    srcs = ["test_scheduling_sat.py"],
-    main = "test_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":test_scheduling_sat_py3",
 )
 
 py_binary(
     name = "tsp_sat_py3",
     srcs = ["tsp_sat.py"],
     main = "tsp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    deps = ["//ortools/sat/python:cp_model"],
 )
 
-py_test(
+run_binary_test(
     name = "tsp_sat_py_test",
     size = "medium",
-    srcs = ["tsp_sat.py"],
-    main = "tsp_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":tsp_sat_py3",
 )
 
 py_binary(
@@ -1574,42 +592,15 @@ py_binary(
     srcs = ["vendor_scheduling_sat.py"],
     main = "vendor_scheduling_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "vendor_scheduling_sat_py_test",
     size = "medium",
-    srcs = ["vendor_scheduling_sat.py"],
-    main = "vendor_scheduling_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":vendor_scheduling_sat_py3",
 )
 
 py_binary(
@@ -1617,83 +608,25 @@ py_binary(
     srcs = ["wedding_optimal_chart_sat.py"],
     main = "wedding_optimal_chart_sat.py",
     deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
         requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
+        "//ortools/sat/python:cp_model",
     ],
 )
 
-py_test(
+run_binary_test(
     name = "wedding_optimal_chart_sat_py_test",
     size = "medium",
-    srcs = ["wedding_optimal_chart_sat.py"],
-    main = "wedding_optimal_chart_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":wedding_optimal_chart_sat_py3",
 )
 
 py_binary(
     name = "zebra_sat_py3",
     srcs = ["zebra_sat.py"],
     main = "zebra_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    deps = ["//ortools/sat/python:cp_model"],
 )
 
-py_test(
+run_binary_test(
     name = "zebra_sat_py_test",
-    size = "medium",
-    srcs = ["zebra_sat.py"],
-    main = "zebra_sat.py",
-    deps = [
-        "//ortools/init/python:init",
-        "//ortools/linear_solver/python:model_builder",
-        "//ortools/sat/colab:visualization",
-        "//ortools/sat/python:cp_model",
-        "//ortools/scheduling:rcpsp_py_pb2",
-        "//ortools/scheduling/python:rcpsp",
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("pandas"),
-        requirement("protobuf"),
-        requirement("python_dateutil"),
-        requirement("pytz"),
-        requirement("six"),
-    ],
+    binary = ":zebra_sat_py3",
 )
