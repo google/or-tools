@@ -412,6 +412,7 @@ cc_library(
         ":status",
         ":variables_info",
         "//ortools/base",
+        "//ortools/base:numbers",
         "//ortools/base:timer",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",

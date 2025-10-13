@@ -310,6 +310,7 @@ cc_library(
     hdrs = ["sparse_permutation.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:numbers",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],

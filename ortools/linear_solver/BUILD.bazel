@@ -18,6 +18,8 @@ load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
+# For all the linear_solver_interface_tests rules.
+
 package(default_visibility = ["//visibility:public"])
 
 # OSS solvers
@@ -28,9 +30,7 @@ bool_flag(
 
 config_setting(
     name = "use_bop",
-    flag_values = {
-        ":with_bop": "true",
-    },
+    flag_values = {":with_bop": "true"},
 )
 
 bool_flag(
@@ -40,9 +40,7 @@ bool_flag(
 
 config_setting(
     name = "use_cbc",
-    flag_values = {
-        ":with_cbc": "true",
-    },
+    flag_values = {":with_cbc": "true"},
 )
 
 bool_flag(
@@ -52,9 +50,7 @@ bool_flag(
 
 config_setting(
     name = "use_clp",
-    flag_values = {
-        ":with_clp": "true",
-    },
+    flag_values = {":with_clp": "true"},
 )
 
 bool_flag(
@@ -64,9 +60,7 @@ bool_flag(
 
 config_setting(
     name = "use_cp_sat",
-    flag_values = {
-        ":with_cp_sat": "true",
-    },
+    flag_values = {":with_cp_sat": "true"},
 )
 
 bool_flag(
@@ -76,9 +70,7 @@ bool_flag(
 
 config_setting(
     name = "use_glop",
-    flag_values = {
-        ":with_glop": "true",
-    },
+    flag_values = {":with_glop": "true"},
 )
 
 bool_flag(
@@ -88,9 +80,7 @@ bool_flag(
 
 config_setting(
     name = "use_glpk",
-    flag_values = {
-        ":with_glpk": "true",
-    },
+    flag_values = {":with_glpk": "true"},
 )
 
 bool_flag(
@@ -100,9 +90,7 @@ bool_flag(
 
 config_setting(
     name = "use_highs",
-    flag_values = {
-        ":with_highs": "true",
-    },
+    flag_values = {":with_highs": "true"},
 )
 
 bool_flag(
@@ -112,9 +100,7 @@ bool_flag(
 
 config_setting(
     name = "use_pdlp",
-    flag_values = {
-        ":with_pdlp": "true",
-    },
+    flag_values = {":with_pdlp": "true"},
 )
 
 bool_flag(
@@ -124,9 +110,7 @@ bool_flag(
 
 config_setting(
     name = "use_scip",
-    flag_values = {
-        ":with_scip": "true",
-    },
+    flag_values = {":with_scip": "true"},
 )
 
 # Prorietary solvers
@@ -137,11 +121,10 @@ bool_flag(
 
 config_setting(
     name = "use_cplex",
-    flag_values = {
-        ":with_cplex": "true",
-    },
+    flag_values = {":with_cplex": "true"},
 )
 
+# Linear solver proto, used for (efficient!) model storage.
 proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
@@ -155,7 +138,6 @@ cc_proto_library(
 
 py_proto_library(
     name = "linear_solver_py_pb2",
-    visibility = ["//visibility:public"],
     deps = [":linear_solver_proto"],
 )
 
@@ -324,30 +306,6 @@ cc_library(
 )
 
 cc_library(
-    name = "model_validator",
-    srcs = ["model_validator.cc"],
-    hdrs = ["model_validator.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":linear_solver_cc_proto",
-        "//ortools/base",
-        "//ortools/base:accurate_sum",
-        "//ortools/base:map_util",
-        "//ortools/port:file",
-        "//ortools/port:proto_utils",
-        "//ortools/util:fp_utils",
-        "//ortools/util:lazy_mutable_copy",
-        "@abseil-cpp//absl/container:flat_hash_map",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-        "@abseil-cpp//absl/types:optional",
-    ],
-)
-
-cc_library(
     name = "gurobi_util",
     srcs = ["gurobi_util.cc"],
     hdrs = ["gurobi_util.h"],
@@ -363,6 +321,78 @@ cc_library(
     ],
 )
 
+# Model exporter that can write MPS and LP file formats from an MPModelProto.
+cc_library(
+    name = "model_exporter",
+    srcs = ["model_exporter.cc"],
+    hdrs = ["model_exporter.h"],
+    deps = [
+        ":linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "model_validator",
+    srcs = ["model_validator.cc"],
+    hdrs = ["model_validator.h"],
+    deps = [
+        ":linear_solver_cc_proto",
+        "//ortools/base:accurate_sum",
+        "//ortools/base:map_util",
+        "//ortools/port:file",
+        "//ortools/port:proto_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:optional",
+    ],
+)
+
+cc_binary(
+    name = "solve",
+    srcs = ["solve.cc"],
+    deps = [
+        ":linear_solver",
+        ":linear_solver_cc_proto",
+        ":model_exporter",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:recordio",
+        "//ortools/lp_data:lp_parser",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/lp_data:sol_reader",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/util:file_util",
+        "//ortools/util:sigint",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+# Benchmarks.
+
 cc_library(
     name = "scip_helper_macros",
     hdrs = ["scip_helper_macros.h"],
@@ -373,54 +403,14 @@ cc_library(
     ],
 )
 
-# Model exporter that can write MPS and LP file formats from an MPModelProto.
-cc_library(
-    name = "model_exporter",
-    srcs = ["model_exporter.cc"],
-    hdrs = ["model_exporter.h"],
-    deps = [
-        ":linear_solver_cc_proto",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "//ortools/base:status_macros",
-        "//ortools/util:fp_utils",
-        "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
-    ],
-)
-
-cc_binary(
-    name = "solve",
-    srcs = ["solve.cc"],
-    deps = [
-        ":linear_solver",
-        ":linear_solver_cc_proto",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/lp_data:lp_parser",
-        "//ortools/lp_data:mps_reader",
-        "//ortools/lp_data:sol_reader",
-        "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/log:flags",
-        "@abseil-cpp//absl/status",
-        "@abseil-cpp//absl/status:statusor",
-        "@abseil-cpp//absl/time",
-    ],
-)
-
 cc_library(
     name = "solve_mp_model",
     srcs = ["solve_mp_model.cc"],
     hdrs = ["solve_mp_model.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",
+        "//ortools/util:lazy_mutable_copy",
         "//ortools/util:solve_interrupter",
     ],
 )
