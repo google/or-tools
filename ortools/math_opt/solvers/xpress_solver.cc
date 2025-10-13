@@ -73,7 +73,7 @@ struct SharedSolveContext {
  */
 template <typename ProtoT, typename CbT>
 class ScopedCallback {
-  using proto_type = typename ProtoT::proto_type; 
+  using proto_type = typename ProtoT::proto_type;
   SharedSolveContext* ctx;
 
   ScopedCallback(ScopedCallback const&) = delete;
@@ -101,7 +101,8 @@ class ScopedCallback {
       if constexpr (std::is_convertible_v<R, int>) return static_cast<int>(1);
     }
   };
-  static constexpr proto_type low_level_cb = ExWrapper<proto_type>::low_level_cb;
+  static constexpr proto_type low_level_cb =
+      ExWrapper<proto_type>::low_level_cb;
 
  public:
   CbT or_tools_cb;
@@ -143,7 +144,8 @@ class ScopedCallback {
  *    CB_RET_TYPE  return type of the low-level Xpress callback.
  *    (...ARGS)    arguments to the Xpress low-level callback.
  *    <code>       code for the low-level Xpress callback
- * The effect of the macro is an alias CB_NAME####ScopedCb = ScopedCallback<...>.
+ * The effect of the macro is an alias CB_NAME####ScopedCb =
+ * ScopedCallback<...>.
  */
 #define DEFINE_SCOPED_CB(CB_NAME, ORTOOLS_CB, CB_RET_TYPE, ARGS)         \
   CB_RET_TYPE CB_NAME##GlueFn ARGS;                                      \
