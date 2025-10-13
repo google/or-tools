@@ -16,6 +16,7 @@
 """Solves an assignment problem for given group of workers."""
 # [START import]
 from ortools.sat.python import cp_model
+
 # [END import]
 
 

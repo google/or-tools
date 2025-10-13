@@ -17,12 +17,12 @@ CMD ["/bin/sh"]
 ##  OR-TOOLS  ##
 ################
 FROM env AS devel
-ENV GIT_URL https://github.com/google/or-tools
+ENV GIT_URL=https://github.com/google/or-tools
 
 ARG GIT_BRANCH
-ENV GIT_BRANCH ${GIT_BRANCH:-main}
+ENV GIT_BRANCH=${GIT_BRANCH:-main}
 ARG GIT_SHA1
-ENV GIT_SHA1 ${GIT_SHA1:-unknown}
+ENV GIT_SHA1=${GIT_SHA1:-unknown}
 
 # Download sources
 # use GIT_SHA1 to modify the command
@@ -33,9 +33,9 @@ RUN git clone -b "${GIT_BRANCH}" --single-branch "$GIT_URL" /project \
 WORKDIR /project
 
 # Copy build script and setup env
-ENV PLATFORM x86_64
+ENV PLATFORM=x86_64
 ARG PYTHON_VERSION
-ENV PYTHON_VERSION ${PYTHON_VERSION:-3}
+ENV PYTHON_VERSION=${PYTHON_VERSION:-3}
 COPY build-musllinux.sh .
 RUN chmod a+x "build-musllinux.sh"
 

@@ -119,12 +119,6 @@ struct SearchHeuristics {
 // given model.
 void ConfigureSearchHeuristics(Model* model);
 
-// Callbacks that will be called when the search goes back to level 0.
-// Callbacks should return false if the propagation fails.
-struct LevelZeroCallbackHelper {
-  std::vector<std::function<bool()>> callbacks;
-};
-
 // Resets the solver to the given assumptions before calling
 // SolveIntegerProblem().
 SatSolver::Status ResetAndSolveIntegerProblem(
@@ -346,7 +340,7 @@ class ContinuousProber {
 
  private:
   static const int kTestLimitPeriod = 20;
-  static const int kLogPeriod = 1000;
+  static const int kLogPeriod = 5000;
   static const int kSyncPeriod = 50;
 
   SatSolver::Status ShaveLiteral(Literal literal);

@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
@@ -45,8 +46,8 @@
 namespace operations_research {
 namespace math_opt {
 
-absl::StatusOr<std::unique_ptr<ModelStorage>> ModelStorage::FromModelProto(
-    const ModelProto& model_proto) {
+absl::StatusOr<absl_nonnull std::unique_ptr<ModelStorage>>
+ModelStorage::FromModelProto(const ModelProto& model_proto) {
   // We don't check names since ModelStorage does not do so before exporting
   // models. Thus a model built by ModelStorage can contain duplicated
   // names. And since we use FromModelProto() to implement Clone(), we must make
@@ -143,7 +144,7 @@ void ModelStorage::UpdateLinearConstraintCoefficients(
   }
 }
 
-std::unique_ptr<ModelStorage> ModelStorage::Clone(
+absl_nonnull std::unique_ptr<ModelStorage> ModelStorage::Clone(
     const std::optional<absl::string_view> new_name) const {
   // We leverage the private copy constructor that copies copyable_data_ but not
   // update_trackers_ here.

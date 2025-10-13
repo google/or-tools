@@ -92,8 +92,8 @@ message OsqpSettingsProto {
 // LINT.ThenChange(osqp_solver.cc:merge_from_proto,
 // osqp_solver.cc:must_initialize, osqp_solver.cc:solve,
 // osqp_solver.cc:try_overwrite_with_current_values,
-// //depot/osqp_cpp/include/osqp++.h:osqp_settings,
-// //depot/osqp_cpp/src/osqp++.cc:settings_translation)
+// osqp_cpp/include/osqp++.h:osqp_settings,
+// osqp_cpp/src/osqp++.cc:settings_translation)
 
 // Solver-specific output for OSQP.
 message OsqpOutput {

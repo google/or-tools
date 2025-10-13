@@ -24,20 +24,19 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "ortools/base/helpers.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/options.h"
-#include "ortools/gurobi/environment.h"
+#include "ortools/linear_solver/gurobi_util.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/proto_solver/glop_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/sat_proto_solver.h"
-#include "ortools/linear_solver/proto_solver/xpress_proto_solver.h"
 #include "ortools/linear_solver/solve_mp_model.h"
 #if defined(USE_SCIP)
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
@@ -48,11 +47,8 @@
 #if defined(USE_PDLP)
 #include "ortools/linear_solver/proto_solver/pdlp_proto_solver.h"
 #endif  // defined(USE_PDLP)
-#if defined(USE_LP_PARSER)
 #include "ortools/lp_data/lp_parser.h"
-#endif  // defined(USE_LP_PARSER)
 #include "ortools/lp_data/mps_reader.h"
-#include "ortools/xpress/environment.h"
 
 namespace operations_research {
 namespace mb {
@@ -121,7 +117,6 @@ bool ModelBuilderHelper::ImportFromMpsFile(const std::string& mps_file) {
   return true;
 }
 
-#if defined(USE_LP_PARSER)
 bool ModelBuilderHelper::ImportFromLpString(const std::string& lp_string) {
   absl::StatusOr<MPModelProto> model_or = ModelProtoFromLpFormat(lp_string);
   if (!model_or.ok()) return false;
@@ -139,7 +134,6 @@ bool ModelBuilderHelper::ImportFromLpFile(const std::string& lp_file) {
   model_ = model_or.value();
   return true;
 }
-#endif  // #if defined(USE_LP_PARSER)
 
 const MPModelProto& ModelBuilderHelper::model() const { return model_; }
 
@@ -561,11 +555,6 @@ bool ModelSolverHelper::SolverIsSupported() const {
       solver_type_.value() == MPModelRequest::GUROBI_LINEAR_PROGRAMMING) {
     return GurobiIsCorrectlyInstalled();
   }
-  if (solver_type_.value() ==
-          MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING ||
-      solver_type_.value() == MPModelRequest::XPRESS_LINEAR_PROGRAMMING) {
-    return XpressIsCorrectlyInstalled();
-  }
   return false;
 }
 
@@ -639,12 +628,6 @@ void ModelSolverHelper::Solve(const ModelBuilderHelper& model) {
       break;
     }
 #endif  // defined(USE_HIGHS)
-    case MPModelRequest::
-        XPRESS_LINEAR_PROGRAMMING:  // ABSL_FALLTHROUGH_INTENDED
-    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING: {
-      response_ = XPressSolveProto(request);
-      break;
-    }
     default: {
       response_->set_status(
           MPSolverResponseStatus::MPSOLVER_SOLVER_TYPE_UNAVAILABLE);
@@ -820,9 +803,8 @@ std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
 std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> expr) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(expr);
-  std::vector<double> coeffs = {1.0, -1.0};
-  return std::make_shared<WeightedSumArray>(exprs, coeffs, 0.0);
+  exprs.push_back(expr->MulFloat(-1.0));
+  return std::make_shared<SumArray>(exprs, 0.0);
 }
 
 std::shared_ptr<LinearExpr> LinearExpr::SubFloat(double cst) {
@@ -992,6 +974,72 @@ std::string FlatExpr::DebugString() const {
   absl::StrAppend(&s, ")");
   return s;
 }
+
+SumArray::SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
+                   double offset)
+    : exprs_(std::move(exprs)), offset_(offset) {}
+
+void SumArray::Visit(ExprVisitor& lin, double c) {
+  for (int i = 0; i < exprs_.size(); ++i) {
+    lin.AddToProcess(exprs_[i], c);
+  }
+  if (offset_ != 0.0) {
+    lin.AddConstant(offset_ * c);
+  }
+}
+
+std::string SumArray::ToString() const {
+  if (exprs_.empty()) {
+    if (offset_ != 0.0) {
+      return absl::StrCat(offset_);
+    }
+  }
+  std::string s = "(";
+  for (int i = 0; i < exprs_.size(); ++i) {
+    if (i > 0) {
+      absl::StrAppend(&s, " + ");
+    }
+    absl::StrAppend(&s, exprs_[i]->ToString());
+  }
+  if (offset_ != 0.0) {
+    if (offset_ > 0.0) {
+      absl::StrAppend(&s, " + ", offset_);
+    } else {
+      absl::StrAppend(&s, " - ", -offset_);
+    }
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::string SumArray::DebugString() const {
+  std::string s = absl::StrCat(
+      "SumArray(",
+      absl::StrJoin(exprs_, ", ",
+                    [](std::string* out, std::shared_ptr<LinearExpr> expr) {
+                      absl::StrAppend(out, expr->DebugString());
+                    }));
+  if (offset_ != 0.0) {
+    absl::StrAppend(&s, ", offset=", offset_);
+  }
+  absl::StrAppend(&s, ")");
+  return s;
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddInPlace(
+    std::shared_ptr<LinearExpr> expr) {
+  exprs_.push_back(std::move(expr));
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddFloatInPlace(double cst) {
+  offset_ += cst;
+  return shared_from_this();
+}
+
+int SumArray::num_exprs() const { return exprs_.size(); }
+
+double SumArray::offset() const { return offset_; }
 
 void FixedValue::Visit(ExprVisitor& lin, double c) {
   lin.AddConstant(value_ * c);

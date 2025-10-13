@@ -11,6 +11,10 @@ if(NOT TARGET ZLIB::ZLIB)
   find_dependency(ZLIB REQUIRED)
 endif()
 
+if(NOT TARGET BZip2::BZip2)
+  find_dependency(BZip2 REQUIRED)
+endif()
+
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.9.6")
   set(CONFIG_FLAG CONFIG)
 endif()
@@ -30,11 +34,9 @@ if(NOT TARGET protobuf::libprotobuf)
   endif()
 endif()
 
-if(@BUILD_LP_PARSER@)
-  # re2 may not provide a CMake config files
-  if(NOT TARGET re2::re2)
-    find_dependency(re2 REQUIRED)
-  endif()
+# re2 may not provide a CMake config files
+if(NOT TARGET re2::re2)
+  find_dependency(re2 REQUIRED)
 endif()
 
 if(@USE_COINOR@)
@@ -66,7 +68,7 @@ if(@USE_PDLP@)
 endif()
 
 if(@USE_SCIP@)
-  if(NOT TARGET libscip)
+  if(NOT TARGET SCIP::libscip)
     find_dependency(SCIP REQUIRED)
   endif()
 endif()

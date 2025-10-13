@@ -13,6 +13,8 @@
 
 #include "ortools/base/timer.h"
 
+#include "absl/log/check.h"
+
 ScopedWallTime::ScopedWallTime(double* aggregate_time)
     : aggregate_time_(aggregate_time), timer_() {
   DCHECK(aggregate_time != nullptr);

@@ -128,8 +128,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/christofides.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
@@ -219,7 +219,7 @@ class HeldWolfeCrowderEvaluator {
     // bounds lead to faster convergence.
     ChristofidesPathSolver<CostType, int64_t, int, CostFunction> solver(
         number_of_nodes, cost);
-    upper_bound_ = solver.TravelingSalesmanCost();
+    upper_bound_ = solver.TravelingSalesmanCost().value();
   }
 
   bool Next() {

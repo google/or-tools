@@ -22,6 +22,8 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
@@ -35,6 +37,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
 #include "ortools/util/time_limit.h"
@@ -229,6 +232,18 @@ void SatPresolver::SetNumVariables(int num_variables) {
   }
 }
 
+void SatPresolver::RebuildLiteralToClauses() {
+  const int size = literal_to_clauses_.size();
+  literal_to_clauses_.clear();
+  literal_to_clauses_.resize(size);
+  for (ClauseIndex ci(0); ci < clauses_.size(); ++ci) {
+    for (const Literal lit : clauses_[ci]) {
+      literal_to_clauses_[lit].push_back(ci);
+    }
+  }
+  num_deleted_literals_since_last_cleanup_ = 0;
+}
+
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
   if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
 
@@ -340,11 +355,11 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     for (const bool b : can_be_removed) {
       if (b) ++num_removable;
     }
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num removable Booleans: ", num_removable, " / ",
-               can_be_removed.size());
-    SOLVER_LOG(logger_,
-               "[SAT presolve] num trivial clauses: ", num_trivial_clauses_);
+    SOLVER_LOG(logger_, "[SAT presolve] num removable Booleans: ",
+               FormatCounter(num_removable), " / ",
+               FormatCounter(can_be_removed.size()));
+    SOLVER_LOG(logger_, "[SAT presolve] num trivial clauses: ",
+               FormatCounter(num_trivial_clauses_));
     DisplayStats(0);
   }
 
@@ -363,6 +378,10 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     if (!can_be_removed[var.value()]) continue;
     if (CrossProduct(Literal(var, true))) {
       if (!ProcessAllClauses()) return false;
+
+      if (num_deleted_literals_since_last_cleanup_ > 1e7) {
+        RebuildLiteralToClauses();
+      }
     }
     if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
     if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
@@ -700,9 +719,18 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
   return true;
 }
 
-void SatPresolver::RemoveAndRegisterForPostsolveAllClauseContaining(Literal x) {
-  for (ClauseIndex i : literal_to_clauses_[x]) {
-    if (!clauses_[i].empty()) RemoveAndRegisterForPostsolve(i, x);
+void SatPresolver::RemoveAllClauseContaining(Literal x,
+                                             bool register_for_postsolve) {
+  if (register_for_postsolve) {
+    for (ClauseIndex i : literal_to_clauses_[x]) {
+      if (!clauses_[i].empty()) {
+        RemoveAndRegisterForPostsolve(i, x);
+      }
+    }
+  } else {
+    for (ClauseIndex i : literal_to_clauses_[x]) {
+      if (!clauses_[i].empty()) Remove(i);
+    }
   }
   gtl::STLClearObject(&literal_to_clauses_[x]);
   literal_to_clause_sizes_[x] = 0;
@@ -723,18 +751,24 @@ bool SatPresolver::CrossProduct(Literal x) {
   }
 
   // Compute the threshold under which we don't remove x.Variable().
-  int threshold = 0;
+  int num_clauses = 0;
+  int64_t sum_for_x = 0;
+  int64_t sum_for_not_x = 0;
   const int clause_weight = parameters_.presolve_bve_clause_weight();
   for (ClauseIndex i : literal_to_clauses_[x]) {
     if (!clauses_[i].empty()) {
-      threshold += clause_weight + clauses_[i].size();
+      ++num_clauses;
+      sum_for_x += clauses_[i].size();
     }
   }
   for (ClauseIndex i : literal_to_clauses_[x.NegatedIndex()]) {
     if (!clauses_[i].empty()) {
-      threshold += clause_weight + clauses_[i].size();
+      ++num_clauses;
+      sum_for_not_x += clauses_[i].size();
     }
   }
+  const int64_t threshold =
+      clause_weight * num_clauses + sum_for_x + sum_for_not_x;
 
   // For the BCE, we prefer s2 to be small.
   if (s1 < s2) x = x.Negated();
@@ -790,8 +824,17 @@ bool SatPresolver::CrossProduct(Literal x) {
   //
   // TODO(user): We could only update the priority queue once for each variable
   // instead of doing it many times.
-  RemoveAndRegisterForPostsolveAllClauseContaining(x);
-  RemoveAndRegisterForPostsolveAllClauseContaining(x.Negated());
+  bool push_x_for_postsolve = true;
+  bool push_not_x_for_postsolve = true;
+  if (parameters_.filter_sat_postsolve_clauses()) {
+    if (sum_for_x <= sum_for_not_x) {
+      push_not_x_for_postsolve = false;
+    } else {
+      push_x_for_postsolve = false;
+    }
+  }
+  RemoveAllClauseContaining(x, push_x_for_postsolve);
+  RemoveAllClauseContaining(x.Negated(), push_not_x_for_postsolve);
 
   // TODO(user): At this point x.Variable() is added back to the priority queue.
   // Avoid doing that.
@@ -799,8 +842,9 @@ bool SatPresolver::CrossProduct(Literal x) {
 }
 
 void SatPresolver::Remove(ClauseIndex ci) {
+  num_deleted_literals_since_last_cleanup_ += clauses_[ci].size();
   signatures_[ci] = 0;
-  for (Literal e : clauses_[ci]) {
+  for (const Literal e : clauses_[ci]) {
     literal_to_clause_sizes_[e]--;
     UpdatePriorityQueue(e.Variable());
     UpdateBvaPriorityQueue(Literal(e.Variable(), true).Index());
@@ -818,7 +862,7 @@ void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {
 }
 
 Literal SatPresolver::FindLiteralWithShortestOccurrenceList(
-    const std::vector<Literal>& clause) {
+    absl::Span<const Literal> clause) {
   DCHECK(!clause.empty());
   Literal result = clause.front();
   int best_size = literal_to_clause_sizes_[result];
@@ -932,10 +976,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
     }
   }
   SOLVER_LOG(logger_, "[SAT presolve] [", elapsed_seconds, "s]",
-             " clauses:", num_clauses, " literals:", num_literals,
-             " vars:", num_vars, " one_side_vars:", num_one_side,
-             " simple_definition:", num_simple_definition,
-             " singleton_clauses:", num_singleton_clauses);
+             " clauses:", FormatCounter(num_clauses),
+             " literals:", FormatCounter(num_literals),
+             " vars:", FormatCounter(num_vars), " one_side_vars:", num_one_side,
+             " simple_definition:", FormatCounter(num_simple_definition),
+             " singleton_clauses:", FormatCounter(num_singleton_clauses));
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
@@ -1249,10 +1294,12 @@ void ProbeAndFindEquivalentLiteral(
   }
 
   if (logger != nullptr) {
-    SOLVER_LOG(logger, "[Pure SAT probing] fixed ", num_already_fixed_vars,
-               " + ", solver->LiteralTrail().Index() - num_already_fixed_vars,
-               " equiv ", num_equiv / 2, " total ", solver->NumVariables(),
-               " wtime: ", timer.Get());
+    SOLVER_LOG(
+        logger, "[Pure SAT probing] fixed ",
+        FormatCounter(num_already_fixed_vars), " + ",
+        FormatCounter(solver->LiteralTrail().Index() - num_already_fixed_vars),
+        " equiv ", FormatCounter(num_equiv / 2), " total ",
+        FormatCounter(solver->NumVariables()), " wtime: ", timer.Get());
   } else {
     const bool log_info =
         solver->parameters().log_search_progress() || VLOG_IS_ON(1);

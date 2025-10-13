@@ -1,0 +1,43 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Description: python wrapping of the libraries in ../
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+pybind_extension(
+    name = "set_cover",
+    srcs = ["set_cover.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/set_cover:base_types",
+        "//ortools/set_cover:set_cover_heuristics",
+        "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_model",
+        "//ortools/set_cover:set_cover_reader",
+        "@abseil-cpp//absl/types:span",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+py_test(
+    name = "set_cover_test",
+    srcs = ["set_cover_test.py"],
+    deps = [
+        ":set_cover",
+        requirement("absl-py"),
+        "//ortools/set_cover:set_cover_py_pb2",
+    ],
+)

@@ -1,13 +1,24 @@
+# ref: https://github.com/actions/runner-images
 name: amd64 CMake Glop C++
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
 
 jobs:
   docker:
-    name: Docker • CMake • Glop
+    name: amd64•Docker•CMake•Glop
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build env image
         run: make --directory=cmake glop_env
       - name: Build devel image
@@ -31,6 +42,7 @@ jobs:
       matrix:
         cmake: [
           {
+            platform: amd64,
             runner: "ubuntu-latest",
             generator: "Unix Makefiles",
             config: Release,
@@ -39,7 +51,8 @@ jobs:
             install_target: install
           },
           {
-            runner: "macos-13", # last macos intel based runner
+            platform: amd64,
+            runner: "macos-15-intel",
             generator: "Xcode",
             config: Release,
             build_target: ALL_BUILD,
@@ -47,6 +60,7 @@ jobs:
             install_target: install
           },
           {
+            platform: arm64,
             runner: "macos-latest", # macos arm64 based runner
             generator: "Xcode",
             config: Release,
@@ -55,6 +69,7 @@ jobs:
             install_target: install
           },
           {
+            platform: amd64,
             runner: "windows-latest",
             generator: "Visual Studio 17 2022",
             config: Release,
@@ -64,29 +79,29 @@ jobs:
           },
         ]
       fail-fast: false
-    name: ${{ matrix.cmake.runner }} • CMake • Glop
-    runs-on: ${{ matrix.cmake.runner }}
+    name: ${{matrix.cmake.platform}}•${{matrix.cmake.runner}}•CMake•Glop
+    runs-on: ${{matrix.cmake.runner}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check cmake
         run: cmake --version
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -G "${{matrix.cmake.generator}}"
+          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
           -DBUILD_DEPS=ON
           -DBUILD_CXX=OFF -DBUILD_GLOP=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.build_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.build_target}}
           -v -j2
       - name: Install
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.install_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.install_target}}
           -v

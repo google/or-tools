@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
@@ -26,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log_streamer.h"
@@ -100,7 +102,8 @@ class CompactVectorVector {
   // We only check keys.size(), so this can be used with IdentityMap() as
   // second argument.
   template <typename Keys, typename Values>
-  void ResetFromFlatMapping(Keys keys, Values values);
+  void ResetFromFlatMapping(Keys keys, Values values,
+                            int minimum_num_nodes = 0);
 
   // Same as above but for any collections of std::pair<K, V>, or, more
   // generally, any iterable collection of objects that have a `first` and a
@@ -170,6 +173,13 @@ class CompactVectorVector {
 template <typename T>
 class FixedCapacityVector {
  public:
+  FixedCapacityVector() = default;
+  explicit FixedCapacityVector(absl::Span<const T> span) {
+    size_ = span.size();
+    data_.reset(new T[size_]);
+    std::copy(span.begin(), span.end(), data_.get());
+  }
+
   void ClearAndReserve(size_t size) {
     size_ = 0;
     data_.reset(new T[size]);
@@ -309,7 +319,7 @@ bool LinearInequalityCanBeReducedWithClosestMultiple(
 // The model "singleton" random engine used in the solver.
 //
 // In test, we usually set use_absl_random() so that the sequence is changed at
-// each invocation. This way, clients do not relly on the wrong assumption that
+// each invocation. This way, clients do not really on the wrong assumption that
 // a particular optimal solution will be returned if they are many equivalent
 // ones.
 class ModelRandomGenerator : public absl::BitGenRef {
@@ -326,6 +336,12 @@ class ModelRandomGenerator : public absl::BitGenRef {
       absl::BitGenRef::operator=(absl::BitGenRef(absl_random_));
     }
   }
+
+  explicit ModelRandomGenerator(const absl::BitGenRef& bit_gen_ref)
+      : absl::BitGenRef(deterministic_random_) {
+    absl::BitGenRef::operator=(bit_gen_ref);
+  }
+
   explicit ModelRandomGenerator(Model* model)
       : ModelRandomGenerator(*model->GetOrCreate<SatParameters>()) {}
 
@@ -381,6 +397,38 @@ int WeightedPick(absl::Span<const double> input, absl::BitGenRef random);
 int MoveOneUnprocessedLiteralLast(
     const absl::btree_set<LiteralIndex>& processed, int relevant_prefix_size,
     std::vector<Literal>* literals);
+
+// Selects k out of n such that the sum of pairwise distances is maximal.
+// distances[i * n + j] = distances[j * n + j] = distances between i and j.
+//
+// In the special case k >= n - 1, we use a faster algo.
+//
+// Otherwise, this shall only be called with small n, we CHECK_LE(n, 25).
+// Complexity is in O(2 ^ n + n_choose_k * n). Memory is in O(2 ^ n).
+//
+// In case of tie, this will choose deterministically, so one can randomize the
+// order first to get a random subset. The returned subset will always be
+// sorted.
+std::vector<int> FindMostDiverseSubset(int k, int n,
+                                       absl::Span<const int64_t> distances,
+                                       std::vector<int64_t>& buffer,
+                                       int always_pick_mask = 0);
+
+// HEURISTIC. Try to "cut" the list into roughly sqrt(size) equally sized parts.
+// We try to keep the same coefficients in the same buckets.
+// The list is assumed to be sorted.
+// Return a list of pair (start, size) for each part.
+//
+// Context: Currently when we load long linear constraint (more than 100 terms),
+// to keep the propagation and reason shorts, we always split them by adding
+// intermediate variable corresponding to the sum of a subpart. We just do that
+// in the CP-engine, not in the LP though. using sub-part with the same coeff
+// seems to help and kind of make sense.
+//
+// TODO(user): This sounds sub-optimal, we should also try to add variables for
+// common part between constraints, like what some of the presolve is doing.
+std::vector<std::pair<int, int>> HeuristicallySplitLongLinear(
+    absl::Span<const int64_t> coeffs);
 
 // Simple DP to compute the maximum reachable value of a "subset sum" under
 // a given bound (inclusive). Note that we abort as soon as the computation
@@ -838,14 +886,19 @@ inline bool CompactVectorVector<K, V>::empty() const {
 
 template <typename K, typename V>
 template <typename Keys, typename Values>
-inline void CompactVectorVector<K, V>::ResetFromFlatMapping(Keys keys,
-                                                            Values values) {
-  if (keys.empty()) return clear();
-
+inline void CompactVectorVector<K, V>::ResetFromFlatMapping(
+    Keys keys, Values values, int minimum_num_nodes) {
   // Compute maximum index.
-  int max_key = 0;
+  int max_key = minimum_num_nodes;
   for (const K key : keys) {
     max_key = std::max(max_key, InternalKey(key) + 1);
+  }
+
+  if (keys.empty()) {
+    clear();
+    sizes_.assign(minimum_num_nodes, 0);
+    starts_.assign(minimum_num_nodes, 0);
+    return;
   }
 
   // Compute sizes_;
@@ -965,6 +1018,291 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
     starts_[k] = starts_[k - 1];
   }
   starts_[0] = 0;
+}
+
+// A class to generate all possible topological sorting of a dag.
+//
+// If the graph has no edges, it will generate all possible permutations.
+//
+// If the graph has edges, it will generate all possible permutations of the dag
+// that are a topological sorting of the graph.
+//
+// Typical usage:
+//
+//   DagTopologicalSortIterator dag_topological_sort(5);
+//
+//   dag_topological_sort.AddArc(0, 1);
+//   dag_topological_sort.AddArc(1, 2);
+//   dag_topological_sort.AddArc(3, 4);
+//
+//   for (const auto& permutation : dag_topological_sort) {
+//     // Do something with each permutation.
+//   }
+//
+// Note: to test if there are cycles, it is enough to check if at least one
+// iteration occurred in the above loop.
+//
+// Note 2: adding an arc during an iteration is not supported and the behavior
+// is undefined.
+class DagTopologicalSortIterator {
+ public:
+  DagTopologicalSortIterator() = default;
+
+  // Graph maps indices to their children. Any children must exist.
+  explicit DagTopologicalSortIterator(int size)
+      : graph_(size, std::vector<int>{}) {}
+
+  // An iterator class to generate all possible topological sorting of a dag.
+  //
+  // If the graph has no edges, it will generate all possible permutations.
+  //
+  // If the graph has edges, it will generate all possible permutations of the
+  // dag that are a topological sorting of the graph.
+  //
+  // The class maintains 5 fields:
+  //  - graph_: a vector of vectors, where graph_[i] contains the list of
+  //  elements that are adjacent to element i. This is not owned.
+  //  - size_: the size of the graph.
+  //  - missing_parent_numbers_: a vector of integers, where
+  //    missing_parent_numbers_[i] is the number of parents of element i that
+  //    are not yet in permutation_. It is always 0 except during the
+  //    execution of operator++().
+  //  - permutation_: a vector of integers, that is a topological sorting of the
+  //    graph except during the execution of operator++().
+  //  - element_original_position_: a vector of integers, where
+  //    element_original_position_[i] is the original position of element i in
+  //    the permutation_. See the algorithm below for more details.
+
+  class Iterator {
+    friend class DagTopologicalSortIterator;
+
+   public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = const std::vector<int>;
+    using difference_type = ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type&;
+
+    Iterator& operator++();
+
+    friend bool operator==(const Iterator& a, const Iterator& b) {
+      return &a.graph_ == &b.graph_ && a.ordering_index_ == b.ordering_index_;
+    }
+
+    friend bool operator!=(const Iterator& a, const Iterator& b) {
+      return !(a == b);
+    }
+
+    reference operator*() const { return permutation_; }
+
+    pointer operator->() const { return &permutation_; }
+
+   private:
+    // End iterator.
+    explicit Iterator(const std::vector<std::vector<int>>& graph
+                          ABSL_ATTRIBUTE_LIFETIME_BOUND,
+                      bool)
+        : graph_(graph), ordering_index_(-1) {}
+
+    // Begin iterator.
+    explicit Iterator(const std::vector<std::vector<int>>& graph
+                          ABSL_ATTRIBUTE_LIFETIME_BOUND);
+
+    // Unset the element at pos.
+    void Unset(int pos);
+
+    // Set the element at pos to the element at k.
+    void Set(int pos, int k);
+
+    // Graph maps indices to their children. Children must be in [0, size_).
+    const std::vector<std::vector<int>>& graph_;
+    // Number of elements in graph_.
+    int size_;
+    // For each element in graph_, the number of parents it has that are not yet
+    // in permutation_. In particular, it is always 0 outside of operator++().
+    std::vector<int> missing_parent_numbers_;
+    // The current permutation. It is ensured to be a topological sorting of the
+    // graph outside of operator++().
+    std::vector<int> permutation_;
+    // Keeps track of the original position of the element in permutation_[i].
+    // See the comment above the class for the detailed algorithm.
+    std::vector<int> element_original_position_;
+
+    // Index of the current ordering. Used to compare iterators. It is -1 if the
+    // end has been reached.
+    int64_t ordering_index_;
+  };
+
+  Iterator begin() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return Iterator(graph_);
+  }
+  Iterator end() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return Iterator(graph_, true);
+  }
+
+  void Reset(int size) { graph_.assign(size, {}); }
+
+  // Must be called before iteration starts or between iterations.
+  void AddArc(int from, int to) {
+    DCHECK_GE(from, 0);
+    DCHECK_LT(from, graph_.size());
+    DCHECK_GE(to, 0);
+    DCHECK_LT(to, graph_.size());
+    graph_[from].push_back(to);
+  }
+
+ private:
+  // Graph maps indices to their children. Children must be in [0, size_).
+  std::vector<std::vector<int>> graph_;
+};
+
+// To describe the algorithm in operator++() and constructor(), we consider the
+// following invariant, called Invariant(pos) for a position pos in [0, size_):
+//  1. permutations_[0], ..., permutations_[pos] form a prefix of a topological
+//     ordering of the graph;
+//  2. permutations_[pos + 1], ..., permutations_.back() are all other elements
+//     that have all their parents in permutations_[0], ..., permutations_[pos],
+//     ordered lexicographically by the index of their last parent in
+//     permutations_[0], ... permutations_[pos] and then by their index in the
+//     graph;
+//  3. missing_parent_numbers_[i] is the number of parents of element i that are
+//     not in {permutations_[0], ..., permutations_[pos]}.
+//  4. element_original_position_[i] is the original position of element i of
+//     the permutation following the order described in 2. In particular,
+//     element_original_position_[i] = i for i > pos.
+// Set and Unset maintain these invariants.
+
+// Precondition: Invariant(size_ - 1) holds.
+// Postcondition: Invariant(size_ - 1) holds if the end of the iteration is not
+// reached.
+inline DagTopologicalSortIterator::Iterator&
+DagTopologicalSortIterator::Iterator::operator++() {
+  CHECK_GE(ordering_index_, 0) << "Iteration past end";
+  if (size_ == 0) {
+    // Special case: empty graph, only one topological ordering is
+    // generated.
+    ordering_index_ = -1;
+    return *this;
+  }
+
+  Unset(size_ - 1);
+  for (int pos = size_ - 2; pos >= 0; --pos) {
+    // Invariant(pos) holds.
+    // Increasing logic: once permutation_[pos] has been put back to its
+    // original position by Unset(pos), elements permutations_[pos], ...,
+    // permutations_.back() are in their original ordering, in particular in
+    // the same order as last time the iteration on permutation_[pos] occurred
+    // (according to Invariant(pos).2, these are exactly the elements that have
+    // to be tried at pos). All possibilities in permutations_[pos], ...,
+    // permutations_[element_original_position_[pos]] have been run through.
+    // The next to test is permutations_[element_original_position_[pos] + 1].
+    const int k = element_original_position_[pos] + 1;
+    Unset(pos);
+    // Invariant(pos - 1) holds.
+
+    // No more elements to iterate on at position pos. Go backwards one position
+    // to increase that one.
+    if (k == permutation_.size()) continue;
+    Set(pos, k);
+    // Invariant(pos) holds.
+    for (++pos; pos < size_; ++pos) {
+      // Invariant(pos - 1) holds.
+      // According to Invariant(pos - 1).2, if pos >= permutation_.size(), there
+      // are no more elements we can add to the permutation which means that we
+      // detected a cycle. It would be a bug as we would have detected it in
+      // the constructor.
+      CHECK_LT(pos, permutation_.size())
+          << "Unexpected cycle detected during iteration";
+      // According to Invariant(pos - 1).2, elements that can be used at pos are
+      // permutations_[pos], ..., permutations_.back(). Starts the iteration at
+      // permutations_[pos].
+      Set(pos, pos);
+      // Invariant(pos) holds.
+    }
+    // Invariant(size_ - 1) holds.
+    ++ordering_index_;
+    return *this;
+  }
+  ordering_index_ = -1;
+  return *this;
+}
+
+inline DagTopologicalSortIterator::Iterator::Iterator(
+    const std::vector<std::vector<int>>& graph)
+    : graph_(graph),
+      size_(graph.size()),
+      missing_parent_numbers_(size_, 0),
+      element_original_position_(size_, 0),
+      ordering_index_(0) {
+  if (size_ == 0) {
+    // Special case: empty graph, only one topological ordering is generated,
+    // which is the "empty" ordering.
+    return;
+  }
+
+  for (const auto& children : graph_) {
+    for (const int child : children) {
+      missing_parent_numbers_[child]++;
+    }
+  }
+
+  for (int i = 0; i < size_; ++i) {
+    if (missing_parent_numbers_[i] == 0) {
+      permutation_.push_back(i);
+    }
+  }
+  for (int pos = 0; pos < size_; ++pos) {
+    // Invariant(pos - 1) holds.
+    // According to Invariant(pos - 1).2, if pos >= permutation_.size(), there
+    // are no more elements we can add to the permutation.
+    if (pos >= permutation_.size()) {
+      ordering_index_ = -1;
+      return;
+    }
+    // According to Invariant(pos - 1).2, elements that can be used at pos are
+    // permutations_[pos], ..., permutations_.back(). Starts the iteration at
+    // permutations_[pos].
+    Set(pos, pos);
+    // Invariant(pos) holds.
+  }
+  // Invariant(pos - 1) hold. We have a permutation.
+}
+
+// Unset the element at pos.
+//
+//  - Precondition: Invariant(pos) holds.
+//  - Postcondition: Invariant(pos - 1) holds.
+inline void DagTopologicalSortIterator::Iterator::Unset(int pos) {
+  const int n = permutation_[pos];
+  // Before the loop: Invariant(pos).2 and Invariant(pos).3 hold.
+  // After the swap below: Invariant(pos - 1).2 and Invariant(pos - 1).3 hold.
+  for (const int c : graph_[n]) {
+    if (missing_parent_numbers_[c] == 0) permutation_.pop_back();
+    ++missing_parent_numbers_[c];
+  }
+  std::swap(permutation_[element_original_position_[pos]], permutation_[pos]);
+  // Invariant(pos).4 -> Invariant(pos - 1).4.
+  element_original_position_[pos] = pos;
+}
+
+// Set the element at pos to the element at k.
+//
+//  - Precondition: Invariant(pos - 1) holds and k in [pos,
+//    permutation_.size()).
+//  - Postcondition: Invariant(pos) holds and permutation_[pos] has been swapped
+//    with permutation_[k].
+inline void DagTopologicalSortIterator::Iterator::Set(int pos, int k) {
+  int n = permutation_[k];
+  // Before the loop: Invariant(pos - 1).2 and Invariant(pos - 1).3 hold.
+  // After the loop: Invariant(pos).2 and Invariant(pos).3 hold.
+  for (int c : graph_[n]) {
+    --missing_parent_numbers_[c];
+    if (missing_parent_numbers_[c] == 0) permutation_.push_back(c);
+  }
+  // Invariant(pos - 1).1 -> Invariant(pos).1.
+  std::swap(permutation_[k], permutation_[pos]);
+  // Invariant(pos - 1).4 -> Invariant(pos).4.
+  element_original_position_[pos] = k;
 }
 
 }  // namespace sat

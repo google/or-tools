@@ -14,6 +14,8 @@
 """Build definitions for SWIG Java."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_java//java/common:java_common.bzl", "java_common")
 
@@ -32,7 +34,9 @@ def _create_src_jar(ctx, java_runtime_info, input_dir, output_jar):
     )
 
 def _java_wrap_cc_impl(ctx):
-    src = ctx.file.src
+    if len(ctx.files.srcs) != 1:
+        fail("There must be exactly one *.swig file", attr = "srcs")
+    swig_src = ctx.files.srcs[0]
     outfile = ctx.outputs.outfile
     outhdr = ctx.outputs.outhdr
 
@@ -64,7 +68,7 @@ def _java_wrap_cc_impl(ctx):
         swig_args.add("-module", ctx.attr.module)
     for include_path in depset(transitive = include_path_sets).to_list():
         swig_args.add("-I" + include_path)
-    swig_args.add(src.path)
+    swig_args.add(swig_src.path)
     generated_c_files = [outfile]
     if ctx.attr.use_directors:
         generated_c_files.append(outhdr)
@@ -73,7 +77,7 @@ def _java_wrap_cc_impl(ctx):
     swig_lib = {"SWIG_LIB": paths.dirname(ctx.files._swig_lib[0].path)}
     ctx.actions.run(
         outputs = generated_c_files + [java_files_dir],
-        inputs = depset([src] + ctx.files.swig_includes + ctx.files._swig_lib, transitive = header_sets),
+        inputs = depset([swig_src] + ctx.files.swig_includes + ctx.files._swig_lib, transitive = header_sets),
         env = swig_lib,
         executable = ctx.executable._swig,
         arguments = [swig_args],
@@ -91,10 +95,13 @@ It's expected that the `swig` binary exists in the host's path.
 """,
     implementation = _java_wrap_cc_impl,
     attrs = {
-        "src": attr.label(
-            doc = "Single swig source file.",
-            allow_single_file = True,
-            mandatory = True,
+        "srcs": attr.label_list(
+            allow_empty = False,
+            allow_files = [".swig", ".i"],
+            flags = ["DIRECT_COMPILE_TIME_INPUT", "ORDER_INDEPENDENT"],
+            doc = """
+A list of one <code>swig</code> source.
+            """,
         ),
         "deps": attr.label_list(
             doc = "C++ dependencies.",
@@ -140,9 +147,9 @@ It's expected that the `swig` binary exists in the host's path.
     },
 )
 
-def ortools_java_wrap_cc(
+def java_wrap_cc(
         name,
-        src,
+        srcs,
         package,
         deps = [],
         java_deps = [],
@@ -158,7 +165,7 @@ def ortools_java_wrap_cc(
 
     Args:
         name: target name.
-        src: single .i source file.
+        srcs: A list of one <code>swig</code> source.
         package: package of generated Java files.
         deps: C++ deps.
         java_deps: Java deps.
@@ -182,7 +189,7 @@ def ortools_java_wrap_cc(
 
     _java_wrap_cc(
         name = wrapper_name,
-        src = src,
+        srcs = srcs,
         package = package,
         outfile = outfile,
         outhdr = outhdr if use_directors else None,
@@ -195,8 +202,7 @@ def ortools_java_wrap_cc(
         visibility = ["//visibility:private"],
         **kwargs
     )
-
-    native.cc_library(
+    cc_library(
         name = cc_name,
         srcs = [outfile],
         hdrs = [outhdr] if use_directors else [],

@@ -25,6 +25,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -128,7 +129,8 @@ TEST(ConstraintViolationTest, BasicExactlyOneExampleNonViolated) {
     constraints { exactly_one { literals: [ 0, 1, 2, 3 ] } }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 0, 1});
   EXPECT_EQ(0, ls.SumOfViolations());
 }
@@ -142,7 +144,8 @@ TEST(ConstraintViolationTest, BasicExactlyOneExampleViolated) {
     constraints { exactly_one { literals: [ 0, 1, 2, 3 ] } }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 1, 1});
   EXPECT_EQ(1, ls.SumOfViolations());
   EXPECT_THAT(ls.ViolatedConstraints(), ElementsAre(0));
@@ -161,7 +164,8 @@ TEST(ConstraintViolationTest, BasicBoolOrViolated) {
     constraints { bool_or { literals: [ 0, -2, 2, -4 ] } }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 1, 0, 1});
   EXPECT_EQ(1, ls.SumOfViolations());
   ls.ComputeAllViolations({0, 0, 0, 1});
@@ -183,7 +187,8 @@ TEST(ConstraintViolationTest, BasicLinearExample) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0});
   EXPECT_EQ(1, ls.SumOfViolations());
   ls.ComputeAllViolations({2, 0});
@@ -206,7 +211,8 @@ TEST(ConstraintViolationTest, BasicObjectiveExampleWithChange) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 0, 1});
   EXPECT_EQ(0, ls.SumOfViolations());
   EXPECT_EQ(ls.NumViolatedConstraintsForVarIgnoringObjective(0), 0);
@@ -225,6 +231,51 @@ TEST(ConstraintViolationTest, BasicBoolXorExample) {
   EXPECT_EQ(1, ct.ComputeViolation({1, 0, 0}));
 }
 
+TEST(ConstraintViolationTest, ComputeViolationWithEnforcementLiteral) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          bool_xor { literals: [ 1, 2 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  EXPECT_EQ(0, ct.ComputeViolation({0, 1, 1}));  // Not enforced.
+  EXPECT_EQ(1, ct.ComputeViolation({1, 1, 1}));  // Enforced.
+}
+
+TEST(ConstraintViolationTest, ViolationDeltaWithEnforcementLiteral) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          enforcement_literal: 1
+                          bool_xor { literals: [ 2, 3 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  ct.InitializeViolation({0, 0, 0, 0});
+  EXPECT_EQ(0, ct.violation());
+
+  // Was not enforced and stays unenforced: no change.
+  EXPECT_EQ(0, ct.ViolationDelta(0, 0, {1, 0, 1, 1}));
+  ct.PerformMove(0, 0, {1, 0, 1, 1});
+  EXPECT_EQ(0, ct.violation());
+
+  // Was not enforced and becomes enforced and violated.
+  EXPECT_EQ(1, ct.ViolationDelta(1, 0, {1, 1, 1, 1}));
+  ct.PerformMove(1, 0, {1, 1, 1, 1});
+  EXPECT_EQ(1, ct.violation());
+
+  // Was enforced and violated, becomes unenforced.
+  EXPECT_EQ(-1, ct.ViolationDelta(0, 1, {0, 1, 1, 1}));
+  ct.PerformMove(0, 1, {0, 1, 1, 1});
+  EXPECT_EQ(0, ct.violation());
+}
+
+TEST(ConstraintViolationTest, ViolationDeltaWhenEnforced) {
+  const ConstraintProto ct_proto =
+      ParseTestProto(R"pb(enforcement_literal: 0
+                          enforcement_literal: 1
+                          bool_xor { literals: [ 2, 3 ] })pb");
+  CompiledBoolXorConstraint ct(ct_proto);
+  ct.InitializeViolation({1, 1, 0, 1});
+  EXPECT_EQ(0, ct.violation());
+  EXPECT_EQ(1, ct.ViolationDelta(2, 0, {1, 1, 1, 1}));
+}
+
 TEST(ConstraintViolationTest, BasicLinMaxExampleNoViolation) {
   const CpModelProto model = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
@@ -240,7 +291,8 @@ TEST(ConstraintViolationTest, BasicLinMaxExampleNoViolation) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({1, 1, 0});
   EXPECT_EQ(0, ls.SumOfViolations());
 }
@@ -260,7 +312,8 @@ TEST(ConstraintViolationTest, BasicLinMaxExampleExcessViolation) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 0});
   EXPECT_EQ(3, ls.SumOfViolations());
 }
@@ -280,7 +333,8 @@ TEST(ConstraintViolationTest, BasicLinMaxExampleMissingViolation) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({1, 0, 0});
   EXPECT_EQ(1, ls.SumOfViolations());
 }
@@ -299,7 +353,8 @@ TEST(ConstraintViolationTest, BasicLinMaxExampleNegativeCoeffs) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({33, 33, 33});
   EXPECT_EQ(1, ls.SumOfViolations());
 }
@@ -399,7 +454,8 @@ TEST(ConstraintViolationTest, BasicNoOverlapExample) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 4, 8, 1});
   EXPECT_EQ(0, ls.SumOfViolations());
 
@@ -440,7 +496,8 @@ TEST(ConstraintViolationTest, TwoIntervalsNoOverlapExample) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 4, 1});
   EXPECT_EQ(0, ls.SumOfViolations());
 
@@ -499,7 +556,8 @@ TEST(ConstraintViolationTest, BasicCumulativeExample) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 4, 8, 1, 2, 2});
   EXPECT_EQ(0, ls.SumOfViolations());
 
@@ -525,7 +583,8 @@ TEST(ConstraintViolationTest, EmptyNoOverlap) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 4, 8});
   EXPECT_EQ(0, ls.SumOfViolations());
 }
@@ -551,7 +610,8 @@ TEST(ConstraintViolationTest, WeightedViolationAndDelta) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
 
   std::vector<int64_t> solution{0, 0};
   std::vector<double> weight{0.0, 0.0};
@@ -593,7 +653,8 @@ TEST(ConstraintViolationTest, Breakpoints) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0});
 
   // We don't want the same value as zero, so we should include both values
@@ -626,7 +687,8 @@ TEST(ConstraintViolationTest, BasicCircuit) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 0, 0, 0, 0, 0, 0});
   EXPECT_GE(ls.SumOfViolations(), 1);
   ls.ComputeAllViolations({1, 0, 1, 0, 0, 0, 0, 0});
@@ -662,7 +724,8 @@ TEST(ConstraintViolationTest, BasicMultiCircuit) {
   )pb");
 
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   ls.ComputeAllViolations({0, 0, 0, 0, 0, 0, 0});
   EXPECT_GE(ls.SumOfViolations(), 1) << "arcs: None";
   ls.ComputeAllViolations({1, 0, 1, 0, 0, 0, 0});
@@ -702,7 +765,8 @@ TEST(ConstraintViolationTest, LastUpdateViolationChanges) {
     }
   )pb");
   SatParameters params;
-  LsEvaluator ls(model, params);
+  TimeLimit time_limit;
+  LsEvaluator ls(model, params, &time_limit);
   std::vector<double> unused_jump_scores = {0.0, 0.0, 0.0};
 
   std::vector<int64_t> solution = {2, 1, 3};

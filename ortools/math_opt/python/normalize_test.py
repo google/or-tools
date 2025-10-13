@@ -14,7 +14,6 @@
 
 """Test normalize for mathopt protos."""
 
-from google3.net.proto2.contrib.pyutil import compare
 from absl.testing import absltest
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import model_pb2
@@ -23,18 +22,21 @@ from ortools.math_opt import parameters_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt import sparse_containers_pb2
 from ortools.math_opt.python import normalize
+from ortools.math_opt.python.testing import compare_proto
 
 
-class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
+class MathOptProtoAssertionsTest(
+    compare_proto.MathOptProtoAssertions, absltest.TestCase
+):
 
     def test_removes_empty_message(self) -> None:
         model_with_empty_vars = model_pb2.ModelProto()
         model_with_empty_vars.variables.SetInParent()
         with self.assertRaisesRegex(AssertionError, ".*variables.*"):
-            self.assertProto2Equal(model_with_empty_vars, model_pb2.ModelProto())
+            self.assert_protos_equal(model_with_empty_vars, model_pb2.ModelProto())
 
         normalize.math_opt_normalize_proto(model_with_empty_vars)
-        self.assertProto2Equal(model_with_empty_vars, model_pb2.ModelProto())
+        self.assert_protos_equal(model_with_empty_vars, model_pb2.ModelProto())
 
     def test_keeps_nonempty_message(self) -> None:
         model_with_vars = model_pb2.ModelProto()
@@ -44,7 +46,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected.variables.ids[:] = [1, 3]
 
         normalize.math_opt_normalize_proto(model_with_vars)
-        self.assertProto2Equal(model_with_vars, expected)
+        self.assert_protos_equal(model_with_vars, expected)
 
     def test_keeps_optional_scalar_at_default_message(self) -> None:
         objective = model_update_pb2.ObjectiveUpdatesProto(offset_update=0.0)
@@ -53,17 +55,17 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
 
         wrong = model_update_pb2.ObjectiveUpdatesProto()
         with self.assertRaisesRegex(AssertionError, ".*offset_update.*"):
-            self.assertProto2Equal(objective, wrong)
+            self.assert_protos_equal(objective, wrong)
 
         expected = model_update_pb2.ObjectiveUpdatesProto(offset_update=0.0)
-        self.assertProto2Equal(objective, expected)
+        self.assert_protos_equal(objective, expected)
 
     def test_recursive_cleanup(self) -> None:
         update_rec_empty = model_update_pb2.ModelUpdateProto()
         update_rec_empty.variable_updates.lower_bounds.SetInParent()
 
         normalize.math_opt_normalize_proto(update_rec_empty)
-        self.assertProto2Equal(update_rec_empty, model_update_pb2.ModelUpdateProto())
+        self.assert_protos_equal(update_rec_empty, model_update_pb2.ModelUpdateProto())
 
     def test_duration_no_cleanup(self) -> None:
         params = parameters_pb2.SolveParametersProto()
@@ -71,7 +73,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
 
         with self.assertRaisesRegex(AssertionError, ".*time_limit.*"):
             normalize.math_opt_normalize_proto(params)
-            self.assertProto2Equal(params, parameters_pb2.SolveParametersProto())
+            self.assert_protos_equal(params, parameters_pb2.SolveParametersProto())
 
     def test_repeated_scalar_no_cleanup(self) -> None:
         vec = sparse_containers_pb2.SparseDoubleVectorProto()
@@ -81,7 +83,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected = sparse_containers_pb2.SparseDoubleVectorProto()
         expected.ids[:] = [0, 0]
 
-        self.assertProto2Equal(vec, expected)
+        self.assert_protos_equal(vec, expected)
 
     def test_reaches_into_map(self) -> None:
         model = model_pb2.ModelProto()
@@ -91,7 +93,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected = model_pb2.ModelProto()
         expected.quadratic_constraints[2]  # pylint: disable=pointless-statement
 
-        self.assertProto2Equal(model, expected)
+        self.assert_protos_equal(model, expected)
 
     def test_reaches_into_vector(self) -> None:
         params = model_parameters_pb2.ModelSolveParametersProto()
@@ -101,7 +103,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected = model_parameters_pb2.ModelSolveParametersProto()
         expected.solution_hints.add()
 
-        self.assertProto2Equal(params, expected)
+        self.assert_protos_equal(params, expected)
 
     def test_oneof_is_not_cleared(self) -> None:
         result = result_pb2.SolveResultProto()
@@ -111,7 +113,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected = result_pb2.SolveResultProto()
         expected.gscip_output.SetInParent()
 
-        self.assertProto2Equal(result, expected)
+        self.assert_protos_equal(result, expected)
 
     def test_reaches_into_oneof(self) -> None:
         result = result_pb2.SolveResultProto()
@@ -121,7 +123,7 @@ class MathOptProtoAssertionsTest(absltest.TestCase, compare.Proto2Assertions):
         expected = result_pb2.SolveResultProto()
         expected.gscip_output.SetInParent()
 
-        self.assertProto2Equal(result, expected)
+        self.assert_protos_equal(result, expected)
 
 
 if __name__ == "__main__":

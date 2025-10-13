@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -27,13 +29,13 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/validators:model_validator",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -48,8 +50,8 @@ cc_library(
         "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader",
         "//ortools/math_opt:model_cc_proto",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -73,7 +75,7 @@ cc_library(
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/math_opt:model_cc_proto",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -83,19 +85,18 @@ cc_library(
     hdrs = ["lp_parser.h"],
     deps = [
         ":mps_converter",
-        "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:path",
         "//ortools/base:status_macros",
         "//ortools/base:temp_path",
-        "//ortools/gscip",
         "//ortools/linear_solver:scip_helper_macros",
         "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt/solvers/gscip",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@scip",
     ],
 )

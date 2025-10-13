@@ -39,6 +39,9 @@ TEST(ProtoTrailTest, PushLevel) {
   EXPECT_EQ(p.MaxLevel(), 1);
   EXPECT_EQ(p.Decision(1), ProtoLiteral(0, 0));
   EXPECT_EQ(p.ObjectiveLb(1), 0);
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0).Negated()));
+  EXPECT_FALSE(p.IsAssigned(ProtoLiteral(1, 0)));
 }
 
 TEST(ProtoTrailTest, AddImplications) {
@@ -57,6 +60,12 @@ TEST(ProtoTrailTest, AddImplications) {
   EXPECT_THAT(p.Implications(2),
               testing::UnorderedElementsAre(
                   ProtoLiteral(5, 0), ProtoLiteral(2, 0), ProtoLiteral(6, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(0, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(1, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(2, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(3, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(5, 0)));
+  EXPECT_TRUE(p.IsAssigned(ProtoLiteral(6, 0)));
 }
 
 TEST(ProtoTrailTest, SetLevel1Implied) {
@@ -257,7 +266,7 @@ TEST(SharedTreeManagerTest, SplitTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail shared_trail;
 
-  shared_tree_manager->ProposeSplit(shared_trail, {-1, 0});
+  shared_tree_manager->TrySplitTree({{-1, 0}}, shared_trail);
 
   EXPECT_EQ(shared_trail.MaxLevel(), 1);
 }
@@ -278,7 +287,7 @@ TEST(SharedTreeManagerTest, RestartTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail shared_trail;
 
-  shared_tree_manager->ProposeSplit(shared_trail, {-1, 0});
+  shared_tree_manager->TrySplitTree({{-1, 0}}, shared_trail);
   shared_tree_manager->Restart();
   shared_tree_manager->SyncTree(shared_trail);
 
@@ -301,7 +310,7 @@ TEST(SharedTreeManagerTest, RestartTestWithLevelZeroImplications) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail shared_trail;
 
-  shared_tree_manager->ProposeSplit(shared_trail, {-1, 0});
+  shared_tree_manager->TrySplitTree({{-1, 0}}, shared_trail);
   shared_tree_manager->CloseTree(shared_trail, 1);
   shared_tree_manager->SyncTree(shared_trail);
   shared_tree_manager->ReplaceTree(shared_trail);
@@ -328,7 +337,7 @@ TEST(SharedTreeManagerTest, SharedBranchingTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
+  shared_tree_manager->TrySplitTree({{-1, 0}}, trail1);
   shared_tree_manager->ReplaceTree(trail2);
 
   EXPECT_EQ(trail1.MaxLevel(), 1);
@@ -356,7 +365,7 @@ TEST(SharedTreeManagerTest, ObjectiveLbSplitTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
+  shared_tree_manager->TrySplitTree({{-1, 0}}, trail1);
   ASSERT_EQ(trail1.MaxLevel(), 1);
   trail1.SetObjectiveLb(1, 2);
   shared_tree_manager->SyncTree(trail1);
@@ -365,7 +374,8 @@ TEST(SharedTreeManagerTest, ObjectiveLbSplitTest) {
   trail2.SetObjectiveLb(1, 1);
   shared_tree_manager->SyncTree(trail2);
   // Reject this split because it is not at the global lower bound.
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 3});
+  ASSERT_FALSE(
+      shared_tree_manager->TrySplitTree({{int_var.index(), 3}}, trail1));
 
   EXPECT_EQ(response_manager->GetInnerObjectiveLowerBound(), 1);
   EXPECT_EQ(shared_tree_manager->NumNodes(), 3);
@@ -379,9 +389,10 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
   model_builder.Maximize(int_var);
   Model model;
   SatParameters params;
-  params.set_num_workers(4);
-  params.set_shared_tree_num_workers(4);
+  params.set_num_workers(5);
+  params.set_shared_tree_num_workers(5);
   params.set_shared_tree_open_leaves_per_worker(1);
+  params.set_shared_tree_balance_tolerance(0);
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_DISCREPANCY);
@@ -392,19 +403,23 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTestOneLeafPerWorker) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
-  shared_tree_manager->SyncTree(trail1);
+  // Reject the last split: splitting at 3 depth + 0 discrepancy is not minimal.
+  EXPECT_EQ(shared_tree_manager->TrySplitTree({{-1, 0},
+                                               {int_var.index(), 3},
+                                               {int_var.index(), 4},
+                                               {int_var.index(), 5}},
+                                              trail1),
+            3);
   shared_tree_manager->ReplaceTree(trail2);
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 3});
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 3});
-  // Reject this split: 2 depth + 1 discrepancy is not minimal.
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 5});
-  // Reject this split: 2 depth  + 0 discrepancy is not minimal.
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 5});
+  // Reject the 2nd split: 2 depth + 1 discrepancy is not minimal.
+  EXPECT_EQ(shared_tree_manager->TrySplitTree(
+                {{int_var.index(), 3}, {int_var.index(), 5}}, trail2),
+            1);
 
-  EXPECT_EQ(trail1.MaxLevel(), 2);
+  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
+  EXPECT_EQ(trail1.MaxLevel(), 3);
   EXPECT_EQ(trail2.MaxLevel(), 2);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 7);
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
 }
 
 TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
@@ -417,10 +432,11 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
   SatParameters params;
   params.set_num_workers(2);
   params.set_shared_tree_num_workers(2);
-  params.set_shared_tree_open_leaves_per_worker(2);
+  params.set_shared_tree_open_leaves_per_worker(2.5);
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
       SatParameters::SPLIT_STRATEGY_DISCREPANCY);
+  params.set_shared_tree_balance_tolerance(0);
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* response_manager = model.GetOrCreate<SharedResponseManager>();
@@ -428,19 +444,18 @@ TEST(SharedTreeManagerTest, DiscrepancySplitTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
-  shared_tree_manager->SyncTree(trail1);
+  EXPECT_EQ(shared_tree_manager->TrySplitTree(
+                {{-1, 0}, {int_var.index(), 3}, {int_var.index(), 5}}, trail1),
+            3);
   shared_tree_manager->ReplaceTree(trail2);
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 3});
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 3});
-  // Reject this split: 2 depth + 1 discrepancy is not minimal.
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 5});
-  // Reject this split: 2 depth  + 0 discrepancy is not minimal.
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 5});
+  EXPECT_EQ(shared_tree_manager->TrySplitTree(
+                {{int_var.index(), 3}, {int_var.index(), 5}}, trail2),
+            1);
 
-  EXPECT_EQ(trail1.MaxLevel(), 2);
+  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
+  EXPECT_EQ(trail1.MaxLevel(), 3);
   EXPECT_EQ(trail2.MaxLevel(), 2);
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 7);
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
 }
 
 TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
@@ -465,17 +480,24 @@ TEST(SharedTreeManagerTest, BalancedSplitTestOneLeafPerWorker) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
+  EXPECT_EQ(shared_tree_manager->TrySplitTree({{int_var.index(), 3},
+                                               {int_var.index(), 2},
+                                               {int_var.index(), 1},
+                                               {int_var.index(), 0}},
+                                              trail1),
+            3);
   shared_tree_manager->SyncTree(trail1);
+  // Trees are assigned in FIFO order, so this will be the subtree at depth 1.
   shared_tree_manager->ReplaceTree(trail2);
-  shared_tree_manager->SyncTree(trail2);
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 3});
-  // Reject this split because it creates an unbalanced tree
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 5});
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 3});
+  // Reject the final split because there are too many leaves, even though the
+  // depth is ok.
+  EXPECT_EQ(shared_tree_manager->TrySplitTree(
+                {{int_var.index(), 5}, {int_var.index(), 4}}, trail2),
+            1);
 
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 7);
-  EXPECT_EQ(trail1.MaxLevel(), 2);
+  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 9);
+  EXPECT_EQ(trail1.MaxLevel(), 3);
   EXPECT_EQ(trail2.MaxLevel(), 2);
 }
 
@@ -487,8 +509,8 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   model_builder.Maximize(int_var);
   Model model;
   SatParameters params;
-  params.set_num_workers(3);
-  params.set_shared_tree_num_workers(3);
+  params.set_num_workers(4);
+  params.set_shared_tree_num_workers(4);
   params.set_shared_tree_open_leaves_per_worker(2);
   params.set_cp_model_presolve(false);
   params.set_shared_tree_split_strategy(
@@ -501,18 +523,24 @@ TEST(SharedTreeManagerTest, BalancedSplitTest) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
   ProtoTrail trail1, trail2;
 
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
-  shared_tree_manager->SyncTree(trail1);
+  EXPECT_EQ(shared_tree_manager->TrySplitTree({{int_var.index(), 3},
+                                               {int_var.index(), 2},
+                                               {int_var.index(), 1},
+                                               {int_var.index(), 0}},
+                                              trail1),
+            3);
   shared_tree_manager->ReplaceTree(trail2);
-  shared_tree_manager->SyncTree(trail2);
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 3});
-  // Reject this split because it creates an unbalanced tree
-  shared_tree_manager->ProposeSplit(trail1, {int_var.index(), 5});
-  shared_tree_manager->ProposeSplit(trail2, {int_var.index(), 3});
+  EXPECT_EQ(shared_tree_manager->TrySplitTree({{int_var.index(), 6},
+                                               {int_var.index(), 5},
+                                               {int_var.index(), 4},
+                                               {int_var.index(), 3}},
+                                              trail2),
+            2);
 
-  EXPECT_EQ(shared_tree_manager->NumNodes(), 7);
-  EXPECT_EQ(trail1.MaxLevel(), 2);
-  EXPECT_EQ(trail2.MaxLevel(), 2);
+  EXPECT_EQ(shared_tree_manager->MaxPathDepth(), 3);
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 11);
+  EXPECT_EQ(trail1.MaxLevel(), 3);
+  EXPECT_EQ(trail2.MaxLevel(), 3);
 }
 
 TEST(SharedTreeManagerTest, CloseTreeTest) {
@@ -529,10 +557,9 @@ TEST(SharedTreeManagerTest, CloseTreeTest) {
   model.Add(NewSatParameters(params));
   LoadVariables(model_builder.Build(), false, &model);
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
-  ProtoTrail trail1, trail2, trail3;
-  shared_tree_manager->ProposeSplit(trail1, {-1, 0});
+  ProtoTrail trail1, trail2;
+  EXPECT_EQ(shared_tree_manager->TrySplitTree({{-1, 0}, {1, 0}}, trail1), 2);
   shared_tree_manager->ReplaceTree(trail2);
-  shared_tree_manager->ProposeSplit(trail1, {1, 0});
   shared_tree_manager->CloseTree(trail1, 1);
   shared_tree_manager->ReplaceTree(trail1);
 
@@ -559,7 +586,7 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   auto* shared_tree_manager = model.GetOrCreate<SharedTreeManager>();
 
   ProtoTrail trail1, trail2;
-  shared_tree_manager->ProposeSplit(trail1, ProtoLiteral(0, 1));
+  shared_tree_manager->TrySplitTree({ProtoLiteral(0, 1)}, trail1);
   trail1.AddImplication(1, ProtoLiteral(1, 1));
   trail1.AddImplication(1, ProtoLiteral(1, 3));
   shared_tree_manager->SyncTree(trail1);
@@ -567,6 +594,9 @@ TEST(SharedTreeManagerTest, TrailSharing) {
   shared_tree_manager->ReplaceTree(trail1);
   shared_tree_manager->ReplaceTree(trail2);
 
+  EXPECT_EQ(shared_tree_manager->NumNodes(), 3);
+  EXPECT_EQ(trail1.MaxLevel(), 1);
+  EXPECT_EQ(trail2.MaxLevel(), 1);
   EXPECT_EQ(trail2.Implications(1).size(), 1);
   EXPECT_EQ(trail2.TargetPhase().size(), 1);
   EXPECT_TRUE(trail1.Implications(1).empty());

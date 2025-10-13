@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/types/span.h"
@@ -48,12 +49,13 @@ std::string ValidateCpModel(const CpModelProto& model,
 std::string ValidateInputCpModel(const SatParameters& params,
                                  const CpModelProto& model);
 
-// Check if a given linear expression can create overflow. It is exposed to test
-// new constraints created during the presolve.
-bool PossibleIntegerOverflow(const CpModelProto& model,
-                             absl::Span<const int> vars,
-                             absl::Span<const int64_t> coeffs,
-                             int64_t offset = 0);
+// Check if a given linear expression can create overflow. If it doesn't,
+// sets `implied_domain` to the implied domain of the expression. It is exposed
+// to test new constraints created during the presolve.
+bool PossibleIntegerOverflow(
+    const CpModelProto& model, absl::Span<const int> vars,
+    absl::Span<const int64_t> coeffs, int64_t offset = 0,
+    std::pair<int64_t, int64_t>* implied_domain = nullptr);
 
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with
@@ -65,6 +67,10 @@ bool SolutionIsFeasible(const CpModelProto& model,
                         absl::Span<const int64_t> variable_values,
                         const CpModelProto* mapping_proto = nullptr,
                         const std::vector<int>* postsolve_mapping = nullptr);
+
+// Verifies some invariants that any optimal solution must satisfy.
+bool SolutionCanBeOptimal(const CpModelProto& model,
+                          absl::Span<const int64_t> variable_values);
 
 // Checks a single constraint for feasibility.
 // This has some overhead, and should only be used for debugging.

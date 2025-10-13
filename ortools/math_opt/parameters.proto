@@ -19,8 +19,8 @@ package operations_research.math_opt;
 import "google/protobuf/duration.proto";
 import "ortools/pdlp/solvers.proto";
 import "ortools/glop/parameters.proto";
-import "ortools/gscip/gscip.proto";
 import "ortools/math_opt/solvers/glpk.proto";
+import "ortools/math_opt/solvers/gscip/gscip.proto";
 import "ortools/math_opt/solvers/gurobi.proto";
 import "ortools/math_opt/solvers/highs.proto";
 import "ortools/math_opt/solvers/osqp.proto";
@@ -106,11 +106,13 @@ enum SolverTypeProto {
   // returned).
   SOLVER_TYPE_SANTORINI = 11;
 
+  reserved 12;
+
   // Fico XPRESS solver (third party).
   //
   // Supports LP, MIP, and nonconvex integer quadratic problems.
   // A fast option, but has special licensing.
-  SOLVER_TYPE_XPRESS = 12;
+  SOLVER_TYPE_XPRESS = 13;
 }
 
 // Selects an algorithm for solving linear programs.
@@ -173,6 +175,7 @@ message StrictnessProto {
 // instantiated.
 message SolverInitializerProto {
   GurobiInitializerProto gurobi = 1;
+  reserved 2;
 }
 
 // Parameters to control a single solve.

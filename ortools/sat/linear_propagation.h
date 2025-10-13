@@ -19,7 +19,6 @@
 #include <deque>
 #include <functional>
 #include <limits>
-#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,6 +28,8 @@
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -44,121 +45,24 @@
 namespace operations_research {
 namespace sat {
 
-DEFINE_STRONG_INDEX_TYPE(EnforcementId);
-
-// An enforced constraint can be in one of these 4 states.
-// Note that we rely on the integer encoding to take 2 bits for optimization.
-enum class EnforcementStatus {
-  // One enforcement literal is false.
-  IS_FALSE = 0,
-  // More than two literals are unassigned.
-  CANNOT_PROPAGATE = 1,
-  // All enforcement literals are true but one.
-  CAN_PROPAGATE = 2,
-  // All enforcement literals are true.
-  IS_ENFORCED = 3,
-};
-
-std::ostream& operator<<(std::ostream& os, const EnforcementStatus& e);
-
-// This is meant as an helper to deal with enforcement for any constraint.
-class EnforcementPropagator : public SatPropagator {
- public:
-  explicit EnforcementPropagator(Model* model);
-
-  // SatPropagator interface.
-  bool Propagate(Trail* trail) final;
-  void Untrail(const Trail& trail, int trail_index) final;
-
-  // Adds a new constraint to the class and register a callback that will
-  // be called on status change. Note that we also call the callback with the
-  // initial status if different from CANNOT_PROPAGATE when added.
-  //
-  // It is better to not call this for empty enforcement list, but you can. A
-  // negative id means the level zero status will never change, and only the
-  // first call to callback() should be necessary, we don't save it.
-  EnforcementId Register(
-      absl::Span<const Literal> enforcement,
-      std::function<void(EnforcementId, EnforcementStatus)> callback = nullptr);
-
-  // Add the enforcement reason to the given vector.
-  void AddEnforcementReason(EnforcementId id,
-                            std::vector<Literal>* reason) const;
-
-  // Try to propagate when the enforced constraint is not satisfiable.
-  // This is currently in O(enforcement_size).
-  ABSL_MUST_USE_RESULT bool PropagateWhenFalse(
-      EnforcementId id, absl::Span<const Literal> literal_reason,
-      absl::Span<const IntegerLiteral> integer_reason);
-
-  EnforcementStatus Status(EnforcementId id) const { return statuses_[id]; }
-
-  // Recompute the status from the current assignment.
-  // This should only used in DCHECK().
-  EnforcementStatus DebugStatus(EnforcementId id);
-
-  // Returns the enforcement literals of the given id.
-  absl::Span<const Literal> GetEnforcementLiterals(EnforcementId id) const {
-    if (id < 0) return {};
-    return GetSpan(id);
-  }
-
- private:
-  absl::Span<Literal> GetSpan(EnforcementId id);
-  absl::Span<const Literal> GetSpan(EnforcementId id) const;
-  void ChangeStatus(EnforcementId id, EnforcementStatus new_status);
-
-  // Returns kNoLiteralIndex if nothing need to change or a new literal to
-  // watch. This also calls the registered callback.
-  LiteralIndex ProcessIdOnTrue(Literal watched, EnforcementId id);
-
-  // External classes.
-  const Trail& trail_;
-  const VariablesAssignment& assignment_;
-  IntegerTrail* integer_trail_;
-  RevIntRepository* rev_int_repository_;
-
-  // All enforcement will be copied there, and we will create Span out of this.
-  // Note that we don't store the span so that we are not invalidated on buffer_
-  // resizing.
-  util_intops::StrongVector<EnforcementId, int> starts_;
-  std::vector<Literal> buffer_;
-
-  util_intops::StrongVector<EnforcementId, EnforcementStatus> statuses_;
-  util_intops::StrongVector<
-      EnforcementId, std::function<void(EnforcementId, EnforcementStatus)>>
-      callbacks_;
-
-  // Used to restore status and call callback on untrail.
-  std::vector<std::pair<EnforcementId, EnforcementStatus>> untrail_stack_;
-  int rev_stack_size_ = 0;
-  int64_t rev_stamp_ = 0;
-
-  // We use a two watcher scheme.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<EnforcementId, 6>>
-      watcher_;
-
-  std::vector<Literal> temp_literals_;
-  std::vector<Literal> temp_reason_;
-
-  std::vector<EnforcementId> ids_to_fix_until_next_root_level_;
-};
-
 // Helper class to decide on the constraint propagation order.
 //
 // Each constraint might push some variables which might in turn make other
 // constraint tighter. In general, it seems better to make sure we push first
 // constraints that are not affected by other variables and delay the
-// propagation of constraint that we know will become tigher.
+// propagation of constraint that we know will become tigher. This also likely
+// simplifies the reasons.
 //
 // Note that we can have cycle in this graph, and that this is not necessarily a
 // conflict.
 class ConstraintPropagationOrder {
  public:
   ConstraintPropagationOrder(
-      ModelRandomGenerator* random,
+      ModelRandomGenerator* random, TimeLimit* time_limit,
       std::function<absl::Span<const IntegerVariable>(int)> id_to_vars)
-      : random_(random), id_to_vars_func_(std::move(id_to_vars)) {}
+      : random_(random),
+        time_limit_(time_limit),
+        id_to_vars_func_(std::move(id_to_vars)) {}
 
   void Resize(int num_vars, int num_ids) {
     var_has_entry_.Resize(IntegerVariable(num_vars));
@@ -166,7 +70,7 @@ class ConstraintPropagationOrder {
     var_to_lb_.resize(num_vars);
     var_to_pos_.resize(num_vars);
 
-    in_ids_.Resize(num_ids);
+    in_ids_.resize(num_ids);
   }
 
   void Register(int id, IntegerVariable var, IntegerValue lb) {
@@ -203,15 +107,17 @@ class ConstraintPropagationOrder {
   // Return -1 if there is none.
   // This returns a constraint with min degree.
   //
-  // TODO(user): fix quadratic algo? We can use var_to_ids_func_() to maintain
-  // the degree. But note that with the start_ optim and because we expect
-  // mainly degree zero, this seems to be faster.
+  // TODO(user): fix quadratic or even linear algo? We can use
+  // var_to_ids_func_() to maintain the degree. But note that since we reorder
+  // constraints and because we expect mainly degree zero, this seems to be
+  // faster.
   int NextId() {
     if (ids_.empty()) return -1;
 
     int best_id = 0;
     int best_num_vars = 0;
     int best_degree = std::numeric_limits<int>::max();
+    int64_t work_done = 0;
     const int size = ids_.size();
     const auto var_has_entry = var_has_entry_.const_view();
     for (int i = 0; i < size; ++i) {
@@ -219,10 +125,28 @@ class ConstraintPropagationOrder {
       ids_.pop_front();
       DCHECK(in_ids_[id]);
 
+      // By degree, we mean the number of variables of the constraint that do
+      // not have yet their lower bounds up to date; they will be pushed by
+      // other constraints as we propagate them. If possible, we want to delay
+      // the propagation of a constraint with positive degree until all involved
+      // lower bounds are up to date (i.e. degree == 0).
       int degree = 0;
       absl::Span<const IntegerVariable> vars = id_to_vars_func_(id);
+      work_done += vars.size();
       for (const IntegerVariable var : vars) {
-        if (var_has_entry[var]) ++degree;
+        if (var_has_entry[var]) {
+          if (var_has_entry[NegationOf(var)] &&
+              var_to_id_[NegationOf(var)] == id) {
+            // We have two constraints, this one (id) push NegationOf(var), and
+            // var_to_id_[var] push var. So whichever order we choose, the first
+            // constraint will need to be scanned at least twice. Lets not count
+            // this situation in the degree.
+            continue;
+          }
+
+          DCHECK_NE(var_to_id_[var], id);
+          ++degree;
+        }
       }
 
       // We select the min-degree and prefer lower constraint size.
@@ -239,6 +163,11 @@ class ConstraintPropagationOrder {
       }
 
       ids_.push_back(id);
+    }
+
+    if (work_done > 100) {
+      time_limit_->AdvanceDeterministicTime(static_cast<double>(work_done) *
+                                            5e-9);
     }
 
     // We didn't find any degree zero, we scanned the whole queue.
@@ -277,6 +206,7 @@ class ConstraintPropagationOrder {
 
  public:
   ModelRandomGenerator* random_;
+  TimeLimit* time_limit_;
   std::function<absl::Span<const IntegerVariable>(int)> id_to_vars_func_;
 
   // For each variable we only keep the constraint id that pushes it further.
@@ -309,6 +239,8 @@ class LinearPropagator : public PropagatorInterface,
   bool Propagate() final;
   void SetLevel(int level) final;
 
+  std::string LazyReasonName() const override { return "LinearPropagator"; }
+
   // Adds a new constraint to the propagator.
   // We support adding constraint at a positive level:
   //  - This will push new propagation right away.
@@ -323,6 +255,10 @@ class LinearPropagator : public PropagatorInterface,
                IntegerVariable var_to_explain, int trail_index,
                std::vector<Literal>* literals_reason,
                std::vector<int>* trail_indices_reason) final;
+
+  void SetPushAffineUbForBinaryRelation() {
+    push_affine_ub_for_binary_relations_ = true;
+  }
 
  private:
   // We try to pack the struct as much as possible. Using a maximum size of
@@ -384,14 +320,18 @@ class LinearPropagator : public PropagatorInterface,
   Trail* trail_;
   IntegerTrail* integer_trail_;
   EnforcementPropagator* enforcement_propagator_;
+  EnforcementHelper* enforcement_helper_;
   GenericLiteralWatcher* watcher_;
   TimeLimit* time_limit_;
   RevIntRepository* rev_int_repository_;
   RevIntegerValueRepository* rev_integer_value_repository_;
-  PrecedenceRelations* precedences_;
+  EnforcedLinear2Bounds* precedences_;
+  Linear2BoundsFromLinear3* linear3_bounds_;
   ModelRandomGenerator* random_;
   SharedStatistics* shared_stats_ = nullptr;
   const int watcher_id_;
+
+  bool push_affine_ub_for_binary_relations_ = false;
 
   // To know when we backtracked. See SetLevel().
   int previous_level_ = 0;

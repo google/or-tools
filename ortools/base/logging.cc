@@ -15,7 +15,6 @@
 
 #include <mutex>  // for std::call_once and std::once_flag.  // NOLINT
 
-#include "absl/flags/flag.h"
 #include "absl/flags/usage.h"
 #include "absl/log/globals.h"
 #include "absl/log/initialize.h"
@@ -33,7 +32,5 @@ void FixFlagsAndEnvironmentForSwig() {
   });
   absl::EnableLogPrefix(false);
 }
-
-void KeepAbslSymbols() { absl::SetFlag(&FLAGS_stderrthreshold, 0); }
 
 }  // namespace operations_research

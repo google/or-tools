@@ -13,22 +13,24 @@
 
 #include "ortools/init/init.h"
 
+#include <string>
+
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
-#include "absl/flags/usage.h"
 #include "absl/log/globals.h"
-#include "absl/log/initialize.h"
-#include "ortools/gurobi/environment.h"
+#include "absl/strings/string_view.h"
+#include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/cp_model_utils.h"
+#include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
-void CppBridge::InitLogging(const std::string& usage) {
-  absl::SetProgramUsageMessage(usage);
-  absl::InitializeLog();
+void CppBridge::InitLogging(absl::string_view usage) {
+  google::InitGoogleLogging(usage);
 }
 
 void CppBridge::SetFlags(const CppFlags& flags) {
-  absl::SetFlag(&FLAGS_stderrthreshold, flags.stderrthreshold);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   absl::EnableLogPrefix(flags.log_prefix);
   if (!flags.cp_model_dump_prefix.empty()) {
     absl::SetFlag(&FLAGS_cp_model_dump_prefix, flags.cp_model_dump_prefix);
@@ -38,7 +40,7 @@ void CppBridge::SetFlags(const CppFlags& flags) {
   absl::SetFlag(&FLAGS_cp_model_dump_response, flags.cp_model_dump_response);
 }
 
-bool CppBridge::LoadGurobiSharedLibrary(const std::string& full_library_path) {
+bool CppBridge::LoadGurobiSharedLibrary(absl::string_view full_library_path) {
   return LoadGurobiDynamicLibrary({full_library_path}).ok();
 }
 

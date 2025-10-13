@@ -16,9 +16,7 @@
 #include <algorithm>
 #include <optional>
 #include <utility>
-#include <vector>
 
-#include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -26,14 +24,15 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/strong_int.h"
+#include "ortools/base/status_macros.h"
 #include "ortools/math_opt/callback.pb.h"
-#include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/map_filter.h"
+#include "ortools/math_opt/cpp/model.h"
 #include "ortools/math_opt/cpp/sparse_containers.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/util/status_macros.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -70,7 +69,7 @@ CallbackData::CallbackData(const CallbackEvent event,
                            const absl::Duration runtime)
     : event(event), runtime(runtime) {}
 
-CallbackData::CallbackData(const ModelStorage* storage,
+CallbackData::CallbackData(const ModelStorageCPtr storage,
                            const CallbackDataProto& proto)
     // iOS 11 does not support .value() hence we use operator* here and CHECK
     // below that we have a value.
@@ -89,8 +88,75 @@ CallbackData::CallbackData(const ModelStorage* storage,
   runtime = *maybe_time;
 }
 
+absl::Status CallbackData::CheckModelStorage(
+    const ModelStorageCPtr expected_storage) const {
+  if (solution.has_value()) {
+    for (const auto& [v, _] : solution.value()) {
+      RETURN_IF_ERROR(internal::CheckModelStorage(
+          /*storage=*/v.storage(), /*expected_storage=*/expected_storage))
+          << "invalid variable " << v << " in solution";
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::StatusOr<CallbackDataProto> CallbackData::Proto() const {
+  CallbackDataProto proto;
+  proto.set_event(EnumToProto(event));
+  *proto.mutable_presolve_stats() = presolve_stats;
+  *proto.mutable_simplex_stats() = simplex_stats;
+  *proto.mutable_barrier_stats() = barrier_stats;
+  *proto.mutable_mip_stats() = mip_stats;
+  if (solution.has_value()) {
+    *proto.mutable_primal_solution_vector() =
+        VariableValuesToProto(solution.value());
+  }
+  OR_ASSIGN_OR_RETURN3(*proto.mutable_runtime(),
+                       util_time::EncodeGoogleApiProto(runtime),
+                       _ << "failed to encode runtime");
+  return proto;
+}
+
+absl::StatusOr<CallbackRegistration> CallbackRegistration::FromProto(
+    const Model& model, const CallbackRegistrationProto& registration_proto) {
+  CallbackRegistration result;
+
+  // Parses `events`.
+  for (int e = 0; e < registration_proto.request_registration_size(); ++e) {
+    const CallbackEventProto event_proto =
+        registration_proto.request_registration(e);
+    const std::optional<CallbackEvent> event = EnumFromProto(event_proto);
+    if (event == std::nullopt) {
+      return util::InvalidArgumentErrorBuilder()
+             << "value CallbackRegistrationProto.request_registration[" << e
+             << "] is CALLBACK_EVENT_UNSPECIFIED";
+    }
+    if (!result.events.insert(event.value()).second) {
+      return util::InvalidArgumentErrorBuilder()
+             << "value " << event
+             << " is repeated at "
+                "CallbackRegistrationProto.request_registration["
+             << e << "]";
+    }
+  }
+
+  OR_ASSIGN_OR_RETURN3(
+      result.mip_solution_filter,
+      VariableFilterFromProto(model, registration_proto.mip_solution_filter()),
+      _ << "invalid CallbackRegistrationProto.mip_solution_filter");
+  OR_ASSIGN_OR_RETURN3(
+      result.mip_node_filter,
+      VariableFilterFromProto(model, registration_proto.mip_node_filter()),
+      _ << "invalid CallbackRegistrationProto.mip_node_filter");
+
+  result.add_cuts = registration_proto.add_cuts();
+  result.add_lazy_constraints = registration_proto.add_lazy_constraints();
+
+  return result;
+}
+
 absl::Status CallbackRegistration::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   RETURN_IF_ERROR(mip_node_filter.CheckModelStorage(expected_storage))
       << "invalid mip_node_filter";
   RETURN_IF_ERROR(mip_solution_filter.CheckModelStorage(expected_storage))
@@ -112,8 +178,50 @@ CallbackRegistrationProto CallbackRegistration::Proto() const {
   return result;
 }
 
+absl::StatusOr<CallbackResult> CallbackResult::FromProto(
+    const Model& model, const CallbackResultProto& result_proto) {
+  CallbackResult result = {
+      .terminate = result_proto.terminate(),
+  };
+
+  // Add new_constraints.
+  for (int c = 0; c < result_proto.cuts_size(); ++c) {
+    const CallbackResultProto::GeneratedLinearConstraint& constraint_proto =
+        result_proto.cuts(c);
+    OR_ASSIGN_OR_RETURN3(
+        const VariableMap<double> coefficients,
+        VariableValuesFromProto(model.storage(),
+                                constraint_proto.linear_expression()),
+        _ << "invalid CallbackResultProto.cuts[" << c << "].linear_expression");
+    LinearExpression expression;
+    for (const auto [v, coeff] : coefficients) {
+      expression += coeff * v;
+    };
+    result.new_constraints.push_back({
+        .linear_constraint = BoundedLinearExpression(
+            /*expression=*/std::move(expression),
+            /*lower_bound=*/constraint_proto.lower_bound(),
+            /*upper_bound=*/constraint_proto.upper_bound()),
+        .is_lazy = constraint_proto.is_lazy(),
+    });
+  }
+
+  // Add suggested_solutions.
+  for (int s = 0; s < result_proto.suggested_solutions_size(); ++s) {
+    const SparseDoubleVectorProto suggested_solution_proto =
+        result_proto.suggested_solutions(s);
+    OR_ASSIGN_OR_RETURN3(
+        VariableMap<double> suggested_solution,
+        VariableValuesFromProto(model.storage(), suggested_solution_proto),
+        _ << "invalid CallbackResultProto.suggested_solutions[" << s << "]");
+    result.suggested_solutions.push_back(std::move(suggested_solution));
+  }
+
+  return result;
+}
+
 absl::Status CallbackResult::CheckModelStorage(
-    const ModelStorage* const expected_storage) const {
+    const ModelStorageCPtr expected_storage) const {
   for (const GeneratedLinearConstraint& constraint : new_constraints) {
     RETURN_IF_ERROR(
         internal::CheckModelStorage(/*storage=*/constraint.storage(),

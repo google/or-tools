@@ -7,6 +7,7 @@
 | amd64 MacOS   | [![Status][amd64_macos_cpp_svg]][amd64_macos_cpp_link] | [![Status][amd64_macos_python_svg]][amd64_macos_python_link] | [![Status][amd64_macos_java_svg]][amd64_macos_java_link] | [![Status][amd64_macos_dotnet_svg]][amd64_macos_dotnet_link] |
 | amd64 Windows | [![Status][windows_cpp_svg]][windows_cpp_link] | [![Status][windows_python_svg]][windows_python_link] | [![Status][windows_java_svg]][windows_java_link] | [![Status][windows_dotnet_svg]][windows_dotnet_link] |
 
+<!-- disableFinding(LINK_RELATIVE_G3DOC) -->
 [linux_cpp_svg]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml/badge.svg?branch=main
 [linux_cpp_link]: ./../../../actions/workflows/amd64_linux_cmake_cpp.yml
 [linux_python_svg]: ./../../../actions/workflows/amd64_linux_cmake_python.yml/badge.svg?branch=main
@@ -43,22 +44,12 @@
 [windows_dotnet_svg]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml/badge.svg?branch=main
 [windows_dotnet_link]: ./../../../actions/workflows/amd64_windows_cmake_dotnet.yml
 
-Dockers \[Alpine, Archlinux, Centos, Debian, Fedora, OpenSuse, Ubuntu\]x
+Dockers:
+\[AlmaLinux, Alpine, Archlinux, Debian, Fedora, OpenSuse, RockyLinux, Ubuntu\]x
 \[C++, Python, Java, .Net\]: [![Status][docker_svg]][docker_link]
 
 [docker_svg]: ./../../../actions/workflows/amd64_docker_cmake.yml/badge.svg?branch=main
 [docker_link]: ./../../../actions/workflows/amd64_docker_cmake.yml
-
-[![Build Status][aarch64_toolchain_status]][aarch64_toolchain_link]
-[![Build Status][mips_toolchain_status]][mips_toolchain_link]
-[![Build Status][powerpc_toolchain_status]][powerpc_toolchain_link]
-
-[aarch64_toolchain_status]: ./../../../actions/workflows/aarch64_toolchain.yml/badge.svg?branch=main
-[aarch64_toolchain_link]: ./../../../actions/workflows/aarch64_toolchain.yml
-[mips_toolchain_status]: ./../../../actions/workflows/mips_toolchain.yml/badge.svg?branch=main
-[mips_toolchain_link]: ./../../../actions/workflows/mips_toolchain.yml
-[powerpc_toolchain_status]: ./../../../actions/workflows/powerpc_toolchain.yml/badge.svg?branch=main
-[powerpc_toolchain_link]: ./../../../actions/workflows/powerpc_toolchain.yml
 
 ## Introduction
 <nav for="cmake"> |
@@ -86,7 +77,7 @@ CMake as a standalone project or incorporate it into an existing CMake project.
 ## Requirement
 You'll need:
 
-* `CMake >= 3.18`.
+* `CMake >= 3.24`.
 * A C++20 compiler (GCC 10 or above)
 
 ## Solvers supported
@@ -114,6 +105,7 @@ the option `-DBUILD_DEPS=ON` (`OFF` by default) or compile some of them using
 the options below (see [CMake Options](#cmake-options) below).
 
 *   zlib (`BUILD_ZLIB`),
+*   bzip2 (`BUILD_BZip2`),
 *   Google Abseil-cpp (`BUILD_absl`),
 *   Google Protobuf (`BUILD_Protobuf`),
 *   COIN-OR solvers:
@@ -183,84 +175,86 @@ Following is a list of available options, for the full list run:
 cmake -S. -Bbuild -LH
 ```
 
-| CMake Option | Default Value | Note |
-|:-------------|:--------------|:-----|
-| `CMAKE_BUILD_TYPE` | Release | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) |
-| `BUILD_CXX` | ON | Build C++ |
-| `BUILD_DOTNET` | OFF | Build .Net wrapper and packages |
-| `BUILD_JAVA` | OFF | Build Java wrapper and packages |
-| `BUILD_PYTHON` | OFF | Build Python wrapper and package |
-| | | |
-| `BUILD_FLATZINC` | ON\* | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLOP` | OFF\* | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON |
-| | | |
-| `BUILD_DEPS` | OFF* | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON` |
-| `BUILD_ZLIB` | OFF* | Static build the zlib library<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_absl` | OFF* | Static build the abseil-cpp libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Protobuf` | OFF* | Static build the protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_re2`  | OFF* | Static build the re2 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| `BUILD_Eigen3` | OFF* | Static build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON` |
-| | | |
-| `USE_COINOR` | ON\* | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_CoinUtils`  | OFF\* | Static build the CoinUtils library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Osi`  | OFF\* | Static build the Osi library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Clp`  | OFF\* | Static build the Clp library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Cgl`  | OFF\* | Static build the Cgl library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| `BUILD_Cbc`  | OFF\* | Static build the Cbc library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON` |
-| | | |
-| `USE_GLPK`   | OFF\* | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_GLPK` | OFF\* | Static build the GLPK libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON` |
-| | | |
-| `USE_HIGHS`  | ON\* | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_HIGHS` | OFF\* | Static build the HiGHS libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON` |
-| | | |
-| `USE_SCIP`   | ON\*  | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF` |
-| `BUILD_SCIP` | OFF\* | Static build the SCIP libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON` |
-| | | |
-| `USE_CPLEX`  | OFF | Enable CPLEX support |
-| | | |
-| `BUILD_DOC`   | OFF\* | Build all documentations |
-| `BUILD_CXX_DOC` | OFF\* | Build C++ documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
-| `BUILD_DOTNET_DOC` | OFF\* | Build .Net documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
-| `BUILD_JAVA_DOC` | OFF\* | Build Java documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
-| `BUILD_PYTHON_DOC` | OFF\* | Build Python documentation<br>**Forced** to ON if `BUILD_DOC=ON` |
-| `INSTALL_DOC` | OFF\* | Install all documentations<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_DOC=OFF` |
-| | | |
-| `BUILD_SAMPLES`  | ON\* | Build all samples<br>Default to ON if `BUILD_DEPS=ON` |
-| `BUILD_CXX_SAMPLES`  | ON\* | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_DOTNET_SAMPLES`  | ON\* | Build all .Net samples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_JAVA_SAMPLES`  | ON\* | Build all Java samples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_PYTHON_SAMPLES`  | ON\* | Build all Python samples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
-| | | |
-| `BUILD_EXAMPLES`  | ON\* | Build all examples<br>Default to ON if `BUILD_DEPS=ON` |
-| `BUILD_CXX_EXAMPLES`  | ON\* | Build all C++ examples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_DOTNET_EXAMPLES`  | ON\* | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_JAVA_EXAMPLES`  | ON\* | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF` |
-| `BUILD_PYTHON_EXAMPLES`  | ON\* | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF` |
-| | | |
-| `USE_DOTNET_46`  | OFF | Enable .Net Framework 4.6 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_461`  | OFF | Enable .Net Framework 4.6.1 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_462`  | OFF | Enable .Net Framework 4.6.2 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_48`  | OFF | Enable .Net Framework 4.8 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_STD_21`  | OFF | Enable .Net Standard 2.1 support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
-| `USE_DOTNET_CORE_31`  | OFF | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform |
-| `USE_DOTNET_6`  | ON | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_7`  | OFF | Enable .Net 7 support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_8`  | OFF | Enable .Net 8 LTS support<br>Only available if `BUILD_DOTNET=ON` |
-| `USE_DOTNET_9`  | OFF | Enable .Net 9 support<br>Only available if `BUILD_DOTNET=ON` |
-| `UNIVERSAL_DOTNET_PACKAGE`  | OFF | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON` |
-| | | |
-| `SKIP_GPG`  | ON | Disable GPG sign<br>Only available if `BUILD_JAVA=ON` |
-| `UNIVERSAL_JAVA_PACKAGE`  | OFF | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON` |
-| `BUILD_FAT_JAR`  | OFF | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON` |
-| | | |
-| `BUILD_pybind11` | `BUILD_DEPS` | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `BUILD_pybind11_protobuf` | `BUILD_DEPS` | Static build the pybind11_protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `GENERATE_PYTHON_STUB` | ON | Generate python stub files<br>Only available if `BUILD_PYTHON=ON` |
-| `BUILD_VENV` | `BUILD_TESTING` | Create python venv in `BINARY_DIR/python/venv`<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON` |
-| `VENV_USE_SYSTEM_SITE_PACKAGES` | OFF | Python venv can use system site package (e.g. `py3-numpy` on Alpine)<br>Only available if `BUILD_PYTHON=ON` and `BUILD_VENV=ON` |
-| `FETCH_PYTHON_DEPS`  | `BUILD_DEPS` | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON` |
-| | | |
+CMake Option                    | Default Value   | Note
+:------------------------------ | :-------------- | :---
+`CMAKE_BUILD_TYPE`              | Release         | see CMake documentation [here](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html)
+`BUILD_CXX`                     | ON              | Build C++
+`BUILD_DOTNET`                  | OFF             | Build .Net wrapper and packages
+`BUILD_JAVA`                    | OFF             | Build Java wrapper and packages
+`BUILD_PYTHON`                  | OFF             | Build Python wrapper and package
+| |
+`BUILD_FLATZINC`                | ON\*            | Build the flatzinc library<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`BUILD_GLOP`                    | OFF\*           | Build the standalone Glop library<br>**Forced** to OFF if `BUILD_CXX=ON`, otherwise default to ON
+| **Dependencies** |
+`BUILD_DEPS`                    | OFF*            | Default to ON if `BUILD_JAVA=ON` or `BUILD_PYTHON=ON` or `BUILD_DOTNET=ON`
+`BUILD_ZLIB`                    | OFF*            | Build the zlib dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_BZip2`                   | OFF*            | Build the bzip2 dynamic library<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_absl`                    | OFF*            | Build the abseil-cpp dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Protobuf`                | OFF*            | Build the protobuf dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_re2`                     | OFF*            | Build the re2 dynamic libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+`BUILD_Eigen3`                  | OFF*            | Build the Eigen3 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`
+| Coin-OR |
+`USE_COINOR`                    | ON\*            | Enable Coin-OR support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`BUILD_CoinUtils`               | OFF\*           | Build the CoinUtils dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Osi`                     | OFF\*           | Build the Osi dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Clp`                     | OFF\*           | Build the Clp dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Cgl`                     | OFF\*           | Build the Cgl dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+`BUILD_Cbc`                     | OFF\*           | Build the Cbc dynamic library<br>**Forced** to ON if `USE_COINOR=ON` **and** `BUILD_DEPS=ON`
+| GLPK |
+`USE_GLPK`                      | OFF\*           | Enable GLPK support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`BUILD_GLPK`                    | OFF\*           | Build the GLPK dynamic libraries<br>**Forced** to ON if `USE_GLPK=ON` **and** `BUILD_DEPS=ON`
+| HiGHS |
+`USE_HIGHS`                     | ON\*            | Enable HIGHS support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`BUILD_HIGHS`                   | OFF\*           | Build the HiGHS dynamic libraries<br>**Forced** to ON if `USE_HIGHS=ON` **and** `BUILD_DEPS=ON`
+| SCIP |
+`USE_SCIP`                      | ON\*            | Enable SCIP support<br>**Forced** to OFF if `BUILD_CXX=OFF`
+`BUILD_SCIP`                    | OFF\*           | Build the SCIP dynamic libraries<br>**Forced** to ON if `USE_SCIP=ON` **and** `BUILD_DEPS=ON`
+| CPLEX
+`USE_CPLEX`                     | OFF             | Enable CPLEX support
+| **Documentation** |
+`BUILD_DOC`                     | OFF\*           | Build all documentations
+`BUILD_CXX_DOC`                 | OFF\*           | Build C++ documentation<br>**Forced** to ON if `BUILD_DOC=ON`
+`BUILD_DOTNET_DOC`              | OFF\*           | Build .Net documentation<br>**Forced** to ON if `BUILD_DOC=ON`
+`BUILD_JAVA_DOC`                | OFF\*           | Build Java documentation<br>**Forced** to ON if `BUILD_DOC=ON`
+`BUILD_PYTHON_DOC`              | OFF\*           | Build Python documentation<br>**Forced** to ON if `BUILD_DOC=ON`
+`INSTALL_DOC`                   | OFF\*           | Install all documentations<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_DOC=OFF`
+| **Samples** |
+`BUILD_SAMPLES`                 | ON\*            | Build all samples<br>Default to ON if `BUILD_DEPS=ON`
+`BUILD_CXX_SAMPLES`             | ON\*            | Build all C++ samples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_DOTNET_SAMPLES`          | ON\*            | Build all .Net samples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_JAVA_SAMPLES`            | ON\*            | Build all Java samples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_PYTHON_SAMPLES`          | ON\*            | Build all Python samples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF`
+| **Examples** |
+`BUILD_EXAMPLES`                | ON\*            | Build all examples<br>Default to ON if `BUILD_DEPS=ON`
+`BUILD_CXX_EXAMPLES`            | ON\*            | Build all C++ examples<br>**Forced** to OFF if `BUILD_CXX=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_DOTNET_EXAMPLES`         | ON\*            | Build all .Net examples<br>**Forced** to OFF if `BUILD_DOTNET=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_JAVA_EXAMPLES`           | ON\*            | Build all Java examples<br>**Forced** to OFF if `BUILD_JAVA=OFF` or `BUILD_SAMPLE=OFF`
+`BUILD_PYTHON_EXAMPLES`         | ON\*            | Build all Python examples<br>**Forced** to OFF if `BUILD_PYTHON=OFF` or `BUILD_SAMPLE=OFF`
+| **.Net** |
+`USE_DOTNET_46`                 | OFF             | Enable .Net Framework 4.6 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_461`                | OFF             | Enable .Net Framework 4.6.1 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_462`                | OFF             | Enable .Net Framework 4.6.2 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_48`                 | OFF             | Enable .Net Framework 4.8 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_STD_21`             | OFF             | Enable .Net Standard 2.1 support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform
+`USE_DOTNET_CORE_31`            | OFF             | Enable .Net Core 3.1 LTS support<br>Only available if `BUILD_DOTNET=ON` and not targeting arm64 platform
+`USE_DOTNET_6`                  | OFF             | Enable .Net 6 LTS support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_7`                  | OFF             | Enable .Net 7 support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_8`                  | ON              | Enable .Net 8 LTS support<br>Only available if `BUILD_DOTNET=ON`
+`USE_DOTNET_9`                  | OFF             | Enable .Net 9 support<br>Only available if `BUILD_DOTNET=ON`
+`UNIVERSAL_DOTNET_PACKAGE`      | OFF             | Build a multi platform package (i.e. `Google.OrTools` will depends on all runtime packages)<br>Only available if `BUILD_DOTNET=ON`
+| **Java** |
+`SKIP_GPG`                      | ON              | Disable GPG sign<br>Only available if `BUILD_JAVA=ON`
+`UNIVERSAL_JAVA_PACKAGE`        | OFF             | Build a multi platform package (i.e. `ortools-java` will depends on all native packages)<br>Only available if `BUILD_JAVA=ON`
+`BUILD_FAT_JAR`                 | OFF             | Build a `ortools-java` .jar that includes all of its own Maven dependencies, including the native package<br>Only available if `BUILD_JAVA=ON`
+| **Python** |
+`BUILD_pybind11`                | `BUILD_DEPS`    | Static build the pybind11 libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON`
+`BUILD_pybind11_abseil`         | `BUILD_DEPS`    | Static build the pybind11_abseil libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON`
+`BUILD_pybind11_protobuf`       | `BUILD_DEPS`    | Static build the pybind11_protobuf libraries<br>**Forced** to ON if `BUILD_DEPS=ON`<br>Only available if `BUILD_PYTHON=ON`
+`GENERATE_PYTHON_STUB`          | ON              | Generate python stub files<br>Only available if `BUILD_PYTHON=ON`
+`BUILD_VENV`                    | `BUILD_TESTING` | Create python venv in `BINARY_DIR/python/venv`<br>**Forced** to ON if `BUILD_TESTING=ON`<br>Only available if `BUILD_PYTHON=ON`
+`VENV_USE_SYSTEM_SITE_PACKAGES` | OFF             | Python venv can use system site package (e.g. `py3-numpy` on Alpine)<br>Only available if `BUILD_PYTHON=ON` and `BUILD_VENV=ON`
+`FETCH_PYTHON_DEPS`             | `BUILD_DEPS`    | Fetch python modules needed to build ortools package<br>Only available if `BUILD_PYTHON=ON`
+| |
 
 ## Integrating OR-Tools in your CMake Project
 

@@ -11,15 +11,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Code specific to Glpk solver used by linear_solver/ and math_opt/.
-package(default_visibility = ["//ortools:__subpackages__"])
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(
+    # Code specific to Glpk solver used by linear_solver/ and math_opt/.
+    default_visibility = ["//visibility:public"],
+)
 
 cc_library(
     name = "glpk_env_deleter",
     srcs = ["glpk_env_deleter.cc"],
     hdrs = ["glpk_env_deleter.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
-        "//ortools/base",
+        "//ortools/base:logging",
         "@glpk",
     ],
 )
@@ -28,17 +38,40 @@ cc_library(
     name = "glpk_formatters",
     srcs = ["glpk_formatters.cc"],
     hdrs = ["glpk_formatters.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
-        "//ortools/base",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/strings",
         "@glpk",
+    ],
+)
+
+cc_test(
+    name = "glpk_formatters_test",
+    srcs = ["glpk_formatters_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+    deps = [
+        ":glpk_formatters",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
 cc_library(
     name = "glpk_computational_form",
     hdrs = ["glpk_computational_form.h"],
-    deps = [
-        "@glpk",
-    ],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+    deps = ["@glpk"],
 )

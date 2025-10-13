@@ -24,6 +24,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,7 +36,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -137,7 +137,7 @@ std::vector<std::string> SetSolveParameters(
     sat_parameters.set_random_seed(parameters.random_seed());
   }
   if (parameters.has_threads()) {
-    sat_parameters.set_num_search_workers(parameters.threads());
+    sat_parameters.set_num_workers(parameters.threads());
   }
   if (parameters.has_relative_gap_tolerance()) {
     sat_parameters.set_relative_gap_limit(parameters.relative_gap_tolerance());

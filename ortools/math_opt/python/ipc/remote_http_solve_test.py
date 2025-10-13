@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +14,9 @@
 
 import requests_mock
 from absl.testing import absltest
-from ortools.gscip import gscip_pb2
 from ortools.math_opt.python import mathopt
 from ortools.math_opt.python.ipc import remote_http_solve
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 _MOCK_API_KEY = "1234"
 _ENDPOINT = "https://optimization.googleapis.com/v1/mathopt:solveMathOptModel"
@@ -103,7 +104,11 @@ class RemoteHttpSolveTest(absltest.TestCase):
         )
 
         remote_solve_result, messages = remote_http_solve.remote_http_solve(
-            mod, mathopt.SolverType.GSCIP, api_key=_MOCK_API_KEY
+            mod,
+            mathopt.SolverType.GSCIP,
+            params=mathopt.SolveParameters(enable_output=True),
+            api_key=_MOCK_API_KEY,
+            resources=mathopt.SolverResources(ram=1024 * 1024 * 1024),
         )
 
         self.assertGreaterEqual(len(remote_solve_result.solutions), 1)

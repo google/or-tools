@@ -25,17 +25,16 @@
 #ifndef OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 #define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_G_XPRESS_H_
 
-#include <functional>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research::math_opt {
 
@@ -45,8 +44,8 @@ class Xpress {
 
   // Creates a new Xpress
   static absl::StatusOr<std::unique_ptr<Xpress>> New(
-      const std::string& model_name);
-  absl::Status SetProbName(const std::string& name);
+      absl::string_view model_name);
+  absl::Status SetProbName(absl::string_view name);
 
   ~Xpress();
 
@@ -79,14 +78,16 @@ class Xpress {
                           absl::Span<const double> rowcoef);
 
   absl::Status SetObjectiveSense(bool maximize);
-  absl::Status SetLinearObjective(double offset, absl::Span<const int> colind,
-                                  absl::Span<const double> values);
+  absl::Status SetLinearObjective(double constant,
+                                  absl::Span<const int> col_index,
+                                  absl::Span<const double> obj_coeffs);
   absl::Status SetQuadraticObjective(absl::Span<const int> colind1,
                                      absl::Span<const int> colind2,
                                      absl::Span<const double> coefficients);
 
-  absl::Status ChgCoeffs(absl::Span<const int> cind, absl::Span<const int> vind,
-                         absl::Span<const double> val);
+  absl::Status ChgCoeffs(absl::Span<const int> rowind,
+                         absl::Span<const int> colind,
+                         absl::Span<const double> values);
 
   absl::Status LpOptimize(std::string flags);
   // Fetch LP solution (primals, duals, and reduced costs)

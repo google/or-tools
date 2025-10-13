@@ -1,4 +1,0 @@
-ortools
-matplotlib
-plotly
-svgwrite

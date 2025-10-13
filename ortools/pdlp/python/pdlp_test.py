@@ -157,7 +157,7 @@ def tiny_lp():
     return qp
 
 
-def test_lp():
+def small_lp():
     """Returns a small LP with all 4 patterns lower and upper bounds.
 
     min 5.5 x_0 - 2 x_1 - x_2 +   x_3 - 14 s.t.
@@ -221,7 +221,7 @@ class PrimalDualHybridGradientTest(absltest.TestCase):
         opt_criteria = params.termination_criteria.simple_optimality_criteria
         opt_criteria.eps_optimal_relative = 0.0
         opt_criteria.eps_optimal_absolute = 1.0e-10
-        result = pdlp.primal_dual_hybrid_gradient(test_lp(), params)
+        result = pdlp.primal_dual_hybrid_gradient(small_lp(), params)
         self.assertEqual(
             result.solve_log.termination_reason,
             solve_log_pb2.TERMINATION_REASON_OPTIMAL,

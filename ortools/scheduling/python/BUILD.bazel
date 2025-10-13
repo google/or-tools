@@ -11,11 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for ..
-
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 pybind_extension(
     name = "rcpsp",
@@ -24,21 +22,20 @@ pybind_extension(
     deps = [
         "//ortools/scheduling:rcpsp_cc_proto",
         "//ortools/scheduling:rcpsp_parser",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
 )
 
 py_test(
     name = "rcpsp_test",
+    size = "small",
     srcs = ["rcpsp_test.py"],
-    data = [
-        "//ortools/scheduling/testdata:j301_1.sm",
-    ],
-    python_version = "PY3",
+    data = ["//ortools/scheduling/testdata:j301_1.sm"],
     deps = [
         ":rcpsp",
-        "//ortools/scheduling:rcpsp_py_proto",
+        "//ortools/scheduling:rcpsp_py_pb2",
         requirement("absl-py"),
     ],
 )

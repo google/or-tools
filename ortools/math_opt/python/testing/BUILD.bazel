@@ -11,7 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_python//python:defs.bzl", "py_library")
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -20,8 +22,20 @@ py_library(
     testonly = 1,
     srcs = ["compare_proto.py"],
     deps = [
+        requirement("absl-py"),
         "//ortools/math_opt/python:normalize",
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
+    ],
+)
+
+py_test(
+    name = "compare_proto_test",
+    srcs = ["compare_proto_test.py"],
+    deps = [
+        ":compare_proto",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt/python:normalize",
     ],
 )
 
@@ -31,6 +45,17 @@ py_library(
     srcs = ["proto_matcher.py"],
     deps = [
         "//ortools/math_opt/python:normalize",
-        "@com_google_protobuf//:protobuf_python",
+        "@protobuf//:protobuf_python",
+    ],
+)
+
+py_test(
+    name = "proto_matcher_test",
+    srcs = ["proto_matcher_test.py"],
+    deps = [
+        ":proto_matcher",
+        requirement("absl-py"),
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt:sparse_containers_py_pb2",
     ],
 )

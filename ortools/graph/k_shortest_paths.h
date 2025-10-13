@@ -25,6 +25,16 @@
 // Loopless path: path not going through the same node more than once. Also
 // called simple path.
 //
+// The implementations do not support multigraphs, i.e. graphs with several
+// arcs between the same source and destination nodes. One way to work around
+// this limitation is to create dummy nodes between the source and destination
+// nodes, with one of the edges carrying the weight and the other having a zero
+// weight. This transformation slightly increases the size of the graph.
+// If you have n edges between the nodes s and t, with the weights w_i, do the
+// following: create n - 1 nodes (d_i for i from 2 to n), create n - 1 edges
+// between s and d_i with weight w_i, create n - 1 edges between d_i and t with
+// weight 0.
+//
 //
 // Design choices
 // ==============
@@ -55,6 +65,7 @@
 #define OR_TOOLS_GRAPH_K_SHORTEST_PATHS_H_
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <queue>
@@ -66,9 +77,9 @@
 #include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/bounded_dijkstra.h"
 #include "ortools/graph/shortest_paths.h"
 
@@ -206,8 +217,8 @@ class PathWithPriority {
 
   PathWithPriority(PathDistance priority, std::vector<NodeIndex> path)
       : path_(std::move(path)), priority_(priority) {}
-  bool operator<(const PathWithPriority& other) const {
-    return priority_ < other.priority_;
+  bool operator>(const PathWithPriority& other) const {
+    return priority_ > other.priority_;
   }
 
   [[nodiscard]] const std::vector<NodeIndex>& path() const { return path_; }
@@ -318,7 +329,9 @@ KShortestPaths<GraphType> YenKShortestPaths(
 
   // Generate variant paths.
   internal::UnderlyingContainerAdapter<
-      std::priority_queue<internal::PathWithPriority<GraphType>>>
+      std::priority_queue<internal::PathWithPriority<GraphType>,
+                          std::vector<internal::PathWithPriority<GraphType>>,
+                          std::greater<internal::PathWithPriority<GraphType>>>>
       variant_path_queue;
 
   // One path has already been generated (the shortest one). Only k-1 more
@@ -495,7 +508,7 @@ KShortestPaths<GraphType> YenKShortestPaths(
             internal::ComputePathLength(graph, arc_lengths, new_path);
         VLOG(5) << "  New potential path generated: "
                 << absl::StrJoin(new_path, " - ") << " (" << new_path.size()
-                << ")";
+                << ")" << " with length " << path_length;
         VLOG(5) << "    Root: " << absl::StrJoin(root_path, " - ") << " ("
                 << root_path.size() << ")";
         VLOG(5) << "    Spur: " << absl::StrJoin(spur_path, " - ") << " ("

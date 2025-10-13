@@ -174,6 +174,13 @@ class SolutionCrush {
       int var, bool value,
       absl::Span<const std::unique_ptr<SparsePermutation>> generators);
 
+  // If at most one literal in `orbitope[row]` is equal to `value`, and if this
+  // literal is in a column 'col' > `pivot_col`, swaps the value of all the
+  // literals in columns 'col' and `pivot_col` (if they all have a value).
+  // Otherwise does nothing.
+  void MaybeSwapOrbitopeColumns(absl::Span<const std::vector<int>> orbitope,
+                                int row, int pivot_col, bool value);
+
   // Sets the value of the i-th variable in `vars` so that the given constraint
   // "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
   // variables have a value. i is equal to `var_index` if set. Otherwise it is

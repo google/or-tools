@@ -21,9 +21,9 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/bop_solution.h"

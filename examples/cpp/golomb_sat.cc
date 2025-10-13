@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Golomb ruler problem
 //
 //  find minimal ruler so that the differences between ticks are unique.
@@ -26,16 +25,21 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/types.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
+#include "ortools/util/sorted_interval_list.h"
 
 ABSL_FLAG(bool, print, false, "If true, print the minimal solution.");
 ABSL_FLAG(
@@ -120,7 +124,7 @@ void GolombRuler(int size) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
 
   if (absl::GetFlag(FLAGS_size) != 0) {

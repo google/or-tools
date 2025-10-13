@@ -487,10 +487,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   glop::LpScalingHelper scaler_;
 
   // Temporary data for cuts.
-  ZeroHalfCutHelper zero_half_cut_helper_;
-  CoverCutHelper cover_cut_helper_;
-  IntegerRoundingCutHelper integer_rounding_cut_helper_;
-
   bool problem_proven_infeasible_by_cuts_ = false;
   CutData base_ct_;
 
@@ -535,7 +531,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerTrail* integer_trail_;
   Trail* trail_;
   GenericLiteralWatcher* watcher_;
-  IntegerEncoder* integer_encoder_;
   ProductDetector* product_detector_;
   ObjectiveDefinition* objective_definition_;
   SharedStatistics* shared_stats_;
@@ -546,6 +541,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   int watcher_id_;
 
+  // Cut helpers.
+  ZeroHalfCutHelper zero_half_cut_helper_;
+  CoverCutHelper cover_cut_helper_;
+  IntegerRoundingCutHelper integer_rounding_cut_helper_;
   BoolRLTCutHelper rlt_cut_helper_;
 
   // Used while deriving cuts.
@@ -591,6 +590,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // True if the last time we solved the exact same LP at level zero, no cuts
   // and no lazy constraints where added.
   bool lp_at_level_zero_is_final_ = false;
+  int num_force_lp_call_on_next_propagate_ = 0;
 
   // Same as lp_solution_ but this vector is indexed by IntegerVariable.
   ModelLpVariableMapping& mirror_lp_variable_;

@@ -24,15 +24,17 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/path.h"
 #include "ortools/packing/binpacking_2d_parser.h"
@@ -48,7 +50,7 @@ ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 ABSL_FLAG(int, max_bins, 0,
           "Maximum number of bins. The 0 default value implies the code will "
           "use some heuristics to compute this number.");
-ABSL_FLAG(int, symmetry_breaking_level, 2, "Use symmetry breaking constraints");
+ABSL_FLAG(int, symmetry_breaking_level, 3, "Use symmetry breaking constraints");
 ABSL_FLAG(bool, use_global_cumulative, true,
           "Use a global cumulative relaxation");
 
@@ -555,7 +557,7 @@ void LoadAndSolve(const std::string& file_name, int instance) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";

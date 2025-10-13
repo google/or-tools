@@ -11,72 +11,82 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-
-package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 cc_library(
     name = "graph",
     hdrs = ["graph.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":iterators",
         "//ortools/base",
         "//ortools/base:constant_divisor",
-        "@com_google_absl//absl/debugging:leak_check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/debugging:leak_check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "graph_test",
+    size = "small",
+    srcs = ["graph_test.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":graph",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "flow_graph",
     hdrs = ["flow_graph.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         ":iterators",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 cc_library(
     name = "bfs",
     hdrs = ["bfs.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
 cc_library(
     name = "bounded_dijkstra",
     hdrs = ["bounded_dijkstra.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":graph",
+        "//ortools/base:intops",
         "//ortools/base:iterator_adaptors",
+        "//ortools/base:strong_vector",
         "//ortools/base:threadpool",
         "//ortools/base:top_n",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "//ortools/graph",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -86,16 +96,17 @@ cc_test(
     srcs = ["bounded_dijkstra_test.cc"],
     deps = [
         ":bounded_dijkstra",
-        ":graph",
-        ":io",
-        ":test_util",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/graph",
+        "//ortools/graph:io",
+        "//ortools/graph:test_util",
         "//ortools/util:flat_matrix",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -103,9 +114,10 @@ cc_library(
     name = "minimum_vertex_cover",
     srcs = ["minimum_vertex_cover.cc"],
     hdrs = ["minimum_vertex_cover.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":max_flow",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -115,18 +127,19 @@ cc_test(
     deps = [
         ":minimum_vertex_cover",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/algorithm:container",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "multi_dijkstra",
     hdrs = ["multi_dijkstra.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:map_util",
         "//ortools/base:types",
-        "@com_google_absl//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_map",
     ],
 )
 
@@ -135,31 +148,33 @@ cc_test(
     size = "small",
     srcs = ["multi_dijkstra_test.cc"],
     deps = [
-        ":connected_components",
-        ":graph",
         ":multi_dijkstra",
-        ":random_graph",
-        ":util",
         "//ortools/base:gmock_main",
         "//ortools/base:map_util",
         "//ortools/base:types",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/random:distributions",
+        "//ortools/graph",
+        "//ortools/graph:connected_components",
+        "//ortools/graph:random_graph",
+        "//ortools/graph:util",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/random:distributions",
     ],
 )
 
 cc_library(
     name = "bidirectional_dijkstra",
     hdrs = ["bidirectional_dijkstra.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
         "//ortools/base:threadpool",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -167,16 +182,17 @@ cc_test(
     name = "bidirectional_dijkstra_test",
     size = "small",
     srcs = ["bidirectional_dijkstra_test.cc"],
+    tags = ["noci"],
     deps = [
         ":bidirectional_dijkstra",
         ":bounded_dijkstra",
-        ":graph",
         "//ortools/base:gmock_main",
         "//ortools/base:iterator_adaptors",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "//ortools/graph",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -184,15 +200,16 @@ cc_library(
     name = "cliques",
     srcs = ["cliques.cc"],
     hdrs = ["cliques.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:bitset",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -204,28 +221,28 @@ cc_test(
         ":cliques",
         "//ortools/base:gmock_main",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/functional:bind_front",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:bind_front",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "hamiltonian_path",
     hdrs = ["hamiltonian_path.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//ortools/base",
-        "//ortools/base:types",
         "//ortools/util:bitset",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:vector_or_function",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -236,29 +253,32 @@ cc_test(
     srcs = ["hamiltonian_path_test.cc"],
     deps = [
         ":hamiltonian_path",
-        "//ortools/base",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 cc_library(
     name = "christofides",
     hdrs = ["christofides.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":eulerian_path",
-        ":graph",
         ":minimum_spanning_tree",
         ":perfect_matching",
         "//ortools/base",
-        "//ortools/base:types",
+        "//ortools/graph",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/util:saturated_arithmetic",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -269,16 +289,17 @@ cc_test(
         ":christofides",
         "//ortools/base",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "eulerian_path",
     hdrs = ["eulerian_path.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -289,22 +310,23 @@ cc_test(
     srcs = ["eulerian_path_test.cc"],
     deps = [
         ":eulerian_path",
-        ":graph",
-        "//ortools/base",
         "//ortools/base:gmock_main",
-        "@com_google_benchmark//:benchmark",
+        "//ortools/graph",
+        "@abseil-cpp//absl/base:core_headers",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "minimum_spanning_tree",
     hdrs = ["minimum_spanning_tree.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":connected_components",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:types",
+        "//ortools/graph:connected_components",
         "//ortools/util:vector_or_function",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -312,26 +334,27 @@ cc_test(
     name = "minimum_spanning_tree_test",
     srcs = ["minimum_spanning_tree_test.cc"],
     deps = [
-        ":graph",
         ":minimum_spanning_tree",
         "//ortools/base:gmock_main",
         "//ortools/base:types",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "//ortools/graph",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
 cc_library(
     name = "one_tree_lower_bound",
     hdrs = ["one_tree_lower_bound.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":christofides",
-        ":graph",
         ":minimum_spanning_tree",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/types:span",
+        "//ortools/graph",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -344,19 +367,15 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/routing/parsers:tsplib_parser",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/types:span",
     ],
-)
-
-cc_library(
-    name = "ebert_graph",
-    hdrs = ["ebert_graph.h"],
 )
 
 cc_library(
     name = "shortest_paths",
     hdrs = ["shortest_paths.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
@@ -364,11 +383,11 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/base:timer",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/functional:bind_front",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/functional:bind_front",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -376,32 +395,32 @@ cc_test(
     name = "shortest_paths_test",
     size = "enormous",
     srcs = ["shortest_paths_test.cc"],
-    tags = ["noasan"],  # Times out occasionally in ASAN mode.
+    tags = ["noci"],  # Times out occasionally in ASAN mode.
     deps = [
-        ":graph",
         ":shortest_paths",
-        ":strongly_connected_components",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
+        "//ortools/graph",
+        "//ortools/graph:strongly_connected_components",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
     ],
 )
 
 cc_library(
     name = "k_shortest_paths",
     hdrs = ["k_shortest_paths.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":bounded_dijkstra",
-        ":ebert_graph",
         ":shortest_paths",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -409,16 +428,16 @@ cc_test(
     name = "k_shortest_paths_test",
     srcs = ["k_shortest_paths_test.cc"],
     deps = [
-        ":graph",
-        ":io",
         ":k_shortest_paths",
         ":shortest_paths",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings",
-        "@com_google_benchmark//:benchmark",
+        "//ortools/graph",
+        "//ortools/graph:io",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -426,10 +445,12 @@ cc_test(
 proto_library(
     name = "flow_problem_proto",
     srcs = ["flow_problem.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "flow_problem_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":flow_problem_proto"],
 )
 
@@ -438,10 +459,11 @@ cc_library(
     name = "max_flow",
     srcs = ["max_flow.cc"],
     hdrs = ["max_flow.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":flow_problem_cc_proto",
         ":generic_max_flow",
-        ":graph",
+        "//ortools/graph",
     ],
 )
 
@@ -455,20 +477,20 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/base:path",
         "//ortools/util:file_util",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
 cc_library(
     name = "generic_max_flow",
     hdrs = ["generic_max_flow.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":ebert_graph",
         ":flow_problem_cc_proto",
         "//ortools/base",
         "//ortools/util:stats",
         "//ortools/util:zvector",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -477,18 +499,17 @@ cc_test(
     size = "medium",
     srcs = ["generic_max_flow_test.cc"],
     deps = [
-        ":ebert_graph",
-        ":flow_graph",
         ":generic_max_flow",
-        ":graph",
         "//ortools/base",
         "//ortools/base:gmock_main",
+        "//ortools/graph",
+        "//ortools/graph:flow_graph",
         "//ortools/linear_solver",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -498,24 +519,23 @@ cc_library(
     srcs = ["min_cost_flow.cc"],
     hdrs = ["min_cost_flow.h"],
     copts = select({
-        "on_linux": [],
-        "on_macos": [],
-        "on_windows": ["/Zc:preprocessor"],
+        "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":generic_max_flow",
-        ":graph",
         "//ortools/base:mathutil",
+        "//ortools/graph",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:stats",
         "//ortools/util:zvector",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -523,17 +543,17 @@ cc_test(
     name = "min_cost_flow_test",
     size = "medium",
     srcs = ["min_cost_flow_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":ebert_graph",
         ":min_cost_flow",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
-        ":graph",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+        "//ortools/graph",
         # Using CLP because GLOP is too slow in non-opt mode.
         "//ortools/algorithms:binary_search",
         "//ortools/linear_solver",
@@ -545,22 +565,25 @@ cc_binary(
     name = "solve_flow_model",
     srcs = ["solve_flow_model.cc"],
     deps = [
-        ":flow_graph",
         ":flow_problem_cc_proto",
         ":generic_max_flow",
-        ":graph",
         ":min_cost_flow",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:path",
         "//ortools/base:timer",
+        "//ortools/graph",
+        "//ortools/graph:flow_graph",
         "//ortools/util:file_util",
         "//ortools/util:filelineiter",
         "//ortools/util:stats",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -571,9 +594,10 @@ cc_library(
     name = "assignment",
     srcs = ["assignment.cc"],
     hdrs = ["assignment.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":graph",
         ":linear_assignment",
+        "//ortools/graph",
     ],
 )
 
@@ -584,20 +608,9 @@ cc_test(
     deps = [
         ":assignment",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_benchmark//:benchmark",
-    ],
-)
-
-cc_test(
-    name = "line_graph_test",
-    srcs = ["line_graph_test.cc"],
-    deps = [
-        ":graph",
-        ":line_graph",
-        "//ortools/base:gmock_main",
-        "@com_google_absl//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -607,14 +620,14 @@ cc_library(
     name = "linear_assignment",
     srcs = ["linear_assignment.cc"],
     hdrs = ["linear_assignment.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":ebert_graph",
-        ":iterators",
         "//ortools/base",
+        "//ortools/graph:iterators",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -623,14 +636,40 @@ cc_test(
     size = "small",
     srcs = ["linear_assignment_test.cc"],
     deps = [
-        ":graph",
         ":linear_assignment",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random:distributions",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "//ortools/graph",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "dag_connectivity",
+    srcs = ["dag_connectivity.cc"],
+    hdrs = ["dag_connectivity.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:container_logging",
+        "//ortools/graph:topologicalsorter",
+        "//ortools/util:bitset",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "dag_connectivity_test",
+    srcs = ["dag_connectivity_test.cc"],
+    deps = [
+        ":dag_connectivity",
+        "//ortools/base:gmock_main",
+        "//ortools/util:bitset",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -638,17 +677,18 @@ cc_library(
     name = "perfect_matching",
     srcs = ["perfect_matching.cc"],
     hdrs = ["perfect_matching.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:int_type",
         "//ortools/base:strong_vector",
         "//ortools/util:saturated_arithmetic",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -656,15 +696,16 @@ cc_library(
     name = "dag_shortest_path",
     srcs = ["dag_shortest_path.cc"],
     hdrs = ["dag_shortest_path.h"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":graph",
-        ":topologicalsorter",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "//ortools/graph",
+        "//ortools/graph:topologicalsorter",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -672,53 +713,49 @@ cc_library(
     name = "dag_constrained_shortest_path",
     srcs = ["dag_constrained_shortest_path.cc"],
     hdrs = ["dag_constrained_shortest_path.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":dag_shortest_path",
-        ":graph",
-        ":topologicalsorter",
         "//ortools/base:threadpool",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/base:log_severity",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "//ortools/graph",
+        "//ortools/graph:topologicalsorter",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 cc_library(
     name = "rooted_tree",
     hdrs = ["rooted_tree.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
-)
-
-cc_library(
-    name = "line_graph",
-    hdrs = ["line_graph.h"],
-    deps = ["@com_google_absl//absl/log"],
 )
 
 cc_test(
     name = "rooted_tree_test",
     srcs = ["rooted_tree_test.cc"],
     deps = [
-        ":graph",
         ":rooted_tree",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/status",
-        "@com_google_benchmark//:benchmark",
+        "//ortools/graph",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -731,8 +768,8 @@ cc_test(
         "//ortools/base:gmock_main",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:solve_mp_model",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -742,17 +779,19 @@ cc_test(
     srcs = ["dag_shortest_path_test.cc"],
     deps = [
         ":dag_shortest_path",
-        ":graph",
-        ":io",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "//ortools/graph",
+        "//ortools/graph:io",
         "//ortools/util:flat_matrix",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -761,19 +800,18 @@ cc_test(
     srcs = ["dag_constrained_shortest_path_test.cc"],
     deps = [
         ":dag_constrained_shortest_path",
-        ":dag_shortest_path",
-        ":graph",
-        ":io",
         "//ortools/base:dump_vars",
         "//ortools/base:gmock_main",
+        "//ortools/graph",
+        "//ortools/graph:io",
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers:cp_sat_solver",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
-        "@com_google_benchmark//:benchmark",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
     ],
 )
 
@@ -786,46 +824,62 @@ cc_library(
     hdrs = [
         "connected_components.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
-        "//ortools/base:ptr_util",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )
 
 cc_library(
     name = "io",
     hdrs = ["graph_io.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         "//ortools/base:numbers",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
 cc_library(
     name = "iterators",
     hdrs = ["iterators.h"],
+    visibility = ["//visibility:public"],
+    deps = ["@abseil-cpp//absl/log:check"],
+)
+
+cc_test(
+    name = "iterators_test",
+    size = "small",
+    srcs = ["iterators_test.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":iterators",
+        "//ortools/base:gmock_main",
+        "//ortools/base:intops",
+    ],
 )
 
 cc_library(
     name = "random_graph",
     srcs = ["random_graph.cc"],
     hdrs = ["random_graph.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         "//ortools/base:logging",
         "//ortools/base:types",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/random:bit_gen_ref",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:bit_gen_ref",
     ],
 )
 
@@ -834,6 +888,7 @@ cc_library(
     hdrs = [
         "strongly_connected_components.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
     ],
@@ -843,6 +898,7 @@ cc_library(
     name = "topologicalsorter",
     srcs = ["topologicalsorter.cc"],
     hdrs = ["topologicalsorter.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         "//ortools/base",
@@ -850,10 +906,10 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:status_builder",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -861,22 +917,24 @@ cc_library(
     name = "util",
     srcs = ["util.cc"],
     hdrs = ["util.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":connected_components",
         ":graph",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:inlined_vector",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:inlined_vector",
     ],
 )
 
 cc_library(
     name = "test_util",
     hdrs = ["test_util.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":graph",
         "//ortools/base:types",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )

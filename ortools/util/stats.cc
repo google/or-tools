@@ -15,16 +15,17 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stl_util.h"
-#include "ortools/base/types.h"
+#include "ortools/base/timer.h"
 #include "ortools/port/sysinfo.h"
-#include "ortools/port/utf8.h"
 
 namespace operations_research {
 
@@ -51,8 +52,6 @@ Stat::Stat(absl::string_view name, StatsGroup* group) : name_(name) {
 
 std::string Stat::StatString() const { return name_ + ": " + ValueAsString(); }
 
-StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
-
 void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
 
 void StatsGroup::Reset() {
@@ -72,6 +71,25 @@ bool CompareStatPointers(const Stat* s1, const Stat* s2) {
   }
 }
 
+// This function counts the number of codepoints in the string and assumes well
+// formed UTF-8 strings. Codepoints can take up to 4 bytes.
+// * 1-byte codepoint : 0yyyzzzz
+// * 2-byte codepoint : 110xxxyy 10yyzzzz
+// * 3-byte codepoint : 1110wwww 10xxxxyy 10yyzzzz
+// * 4-byte codepoint : 11110uvv 10vvwwww 10xxxxyy 10yyzzzz
+// We count one codepoint for bytes where the two most significant bits are
+// different of 0b10, effectively discarding all trailing bytes in multibyte
+// codepoints.
+int UTF8StrLen(absl::string_view str) {
+  int len = 0;
+  for (const char c : str) {
+    if ((c & 0b11'00'0000) != 0b10'00'0000) {
+      ++len;
+    }
+  }
+  return len;
+}
+
 }  // namespace
 
 std::string StatsGroup::StatString() const {
@@ -82,7 +100,7 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
     // We support UTF8 characters in the stat names.
-    const int size = operations_research::utf8::UTF8StrLen(stats_[i]->Name());
+    const int size = UTF8StrLen(stats_[i]->Name());
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
@@ -108,22 +126,21 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
     result += sorted_stats[i]->Name();
-    result.append(longest_name_size - operations_research::utf8::UTF8StrLen(
-                                          sorted_stats[i]->Name()),
-                  ' ');
+    result.append(longest_name_size - UTF8StrLen(sorted_stats[i]->Name()), ' ');
     result += " : " + sorted_stats[i]->ValueAsString();
   }
   result += "}\n";
   return result;
 }
 
-TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
-  TimeDistribution*& ref = time_distributions_[name];
+TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(
+    absl::string_view name) {
+  std::unique_ptr<TimeDistribution>& ref = time_distributions_[name];
   if (ref == nullptr) {
-    ref = new TimeDistribution(name);
-    Register(ref);
+    ref = std::make_unique<TimeDistribution>(name);
+    Register(ref.get());
   }
-  return ref;
+  return ref.get();
 }
 
 DistributionStat::DistributionStat(absl::string_view name)

@@ -15,10 +15,9 @@
 #define OR_TOOLS_MATH_OPT_SOLVERS_XPRESS_SOLVER_H_
 
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
-#include <vector>
+#include <string>
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -37,6 +36,7 @@
 #include "ortools/math_opt/solution.pb.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/sparse_containers.pb.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research::math_opt {
@@ -127,7 +127,8 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);
 
-  absl::Status AddNewLinearConstraints(const LinearConstraintsProto& cts);
+  absl::Status AddNewLinearConstraints(
+      const LinearConstraintsProto& constraints);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
   absl::Status AddSingleObjective(const ObjectiveProto& objective);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);

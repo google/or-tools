@@ -2,7 +2,7 @@ FROM ortools/make:fedora_swig AS env
 
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-fedora
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-6.0 \
+&& dnf -y install dotnet-sdk-8.0 \
 && dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info

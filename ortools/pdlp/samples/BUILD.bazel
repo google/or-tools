@@ -11,6 +11,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc")
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
-code_sample_cc(name = "simple_pdlp_program")
+cc_binary(
+    name = "simple_pdlp_program_cc",
+    srcs = ["simple_pdlp_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/pdlp:iteration_stats",
+        "//ortools/pdlp:primal_dual_hybrid_gradient",
+        "//ortools/pdlp:quadratic_program",
+        "//ortools/pdlp:solve_log_cc_proto",
+        "//ortools/pdlp:solvers_cc_proto",
+        "@eigen",
+    ],
+)
+
+py_binary(
+    name = "simple_pdlp_program_py",
+    srcs = ["simple_pdlp_program.py"],
+    main = "simple_pdlp_program.py",
+    deps = [
+        "//ortools/pdlp:solve_log_py_pb2",
+        "//ortools/pdlp:solvers_py_pb2",
+        "//ortools/pdlp/python:pdlp",
+        requirement("numpy"),
+        requirement("scipy"),
+    ],
+)

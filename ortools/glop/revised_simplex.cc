@@ -18,13 +18,13 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
 #include "absl/random/seed_sequences.h"
@@ -96,7 +96,9 @@ constexpr const uint64_t kDeterministicSeed = 42;
 
 namespace {
 
-bool UseAbslRandom() { return false; }
+bool UseAbslRandom(const GlopParameters& parameters) {
+  return parameters.use_absl_random();
+}
 
 }  // namespace
 
@@ -107,8 +109,7 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
-      random_(UseAbslRandom() ? absl::BitGenRef(absl_random_)
-                              : absl::BitGenRef(deterministic_random_)),
+      random_(absl::BitGenRef(deterministic_random_)),
       basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_),
       primal_edge_norms_(compact_matrix_, variables_info_,
@@ -472,11 +473,11 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
       // it is hard to claim we are really unbounded. This is a quick
       // heuristic to error on the side of optimality rather than
       // unboundedness.
-      double max_magnitude = 0.0;
-      double min_distance = kInfinity;
+      Fractional max_magnitude = 0.0;
+      Fractional min_distance = kInfinity;
       const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
       const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
-      double cost_delta = 0.0;
+      Fractional cost_delta = 0.0;
       for (ColIndex col(0); col < num_cols_; ++col) {
         cost_delta += solution_primal_ray_[col] * objective_[col];
         if (solution_primal_ray_[col] > 0 && upper_bounds[col] != kInfinity) {
@@ -584,10 +585,12 @@ ABSL_MUST_USE_RESULT Status RevisedSimplex::SolveInternal(
         // infeasibility lower than its corresponding residual error. Note that
         // we already adapt the tolerance like this during the simplex
         // execution.
-        const Fractional primal_tolerance = std::max(
-            primal_residual, parameters_.primal_feasibility_tolerance());
+        const Fractional primal_tolerance =
+            std::max(primal_residual,
+                     Fractional(parameters_.primal_feasibility_tolerance()));
         const Fractional dual_tolerance =
-            std::max(dual_residual, parameters_.dual_feasibility_tolerance());
+            std::max(dual_residual,
+                     Fractional(parameters_.dual_feasibility_tolerance()));
         const Fractional primal_infeasibility =
             variable_values_.ComputeMaximumPrimalInfeasibility();
         const Fractional dual_infeasibility =
@@ -875,7 +878,7 @@ void RevisedSimplex::UpdateBasis(ColIndex entering_col, RowIndex basis_row,
   DCHECK(variables_info_.GetIsBasicBitRow().IsSet(leaving_col));
 
   // Make leaving_col leave the basis and update relevant data.
-  // Note thate the leaving variable value is not necessarily at its exact
+  // Note that the leaving variable value is not necessarily at its exact
   // bound, which is like a bound shift.
   variables_info_.UpdateToNonBasicStatus(leaving_col, leaving_variable_status);
   DCHECK(leaving_variable_status == VariableStatus::AT_UPPER_BOUND ||
@@ -2745,7 +2748,7 @@ Status RevisedSimplex::Polish(TimeLimit* time_limit) {
     const auto get_diff = [this](ColIndex col, Fractional old_value,
                                  Fractional new_value) {
       if (col >= integrality_scale_.size() || integrality_scale_[col] == 0.0) {
-        return 0.0;
+        return Fractional(0.0);
       }
       const Fractional s = integrality_scale_[col];
       return (std::abs(new_value * s - std::round(new_value * s)) -
@@ -2861,8 +2864,7 @@ Status RevisedSimplex::PrimalMinimize(TimeLimit* time_limit) {
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
 
     // Trigger a refactorization if one of the class we use request it.
     if (!refactorize && reduced_costs_.NeedsBasisRefactorization()) {
@@ -3164,8 +3166,7 @@ Status RevisedSimplex::DualMinimize(bool feasibility_phase,
 
     // TODO(user): we may loop a bit more than the actual number of iteration.
     // fix.
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
 
     // Trigger a refactorization if one of the class we use request it.
     //
@@ -3488,8 +3489,7 @@ Status RevisedSimplex::PrimalPush(TimeLimit* time_limit) {
     AdvanceDeterministicTime(time_limit);
     if (time_limit->LimitReached()) break;
 
-    IF_STATS_ENABLED(
-        ScopedTimeDistributionUpdater timer(&iteration_stats_.total));
+    ScopedTimeDistributionUpdater timer(&iteration_stats_.total);
     GLOP_RETURN_IF_ERROR(RefactorizeBasisIfNeeded(&refactorize));
     if (basis_factorization_.IsRefactorized()) {
       CorrectErrorsOnVariableValues();
@@ -3680,10 +3680,21 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
   return objective_scaling_factor_ * (sum + objective_offset_);
 }
 
+void RevisedSimplex::SetRandom(absl::BitGenRef random) {
+  random_ = random;
+  dual_prices_.SetRandom(random_);
+  entering_variable_.SetRandom(random_);
+  reduced_costs_.SetRandom(random_);
+  primal_prices_.SetRandom(random_);
+}
+
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
   deterministic_random_.seed(parameters.random_seed());
   absl_random_ = absl::BitGen(absl::SeedSeq({parameters.random_seed()}));
+  SetRandom((UseAbslRandom(parameters)
+                 ? absl::BitGenRef(absl_random_)
+                 : absl::BitGenRef(deterministic_random_)));
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();
@@ -3871,9 +3882,10 @@ void RevisedSimplex::DisplayVariableBounds() {
           VLOG(3) << variable_name_[col] << " = "
                   << StringifyWithFlags(lower_bounds[col]) << ";";
           break;
-        default:  // This should never happen.
-          LOG(DFATAL) << "Column " << col << " has no meaningful status.";
-          break;
+        default:                           // This should never happen.
+          LOG(DFATAL) << "Column " << col  // COV_NF_LINE
+                      << " has no meaningful status.";  // COV_NF_LINE
+          break;                                        // COV_NF_LINE
       }
     }
   }
@@ -3913,7 +3925,7 @@ void RevisedSimplex::ComputeBasicVariablesForState(
 
 void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
   if (VLOG_IS_ON(3)) {
-    // This function has a complexity in O(num_non_zeros_in_matrix).
+    variable_name_.resize(num_cols_, "");
     DisplayInfoOnVariables();
 
     std::string output = "z = " + StringifyWithFlags(ComputeObjectiveValue());
@@ -3946,10 +3958,11 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
   }
 }
 
-void RevisedSimplex::DisplayProblem() const {
+void RevisedSimplex::DisplayProblem() {
   // This function has a complexity in O(num_rows * num_cols *
   // num_non_zeros_in_row).
   if (VLOG_IS_ON(3)) {
+    variable_name_.resize(num_cols_, "");
     DisplayInfoOnVariables();
     std::string output = "min: ";
     bool has_objective = false;

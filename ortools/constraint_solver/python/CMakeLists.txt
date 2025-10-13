@@ -11,16 +11,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
-set_property(SOURCE routing.i PROPERTY SWIG_MODULE_NAME pywrapcp)
-set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
+# constraint_solver
+pybind11_add_module(constraint_solver_pybind11 MODULE constraint_solver.cc)
+set_target_properties(constraint_solver_pybind11 PROPERTIES
+  LIBRARY_OUTPUT_NAME "constraint_solver")
+
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(constraint_solver_pybind11 PROPERTIES
+    SUFFIX ".so"
+    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs")
+elseif(UNIX)
+  set_target_properties(constraint_solver_pybind11 PROPERTIES
+    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs")
+endif()
+
+target_link_libraries(constraint_solver_pybind11 PRIVATE
+  ${PROJECT_NAMESPACE}::ortools
+  pybind11_native_proto_caster)
+add_library(${PROJECT_NAMESPACE}::constraint_solver_pybind11 ALIAS constraint_solver_pybind11)
+
+# legacy pywrapcp
+set_property(SOURCE constraint_solver.swig PROPERTY CPLUSPLUS ON)
+set_property(SOURCE constraint_solver.swig PROPERTY SWIG_MODULE_NAME pywrapcp)
+set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT=)
-set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS -nofastunpack)
+set_property(SOURCE constraint_solver.swig PROPERTY COMPILE_OPTIONS -nofastunpack)
 swig_add_library(pywrapcp
   TYPE MODULE
   LANGUAGE python
   OUTPUT_DIR ${PYTHON_PROJECT_DIR}/constraint_solver
-  SOURCES routing.i)
+  SOURCES constraint_solver.swig)
 
 target_include_directories(pywrapcp PRIVATE ${Python3_INCLUDE_DIRS})
 set_property(TARGET pywrapcp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)

@@ -193,26 +193,14 @@ QEMU_ARGS+=( -E LD_PRELOAD="${SYSROOT_DIR}/usr/lib/libstdc++.so.6:${SYSROOT_DIR}
 function expand_codescape_config() {
   # https://www.mips.com/mips-toolchain-configurations/
   # mips-img: MIPS32R6 and MIPS64R6
-  # mips-mti: MIPS32R2 and MIPS64R2
   case "${TARGET}" in
-    "mips" | "mipsel" | "mips64" | "mips64el" | \
-    "mips32-r6" | "mips32el-r6" | "mips64-r6" | "mips64el-r6" )
-      # IMG Toolchain MIPS32R6 and MIPS64R6
-      # ref: https://codescape.mips.com/components/toolchain/2021.09-01/downloads.html
-      local -r DATE=2021.09-01
+    "mips64" | "mips64el" | \
+    "mips64-r6" | "mips64el-r6" )
+      # IMG Toolchain MIPS64R6
+      # ref: https://codescape.mips.com/components/toolchain/2024.10-02/downloads.html
+      local -r DATE=2024.10-02
       local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.IMG.Linux.CentOS-6.x86_64.tar.gz
       local -r GCC_PREFIX="mips-img-linux-gnu"
-      local -r GCC_RELATIVE_DIR="${GCC_PREFIX}/${DATE}"
-      ;;
-    "mips32-r2" | "mips32el-r2" | "mips64-r2" | "mips64el-r2")
-      # MTI Toolchain MIPS32R2-MIPS32R6, MIPS64R2-MIPS64R6
-      # ref: https://codescape.mips.com/components/toolchain/2020.06-01/downloads.html
-      local -r DATE=2020.06-01
-      local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
-      # # ref: https://codescape.mips.com/components/toolchain/2019.09-06/downloads.html
-      # local -r DATE=2019.09-06
-      # local -r CODESCAPE_URL=https://codescape.mips.com/components/toolchain/${DATE}/Codescape.GNU.Tools.Package.${DATE}.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz
-      local -r GCC_PREFIX="mips-mti-linux-gnu"
       local -r GCC_RELATIVE_DIR="${GCC_PREFIX}/${DATE}"
       ;;
     *)
@@ -226,44 +214,14 @@ function expand_codescape_config() {
   local -r GCC_DIR=${ARCHIVE_DIR}/${GCC_RELATIVE_DIR}
 
   case "${TARGET}" in
-    "mips" | "mips32-r6")
-      local -r MIPS_FLAGS="-EB -mips32r6 -mabi=32"
-      local -r FLAVOUR="mips-r6-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
-    "mips32-r2")
-      local -r MIPS_FLAGS="-EB -mips32r2 -mabi=32"
-      local -r FLAVOUR="mips-r2-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
-    "mipsel" | "mips32el-r6")
-      local -r MIPS_FLAGS="-EL -mips32r6 -mabi=32"
-      local -r FLAVOUR="mipsel-r6-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
-    "mips32el-r2")
-      local -r MIPS_FLAGS="-EL -mips32r2 -mabi=32"
-      local -r FLAVOUR="mipsel-r2-hard"
-      local -r LIBC_DIR_SUFFIX="lib"
-      ;;
     "mips64" | "mips64-r6")
       local -r MIPS_FLAGS="-EB -mips64r6 -mabi=64"
       local -r FLAVOUR="mips-r6-hard"
       local -r LIBC_DIR_SUFFIX="lib64"
       ;;
-    "mips64-r2")
-      local -r MIPS_FLAGS="-EB -mips64r2 -mabi=64"
-      local -r FLAVOUR="mips-r2-hard"
-      local -r LIBC_DIR_SUFFIX="lib64"
-      ;;
     "mips64el" | "mips64el-r6")
       local -r MIPS_FLAGS="-EL -mips64r6 -mabi=64"
       local -r FLAVOUR="mipsel-r6-hard"
-      local -r LIBC_DIR_SUFFIX="lib64"
-      ;;
-    "mips64el-r2")
-      local -r MIPS_FLAGS="-EL -mips64r2 -mabi=64"
-      local -r FLAVOUR="mipsel-r2-hard"
       local -r LIBC_DIR_SUFFIX="lib64"
       ;;
     *)
@@ -359,7 +317,7 @@ DESCRIPTION
 \t* TARGET:
 \t\tx86_64
 \t\taarch64(arm64) aarch64be(arm64be) (bootlin)
-\t\tmips64-r6(mips64) mips64el-r6(mips64el) mips64-r2 mips64el-r2 (codespace)
+\t\tmips64-r6(mips64) mips64el-r6(mips64el) (codespace)
 \t\tppc-440fp(ppc) ppc-e500mc (bootlin)
 \t\tppc64 ppc64le (bootlin)
 \t\triscv64 (bootlin)
@@ -430,10 +388,10 @@ function main() {
       expand_bootlin_config
       declare -r QEMU_ARCH=aarch64_be ;;
 
-    mips64 | mips64-r6 | mips64-r2)
+    mips64 | mips64-r6)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64 ;;
-    mips64el | mips64el-r6 | mips64el-r2)
+    mips64el | mips64el-r6)
       expand_codescape_config
       declare -r QEMU_ARCH=mips64el ;;
 

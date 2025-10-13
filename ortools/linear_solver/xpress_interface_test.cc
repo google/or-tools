@@ -11,14 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cctype>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <locale>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 #include "gtest/gtest.h"
 #include "ortools/base/init_google.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 #define XPRS_NAMELENGTH 1028
 
 namespace operations_research {
@@ -148,6 +152,15 @@ class XPRSGetter {
   int getInteger64Control(int control) {
     XPRSint64 value;
     EXPECT_STATUS(XPRSgetintcontrol64(prob(), control, &value));
+    return value;
+  }
+
+  std::string getStringAttribute(int attrib) {
+    std::string value(280, '\0');
+    int valueSize;
+    EXPECT_STATUS(XPRSgetstringattrib(prob(), attrib, &value[0], value.size(),
+                                      &valueSize));
+    value.resize(valueSize - 1);
     return value;
   }
 
@@ -396,12 +409,16 @@ TEST_F(XpressFixtureMIP, Reset) {
   solver.MakeBoolVar("x1");
   solver.MakeBoolVar("x2");
   solver.MakeRowConstraint(12., 100.0);
+  solver.MutableObjective()->SetMaximization();
   solver.Solve();
   EXPECT_EQ(getter.getNumConstraints(), 1);
   EXPECT_EQ(getter.getNumVariables(), 2);
+  auto oldProbUuid = getter.getStringAttribute(XPRS_UUID);
   solver.Reset();
+  EXPECT_EQ(getter.getStringAttribute(XPRS_UUID), oldProbUuid);
   EXPECT_EQ(getter.getNumConstraints(), 0);
   EXPECT_EQ(getter.getNumVariables(), 0);
+  EXPECT_EQ(getter.getObjectiveSense(), XPRS_OBJ_MAXIMIZE);
 }
 
 TEST_F(XpressFixtureMIP, MakeIntVar) {
@@ -733,7 +750,7 @@ TEST_F(XpressFixtureMIP, Write) {
   // disable formatting to keep the expected MPS readable
   // clang-format off
   std::string expectedMps = std::string("") +
-                            "NAME          newProb" + "\n" +
+                            "NAME          " + "\n" +
                             "OBJSENSE  MAXIMIZE" + "\n" +
                             "ROWS" + "\n" +
                             " N  __OBJ___        " + "\n" +
@@ -1336,7 +1353,7 @@ TEST_F(XpressFixtureMIP, SetHint) {
   // back using the API
   // In this test we send the (near) optimal solution as a hint (with
   // obj=56774). Usually XPRESS finds it in ~3000 seconds but in this case it
-  // should be able to retain it in juste a few seconds using the hint. Note
+  // should be able to retain it in just a few seconds using the hint. Note
   // that the logs should mention "User solution (USER_HINT) stored."
   buildLargeMipWithCallback(solver, 60, 2);
 
@@ -1414,7 +1431,7 @@ TEST_F(XpressFixtureMIP, CallbackThrowsException) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   testing::InitGoogleTest(&argc, argv);
   auto solver = operations_research::MPSolver::CreateSolver("XPRESS_LP");
   if (solver == nullptr) {

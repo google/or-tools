@@ -27,8 +27,7 @@ CMD ["/usr/bin/bash"]
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
-&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
+&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 #RUN objdump -p /lib64/libstdc++.so.6
 #RUN g++ --version
@@ -42,10 +41,10 @@ RUN dnf -y update \
 ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Update maven
-ADD https://dlcdn.apache.org/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz /usr/local
+ADD https://dlcdn.apache.org/maven/maven-3/3.9.10/binaries/apache-maven-3.9.10-bin.tar.gz /usr/local
 RUN mkdir -p /usr/local/maven \
- && tar xzvf /usr/local/apache-maven-3.9.9-bin.tar.gz --strip-components=1 -C /usr/local/maven \
- && rm /usr/local/apache-maven-3.9.9-bin.tar.gz
+ && tar xzvf /usr/local/apache-maven-3.9.10-bin.tar.gz --strip-components=1 -C /usr/local/maven \
+ && rm /usr/local/apache-maven-3.9.10-bin.tar.gz
 ENV PATH=/usr/local/maven/bin:$PATH
 
 ENV TZ=America/Los_Angeles

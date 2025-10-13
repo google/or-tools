@@ -32,8 +32,7 @@ RUN dnf -y update \
 # see: https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual#scripted-install
 RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 && chmod a+x dotnet-install.sh \
-&& ./dotnet-install.sh -c 3.1 -i /usr/local/bin \
-&& ./dotnet-install.sh -c 6.0 -i /usr/local/bin
+&& ./dotnet-install.sh -c 8.0 -i /usr/local/bin
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
@@ -63,12 +62,12 @@ COPY or-tools.snk /root/or-tools.snk
 ENV DOTNET_SNK=/root/or-tools.snk
 
 ARG SRC_GIT_BRANCH
-ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-main}
+ENV SRC_GIT_BRANCH=${SRC_GIT_BRANCH:-main}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 
 ARG OR_TOOLS_PATCH
-ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
+ENV OR_TOOLS_PATCH=${OR_TOOLS_PATCH:-9999}
 
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
@@ -90,7 +89,6 @@ RUN make archive_cpp
 ## build
 FROM cpp_build AS dotnet_build
 RUN sed -i 's/\(<SignAssembly>\).*\(<\/SignAssembly>\)/\1false\2/' ortools/dotnet/Google.OrTools*.csproj.in
-ENV USE_DOTNET_CORE_31=ON
 RUN make detect_dotnet \
 && make dotnet JOBS=8
 ## archive

@@ -1,4 +1,4 @@
-# CP/SAT
+# CP-SAT
 
 This directory contains a next-gen Constraint Programming (CP) solver with
 clause learning. It is built on top of an efficient SAT/max-SAT solver whose
@@ -39,7 +39,7 @@ The optimization model description and related utilities:
 
 ## SAT solver
 
-Stand-alone SAT solver and related files. Note that this is more than a basic
+Standalone SAT solver and related files. Note that this is more than a basic
 SAT solver as it already includes non-clause constraints. However, these do not
 work on the general integer problems that the CP solver handles.
 
@@ -126,8 +126,6 @@ CP solver built on top of the SAT solver:
     Propagation algorithms for the cumulative scheduling constraint.
 *   [cumulative_energy.h](../sat/cumulative_energy.h):
     Propagation algorithms for a more general cumulative constraint.
-*   [theta_tree.h](../sat/theta_tree.h):
-    Data structure used in the cumulative/disjunctive propagation algorithm.
 
 ### Packing constraints
 
@@ -172,7 +170,7 @@ CP solver built on top of the SAT solver:
     objects and manages the memory ownership of all the solver classes.
 *   [optimization.h](../sat/optimization.h):
     Algorithms to solve an optimization problem using a satisfiability solver as
-    a black box.
+    an opaque-box.
 *   [lp_utils.h](../sat/lp_utils.h):
     Utility to scale and convert a MIP model into CP.
 

@@ -27,6 +27,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
@@ -85,9 +86,10 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
 
 // Enforces that the boxes with corners in (x, y), (x + dx, y), (x, y + dy)
 // and (x + dx, y + dy) do not overlap.
-void AddNonOverlappingRectangles(const std::vector<IntervalVariable>& x,
-                                 const std::vector<IntervalVariable>& y,
-                                 Model* model);
+void AddNonOverlappingRectangles(
+    const std::vector<Literal>& enforcement_literals,
+    const std::vector<IntervalVariable>& x,
+    const std::vector<IntervalVariable>& y, Model* model);
 
 // Non overlapping rectangles. This includes box with zero-areas.
 // The following is forbidden:
@@ -168,10 +170,6 @@ class RectanglePairwisePropagator : public PropagatorInterface {
 
   // Return false if a conflict is found.
   bool FindRestrictionsAndPropagateConflict(
-      absl::Span<const ItemWithVariableSize> items,
-      std::vector<PairwiseRestriction>* restrictions);
-
-  bool FindRestrictionsAndPropagateConflict(
       absl::Span<const ItemWithVariableSize> items1,
       absl::Span<const ItemWithVariableSize> items2,
       std::vector<PairwiseRestriction>* restrictions);
@@ -186,7 +184,6 @@ class RectanglePairwisePropagator : public PropagatorInterface {
   int64_t num_pairwise_conflicts_ = 0;
   int64_t num_pairwise_propagations_ = 0;
 
-  std::vector<Rectangle> fixed_non_zero_area_rectangles_;
   std::vector<ItemWithVariableSize> fixed_non_zero_area_boxes_;
   std::vector<ItemWithVariableSize> non_fixed_non_zero_area_boxes_;
   std::vector<ItemWithVariableSize> horizontal_zero_area_boxes_;

@@ -34,12 +34,27 @@ digraph CMake {
         label = "madler/zlib.git + cmake patch";
       }
 
+      subgraph clusterBZIP2 {
+        BZip2 [label="BZip2::BZip2", color=royalblue];
+
+        color=royalblue;
+        label = "bzip2/bzip2.git + cmake patch";
+      }
+
       subgraph clusterAbsl {
         Absl [label="absl::absl_*", color=royalblue];
 
         color=royalblue;
         label = "abseil/abseil-cpp.git";
       }
+
+      subgraph clusterRe2 {
+        Re2 [label="re2::re2"];
+
+        color=royalblue;
+        label = "google/re2.git";
+      }
+      Absl -> Re2;
 
       subgraph clusterProtobuf {
         Protobuf [label="protobuf::libprotobuf", color=royalblue];
@@ -49,6 +64,7 @@ digraph CMake {
       }
       ZLIB -> Protobuf;
       Absl -> Protobuf;
+      Re2 -> Protobuf;
 
       subgraph clusterCoinOR {
         subgraph clusterCoinUtils {
@@ -139,15 +155,27 @@ digraph CMake {
       }
 
       subgraph clusterSCIPSolver {
+        subgraph clusterSoplex {
+          SPX [label="libsoplex-pic"];
+
+          color=royalblue;
+          label = "scipopt/soplex.git";
+        }
+
         subgraph clusterSCIP {
-          SCIP [label="scip::scip"];
+          SCIP [label="SCIP::libscip"];
 
           color=royalblue;
           label = "scipopt/scip.git";
         }
+
+        SPX -> SCIP;
+
         color=royalblue;
         label = "SCIP Solver\n(-DUSE_SCIP=ON)";
       }
+      ZLIB -> SPX;
+      ZLIB -> SCIP;
 
       SWIG_WIN [label="swigwin\n(Windows)", color=chocolate];
 
@@ -174,8 +202,10 @@ digraph CMake {
       PKG_CPP -> EX_CPP;
 
       ZLIB -> OR_SRC;
+      BZip2 -> OR_SRC;
       Absl -> OR_SRC;
       Protobuf -> OR_SRC;
+      Re2 -> OR_SRC;
       ClpSolver -> OR_SRC;
       CbcSolver -> OR_SRC;
       GLPK -> OR_SRC;
@@ -228,7 +258,7 @@ digraph CMake {
       OR_SRC -> OR_WJAVA [label="swig", color=chocolate];
       OR_SRC -> OR_JAVA [label="swig", color=chocolate];
       OR_WJAVA -> OR_JAVA;
-      OR_JAVA -> PKG_JAVA [label="maven (WIP)", style="dotted", color=crimson];
+      OR_JAVA -> PKG_JAVA [label="maven", color=crimson];
 
       color=crimson;
       label = "Java\n(-DBUILD_JAVA=ON)";

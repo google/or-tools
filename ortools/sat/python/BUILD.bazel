@@ -11,12 +11,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for cp_model.
+# Description: python wrapping of the C++ code at ../
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
 
+# This file is generated manually by running pybind11_mkdoc on linear_expr.h
 cc_library(
     name = "linear_expr_doc",
     hdrs = ["linear_expr_doc.h"],
@@ -28,14 +32,62 @@ cc_library(
     hdrs = ["linear_expr.h"],
     deps = [
         "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_utils",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sorted_interval_list",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:fixed_array",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:fixed_array",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
+)
+
+cc_library(
+    name = "wrappers",
+    srcs = ["wrappers.cc"],
+    hdrs = ["wrappers.h"],
+    deps = [
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_binary(
+    name = "gen_proto_builder_pybind11",
+    srcs = ["gen_proto_builder_pybind11.cc"],
+    deps = [
+        ":wrappers",
+        "//ortools/base",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+genrule(
+    name = "run_gen_proto_builder_pybind11",
+    outs = ["proto_builder_pybind11.h"],
+    cmd = "$(location :gen_proto_builder_pybind11) > $@",
+    tools = [":gen_proto_builder_pybind11"],
+)
+
+cc_library(
+    name = "proto_builder_pybind11",
+    hdrs = ["proto_builder_pybind11.h"],
 )
 
 pybind_extension(
@@ -45,44 +97,30 @@ pybind_extension(
     deps = [
         ":linear_expr",
         ":linear_expr_doc",
+        ":proto_builder_pybind11",
+        "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/sat:swig_helper",
-        "@com_google_absl//absl/strings",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util/python:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
 py_test(
     name = "cp_model_helper_test",
+    size = "small",
     srcs = ["cp_model_helper_test.py"],
     deps = [
         ":cp_model_helper",
-        "//ortools/sat:cp_model_py_pb2",
-        "//ortools/sat:sat_parameters_py_pb2",
+        requirement("absl-py"),
         "//ortools/util/python:sorted_interval_list",
-        requirement("absl-py"),
-    ],
-)
-
-py_library(
-    name = "cp_model_numbers",
-    srcs = ["cp_model_numbers.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":cp_model_helper",
-        requirement("numpy"),
-        "@com_google_protobuf//:protobuf_python",
-    ],
-)
-
-py_test(
-    name = "cp_model_numbers_test",
-    srcs = ["cp_model_numbers_test.py"],
-    deps = [
-        ":cp_model_numbers",
-        requirement("absl-py"),
     ],
 )
 
@@ -92,22 +130,21 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_helper",
-        ":cp_model_numbers",
         requirement("numpy"),
         requirement("pandas"),
-        "//ortools/sat:cp_model_py_pb2",
-        "//ortools/sat:sat_parameters_py_pb2",
         "//ortools/util/python:sorted_interval_list",
     ],
 )
 
 py_test(
     name = "cp_model_test",
+    size = "small",
     srcs = ["cp_model_test.py"],
     deps = [
         ":cp_model",
         ":cp_model_helper",
         requirement("absl-py"),
         requirement("numpy"),
+        requirement("pandas"),
     ],
 )

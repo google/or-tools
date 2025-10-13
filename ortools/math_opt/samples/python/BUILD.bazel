@@ -12,13 +12,11 @@
 # limitations under the License.
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 
 py_binary(
     name = "tsp",
     srcs = ["tsp.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         requirement("svgwrite"),
@@ -29,8 +27,6 @@ py_binary(
 py_binary(
     name = "basic_example",
     srcs = ["basic_example.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -40,8 +36,6 @@ py_binary(
 py_binary(
     name = "linear_programming",
     srcs = ["linear_programming.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -51,8 +45,6 @@ py_binary(
 py_binary(
     name = "integer_programming",
     srcs = ["integer_programming.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -62,8 +54,6 @@ py_binary(
 py_binary(
     name = "advanced_linear_programming",
     srcs = ["advanced_linear_programming.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -73,8 +63,6 @@ py_binary(
 py_binary(
     name = "cutting_stock",
     srcs = ["cutting_stock.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
@@ -84,8 +72,6 @@ py_binary(
 py_binary(
     name = "facility_lp_benders",
     srcs = ["facility_lp_benders.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
@@ -96,11 +82,28 @@ py_binary(
 py_binary(
     name = "linear_regression",
     srcs = ["linear_regression.py"],
-    python_version = "PY3",
-    srcs_version = "PY3",
     deps = [
         requirement("absl-py"),
         requirement("numpy"),
+        "//ortools/math_opt/python:mathopt",
+    ],
+)
+
+py_binary(
+    name = "smallest_circle",
+    srcs = ["smallest_circle.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        "//ortools/math_opt/python:mathopt",
+    ],
+)
+
+py_binary(
+    name = "spillover",
+    srcs = ["spillover.py"],
+    deps = [
+        requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
     ],
 )
@@ -120,6 +123,14 @@ py_binary(
     deps = [
         requirement("absl-py"),
         "//ortools/math_opt/python:mathopt",
-        "//ortools/math_opt/solvers:highs_solver",
+    ],
+)
+
+py_binary(
+    name = "hierarchical_objectives",
+    srcs = ["hierarchical_objectives.py"],
+    deps = [
+        requirement("absl-py"),
+        "//ortools/math_opt/python:mathopt",
     ],
 )

@@ -46,7 +46,7 @@ enum SchedulerType {
   // Google ThreadPool with barrier synchronization.
   SCHEDULER_TYPE_GOOGLE_THREADPOOL = 1;
   // Eigen non-blocking ThreadPool with barrier synchronization (see
-  // <Eigen/ThreadPool>).
+  // <Eigen/ThreadPool>) that uses Google threads.
   SCHEDULER_TYPE_EIGEN_THREADPOOL = 3;
 }
 
@@ -479,6 +479,19 @@ message PrimalDualHybridGradientParams {
   // termination criteria.
   //
   optional bool use_feasibility_polishing = 30 [default = false];
+
+  // If true, feasibility polishing will be applied after the iteration limit,
+  // kkt limit, or time limit is reached. This can result in a solution that is
+  // closer to feasibility, at the expense of violating the limit by a moderate
+  // amount.
+  optional bool apply_feasibility_polishing_after_limits_reached = 33
+      [default = false];
+
+  // If true, feasibility polishing will be applied after the solver is
+  // interrupted. This can result in a solution that is closer to feasibility,
+  // at the expense of not stopping as promptly when interrupted.
+  optional bool apply_feasibility_polishing_if_solver_is_interrupted = 34
+      [default = false];
 
   reserved 13, 14, 15, 20, 21;
 }

@@ -19,10 +19,10 @@
 
 #include "ortools/base/zipfile.h"
 
+#include <memory>
+
 #include "absl/strings/string_view.h"
-#include "ortools/base/file.h"
 #include "ortools/base/logging.h"
-#include "zlib.h"
 
 namespace zipfile {
 

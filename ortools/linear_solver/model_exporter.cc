@@ -57,7 +57,7 @@ class LineBreaker {
 
   // Returns true if string s will fit on the current line without adding a
   // carriage return.
-  bool WillFit(const std::string& s) {
+  bool WillFit(absl::string_view s) {
     return line_size_ + static_cast<int>(s.size()) < max_line_size_;
   }
 
@@ -147,6 +147,8 @@ class MPModelProtoExporter {
   // error (for example, var_index is out of range).
   bool WriteLpTerm(int var_index, double coefficient,
                    std::string* output) const;
+  bool WriteLpQuadraticTerm(int var1_index, int var2_index, double coefficient,
+                            std::string* output) const;
 
   // Appends a pair name, value to "output", formatted to comply with the MPS
   // standard.
@@ -456,6 +458,30 @@ bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
   return true;
 }
 
+bool MPModelProtoExporter::WriteLpQuadraticTerm(int var1_index, int var2_index,
+                                                double coefficient,
+                                                std::string* output) const {
+  output->clear();
+  if (var1_index < 0 || var1_index >= proto_.variable_size()) {
+    LOG(DFATAL) << "Reference to out-of-bounds variable index # " << var1_index;
+    return false;
+  }
+  if (var2_index < 0 || var2_index >= proto_.variable_size()) {
+    LOG(DFATAL) << "Reference to out-of-bounds variable index # " << var2_index;
+    return false;
+  }
+  auto variable_product =
+      var1_index == var2_index
+          ? absl::StrCat(exported_variable_names_[var1_index], "^2")
+          : absl::StrCat(exported_variable_names_[var1_index], " * ",
+                         exported_variable_names_[var2_index]);
+  if (coefficient != 0.0) {
+    *output = absl::StrCat(DoubleToStringWithForcedSign(coefficient), " ",
+                           variable_product, " ");
+  }
+  return true;
+}
+
 namespace {
 bool IsBoolean(const MPVariableProto& var) {
   return var.is_integer() && ceil(var.lower_bound()) == 0.0 &&
@@ -571,6 +597,24 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(
     }
     obj_line_breaker.Append(term);
     show_variable[var_index] = coeff != 0.0 || show_variable[var_index];
+  }
+  if (proto_.has_quadratic_objective()) {
+    obj_line_breaker.Append(" + [ ");
+    for (int i_term = 0;
+         i_term < proto_.quadratic_objective().qvar1_index_size(); ++i_term) {
+      const int qvar1 = proto_.quadratic_objective().qvar1_index(i_term);
+      const int qvar2 = proto_.quadratic_objective().qvar2_index(i_term);
+      const double coeff = proto_.quadratic_objective().coefficient(i_term);
+
+      std::string term;
+      if (!WriteLpQuadraticTerm(qvar1, qvar2, 2 * coeff, &term)) {
+        return false;
+      }
+      obj_line_breaker.Append(term);
+      show_variable[qvar1] = coeff != 0.0 || show_variable[qvar1];
+      show_variable[qvar2] = coeff != 0.0 || show_variable[qvar2];
+    }
+    obj_line_breaker.Append(" ] / 2");
   }
   // Linear Constraints
   absl::StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");

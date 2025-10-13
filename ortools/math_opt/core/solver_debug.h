@@ -28,7 +28,8 @@ namespace internal {
 // This variable is intended to be used by MathOpt unit tests in other languages
 // to test the proper garbage collection. It should never be used in any other
 // context.
-OR_DLL extern std::atomic<int64_t> debug_num_solver;
+OR_DLL
+extern std::atomic<int64_t> debug_num_solver;
 
 }  // namespace internal
 }  // namespace math_opt

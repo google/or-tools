@@ -18,18 +18,17 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <map>
+#include <limits>
 #include <memory>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
@@ -97,11 +96,14 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
 // Example:
 // ReverseArcsStaticGraph<> dgraph;
 // ...
-// UndirectedAdjacencyListsOfDirectedGraph<decltype(dgraph)> ugraph(dgraph);
+// UndirectedAdjacencyListsOfDirectedGraph ugraph(dgraph);
 // for (int neighbor_of_node_42 : ugraph[42]) { ... }
 template <class Graph>
 class UndirectedAdjacencyListsOfDirectedGraph {
  public:
+  static_assert(Graph::kHasNegativeReverseArcs,
+                "for forward graphs, directly use `Graph::operator[]`");
+
   explicit UndirectedAdjacencyListsOfDirectedGraph(const Graph& graph)
       : graph_(graph) {}
 
@@ -130,13 +132,18 @@ class UndirectedAdjacencyListsOfDirectedGraph {
   const Graph& graph_;
 };
 
+// CTAD for UndirectedAdjacencyListsOfDirectedGraph.
+template <class Graph>
+UndirectedAdjacencyListsOfDirectedGraph(const Graph&)
+    -> UndirectedAdjacencyListsOfDirectedGraph<Graph>;
+
 // Computes the weakly connected components of a directed graph that
 // provides the OutgoingOrOppositeIncomingArcs() API, and returns them
 // as a mapping from node to component index. See GetConnectedComponents().
 template <class Graph>
 std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
-  return GetConnectedComponents(
-      graph.num_nodes(), UndirectedAdjacencyListsOfDirectedGraph<Graph>(graph));
+  return GetConnectedComponents(graph.num_nodes(),
+                                UndirectedAdjacencyListsOfDirectedGraph(graph));
 }
 
 // Returns true iff the given vector is a subset of [0..n-1], i.e.

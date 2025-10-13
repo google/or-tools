@@ -14,7 +14,6 @@
 #include "ortools/math_opt/solvers/glpk/rays.h"
 
 #include <optional>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -376,7 +375,7 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(
       ComputeFormVarStatus(problem,
                            /*num_cstrs=*/glp_get_num_rows(problem),
                            /*k=*/unbound_ray) == GLP_BS;
-  ASSIGN_OR_RETURN(const GlpkRay ray,
+  ASSIGN_OR_RETURN(GlpkRay ray,
                    (is_dual_ray ? ComputeDualRay(problem, unbound_ray)
                                 : ComputePrimalRay(problem, unbound_ray)));
   return ray;

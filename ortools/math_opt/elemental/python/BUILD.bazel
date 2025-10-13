@@ -1,0 +1,85 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+
+genrule(
+    name = "generated_enums",
+    outs = [
+        "enums.py",
+    ],
+    cmd = "$(location //ortools/math_opt/elemental/codegen:codegen) --binding_type=python_enums > $@",
+    tools = ["//ortools/math_opt/elemental/codegen"],
+)
+
+py_library(
+    name = "enums",
+    srcs = [":generated_enums"],
+    visibility = ["//ortools/math_opt/python:__subpackages__"],
+    deps = [
+        requirement("numpy"),
+    ],
+)
+
+pybind_extension(
+    name = "cpp_elemental",
+    srcs = [
+        "elemental.cc",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base:status_macros",
+        "//ortools/math_opt/elemental",
+        "//ortools/math_opt/elemental:arrays",
+        "//ortools/math_opt/elemental:attr_key",
+        "//ortools/math_opt/elemental:attributes",
+        "//ortools/math_opt/elemental:derived_data",
+        "//ortools/math_opt/elemental:elements",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:no_destructor",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
+    ],
+)
+
+py_test(
+    name = "enums_test",
+    srcs = ["enums_test.py"],
+    deps = [
+        ":enums",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "elemental_test",
+    srcs = ["elemental_test.py"],
+    deps = [
+        ":cpp_elemental",
+        ":enums",
+        requirement("absl-py"),
+        requirement("numpy"),
+        "//ortools/math_opt:model_py_pb2",
+        "//ortools/math_opt:model_update_py_pb2",
+        "//ortools/math_opt/python/testing:compare_proto",
+    ],
+)

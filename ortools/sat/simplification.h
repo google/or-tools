@@ -86,14 +86,15 @@ class SatPostsolver {
   int NumClauses() const { return clauses_start_.size(); }
   std::vector<Literal> Clause(int i) const {
     // TODO(user): we could avoid the copy here, but because clauses_literals_
-    // is a deque, we do need a special return class and cannot juste use
+    // is a deque, we do need a special return class and cannot just use
     // absl::Span<Literal> for instance.
-    const int begin = clauses_start_[i];
-    const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
-                                                  : clauses_literals_.size();
+    const int64_t begin = clauses_start_[i];
+    const int64_t end = i + 1 < clauses_start_.size()
+                            ? clauses_start_[i + 1]
+                            : clauses_literals_.size();
     std::vector<Literal> result(clauses_literals_.begin() + begin,
                                 clauses_literals_.begin() + end);
-    for (int j = 0; j < result.size(); ++j) {
+    for (int64_t j = 0; j < result.size(); ++j) {
       if (result[j] == associated_literal_[i]) {
         std::swap(result[0], result[j]);
         break;
@@ -118,7 +119,7 @@ class SatPostsolver {
 
   // Stores the arguments of the Add() calls: clauses_start_[i] is the index of
   // the first literal of the clause #i in the clauses_literals_ deque.
-  std::vector<int> clauses_start_;
+  std::vector<int64_t> clauses_start_;
   std::deque<Literal> clauses_literals_;
   std::vector<Literal> associated_literal_;
 
@@ -243,10 +244,14 @@ class SatPresolver {
   // after this call.
   void AddClauseInternal(std::vector<Literal>* clause);
 
+  // Since we only cleanup the list lazily, literal_to_clauses_ memory usage
+  // can get out of hand, we clean it up periodically.
+  void RebuildLiteralToClauses();
+
   // Clause removal function.
   void Remove(ClauseIndex ci);
   void RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x);
-  void RemoveAndRegisterForPostsolveAllClauseContaining(Literal x);
+  void RemoveAllClauseContaining(Literal x, bool register_for_postsolve);
 
   // Call ProcessClauseToSimplifyOthers() on all the clauses in
   // clause_to_process_ and empty the list afterwards. Note that while some
@@ -257,7 +262,7 @@ class SatPresolver {
   // Finds the literal from the clause that occur the less in the clause
   // database.
   Literal FindLiteralWithShortestOccurrenceList(
-      const std::vector<Literal>& clause);
+      absl::Span<const Literal> clause);
   LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
       const std::vector<Literal>& clause, Literal to_exclude);
 
@@ -354,6 +359,10 @@ class SatPresolver {
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
+  //
+  // This is cleaned up lazily, or when num_deleted_literals_since_last_cleanup_
+  // becomes big.
+  int64_t num_deleted_literals_since_last_cleanup_ = 0;
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
 

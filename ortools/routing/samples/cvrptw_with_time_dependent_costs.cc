@@ -17,38 +17,39 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <random>
-#include <set>
+#include <string>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/flags/flag.h"
 #include "absl/functional/bind_front.h"
+#include "absl/log/globals.h"
 #include "absl/random/random.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/types.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
-#include "ortools/constraint_solver/routing_parameters.h"
-#include "ortools/constraint_solver/routing_parameters.pb.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/parameters.h"
+#include "ortools/routing/parameters.pb.h"
 #include "ortools/routing/parsers/cvrptw_lib.h"
-#include "ortools/util/range_query_function.h"
+#include "ortools/routing/routing.h"
+#include "ortools/routing/types.h"
 #include "ortools/util/step_function.h"
 
 using operations_research::Assignment;
-using operations_research::DefaultRoutingSearchParameters;
-using operations_research::GetSeed;
-using operations_research::LocationContainer;
-using operations_research::RandomDemand;
-using operations_research::RoutingDimension;
-using operations_research::RoutingIndexManager;
-using operations_research::RoutingModel;
-using operations_research::RoutingNodeIndex;
-using operations_research::RoutingSearchParameters;
-using operations_research::ServiceTimePlusTransition;
 using operations_research::StepFunction;
+using operations_research::routing::DefaultRoutingSearchParameters;
+using operations_research::routing::GetSeed;
+using operations_research::routing::LocationContainer;
+using operations_research::routing::RandomDemand;
+using operations_research::routing::RoutingDimension;
+using operations_research::routing::RoutingIndexManager;
+using operations_research::routing::RoutingModel;
+using operations_research::routing::RoutingNodeIndex;
+using operations_research::routing::RoutingSearchParameters;
+using operations_research::routing::ServiceTimePlusTransition;
 
 ABSL_FLAG(int, vrp_orders, 25, "Nodes in the problem.");
 ABSL_FLAG(int, vrp_vehicles, 10,
@@ -146,6 +147,7 @@ class TrafficTransitionEvaluator {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
@@ -239,8 +241,7 @@ int main(int argc, char** argv) {
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                routing.GetDimensionOrDie(kCapacity),
-                routing.GetDimensionOrDie(kTime));
+                {kCapacity, kTime, kTimeDependentCost});
   } else {
     LOG(INFO) << "No solution found.";
   }

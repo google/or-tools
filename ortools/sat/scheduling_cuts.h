@@ -16,13 +16,16 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -99,19 +102,35 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 
 // Internal methods and data structures, useful for testing.
 
-// Base event type for scheduling cuts.
-struct BaseEvent {
-  BaseEvent(int t, SchedulingConstraintHelper* x_helper);
+// Stores the event for a task (interval, demand).
+// For a no_overlap constraint, demand is always between 0 and 1.
+// For a cumulative constraint, demand must be between 0 and capacity_max.
+struct CompletionTimeEvent {
+  CompletionTimeEvent(int t, SchedulingConstraintHelper* x_helper,
+                      SchedulingDemandHelper* demands_helper);
 
-  // Cache of the intervals bound on the x direction.
-  IntegerValue x_start_min;
-  IntegerValue x_start_max;
-  IntegerValue x_end_min;
-  IntegerValue x_end_max;
-  IntegerValue x_size_min;
+  // The index of the task in the helper.
+  int task_index;
 
-  // Cache of the bounds on the y direction.
-  IntegerValue y_size_min;
+  // Cache of the bounds of the interval.
+  IntegerValue start_min;
+  IntegerValue start_max;
+  IntegerValue end_min;
+  IntegerValue end_max;
+  IntegerValue size_min;
+
+  // Start and end affine expressions and lp value of the end of the interval.
+  AffineExpression start;
+  AffineExpression end;
+  double lp_end = 0.0;
+
+  // Cache of the bounds of the demand.
+  IntegerValue demand_min;
+
+  // If we know that the size on y is fixed, we can use some heuristic to
+  // compute the maximum subset sums under the capacity and use that instead
+  // of the full capacity.
+  bool demand_is_fixed = false;
 
   // The energy min of this event.
   IntegerValue energy_min;
@@ -119,34 +138,70 @@ struct BaseEvent {
   // If non empty, a decomposed view of the energy of this event.
   // First value in each pair is x_size, second is y_size.
   std::vector<LiteralValueValue> decomposed_energy;
-};
-
-// Stores the event for a rectangle along the two axis x and y.
-//   For a no_overlap constraint, y is always of size 1 between 0 and 1.
-//   For a cumulative constraint, y is the demand that must be between 0 and
-//       capacity_max.
-struct CtEvent : BaseEvent {
-  CtEvent(int t, SchedulingConstraintHelper* x_helper);
-
-  // The lp value of the end of the x interval.
-  AffineExpression x_end;
-  double x_lp_end;
 
   // Indicates if the events used the optional energy information from the
   // model.
-  bool use_energy = false;
+  bool use_decomposed_energy_min = false;
 
   // Indicates if the cut is lifted, that is if it includes tasks that are not
   // strictly contained in the current time window.
   bool lifted = false;
 
-  // If we know that the size on y is fixed, we can use some heuristic to
-  // compute the maximum subset sums under the capacity and use that instead
-  // of the full capacity.
-  bool y_size_is_fixed = false;
-
   std::string DebugString() const;
 };
+
+class CtExhaustiveHelper {
+ public:
+  CtExhaustiveHelper() = default;
+
+  int max_task_index() const { return max_task_index_; }
+  const CompactVectorVector<int>& predecessors() const { return predecessors_; }
+
+  // Temporary data.
+  std::vector<std::pair<IntegerValue, IntegerValue>> profile_;
+  std::vector<std::pair<IntegerValue, IntegerValue>> new_profile_;
+  std::vector<IntegerValue> assigned_ends_;
+  std::vector<int> task_to_index_;
+  DagTopologicalSortIterator valid_permutation_iterator_;
+  std::vector<CompletionTimeEvent> residual_events_;
+
+  // Collect precedences, set max_task_index.
+  // TODO(user): Do some transitive closure.
+  void Init(absl::Span<const CompletionTimeEvent> events, Model* model);
+
+  bool PermutationIsCompatibleWithPrecedences(
+      absl::Span<const CompletionTimeEvent> events,
+      absl::Span<const int> permutation);
+
+ private:
+  void BuildPredecessors(absl::Span<const CompletionTimeEvent> events,
+                         Model* model);
+
+  CompactVectorVector<int> predecessors_;
+  int max_task_index_ = 0;
+  std::vector<bool> visited_;
+};
+
+enum class CompletionTimeExplorationStatus {
+  FINISHED,
+  ABORTED,
+  NO_VALID_PERMUTATION,
+};
+
+template <typename Sink>
+void AbslStringify(Sink& sink, const CompletionTimeExplorationStatus& status) {
+  switch (status) {
+    case CompletionTimeExplorationStatus::FINISHED:
+      sink.Append("FINISHED");
+      break;
+    case CompletionTimeExplorationStatus::ABORTED:
+      sink.Append("ABORTED");
+      break;
+    case CompletionTimeExplorationStatus::NO_VALID_PERMUTATION:
+      sink.Append("NO_VALID_PERMUTATION");
+      break;
+  }
+}
 
 // Computes the minimum sum of the end min and the minimum sum of the end min
 // weighted by weight of all events. It returns false if no permutation is
@@ -156,30 +211,43 @@ struct CtEvent : BaseEvent {
 // small, like <= 10. They should also starts in index order.
 //
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
-struct PermutableEvent {
-  PermutableEvent(int i, CtEvent e)
-      : index(i),
-        start_min(e.x_start_min),
-        start_max(e.x_start_max),
-        size(e.x_size_min),
-        demand(e.y_size_min),
-        weight(e.y_size_min) {}
+CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
+    absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
+    double unweighted_threshold, double weighted_threshold,
+    CtExhaustiveHelper& helper, double& min_sum_of_ends,
+    double& min_sum_of_weighted_ends, bool& cut_use_precedences,
+    int& exploration_credit);
 
-  bool operator<(const PermutableEvent& o) const { return index < o.index; }
+// Split the list of events in connected components. Two intervals are connected
+// if they overlap. It expects the events to have the start_min and end_max
+// fields. Note that events are semi-open intervals [start_min, end_max). This
+// will filter out components of size one.
+template <class E>
+std::vector<absl::Span<E>> SplitEventsInIndendentSets(absl::Span<E> events) {
+  if (events.empty()) return {};
 
-  int index;  // for < to be used by std::next_permutation().
-  IntegerValue start_min;
-  IntegerValue start_max;
-  IntegerValue size;
-  IntegerValue demand;
-  IntegerValue weight;
-};
-bool ComputeMinSumOfWeightedEndMins(std::vector<PermutableEvent>& events,
-                                    IntegerValue capacity_max,
-                                    IntegerValue& min_sum_of_end_mins,
-                                    IntegerValue& min_sum_of_weighted_end_mins,
-                                    IntegerValue unweighted_threshold,
-                                    IntegerValue weighted_threshold);
+  std::sort(events.begin(), events.end(), [](const E& a, const E& b) {
+    return std::tie(a.start_min, a.end_max) < std::tie(b.start_min, b.end_max);
+  });
+  const int size = events.size();
+  std::vector<absl::Span<E>> result;
+  IntegerValue max_end_max = events[0].end_max;
+  int start = 0;
+  for (int i = 1; i < size; ++i) {
+    const E& event = events[i];
+    if (event.start_min >= max_end_max) {
+      if (i - start > 1) {
+        result.push_back(absl::MakeSpan(events.data() + start, i - start));
+      }
+      start = i;
+    }
+    max_end_max = std::max(max_end_max, event.end_max);
+  }
+  if (size - start > 1) {
+    result.push_back(absl::MakeSpan(events.data() + start, size - start));
+  }
+  return result;
+}
 
 }  // namespace sat
 }  // namespace operations_research

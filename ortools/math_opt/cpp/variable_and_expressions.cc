@@ -24,6 +24,9 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/math_opt/cpp/formatters.h"
+#ifdef MATH_OPT_USE_EXPRESSION_COUNTERS
+#include "ortools/math_opt/storage/model_storage_item.h"
+#endif  // MATH_OPT_USE_EXPRESSION_COUNTERS
 #include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
@@ -35,7 +38,9 @@ constexpr double kInf = std::numeric_limits<double>::infinity();
 LinearExpression::LinearExpression() { ++num_calls_default_constructor_; }
 
 LinearExpression::LinearExpression(const LinearExpression& other)
-    : storage_(other.storage_), terms_(other.terms_), offset_(other.offset_) {
+    : ModelStorageItemContainer(other.storage()),
+      terms_(other.terms_),
+      offset_(other.offset_) {
   ++num_calls_copy_constructor_;
 }
 
@@ -203,7 +208,7 @@ std::ostream& operator<<(std::ostream& ostr,
 QuadraticExpression::QuadraticExpression() { ++num_calls_default_constructor_; }
 
 QuadraticExpression::QuadraticExpression(const QuadraticExpression& other)
-    : storage_(other.storage_),
+    : ModelStorageItemContainer(other),
       quadratic_terms_(other.quadratic_terms_),
       linear_terms_(other.linear_terms_),
       offset_(other.offset_) {

@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -19,8 +21,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/port:proto_utils",
-        "@com_google_absl//absl/log:check",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/log:check",
+        "@protobuf",
     ],
 )
 
@@ -42,9 +44,9 @@ cc_library(
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -63,7 +65,7 @@ cc_library(
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status:statusor",
     ],
 )
 
@@ -72,12 +74,13 @@ cc_library(
     srcs = ["sat_solver_utils.cc"],
     hdrs = ["sat_solver_utils.h"],
     deps = [
+        ":preprocessor",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/glop:preprocessor",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data:proto_utils",
         "//ortools/util:logging",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -103,10 +106,24 @@ cc_library(
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:logging",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "scip_params",
+    srcs = ["scip_params.cc"],
+    hdrs = ["scip_params.h"],
+    deps = [
+        "//ortools/base:logging",
+        "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@scip",
     ],
 )
 
@@ -121,19 +138,19 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:timer",
-        "//ortools/gscip:legacy_scip_params",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
         "//ortools/linear_solver:scip_helper_macros",
+        "//ortools/linear_solver/proto_solver:scip_params",
         "//ortools/util:lazy_mutable_copy",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
     ] + select({
         "//ortools/linear_solver:use_scip": ["@scip"],
         "//conditions:default": [],
@@ -146,20 +163,21 @@ cc_library(
     hdrs = ["gurobi_proto_solver.h"],
     deps = [
         "//ortools/base:timer",
-        "//ortools/gurobi:environment",
+        "//ortools/linear_solver:gurobi_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_validator",
+        "//ortools/third_party_solvers:gurobi_environment",
         "//ortools/util:lazy_mutable_copy",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:optional",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:optional",
     ],
 )
 
@@ -177,30 +195,26 @@ cc_library(
         "//ortools/linear_solver:model_validator",
         "//ortools/port:proto_utils",
         "//ortools/util:lazy_mutable_copy",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status:statusor",
         "@highs",
     ],
 )
 
 cc_library(
-    name = "xpress_proto_solver",
-    srcs = ["xpress_proto_solver.cc"],
-    hdrs = ["xpress_proto_solver.h"],
+    name = "preprocessor",
+    srcs = ["preprocessor.cc"],
+    hdrs = ["preprocessor.h"],
     deps = [
-        "//ortools/base:timer",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "//ortools/linear_solver:model_validator",
-        "//ortools/util:lazy_mutable_copy",
-        "//ortools/xpress:environment",
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:optional",
+        "//ortools/glop:preprocessor",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "//ortools/util:fp_utils",
+        "//ortools/util:return_macros",
+        "//ortools/util:stats",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )

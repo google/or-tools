@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // Frequency Assignment Problem
 // The Radio Link Frequency Assignment Problem consists in assigning frequencies
 // to a set of radio links defined between pairs of sites in order to avoid

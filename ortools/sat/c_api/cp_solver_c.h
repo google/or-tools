@@ -25,12 +25,12 @@ void SolveCpModelWithParameters(const void* creq, int creq_len,
                                 const void* cparams, int cparams_len,
                                 void** cres, int* cres_len);
 
-void* SolveCpNewAtomicBool();
-void SolveCpDestroyAtomicBool(void* atomic_bool);
-void SolveCpStopSolve(void* atomic_bool);
+void* SolveCpNewEnv();
+void SolveCpDestroyEnv(void* cenv);
+void SolveCpStopSearch(void* cenv);
 // Allows for interruptible solves. Solves can be interrupted by calling
-// `SolveCpStopSolve` with the `limit_reached` atomic Boolean.
-void SolveCpInterruptible(void* limit_reached, const void* creq, int creq_len,
+// `SolveCpStopSolve` with the `cenv` argument.
+void SolveCpInterruptible(void* cenv, const void* creq, int creq_len,
                           const void* cparams, int cparams_len, void** cres,
                           int* cres_len);
 

@@ -29,7 +29,6 @@
 #include <limits>
 // Needed before fenv_access. See https://github.com/microsoft/STL/issues/2613.
 #include <numeric>  // IWYU pragma:keep.
-#include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
@@ -164,7 +163,8 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
 template <typename FloatType>
 bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
   if (IsPositiveOrNegativeInfinity(y)) return x <= y;
-  return x <= y + tolerance * std::max(1.0, std::min(std::abs(x), std::abs(y)));
+  return x <= y + tolerance * std::max(FloatType(1.0),
+                                       std::min(std::abs(x), std::abs(y)));
 }
 
 // Returns true if x is within tolerance of any integer.  Always returns
@@ -253,18 +253,10 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
 
-// This is a fast implementation of the C99 function ilogb for normalized
-// doubles with the caveat that it returns -1023 for zero, and 1024 for infinity
-// an NaNs.
-int fast_ilogb(double value);
-
-// This is a fast implementation of the C99 function scalbn, with the caveat
-// that it works on normalized numbers and if the result underflows, overflows,
-// or is applied to a NaN or an +-infinity, the result is undefined behavior.
-// Note that the version of the function that takes a reference, modifies the
-// given value.
-double fast_scalbn(double value, int exponent);
-void fast_scalbn_inplace(double& mutable_value, int exponent);
+inline int fast_ilogb(double value) { return ilogb(value); }
+inline double fast_scalbn(double value, int exponent) {
+  return scalbn(value, exponent);
+}
 
 }  // namespace operations_research
 

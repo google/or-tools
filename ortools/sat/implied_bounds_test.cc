@@ -80,11 +80,11 @@ TEST(ImpliedBoundsTest, BasicTestPositiveLevel) {
   EXPECT_TRUE(ib->Add(enforcement.Negated(),
                       IntegerLiteral::GreaterOrEqual(var, IntegerValue(7))));
 
-  // Now, only the level zero bound is up to date.
-  EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(0));
+  // Now, because the new "root bound" is better, we update both bounds.
+  EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(3));
   EXPECT_EQ(integer_trail->LevelZeroLowerBound(var), IntegerValue(3));
 
-  // But on the next restart, nothing is lost.
+  // And on the next restart, nothing is lost.
   EXPECT_TRUE(sat_solver->ResetToLevelZero());
   EXPECT_EQ(integer_trail->LowerBound(var), IntegerValue(3));
 }
@@ -145,7 +145,6 @@ TEST(ImpliedBoundsTest, ReadBoundsFromTrail) {
   EXPECT_EQ(result.size(), 1);
   EXPECT_EQ(result[0].literal_view, view);
   EXPECT_EQ(result[0].lower_bound, IntegerValue(9));
-  EXPECT_TRUE(result[0].is_positive);
 }
 
 TEST(ImpliedBoundsTest, DetectEqualityFromMin) {
@@ -237,12 +236,12 @@ TEST(DetectLinearEncodingOfProductsTest, MatchingElementEncodings) {
   builder.AddConstant(IntegerValue(-1));  // To be cleared.
   EXPECT_TRUE(
       model.GetOrCreate<ProductDecomposer>()->TryToLinearize(x0, x1, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "34*X1 34*X2 294*X3 + 6");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "34*I1 34*I2 294*I3 + 6");
 
   builder.Clear();
   EXPECT_TRUE(
       model.GetOrCreate<ProductDecomposer>()->TryToLinearize(x1, x0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "34*X1 34*X2 294*X3 + 6");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "34*I1 34*I2 294*I3 + 6");
 }
 
 TEST(DetectLinearEncodingOfProductsTest, MatchingEncodingAndSizeTwoEncoding) {
@@ -271,11 +270,11 @@ TEST(DetectLinearEncodingOfProductsTest, MatchingEncodingAndSizeTwoEncoding) {
   builder.AddConstant(IntegerValue(-1));  // To be cleared.
   EXPECT_TRUE(
       model.GetOrCreate<ProductDecomposer>()->TryToLinearize(x0, x1, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "12*X3 2*X4 48*X5 + 12");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "12*I3 2*I4 48*I5 + 12");
 
   EXPECT_TRUE(
       model.GetOrCreate<ProductDecomposer>()->TryToLinearize(x1, x0, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "12*X3 2*X4 48*X5 + 12");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "12*I3 2*I4 48*I5 + 12");
 }
 
 TEST(DetectLinearEncodingOfProductsTest, BooleanAffinePosPosProduct) {
@@ -398,11 +397,11 @@ TEST(DetectLinearEncodingOfProductsTest, AffineTimesConstant) {
   LinearConstraintBuilder builder(&model);
   EXPECT_TRUE(model.GetOrCreate<ProductDecomposer>()->TryToLinearize(
       left, right, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "6*X0 + -3");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "6*I0 + -3");
 
   EXPECT_TRUE(model.GetOrCreate<ProductDecomposer>()->TryToLinearize(
       right, left, &builder));
-  EXPECT_EQ(builder.BuildExpression().DebugString(), "6*X0 + -3");
+  EXPECT_EQ(builder.BuildExpression().DebugString(), "6*I0 + -3");
 }
 
 TEST(DecomposeProductTest, MatchingElementEncodings) {

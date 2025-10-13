@@ -20,13 +20,15 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <string>
 
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
@@ -421,6 +423,13 @@ class XpressInterface : public MPSolverInterface {
  private:
   XPRSprob mLp;
   bool const mMip;
+
+  // Looping on MPConstraint::coefficients_ yields non-reproducible results
+  // since is uses pointer addresses as keys, the value of which is
+  // non-deterministic, especially their order.
+  absl::btree_map<int, std::map<int, double> >
+      fixedOrderCoefficientsPerConstraint;
+
   // Incremental extraction.
   // Without incremental extraction we have to re-extract the model every
   // time we perform a solve. Due to the way the Reset() function is
@@ -844,7 +853,6 @@ XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
   int nReturn = XPRSaddcbmessage(mLp, optimizermsg, (void*)this, 0);
-  CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
   CHECK_STATUS(
       XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
 }
@@ -875,20 +883,15 @@ std::string XpressInterface::SolverVersion() const {
 // ------ Model modifications and extraction -----
 
 void XpressInterface::Reset() {
-  // Instead of explicitly clearing all modeling objects we
-  // just delete the problem object and allocate a new one.
-  CHECK_STATUS(XPRSdestroyprob(mLp));
-
-  int status;
-  status = XPRScreateprob(&mLp);
-  CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
-  int nReturn = XPRSaddcbmessage(mLp, optimizermsg, (void*)this, 0);
-  CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-
-  CHECK_STATUS(
-      XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
-
+  int nRows = getnumrows(mLp);
+  std::vector<int> rows(nRows);
+  std::iota(rows.begin(), rows.end(), 0);
+  int nCols = getnumcols(mLp);
+  std::vector<int> cols(nCols);
+  std::iota(cols.begin(), cols.end(), 0);
+  XPRSdelrows(mLp, nRows, rows.data());
+  XPRSdelcols(mLp, nCols, cols.data());
+  XPRSdelobj(mLp, 0);
   ResetExtractionInformation();
   mCstat.clear();
   mRstat.clear();
@@ -985,8 +988,7 @@ void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
                   << (ub - std::abs(ub - lb)) << "]";
     }
     rhs = ub;
-    range = std::abs(
-        ub - lb);  // This happens implicitly by XPRSaddrows() and XPRSloadlp()
+    range = std::abs(ub - lb);  // This happens implicitly by XPRSaddrows()
     sense = 'R';
   } else if (ub < XPRS_PLUSINFINITY || (std::abs(ub) == XPRS_PLUSINFINITY &&
                                         std::abs(lb) > XPRS_PLUSINFINITY)) {
@@ -1092,6 +1094,9 @@ void XpressInterface::SetCoefficient(MPConstraint* const constraint,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
+  fixedOrderCoefficientsPerConstraint[constraint->index()][variable->index()] =
+      new_value;
+
   // Changing a single coefficient in the matrix is potentially pretty
   // slow since that coefficient has to be found in the sparse matrix
   // representation. So by default we don't perform this update immediately
@@ -1123,6 +1128,8 @@ void XpressInterface::ClearConstraint(MPConstraint* const constraint) {
   if (!constraint_is_extracted(row))
     // There is nothing to do if the constraint was not even extracted.
     return;
+
+  fixedOrderCoefficientsPerConstraint.erase(constraint->index());
 
   // Clearing a constraint means setting all coefficients in the corresponding
   // row to 0 (we cannot just delete the row since that would renumber all
@@ -1558,14 +1565,13 @@ void XpressInterface::ExtractNewConstraints() {
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
-          const auto& coeffs = ct->coefficients_;
-          for (auto coeff : coeffs) {
-            int const idx = coeff.first->index();
+          const auto& coeffs = fixedOrderCoefficientsPerConstraint[ct->index()];
+          for (auto [idx, coeff] : coeffs) {
             if (variable_is_extracted(idx)) {
               DCHECK_LT(nextNz, cols);
               DCHECK_LT(idx, cols);
               rmatind[nextNz] = idx;
-              rmatval[nextNz] = coeff.second;
+              rmatval[nextNz] = coeff;
               ++nextNz;
             }
           }
@@ -2099,29 +2105,21 @@ void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
   }
 }
 
-const char* stringToCharPtr(std::string& var) { return var.c_str(); }
+bool stringToCharPtr(const std::string& var, const char** out) {
+  *out = var.c_str();
+  return true;
+}
 
-// Save the existing locale, use the "C" locale to ensure that
-// string -> double conversion is done ignoring the locale.
-struct ScopedLocale {
-  ScopedLocale() {
-    oldLocale = std::setlocale(LC_NUMERIC, nullptr);
-    auto newLocale = std::setlocale(LC_NUMERIC, "C");
-    CHECK_EQ(std::string(newLocale), "C");
-  }
-  ~ScopedLocale() { std::setlocale(LC_NUMERIC, oldLocale); }
-
- private:
-  const char* oldLocale;
-};
-
-#define setParamIfPossible_MACRO(target_map, setter, converter)          \
+#define setParamIfPossible_MACRO(target_map, setter, converter, type)    \
   {                                                                      \
     auto matchingParamIter = (target_map).find(paramAndValuePair.first); \
     if (matchingParamIter != (target_map).end()) {                       \
-      const auto convertedValue = converter(paramAndValuePair.second);   \
-      VLOG(1) << "Setting parameter " << paramAndValuePair.first         \
-              << " to value " << convertedValue << std::endl;            \
+      type convertedValue;                                               \
+      bool ret = converter(paramAndValuePair.second, &convertedValue);   \
+      if (ret) {                                                         \
+        VLOG(1) << "Setting parameter " << paramAndValuePair.first       \
+                << " to value " << convertedValue << std::endl;          \
+      }                                                                  \
       setter(mLp, matchingParamIter->second, convertedValue);            \
       continue;                                                          \
     }                                                                    \
@@ -2146,14 +2144,15 @@ bool XpressInterface::SetSolverSpecificParametersAsString(
     }
   }
 
-  ScopedLocale locale;
   for (auto& paramAndValuePair : paramAndValuePairList) {
-    setParamIfPossible_MACRO(mapIntegerControls_, XPRSsetintcontrol, std::stoi);
-    setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol, std::stod);
+    setParamIfPossible_MACRO(mapIntegerControls_, XPRSsetintcontrol,
+                             absl::SimpleAtoi<int>, int);
+    setParamIfPossible_MACRO(mapDoubleControls_, XPRSsetdblcontrol,
+                             absl::SimpleAtod, double);
     setParamIfPossible_MACRO(mapStringControls_, XPRSsetstrcontrol,
-                             stringToCharPtr);
+                             stringToCharPtr, const char*);
     setParamIfPossible_MACRO(mapInteger64Controls_, XPRSsetintcontrol64,
-                             std::stoll);
+                             absl::SimpleAtoi<int64_t>, int64_t);
     LOG(ERROR) << "Unknown parameter " << paramName << " : function "
                << __FUNCTION__ << std::endl;
     return false;

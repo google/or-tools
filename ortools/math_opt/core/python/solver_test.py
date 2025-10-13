@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Sequence
+import sys
 import threading
-from typing import Callable, Optional, Sequence
+from typing import Optional
 from absl.testing import absltest
 from absl.testing import parameterized
-from pybind11_abseil.status import StatusNotOk
+from pybind11_abseil import status
 from ortools.math_opt import callback_pb2
 from ortools.math_opt import model_parameters_pb2
 from ortools.math_opt import model_pb2
@@ -24,6 +26,7 @@ from ortools.math_opt import model_update_pb2
 from ortools.math_opt import parameters_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt.core.python import solver
+from ortools.util.python import pybind_solve_interrupter
 
 
 def _build_simple_model() -> model_pb2.ModelProto:
@@ -52,7 +55,7 @@ def _solve_model(
     user_cb: Optional[
         Callable[[callback_pb2.CallbackDataProto], callback_pb2.CallbackResultProto]
     ] = None,
-    interrupter: Optional[solver.SolveInterrupter] = None,
+    interrupter: Optional[pybind_solve_interrupter.PySolveInterrupter] = None,
 ) -> result_pb2.SolveResultProto:
     """Convenience function for both types of solve with parameter defaults."""
     if use_solver_class:
@@ -111,8 +114,12 @@ class PybindSolverTest(parameterized.TestCase):
         # Add invalid variable id to cause MathOpt model validation error.
         model.objective.linear_coefficients.ids.append(7)
         model.objective.linear_coefficients.values.append(2.0)
-        with self.assertRaisesRegex(StatusNotOk, "id 7 not found"):
-            _solve_model(model, use_solver_class=use_solver_class)
+        if sys.platform in ("darwin", "win32"):
+            with self.assertRaisesRegex(RuntimeError, "id 7 not found"):
+                _solve_model(model, use_solver_class=use_solver_class)
+        else:
+            with self.assertRaisesRegex(status.StatusNotOk, "id 7 not found"):
+                _solve_model(model, use_solver_class=use_solver_class)
 
     @parameterized.named_parameters(
         dict(testcase_name="without_solver", use_solver_class=False),
@@ -120,7 +127,7 @@ class PybindSolverTest(parameterized.TestCase):
     )
     def test_solve_interrupter_interrupts_solve(self, use_solver_class: bool) -> None:
         model = _build_simple_model()
-        interrupter = solver.SolveInterrupter()
+        interrupter = pybind_solve_interrupter.PySolveInterrupter()
         interrupter.interrupt()
         result = _solve_model(
             model, use_solver_class=use_solver_class, interrupter=interrupter
@@ -259,16 +266,6 @@ class PybindSolverTest(parameterized.TestCase):
             result.termination.reason, result_pb2.TERMINATION_REASON_OPTIMAL
         )
         self.assertAlmostEqual(result.solve_stats.best_primal_bound, 2.5)
-
-
-class PybindSolveInterrupterTest(parameterized.TestCase):
-
-    def test_solve_interrupter_is_interrupted(self) -> None:
-        interrupter = solver.SolveInterrupter()
-        self.assertFalse(interrupter.is_interrupted())
-        interrupter.interrupt()
-        self.assertTrue(interrupter.is_interrupted())
-        del interrupter
 
 
 if __name__ == "__main__":

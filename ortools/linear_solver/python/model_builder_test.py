@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable, Mapping
 import math
 import sys
-from typing import Any, Callable, Dict, Mapping, Union
+from typing import Any, Union
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -30,7 +31,7 @@ from ortools.linear_solver.python import model_builder as mb
 from ortools.linear_solver.python import model_builder_helper as mbh
 
 
-def build_dict(expr: mb.LinearExprT) -> Dict[mbh.Variable, float]:
+def build_dict(expr: mb.LinearExprT) -> dict[mbh.Variable, float]:
     res = {}
     flat_expr = mbh.FlatExpr(expr)
     for var, coeff in zip(flat_expr.vars, flat_expr.coeffs):
@@ -363,6 +364,20 @@ ENDATA
 
         c5 = x - y == 3
         self.assertEqual(str(c5), "(x - y) == 3")
+
+    def test_large_iadd(self):
+        model = mb.Model()
+        s = 0
+        for _ in range(300000):
+            s += model.new_bool_var("")
+        model.add(s == 10)
+
+    def test_large_isub(self):
+        model = mb.Model()
+        s = 0
+        for _ in range(300000):
+            s -= model.new_bool_var("")
+        model.add(s == 10)
 
     def test_variables(self):
         model = mb.Model()
@@ -1844,7 +1859,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_solve_status(
         self,
-        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,
@@ -1920,7 +1935,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_get_variable_values(
         self,
-        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,
@@ -1998,7 +2013,7 @@ class SolverTest(parameterized.TestCase):
     )
     def test_get_objective_value(
         self,
-        solver: Dict[str, Union[str, Mapping[str, Any], bool]],
+        solver: dict[str, Union[str, Mapping[str, Any], bool]],
         variable_indices: pd.Index,
         variable_bound: float,
         solve_status: mb.SolveStatus,

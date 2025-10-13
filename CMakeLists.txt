@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
@@ -73,7 +73,6 @@ if(UNIX)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OutputConfig}/${CMAKE_INSTALL_BINDIR})
   endforeach()
 else()
-  # Currently Only support static build for windows
   option(BUILD_SHARED_LIBS "Build shared libraries (.dll)." ON)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
@@ -90,6 +89,9 @@ endif()
 if(MSVC AND BUILD_SHARED_LIBS)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
+
+# Enable CCache if any
+include(ccache)
 
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -123,10 +125,6 @@ include(CMakeDependentOption)
 ## Flatzinc
 CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
-
-## LP Parser
-CMAKE_DEPENDENT_OPTION(BUILD_LP_PARSER "Build lp_parser" ON "BUILD_CXX" OFF)
-message(STATUS "Build LP Parser: ${BUILD_LP_PARSER}")
 
 ## MathOpt
 CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
@@ -177,6 +175,10 @@ CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 
+CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
+message(STATUS "Build BZip2: ${BUILD_BZip2}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
@@ -189,12 +191,8 @@ CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build eigen3: ${BUILD_Eigen3}")
 
-if(BUILD_LP_PARSER OR BUILD_TESTING)
-  CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
-    "NOT BUILD_DEPS" ON)
-else()
-  set(BUILD_re2 OFF)
-endif()
+CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
 message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
@@ -202,12 +200,32 @@ if(BUILD_TESTING)
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
+  set(BUILD_protobuf_matchers ON)
+  # Fuzztest do not support MSVC or toolchain
+  if(APPLE OR MSVC OR CMAKE_CROSSCOMPILING)
+    set(USE_fuzztest OFF)
+  else()
+    # since no distro provide a fuzztest package disable support by default.
+    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS} "BUILD_CXX" OFF)
+  endif()
+  if(NOT USE_fuzztest)
+    set(BUILD_fuzztest OFF)
+  else()
+    CMAKE_DEPENDENT_OPTION(BUILD_fuzztest "Build fuzztest" OFF
+      "NOT BUILD_DEPS" ON)
+  endif()
 else()
   set(BUILD_googletest OFF)
+  set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
+  set(USE_fuzztest OFF)
+  set(BUILD_fuzztest OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
+message(STATUS "Build protobuf_matchers: ${BUILD_protobuf_matchers}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
+message(STATUS "Enable fuzztest: ${USE_fuzztest}")
+message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
 
 # Optional third party solvers (enabled by default)
 ## BOP
@@ -297,11 +315,19 @@ message(STATUS "Build PDLP: ${BUILD_PDLP}")
 CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
+  CMAKE_DEPENDENT_OPTION(BUILD_Boost "Build the Boost dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  CMAKE_DEPENDENT_OPTION(BUILD_soplex "Build the Soplex dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
     "NOT BUILD_DEPS" ON)
 else()
+  set(BUILD_Boost OFF)
+  set(BUILD_soplex OFF)
   set(BUILD_SCIP OFF)
 endif()
+message(STATUS "Build Boost (Soplex requirement): ${BUILD_Boost}")
+message(STATUS "Build Soplex (SCIP requirement): ${BUILD_soplex}")
 message(STATUS "Build SCIP: ${BUILD_SCIP}")
 
 # Optional third party solvers (disabled by default)
@@ -359,13 +385,13 @@ if(BUILD_DOTNET)
   endif()
   message(STATUS ".Net: Use .Net Core 3.1 LTS support: ${USE_DOTNET_CORE_31}")
 
-  option(USE_DOTNET_6 "Use .Net 6.0 LTS support" ON)
+  option(USE_DOTNET_6 "Use .Net 6.0 LTS support" OFF)
   message(STATUS ".Net: Use .Net 6.0 LTS support: ${USE_DOTNET_6}")
 
   option(USE_DOTNET_7 "Use .Net 7.0 support" OFF)
   message(STATUS ".Net: Use .Net 7.0 support: ${USE_DOTNET_7}")
 
-  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" OFF)
+  option(USE_DOTNET_8 "Use .Net 8.0 LTS support" ON)
   message(STATUS ".Net: Use .Net 8.0 support: ${USE_DOTNET_8}")
 
   option(USE_DOTNET_9 "Use .Net 9.0 support" OFF)
@@ -396,13 +422,13 @@ if(BUILD_PYTHON)
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11: ${BUILD_pybind11}")
 
-  CMAKE_DEPENDENT_OPTION(BUILD_pybind11_protobuf "Build the pybind11_protobuf dependency Library" OFF
-    "NOT BUILD_DEPS" ON)
-  message(STATUS "Python: Build pybind11_protobuf: ${BUILD_pybind11_protobuf}")
-
   CMAKE_DEPENDENT_OPTION(BUILD_pybind11_abseil "Build the pybind11_abseil dependency Library" OFF
     "NOT BUILD_DEPS" ON)
   message(STATUS "Python: Build pybind11_abseil: ${BUILD_pybind11_abseil}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_pybind11_protobuf "Build the pybind11_protobuf dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Python: Build pybind11_protobuf: ${BUILD_pybind11_protobuf}")
 
   option(GENERATE_PYTHON_STUB "Generate Python stub file (.pyi)" ON)
   message(STATUS "Python: Generate stub file: ${GENERATE_PYTHON_STUB}")
@@ -448,6 +474,7 @@ foreach(SAMPLES IN ITEMS
  graph
  glop
  constraint_solver
+ routing
  linear_solver
  ${MATH_OPT_DIR}
  ${PDLP_DIR}

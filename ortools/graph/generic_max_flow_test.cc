@@ -32,7 +32,6 @@
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/flow_graph.h"
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -42,6 +41,8 @@ namespace {
 
 using ::testing::ContainerEq;
 using ::testing::WhenSorted;
+
+using FlowQuantity = int64_t;
 
 template <typename Graph>
 typename GenericMaxFlow<Graph>::Status MaxFlowTester(
@@ -101,8 +102,7 @@ template <typename Graph>
 class GenericMaxFlowTest : public ::testing::Test {};
 
 typedef ::testing::Types<util::FlowGraph<>, util::ReverseArcListGraph<>,
-                         util::ReverseArcStaticGraph<>,
-                         util::ReverseArcMixedGraph<>>
+                         util::ReverseArcStaticGraph<>>
     GraphTypes;
 
 TYPED_TEST_SUITE(GenericMaxFlowTest, GraphTypes);
@@ -294,6 +294,7 @@ constexpr bool operator>=(StrongUint16 a, StrongUint16 b) { return a.v >= b.v; }
 constexpr bool operator>(StrongUint16 a, StrongUint16 b) { return a.v > b.v; }
 constexpr bool operator<(StrongUint16 a, StrongUint16 b) { return a.v < b.v; }
 constexpr bool operator==(StrongUint16 a, StrongUint16 b) { return a.v == b.v; }
+constexpr bool operator!=(StrongUint16 a, StrongUint16 b) { return a.v != b.v; }
 
 // This is a bit hacky, but we need to define the overload in the std namespace.
 }  // namespace
@@ -333,8 +334,10 @@ TYPED_TEST(GenericMaxFlowTest, SmallFlowTypes) {
     max_flow_A.SetArcCapacity(arc, capa);
     max_flow_B.SetArcCapacity(arc, capa);
   }
-  EXPECT_EQ(max_flow_A.Solve(), MaxFlowA::OPTIMAL);
-  EXPECT_EQ(max_flow_B.Solve(), MaxFlowB::OPTIMAL);
+  EXPECT_TRUE(max_flow_A.Solve());
+  EXPECT_EQ(max_flow_A.status(), MaxFlowA::OPTIMAL);
+  EXPECT_TRUE(max_flow_B.Solve());
+  EXPECT_EQ(max_flow_B.status(), MaxFlowB::OPTIMAL);
   EXPECT_EQ(max_flow_A.GetOptimalFlow(), max_flow_B.GetOptimalFlow());
 }
 
@@ -352,9 +355,9 @@ void AddSourceAndSink(const typename Graph::NodeIndex num_tails,
 }
 
 template <typename Graph>
-void GenerateCompleteGraph(const typename Graph::NodeIndex num_tails,
-                           const typename Graph::NodeIndex num_heads,
-                           Graph* graph) {
+void GenerateCompleteGraphWithSourceAndSink(
+    const typename Graph::NodeIndex num_tails,
+    const typename Graph::NodeIndex num_heads, Graph* graph) {
   const typename Graph::NodeIndex num_nodes = num_tails + num_heads + 2;
   const typename Graph::ArcIndex num_arcs =
       num_tails * num_heads + num_tails + num_heads;
@@ -470,7 +473,7 @@ void FullAssignment(std::optional<FlowQuantity> unused,
                     typename Graph::NodeIndex num_tails,
                     typename Graph::NodeIndex num_heads) {
   Graph graph;
-  GenerateCompleteGraph(num_tails, num_heads, &graph);
+  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
   graph.Build();
   std::vector<int64_t> arc_capacity(graph.num_arcs(), 1);
   std::unique_ptr<GenericMaxFlow<Graph>> max_flow(new GenericMaxFlow<Graph>(
@@ -590,7 +593,7 @@ void FullRandomFlow(std::optional<FlowQuantity> expected_flow,
   const FlowQuantity kCapacityRange = 10000;
   const FlowQuantity kCapacityDelta = 1000;
   Graph graph;
-  GenerateCompleteGraph(num_tails, num_heads, &graph);
+  GenerateCompleteGraphWithSourceAndSink(num_tails, num_heads, &graph);
   std::vector<int64_t> arc_capacity(graph.num_arcs());
   GenerateRandomArcValuations(random, graph, kCapacityRange, &arc_capacity);
 
@@ -684,22 +687,18 @@ static void BM_FullRandomFlow(benchmark::State& state) {
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomAssignment, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomFlow, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_FullRandomFlow, util::ReverseArcMixedGraph<>);
 
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::FlowGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcListGraph<>);
 BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcStaticGraph<>);
-BENCHMARK_TEMPLATE(BM_PartialRandomAssignment, util::ReverseArcMixedGraph<>);
 
 #undef LP_AND_FLOW_TEST
 

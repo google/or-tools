@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
 
   // Solve the shortest path problem from 0 to 5.
   std::pair<int, std::vector<int>> result =
-      operations_research::SimpleOneToOneShortestPath<int>(0, 5, tails, heads,
-                                                           lengths);
+      operations_research::SimpleOneToOneShortestPath<int, int>(0, 5, tails,
+                                                                heads, lengths);
 
   // Print to length of the path and then the nodes in the path.
   std::cout << "Shortest path length: " << result.first << std::endl;

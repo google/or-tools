@@ -1,0 +1,12 @@
+diff -ru a/tools/cmake/include/BoostInstall.cmake b/tools/cmake/include/BoostInstall.cmake
+--- a/tools/cmake/include/BoostInstall.cmake	2024-12-12 00:43:08.000000000 +0100
++++ b/tools/cmake/include/BoostInstall.cmake	2025-03-03 13:11:00.310140710 +0100
+@@ -306,7 +306,7 @@
+     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+   )
+ 
+-  export(TARGETS ${LIB} NAMESPACE Boost:: FILE export/${LIB}-targets.cmake)
++  #export(TARGETS ${LIB} NAMESPACE Boost:: FILE export/${LIB}-targets.cmake)
+ 
+   if(MSVC)
+     if(TYPE STREQUAL "SHARED_LIBRARY")

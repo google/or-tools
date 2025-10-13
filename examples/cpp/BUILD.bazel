@@ -11,49 +11,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-exports_files(
-    [
-        "shift_minimization.dat",
-        "wt40.txt",
-    ],
-)
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
-# Constraint solver examples.
+# Description:
+# C++ examples for operations_research.
+package(default_visibility = ["//visibility:public"])
+
 cc_binary(
     name = "binpacking_2d_sat",
-    srcs = [
-        "binpacking_2d_sat.cc",
-    ],
+    srcs = ["binpacking_2d_sat.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:mathutil",
         "//ortools/base:path",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:sat_parameters_cc_proto",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "binpacking_2d_sat_class01_instance2_test",
     size = "medium",
-    srcs = [
-        "binpacking_2d_sat.cc",
-    ],
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    binary = ":binpacking_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:path",
-        "//ortools/packing:binpacking_2d_parser",
-        "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
-        "//ortools/sat:cp_model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
-    ],
 )
 
 cc_binary(
@@ -62,17 +58,16 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/constraint_solver:cp",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "constraint_programming_cp_test",
     size = "small",
-    srcs = ["constraint_programming_cp.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-    ],
+    binary = ":constraint_programming_cp",
 )
 
 cc_binary(
@@ -80,86 +75,50 @@ cc_binary(
     srcs = ["costas_array_sat.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/base:types",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "costas_array_sat_model1_test",
     size = "medium",
-    srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=1",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=1"],
+    binary = ":costas_array_sat",
 )
 
-cc_test(
+run_binary_test(
     name = "costas_array_sat_model2_test",
     size = "medium",
-    srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=2",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=2"],
+    binary = ":costas_array_sat",
 )
 
-cc_test(
+run_binary_test(
     name = "costas_array_sat_model3_test",
     size = "medium",
-    srcs = ["costas_array_sat.cc"],
-    args = [
-        "--minsize=6 --maxsize=6 --model=3",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    args = ["--minsize=6 --maxsize=6 --model=3"],
+    binary = ":costas_array_sat",
 )
 
 cc_binary(
     name = "cryptarithm_sat",
     srcs = ["cryptarithm_sat.cc"],
-    deps = [
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-    ],
+    deps = ["//ortools/sat:cp_model"],
 )
 
-cc_test(
+run_binary_test(
     name = "cryptarithm_sat_test",
     size = "small",
-    srcs = ["cryptarithm_sat.cc"],
-    deps = [
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-    ],
+    binary = ":cryptarithm_sat",
 )
 
 cc_binary(
@@ -168,26 +127,20 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
         "//ortools/util:bitset",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "dobble_ls_test",
     size = "medium",
-    srcs = ["dobble_ls.cc"],
     args = ["--time_limit_in_ms=10000"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:map_util",
-        "//ortools/constraint_solver:cp",
-        "//ortools/util:bitset",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":dobble_ls",
 )
 
 cc_binary(
@@ -197,102 +150,85 @@ cc_binary(
         "//ortools/base",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+        "@protobuf",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "golomb_sat_test",
     size = "medium",
-    srcs = ["golomb_sat.cc"],
     args = ["--size 5"],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
-    ],
+    binary = ":golomb_sat",
 )
 
 cc_binary(
     name = "knapsack_2d_sat",
-    srcs = [
-        "knapsack_2d_sat.cc",
-    ],
+    srcs = ["knapsack_2d_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/packing:binpacking_2d_parser",
         "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
         "//ortools/sat:cp_model",
         "//ortools/sat:cp_model_solver",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "knapsack_2d_sat_class01_instance2_test",
     size = "medium",
-    srcs = [
-        "knapsack_2d_sat.cc",
-    ],
     args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    binary = ":knapsack_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
-    deps = [
-        "//ortools/base",
-        "//ortools/packing:binpacking_2d_parser",
-        "//ortools/packing:multiple_dimensions_bin_packing_cc_proto",
-        "//ortools/sat:cp_model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_protobuf//:protobuf",
-    ],
 )
 
 cc_binary(
     name = "jobshop_sat",
-    srcs = [
-        "jobshop_sat.cc",
-    ],
+    srcs = ["jobshop_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:timer",
+        "//ortools/graph:connected_components",
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:model",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/scheduling:jobshop_scheduling_cc_proto",
         "//ortools/scheduling:jobshop_scheduling_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+        "@protobuf//:wrappers_cc_proto",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "jobshop_sat_ft06",
     size = "small",
-    srcs = [
-        "jobshop_sat.cc",
-    ],
     args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
+    binary = ":jobshop_sat",
     data = ["//ortools/scheduling/testdata:ft06"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:timer",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:cp_model_solver",
-        "//ortools/sat:model",
-        "//ortools/scheduling:jobshop_scheduling_cc_proto",
-        "//ortools/scheduling:jobshop_scheduling_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-    ],
 )
 
 cc_binary(
@@ -301,140 +237,96 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "magic_sequence_sat_test",
     size = "medium",
-    srcs = ["magic_sequence_sat.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":magic_sequence_sat",
 )
 
 cc_binary(
     name = "multi_knapsack_sat",
-    srcs = [
-        "multi_knapsack_sat.cc",
-    ],
+    srcs = ["multi_knapsack_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
-        "@com_google_absl//absl/flags:flag",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "multi_knapsack_sat_test",
     size = "medium",
-    srcs = [
-        "multi_knapsack_sat.cc",
-    ],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "@com_google_absl//absl/flags:flag",
-    ],
+    binary = ":multi_knapsack_sat",
 )
 
 cc_binary(
     name = "shift_minimization_sat",
-    srcs = [
-        "shift_minimization_sat.cc",
-    ],
+    srcs = ["shift_minimization_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:file",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "shift_minimization_sat_test",
     size = "medium",
-    srcs = [
-        "shift_minimization_sat.cc",
-    ],
-    args = ["--input $(rootpath //examples/cpp:shift_minimization.dat)"],
-    data = ["//examples/cpp:shift_minimization.dat"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "//ortools/util:filelineiter",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-    ],
+    args = ["--input $(rootpath :shift_minimization.dat)"],
+    binary = ":shift_minimization_sat",
+    data = [":shift_minimization.dat"],
 )
 
 cc_binary(
     name = "weighted_tardiness_sat",
-    srcs = [
-        "weighted_tardiness_sat.cc",
-    ],
+    srcs = ["weighted_tardiness_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:file",
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
-        "//ortools/sat:disjunctive",
-        "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
-        "//ortools/sat:intervals",
         "//ortools/sat:model",
-        "//ortools/sat:optimization",
-        "//ortools/sat:precedences",
-        "//ortools/sat:sat_solver",
+        "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "weighted_tardiness_sat_test",
     size = "medium",
-    srcs = [
-        "weighted_tardiness_sat.cc",
-    ],
-    args = ["--input $(rootpath //examples/cpp:wt40.txt)"],
-    data = ["//examples/cpp:wt40.txt"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:cp_model_solver",
-        "//ortools/sat:disjunctive",
-        "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
-        "//ortools/sat:intervals",
-        "//ortools/sat:model",
-        "//ortools/sat:optimization",
-        "//ortools/sat:precedences",
-        "//ortools/sat:sat_solver",
-        "//ortools/util:filelineiter",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
-    ],
+    args = ["--input $(rootpath :wt40.txt)"],
+    binary = ":weighted_tardiness_sat",
+    data = [":wt40.txt"],
 )
 
 cc_binary(
@@ -444,26 +336,19 @@ cc_binary(
         "//ortools/base",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "magic_square_sat_test",
     size = "medium",
-    srcs = ["magic_square_sat.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":magic_square_sat",
 )
 
 cc_binary(
@@ -471,41 +356,43 @@ cc_binary(
     srcs = ["network_routing_sat.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
+        "//ortools/graph",
         "//ortools/graph:shortest_paths",
         "//ortools/sat:cp_model",
         "//ortools/sat:model",
-        "//ortools/util:tuple_set",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "network_routing_sat_test",
     size = "medium",
-    srcs = ["network_routing_sat.cc"],
-    args = ["--clients=10 --backbones=5 --demands=10 --traffic_min=5 --traffic_max=10 --min_client_degree=2 --max_client_degree=5 --min_backbone_degree=3 --max_backbone_degree=5 --max_capacity=20 --fixed_charge_cost=10"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:hash",
-        "//ortools/base:map_util",
-        "//ortools/graph:shortest_paths",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "//ortools/util:tuple_set",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+    args = [
+        "--clients=10",
+        "--backbones=5",
+        "--demands=10",
+        "--traffic_min=5",
+        "--traffic_max=10",
+        "--min_client_degree=2",
+        "--max_client_degree=5",
+        "--min_backbone_degree=3",
+        "--max_backbone_degree=5",
+        "--max_capacity=20",
+        "--fixed_charge_cost=10",
     ],
+    binary = ":network_routing_sat",
 )
 
 cc_binary(
@@ -514,22 +401,17 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
+        "//ortools/base:types",
         "//ortools/constraint_solver:cp",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "nqueens_test",
-    srcs = ["nqueens.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:map_util",
-        "//ortools/constraint_solver:cp",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    size = "small",
+    binary = ":nqueens",
 )
 
 cc_binary(
@@ -538,63 +420,50 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "sports_scheduling_sat_test",
     size = "medium",
-    srcs = ["sports_scheduling_sat.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":sports_scheduling_sat",
 )
 
 cc_binary(
-    name = "vector_bin_packing_solver",
-    srcs = [
-        "vector_bin_packing_solver.cc",
-    ],
+    name = "pdptw",
+    srcs = ["pdptw.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/packing:arc_flow_builder",
-        "//ortools/packing:arc_flow_solver",
-        "//ortools/packing:vector_bin_packing_cc_proto",
-        "//ortools/packing:vector_bin_packing_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
-cc_test(
-    name = "vector_bin_packing_solver_test",
-    size = "medium",
-    srcs = [
-        "vector_bin_packing_solver.cc",
-    ],
-    args = ["--input $(rootpath //ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp)"],
-    data = ["//ortools/packing/testdata:1D__bpp_scholl__bin2data.N2W2B1R0.vbp"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/packing:arc_flow_builder",
-        "//ortools/packing:arc_flow_solver",
-        "//ortools/packing:vector_bin_packing_cc_proto",
-        "//ortools/packing:vector_bin_packing_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:mathutil",
+        "//ortools/base:timer",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
+        "//ortools/routing/parsers:lilim_parser",
+        "//ortools/routing/parsers:simple_graph",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@protobuf",
     ],
 )
 
@@ -603,27 +472,22 @@ cc_binary(
     name = "random_tsp",
     srcs = ["random_tsp.cc"],
     deps = [
-        "//ortools/base",
-        "//ortools/constraint_solver:routing",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
         "//ortools/util:random_engine",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
-    ],
-)
-
-cc_binary(
-    name = "pdptw",
-    srcs = ["pdptw.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:mathutil",
-        "//ortools/constraint_solver:routing",
-        "//ortools/routing/parsers:lilim_parser",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
 )
 
@@ -634,19 +498,17 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "integer_programming_test",
     size = "small",
-    srcs = ["integer_programming.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-        "@com_google_absl//absl/strings",
-    ],
+    binary = ":integer_programming",
 )
 
 cc_binary(
@@ -656,22 +518,17 @@ cc_binary(
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "linear_programming_test",
     size = "small",
-    srcs = ["linear_programming.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-        "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-    ],
+    binary = ":linear_programming",
 )
 
 cc_binary(
@@ -679,10 +536,15 @@ cc_binary(
     srcs = ["linear_solver_protocol_buffers.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:solve_mp_model",
     ],
+)
+
+run_binary_test(
+    name = "linear_solver_protocol_buffers_test",
+    size = "small",
+    binary = ":linear_solver_protocol_buffers",
 )
 
 cc_binary(
@@ -691,20 +553,19 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "strawberry_fields_with_column_generation_test",
     size = "large",
-    srcs = ["strawberry_fields_with_column_generation.cc"],
     args = ["--colgen_instance=4"],
-    deps = [
-        "//ortools/base",
-        "//ortools/linear_solver",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":strawberry_fields_with_column_generation",
 )
 
 # Dimacs assignment problems
@@ -714,11 +575,9 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/graph",
         "//ortools/graph:linear_assignment",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -727,11 +586,11 @@ cc_library(
     srcs = ["parse_dimacs_assignment.cc"],
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
-        "//ortools/base",
-        "//ortools/graph",
         "//ortools/graph:linear_assignment",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -746,8 +605,9 @@ cc_binary(
         "//ortools/base:timer",
         "//ortools/graph",
         "//ortools/graph:linear_assignment",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -755,40 +615,37 @@ cc_binary(
 cc_binary(
     name = "mps_driver",
     srcs = ["mps_driver.cc"],
+    copts = ["-Wfloat-conversion"],
     deps = [
         "//ortools/base",
+        "//ortools/base:file",
         "//ortools/base:timer",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
         "//ortools/lp_data:mps_reader",
+        "//ortools/lp_data:proto_utils",
+        "//ortools/util:file_util",
         "//ortools/util:proto_tools",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@protobuf",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "mps_driver_test",
     size = "small",
-    srcs = ["mps_driver.cc"],
     args = ["--input $(rootpath //ortools/linear_solver/testdata:maximization.mps)"],
+    binary = ":mps_driver",
     data = ["//ortools/linear_solver/testdata:maximization.mps"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:timer",
-        "//ortools/glop:lp_solver",
-        "//ortools/glop:parameters_cc_proto",
-        "//ortools/lp_data:mps_reader",
-        "//ortools/util:proto_tools",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_protobuf//:protobuf",
-    ],
 )
 
 # Linear Assignment C++ Example
@@ -802,15 +659,10 @@ cc_binary(
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "linear_assignment_api_test",
     size = "small",
-    srcs = ["linear_assignment_api.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/graph",
-        "//ortools/graph:linear_assignment",
-    ],
+    binary = ":linear_assignment_api",
 )
 
 # Flow C++ Example
@@ -820,21 +672,15 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/graph",
-        "//ortools/graph:max_flow",
+        "//ortools/graph:generic_max_flow",
         "//ortools/graph:min_cost_flow",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "flow_api_test",
     size = "small",
-    srcs = ["flow_api.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/graph",
-        "//ortools/graph:max_flow",
-        "//ortools/graph:min_cost_flow",
-    ],
+    binary = ":flow_api",
 )
 
 cc_binary(
@@ -842,18 +688,18 @@ cc_binary(
     srcs = ["max_flow.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/graph:max_flow",
+        "//ortools/graph",
+        "//ortools/graph:generic_max_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "max_flow_test",
     size = "small",
-    srcs = ["max_flow.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/graph:max_flow",
-    ],
+    binary = ":max_flow",
 )
 
 cc_binary(
@@ -862,17 +708,16 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "min_cost_flow_test",
     size = "small",
-    srcs = ["min_cost_flow.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/graph:min_cost_flow",
-    ],
+    binary = ":min_cost_flow",
 )
 
 # Frequency Assignment Problem
@@ -881,12 +726,12 @@ cc_library(
     srcs = ["fap_parser.cc"],
     hdrs = ["fap_parser.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:hash",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -896,10 +741,10 @@ cc_library(
     hdrs = ["fap_model_printer.h"],
     deps = [
         ":fap_parser",
-        "//ortools/base",
-        "//ortools/base:file",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -912,7 +757,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/constraint_solver:cp",
-        "@com_google_absl//absl/container:btree",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -926,24 +772,25 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/constraint_solver:cp",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
 # Quadratic assignment problem.
+
 cc_binary(
     name = "qap_sat",
     srcs = ["qap_sat.cc"],
     deps = [
         "//ortools/base",
         "//ortools/sat:cp_model",
-        "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:qap_reader",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
 )
 
@@ -952,20 +799,20 @@ cc_binary(
     srcs = ["slitherlink_sat.cc"],
     deps = [
         "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/strings:str_format",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "slitherlink_sat_test",
     size = "small",
-    srcs = ["slitherlink_sat.cc"],
-    deps = [
-        "//ortools/sat:cp_model",
-        "//ortools/sat:model",
-        "@com_google_absl//absl/strings:str_format",
-    ],
+    binary = ":slitherlink_sat",
 )
 
 cc_binary(
@@ -974,10 +821,14 @@ cc_binary(
     deps = [
         "//ortools/base",
         "//ortools/linear_solver",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/random",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/util:random_engine",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/flags:usage",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/log:initialize",
+        "@abseil-cpp//absl/random",
     ],
 )
 
@@ -986,20 +837,17 @@ cc_binary(
     srcs = ["variable_intervals_sat.cc"],
     deps = [
         "//ortools/sat:cp_model",
+        "//ortools/sat:cp_model_solver",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/log",
     ],
 )
 
-cc_test(
+run_binary_test(
     name = "variable_intervals_sat_test",
     size = "small",
-    srcs = ["variable_intervals_sat.cc"],
-    deps = [
-        "//ortools/sat:cp_model",
-        "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:time_limit",
-    ],
+    binary = ":variable_intervals_sat",
 )
 
 cc_binary(
@@ -1007,7 +855,7 @@ cc_binary(
     srcs = ["pdlp_solve.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/base:file",
         "//ortools/pdlp:iteration_stats",
         "//ortools/pdlp:primal_dual_hybrid_gradient",
         "//ortools/pdlp:quadratic_program",
@@ -1018,9 +866,11 @@ cc_binary(
         "//ortools/util:file_util",
         "//ortools/util:fp_roundtrip_conv",
         "//ortools/util:sigint",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/log:flags",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
     ],
 )

@@ -15,28 +15,10 @@
 # Source code for the flatzinc interpreter. See www.minizinc.org.
 # This is a google owned implementation.
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
-
-config_setting(
-    name = "on_linux",
-    constraint_values = [
-        "@platforms//os:linux",
-    ],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = [
-        "@platforms//os:macos",
-    ],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = [
-        "@platforms//os:windows",
-    ],
-)
 
 # ---------------------------------------------------------------------------
 # Baseline flatzinc model.
@@ -53,10 +35,10 @@ cc_library(
         "//ortools/graph:iterators",
         "//ortools/util:logging",
         "//ortools/util:string_array",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -77,7 +59,7 @@ cc_library(
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
         "//ortools/util:string_array",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -85,16 +67,15 @@ cc_library(
     name = "parser_lex_lib",
     srcs = ["parser.yy.cc"],
     copts = select({
-        "on_linux": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_macos": ["-Wno-unused-function"],  # parser.yy.cc
-        "on_windows": [],
+        "@platforms//os:linux": ["-Wno-unused-function"],  # parser.yy.cc
+        "@platforms//os:macos": ["-Wno-unused-function"],  # parser.yy.cc
         "//conditions:default": [],
     }),
     deps = [
         ":parser_yacc_lib",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -109,6 +90,23 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "parser",
+    srcs = ["parser_main.cc"],
+    deps = [
+        ":model",
+        ":parser_lib",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
 cc_library(
     name = "checker",
     srcs = ["checker.cc"],
@@ -118,8 +116,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/util:logging",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -146,7 +144,7 @@ cc_library(
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
         "//ortools/util:logging",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -161,5 +159,7 @@ cc_binary(
         "//ortools/base:path",
         "//ortools/base:threadpool",
         "//ortools/util:logging",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:flags",
     ],
 )

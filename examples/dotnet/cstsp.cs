@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 class Tsp
 {
@@ -77,8 +78,7 @@ class Tsp
                              size + 1, size + 1, true, "dummy");
 
         // Solve, returns a solution if any (owned by RoutingModel).
-        RoutingSearchParameters search_parameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters search_parameters = RoutingGlobals.DefaultRoutingSearchParameters();
         // Setting first solution heuristic (cheapest addition).
         search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 

@@ -14,7 +14,6 @@
 #include "ortools/sat/cp_model_symmetries.h"
 
 #include <algorithm>
-#include <limits>
 #include <memory>
 #include <vector>
 
@@ -29,6 +28,7 @@
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -70,8 +70,8 @@ TEST(FindCpModelSymmetries, FindsSymmetry) {
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   SolverLogger logger;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -84,8 +84,8 @@ TEST(FindCpModelSymmetries, NoSymmetryIfDifferentVariableBounds) {
   std::vector<std::unique_ptr<SparsePermutation>> generators;
   SolverLogger logger;
 
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -96,8 +96,8 @@ TEST(FindCpModelSymmetries, NoSymmetryIfDifferentConstraintCoefficients) {
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -109,8 +109,8 @@ TEST(FindCpModelSymmetries, NoSymmetryIfDifferentObjectiveCoefficients) {
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -149,8 +149,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryIfSameConstraintBounds) {
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -158,8 +158,7 @@ TEST(FindCpModelSymmetries, FindsSymmetryIfSameConstraintBounds) {
   // Make sure that if the constraint bounds are different, the symmetry is
   // broken.
   model.mutable_constraints(1)->mutable_linear()->set_domain(1, 20);
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -172,8 +171,8 @@ TEST(FindCpModelSymmetries,
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -185,8 +184,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryIfSameConstraintEnforcementLiterals) {
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -200,8 +199,8 @@ TEST(FindCpModelSymmetries,
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -225,8 +224,8 @@ TEST(FindCpModelSymmetries, LinMaxConstraint) {
   SolverLogger logger;
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -251,8 +250,8 @@ TEST(FindCpModelSymmetries, UnsupportedConstraintTypeReturnsNoGenerators) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -276,8 +275,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryIfNoConstraints) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
   ASSERT_EQ(generators.size(), 0);
 }
 
@@ -313,8 +312,8 @@ TEST(FindCpModelSymmetries, NoSymmetryIfDuplicateConstraints) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 0);
 }
@@ -352,8 +351,8 @@ TEST(FindCpModelSymmetries, ImplicationTestThatUsedToFail) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 1) (2 3)");
@@ -391,7 +390,8 @@ TEST(DetectAndAddSymmetryToProto, BasicTest) {
   SolverLogger logger;
   SatParameters params;
   params.set_log_search_progress(true);
-  DetectAndAddSymmetryToProto(params, &model, &logger);
+  TimeLimit time_limit;
+  DetectAndAddSymmetryToProto(params, &model, &logger, &time_limit);
 
   // TODO(user): canonicalize the order in each cycle?
   const SymmetryProto expected = ParseTestProto(R"pb(
@@ -426,8 +426,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolOr) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 1)");
@@ -440,8 +440,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInNegatedBoolOr) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 2)");
@@ -457,8 +457,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolOrWithEnforcementLiteral) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 2)");
@@ -471,8 +471,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolXor) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 2)");
@@ -485,8 +485,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInNegatedBoolXor) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -496,14 +496,14 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolXorWithEnforcementLiteral) {
   CpModelProto model = ParseTestProto(absl::StrCat(kBooleanModel, R"pb(
     constraints {
       enforcement_literal: 0
-      bool_or { literals: [ 1, 2 ] }
+      bool_xor { literals: [ 1, 2 ] }
     }
   )pb"));
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(1 2)");
@@ -519,8 +519,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolAnd) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 2)");
@@ -536,8 +536,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInNegatedBoolAnd) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 1)");
@@ -553,8 +553,8 @@ TEST(FindCpModelSymmetries, FindsSymmetryInBoolAndWithEnforcementLiteral) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 1)");
@@ -575,8 +575,8 @@ TEST(FindCpModelSymmetries,
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   ASSERT_EQ(generators.size(), 1);
   EXPECT_EQ(generators[0]->DebugString(), "(0 1)");
@@ -613,8 +613,8 @@ TEST(FindCpModelSymmetries, BasicSchedulingCase) {
 
   SolverLogger logger;
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries({}, model, &generators,
-                        std::numeric_limits<double>::infinity(), &logger);
+  TimeLimit time_limit;
+  FindCpModelSymmetries({}, model, &generators, &logger, &time_limit);
 
   // The two intervals with the same size can be swapped.
   ASSERT_EQ(generators.size(), 1);

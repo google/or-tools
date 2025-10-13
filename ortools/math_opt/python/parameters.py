@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,12 +21,12 @@ from typing import Dict, Optional
 
 from ortools.pdlp import solvers_pb2 as pdlp_solvers_pb2
 from ortools.glop import parameters_pb2 as glop_parameters_pb2
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import parameters_pb2 as math_opt_parameters_pb2
 from ortools.math_opt.solvers import glpk_pb2
 from ortools.math_opt.solvers import gurobi_pb2
 from ortools.math_opt.solvers import highs_pb2
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 from ortools.sat import sat_parameters_pb2
 
 

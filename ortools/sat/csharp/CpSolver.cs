@@ -26,176 +26,108 @@ namespace Google.OrTools.Sat
  * variables in the best solution, as well as general statistics of the search.
  * </remarks>
  */
-public class CpSolver
+public sealed class CpSolver : IDisposable
 {
-    /** <summary>Solves the given model, and returns the solve status.</summary> */
-    public CpSolverStatus Solve(CpModel model, SolutionCallback cb = null)
+    private LogCallback? _log_callback;
+    private BestBoundCallback? _best_bound_callback;
+    private SolveWrapper? _solve_wrapper;
+    private Queue<Term> _terms;
+    private bool _disposed = false;
+
+    public double ObjectiveValue => Response!.ObjectiveValue;
+
+    public double BestObjectiveBound => Response!.BestObjectiveBound;
+
+    public string? StringParameters { get; set; }
+
+    public CpSolverResponse? Response { get; private set; }
+
+    public CpSolverStatus Solve(CpModel model, SolutionCallback? cb = null)
     {
         // Setup search.
         CreateSolveWrapper();
-        if (string_parameters_ is not null)
+        if (StringParameters is not null)
         {
-            solve_wrapper_.SetStringParameters(string_parameters_);
-        }
-        if (log_callback_ is not null)
-        {
-            solve_wrapper_.AddLogCallbackFromClass(log_callback_);
-        }
-        if (best_bound_callback_ is not null)
-        {
-            solve_wrapper_.AddBestBoundCallbackFromClass(best_bound_callback_);
-        }
-        if (cb is not null)
-        {
-            solve_wrapper_.AddSolutionCallback(cb);
+            _solve_wrapper!.SetStringParameters(StringParameters);
         }
 
-        response_ = solve_wrapper_.Solve(model.Model);
+        if (_log_callback is not null)
+        {
+            _solve_wrapper!.AddLogCallbackFromClass(_log_callback);
+        }
+
+        if (_best_bound_callback is not null)
+        {
+            _solve_wrapper!.AddBestBoundCallbackFromClass(_best_bound_callback);
+        }
+
+        if (cb is not null)
+        {
+            _solve_wrapper!.AddSolutionCallback(cb);
+        }
+
+        Response = _solve_wrapper!.Solve(model.Model);
 
         // Cleanup search.
         if (cb is not null)
         {
-            solve_wrapper_.ClearSolutionCallback(cb);
+            _solve_wrapper.ClearSolutionCallback(cb);
         }
+
         ReleaseSolveWrapper();
 
-        return response_.Status;
-    }
-
-    /** <summary> Deprecated, use Solve() instead. </summary> */
-    [ObsoleteAttribute("This method is obsolete. Call Solve instead.", false)]
-    public CpSolverStatus SolveWithSolutionCallback(CpModel model, SolutionCallback cb)
-    {
-        return Solve(model, cb);
-    }
-
-    /** <summary> Deprecated, use Solve() instead. </summary> */
-    [ObsoleteAttribute("This method is obsolete. Call Solve instead with the enumerate_all_solutions parameter.",
-                       false)]
-    public CpSolverStatus SearchAllSolutions(CpModel model, SolutionCallback cb)
-    {
-        string old_parameters = string_parameters_;
-        string_parameters_ += " enumerate_all_solutions:true";
-        Solve(model, cb);
-        string_parameters_ = old_parameters;
-        return response_.Status;
+        return Response.Status;
     }
 
     /** <summary>Stops the search asynchronously.</summary> */
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public void StopSearch()
-    {
-        if (solve_wrapper_ is not null)
-        {
-            solve_wrapper_.StopSearch();
-        }
-    }
+    public void StopSearch() => _solve_wrapper?.StopSearch();
 
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void CreateSolveWrapper()
-    {
-        solve_wrapper_ = new SolveWrapper();
-    }
-
-    [MethodImpl(MethodImplOptions.Synchronized)]
-    private void ReleaseSolveWrapper()
-    {
-        solve_wrapper_ = null;
-    }
-
-    /** <summary>Statistics on the solution found as a string.</summary>*/
-    public String ResponseStats()
-    {
-        return CpSatHelper.SolverResponseStats(response_);
-    }
-
-    /** <summary>The best objective value found during search.</summary>*/
-    public double ObjectiveValue
-    {
-        get {
-            return response_.ObjectiveValue;
-        }
-    }
-
-    /**
-     * <summary>
-     * The best lower bound found when minimizing, of the best upper bound found when maximizing
-     * </summary>
-     */
-    public double BestObjectiveBound
-    {
-        get {
-            return response_.BestObjectiveBound;
-        }
-    }
-
-    /** The parameters of the search, stored as a string */
-    public string StringParameters
-    {
-        get {
-            return string_parameters_;
-        }
-        set {
-            string_parameters_ = value;
-        }
-    }
+    public string ResponseStats() => CpSatHelper.SolverResponseStats(Response);
 
     public void SetLogCallback(StringToVoidDelegate del)
     {
-        log_callback_ = new LogCallbackDelegate(del);
+        _log_callback?.Dispose();
+        _log_callback = new LogCallbackDelegate(del);
     }
 
     public void ClearLogCallback()
     {
-        log_callback_ = null;
+        _log_callback?.Dispose();
+        _log_callback = null;
     }
 
     public void SetBestBoundCallback(DoubleToVoidDelegate del)
     {
-        best_bound_callback_ = new BestBoundCallbackDelegate(del);
+        _best_bound_callback?.Dispose();
+        _best_bound_callback = new BestBoundCallbackDelegate(del);
     }
 
     public void ClearBestBoundCallback()
     {
-        best_bound_callback_ = null;
+        _best_bound_callback?.Dispose();
+        _best_bound_callback = null;
     }
 
-    public CpSolverResponse Response
-    {
-        get {
-            return response_;
-        }
-    }
-
-    /**
-     * <summary>
-     * Returns the value of an integer variable in the last solution found.
-     * </summary>
-     */
     public long Value(IntVar intVar)
     {
-        int index = intVar.GetIndex();
-        long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
+        var index = intVar.GetIndex();
+        var value = index >= 0 ? Response!.Solution[index] : -Response!.Solution[-index - 1];
         return value;
     }
 
-    /**
-     * <summary>
-     * Returns the value of a linear expression in the last solution found.
-     * </summary>
-     */
     public long Value(LinearExpr e)
     {
         long constant = 0;
         long coefficient = 1;
-        LinearExpr expr = e;
-        if (terms_ is null)
+        var expr = e;
+        if (_terms is null)
         {
-            terms_ = new Queue<Term>();
+            _terms = new Queue<Term>();
         }
         else
         {
-            terms_.Clear();
+            _terms.Clear();
         }
 
         do
@@ -206,22 +138,23 @@ public class CpSolver
                 constant += coefficient * a.Offset;
                 if (coefficient == 1)
                 {
-                    foreach (Term sub in a.Terms)
+                    foreach (var sub in a.Terms)
                     {
-                        terms_.Enqueue(sub);
+                        _terms.Enqueue(sub);
                     }
                 }
                 else
                 {
-                    foreach (Term sub in a.Terms)
+                    foreach (var sub in a.Terms)
                     {
-                        terms_.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
+                        _terms.Enqueue(new Term(sub.expr, sub.coefficient * coefficient));
                     }
                 }
+
                 break;
             case IntVar intVar:
-                int index = intVar.GetIndex();
-                long value = index >= 0 ? response_.Solution[index] : -response_.Solution[-index - 1];
+                var index = intVar.GetIndex();
+                var value = index >= 0 ? Response!.Solution[index] : -Response!.Solution[-index - 1];
                 constant += coefficient * value;
                 break;
             case NotBoolVar:
@@ -230,10 +163,11 @@ public class CpSolver
                 throw new ArgumentException("Cannot evaluate '" + expr + "' in an integer expression");
             }
 
-            if (!terms_.TryDequeue(out var term))
+            if (!_terms.TryDequeue(out var term))
             {
                 break;
             }
+
             expr = term.expr;
             coefficient = term.coefficient;
         } while (true);
@@ -241,23 +175,18 @@ public class CpSolver
         return constant;
     }
 
-    /**
-     * <summary>
-     * Returns the Boolean value of a literal in the last solution found.
-     * </summary>
-     */
-    public Boolean BooleanValue(ILiteral literal)
+    public bool BooleanValue(ILiteral literal)
     {
         if (literal is BoolVar || literal is NotBoolVar)
         {
-            int index = literal.GetIndex();
+            var index = literal.GetIndex();
             if (index >= 0)
             {
-                return response_.Solution[index] != 0;
+                return Response!.Solution[index] != 0;
             }
             else
             {
-                return response_.Solution[-index - 1] == 0;
+                return Response!.Solution[-index - 1] == 0;
             }
         }
         else
@@ -266,76 +195,60 @@ public class CpSolver
         }
     }
 
-    /** <summary>Returns the number of branches explored during search. </summary>*/
-    public long NumBranches()
+    public long NumBranches() => Response!.NumBranches;
+
+    public long NumConflicts() => Response!.NumConflicts;
+
+    public double WallTime() => Response!.WallTime;
+
+    public IList<int> SufficientAssumptionsForInfeasibility() => Response!.SufficientAssumptionsForInfeasibility;
+
+    public string SolutionInfo() => Response!.SolutionInfo;
+
+    public void Dispose()
     {
-        return response_.NumBranches;
+        if (_disposed)
+        {
+            return;
+        }
+
+        _best_bound_callback?.Dispose();
+        _log_callback?.Dispose();
+        ReleaseSolveWrapper();
+        _disposed = true;
     }
 
-    /** <summary>Returns the number of conflicts created during search. </summary>*/
-    public long NumConflicts()
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    private void CreateSolveWrapper()
     {
-        return response_.NumConflicts;
+        _solve_wrapper?.Dispose();
+        _solve_wrapper = new SolveWrapper();
     }
 
-    /** <summary>Returns the wall time of the search. </summary>*/
-    public double WallTime()
+    [MethodImpl(MethodImplOptions.Synchronized)]
+    private void ReleaseSolveWrapper()
     {
-        return response_.WallTime;
+        _solve_wrapper?.Dispose();
+        _solve_wrapper = null;
     }
-
-    public IList<int> SufficientAssumptionsForInfeasibility()
-    {
-        return response_.SufficientAssumptionsForInfeasibility;
-    }
-
-    /**
-     * <summary>
-     * Returns some information on how the solution was found, or the reason why the model or the
-     * parameters are invalid.
-     * </summary>
-     */
-    public String SolutionInfo()
-    {
-        return response_.SolutionInfo;
-    }
-
-    private CpSolverResponse response_;
-    private LogCallback log_callback_;
-    private BestBoundCallback best_bound_callback_;
-    private string string_parameters_;
-    private SolveWrapper solve_wrapper_;
-    private Queue<Term> terms_;
 }
 
 class LogCallbackDelegate : LogCallback
 {
-    public LogCallbackDelegate(StringToVoidDelegate del)
-    {
-        this.delegate_ = del;
-    }
+    private readonly StringToVoidDelegate _delegate_;
 
-    public override void NewMessage(string message)
-    {
-        delegate_(message);
-    }
+    public LogCallbackDelegate(StringToVoidDelegate del) => _delegate_ = del;
 
-    private StringToVoidDelegate delegate_;
+    public override void NewMessage(string message) => _delegate_(message);
 }
 
 class BestBoundCallbackDelegate : BestBoundCallback
 {
-    public BestBoundCallbackDelegate(DoubleToVoidDelegate del)
-    {
-        this.delegate_ = del;
-    }
+    private readonly DoubleToVoidDelegate _delegate;
 
-    public override void NewBestBound(double bound)
-    {
-        delegate_(bound);
-    }
+    public BestBoundCallbackDelegate(DoubleToVoidDelegate del) => _delegate = del;
 
-    private DoubleToVoidDelegate delegate_;
+    public override void NewBestBound(double bound) => _delegate(bound);
 }
 
 } // namespace Google.OrTools.Sat

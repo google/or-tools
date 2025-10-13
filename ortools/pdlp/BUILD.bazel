@@ -11,10 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,7 +26,8 @@ cc_library(
     deps = [
         ":solvers_cc_proto",
         "//ortools/base:threadpool",
-        "@com_google_absl//absl/functional:any_invocable",
+        "@abseil-cpp//absl/functional:any_invocable",
+        "@abseil-cpp//absl/synchronization",
         "@eigen",
     ],
 )
@@ -33,11 +35,12 @@ cc_library(
 cc_test(
     name = "scheduler_test",
     srcs = ["scheduler_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":scheduler",
         ":solvers_cc_proto",
-        "@com_google_absl//absl/functional:any_invocable",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -70,18 +73,7 @@ cc_proto_library(
 
 py_proto_library(
     name = "solvers_py_pb2",
-    deps = [
-        ":solvers_proto",
-    ],
-)
-
-cc_library(
-    name = "gtest_main",
-    srcs = ["gtest_main.cc"],
-    deps = [
-        "//ortools/base",
-        "//ortools/base:gmock",
-    ],
+    deps = [":solvers_proto"],
 )
 
 cc_library(
@@ -94,9 +86,9 @@ cc_library(
         ":sharder",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
-        "//ortools/base",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/random:distributions",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
         "@eigen",
     ],
 )
@@ -104,15 +96,16 @@ cc_library(
 cc_test(
     name = "iteration_stats_test",
     srcs = ["iteration_stats_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":iteration_stats",
         ":quadratic_program",
         ":sharded_quadratic_program",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         ":test_util",
-        "//ortools/base:protobuf_util",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
         "@eigen",
     ],
 )
@@ -132,7 +125,6 @@ cc_library(
         ":solvers_proto_validation",
         ":termination",
         ":trust_region",
-        "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:timer",
         "//ortools/glop:parameters_cc_proto",
@@ -142,14 +134,17 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/lp_data:proto_utils",
         "//ortools/util:logging",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/time",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
         "@eigen",
+        "@protobuf",
     ],
 )
 
@@ -157,9 +152,8 @@ cc_test(
     name = "primal_dual_hybrid_gradient_test",
     size = "medium",
     srcs = ["primal_dual_hybrid_gradient_test.cc"],
-    shard_count = 3,
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":iteration_stats",
         ":primal_dual_hybrid_gradient",
         ":quadratic_program",
@@ -169,14 +163,16 @@ cc_test(
         ":solvers_cc_proto",
         ":termination",
         ":test_util",
-        "//ortools/base",
+        "//ortools/base:gmock_main",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@eigen",
     ],
 )
@@ -186,12 +182,12 @@ cc_library(
     srcs = ["quadratic_program.cc"],
     hdrs = ["quadratic_program.h"],
     deps = [
-        "//ortools/base",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@eigen",
     ],
 )
@@ -201,14 +197,13 @@ cc_test(
     size = "small",
     srcs = ["quadratic_program_test.cc"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":test_util",
-        "//ortools/base:protobuf_util",
-        "//ortools/base:status_macros",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
         "@eigen",
     ],
 )
@@ -219,19 +214,23 @@ cc_library(
     hdrs = ["quadratic_program_io.h"],
     deps = [
         ":quadratic_program",
-        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:gzipfile",
         "//ortools/base:mathutil",
+        "//ortools/base:recordio",
         "//ortools/base:status_macros",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/lp_data:mps_reader_template",
         "//ortools/util:file_util",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
         "@eigen",
     ],
 )
@@ -245,9 +244,10 @@ cc_library(
         ":sharded_quadratic_program",
         ":sharder",
         ":solve_log_cc_proto",
-        "//ortools/base",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/random:distributions",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random:distributions",
         "@eigen",
     ],
 )
@@ -256,14 +256,15 @@ cc_test(
     name = "sharded_optimization_utils_test",
     size = "small",
     srcs = ["sharded_optimization_utils_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_optimization_utils",
         ":sharded_quadratic_program",
         ":sharder",
         ":solve_log_cc_proto",
         ":test_util",
+        "//ortools/base:gmock_main",
         "@eigen",
     ],
 )
@@ -277,10 +278,10 @@ cc_library(
         ":scheduler",
         ":sharder",
         ":solvers_cc_proto",
-        "//ortools/base",
         "//ortools/util:logging",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
         "@eigen",
     ],
 )
@@ -288,12 +289,13 @@ cc_library(
 cc_test(
     name = "sharded_quadratic_program_test",
     srcs = ["sharded_quadratic_program_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_quadratic_program",
         ":sharder",
         ":test_util",
+        "//ortools/base:gmock_main",
         "@eigen",
     ],
 )
@@ -304,11 +306,13 @@ cc_library(
     hdrs = ["sharder.h"],
     deps = [
         ":scheduler",
-        "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:timer",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/time",
         "@eigen",
     ],
 )
@@ -317,13 +321,15 @@ cc_test(
     name = "sharder_test",
     size = "small",
     srcs = ["sharder_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":scheduler",
         ":sharder",
-        "//ortools/base",
+        ":solvers_cc_proto",
+        "//ortools/base:gmock_main",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/random:distributions",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/random:distributions",
         "@eigen",
     ],
 )
@@ -335,8 +341,8 @@ cc_library(
     deps = [
         ":solvers_cc_proto",
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -344,12 +350,12 @@ cc_test(
     name = "solvers_proto_validation_test",
     srcs = ["solvers_proto_validation_test.cc"],
     deps = [
-        ":gtest_main",
         ":solvers_cc_proto",
         ":solvers_proto_validation",
-        "//ortools/base:protobuf_util",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -360,7 +366,7 @@ cc_library(
     deps = [
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
-        "//ortools/base",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -369,11 +375,11 @@ cc_test(
     size = "small",
     srcs = ["termination_test.cc"],
     deps = [
-        ":gtest_main",
         ":solve_log_cc_proto",
         ":solvers_cc_proto",
         ":termination",
-        "//ortools/base:protobuf_util",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
     ],
 )
 
@@ -384,9 +390,11 @@ cc_library(
     hdrs = ["test_util.h"],
     deps = [
         ":quadratic_program",
-        "//ortools/base",
         "//ortools/base:gmock",
-        "@com_google_absl//absl/types:span",
+        "//ortools/base:path",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
         "@eigen",
     ],
 )
@@ -395,10 +403,10 @@ cc_test(
     name = "test_util_test",
     srcs = ["test_util_test.cc"],
     deps = [
-        ":gtest_main",
         ":test_util",
-        "//ortools/base",
-        "@com_google_absl//absl/types:span",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
         "@eigen",
     ],
 )
@@ -412,9 +420,10 @@ cc_library(
         ":sharded_optimization_utils",
         ":sharded_quadratic_program",
         ":sharder",
-        "//ortools/base",
         "//ortools/base:mathutil",
-        "@com_google_absl//absl/algorithm:container",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@eigen",
     ],
 )
@@ -422,15 +431,16 @@ cc_library(
 cc_test(
     name = "trust_region_test",
     srcs = ["trust_region_test.cc"],
+    tags = ["noci"],
     deps = [
-        ":gtest_main",
         ":quadratic_program",
         ":sharded_optimization_utils",
         ":sharded_quadratic_program",
         ":sharder",
         ":test_util",
         ":trust_region",
-        "@com_google_absl//absl/strings",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/strings",
         "@eigen",
     ],
 )

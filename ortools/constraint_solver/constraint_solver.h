@@ -92,6 +92,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/timer.h"
@@ -3144,6 +3145,7 @@ class Solver {
   void SetSearchContext(Search* search, absl::string_view search_context);
   std::string SearchContext() const;
   std::string SearchContext(const Search* search) const;
+  bool AcceptSolution(Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
   // TODO(user): Investigate if this should be moved to Search.
   Assignment* GetOrCreateLocalSearchState();
@@ -3386,7 +3388,7 @@ class BaseObject {
   BaseObject(const BaseObject&) = delete;
   BaseObject& operator=(const BaseObject&) = delete;
 #endif
-  virtual ~BaseObject() {}
+  virtual ~BaseObject() = default;
   virtual std::string DebugString() const { return "BaseObject"; }
 };
 
@@ -3974,9 +3976,9 @@ class SearchMonitor : public BaseObject {
   /// When the search tree is finished.
   virtual void NoMoreSolutions();
 
-  /// When a local optimum is reached. If 'true' is returned, the last solution
-  /// is discarded and the search proceeds with the next one.
-  virtual bool LocalOptimum();
+  /// Called when a local optimum is reached. If 'true' is returned, the last
+  /// solution is discarded and the search proceeds with the next one.
+  virtual bool AtLocalOptimum();
 
   ///
   virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
@@ -5072,6 +5074,7 @@ class SequenceVar : public PropagationBaseObject {
 class AssignmentElement {
  public:
   AssignmentElement() : activated_(true) {}
+  AssignmentElement(const AssignmentElement&) = default;
 
   void Activate() { activated_ = true; }
   void Deactivate() { activated_ = false; }
@@ -5085,6 +5088,7 @@ class IntVarElement : public AssignmentElement {
  public:
   IntVarElement();
   explicit IntVarElement(IntVar* var);
+  IntVarElement(const IntVarElement& element) = default;
   void Reset(IntVar* var);
   IntVarElement* Clone();
   void Copy(const IntVarElement& element);
@@ -5349,9 +5353,8 @@ class AssignmentContainer {
   /// previous content.
   void Copy(const AssignmentContainer<V, E>& container) {
     Clear();
-    for (int i = 0; i < container.elements_.size(); ++i) {
-      const E& element = container.elements_[i];
-      FastAdd(element.Var())->Copy(element);
+    for (const E& element : container.elements_) {
+      elements_.emplace_back(element);
     }
   }
   bool Contains(const V* const var) const {

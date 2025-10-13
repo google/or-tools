@@ -46,7 +46,7 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
                                          Highs& highs);
 
 absl::StatusOr<MPSolutionResponse> HighsSolveProto(
-    LazyMutableCopy<MPModelRequest> request) {
+    LazyMutableCopy<MPModelRequest> request, HighsSolveInfo* solve_info) {
   MPSolutionResponse response;
   const std::optional<LazyMutableCopy<MPModelProto>> optional_model =
       GetMPModelOrPopulateResponse(request, &response);
@@ -55,7 +55,7 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
 
   Highs highs;
   // Set model name.
-  if (model.has_name()) {
+  if (model.has_name() && !model.name().empty()) {
     const std::string model_name = model.name();
     highs.passModelName(model_name);
   }
@@ -186,13 +186,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
       }
 
       // Constraint names.
-      for (int c = 0; c < model.constraint_size(); ++c) {
-        const MPConstraintProto& constraint = model.constraint(c);
-        std::string constraint_name_str = "";
-        if (!constraint.name().empty()) {
-          constraint_name_str = constraint.name();
-          highs.passRowName(c, constraint_name_str);
-        }
+      std::string constraint_name_str = "";
+      if (!constraint.name().empty()) {
+        constraint_name_str = constraint.name();
+        highs.passRowName(c, constraint_name_str);
       }
     }
 
@@ -263,6 +260,10 @@ absl::StatusOr<MPSolutionResponse> HighsSolveProto(
         }
       }
     }
+  }
+
+  if (solve_info != nullptr) {
+    solve_info->mip_node_count = highs.getInfo().mip_node_count;
   }
 
   const absl::Duration solving_duration = absl::Now() - time_before;

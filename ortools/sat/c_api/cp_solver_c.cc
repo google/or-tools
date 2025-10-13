@@ -13,7 +13,6 @@
 
 #include "ortools/sat/c_api/cp_solver_c.h"
 
-#include <atomic>
 #include <string>
 
 #include "absl/log/check.h"
@@ -22,53 +21,57 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/time_limit.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research::sat {
-
 namespace {
 
-CpSolverResponse solveWithParameters(std::atomic<bool>* const limit_reached,
-                                     const CpModelProto& proto,
-                                     const SatParameters& params) {
+struct CpSatEnv {
+  CpSatEnv() : shared_time_limit(model.GetOrCreate<ModelSharedTimeLimit>()) {}
+  void StopSearch() { shared_time_limit->Stop(); }
+
   Model model;
-  model.Add(NewSatParameters(params));
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(limit_reached);
-  return SolveCpModel(proto, &model);
-}
+  ModelSharedTimeLimit* shared_time_limit;
+};
 
 }  // namespace
+}  // namespace operations_research::sat
 
 extern "C" {
 
 void SolveCpModelWithParameters(const void* creq, int creq_len,
                                 const void* cparams, int cparams_len,
                                 void** cres, int* cres_len) {
-  return SolveCpInterruptible(nullptr, creq, creq_len, cparams, cparams_len,
-                              cres, cres_len);
+  operations_research::sat::CpSatEnv env;
+  SolveCpInterruptible(&env, creq, creq_len, cparams, cparams_len, cres,
+                       cres_len);
 }
 
-void* SolveCpNewAtomicBool() { return new std::atomic<bool>(false); }
+void* SolveCpNewEnv() { return new operations_research::sat::CpSatEnv(); }
 
-void SolveCpDestroyAtomicBool(void* const atomic_bool) {
-  delete static_cast<std::atomic<bool>*>(atomic_bool);
+void SolveCpDestroyEnv(void* const cenv) {
+  delete static_cast<operations_research::sat::CpSatEnv*>(cenv);
 }
 
-void SolveCpStopSolve(void* const atomic_bool) {
-  *static_cast<std::atomic<bool>*>(atomic_bool) = true;
+void SolveCpStopSearch(void* cenv) {
+  static_cast<operations_research::sat::CpSatEnv*>(cenv)->StopSearch();
 }
 
-void SolveCpInterruptible(void* const limit_reached, const void* creq,
-                          int creq_len, const void* cparams, int cparams_len,
-                          void** cres, int* cres_len) {
-  CpModelProto req;
+void SolveCpInterruptible(void* const cenv, const void* creq, int creq_len,
+                          const void* cparams, int cparams_len, void** cres,
+                          int* cres_len) {
+  operations_research::sat::CpModelProto req;
   CHECK(req.ParseFromArray(creq, creq_len));
 
-  SatParameters params;
+  operations_research::sat::SatParameters params;
   CHECK(params.ParseFromArray(cparams, cparams_len));
 
-  CpSolverResponse res = solveWithParameters(
-      static_cast<std::atomic<bool>*>(limit_reached), req, params);
+  operations_research::sat::CpSatEnv* env =
+      static_cast<operations_research::sat::CpSatEnv*>(cenv);
+
+  env->model.Add(NewSatParameters(params));
+  operations_research::sat::CpSolverResponse res =
+      SolveCpModel(req, &env->model);
 
   std::string res_str;
   CHECK(res.SerializeToString(&res_str));
@@ -79,5 +82,3 @@ void SolveCpInterruptible(void* const limit_reached, const void* creq,
 }
 
 }  // extern "C"
-
-}  // namespace operations_research::sat

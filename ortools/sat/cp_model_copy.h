@@ -16,8 +16,10 @@
 
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/types/span.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -65,6 +67,12 @@ class ModelCopy {
   // Inactive variables will be fixed to their lower bound.
   void CreateVariablesFromDomains(absl::Span<const Domain> domains);
 
+  // Advanced usage. When a model was copied, interval_mapping[i] will contain
+  // for a copied interval with original index i, its new index.
+  absl::Span<const int64_t> InternalIntervalMapping() const {
+    return interval_mapping_;
+  }
+
  private:
   // Overwrites the out_model to be unsat. Returns false.
   // The arguments are used to log which constraint caused unsat.
@@ -101,9 +109,12 @@ class ModelCopy {
 
   // If we "copy" an interval for a first time, we make sure to create the
   // linear constraint between the start, size and end. This allow to simplify
-  // the input proto and client side code.
+  // the input proto and client side code. If there are more than one
+  // enforcement literals, we replace them with a new one, made equal to their
+  // conjunction with two new constraints.
   bool CopyInterval(const ConstraintProto& ct, int c, bool ignore_names);
   bool AddLinearConstraintForInterval(const ConstraintProto& ct);
+  int GetOrCreateVariableForConjunction(std::vector<int>* literals);
 
   // These function remove unperformed intervals. Note that they requires
   // interval to appear before (validated) as they test unperformed by testing
@@ -111,6 +122,17 @@ class ModelCopy {
   void CopyAndMapNoOverlap(const ConstraintProto& ct);
   void CopyAndMapNoOverlap2D(const ConstraintProto& ct);
   bool CopyAndMapCumulative(const ConstraintProto& ct);
+
+  // Expands linear expressions with more than one variable in constraints which
+  // internally only support affine expressions (such as all_diff, element,
+  // interval, reservoir, table, etc). This creates new variables for each such
+  // expression, and replaces the original expressions with the new variables in
+  // the constraints.
+  void ExpandNonAffineExpressions();
+  // Replaces the expression sum a_i * x_i + c with gcd * y + c, where y is a
+  // new variable defined with an additional constraint y = sum a_i / gcd * x_i.
+  void MaybeExpandNonAffineExpression(LinearExpressionProto* expr);
+  void MaybeExpandNonAffineExpressions(LinearArgumentProto* linear_argument);
 
   PresolveContext* context_;
 
@@ -127,6 +149,14 @@ class ModelCopy {
   absl::flat_hash_set<int> temp_literals_set_;
 
   ConstraintProto tmp_constraint_;
+
+  // Map used in GetOrCreateVariableForConjunction() to avoid creating duplicate
+  // variables for identical sets of literals.
+  absl::flat_hash_map<std::vector<int>, int> boolean_product_encoding_;
+  // Map used in ExpandNonAffineExpressions() to avoid creating duplicate
+  // variables for the identical non affine expressions.
+  absl::flat_hash_map<std::vector<std::pair<int, int64_t>>, int>
+      non_affine_expression_to_new_var_;
 };
 
 // Copy in_model to the model in the presolve context.
@@ -141,10 +171,11 @@ bool ImportModelWithBasicPresolveIntoContext(const CpModelProto& in_model,
                                              PresolveContext* context);
 
 // Same as ImportModelWithBasicPresolveIntoContext() except that variable
-// domains are read from domains.
+// domains are read from domains and constraint might be filtered.
 bool ImportModelAndDomainsWithBasicPresolveIntoContext(
     const CpModelProto& in_model, absl::Span<const Domain> domains,
-    std::function<bool(int)> active_constraints, PresolveContext* context);
+    std::function<bool(int)> active_constraints, PresolveContext* context,
+    std::vector<int>* interval_mapping);
 
 // Copies the non constraint, non variables part of the model.
 void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(

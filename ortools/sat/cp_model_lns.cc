@@ -32,6 +32,8 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/meta/type_traits.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
@@ -40,7 +42,6 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -71,11 +72,13 @@ namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     CpModelProto const* model_proto, SatParameters const* parameters,
-    SharedResponseManager* shared_response, SharedBoundsManager* shared_bounds)
+    SharedResponseManager* shared_response,
+    ModelSharedTimeLimit* global_time_limit, SharedBoundsManager* shared_bounds)
     : SubSolver("neighborhood_helper", HELPER),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_bounds_(shared_bounds),
+      global_time_limit_(global_time_limit),
       shared_response_(shared_response) {
   // Initialize proto memory.
   local_arena_storage_.assign(Neighborhood::kDefaultArenaSizePerVariable *
@@ -98,6 +101,10 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
 }
 
 void NeighborhoodGeneratorHelper::Synchronize() {
+  if (shared_response_->ProblemIsSolved() ||
+      global_time_limit_->LimitReached()) {
+    return;
+  }
   if (shared_bounds_ != nullptr) {
     std::vector<int> model_variables;
     std::vector<int64_t> new_lower_bounds;
@@ -108,7 +115,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
     bool new_variables_have_been_fixed = false;
 
     if (!model_variables.empty()) {
-      absl::MutexLock domain_lock(&domain_mutex_);
+      absl::MutexLock domain_lock(domain_mutex_);
 
       for (int i = 0; i < model_variables.size(); ++i) {
         const int var = model_variables[i];
@@ -196,9 +203,15 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
 
   const int num_variables = model_proto_.variables().size();
   is_in_objective_.resize(num_variables, false);
+  has_positive_objective_coefficient_.resize(num_variables, false);
   if (model_proto_.has_objective()) {
-    for (const int ref : model_proto_.objective().vars()) {
+    for (int i = 0; i < model_proto_.objective().vars_size(); ++i) {
+      const int ref = model_proto_.objective().vars(i);
+      const int64_t coeff = model_proto_.objective().coeffs(i);
+      DCHECK_NE(coeff, 0);
       is_in_objective_[PositiveRef(ref)] = true;
+      has_positive_objective_coefficient_[PositiveRef(ref)] =
+          ref == PositiveRef(ref) ? coeff > 0 : coeff < 0;
     }
   }
 }
@@ -206,8 +219,8 @@ void NeighborhoodGeneratorHelper::InitializeHelperData() {
 // Recompute all the data when new variables have been fixed. Note that this
 // shouldn't be called if there is no change as it is in O(problem size).
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
-  absl::MutexLock graph_lock(&graph_mutex_);
-  absl::ReaderMutexLock domain_lock(&domain_mutex_);
+  absl::MutexLock graph_lock(graph_mutex_);
+  absl::ReaderMutexLock domain_lock(domain_mutex_);
 
   // Do basic presolving to have a more precise graph.
   // Here we just remove trivially true constraints.
@@ -408,7 +421,7 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   neighborhood.is_reduced = false;
   neighborhood.is_generated = true;
   {
-    absl::ReaderMutexLock lock(&domain_mutex_);
+    absl::ReaderMutexLock lock(domain_mutex_);
     *neighborhood.delta.mutable_variables() =
         model_proto_with_only_variables_.variables();
   }
@@ -451,7 +464,7 @@ std::vector<int> NeighborhoodGeneratorHelper::KeepActiveIntervals(
     const CpSolverResponse& initial_solution) const {
   std::vector<int> filtered_intervals;
   filtered_intervals.reserve(unfiltered_intervals.size());
-  absl::ReaderMutexLock lock(&domain_mutex_);
+  absl::ReaderMutexLock lock(domain_mutex_);
   for (const int i : unfiltered_intervals) {
     if (IntervalIsActive(i, initial_solution)) filtered_intervals.push_back(i);
   }
@@ -1069,7 +1082,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   // Fill in neighborhood.delta all variable domains.
   int num_fixed = 0;
   {
-    absl::ReaderMutexLock domain_lock(&domain_mutex_);
+    absl::ReaderMutexLock domain_lock(domain_mutex_);
     for (int i = 0; i < num_variables; ++i) {
       const IntegerVariableProto& current_var =
           model_proto_with_only_variables_.variables(i);
@@ -1115,7 +1128,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   //
   // TODO(user): If there is just one component, we can skip some computation.
   {
-    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    absl::ReaderMutexLock graph_lock(graph_mutex_);
     std::vector<int> count(components_.size(), 0);
     const int num_variables = neighborhood.delta.variables().size();
     for (int var = 0; var < num_variables; ++var) {
@@ -1192,7 +1205,7 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
     absl::Span<const int> relaxed_variables) const {
   Bitset64<int> fixed_variables(NumVariables());
   {
-    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    absl::ReaderMutexLock graph_lock(graph_mutex_);
     for (const int i : active_variables_) {
       fixed_variables.Set(i);
     }
@@ -1205,7 +1218,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
     const CpSolverResponse& initial_solution) const {
   Bitset64<int> fixed_variables(NumVariables());
   {
-    absl::ReaderMutexLock graph_lock(&graph_mutex_);
+    absl::ReaderMutexLock graph_lock(graph_mutex_);
     for (const int i : active_variables_) {
       fixed_variables.Set(i);
     }
@@ -1216,7 +1229,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
 CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
   CpModelProto updated_model = model_proto_;
   {
-    absl::MutexLock domain_lock(&domain_mutex_);
+    absl::MutexLock domain_lock(domain_mutex_);
     *updated_model.mutable_variables() =
         model_proto_with_only_variables_.variables();
   }
@@ -1224,18 +1237,18 @@ CpModelProto NeighborhoodGeneratorHelper::UpdatedModelProtoCopy() const {
 }
 
 bool NeighborhoodGenerator::ReadyToGenerate() const {
-  return (helper_.shared_response().SolutionsRepository().NumSolutions() > 0);
+  return helper_.shared_response().HasFeasibleSolution();
 }
 
 double NeighborhoodGenerator::GetUCBScore(int64_t total_num_calls) const {
-  absl::ReaderMutexLock mutex_lock(&generator_mutex_);
+  absl::ReaderMutexLock mutex_lock(generator_mutex_);
   DCHECK_GE(total_num_calls, num_calls_);
   if (num_calls_ <= 10) return std::numeric_limits<double>::infinity();
   return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
 }
 
-double NeighborhoodGenerator::Synchronize() {
-  absl::MutexLock mutex_lock(&generator_mutex_);
+absl::Span<const double> NeighborhoodGenerator::Synchronize() {
+  absl::MutexLock mutex_lock(generator_mutex_);
 
   // To make the whole update process deterministic, we currently sort the
   // SolveData.
@@ -1245,7 +1258,7 @@ double NeighborhoodGenerator::Synchronize() {
   int num_fully_solved_in_batch = 0;
   int num_not_fully_solved_in_batch = 0;
 
-  double total_dtime = 0.0;
+  tmp_dtimes_.clear();
   for (const SolveData& data : solve_data_) {
     ++num_calls_;
 
@@ -1291,7 +1304,7 @@ double NeighborhoodGenerator::Synchronize() {
       current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
     }
 
-    total_dtime += data.deterministic_time;
+    tmp_dtimes_.push_back(data.deterministic_time);
   }
 
   // Update the difficulty.
@@ -1314,7 +1327,27 @@ double NeighborhoodGenerator::Synchronize() {
   }
 
   solve_data_.clear();
-  return total_dtime;
+  return tmp_dtimes_;
+}
+
+std::vector<int>
+NeighborhoodGeneratorHelper::ImprovableObjectiveVariablesWhileHoldingLock(
+    const CpSolverResponse& initial_solution) const {
+  std::vector<int> result;
+  absl::ReaderMutexLock lock(domain_mutex_);
+  for (const int var : active_objective_variables_) {
+    const auto& domain =
+        model_proto_with_only_variables_.variables(var).domain();
+    bool at_best_value = false;
+    if (has_positive_objective_coefficient_[var]) {
+      at_best_value = initial_solution.solution(var) == domain[0];
+    } else {
+      at_best_value =
+          initial_solution.solution(var) == domain[domain.size() - 1];
+    }
+    if (!at_best_value) result.push_back(var);
+  }
+  return result;
 }
 
 namespace {
@@ -1353,7 +1386,7 @@ Neighborhood RelaxRandomConstraintsGenerator::Generate(
 
   std::vector<int> relaxed_variables;
   {
-    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
     const int num_active_constraints = helper_.ConstraintToVar().size();
     std::vector<int> active_constraints(num_active_constraints);
     for (int c = 0; c < num_active_constraints; ++c) {
@@ -1404,23 +1437,22 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 
   std::vector<int> random_variables;
   {
-    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
 
+    std::vector<int> initial_vars =
+        helper_.ImprovableObjectiveVariablesWhileHoldingLock(initial_solution);
+    if (initial_vars.empty()) {
+      initial_vars = helper_.ActiveVariablesWhileHoldingLock();
+    }
     // The number of active variables can decrease asynchronously.
     // We read the exact number while locked.
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
-    const int num_objective_variables =
-        helper_.ActiveObjectiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(data.difficulty * num_active_vars);
     if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
     const int first_var =
-        num_objective_variables > 0  // Prefer objective variables.
-            ? helper_.ActiveObjectiveVariablesWhileHoldingLock()
-                  [absl::Uniform<int>(random, 0, num_objective_variables)]
-            : helper_.ActiveVariablesWhileHoldingLock()[absl::Uniform<int>(
-                  random, 0, num_active_vars)];
+        initial_vars[absl::Uniform<int>(random, 0, initial_vars.size())];
     visited_variables_set[first_var] = true;
     visited_variables.push_back(first_var);
     relaxed_variables.push_back(first_var);
@@ -1475,9 +1507,10 @@ Neighborhood ArcGraphNeighborhoodGenerator::Generate(
   int num_active_vars = 0;
   std::vector<int> active_objective_vars;
   {
-    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
     num_active_vars = helper_.ActiveVariablesWhileHoldingLock().size();
-    active_objective_vars = helper_.ActiveObjectiveVariablesWhileHoldingLock();
+    active_objective_vars =
+        helper_.ImprovableObjectiveVariablesWhileHoldingLock(initial_solution);
     constraints_to_vars = helper_.ConstraintToVar();
     vars_to_constraints = helper_.VarToConstraint();
   }
@@ -1562,19 +1595,18 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
   std::vector<int> random_variables;
   {
-    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
     const int target_size = std::ceil(data.difficulty * num_active_vars);
     if (target_size == num_active_vars) return helper_.FullNeighborhood();
 
-    // Start by a random constraint.
+    // Start from a random active constraint.
     const int num_active_constraints = helper_.ConstraintToVar().size();
-    if (num_active_constraints != 0) {
-      next_constraints.push_back(
-          absl::Uniform<int>(random, 0, num_active_constraints));
-      added_constraints[next_constraints.back()] = true;
-    }
+    if (num_active_constraints == 0) return helper_.NoNeighborhood();
+    next_constraints.push_back(
+        absl::Uniform<int>(random, 0, num_active_constraints));
+    added_constraints[next_constraints.back()] = true;
 
     while (relaxed_variables.size() < target_size) {
       // Stop if we have a full connected component.
@@ -1626,7 +1658,7 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
   // might not want to lock the graph for so long? it is just a reader lock
   // though.
   {
-    absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+    absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
 
     const int num_active_vars =
         helper_.ActiveVariablesWhileHoldingLock().size();
@@ -1666,9 +1698,9 @@ Neighborhood DecompositionGraphNeighborhoodGenerator::Generate(
       elements[i].tie_break = absl::Uniform<double>(random, 0.0, 1.0);
     }
 
-    // We start by a random active variable.
+    // We start from a random active variable.
     //
-    // Note that while num_vars contains all variables, all the fixed variable
+    // Note that while num_vars contains all variables, all the fixed variables
     // will have no associated constraint, so we don't want to start from a
     // random variable.
     //
@@ -2426,6 +2458,10 @@ Neighborhood RectanglesPackingRelaxOneNeighborhoodGenerator::Generate(
   Neighborhood neighborhood =
       helper_.FixGivenVariables(initial_solution, variables_to_freeze);
 
+  neighborhood.is_simple = false;
+  neighborhood.is_reduced = true;
+  neighborhood.variables_that_can_be_fixed_to_local_optimum.clear();
+
   // The call above add the relaxed variables to the neighborhood using the
   // current bounds at level 0. For big problems, this might create a hard model
   // with a large complicated landscape of fixed boxes with a lot of potential
@@ -2772,7 +2808,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   }
   neighborhood.source_info = reduced_domains.source_info;
 
-  absl::ReaderMutexLock graph_lock(&helper_.graph_mutex_);
+  absl::ReaderMutexLock graph_lock(helper_.graph_mutex_);
   // Fix the variables in the local model.
   for (const std::pair</*model_var*/ int, /*value*/ int64_t>& fixed_var :
        reduced_domains.fixed_vars) {

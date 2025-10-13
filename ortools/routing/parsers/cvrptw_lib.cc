@@ -18,17 +18,22 @@
 #include <limits>
 #include <memory>
 #include <random>
-#include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/btree_set.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/constraint_solver/routing.h"
-#include "ortools/constraint_solver/routing_index_manager.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/routing/index_manager.h"
+#include "ortools/routing/routing.h"
 
-namespace operations_research {
+namespace operations_research::routing {
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
@@ -157,12 +162,17 @@ int64_t StopServiceTimePlusTransition::Compute(NodeIndex from,
              : stop_time_ + transition_time_(from, to);
 }
 
-void DisplayPlan(
-    const RoutingIndexManager& manager, const RoutingModel& routing,
-    const operations_research::Assignment& plan, bool use_same_vehicle_costs,
-    int64_t max_nodes_per_group, int64_t same_vehicle_cost,
-    const operations_research::RoutingDimension& capacity_dimension,
-    const operations_research::RoutingDimension& time_dimension) {
+void DisplayPlan(const RoutingIndexManager& manager,
+                 const RoutingModel& routing,
+                 const operations_research::Assignment& plan,
+                 bool use_same_vehicle_costs, int64_t max_nodes_per_group,
+                 int64_t same_vehicle_cost,
+                 absl::Span<const std::string> dimension_names) {
+  std::vector<const RoutingDimension*> dimensions;
+  for (const std::string& dimension_name : dimension_names) {
+    dimensions.push_back(&routing.GetDimensionOrDie(dimension_name));
+  }
+
   // Display plan cost.
   std::string plan_output = absl::StrFormat("Cost %d\n", plan.ObjectiveValue());
 
@@ -207,6 +217,18 @@ void DisplayPlan(
   }
 
   // Display actual output for each vehicle.
+  const auto str_append_variable =
+      [&plan, &plan_output](const IntVar* var, absl::string_view name) {
+        if (var == nullptr || !plan.Contains(var)) return;
+        const int64_t var_min = plan.Min(var);
+        const int64_t var_max = plan.Max(var);
+        if (var_min == var_max) {
+          absl::StrAppendFormat(&plan_output, "%s(%d) ", name, var_min);
+        } else {
+          absl::StrAppendFormat(&plan_output, "%s(%d, %d) ", name, var_min,
+                                var_max);
+        }
+      };
   for (int route_number = 0; route_number < routing.vehicles();
        ++route_number) {
     int64_t order = routing.Start(route_number);
@@ -215,26 +237,16 @@ void DisplayPlan(
       plan_output += "Empty\n";
     } else {
       while (true) {
-        operations_research::IntVar* const load_var =
-            capacity_dimension.CumulVar(order);
-        operations_research::IntVar* const time_var =
-            time_dimension.CumulVar(order);
-        operations_research::IntVar* const slack_var =
-            routing.IsEnd(order) ? nullptr : time_dimension.SlackVar(order);
-        if (slack_var != nullptr && plan.Contains(slack_var)) {
-          absl::StrAppendFormat(
-              &plan_output, "%d Load(%d) Time(%d, %d) Slack(%d, %d)",
-              manager.IndexToNode(order).value(), plan.Value(load_var),
-              plan.Min(time_var), plan.Max(time_var), plan.Min(slack_var),
-              plan.Max(slack_var));
-        } else {
-          absl::StrAppendFormat(&plan_output, "%d Load(%d) Time(%d, %d)",
-                                manager.IndexToNode(order).value(),
-                                plan.Value(load_var), plan.Min(time_var),
-                                plan.Max(time_var));
+        absl::StrAppendFormat(&plan_output, "%d ",
+                              manager.IndexToNode(order).value());
+        for (const RoutingDimension* dimension : dimensions) {
+          str_append_variable(dimension->CumulVar(order), dimension->name());
+          operations_research::IntVar* const slack_var =
+              routing.IsEnd(order) ? nullptr : dimension->SlackVar(order);
+          str_append_variable(slack_var, dimension->name() + "Slack");
         }
         if (routing.IsEnd(order)) break;
-        plan_output += " -> ";
+        plan_output += "-> ";
         order = plan.Value(routing.NextVar(order));
       }
       plan_output += "\n";
@@ -242,4 +254,4 @@ void DisplayPlan(
   }
   LOG(INFO) << plan_output;
 }
-}  // namespace operations_research
+}  // namespace operations_research::routing

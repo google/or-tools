@@ -27,6 +27,8 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -156,8 +158,8 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
     ++num_enqueued_in_var_to_bounds_;
     has_implied_bounds_.Set(var);
-    var_to_bounds_[var].push_back({integer_encoder_->GetLiteralView(literal),
-                                   integer_literal.bound, true});
+    var_to_bounds_[var].emplace_back(integer_encoder_->GetLiteralView(literal),
+                                     integer_literal.bound);
   } else if (integer_encoder_->GetLiteralView(literal.Negated()) !=
              kNoIntegerVariable) {
     if (var_to_bounds_.size() <= var) {
@@ -166,9 +168,9 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
     ++num_enqueued_in_var_to_bounds_;
     has_implied_bounds_.Set(var);
-    var_to_bounds_[var].push_back(
-        {integer_encoder_->GetLiteralView(literal.Negated()),
-         integer_literal.bound, false});
+    var_to_bounds_[var].emplace_back(
+        NegationOf(integer_encoder_->GetLiteralView(literal.Negated())),
+        integer_literal.bound);
   }
   return true;
 }

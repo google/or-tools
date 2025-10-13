@@ -13,7 +13,7 @@ RUN dnf -y update \
 
 # Install .Net
 RUN dnf -y update \
-&& dnf -y install dotnet-sdk-6.0 \
+&& dnf -y install dotnet-sdk-8.0 \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd

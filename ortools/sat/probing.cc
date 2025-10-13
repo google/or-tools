@@ -23,6 +23,8 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -74,7 +76,7 @@ bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
 
 bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   new_integer_bounds_.clear();
-  propagated_.SparseClearAll();
+  propagated_.ResetAllToFalse();
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 
@@ -284,17 +286,20 @@ bool Prober::ProbeBooleanVariables(
     if (num_new_literals_fixed_ > 0) {
       SOLVER_LOG(logger_,
                  "[Probing]  - new fixed Boolean: ", num_new_literals_fixed_,
-                 " (", num_fixed, "/", sat_solver_->NumVariables(), ")");
+                 " (", FormatCounter(num_fixed), "/",
+                 FormatCounter(sat_solver_->NumVariables()), ")");
     }
     if (num_new_holes_ > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ", num_new_holes_);
+      SOLVER_LOG(logger_, "[Probing]  - new integer holes: ",
+                 FormatCounter(num_new_holes_));
     }
     if (num_new_integer_bounds_ > 0) {
-      SOLVER_LOG(logger_,
-                 "[Probing]  - new integer bounds: ", num_new_integer_bounds_);
+      SOLVER_LOG(logger_, "[Probing]  - new integer bounds: ",
+                 FormatCounter(num_new_integer_bounds_));
     }
     if (num_new_binary_ > 0) {
-      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ", num_new_binary_);
+      SOLVER_LOG(logger_, "[Probing]  - new binary clause: ",
+                 FormatCounter(num_new_binary_));
     }
   }
 
@@ -488,8 +493,9 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
     const int num_fixed = sat_solver->LiteralTrail().Index();
     const int num_newly_fixed = num_fixed - initial_num_fixed;
     const int num_variables = sat_solver->NumVariables();
-    SOLVER_LOG(logger, "[Random exploration]", " num_fixed: +", num_newly_fixed,
-               " (", num_fixed, "/", num_variables, ")",
+    SOLVER_LOG(logger, "[Random exploration]", " num_fixed: +",
+               FormatCounter(num_newly_fixed), " (", FormatCounter(num_fixed),
+               "/", FormatCounter(num_variables), ")",
                " dtime: ", elapsed_dtime, "/", deterministic_time_limit,
                " wtime: ", wall_timer.Get(),
                (limit_reached ? " (Aborted)" : ""));
@@ -591,7 +597,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       const Literal prev_decision =
           sat_solver->Decisions()[sat_solver->CurrentDecisionLevel() - 1]
               .literal;
-      const auto& list =
+      const absl::Span<const Literal> list =
           implication_graph->Implications(prev_decision.Negated());
       const int saved_queue_size = queue.size();
       for (const Literal l : list) {
@@ -656,7 +662,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
     } else if (next_decision == kNoLiteralIndex) {
       const int level = sat_solver->CurrentDecisionLevel();
       const Literal prev_decision = sat_solver->Decisions()[level - 1].literal;
-      const auto& list =
+      const absl::Span<const Literal> list =
           implication_graph->Implications(prev_decision.Negated());
 
       // Probe a literal that implies previous decision.
@@ -892,8 +898,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
                              time_limit->GetElapsedDeterministicTime() > limit;
   LOG_IF(INFO, options.log_info)
       << "Probing. "
-      << " num_probed: " << num_probed << " num_fixed: +" << num_newly_fixed
-      << " (" << num_fixed << "/" << num_variables << ")"
+      << " num_probed: " << num_probed << "/" << probing_order.size()
+      << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
+      << num_variables << ")"
       << " explicit_fix:" << num_explicit_fix
       << " num_conflicts:" << num_conflicts
       << " new_binary_clauses: " << num_new_binary

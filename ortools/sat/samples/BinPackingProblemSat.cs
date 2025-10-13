@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 using System;
 using Google.OrTools.Sat;
 
@@ -116,3 +117,4 @@ public class BinPackingProblemSat
         Console.WriteLine(String.Format("  - wall time : {0} s", solver.WallTime()));
     }
 }
+// [END program]

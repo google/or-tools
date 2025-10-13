@@ -22,13 +22,10 @@ Data use in flags:
 """
 
 import collections
-import time
-from typing import Optional
 
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 from ortools.scheduling import rcpsp_pb2
 from ortools.scheduling.python import rcpsp
@@ -44,24 +41,6 @@ _USE_INTERVAL_MAKESPAN = flags.DEFINE_bool(
     "Whether we encode the makespan using an interval or not.",
 )
 _HORIZON = flags.DEFINE_integer("horizon", -1, "Force horizon.")
-_ADD_REDUNDANT_ENERGETIC_CONSTRAINTS = flags.DEFINE_bool(
-    "add_redundant_energetic_constraints",
-    False,
-    "add redundant energetic constraints on the pairs of tasks extracted from"
-    + " precedence graph.",
-)
-_DELAY_TIME_LIMIT = flags.DEFINE_float(
-    "pairwise_delay_total_time_limit",
-    120.0,
-    "Total time limit when computing min delay between tasks."
-    + " A non-positive time limit disable min delays computation.",
-)
-_PREEMPTIVE_LB_TIME_LIMIT = flags.DEFINE_float(
-    "preemptive_lb_time_limit",
-    0.0,
-    "Time limit when computing a preemptive schedule lower bound."
-    + " A non-positive time limit disable this computation.",
-)
 
 
 def print_problem_statistics(problem: rcpsp_pb2.RcpspProblem):
@@ -109,85 +88,6 @@ def print_problem_statistics(problem: rcpsp_pb2.RcpspProblem):
             print(f"    - {tasks_with_delay} tasks with successor delays")
 
 
-def analyse_dependency_graph(
-    problem: rcpsp_pb2.RcpspProblem,
-) -> tuple[list[tuple[int, int, list[int]]], dict[int, list[int]]]:
-    """Analyses the dependency graph to improve the model.
-
-    Args:
-      problem: the protobuf of the problem to solve.
-
-    Returns:
-      a list of (task1, task2, in_between_tasks) with task2 and indirect successor
-      of task1, and in_between_tasks being the list of all tasks after task1 and
-      before task2.
-    """
-
-    num_nodes = len(problem.tasks)
-    print(f"Analysing the dependency graph over {num_nodes} nodes")
-
-    ins = collections.defaultdict(list)
-    outs = collections.defaultdict(list)
-    after = collections.defaultdict(set)
-    before = collections.defaultdict(set)
-
-    # Build the transitive closure of the precedences.
-    # This algorithm has the wrong complexity (n^4), but is OK for the psplib
-    # as the biggest example has 120 nodes.
-    for n in range(num_nodes):
-        for s in problem.tasks[n].successors:
-            ins[s].append(n)
-            outs[n].append(s)
-
-            for a in list(after[s]) + [s]:
-                for b in list(before[n]) + [n]:
-                    after[b].add(a)
-                    before[a].add(b)
-
-    # Search for pair of tasks, containing at least two parallel branch between
-    # them in the precedence graph.
-    num_candidates = 0
-    result: list[tuple[int, int, list[int]]] = []
-    for source, start_outs in outs.items():
-        if len(start_outs) <= 1:
-            # Starting with the unique successor of source will be as good.
-            continue
-        for sink, end_ins in ins.items():
-            if len(end_ins) <= 1:
-                # Ending with the unique predecessor of sink will be as good.
-                continue
-            if sink == source:
-                continue
-            if sink not in after[source]:
-                continue
-
-            num_active_outgoing_branches = 0
-            num_active_incoming_branches = 0
-            for succ in outs[source]:
-                if sink in after[succ]:
-                    num_active_outgoing_branches += 1
-            for pred in ins[sink]:
-                if source in before[pred]:
-                    num_active_incoming_branches += 1
-
-            if num_active_outgoing_branches <= 1 or num_active_incoming_branches <= 1:
-                continue
-
-            common = after[source].intersection(before[sink])
-            if len(common) <= 1:
-                continue
-            num_candidates += 1
-            result.append((source, sink, common))
-
-    # Sort entries lexicographically by (len(common), source, sink)
-    def price(entry):
-        return num_nodes * num_nodes * len(entry[2]) + num_nodes * entry[0] + entry[1]
-
-    result.sort(key=price)
-    print(f"  - created {len(result)} pairs of nodes to examine", flush=True)
-    return result, after
-
-
 def solve_rcpsp(
     problem: rcpsp_pb2.RcpspProblem,
     proto_file: str,
@@ -195,12 +95,7 @@ def solve_rcpsp(
     active_tasks: set[int],
     source: int,
     sink: int,
-    intervals_of_tasks: list[tuple[int, int, list[int]]],
-    delays: dict[tuple[int, int], tuple[int, int]],
-    in_main_solve: bool = False,
-    initial_solution: Optional[rcpsp_pb2.RcpspAssignment] = None,
-    lower_bound: int = 0,
-) -> tuple[int, int, Optional[rcpsp_pb2.RcpspAssignment]]:
+) -> None:
     """Parse and solve a given RCPSP problem in proto format.
 
     The model will only look at the tasks {source} + {sink} + active_tasks, and
@@ -214,13 +109,6 @@ def solve_rcpsp(
       active_tasks: the set of active tasks to consider.
       source: the source task in the graph. Its end will be forced to 0.
       sink: the sink task of the graph. Its start is the makespan of the problem.
-      intervals_of_tasks: a heuristic lists of (task1, task2, tasks) used to add
-        redundant energetic equations to the model.
-      delays: a list of (task1, task2, min_delays) used to add extended precedence
-        constraints (start(task2) >= end(task1) + min_delay).
-      in_main_solve: indicates if this is the main solve procedure.
-      initial_solution: A valid assignment used to hint the search.
-      lower_bound: A valid lower bound of the makespan objective.
 
     Returns:
       (lower_bound of the objective, best solution found, assignment)
@@ -238,8 +126,6 @@ def solve_rcpsp(
     horizon = problem.deadline if problem.deadline != -1 else problem.horizon
     if _HORIZON.value > 0:
         horizon = _HORIZON.value
-    elif delays and in_main_solve and (source, sink) in delays:
-        horizon = delays[(source, sink)][1]
     elif horizon == -1:  # Naive computation.
         horizon = sum(max(r.duration for r in t.recipes) for t in problem.tasks)
         if problem.is_rcpsp_max:
@@ -248,8 +134,7 @@ def solve_rcpsp(
                     for rd in sd.recipe_delays:
                         for d in rd.min_delays:
                             horizon += abs(d)
-    if in_main_solve:
-        print(f"Horizon = {horizon}", flush=True)
+    print(f"Horizon = {horizon}", flush=True)
 
     # Containers.
     task_starts = {}
@@ -275,7 +160,6 @@ def solve_rcpsp(
         start_var = model.new_int_var(0, horizon, f"start_of_task_{t}")
         end_var = model.new_int_var(0, horizon, f"end_of_task_{t}")
 
-        literals = []
         if num_recipes > 1:
             # Create one literal per recipe.
             literals = [model.new_bool_var(f"is_present_{t}_{r}") for r in all_recipes]
@@ -351,7 +235,7 @@ def solve_rcpsp(
             )
 
     # Create makespan variable
-    makespan = model.new_int_var(lower_bound, horizon, "makespan")
+    makespan = model.new_int_var(0, horizon, "makespan")
     makespan_size = model.new_int_var(1, horizon, "interval_makespan_size")
     interval_makespan = model.new_interval_var(
         makespan,
@@ -459,75 +343,12 @@ def solve_rcpsp(
 
     model.minimize(objective)
 
-    # Add min delay constraints.
-    if delays is not None:
-        for (local_start, local_end), (min_delay, _) in delays.items():
-            if local_start == source and local_end in active_tasks:
-                model.add(task_starts[local_end] >= min_delay)
-            elif local_start in active_tasks and local_end == sink:
-                model.add(makespan >= task_ends[local_start] + min_delay)
-            elif local_start in active_tasks and local_end in active_tasks:
-                model.add(task_starts[local_end] >= task_ends[local_start] + min_delay)
-
-    problem_is_single_mode = True
-    for t in all_active_tasks:
-        if len(task_to_presence_literals[t]) > 1:
-            problem_is_single_mode = False
-            break
-
     # Add sentinels.
     task_starts[source] = 0
     task_ends[source] = 0
     task_to_presence_literals[0].append(True)
     task_starts[sink] = makespan
     task_to_presence_literals[sink].append(True)
-
-    # For multi-mode problems, add a redundant energetic constraint:
-    # for every (start, end, in_between_tasks) extracted from the precedence
-    # graph, it add the energetic relaxation:
-    #   (start_var('end') - end_var('start')) * capacity_max >=
-    #        sum of linearized energies of all tasks from 'in_between_tasks'
-    if (
-        not problem.is_resource_investment
-        and not problem.is_consumer_producer
-        and _ADD_REDUNDANT_ENERGETIC_CONSTRAINTS.value
-        and in_main_solve
-        and not problem_is_single_mode
-    ):
-        added_constraints = 0
-        ignored_constraits = 0
-        for local_start, local_end, common in intervals_of_tasks:
-            for res in all_resources:
-                resource = problem.resources[res]
-                if not resource.renewable:
-                    continue
-                c = resource.max_capacity
-                if delays and (local_start, local_end) in delays:
-                    min_delay, _ = delays[local_start, local_end]
-                    sum_of_max_energies = sum(
-                        task_resource_to_max_energy[(t, res)] for t in common
-                    )
-                    if sum_of_max_energies <= c * min_delay:
-                        ignored_constraits += 1
-                        continue
-                model.add(
-                    c * (task_starts[local_end] - task_ends[local_start])
-                    >= sum(task_resource_to_energy[(t, res)] for t in common)
-                )
-                added_constraints += 1
-        print(
-            f"Added {added_constraints} redundant energetic constraints, and "
-            + f"ignored {ignored_constraits} constraints.",
-            flush=True,
-        )
-
-    # Add solution hint.
-    if initial_solution:
-        for t in all_active_tasks:
-            model.add_hint(task_starts[t], initial_solution.start_of_task[t])
-            if len(task_to_presence_literals[t]) > 1:
-                selected = initial_solution.selected_recipe_of_task[t]
-                model.add_hint(task_to_presence_literals[t][selected], 1)
 
     # Write model to file.
     if proto_file:
@@ -539,245 +360,21 @@ def solve_rcpsp(
 
     # Parse user specified parameters.
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
 
-    # Favor objective_shaving_search over objective_lb_search.
+    # Favor objective_shaving over objective_lb_search.
     if solver.parameters.num_workers >= 16 and solver.parameters.num_workers < 24:
         solver.parameters.ignore_subsolvers.append("objective_lb_search")
-        solver.parameters.extra_subsolvers.append("objective_shaving_search")
+        solver.parameters.extra_subsolvers.append("objective_shaving")
 
     # Experimental: Specify the fact that the objective is a makespan
     solver.parameters.push_all_tasks_toward_start = True
 
     # Enable logging in the main solve.
+    solver.parameters.log_search_progress = True
 
-    if in_main_solve:
-        solver.parameters.log_search_progress = True
-    #
-    status = solver.solve(model)
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        assignment = rcpsp_pb2.RcpspAssignment()
-        for t, _ in enumerate(problem.tasks):
-            if t in task_starts:
-                assignment.start_of_task.append(solver.value(task_starts[t]))
-                for r, recipe_literal in enumerate(task_to_presence_literals[t]):
-                    if solver.boolean_value(recipe_literal):
-                        assignment.selected_recipe_of_task.append(r)
-                        break
-            else:  # t is not an active task.
-                assignment.start_of_task.append(0)
-                assignment.selected_recipe_of_task.append(0)
-        return (
-            int(solver.best_objective_bound),
-            int(solver.objective_value),
-            assignment,
-        )
-    return -1, -1, None
-
-
-def compute_delays_between_nodes(
-    problem: rcpsp_pb2.RcpspProblem,
-    task_intervals: list[tuple[int, int, list[int]]],
-) -> tuple[
-    dict[tuple[int, int], tuple[int, int]],
-    Optional[rcpsp_pb2.RcpspAssignment],
-    bool,
-]:
-    """Computes the min delays between all pairs of tasks in 'task_intervals'.
-
-    Args:
-      problem: The protobuf of the model.
-      task_intervals: The output of the AnalysePrecedenceGraph().
-
-    Returns:
-      a list of (task1, task2, min_delay_between_task1_and_task2)
-    """
-    print("Computing the minimum delay between pairs of intervals")
-    delays = {}
-    if (
-        problem.is_resource_investment
-        or problem.is_consumer_producer
-        or problem.is_rcpsp_max
-        or _DELAY_TIME_LIMIT.value <= 0.0
-    ):
-        return delays, None, False
-
-    time_limit = _DELAY_TIME_LIMIT.value
-    complete_problem_assignment = None
-    num_optimal_delays = 0
-    num_delays_not_found = 0
-    optimal_found = True
-    for start_task, end_task, active_tasks in task_intervals:
-        if time_limit <= 0:
-            optimal_found = False
-            print(f"  - #timeout ({_DELAY_TIME_LIMIT.value}s) reached", flush=True)
-            break
-
-        start_time = time.time()
-        min_delay, feasible_delay, assignment = solve_rcpsp(
-            problem,
-            "",
-            f"num_search_workers:16,max_time_in_seconds:{time_limit}",
-            set(active_tasks),
-            start_task,
-            end_task,
-            [],
-            delays,
-        )
-        time_limit -= time.time() - start_time
-
-        if min_delay != -1:
-            delays[(start_task, end_task)] = min_delay, feasible_delay
-            if start_task == 0 and end_task == len(problem.tasks) - 1:
-                complete_problem_assignment = assignment
-            if min_delay == feasible_delay:
-                num_optimal_delays += 1
-            else:
-                optimal_found = False
-        else:
-            num_delays_not_found += 1
-            optimal_found = False
-
-    print(f"  - #optimal delays = {num_optimal_delays}", flush=True)
-    if num_delays_not_found:
-        print(f"  - #not computed delays = {num_delays_not_found}", flush=True)
-
-    return delays, complete_problem_assignment, optimal_found
-
-
-def accept_new_candidate(
-    problem: rcpsp_pb2.RcpspProblem,
-    after: dict[int, list[int]],
-    demand_map: dict[tuple[int, int], int],
-    current: list[int],
-    candidate: int,
-) -> bool:
-    """Check if candidate is compatible with the tasks in current."""
-    for c in current:
-        if candidate in after[c] or c in after[candidate]:
-            return False
-
-    all_resources = range(len(problem.resources))
-    for res in all_resources:
-        resource = problem.resources[res]
-        if not resource.renewable:
-            continue
-        if (
-            sum(demand_map[(t, res)] for t in current) + demand_map[(candidate, res)]
-            > resource.max_capacity
-        ):
-            return False
-
-    return True
-
-
-def compute_preemptive_lower_bound(
-    problem: rcpsp_pb2.RcpspProblem,
-    after: dict[int, list[int]],
-    lower_bound: int,
-) -> int:
-    """Computes a preemtive lower bound for the makespan statically.
-
-    For this, it breaks all intervals into a set of intervals of size one.
-    Then it will try to assign all of them in a minimum number of configurations.
-    This is a standard complete set covering using column generation approach
-    where each column is a possible combination of itervals of size one.
-
-    Args:
-      problem: The probuf of the model.
-      after: a task to list of task dict that contains all tasks after a given
-        task.
-      lower_bound: A valid lower bound of the problem. It can be 0.
-
-    Returns:
-      a valid lower bound of the problem.
-    """
-    # Check this is a single mode problem.
-    if (
-        problem.is_rcpsp_max
-        or problem.is_resource_investment
-        or problem.is_consumer_producer
-    ):
-        return lower_bound
-
-    demand_map = collections.defaultdict(int)
-    duration_map = {}
-    all_active_tasks = list(range(1, len(problem.tasks) - 1))
-    max_duration = 0
-    sum_of_demands = 0
-
-    for t in all_active_tasks:
-        task = problem.tasks[t]
-        if len(task.recipes) > 1:
-            return 0
-        recipe = task.recipes[0]
-        duration_map[t] = recipe.duration
-        for demand, resource in zip(recipe.demands, recipe.resources):
-            demand_map[(t, resource)] = demand
-            max_duration = max(max_duration, recipe.duration)
-            sum_of_demands += demand
-
-    print(
-        f"Compute a bin-packing lower bound with {len(all_active_tasks)}"
-        + " active tasks",
-        flush=True,
-    )
-    all_combinations = []
-
-    for t in all_active_tasks:
-        new_combinations = [[t]]
-
-        for c in all_combinations:
-            if accept_new_candidate(problem, after, demand_map, c, t):
-                new_combinations.append(c + [t])
-
-        all_combinations.extend(new_combinations)
-
-    print(f"  - created {len(all_combinations)} combinations")
-    if len(all_combinations) > 5000000:
-        return lower_bound  # Abort if too large.
-
-    # solve the selection model.
-
-    # TODO(user): a few possible improvements:
-    # 1/  use "dominating" columns, i.e. if you can add a task to a column, then
-    #     do not use that column.
-    # 2/ Merge all task with exactly same demands into one.
-    model = cp_model.CpModel()
-    model.name = f"lower_bound_{problem.name}"
-
-    vars_per_task = collections.defaultdict(list)
-    all_vars = []
-    for c in all_combinations:
-        min_duration = max_duration
-        for t in c:
-            min_duration = min(min_duration, duration_map[t])
-        count = model.new_int_var(0, min_duration, f"count_{c}")
-        all_vars.append(count)
-        for t in c:
-            vars_per_task[t].append(count)
-
-    # Each task must be performed.
-    for t in all_active_tasks:
-        model.add(sum(vars_per_task[t]) >= duration_map[t])
-
-    # Objective
-    objective_var = model.new_int_var(lower_bound, sum_of_demands, "objective_var")
-    model.add(objective_var == sum(all_vars))
-
-    model.minimize(objective_var)
-
-    # solve model.
-    solver = cp_model.CpSolver()
-    solver.parameters.num_search_workers = 16
-    solver.parameters.max_time_in_seconds = _PREEMPTIVE_LB_TIME_LIMIT.value
-    status = solver.solve(model)
-    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
-        status_str = "optimal" if status == cp_model.OPTIMAL else ""
-        lower_bound = max(lower_bound, int(solver.best_objective_bound))
-        print(f"  - {status_str} static lower bound = {lower_bound}", flush=True)
-
-    return lower_bound
+    # Solve the model.
+    solver.solve(model)
 
 
 def main(_):
@@ -787,16 +384,7 @@ def main(_):
     problem = rcpsp_parser.problem()
     print_problem_statistics(problem)
 
-    intervals_of_tasks, after = analyse_dependency_graph(problem)
-    delays, initial_solution, optimal_found = compute_delays_between_nodes(
-        problem, intervals_of_tasks
-    )
-
     last_task = len(problem.tasks) - 1
-    key = (0, last_task)
-    lower_bound = delays[key][0] if key in delays else 0
-    if not optimal_found and _PREEMPTIVE_LB_TIME_LIMIT.value > 0.0:
-        lower_bound = compute_preemptive_lower_bound(problem, after, lower_bound)
 
     solve_rcpsp(
         problem=problem,
@@ -805,11 +393,6 @@ def main(_):
         active_tasks=set(range(1, last_task)),
         source=0,
         sink=last_task,
-        intervals_of_tasks=intervals_of_tasks,
-        delays=delays,
-        in_main_solve=True,
-        initial_solution=initial_solution,
-        lower_bound=lower_bound,
     )
 
 

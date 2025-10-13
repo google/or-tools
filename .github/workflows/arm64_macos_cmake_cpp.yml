@@ -1,47 +1,123 @@
 # ref: https://github.com/actions/runner-images
 name: arm64 MacOS CMake C++
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
 
 # Building using the github runner environement directly.
+env:
+  CCACHE_BASEDIR: ${{github.workspace}}
+  CCACHE_DIR: ${{github.workspace}}/.ccache
+
 jobs:
   native:
     strategy:
       matrix:
         cmake: [
-          {generator: "Xcode", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: install},
-          {generator: "Unix Makefiles", config: Release, build_target: all, test_target: test, install_target: install},
+          {name: "Xcode", generator: "Xcode", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: install},
+          {name: "Make", generator: "Unix Makefiles", config: Release, build_target: all, test_target: test, install_target: install},
         ]
       fail-fast: false
-    name: MacOS • ${{ matrix.cmake.generator }} • C++
+    name: arm64•MacOS•CMake(${{matrix.cmake.name}})•C++
     runs-on: macos-latest # macos M1 based runner
+    env:
+      deps_src_key: arm64_macos_cpp_deps_src
+      deps_build_key: arm64_macos_cpp_deps_build_${{matrix.cmake.name}}
+      ccache_key: arm64_macos_cpp_ccache_${{matrix.cmake.name}}
     steps:
-      - uses: actions/checkout@v4
-      - name: Check cmake
+      - uses: actions/checkout@v5
+      - name: Install Dependencies
+        run: brew install ccache
+
+      # RESTORING CACHES
+      - name: Restore CMake dependency source code
+        uses: actions/cache/restore@v4
+        id: deps_src_restore
+        with:
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Restore CMake dependency build
+        uses: actions/cache/restore@v4
+        id: deps_build_restore
+        with:
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Restore CCache
+        uses: actions/cache/restore@v4
+        id: ccache_restore
+        with:
+          key: ${{env.ccache_key}}-${{github.sha}}
+          restore-keys: ${{env.ccache_key}}-
+          path: ${{env.CCACHE_DIR}}
+
+      - name: Check CMake
         run: cmake --version
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.cmake.config }}
+          -G "${{matrix.cmake.generator}}"
+          -DCMAKE_BUILD_TYPE=${{matrix.cmake.config}}
           -DBUILD_DEPS=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.build_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.build_target}}
           -v -j2
       - name: Test
         run: >
           CTEST_OUTPUT_ON_FAILURE=1
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.test_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.test_target}}
           -v
       - name: Install
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.install_target }}
+          --config ${{matrix.cmake.config}}
+          --target ${{matrix.cmake.install_target}}
           -v
+      - name: CCache stats
+        run: |
+          ccache --show-stats
+          ccache --zero-stats
+
+      # SAVING CACHES
+      - name: Save CCache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.ccache_restore.outputs.cache-primary-key}}
+          path: ${{env.CCACHE_DIR}}
+      - name: Save CMake dependency build
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_build_restore.outputs.cache-primary-key}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+      - name: Save CMake dependency source code
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{steps.deps_src_restore.outputs.cache-primary-key}}
+          path: ${{github.workspace}}/build/_deps/*-src
+
+  arm64_macos_cmake_cpp:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v5

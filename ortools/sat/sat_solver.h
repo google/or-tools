@@ -35,6 +35,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -137,7 +138,16 @@ class SatSolver {
   // TODO(user): Instead of failing, implement an error handling code.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<Literal>* enforcement_literals,
                            std::vector<LiteralWithCoeff>* cst);
+
+  bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
+                           bool use_upper_bound, Coefficient upper_bound,
+                           std::vector<LiteralWithCoeff>* cst) {
+    std::vector<Literal> enforcement_literals;
+    return AddLinearConstraint(use_lower_bound, lower_bound, use_upper_bound,
+                               upper_bound, &enforcement_literals, cst);
+  }
 
   // Returns true if the model is UNSAT. Note that currently the status is
   // "sticky" and once this happen, nothing else can be done with the solver.
@@ -146,9 +156,6 @@ class SatSolver {
   // Add*() functions. If one of them return false, then ModelIsUnsat() will
   // return true.
   bool ModelIsUnsat() const { return model_is_unsat_; }
-
-  // TODO(user): remove this function.
-  bool IsModelUnsat() const { return model_is_unsat_; }  // DEPRECATED
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they were added.
@@ -338,7 +345,7 @@ class SatSolver {
   // Helper functions to get the correct status when one of the functions above
   // returns false.
   Status UnsatStatus() const {
-    return IsModelUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
+    return ModelIsUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
   }
 
   // Extract the current problem clauses. The Output type must support the two
@@ -348,10 +355,8 @@ class SatSolver {
   //
   // TODO(user): also copy the removable clauses?
   template <typename Output>
-  void ExtractClauses(Output* out) {
-    CHECK(!IsModelUnsat());
-    Backtrack(0);
-    if (!FinishPropagation()) return;
+  bool ExtractClauses(Output* out) {
+    if (!ResetToLevelZero()) return false;
 
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
@@ -369,6 +374,8 @@ class SatSolver {
         out->AddClause(clause->AsSpan());
       }
     }
+
+    return true;
   }
 
   // Functions to manage the set of learned binary clauses.
@@ -509,6 +516,10 @@ class SatSolver {
     clauses_propagator_->EnsureNewClauseIndexInitialized();
   }
 
+  void EnableChronologicalBacktracking(bool value) {
+    trail_->EnableChronologicalBacktracking(value);
+  }
+
  private:
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
@@ -557,8 +568,8 @@ class SatSolver {
   // Sets model_is_unsat_ to true and return false.
   bool SetModelUnsat();
 
-  // Returns the decision level of a given variable.
-  int DecisionLevel(BooleanVariable var) const {
+  // Returns the decision level at which the given variable is assigned.
+  int AssignmentLevel(BooleanVariable var) const {
     return trail_->Info(var).level;
   }
 
@@ -602,8 +613,10 @@ class SatSolver {
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
   // action.
-  bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
-                                   Coefficient rhs, Coefficient max_value);
+  bool AddLinearConstraintInternal(
+      const std::vector<Literal>& enforcement_literals,
+      const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+      Coefficient max_value);
 
   // Makes sure a pseudo boolean constraint is in canonical form.
   void CanonicalizeLinear(std::vector<LiteralWithCoeff>* cst,
@@ -692,9 +705,9 @@ class SatSolver {
   // - There is no literal with a decision level of zero.
   bool IsConflictValid(absl::Span<const Literal> literals);
 
-  // Given the learned clause after a conflict, this computes the correct
-  // backtrack level to call Backtrack() with.
-  int ComputeBacktrackLevel(absl::Span<const Literal> literals);
+  // Given the learned clause after a conflict, this computes the level at which
+  // the new clause will propagate.
+  int ComputePropagationLevel(absl::Span<const Literal> literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
   // levels at which the literals of the clause were assigned. Note that we
@@ -749,6 +762,7 @@ class SatSolver {
   // SatPropagator interface for them.
   BinaryImplicationGraph* binary_implication_graph_;
   ClauseManager* clauses_propagator_;
+  EnforcementPropagator* enforcement_propagator_;
   PbConstraints* pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().

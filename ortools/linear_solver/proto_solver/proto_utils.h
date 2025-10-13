@@ -19,9 +19,9 @@
 #include <utility>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "google/protobuf/message.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
 

@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/numeric/int128.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -26,7 +27,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 
 namespace operations_research {

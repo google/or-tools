@@ -11,9 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 #include <stdlib.h>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/types/span.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -66,8 +70,10 @@ void ChannelingSampleSat() {
 }  // namespace sat
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::sat::ChannelingSampleSat();
-
   return EXIT_SUCCESS;
 }
+// [END program]

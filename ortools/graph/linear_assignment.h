@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // An implementation of a cost-scaling push-relabel algorithm for the
 // assignment problem (minimum-cost perfect bipartite matching), from
 // the paper of Goldberg and Kennedy (1995).
@@ -161,7 +160,7 @@
 // possible.
 //
 // We don't use the interface from
-// operations_research/algorithms/hungarian.h because we want to be
+// cs/ortools/algorithms/hungarian.h because we want to be
 // able to express sparse problems efficiently.
 //
 // When asked to solve the given assignment problem we return a
@@ -207,8 +206,8 @@
 #include "absl/flags/declare.h"
 #include "absl/flags/flag.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
-#include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/iterators.h"
 #include "ortools/util/permutation.h"
 #include "ortools/util/zvector.h"
@@ -359,29 +358,29 @@ class LinearSumAssignment {
 
  private:
   struct Stats {
-    Stats() : pushes_(0), double_pushes_(0), relabelings_(0), refinements_(0) {}
+    Stats() : pushes(0), double_pushes(0), relabelings(0), refinements(0) {}
     void Clear() {
-      pushes_ = 0;
-      double_pushes_ = 0;
-      relabelings_ = 0;
-      refinements_ = 0;
+      pushes = 0;
+      double_pushes = 0;
+      relabelings = 0;
+      refinements = 0;
     }
     void Add(const Stats& that) {
-      pushes_ += that.pushes_;
-      double_pushes_ += that.double_pushes_;
-      relabelings_ += that.relabelings_;
-      refinements_ += that.refinements_;
+      pushes += that.pushes;
+      double_pushes += that.double_pushes;
+      relabelings += that.relabelings;
+      refinements += that.refinements;
     }
     std::string StatsString() const {
       return absl::StrFormat(
           "%d refinements; %d relabelings; "
           "%d double pushes; %d pushes",
-          refinements_, relabelings_, double_pushes_, pushes_);
+          refinements, relabelings, double_pushes, pushes);
     }
-    int64_t pushes_;
-    int64_t double_pushes_;
-    int64_t relabelings_;
-    int64_t refinements_;
+    int64_t pushes;
+    int64_t double_pushes;
+    int64_t relabelings;
+    int64_t refinements;
   };
 
 #ifndef SWIG
@@ -1163,17 +1162,17 @@ bool LinearSumAssignment<GraphType, CostValue>::DoublePush(NodeIndex source) {
     matched_arc_[to_unmatch] = GraphType::kNilArc;
     active_nodes_->Add(to_unmatch);
     // This counts as a double push.
-    iteration_stats_.double_pushes_ += 1;
+    iteration_stats_.double_pushes += 1;
   } else {
     // We are about to increase the cardinality of the matching.
     total_excess_ -= 1;
     // This counts as a single push.
-    iteration_stats_.pushes_ += 1;
+    iteration_stats_.pushes += 1;
   }
   matched_arc_[source] = best_arc;
   matched_node_[new_mate] = source;
   // Finally, relabel new_mate.
-  iteration_stats_.relabelings_ += 1;
+  iteration_stats_.relabelings += 1;
   const CostValue new_price = price_[new_mate] - gap - epsilon_;
   price_[new_mate] = new_price;
   return new_price >= price_lower_bound_;
@@ -1195,14 +1194,14 @@ bool LinearSumAssignment<GraphType, CostValue>::Refine() {
       // we know we're returning a wrong answer so we we leave a
       // message in the logs to increase our hope of chasing down the
       // problem.
-      LOG_IF(DFATAL, total_stats_.refinements_ > 0)
+      LOG_IF(DFATAL, total_stats_.refinements > 0)
           << "Infeasibility detection triggered after first iteration found "
           << "a feasible assignment!";
       return false;
     }
   }
   DCHECK(active_nodes_->Empty());
-  iteration_stats_.refinements_ += 1;
+  iteration_stats_.refinements += 1;
   return true;
 }
 
@@ -1227,8 +1226,10 @@ LinearSumAssignment<GraphType, CostValue>::BestArcAndGap(
   DCHECK(IsActive(left_node))
       << "Node " << left_node << " must be active (unmatched)!";
   DCHECK_GT(epsilon_, 0);
-  typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
-  ArcIndex best_arc = arc_it.Index();
+  const auto arcs = graph_->OutgoingArcs(left_node);
+  auto arc_it = arcs.begin();
+  DCHECK(!arcs.empty());
+  ArcIndex best_arc = *arc_it;
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
   // We choose second_min_partial_reduced_cost so that in the case of
   // the largest possible gap (which results from a left-side node
@@ -1238,8 +1239,8 @@ LinearSumAssignment<GraphType, CostValue>::BestArcAndGap(
   const CostValue max_gap = slack_relabeling_price_ - epsilon_;
   CostValue second_min_partial_reduced_cost =
       min_partial_reduced_cost + max_gap;
-  for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
+  for (++arc_it; arc_it != arcs.end(); ++arc_it) {
+    const ArcIndex arc = *arc_it;
     const CostValue partial_reduced_cost = PartialReducedCost(arc);
     if (partial_reduced_cost < second_min_partial_reduced_cost) {
       if (partial_reduced_cost < min_partial_reduced_cost) {
@@ -1266,26 +1267,27 @@ inline CostValue LinearSumAssignment<GraphType, CostValue>::ImplicitPrice(
     NodeIndex left_node) const {
   DCHECK_GT(num_left_nodes_, left_node);
   DCHECK_GT(epsilon_, 0);
-  typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
+  const auto arcs = graph_->OutgoingArcs(left_node);
   // We must not execute this method if left_node has no incident arc.
-  DCHECK(arc_it.Ok());
-  ArcIndex best_arc = arc_it.Index();
+  DCHECK(!arcs.empty());
+  auto arc_it = arcs.begin();
+  ArcIndex best_arc = *arc_it;
   if (best_arc == matched_arc_[left_node]) {
-    arc_it.Next();
-    if (arc_it.Ok()) {
-      best_arc = arc_it.Index();
+    ++arc_it;
+    if (arc_it != arcs.end()) {
+      best_arc = *arc_it;
     }
   }
   CostValue min_partial_reduced_cost = PartialReducedCost(best_arc);
-  if (!arc_it.Ok()) {
+  if (arc_it == arcs.end()) {
     // Only one arc is incident to left_node, and the node is
     // currently matched along that arc, which must be the case in any
     // feasible solution. Therefore we implicitly price this node so
     // low that we will never consider unmatching it.
     return -(min_partial_reduced_cost + slack_relabeling_price_);
   }
-  for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
-    const ArcIndex arc = arc_it.Index();
+  for (++arc_it; arc_it != arcs.end(); ++arc_it) {
+    const ArcIndex arc = *arc_it;
     if (arc != matched_arc_[left_node]) {
       const CostValue partial_reduced_cost = PartialReducedCost(arc);
       if (partial_reduced_cost < min_partial_reduced_cost) {
@@ -1314,9 +1316,7 @@ bool LinearSumAssignment<GraphType, CostValue>::EpsilonOptimal() const {
     // Get the implicit price of left_node and make sure the reduced
     // costs of left_node's incident arcs are in bounds.
     CostValue left_node_price = ImplicitPrice(left_node);
-    for (typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
-         arc_it.Ok(); arc_it.Next()) {
-      const ArcIndex arc = arc_it.Index();
+    for (const ArcIndex arc : graph_->OutgoingArcs(left_node)) {
       const CostValue reduced_cost = left_node_price + PartialReducedCost(arc);
       // Note the asymmetric definition of epsilon-optimality that we
       // use because it means we can saturate all admissible arcs in
@@ -1354,8 +1354,7 @@ bool LinearSumAssignment<GraphType, CostValue>::FinalizeSetup() {
   // precondition.
   for (NodeIndex node = 0; node < num_left_nodes_; ++node) {
     matched_arc_[node] = GraphType::kNilArc;
-    typename GraphType::OutgoingArcIterator arc_it(*graph_, node);
-    if (!arc_it.Ok()) {
+    if (graph_->OutgoingArcs(node).empty()) {
       incidence_precondition_satisfied_ = false;
     }
   }

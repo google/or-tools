@@ -21,18 +21,21 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/scheduling.h"
 #include "ortools/util/strong_integers.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -43,7 +46,8 @@ namespace sat {
 //
 // TODO(user): This is not completely true for empty intervals (start == end).
 // Make sure such intervals are ignored by the constraint.
-void AddDisjunctive(const std::vector<IntervalVariable>& intervals,
+void AddDisjunctive(const std::vector<Literal>& enforcement_literals,
+                    const std::vector<IntervalVariable>& intervals,
                     Model* model);
 
 // Creates Boolean variables for all the possible precedences of the form (task
@@ -186,22 +190,24 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
         window_(new TaskTime[helper->NumTasks()]),
         task_to_event_(new int[helper->NumTasks()]),
         stats_("DisjunctiveOverloadChecker", model) {
-    task_by_increasing_end_max_.ClearAndReserve(helper->NumTasks());
+    // This is just needed to prevent use of uninitialized values.
+    std::fill(task_to_event_.get(), task_to_event_.get() + helper->NumTasks(),
+              -1);
   }
 
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(int relevant_size, IntegerValue global_window_end);
+  bool PropagateSubwindow(int relevant_size, IntegerValue global_window_end,
+                          absl::Span<const CachedTaskBounds>*
+                              task_by_increasing_negated_shifted_end_max);
 
   SchedulingConstraintHelper* helper_;
 
   // Size assigned at construction, stay fixed afterwards.
   std::unique_ptr<TaskTime[]> window_;
   std::unique_ptr<int[]> task_to_event_;
-
-  FixedCapacityVector<TaskTime> task_by_increasing_end_max_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
   PropagationStatistics stats_;
@@ -267,7 +273,7 @@ class CombinedDisjunctive : public PropagatorInterface {
   explicit CombinedDisjunctive(Model* model);
 
   // After creation, this must be called for all the disjunctive constraints
-  // in the model.
+  // in the model which have no enforcement literals.
   void AddNoOverlap(absl::Span<const IntervalVariable> var);
 
   bool Propagate() final;
@@ -351,8 +357,10 @@ class DisjunctivePrecedences : public PropagatorInterface {
                          SchedulingConstraintHelper* helper, Model* model)
       : time_direction_(time_direction),
         helper_(helper),
-        integer_trail_(model->GetOrCreate<IntegerTrail>()),
-        precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        precedence_relations_(model->GetOrCreate<EnforcedLinear2Bounds>()),
+        linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
         stats_("DisjunctivePrecedences", model) {
     window_.ClearAndReserve(helper->NumTasks());
     index_to_end_vars_.ClearAndReserve(helper->NumTasks());
@@ -367,21 +375,23 @@ class DisjunctivePrecedences : public PropagatorInterface {
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
-  IntegerTrail* integer_trail_;
-  PrecedenceRelations* precedence_relations_;
+  const IntegerTrail& integer_trail_;
+  EnforcedLinear2Bounds* precedence_relations_;
+  Linear2Bounds* linear2_bounds_;
+  TimeLimit* time_limit_;
 
   FixedCapacityVector<TaskTime> window_;
   FixedCapacityVector<IntegerVariable> index_to_end_vars_;
 
-  FixedCapacityVector<int> indices_before_;
+  FixedCapacityVector<std::pair<int, LinearExpression2Index>> indices_before_;
   std::vector<bool> skip_;
-  std::vector<PrecedenceRelations::PrecedenceData> before_;
+  std::vector<EnforcedLinear2Bounds::PrecedenceData> before_;
 
   PropagationStatistics stats_;
 };
 
 // This is an optimization for the case when we have a big number of such
-// pairwise constraints. This should be roughtly equivalent to what the general
+// pairwise constraints. This should be roughly equivalent to what the general
 // disjunctive case is doing, but it dealt with variable size better and has a
 // lot less overhead.
 class DisjunctiveWithTwoItems : public PropagatorInterface {

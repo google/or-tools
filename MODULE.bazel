@@ -1,3 +1,16 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 ###############################################################################
 # Bazel now uses Bzlmod by default to manage external dependencies.
 # Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
@@ -5,41 +18,54 @@
 # For more details, please check https://github.com/bazelbuild/bazel/issues/18958
 ###############################################################################
 
-OR_TOOLS_VERSION = "9.12.0"
-
 module(
     name = "or-tools",
-    version = OR_TOOLS_VERSION,
-    repo_name = "com_google_ortools",
+    version = "10.0",
 )
 
 # see https://registry.bazel.build/
-bazel_dep(name = "abseil-cpp", version = "20240722.0.bcr.2", repo_name = "com_google_absl")
-bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "contrib_rules_jvm", version = "0.27.0")
-bazel_dep(name = "eigen", version = "3.4.0.bcr.2")
-bazel_dep(name = "fuzztest", version = "20241028.0", repo_name = "com_google_fuzztest")
-bazel_dep(name = "gazelle", version = "0.39.1", repo_name = "bazel_gazelle")
-bazel_dep(name = "glpk", version = "5.0.bcr.2")
-bazel_dep(name = "google_benchmark", version = "1.8.5", repo_name = "com_google_benchmark")
-bazel_dep(name = "googletest", version = "1.15.2", repo_name = "com_google_googletest")
-bazel_dep(name = "highs", version = "1.9.0")
-bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+# Bazel dependencies
+bazel_dep(name = "bazel_skylib", version = "1.8.1")
+bazel_dep(name = "contrib_rules_jvm", version = "0.28.0")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.0")
+bazel_dep(name = "rules_go", version = "0.53.0")
+bazel_dep(name = "rules_java", version = "8.14.0")
+bazel_dep(name = "rules_jvm_external", version = "6.7")
+bazel_dep(name = "rules_license", version = "1.0.0")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "rules_python", version = "1.5.1")
+bazel_dep(name = "rules_shell", version = "0.6.1")
+
+# OR-Tools C++ dependencies
+bazel_dep(name = "abseil-cpp", version = "20250814.0")
+bazel_dep(name = "bzip2", version = "1.0.8.bcr.2")
+bazel_dep(name = "eigen", version = "3.4.0.bcr.3")
+bazel_dep(name = "fuzztest", version = "20250805.0")
+bazel_dep(name = "glpk", version = "5.0.bcr.4")
+bazel_dep(name = "google_benchmark", version = "1.9.2")
+bazel_dep(name = "googletest", version = "1.17.0")
+bazel_dep(name = "highs", version = "1.11.0")
+bazel_dep(name = "protobuf-matchers", version = "0.1.1")
+bazel_dep(name = "protobuf", version = "32.0")
+bazel_dep(name = "re2", version = "2025-08-12")
+bazel_dep(name = "scip", version = "9.2.3")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.7")
+
+# OR-Tools wrappers dependencies
+bazel_dep(name = "gazelle", version = "0.43.0")
 bazel_dep(name = "pybind11_abseil", version = "202402.0")
 bazel_dep(name = "pybind11_bazel", version = "2.13.6")
 bazel_dep(name = "pybind11_protobuf", version = "0.0.0-20240524-1d7a729")
-bazel_dep(name = "re2", version = "2024-07-02", repo_name = "com_google_re2")
-bazel_dep(name = "rules_cc", version = "0.0.16")
-bazel_dep(name = "rules_go", version = "0.50.1", repo_name = "io_bazel_rules_go")
-bazel_dep(name = "rules_java", version = "8.6.3")
-bazel_dep(name = "rules_jvm_external", version = "6.6")
-bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "rules_python", version = "1.0.0")
-bazel_dep(name = "scip", version = "9.2.0.bcr.3")
 bazel_dep(name = "swig", version = "4.3.0")
-bazel_dep(name = "zlib", version = "1.3.1.bcr.4")
+
+git_override(
+    module_name = "pybind11_bazel",
+    commit = "2b6082a4d9d163a52299718113fa41e4b7978db5",
+    patch_strip = 1,
+    patches = ["//patches:pybind11_bazel.patch"],
+    remote = "https://github.com/pybind/pybind11_bazel.git",
+)
 
 git_override(
     module_name = "pybind11_abseil",
@@ -47,6 +73,12 @@ git_override(
     patch_strip = 1,
     patches = ["//patches:pybind11_abseil.patch"],
     remote = "https://github.com/pybind/pybind11_abseil.git",
+)
+
+git_override(
+    module_name = "pybind11_protobuf",
+    commit = "f02a2b7653bc50eb5119d125842a3870db95d251",
+    remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
 SUPPORTED_PYTHON_VERSIONS = [
@@ -114,10 +146,10 @@ maven.install(
 )
 use_repo(maven, "maven")
 
-go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.22.4")
 
-go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.module(
     path = "github.com/golang/glog",
     sum = "h1:1+mZ9upx1Dh6FmUTFR1naJ77miKiXgALjWOZ3NVFPmY=",
@@ -135,8 +167,8 @@ go_deps.module(
 )
 go_deps.module(
     path = "google.golang.org/protobuf",
-    sum = "h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=",
-    version = "v1.34.2",
+    sum = "h1:tPhr+woSbjfYvY6/GPufUoYizxw1cF/yFoxJ2fmpwlM=",
+    version = "v1.36.5",
 )
 go_deps.module(
     path = "golang.org/x/xerrors",

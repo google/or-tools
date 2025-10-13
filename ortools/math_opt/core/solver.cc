@@ -49,7 +49,7 @@ namespace {
 
 // Returns an InternalError with the input status message if the input status is
 // not OK.
-absl::Status ToInternalError(const absl::Status original) {
+absl::Status ToInternalError(absl::Status original) {
   if (original.ok()) {
     return original;
   }
@@ -201,7 +201,7 @@ Solver::ComputeInfeasibleSubsystem(
   RETURN_IF_ERROR(ValidateSolveParameters(arguments.parameters))
       << "invalid parameters";
 
-  ASSIGN_OR_RETURN(const ComputeInfeasibleSubsystemResultProto result,
+  ASSIGN_OR_RETURN(ComputeInfeasibleSubsystemResultProto result,
                    underlying_solver_->ComputeInfeasibleSubsystem(
                        arguments.parameters, arguments.message_callback,
                        arguments.interrupter));

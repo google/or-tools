@@ -19,10 +19,10 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -167,6 +167,7 @@ BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution& first_solution,
     VLOG(1)
         << "First solution is infeasible. Using it as assignment preference.";
     std::vector<bool> assignment_preference;
+    assignment_preference.reserve(first_solution.Size());
     for (int i = 0; i < first_solution.Size(); ++i) {
       assignment_preference.push_back(first_solution.Value(VariableIndex(i)));
     }

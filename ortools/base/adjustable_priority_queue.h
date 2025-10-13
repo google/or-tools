@@ -20,8 +20,6 @@
 #include <list>
 #include <vector>
 
-#include "ortools/base/macros.h"
-
 template <typename T, typename Comparator>
 class LowerPriorityThan {
  public:

@@ -1406,7 +1406,7 @@ class PathConnectedConstraint : public Constraint {
     }
   }
   void EvaluatePath(int path) {
-    touched_.SparseClearAll();
+    touched_.ResetAllToFalse();
     int64_t source = sources_[path];
     const int64_t end = sinks_[path];
     while (source != end) {

@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "ortools/base/logging.h"
@@ -161,7 +162,7 @@ TerminationProto TerminateForLimit(const LimitProto limit, const bool feasible,
   }
   result.set_limit(limit);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -181,7 +182,7 @@ TerminationProto TerminateForReason(const TerminationReasonProto reason,
   TerminationProto result;
   result.set_reason(reason);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -213,7 +214,7 @@ TerminationProto TerminateForReason(const bool is_maximize,
       FEASIBILITY_STATUS_UNDETERMINED);
   *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -229,7 +230,7 @@ TerminationProto OptimalTerminationProto(const double finite_primal_objective,
       FEASIBILITY_STATUS_FEASIBLE);
   result.mutable_problem_status()->set_dual_status(FEASIBILITY_STATUS_FEASIBLE);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -244,7 +245,7 @@ TerminationProto UnboundedTerminationProto(const bool is_maximize,
       FEASIBILITY_STATUS_INFEASIBLE);
   *result.mutable_objective_bounds() = MakeUnboundedBounds(is_maximize);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -263,7 +264,7 @@ TerminationProto InfeasibleTerminationProto(
         result.objective_bounds().primal_bound());
   }
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -307,7 +308,7 @@ TerminationProto LimitTerminationProto(
   result.mutable_objective_bounds()->set_dual_bound(dual_objective);
   result.set_limit(limit);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -337,7 +338,7 @@ TerminationProto NoSolutionFoundTerminationProto(
   }
   result.set_limit(limit);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -362,7 +363,7 @@ TerminationProto FeasibleTerminationProto(
   }
   result.set_limit(limit);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }
@@ -380,7 +381,7 @@ TerminationProto InfeasibleOrUnboundedTerminationProto(
   }
   *result.mutable_objective_bounds() = MakeTrivialBounds(is_maximize);
   if (!detail.empty()) {
-    result.set_detail(std::string(detail));
+    result.set_detail(detail);
   }
   return result;
 }

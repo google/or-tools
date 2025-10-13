@@ -13,16 +13,10 @@
 
 # ModelBuilder: a lightweight implementation of the linear_solver API
 
-# Public exports.
-exports_files(
-    [
-        "README.md",
-        "BUILD.bazel",
-        "CMakeLists.txt",
-    ] + glob([
-        "*.cc",
-        "*.h",
-    ]),
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(
+    default_visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -33,11 +27,11 @@ cc_library(
         "-DUSE_HIGHS",
         "-DUSE_PDLP",
         "-DUSE_SCIP",
-        "-DUSE_LP_PARSER",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base:file",
+        "//ortools/linear_solver",
+        "//ortools/linear_solver:gurobi_util",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver:solve_mp_model",
@@ -47,10 +41,13 @@ cc_library(
         "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/linear_solver/proto_solver:scip_proto_solver",
-        "//ortools/linear_solver/proto_solver:xpress_proto_solver",
         "//ortools/lp_data:lp_parser",
         "//ortools/lp_data:mps_reader",
-        "//ortools/util:logging",
-        "//ortools/xpress:environment",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:fixed_array",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )

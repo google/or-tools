@@ -19,8 +19,8 @@
 
 #include "absl/base/attributes.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/dual_edge_norms.h"
 #include "ortools/glop/parameters.pb.h"
@@ -170,7 +170,7 @@ Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional infeasibility =
         GetColInfeasibility(col, values, lower_bounds, upper_bounds);
-    sum += std::max(0.0, infeasibility);
+    sum += std::max(Fractional{0.0}, infeasibility);
   }
   return sum;
 }

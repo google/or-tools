@@ -13,12 +13,14 @@
 
 #include "ortools/graph/min_cost_flow.h"
 
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
-#include "absl/flags/flag.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 struct Arc {
@@ -73,7 +75,7 @@ void SolveMinCostFlow() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   InitGoogle(argv[0], &argc, &argv, true);
   operations_research::SolveMinCostFlow();
   return EXIT_SUCCESS;

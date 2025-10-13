@@ -2,10 +2,10 @@ FROM ortools/cmake:opensuse_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
 RUN zypper refresh \
-&& zypper install -y python311 python311-devel \
- python311-pip python311-wheel python311-virtualenv python311-setuptools \
+&& zypper install -y python3 python3-devel \
+ python3-pip python3-wheel python3-virtualenv python3-setuptools \
 && zypper clean -a
-RUN python3.11 -m pip install --break-system-packages \
+RUN python3 -m pip install --break-system-packages \
  absl-py mypy mypy-protobuf
 
 FROM env AS devel

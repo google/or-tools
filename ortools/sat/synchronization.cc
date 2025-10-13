@@ -30,8 +30,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/hash/hash.h"
-#include "absl/time/time.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -39,11 +37,17 @@
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
 #include "absl/algorithm/container.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/numeric/int128.h"
+#include "absl/random/bit_gen_ref.h"
+#include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -73,6 +77,144 @@ ABSL_FLAG(bool, cp_model_dump_tightened_models, false,
 namespace operations_research {
 namespace sat {
 
+std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+SharedSolutionPool::Add(SharedSolutionRepository<int64_t>::Solution solution) {
+  // Only add to the alternative path if it has the correct source id.
+  if (alternative_path_.num_solutions_to_keep() > 0 &&
+      solution.source_id == alternative_path_.source_id()) {
+    alternative_path_.Add(solution);
+    if (solution.rank < best_solutions_.GetBestRank()) {
+      VLOG(2) << "ALTERNATIVE WIN !";
+    }
+  }
+
+  // For now we only return a solution if it was stored in best_solutions_.
+  return best_solutions_.Add(std::move(solution));
+}
+
+void SharedSolutionPool::Synchronize(absl::BitGenRef random) {
+  // Update the "seeds" for the aternative path.
+  if (alternative_path_.num_solutions_to_keep() > 0) {
+    absl::MutexLock mutex_lock(mutex_);
+
+    auto process_solution =
+        [this](const SharedSolutionRepository<int64_t>::Solution& solution)
+            ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+              if (solution.variable_values.empty()) return;
+              if (solution.rank < min_rank_ || solution.rank > max_rank_) {
+                // Recompute buckets.
+                min_rank_ = std::min(min_rank_, solution.rank);
+                max_rank_ = std::max(max_rank_, solution.rank);
+
+                // We want to store around 100 MB max.
+                int num_solutions = std::max<int>(
+                    10, 100'000'000 / solution.variable_values.size());
+                const int64_t range = max_rank_ - min_rank_ + 1;
+                if (num_solutions > range) {
+                  num_solutions = range;
+                }
+
+                // But if the number of variables is low, we do not want
+                // to use a lot of space/time just iterating over num_solutions.
+                //
+                // TODO(user): Rework the algo to be in
+                // O(num_different_solutions) rather than initializing the
+                // maximum amount right away.
+                num_solutions = std::min(num_solutions, 1'000);
+
+                // Resize and recompute rank_.
+                //
+                // seeds_[i] should contains solution in [ranks_[i],
+                // rank_[i+1]). rank_[0] is always min_rank_. As long as we have
+                // room, we should have exactly one bucket per rank.
+                ranks_.resize(num_solutions);
+                seeds_.resize(num_solutions);
+
+                int64_t offset = (max_rank_ - min_rank_ + 1) / num_solutions;
+                CHECK_GT(offset, 0);
+                for (int i = 0; i < num_solutions; ++i) {
+                  ranks_[i] = min_rank_ +
+                              static_cast<int64_t>(absl::int128(i) *
+                                                   absl::int128(range) /
+                                                   absl::int128(num_solutions));
+                }
+
+                // Move existing solutions to their new bucket.
+                int to_index = seeds_.size() - 1;
+                for (int i = seeds_.size(); --i >= 0;) {
+                  if (seeds_[i] == nullptr) continue;
+                  while (to_index >= 0 && ranks_[to_index] > seeds_[i]->rank) {
+                    --to_index;
+                  }
+                  seeds_[to_index] = std::move(seeds_[i]);
+                }
+              }
+
+              // rank[limit] is the first > solution.rank.
+              const int limit = std::upper_bound(ranks_.begin(), ranks_.end(),
+                                                 solution.rank) -
+                                ranks_.begin();
+              CHECK_GT(limit, 0);
+              seeds_[limit - 1] =
+                  std::make_shared<SharedSolutionRepository<int64_t>::Solution>(
+                      solution);
+            };
+
+    // All solution go through best_solutions_.Add(), so we only need
+    // to process these here.
+    best_solutions_.Synchronize(process_solution);
+  } else {
+    best_solutions_.Synchronize();
+  }
+  alternative_path_.Synchronize();
+
+  // If we try to improve the alternate path without success, reset it
+  // from a random path_seeds_.
+  //
+  // TODO(user): find a way to generate random solution and update the seeds
+  // with them. Shall we do that in a continuous way or only when needed?
+  if (alternative_path_.num_solutions_to_keep() > 0) {
+    // Restart the alternative path ?
+    const int threshold = std::max(
+        100, static_cast<int>(std::sqrt(best_solutions_.num_queried())));
+    if (alternative_path_.NumRecentlyNonImproving() > threshold) {
+      VLOG(2) << "Done. num_non_improving: "
+              << alternative_path_.NumRecentlyNonImproving()
+              << " achieved: " << alternative_path_.GetBestRank() << " / "
+              << best_solutions_.GetBestRank();
+      alternative_path_.ClearSolutionsAndIncreaseSourceId();
+    }
+
+    // If we restarted, or we are at the beginning, pick a seed for the path.
+    if (alternative_path_.NumSolutions() == 0) {
+      absl::MutexLock mutex_lock(mutex_);
+
+      // Pick random bucket with bias. If the bucket is empty, we will scan
+      // "worse" bucket until we find a solution. We never pick bucket 0.
+      if (seeds_.size() > 1) {
+        // Note that LogUniform() is always inclusive.
+        // TODO(user): Shall we bias even more?
+        int index = 1 + absl::LogUniform<int>(random, 0, seeds_.size() - 2);
+        for (; index < seeds_.size(); ++index) {
+          if (seeds_[index] != nullptr) {
+            alternative_path_.Add(*seeds_[index]);
+            alternative_path_.Synchronize();
+            VLOG(2) << "RESTART bucket=" << index << "/" << seeds_.size()
+                    << " rank=" << alternative_path_.GetSolution(0)->rank
+                    << " from_optimal="
+                    << alternative_path_.GetSolution(0)->rank - min_rank_;
+            break;
+          }
+        }
+
+        // The last bucket should never be empty.
+        CHECK(seeds_.back() != nullptr);
+        CHECK_LT(index, seeds_.size());
+      }
+    }
+  }
+}
+
 void SharedLPSolutionRepository::NewLPSolution(
     std::vector<double> lp_solution) {
   if (lp_solution.empty()) return;
@@ -84,7 +226,7 @@ void SharedLPSolutionRepository::NewLPSolution(
 
   // We always prefer to keep the solution from the last synchronize batch.
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     solution->rank = -num_synchronization_;
     ++num_added_;
     new_solutions_.push_back(solution);
@@ -93,19 +235,19 @@ void SharedLPSolutionRepository::NewLPSolution(
 
 void SharedIncompleteSolutionManager::AddSolution(
     const std::vector<double>& lp_solution) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   ++num_added_;
   solutions_.push_back(lp_solution);
   if (solutions_.size() > 100) solutions_.pop_front();
 }
 
 bool SharedIncompleteSolutionManager::HasSolution() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return !solutions_.empty();
 }
 
 std::vector<double> SharedIncompleteSolutionManager::PopLast() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (solutions_.empty()) return {};
 
   ++num_queried_;
@@ -118,7 +260,8 @@ SharedResponseManager::SharedResponseManager(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       wall_timer_(*model->GetOrCreate<WallTimer>()),
       shared_time_limit_(model->GetOrCreate<ModelSharedTimeLimit>()),
-      solutions_(parameters_.solution_pool_size(), "feasible solutions"),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
+      solution_pool_(parameters_),
       logger_(model->GetOrCreate<SolverLogger>()) {
   bounds_logging_id_ = logger_->GetNewThrottledId();
 }
@@ -137,9 +280,9 @@ std::string ProgressMessage(absl::string_view event_or_solution_count,
                          obj_next, solution_info);
 }
 
-std::string SatProgressMessage(const std::string& event_or_solution_count,
+std::string SatProgressMessage(absl::string_view event_or_solution_count,
                                double time_in_seconds,
-                               const std::string& solution_info) {
+                               absl::string_view solution_info) {
   return absl::StrFormat("#%-5s %6.2fs %s", event_or_solution_count,
                          time_in_seconds, solution_info);
 }
@@ -149,7 +292,7 @@ std::string SatProgressMessage(const std::string& event_or_solution_count,
 void SharedResponseManager::FillSolveStatsInResponse(
     Model* model, CpSolverResponse* response) {
   if (model == nullptr) return;
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const auto& set_stats : statistics_postprocessors_) {
     set_stats(model, response);
   }
@@ -157,14 +300,14 @@ void SharedResponseManager::FillSolveStatsInResponse(
 
 void SharedResponseManager::LogMessage(absl::string_view prefix,
                                        absl::string_view message) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   SOLVER_LOG(logger_, absl::StrFormat("#%-5s %6.2fs %s", prefix,
                                       wall_timer_.Get(), message));
 }
 
 void SharedResponseManager::LogMessageWithThrottling(
-    const std::string& prefix, const std::string& message) {
-  absl::MutexLock mutex_lock(&mutex_);
+    absl::string_view prefix, absl::string_view message) {
+  absl::MutexLock mutex_lock(mutex_);
 
   int id;
   auto it = throttling_ids_.find(prefix);
@@ -178,7 +321,7 @@ void SharedResponseManager::LogMessageWithThrottling(
 }
 
 bool SharedResponseManager::LoggingIsEnabled() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   return logger_->LoggingIsEnabled();
 }
@@ -197,17 +340,17 @@ void SharedResponseManager::InitializeObjective(const CpModelProto& cp_model) {
 }
 
 void SharedResponseManager::SetSynchronizationMode(bool always_synchronize) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   always_synchronize_ = always_synchronize;
 }
 
 void SharedResponseManager::SetUpdateGapIntegralOnEachChange(bool set) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   update_integral_on_each_change_ = set;
 }
 
 void SharedResponseManager::UpdateGapIntegral() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   UpdateGapIntegralInternal();
 }
 
@@ -237,7 +380,7 @@ void SharedResponseManager::UpdateGapIntegralInternal() {
 
 void SharedResponseManager::SetGapLimitsFromParameters(
     const SatParameters& parameters) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (objective_or_null_ == nullptr) return;
   absolute_gap_limit_ = parameters.absolute_gap_limit();
   relative_gap_limit_ = parameters.relative_gap_limit();
@@ -284,7 +427,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& update_info, IntegerValue lb, IntegerValue ub) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CHECK(objective_or_null_ != nullptr);
 
   // The problem is already solved!
@@ -360,8 +503,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 // UNKNOWN -> FEASIBLE -> OPTIMAL
 // UNKNOWN -> INFEASIBLE
 void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
-    const std::string& worker_info) {
-  absl::MutexLock mutex_lock(&mutex_);
+    absl::string_view worker_info) {
+  absl::MutexLock mutex_lock(mutex_);
   if (best_status_ == CpSolverStatus::FEASIBLE ||
       best_status_ == CpSolverStatus::OPTIMAL) {
     // We also use this status to indicate that we enumerated all solutions to
@@ -381,77 +524,79 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   unsat_cores_ = core;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_inner_objective_lower_bound_;
 }
 
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_inner_objective_upper_bound_;
 }
 
 void SharedResponseManager::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  solution_pool_.Synchronize(*random_);
+
+  absl::MutexLock mutex_lock(mutex_);
   synchronized_inner_objective_lower_bound_ =
       IntegerValue(inner_objective_lower_bound_);
   synchronized_inner_objective_upper_bound_ =
       IntegerValue(inner_objective_upper_bound_);
   synchronized_best_status_ = best_status_;
-  if (solutions_.NumSolutions() > 0) {
+  if (solution_pool_.BestSolutions().NumSolutions() > 0) {
     first_solution_solvers_should_stop_ = true;
   }
   logger_->FlushPendingThrottledLogs();
 }
 
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return IntegerValue(best_solution_objective_value_);
 }
 
 double SharedResponseManager::GapIntegral() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return gap_integral_;
 }
 
 void SharedResponseManager::AddSolutionPostprocessor(
     std::function<void(std::vector<int64_t>*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   solution_postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddFinalResponsePostprocessor(
     std::function<void(CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   final_postprocessors_.push_back(postprocessor);
 }
 
 void SharedResponseManager::AddStatisticsPostprocessor(
     std::function<void(Model*, CpSolverResponse*)> postprocessor) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   statistics_postprocessors_.push_back(postprocessor);
 }
 
 int SharedResponseManager::AddSolutionCallback(
     std::function<void(const CpSolverResponse&)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_callback_id_++;
   callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < callbacks_.size(); ++i) {
     if (callbacks_[i].first == callback_id) {
       callbacks_.erase(callbacks_.begin() + i);
@@ -463,14 +608,14 @@ void SharedResponseManager::UnregisterCallback(int callback_id) {
 
 int SharedResponseManager::AddLogCallback(
     std::function<std::string(const CpSolverResponse&)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_search_log_callback_id_++;
   search_log_callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterLogCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < search_log_callbacks_.size(); ++i) {
     if (search_log_callbacks_[i].first == callback_id) {
       search_log_callbacks_.erase(search_log_callbacks_.begin() + i);
@@ -482,14 +627,14 @@ void SharedResponseManager::UnregisterLogCallback(int callback_id) {
 
 int SharedResponseManager::AddBestBoundCallback(
     std::function<void(double)> callback) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = next_best_bound_callback_id_++;
   best_bound_callbacks_.emplace_back(id, std::move(callback));
   return id;
 }
 
 void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < best_bound_callbacks_.size(); ++i) {
     if (best_bound_callbacks_[i].first == callback_id) {
       best_bound_callbacks_.erase(best_bound_callbacks_.begin() + i);
@@ -501,7 +646,7 @@ void SharedResponseManager::UnregisterBestBoundCallback(int callback_id) {
 
 CpSolverResponse SharedResponseManager::GetResponseInternal(
     absl::Span<const int64_t> variable_values,
-    const std::string& solution_info) {
+    absl::string_view solution_info) {
   CpSolverResponse result;
   result.set_status(best_status_);
   if (!unsat_cores_.empty()) {
@@ -548,21 +693,21 @@ CpSolverResponse SharedResponseManager::GetResponseInternal(
 }
 
 CpSolverResponse SharedResponseManager::GetResponse() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CpSolverResponse result;
-  if (solutions_.NumSolutions() == 0) {
+  if (solution_pool_.BestSolutions().NumSolutions() == 0) {
     result = GetResponseInternal({}, "");
   } else {
     std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-        solution = solutions_.GetSolution(0);
+        solution = solution_pool_.BestSolutions().GetSolution(0);
     result = GetResponseInternal(solution->variable_values, solution->info);
   }
   // If this is true, we postsolve and copy all of our solutions.
   if (parameters_.fill_additional_solutions_in_response()) {
     std::vector<int64_t> temp;
-    for (int i = 0; i < solutions_.NumSolutions(); ++i) {
-      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-          solution = solutions_.GetSolution(i);
+    const int size = solution_pool_.BestSolutions().NumSolutions();
+    for (int i = 0; i < size; ++i) {
+      const auto solution = solution_pool_.BestSolutions().GetSolution(i);
       temp = solution->variable_values;
       for (int i = solution_postprocessors_.size(); --i >= 0;) {
         solution_postprocessors_[i](&temp);
@@ -583,7 +728,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
 
 void SharedResponseManager::AppendResponseToBeMerged(
     const CpSolverResponse& response) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return subsolver_responses_.push_back(response);
 }
 
@@ -621,9 +766,9 @@ void SharedResponseManager::FillObjectiveValuesInResponse(
 
 std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
 SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
-                                   const std::string& solution_info,
-                                   Model* model) {
-  absl::MutexLock mutex_lock(&mutex_);
+                                   absl::string_view solution_info,
+                                   Model* model, int source_id) {
+  absl::MutexLock mutex_lock(mutex_);
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> ret;
 
   // For SAT problems, we add the solution to the solution pool for retrieval
@@ -633,7 +778,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
     solution.variable_values.assign(solution_values.begin(),
                                     solution_values.end());
     solution.info = solution_info;
-    ret = solutions_.Add(solution);
+    solution.source_id = source_id;
+    ret = solution_pool_.Add(solution);
   } else {
     const int64_t objective_value =
         ComputeInnerObjective(*objective_or_null_, solution_values);
@@ -644,7 +790,8 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
                                     solution_values.end());
     solution.rank = objective_value;
     solution.info = solution_info;
-    ret = solutions_.Add(solution);
+    solution.source_id = source_id;
+    ret = solution_pool_.Add(solution);
 
     // Ignore any non-strictly improving solution.
     if (objective_value > inner_objective_upper_bound_) return ret;
@@ -665,7 +812,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   // In single thread, no one is synchronizing the solution manager, so we
   // should do it from here.
   if (always_synchronize_) {
-    solutions_.Synchronize();
+    solution_pool_.Synchronize(*random_);
     first_solution_solvers_should_stop_ = true;
   }
 
@@ -702,7 +849,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
   }
 
   if (logger_->LoggingIsEnabled()) {
-    std::string solution_message = solution_info;
+    std::string solution_message(solution_info);
     if (tmp_postsolved_response.num_booleans() > 0) {
       absl::StrAppend(&solution_message, " (fixed_bools=",
                       tmp_postsolved_response.num_fixed_booleans(), "/",
@@ -765,7 +912,7 @@ SharedResponseManager::NewSolution(absl::Span<const int64_t> solution_values,
 }
 
 bool SharedResponseManager::ProblemIsSolved() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return synchronized_best_status_ == CpSolverStatus::OPTIMAL ||
          synchronized_best_status_ == CpSolverStatus::INFEASIBLE;
 }
@@ -806,7 +953,7 @@ void SharedResponseManager::RegisterObjectiveBoundImprovement(
 }
 
 void SharedResponseManager::DisplayImprovementStatistics() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (!primal_improvements_count_.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back(
@@ -896,7 +1043,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   int num_improvements = 0;
   int num_symmetric_improvements = 0;
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (int i = 0; i < variables.size(); ++i) {
     int var = variables[i];
     if (var >= num_variables_) continue;
@@ -972,7 +1119,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
     absl::Span<const int> variables_to_fix) {
   // This function shouldn't be called if we has symmetry.
   CHECK(!has_symmetry_);
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   // Abort if incompatible. Note that we only check the position that we are
   // about to fix. This should be enough. Otherwise we might never accept any
@@ -1016,7 +1163,7 @@ void SharedBoundsManager::FixVariablesFromPartialSolution(
 }
 
 void SharedBoundsManager::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const int var :
        changed_variables_since_last_synchronize_.PositionsSetAtLeastOnce()) {
     DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
@@ -1026,11 +1173,11 @@ void SharedBoundsManager::Synchronize() {
       id_to_changed_variables_[j].Set(var);
     }
   }
-  changed_variables_since_last_synchronize_.ClearAll();
+  changed_variables_since_last_synchronize_.ResetAllToFalse();
 }
 
 int SharedBoundsManager::RegisterNewId() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int id = id_to_changed_variables_.size();
   id_to_changed_variables_.resize(id + 1);
   id_to_changed_variables_[id].ClearAndResize(num_variables_);
@@ -1055,13 +1202,13 @@ void SharedBoundsManager::GetChangedBounds(
   new_upper_bounds->clear();
 
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     for (const int var :
          id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
       DCHECK(!has_symmetry_ || var_to_representative_[var] == var);
       variables->push_back(var);
     }
-    id_to_changed_variables_[id].ClearAll();
+    id_to_changed_variables_[id].ResetAllToFalse();
 
     // We need to report the bounds in a deterministic order as it is difficult
     // to guarantee that nothing depend on the order in which the new bounds are
@@ -1098,7 +1245,7 @@ void SharedBoundsManager::GetChangedBounds(
 }
 
 void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CHECK_EQ(domains->size(), synchronized_lower_bounds_.size());
   for (int var = 0; var < domains->size(); ++var) {
     (*domains)[var] = (*domains)[var].IntersectionWith(Domain(
@@ -1107,7 +1254,7 @@ void SharedBoundsManager::UpdateDomains(std::vector<Domain>* domains) {
 }
 
 void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (!bounds_exported_.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back({"Improving bounds shared", "Num", "Sym"});
@@ -1121,7 +1268,7 @@ void SharedBoundsManager::LogStatistics(SolverLogger* logger) {
 }
 
 int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const auto it = bounds_exported_.find(worker_name);
   if (it == bounds_exported_.end()) return 0;
   return it->second.num_exported;
@@ -1129,117 +1276,84 @@ int SharedBoundsManager::NumBoundsExported(absl::string_view worker_name) {
 
 UniqueClauseStream::UniqueClauseStream() {
   for (auto& buffer : clauses_by_size_) {
-    buffer.reserve(kMaxBufferedLiterals);
+    buffer.reserve(kMaxLiteralsPerBatch);
   }
+  fingerprints_.reserve(kMaxFingerprints);
 }
 
-bool UniqueClauseStream::Add(absl::Span<const int> clause) {
-  absl::MutexLock mutex_lock(&mutex_);
-  if (clause.size() > kMaxClauseSize || clause.size() <= 2) return false;
-  // This is just a safety check, the caller should have called CanAccept().
-  if (NumLiteralsOfSize(clause.size()) + clause.size() > kMaxBufferedLiterals) {
-    return false;
-  }
-  if (BlockClause(clause)) {
-    std::vector<int>* buffer = MutableBufferForSize(clause.size());
+bool UniqueClauseStream::Add(absl::Span<const int> clause, int lbd) {
+  if (!BlockClause(clause) || lbd > lbd_threshold_) return false;
+  std::vector<int>* buffer = MutableBufferForSize(clause.size());
+  CHECK_NE(buffer, nullptr);
+  if (buffer->size() + clause.size() <= kMaxLiteralsPerBatch) {
     buffer->insert(buffer->end(), clause.begin(), clause.end());
-    return true;
+  } else {
+    // Maybe replace an old buffered clause of the same size if it has a smaller
+    // hash value. This means that the buffer will contain a deterministic
+    // sample of the clauses added independent of insertion order.
+    const int64_t replaced_clause_id =
+        HashClause(clause, 1) % NumClausesOfSize(clause.size());
+    absl::Span<int> replaced_clause = absl::MakeSpan(*buffer).subspan(
+        replaced_clause_id * clause.size(), clause.size());
+    dropped_literals_since_last_batch_ += clause.size();
+    if (HashClause(clause, 2) < HashClause(replaced_clause, 2)) {
+      std::copy(clause.begin(), clause.end(), replaced_clause.begin());
+    }
   }
-  return false;
+  return true;
 }
 
 bool UniqueClauseStream::BlockClause(absl::Span<const int> clause) {
   if (clause.size() > kMaxClauseSize) return false;
   if (clause.size() <= 2) return false;
-  return fingerprints_.emplace(HashClause(clause)).second;
-}
-
-bool UniqueClauseStream::Delete(absl::Span<const int> clause) {
-  const size_t fingerprint = HashClause(clause);
-  absl::MutexLock mutex_lock(&mutex_);
-  // Note a clause with this hash may be buffered, but not yet exported.
-  return fingerprints_.erase(fingerprint) == 1;
+  const auto hash = HashClause(clause);
+  return fingerprints_.emplace(hash).second &&
+         !old_fingerprints_.contains(hash);
 }
 
 CompactVectorVector<int> UniqueClauseStream::NextBatch() {
-  CompactVectorVector<int> buffer;
-  buffer.reserve(kMaxLiteralsPerBatch / kMinClauseSize, kMaxLiteralsPerBatch);
+  CompactVectorVector<int> batch;
+  batch.reserve(kMaxLiteralsPerBatch / kMinClauseSize, kMaxLiteralsPerBatch);
   int to_fill = kMaxLiteralsPerBatch;
-  absl::MutexLock mutex_lock(&mutex_);
   for (int size = kMinClauseSize; size <= kMaxClauseSize; ++size) {
     CHECK_EQ(NumLiteralsOfSize(size) % size, 0);
-    while (to_fill >= size && NumLiteralsOfSize(size) > 0) {
-      absl::Span<const int> clause = NextClause(size);
-      if (fingerprints_.contains(HashClause(clause))) {
-        buffer.Add(NextClause(size));
-        to_fill -= size;
-      }
+    std::vector<int>* buffer = MutableBufferForSize(size);
+    while (to_fill >= size && !buffer->empty()) {
+      batch.Add(NextClause(size));
+      to_fill -= size;
       PopClause(size);
     }
-  }
-  return buffer;
-}
-
-int UniqueClauseStream::FillUpstreamBuffer(UniqueClauseStream& upstream,
-                                           int size,
-                                           int max_clauses_to_export) {
-  int num_exported_clauses = 0;
-  absl::MutexLock mutex_lock(&mutex_);
-  while (NumLiteralsOfSize(size) > 0 &&
-         num_exported_clauses < max_clauses_to_export) {
-    absl::Span<const int> clause = NextClause(size);
-    // Don't emit deleted clauses.
-    if (fingerprints_.contains(HashClause(clause)) && upstream.Add(clause)) {
-      ++num_exported_clauses;
+    if (to_fill < size) {
+      dropped_literals_since_last_batch_ += buffer->size();
+      buffer->clear();
     }
-    PopClause(size);
   }
-  return num_exported_clauses;
+
+  if (fingerprints_.size() >= kMaxFingerprints / 2) {
+    VLOG(2) << "Clearing fingerprints: " << fingerprints_.size() / 1024 << "Ki";
+    std::swap(fingerprints_, old_fingerprints_);
+    fingerprints_.clear();
+    fingerprints_.reserve(kMaxFingerprints);
+  }
+
+  if (to_fill > kMaxLiteralsPerBatch / 2 && lbd_threshold_ < kMaxLbd) {
+    lbd_threshold_ += 1;
+    VLOG(2) << "Inc lbd: " << lbd_threshold_;
+  } else if (dropped_literals_since_last_batch_ > 0 &&
+             lbd_threshold_ > kMinLbd) {
+    lbd_threshold_ -= 1;
+    VLOG(2) << "Dec lbd: " << lbd_threshold_;
+  }
+  dropped_literals_since_last_batch_ = 0;
+  return batch;
 }
 
 int UniqueClauseStream::NumBufferedLiterals() const {
-  absl::MutexLock mutex_lock(&mutex_);
   int result = 0;
   for (const auto& buffer : clauses_by_size_) {
     result += buffer.size();
   }
   return result;
-}
-
-bool UniqueClauseStream::CanAccept(int size, int lbd) const {
-  if (size <= 2 || size > kMaxClauseSize) return false;
-  absl::MutexLock mutex_lock(&mutex_);
-  if (lbd > lbd_threshold_) return false;
-  int num_literals_up_to_size = 0;
-  for (int i = kMinClauseSize; i <= size; ++i) {
-    num_literals_up_to_size += NumLiteralsOfSize(i);
-  }
-  return num_literals_up_to_size + size <= kMaxBufferedLiterals;
-}
-
-void UniqueClauseStream::RemoveWorstClauses() {
-  absl::MutexLock mutex_lock(&mutex_);
-  int literals_to_remove = 0;
-  for (const auto& buffer : clauses_by_size_) {
-    literals_to_remove += buffer.size();
-  }
-  literals_to_remove -= kMaxBufferedLiterals;
-  for (int size = kMaxClauseSize; size >= kMinClauseSize; --size) {
-    while (NumLiteralsOfSize(size) > 0) {
-      // Stop if removing one more clause of the current size would
-      // leave the buffer under full. Otherwise we might remove a shorter
-      // clause later!
-      if (literals_to_remove < size) return;
-      fingerprints_.erase(HashClause(NextClause(size)));
-      PopClause(size);
-      literals_to_remove -= size;
-    }
-  }
-}
-
-void UniqueClauseStream::set_lbd_threshold(int lbd) {
-  absl::MutexLock mutex_lock(&mutex_);
-  lbd_threshold_ = lbd;
 }
 
 size_t UniqueClauseStream::HashClause(absl::Span<const int> clause,
@@ -1269,38 +1383,47 @@ int UniqueClauseStream::NumLiteralsOfSize(int size) const {
   return BufferForSize(size).size();
 }
 
-SharedClausesManager::SharedClausesManager(bool always_synchronize,
-                                           absl::Duration share_frequency)
-    : always_synchronize_(always_synchronize),
-      share_frequency_(share_frequency) {}
+SharedClausesManager::SharedClausesManager(bool always_synchronize)
+    : always_synchronize_(always_synchronize) {}
 
-int SharedClausesManager::RegisterNewId() {
-  absl::MutexLock mutex_lock(&mutex_);
+int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
+                                        bool may_terminate_early) {
+  absl::MutexLock mutex_lock(mutex_);
+  num_full_workers_ += may_terminate_early ? 0 : 1;
   const int id = id_to_last_processed_binary_clause_.size();
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
-  id_to_last_returned_batch_.resize(id + 1, 0);
-  id_to_last_finished_batch_.resize(id + 1, 0);
-  id_to_clauses_exported_.resize(id + 1, 0);
-  id_to_clause_stream_.emplace_back();
+  id_to_last_returned_batch_.resize(id + 1, -1);
+  id_to_last_finished_batch_.resize(id + 1, -1);
+  id_to_num_exported_.resize(id + 1, 0);
+  id_to_worker_name_.resize(id + 1);
+  id_to_worker_name_[id] = worker_name;
   return id;
 }
 
-void SharedClausesManager::SetWorkerNameForId(int id,
-                                              absl::string_view worker_name) {
-  absl::MutexLock mutex_lock(&mutex_);
+int SharedLinear2Bounds::RegisterNewId(std::string worker_name) {
+  absl::MutexLock mutex_lock(mutex_);
+  const int id = id_to_worker_name_.size();
+
+  id_to_stats_.resize(id + 1);
+  id_to_worker_name_.resize(id + 1);
   id_to_worker_name_[id] = worker_name;
+  return id;
+}
+
+bool SharedClausesManager::ShouldReadBatch(int reader_id, int writer_id) {
+  return reader_id != writer_id;
 }
 
 void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   if (lit2 < lit1) std::swap(lit1, lit2);
   const auto p = std::make_pair(lit1, lit2);
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const auto [unused_it, inserted] = added_binary_clauses_set_.insert(p);
   if (inserted) {
     added_binary_clauses_.push_back(p);
     if (always_synchronize_) ++last_visible_binary_clause_;
-    id_to_clauses_exported_[id]++;
+    id_to_num_exported_[id]++;
 
     // Small optim. If the worker is already up to date with clauses to import,
     // we can mark this new clause as already seen.
@@ -1311,24 +1434,31 @@ void SharedClausesManager::AddBinaryClause(int id, int lit1, int lit2) {
   }
 }
 
-std::vector<absl::Span<const int>> SharedClausesManager::GetUnseenClauses(
-    int id) {
+void SharedClausesManager::AddBatch(int id, CompactVectorVector<int> batch) {
+  absl::MutexLock mutex_lock(mutex_);
+  id_to_num_exported_[id] += batch.size();
+  pending_batches_.push_back(std::move(batch));
+}
+
+const CompactVectorVector<int>& SharedClausesManager::GetUnseenClauses(int id) {
   std::vector<absl::Span<const int>> result;
-  absl::MutexLock mutex_lock(&mutex_);
-  for (int i = id_to_last_returned_batch_[id]; i < batches_.size(); ++i) {
-    for (int j = 0; j < batches_[i].size(); ++j) {
-      result.push_back(batches_[i][j]);
+  {
+    absl::MutexLock mutex_lock(mutex_);
+    id_to_last_finished_batch_[id] = id_to_last_returned_batch_[id];
+    if (id_to_last_returned_batch_[id] + 1 < batches_.size()) {
+      id_to_last_returned_batch_[id] += 1;
+      return batches_[id_to_last_returned_batch_[id]];
     }
   }
-  id_to_last_finished_batch_[id] = id_to_last_returned_batch_[id];
-  id_to_last_returned_batch_[id] = batches_.size();
-  return result;
+  static CompactVectorVector<int>* const empty_batch =
+      new CompactVectorVector<int>();
+  return *empty_batch;
 }
 
 void SharedClausesManager::GetUnseenBinaryClauses(
     int id, std::vector<std::pair<int, int>>* new_clauses) {
   new_clauses->clear();
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const int last_binary_clause_seen = id_to_last_processed_binary_clause_[id];
   if (last_binary_clause_seen >= last_visible_binary_clause_) return;
 
@@ -1339,125 +1469,167 @@ void SharedClausesManager::GetUnseenBinaryClauses(
 }
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
-  absl::btree_map<std::string, int64_t> name_to_clauses;
-  for (int id = 0; id < id_to_clauses_exported_.size(); ++id) {
-    if (id_to_clauses_exported_[id] == 0) continue;
-    name_to_clauses[id_to_worker_name_[id]] = id_to_clauses_exported_[id];
+  absl::MutexLock mutex_lock(mutex_);
+  absl::btree_map<std::string, int64_t> name_to_table_line;
+  for (int id = 0; id < id_to_num_exported_.size(); ++id) {
+    if (id_to_num_exported_[id] == 0) continue;
+    name_to_table_line[id_to_worker_name_[id]] = id_to_num_exported_[id];
   }
-  if (!name_to_clauses.empty()) {
+  if (!name_to_table_line.empty()) {
     std::vector<std::vector<std::string>> table;
     table.push_back({"Clauses shared", "Num"});
-    for (const auto& entry : name_to_clauses) {
-      table.push_back({FormatName(entry.first), FormatCounter(entry.second)});
+    for (const auto& [name, count] : name_to_table_line) {
+      table.push_back({FormatName(name), FormatCounter(count)});
+    }
+    SOLVER_LOG(logger, FormatTable(table));
+  }
+}
+
+// TODO(user): Add some library to simplify this "transposition". Ideally we
+// could merge small table with few columns. I am thinking list (row_name,
+// col_name, count) + function that create table?
+void SharedLinear2Bounds::LogStatistics(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(mutex_);
+  absl::btree_map<std::string, Stats> name_to_table_line;
+  for (int id = 0; id < id_to_stats_.size(); ++id) {
+    const Stats stats = id_to_stats_[id];
+    if (!stats.empty()) {
+      name_to_table_line[id_to_worker_name_[id]] = stats;
+    }
+  }
+  for (int import_id = 0; import_id < import_id_to_index_.size(); ++import_id) {
+    name_to_table_line[import_id_to_name_[import_id]].num_imported =
+        import_id_to_num_imported_[import_id];
+  }
+  if (!name_to_table_line.empty()) {
+    std::vector<std::vector<std::string>> table;
+    table.push_back({"Linear2 shared", "New", "Updated", "Imported"});
+    for (const auto& [name, stats] : name_to_table_line) {
+      table.push_back({FormatName(name), FormatCounter(stats.num_new),
+                       FormatCounter(stats.num_update),
+                       FormatCounter(stats.num_imported)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }
 }
 
 void SharedClausesManager::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
-  last_visible_binary_clause_ = added_binary_clauses_.size();
-  const int num_workers = id_to_clause_stream_.size();
-  if (num_workers <= 1) return;
-  if (!share_timer_.IsRunning()) share_timer_.Start();
-  if (share_timer_.GetDuration() < share_frequency_) return;
-  share_timer_.Restart();
+  std::vector<CompactVectorVector<int>> batches_to_merge;
+  {
+    absl::MutexLock mutex_lock(mutex_);
+    last_visible_binary_clause_ = added_binary_clauses_.size();
+    const int num_workers = id_to_last_processed_binary_clause_.size();
+    if (num_workers <= 1) return;
 
-  // Tune LBD threshold for individual workers based on how the worker's buffer
-  // is. We aim to ensure workers can always export their fair share of clauses.
-  for (int id = 0; id < num_workers; ++id) {
-    UniqueClauseStream& stream = id_to_clause_stream_[id];
-    const int lbd_threshold = stream.lbd_threshold();
-    const int num_buffered_literals = stream.NumBufferedLiterals();
-    const bool underfull =
-        num_buffered_literals <
-        UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
-    const bool overfull =
-        num_buffered_literals >
-        2 * UniqueClauseStream::kMaxLiteralsPerBatch / num_workers;
-    const int new_lbd = std::clamp(lbd_threshold + underfull - overfull, 2,
-                                   UniqueClauseStream::kMaxClauseSize);
-    if (new_lbd != lbd_threshold) {
-      VLOG(2) << id_to_worker_name_[id]
-              << " sharing clauses with lbd <= " << new_lbd;
-      stream.set_lbd_threshold(new_lbd);
+    if (pending_batches_.size() >= num_full_workers_) {
+      batches_to_merge = std::move(pending_batches_);
     }
-  }
 
-  std::vector<int> ids(num_workers);
-  int literals_to_fill = UniqueClauseStream::kMaxLiteralsPerBatch;
-  for (int size = UniqueClauseStream::kMinClauseSize;
-       size <= UniqueClauseStream::kMaxClauseSize; ++size) {
-    ids.clear();
-    for (int id = 0; id < num_workers; ++id) {
-      if (id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) > 0) {
-        ids.push_back(id);
+    // Delete batches that have been consumed by all workers.
+    // Keep a few batches around for startup (min finished batch doesn't count
+    // workers that haven't registered yet).
+    if (batches_.size() > kMinBatches) {
+      const int min_finished_batch =
+          std::min<int>(batches_.size() - kMinBatches,
+                        *absl::c_min_element(id_to_last_finished_batch_) + 1);
+      for (int i = 0; i < min_finished_batch; ++i) {
+        VLOG(2) << "Erasing batch";
+        batches_.pop_front();
+      }
+      for (int id = 0; id < id_to_last_finished_batch_.size(); ++id) {
+        id_to_last_returned_batch_[id] -= min_finished_batch;
+        id_to_last_finished_batch_[id] -= min_finished_batch;
       }
     }
-    // Use progressive filling to attempt to fill the batch with clauses of
-    // minimum size, this is max-min fair.
-    while (!ids.empty()) {
-      const int clauses_to_fill = literals_to_fill / size;
-      if (clauses_to_fill == 0) break;
-      // Some workers need to export more clauses to fill the batch due to
-      // rounding, but we don't want all workers to round up.
-      const int num_to_round_up = clauses_to_fill % ids.size();
-      for (int i = 0; i < ids.size(); ++i) {
-        const bool round_up = i < num_to_round_up;
-        const int id = ids[i];
-        const int shared = id_to_clause_stream_[id].FillUpstreamBuffer(
-            all_clauses_, size, clauses_to_fill / ids.size() + round_up);
-        id_to_clauses_exported_[id] += shared;
-        if (shared == 0 ||
-            id_to_clause_stream_[id].NumBufferedLiteralsOfSize(size) == 0) {
-          ids[i] = ids.back();
-          ids.pop_back();
-          --i;
-        }
-      }
+    // TODO(user): We could cleanup binary clauses that have been consumed.
+  }
+  if (batches_to_merge.empty()) return;
+  UniqueClauseStream next_batch;
+  for (const auto& batch : batches_to_merge) {
+    for (int i = 0; i < batch.size(); ++i) {
+      next_batch.Add(batch[i]);
     }
   }
-  if (all_clauses_.NumBufferedLiterals() > 0) {
-    batches_.push_back(all_clauses_.NextBatch());
-    VLOG(2) << "Batch #" << batches_.size() << " w/ " << batches_.back().size()
-            << " clauses max size = "
-            << batches_.back()[batches_.back().size() - 1].size();
+  if (next_batch.NumBufferedLiterals() > 0) {
+    absl::MutexLock mutex_lock(mutex_);
+    VLOG(2) << "Merging batch";
+    batches_.push_back(next_batch.NextBatch());
   }
-  // Delete batches that have been consumed by all workers.
-  // Keep a few batches around for startup (min finished batch doesn't count
-  // workers that haven't registered yet).
-  // This also ensures that our fingerprint table always contains the last few
-  // batches, so we reduce the chance of an old buffered duplicate clause on
-  // a worker being emitted from the global stream multiple times.
-  if (batches_.size() < kMinBatches) return;
-  const int min_finished_batch =
-      std::min<int>(batches_.size() - kMinBatches,
-                    *absl::c_min_element(id_to_last_finished_batch_));
-  for (int i = 0; i < min_finished_batch; ++i) {
-    VLOG(2) << "Erasing batch";
-    for (int i = 0; i < batches_.front().size(); ++i) {
-      all_clauses_.Delete(batches_.front()[i]);
+}
+
+void SharedLinear2Bounds::Add(int id, Key expr, IntegerValue lb,
+                              IntegerValue ub) {
+  DCHECK(expr.IsCanonicalized()) << expr;
+
+  absl::MutexLock mutex_lock(mutex_);
+  auto [it, inserted] = shared_bounds_.insert({expr, {lb, ub}});
+  if (inserted) {
+    // It is new.
+    id_to_stats_[id].num_new++;
+    newly_updated_keys_.push_back(expr);
+  } else {
+    // Update the individual bounds if the new ones are better.
+    auto& bounds = it->second;
+    const bool update_lb = lb > bounds.first;
+    if (update_lb) bounds.first = lb;
+    const bool update_ub = ub < bounds.second;
+    if (update_ub) bounds.second = ub;
+    if (update_lb || update_ub) {
+      id_to_stats_[id].num_update++;
+      newly_updated_keys_.push_back(expr);
     }
-    batches_.pop_front();
   }
-  for (int id = 0; id < id_to_last_finished_batch_.size(); ++id) {
-    id_to_last_returned_batch_[id] -= min_finished_batch;
-    id_to_last_finished_batch_[id] -= min_finished_batch;
+}
+
+int SharedLinear2Bounds::RegisterNewImportId(std::string name) {
+  absl::MutexLock mutex_lock(mutex_);
+  const int import_id = import_id_to_index_.size();
+  import_id_to_name_.push_back(name);
+  import_id_to_index_.push_back(0);
+  import_id_to_num_imported_.push_back(0);
+  return import_id;
+}
+
+std::vector<
+    std::pair<SharedLinear2Bounds::Key, std::pair<IntegerValue, IntegerValue>>>
+SharedLinear2Bounds::NewlyUpdatedBounds(int import_id) {
+  std::vector<std::pair<Key, std::pair<IntegerValue, IntegerValue>>> result;
+
+  absl::MutexLock mutex_lock(mutex_);
+  MaybeCompressNewlyUpdateKeys();
+  const int size = newly_updated_keys_.size();
+  for (int i = import_id_to_index_[import_id]; i < size; ++i) {
+    const auto& key = newly_updated_keys_[i];
+    result.push_back({key, shared_bounds_[key]});
   }
-  // TODO(user): We could cleanup binary clauses that have been consumed.
+  import_id_to_index_[import_id] = size;
+  return result;
+}
+
+void SharedLinear2Bounds::MaybeCompressNewlyUpdateKeys() {
+  int min_index = 0;
+  for (const int index : import_id_to_index_) {
+    min_index = std::min(index, min_index);
+  }
+  if (min_index == 0) return;
+
+  newly_updated_keys_.erase(newly_updated_keys_.begin(),
+                            newly_updated_keys_.begin() + min_index);
+  for (int& index_ref : import_id_to_index_) {
+    index_ref -= min_index;
+  }
 }
 
 void SharedStatistics::AddStats(
     absl::Span<const std::pair<std::string, int64_t>> stats) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   for (const auto& [key, count] : stats) {
     stats_[key] += count;
   }
 }
 
 void SharedStatistics::Log(SolverLogger* logger) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (stats_.empty()) return;
 
   SOLVER_LOG(logger, "Stats across workers (summed):");

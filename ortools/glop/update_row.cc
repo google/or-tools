@@ -17,8 +17,8 @@
 #include <string>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/variables_info.h"
@@ -304,6 +304,9 @@ void UpdateRow::ComputeUpdatesColumnWise() {
   non_zero_position_list_.resize(matrix_.num_cols().value());
   auto* non_zeros = non_zero_position_list_.data();
 
+  const ColIndex first_slack =
+      matrix_.num_cols() - RowToColIndex(matrix_.num_rows());
+
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   const auto output_coeffs = coefficient_.view();
   const auto view = matrix_.view();
@@ -311,7 +314,9 @@ void UpdateRow::ComputeUpdatesColumnWise() {
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Coefficient of the column right inverse on the 'leaving_row'.
     const Fractional coeff =
-        view.ColumnScalarProduct(col, unit_row_left_inverse);
+        col >= first_slack
+            ? unit_row_left_inverse_[col - first_slack]
+            : view.ColumnScalarProduct(col, unit_row_left_inverse);
 
     // Nothing to do if 'coeff' is (almost) zero which does happen due to
     // sparsity. Note that it shouldn't be too bad to use a non-zero drop

@@ -13,6 +13,7 @@
 
 #include "ortools/graph/dag_constrained_shortest_path.h"
 
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -68,7 +69,7 @@ PathWithLength ConstrainedShortestPathsOnDag(
   }
 
   std::vector<ArcIndex> inverse_permutation =
-      GetInversePermutation(permutation);
+      internal::GetInversePermutation(permutation);
 
   const absl::StatusOr<std::vector<NodeIndex>> topological_order =
       util::graph::FastTopologicalSort(graph);
@@ -81,22 +82,14 @@ PathWithLength ConstrainedShortestPathsOnDag(
                                        *topological_order, sources,
                                        destinations, &max_resources);
 
-  PathWithLength path_with_length =
+  GraphPathWithLength<GraphType> path_with_length =
       constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
 
   ApplyMapping(inverse_permutation, path_with_length.arc_path);
 
-  return path_with_length;
-}
-
-std::vector<int> GetInversePermutation(absl::Span<const int> permutation) {
-  std::vector<int> inverse_permutation(permutation.size());
-  if (!permutation.empty()) {
-    for (int i = 0; i < permutation.size(); ++i) {
-      inverse_permutation[permutation[i]] = i;
-    }
-  }
-  return inverse_permutation;
+  return {.length = path_with_length.length,
+          .arc_path = std::move(path_with_length.arc_path),
+          .node_path = std::move(path_with_length.node_path)};
 }
 
 }  // namespace operations_research

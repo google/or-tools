@@ -19,11 +19,13 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
@@ -36,6 +38,17 @@
 
 namespace operations_research {
 namespace sat {
+
+// Callbacks that will be called when the search goes back to level 0.
+// Callbacks should return false if the propagation fails.
+//
+// We will call this after propagation has reached a fixed point. Note however
+// that if any callbacks "propagate" something, the callbacks following it might
+// not see a state where the propagation have been called again.
+// TODO(user): maybe we should re-propagate before calling the next callback.
+struct LevelZeroCallbackHelper {
+  std::vector<std::function<bool()>> callbacks;
+};
 
 // Value type of an integer variable. An integer variable is always bounded
 // on both sides, and this type is also used to store the bounds [lb, ub] of the
@@ -85,6 +98,13 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor > dividend);
   return result - adjust;
+}
+
+// When the case positive_divisor == 1 is frequent, this is faster.
+inline IntegerValue FloorRatioWithTest(IntegerValue dividend,
+                                       IntegerValue positive_divisor) {
+  if (positive_divisor == 1) return dividend;
+  return FloorRatio(dividend, positive_divisor);
 }
 
 // Overflows and saturated arithmetic.
@@ -173,7 +193,7 @@ inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
 inline std::string IntegerTermDebugString(IntegerVariable var,
                                           IntegerValue coeff) {
   coeff = VariableIsPositive(var) ? coeff : -coeff;
-  return absl::StrCat(coeff.value(), "*X", var.value() / 2);
+  return absl::StrCat(coeff.value(), "*I", GetPositiveOnlyIndex(var));
 }
 
 // Returns the vector of the negated variables.
@@ -305,13 +325,14 @@ struct AffineExpression {
 
   bool IsConstant() const { return var == kNoIntegerVariable; }
 
-  std::string DebugString() const {
-    if (var == kNoIntegerVariable) return absl::StrCat(constant.value());
-    if (constant == 0) {
-      return absl::StrCat("(", coeff.value(), " * X", var.value(), ")");
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const AffineExpression& expr) {
+    if (expr.constant == 0) {
+      absl::Format(&sink, "(%v)", IntegerTermDebugString(expr.var, expr.coeff));
     } else {
-      return absl::StrCat("(", coeff.value(), " * X", var.value(), " + ",
-                          constant.value(), ")");
+      absl::Format(&sink, "(%v + %d)",
+                   IntegerTermDebugString(expr.var, expr.coeff),
+                   expr.constant.value());
     }
   }
 
@@ -335,6 +356,176 @@ H AbslHashValue(H h, const AffineExpression& e) {
   return h;
 }
 
+// A linear expression with at most two variables (coeffs can be zero).
+// And some utility to canonicalize them.
+struct LinearExpression2 {
+  // Construct a zero expression.
+  LinearExpression2() = default;
+
+  LinearExpression2(IntegerVariable v1, IntegerVariable v2, IntegerValue c1,
+                    IntegerValue c2) {
+    vars[0] = v1;
+    vars[1] = v2;
+    coeffs[0] = c1;
+    coeffs[1] = c2;
+  }
+
+  // Build (v1 - v2)
+  static LinearExpression2 Difference(IntegerVariable v1, IntegerVariable v2) {
+    return LinearExpression2(v1, v2, 1, -1);
+  }
+
+  // Take the negation of this expression.
+  void Negate() {
+    vars[0] = NegationOf(vars[0]);
+    vars[1] = NegationOf(vars[1]);
+  }
+
+  // This will not change any bounds on the LinearExpression2.
+  // That is we will not potentially Negate() the expression like
+  // CanonicalizeAndUpdateBounds() might do.
+  // Note that since kNoIntegerVariable=-1 and we sort the variables, if we have
+  // one zero and one non-zero we will always have the zero first.
+  void SimpleCanonicalization();
+
+  // Fully canonicalizes the expression and updates the given bounds
+  // accordingly. This is the same as SimpleCanonicalization(), DivideByGcd()
+  // and the NegateForCanonicalization() with a proper updates of the bounds.
+  // Returns whether the expression was negated.
+  bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
+
+  // Divides the expression by the gcd of both coefficients, and returns it.
+  // Note that we always return something >= 1 even if both coefficients are
+  // zero.
+  IntegerValue DivideByGcd();
+
+  bool IsCanonicalized() const;
+
+  // Makes sure expr and -expr have the same canonical representation by
+  // negating the expression of it is in the non-canonical form. Returns true if
+  // the expression was negated.
+  bool NegateForCanonicalization();
+
+  void MakeVariablesPositive();
+
+  absl::Span<const IntegerVariable> non_zero_vars() const {
+    const int first = coeffs[0] == 0 ? 1 : 0;
+    const int last = coeffs[1] == 0 ? 0 : 1;
+    return absl::MakeSpan(&vars[first], last - first + 1);
+  }
+
+  absl::Span<const IntegerValue> non_zero_coeffs() const {
+    const int first = coeffs[0] == 0 ? 1 : 0;
+    const int last = coeffs[1] == 0 ? 0 : 1;
+    return absl::MakeSpan(&coeffs[first], last - first + 1);
+  }
+
+  bool operator==(const LinearExpression2& o) const {
+    return vars[0] == o.vars[0] && vars[1] == o.vars[1] &&
+           coeffs[0] == o.coeffs[0] && coeffs[1] == o.coeffs[1];
+  }
+
+  bool operator<(const LinearExpression2& o) const {
+    return std::tie(vars[0], vars[1], coeffs[0], coeffs[1]) <
+           std::tie(o.vars[0], o.vars[1], o.coeffs[0], o.coeffs[1]);
+  }
+
+  IntegerValue coeffs[2];
+  IntegerVariable vars[2] = {kNoIntegerVariable, kNoIntegerVariable};
+
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const LinearExpression2& expr) {
+    if (expr.coeffs[0] == 0) {
+      if (expr.coeffs[1] == 0) {
+        absl::Format(&sink, "0");
+      } else {
+        absl::Format(&sink, "%v",
+                     IntegerTermDebugString(expr.vars[1], expr.coeffs[1]));
+      }
+    } else {
+      absl::Format(&sink, "%v + %v",
+                   IntegerTermDebugString(expr.vars[0], expr.coeffs[0]),
+                   IntegerTermDebugString(expr.vars[1], expr.coeffs[1]));
+    }
+  }
+};
+
+// Encodes (a - b <= ub) in (linear2 <= ub) format.
+// Note that the returned expression is canonicalized and divided by its GCD.
+inline std::pair<LinearExpression2, IntegerValue> EncodeDifferenceLowerThan(
+    AffineExpression a, AffineExpression b, IntegerValue ub) {
+  LinearExpression2 expr;
+  expr.vars[0] = a.var;
+  expr.coeffs[0] = a.coeff;
+  expr.vars[1] = b.var;
+  expr.coeffs[1] = -b.coeff;
+  IntegerValue rhs = ub + b.constant - a.constant;
+
+  // Canonicalize.
+  expr.SimpleCanonicalization();
+  const IntegerValue gcd = expr.DivideByGcd();
+  rhs = FloorRatio(rhs, gcd);
+  return {std::move(expr), rhs};
+}
+
+template <typename H>
+H AbslHashValue(H h, const LinearExpression2& e) {
+  h = H::combine(std::move(h), e.vars[0]);
+  h = H::combine(std::move(h), e.vars[1]);
+  h = H::combine(std::move(h), e.coeffs[0]);
+  h = H::combine(std::move(h), e.coeffs[1]);
+  return h;
+}
+
+// Note that we only care about binary relation, not just simple variable bound.
+enum class RelationStatus { IS_TRUE, IS_FALSE, IS_UNKNOWN };
+class BestBinaryRelationBounds {
+ public:
+  // Register the fact that expr \in [lb, ub] is true.
+  //
+  // If lb==kMinIntegerValue it only register that expr <= ub (and symmetrically
+  // for ub==kMaxIntegerValue).
+  //
+  // Returns for each of the bound if it was restricted (added/updated), if it
+  // was ignored because a better or equal bound was already present, or if it
+  // was rejected because it was invalid (e.g. the expression was a degenerate
+  // linear2 or the bound was a min/max value).
+  enum class AddResult {
+    ADDED,
+    UPDATED,
+    NOT_BETTER,
+    INVALID,
+  };
+  std::pair<AddResult, AddResult> Add(LinearExpression2 expr, IntegerValue lb,
+                                      IntegerValue ub);
+
+  // Returns the known status of expr <= bound.
+  RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
+                           IntegerValue ub) const;
+
+  // Return a valid upper-bound on the given LinearExpression2. Note that we
+  // assume kMaxIntegerValue is always valid and returns it if we don't have an
+  // entry in the hash-map.
+  IntegerValue GetUpperBound(LinearExpression2 expr) const;
+
+  // Same as GetUpperBound() but assume the expression is already canonicalized.
+  // This is slightly faster.
+  IntegerValue UpperBoundWhenCanonicalized(LinearExpression2 expr) const;
+
+  int64_t num_bounds() const { return best_bounds_.size(); }
+
+  std::vector<std::pair<LinearExpression2, IntegerValue>>
+  GetSortedNonTrivialUpperBounds() const;
+
+  std::vector<std::tuple<LinearExpression2, IntegerValue, IntegerValue>>
+  GetSortedNonTrivialBounds() const;
+
+ private:
+  // The best bound on the given "canonicalized" expression.
+  absl::flat_hash_map<LinearExpression2, std::pair<IntegerValue, IntegerValue>>
+      best_bounds_;
+};
+
 // A model singleton that holds the root level integer variable domains.
 // we just store a single domain for both var and its negation.
 struct IntegerDomains
@@ -344,10 +535,18 @@ struct IntegerDomains
 // can check that various derived constraint do not exclude this solution (if it
 // is a known optimal solution for instance).
 struct DebugSolution {
+  void Clear() {
+    proto_values.clear();
+    ivar_has_value.clear();
+    ivar_values.clear();
+  }
+
   // This is the value of all proto variables.
   // It should be of the same size of the PRESOLVED model and should correspond
   // to a solution to the presolved model.
   std::vector<int64_t> proto_values;
+
+  IntegerValue inner_objective_value = kMinIntegerValue;
 
   // This is filled from proto_values at load-time, and using the
   // cp_model_mapping, we cache the solution of the integer variables that are
@@ -391,6 +590,28 @@ std::ostream& operator<<(std::ostream& os, const ValueLiteralPair& p);
 DEFINE_STRONG_INDEX_TYPE(IntervalVariable);
 const IntervalVariable kNoIntervalVariable(-1);
 
+// This functions appears in hot spot, and so it is important to inline it.
+//
+// TODO(user): Maybe introduce a CanonicalizedLinear2 class so we automatically
+// get the better function, and it documents when we have canonicalized
+// expression.
+inline IntegerValue BestBinaryRelationBounds::UpperBoundWhenCanonicalized(
+    LinearExpression2 expr) const {
+  DCHECK_EQ(expr.DivideByGcd(), 1);
+  DCHECK(expr.IsCanonicalized());
+  const bool negated = expr.NegateForCanonicalization();
+  const auto it = best_bounds_.find(expr);
+  if (it != best_bounds_.end()) {
+    const auto [known_lb, known_ub] = it->second;
+    if (negated) {
+      return -known_lb;
+    } else {
+      return known_ub;
+    }
+  }
+  return kMaxIntegerValue;
+}
+
 // ============================================================================
 // Implementation.
 // ============================================================================
@@ -431,8 +652,8 @@ inline IntegerLiteral AffineExpression::GreaterOrEqual(
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::GreaterOrEqual(var,
-                                        CeilRatio(bound - constant, coeff));
+  return IntegerLiteral::GreaterOrEqual(
+      var, coeff == 1 ? bound - constant : CeilRatio(bound - constant, coeff));
 }
 
 // var * coeff + constant <= bound.
@@ -442,7 +663,8 @@ inline IntegerLiteral AffineExpression::LowerOrEqual(IntegerValue bound) const {
                              : IntegerLiteral::FalseLiteral();
   }
   DCHECK_GT(coeff, 0);
-  return IntegerLiteral::LowerOrEqual(var, FloorRatio(bound - constant, coeff));
+  return IntegerLiteral::LowerOrEqual(
+      var, coeff == 1 ? bound - constant : FloorRatio(bound - constant, coeff));
 }
 
 }  // namespace sat

@@ -31,29 +31,6 @@ endif()
 target_link_libraries(knapsack_solver_pybind11 PRIVATE ${PROJECT_NAMESPACE}::ortools)
 add_library(${PROJECT_NAMESPACE}::knapsack_solver_pybind11 ALIAS knapsack_solver_pybind11)
 
-# set_cover
-pybind11_add_module(set_cover_pybind11 MODULE set_cover.cc)
-set_target_properties(set_cover_pybind11 PROPERTIES
-  LIBRARY_OUTPUT_NAME "set_cover")
-
-# note: macOS is APPLE and also UNIX !
-if(APPLE)
-  set_target_properties(set_cover_pybind11 PROPERTIES
-    SUFFIX ".so"
-    INSTALL_RPATH "@loader_path;@loader_path/../../../${PYTHON_PROJECT}/.libs"
-    )
-elseif(UNIX)
-  set_target_properties(set_cover_pybind11 PROPERTIES
-    INSTALL_RPATH "$ORIGIN:$ORIGIN/../../../${PYTHON_PROJECT}/.libs"
-    )
-endif()
-
-target_link_libraries(set_cover_pybind11 PRIVATE
-  ${PROJECT_NAMESPACE}::ortools
-  pybind11_native_proto_caster
-)
-add_library(${PROJECT_NAMESPACE}::set_cover_pybind11 ALIAS set_cover_pybind11)
-
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)

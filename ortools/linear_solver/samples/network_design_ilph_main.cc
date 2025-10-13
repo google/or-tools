@@ -11,13 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "absl/base/log_severity.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/samples/network_design_ilph.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
@@ -29,6 +31,7 @@ using operations_research::MPSolver;
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::CapacityPlanningInstance request;
   operations_research::CapacityPlanningProblem problem;
   ::absl::Status status =

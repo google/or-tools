@@ -11,211 +11,323 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// StrongInt is a simple template class mechanism for defining "logical"
-// integer-like class types that support many of the same functionalities
-// as native integer types, but which prevent assignment, construction, and
-// other operations from other similar integer-like types.  Essentially, the
-// template class StrongInt<StrongIntName, ValueType> (where ValueType assumes
-// valid scalar types such as int, uint, int32_t, etc) has the additional
-// property that it cannot be assigned to or constructed from other StrongInts
-// or native integer types of equal or implicitly convertible type.
+// StrongInt<T> is a simple template class mechanism for defining "logical"
+// integer-like class types that support almost all of the same functionality
+// as native integer types, but which prevents assignment, construction, and
+// other operations from other integer-like types.  In other words, you cannot
+// assign from raw integer types or other StrongInt<> types, nor can you do
+// most arithmetic or logical operations.  This provides a simple form of
+// dimensionality in that you can add two instances of StrongInt<T>, producing
+// a StrongInt<T>, but you can not add a StrongInt<T> and a raw T nor can you
+// add a StrongInt<T> and a StrongInt<U>.  Generally an arithmetic operator is
+// defined here if and only if its mathematical result would be a quantity with
+// the same dimension.  Details on supported operations are below.
 //
-// The class is useful for preventing mingling of integer variables with
-// different logical roles or units.  Unfortunately, C++ provides relatively
-// good type-safety for user-defined classes but not for integer types.  It is
-// essentially up to the user to use nice variable names and comments to prevent
-// accidental mismatches, such as confusing a user-index with a group-index or a
-// time-in-milliseconds with a time-in-seconds.  The use of typedefs are limited
-// in that regard as they do not enforce type-safety.
+// In addition to type strength, StrongInt provides a way to inject (optional)
+// validation of the various operations.  This allows you to define StrongInt
+// types that check for overflow conditions and react in standard or custom
+// ways.
 //
-// USAGE -----------------------------------------------------------------------
+// A StrongInt<T> with a NullStrongIntValidator should compile away to a raw T
+// in optimized mode.  What this means is that the generated assembly for:
 //
-//    DEFINE_STRONG_INT_TYPE(StrongIntName, ValueType);
+//   int64_t foo = 123;
+//   int64_t bar = 456;
+//   int64_t baz = foo + bar;
+//   constexpr int64_t fubar = 789;
 //
-//  where:
-//    StrongIntName: is the desired (unique) name for the "logical" integer type
-//    ValueType: is one of the integral types as defined by std::is_integral
-//               (see <type_traits>).
+// ...should be identical to the generated assembly for:
 //
-// DISALLOWED OPERATIONS / TYPE-SAFETY ENFORCEMENT -----------------------------
+//    DEFINE_STRONG_INT_TYPE(MyStrongInt, int64_t);
+//    MyStrongInt foo(123);
+//    MyStrongInt bar(456);
+//    MyStrongInt baz = foo + bar;
+//    constexpr MyStrongInt fubar(789);
 //
-//  Consider these definitions and variable declarations:
-//    DEFINE_STRONG_INT_TYPE(GlobalDocID, int64_t);
-//    DEFINE_STRONG_INT_TYPE(LocalDocID, int64_t);
-//    GlobalDocID global;
-//    LocalDocID local;
+// Since the methods are all inline and non-virtual and the class has just
+// one data member, the compiler can erase the StrongInt class entirely in its
+// code-generation phase.  This also means that you can pass StrongInt<T>
+// around by value just as you would a raw T.
 //
-//  The class StrongInt prevents:
+// It is important to note that StrongInt does NOT generate compile time
+// warnings or errors for overflows on implicit constant conversions.
+// For example, the below demonstrates a case where the 2 are not equivalent
+// at compile time and can lead to subtle initialization bugs:
 //
-//  1) Assignments of other StrongInts with different StrongIntNames.
+//    DEFINE_STRONG_INT_TYPE(MyStrongInt8, int8_t);
+//    int8_t foo = 1024;        // Compile error: const conversion to ...
+//    MyStrongInt8 foo(1024); // Compiles ok: foo has undefined / 0 value.
 //
-//    global = local;                  <-- Fails to compile!
-//    local = global;                  <-- Fails to compile!
+// Usage:
+//   DEFINE_STRONG_INT_TYPE(Name, NativeType);
 //
-//  2) Explicit/implicit conversion from an StrongInt to another StrongInt.
+//     Defines a new StrongInt type named 'Name' in the current namespace with
+//     no validation of operations.
 //
-//    LocalDocID l(global);            <-- Fails to compile!
-//    LocalDocID l = global;           <-- Fails to compile!
+//     Name: The desired name for the new StrongInt typedef.  Must be unique
+//         within the current namespace.
+//     NativeType: The primitive integral type this StrongInt will hold, as
+//         defined by std::numeric_limits::is_integer (see <type_traits>).
 //
-//    void GetGlobalDoc(GlobalDocID global) { }
-//    GetGlobalDoc(global);            <-- Compiles fine, types match!
-//    GetGlobalDoc(local);             <-- Fails to compile!
+//  StrongInt<TagType, NativeType, ValidatorType = NullStrongIntValidator>
 //
-//  3) Implicit conversion from an StrongInt to a native integer type.
+//    Creates a new StrongInt instance directly.
 //
-//    void GetGlobalDoc(int64_t global) { ...
-//    GetGlobalDoc(global);            <-- Fails to compile!
-//    GetGlobalDoc(local);             <-- Fails to compile!
+//     TagType: The unique type which discriminates this StrongInt<T> from
+//         other StrongInt<U> types.
+//     NativeType: The primitive integral type this StrongInt will hold, as
+//         defined by std::numeric_limits::is_integer (see <type_traits>).
+//     ValidatorType: The type of validation used by this StrongInt type.  A
+//         few pre-built validator types are provided here, but the caller can
+//         define any custom validator they desire.
 //
-//    void GetLocalDoc(int32_t local) { ...
-//    GetLocalDoc(global);             <-- Fails to compile!
-//    GetLocalDoc(local);              <-- Fails to compile!
+// Supported operations:
+//     StrongInt<T> = StrongInt<T>
+//     !StrongInt<T> => bool
+//     ~StrongInt<T> => StrongInt<T>
+//     -StrongInt<T> => StrongInt<T>
+//     +StrongInt<T> => StrongInt<T>
+//     ++StrongInt<T> => StrongInt<T>
+//     StrongInt<T>++ => StrongInt<T>
+//     --StrongInt<T> => StrongInt<T>
+//     StrongInt<T>-- => StrongInt<T>
+//     StrongInt<T> + StrongInt<T> => StrongInt<T>
+//     StrongInt<T> - StrongInt<T> => StrongInt<T>
+//     StrongInt<T> * (numeric type) => StrongInt<T>
+//     StrongInt<T> / (numeric type) => StrongInt<T>
+//     StrongInt<T> % (numeric type) => StrongInt<T>
+//     StrongInt<T> << (numeric type) => StrongInt<T>
+//     StrongInt<T> >> (numeric type) => StrongInt<T>
+//     StrongInt<T> & StrongInt<T> => StrongInt<T>
+//     StrongInt<T> | StrongInt<T> => StrongInt<T>
+//     StrongInt<T> ^ StrongInt<T> => StrongInt<T>
 //
+//   For binary operations, the equivalent op-equal (eg += vs. +) operations are
+//   also supported.  Other operator combinations should cause compile-time
+//   errors.
 //
-// SUPPORTED OPERATIONS --------------------------------------------------------
+//   This class also provides a .value() accessor method and defines a hash
+//   functor that allows the IntType to be used as key to hashable containers.
 //
-// The following operators are supported: unary: ++ (both prefix and postfix),
-// +, -, ! (logical not), ~ (one's complement); comparison: ==, !=, <, <=, >,
-// >=; numerical: +, -, *, /; assignment: =, +=, -=, /=, *=; stream: <<. Each
-// operator allows the same StrongIntName and the ValueType to be used on
-// both left- and right-hand sides.
+//   This class can be streamed to LOG(), and printed using absl::StrCat(),
+//   absl::Substitute(), and absl::StrFormat(). Use the "%v" format specifier
+//   with absl::StrFormat().
 //
-// It also supports an accessor value() returning the stored value as ValueType,
-// and a templatized accessor value<T>() method that serves as syntactic sugar
-// for static_cast<T>(var.value()).  These accessors are useful when assigning
-// the stored value into protocol buffer fields and using it as printf args.
-//
-// The class also defines a hash functor that allows the StrongInt to be used
-// as key to hashable containers such as hash_map and hash_set.
-//
-// We suggest using the StrongIntIndexedContainer wrapper around google3's
-// FixedArray and STL vector (see int-type-indexed-container.h) if an StrongInt
-// is intended to be used as an index into these containers.  These wrappers are
-// indexed in a type-safe manner using StrongInts to ensure type-safety.
-//
-// NB: this implementation does not attempt to abide by or enforce dimensional
-// analysis on these scalar types.
-//
-// EXAMPLES --------------------------------------------------------------------
-//
-//    DEFINE_STRONG_INT_TYPE(GlobalDocID, int64_t);
-//    GlobalDocID global = 3;
-//    std::cout << global;                      <-- Prints 3 to stdout.
-//
-//    for (GlobalDocID i(0); i < global; ++i) {
-//      std::cout << i;
-//    }                                    <-- Print(ln)s 0 1 2 to stdout
-//
-//    DEFINE_STRONG_INT_TYPE(LocalDocID, int64_t);
-//    LocalDocID local;
-//    std::cout << local;                       <-- Prints 0 to stdout it
-//    default
-//                                             initializes the value to 0.
-//
-//    local = 5;
-//    local *= 2;
-//    LocalDocID l(local);
-//    std::cout << l + local;                   <-- Prints 20 to stdout.
-//
-//    GenericSearchRequest request;
-//    request.set_doc_id(global.value());  <-- Uses value() to extract the value
-//                                             from the StrongInt class.
-//
-// REMARKS ---------------------------------------------------------------------
-//
-// The following bad usage is permissible although discouraged.  Essentially, it
-// involves using the value*() accessors to extract the native integer type out
-// of the StrongInt class.  Keep in mind that the primary reason for the
-// StrongInt class is to prevent *accidental* mingling of similar logical
-// integer types -- and not type casting from one type to another.
-//
-//  DEFINE_STRONG_INT_TYPE(GlobalDocID, int64_t);
-//  DEFINE_STRONG_INT_TYPE(LocalDocID, int64_t);
-//  GlobalDocID global;
-//  LocalDocID local;
-//
-//  global = local.value();                       <-- Compiles fine.
-//
-//  void GetGlobalDoc(GlobalDocID global) { ...
-//  GetGlobalDoc(local.value());                  <-- Compiles fine.
-//
-//  void GetGlobalDoc(int64_t global) { ...
-//  GetGlobalDoc(local.value());                  <-- Compiles fine.
+// Validators:
+//   NullStrongIntValidator: Do no validation.  This should be entirely
+//       optimized away by the compiler.
 
 #ifndef OR_TOOLS_BASE_STRONG_INT_H_
 #define OR_TOOLS_BASE_STRONG_INT_H_
 
-#include <stddef.h>
-
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iosfwd>
-#include <ostream>  // NOLINT
+#include <iterator>
+#include <limits>
+#include <ostream>
+#include <string>
 #include <type_traits>
+#include <utility>
 
-#include "absl/base/port.h"
+#include "absl/meta/type_traits.h"
+#include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
+#include "absl/strings/substitute.h"
 
 namespace util_intops {
 
-template <typename StrongIntName, typename _ValueType>
+// Define the validators which can be plugged-in to make StrongInt resilient to
+// things like overflows. This is a do-nothing implementation of the
+// compile-time interface.
+//
+// NOTE: For all validation functions that operate on an existing StrongInt<T>,
+// the type argument 'T' *must* be StrongInt<T>::ValueType (the int type being
+// strengthened).
+struct NullStrongIntValidator {
+  // Note that this templated default implementation has an arbitrary bool
+  // return value for the sole purpose of conforming to c++11 constexpr.
+  //
+  // Custom validator implementations can choose to return void or use a similar
+  // return value constexpr construct if constexpr initialization is desirable.
+  //
+  // The StrongInt class does not care about or use the returned value. Any
+  // returned value is solely there to allow the constexpr declaration; custom
+  // validators can only fail / abort when detecting an invalid value.
+  //
+  // For example, other than the constexpr behavior, the below 2 custom
+  // validator implementations are logically equivalent:
+  //
+  //   template<typename T, typename U>
+  //   static void ValidateInit(U arg) {
+  //     if (arg < 0) LOG(FATAL) << "arg < 0";
+  //   }
+  //
+  //   template<typename T, typename U>
+  //   static constexpr bool ValidateInit(U arg) {
+  //     return (arg < 0) ? (LOG(FATAL) << "arg < 0", false) : false;
+  //   }
+  //
+  // A constexpr implementation has the added advantage that the validation can
+  // take place (fail) at compile time.
+
+  // Verify initialization of StrongInt<T> from arg, type U.
+  template <typename T, typename U>
+  static constexpr bool ValidateInit(U /*arg*/) {
+    return true;
+  }
+  // Verify -value.
+  template <typename T>
+  static constexpr bool ValidateNegate(T /*value*/) {
+    return true;
+  }
+  // Verify ~value;
+  template <typename T>
+  static constexpr bool ValidateBitNot(T /*value*/) {
+    return true;
+  }
+  // Verify lhs + rhs.
+  template <typename T>
+  static constexpr bool ValidateAdd(T /*lhs*/, T /*rhs*/) {
+    return true;
+  }
+  // Verify lhs - rhs.
+  template <typename T>
+  static constexpr bool ValidateSubtract(T /*lhs*/, T /*rhs*/) {
+    return true;
+  }
+  // Verify lhs * rhs.
+  template <typename T, typename U>
+  static constexpr bool ValidateMultiply(T /*lhs*/, U /*rhs*/) {
+    return true;
+  }
+  // Verify lhs / rhs.
+  template <typename T, typename U>
+  static constexpr bool ValidateDivide(T /*lhs*/, U /*rhs*/) {
+    return true;
+  }
+  // Verify lhs % rhs.
+  template <typename T, typename U>
+  static constexpr bool ValidateModulo(T /*lhs*/, U /*rhs*/) {
+    return true;
+  }
+  // Verify lhs << rhs.
+  template <typename T>
+  static constexpr bool ValidateLeftShift(T /*lhs*/, int64_t /*rhs*/) {
+    return true;
+  }
+  // Verify lhs >> rhs.
+  template <typename T>
+  static constexpr bool ValidateRightShift(T /*lhs*/, int64_t /*rhs*/) {
+    return true;
+  }
+  // Verify lhs & rhs.
+  template <typename T>
+  static constexpr bool ValidateBitAnd(T /*lhs*/, T /*rhs*/) {
+    return true;
+  }
+  // Verify lhs | rhs.
+  template <typename T>
+  static constexpr bool ValidateBitOr(T /*lhs*/, T /*rhs*/) {
+    return true;
+  }
+  // Verify lhs ^ rhs.
+  template <typename T>
+  static constexpr bool ValidateBitXor(T /*lhs*/, T /*rhs*/) {
+    return true;
+  }
+};
+
+template <typename TagType, typename NativeType,
+          typename ValidatorType = NullStrongIntValidator>
 class StrongInt;
 
-// Defines the StrongInt using value_type and typedefs it to int_type_name.
-// The struct int_type_name ## _tag_ trickery is needed to ensure that a new
-// type is created per int_type_name.
-#define DEFINE_STRONG_INT_TYPE(int_type_name, value_type)                    \
-  struct int_type_name##_tag_ {                                              \
-    static constexpr absl::string_view TypeName() { return #int_type_name; } \
-  };                                                                         \
-  typedef ::util_intops::StrongInt<int_type_name##_tag_, value_type>         \
-      int_type_name;
+// Type trait for detecting if a type T is a StrongInt type.
+template <typename T>
+struct IsStrongInt : public std::false_type {};
 
-// Holds a integral value (of type ValueType) and behaves as a
-// ValueType by exposing assignment, unary, comparison, and arithmetic
+template <typename... Ts>
+struct IsStrongInt<StrongInt<Ts...>> : public std::true_type {};
+
+// C++17-style helper variable template.
+template <typename T>
+inline constexpr bool IsStrongIntV = IsStrongInt<T>::value;
+
+// Holds a google3-supported integer value (of type NativeType) and behaves as
+// a NativeType by exposing assignment, unary, comparison, and arithmetic
 // operators.
 //
-// The template parameter StrongIntName defines the name for the int type and
-// must be unique within a binary (the convenient DEFINE_STRONG_INT macro at the
-// end of the file generates a unique StrongIntName).  The parameter ValueType
-// defines the integer type value (see supported list above).
-//
 // This class is NOT thread-safe.
-template <typename StrongIntName, typename _ValueType>
+template <typename TagType, typename NativeType, typename ValidatorType>
 class StrongInt {
  public:
-  typedef _ValueType ValueType;  // for non-member operators
-  typedef StrongInt<StrongIntName, ValueType> ThisType;  // Syntactic sugar.
+  typedef NativeType ValueType;
 
-  static constexpr absl::string_view TypeName() {
-    return StrongIntName::TypeName();
-  }
-
-  // Note that this may change from time to time without notice.
-  // See .
   struct Hasher {
-    size_t operator()(const StrongInt& arg) const {
-      return static_cast<size_t>(arg.value());
+    size_t operator()(const StrongInt& x) const {
+      return static_cast<size_t>(x.value());
     }
   };
 
- public:
-  // Default c'tor initializing value_ to 0.
-  constexpr StrongInt() : value_(0) {}
-  // C'tor explicitly initializing from a ValueType.
-  constexpr explicit StrongInt(ValueType value) : value_(value) {}
+  static constexpr absl::string_view TypeName() { return TagType::TypeName(); }
 
-  // StrongInt uses the default copy constructor, destructor and assign
-  // operator. The defaults are sufficient and omitting them allows the compiler
-  // to add the move constructor/assignment.
+  // Default value initialization.
+  constexpr StrongInt()
+      : value_((ValidatorType::template ValidateInit<ValueType>(NativeType()),
+                NativeType())) {}
 
-  // -- ACCESSORS --------------------------------------------------------------
-  // The class provides a value() accessor returning the stored ValueType value_
-  // as well as a templatized accessor that is just a syntactic sugar for
-  // static_cast<T>(var.value());
+  // Explicit initialization from another StrongInt type that has an
+  // implementation of:
+  //
+  //    ToType StrongIntConvert(FromType source, ToType*);
+  //
+  // This uses Argument Dependent Lookup (ADL) to find which function to
+  // call.
+  //
+  // Example: Assume you have two StrongInt types.
+  //
+  //      DEFINE_STRONG_INT_TYPE(Bytes, int64_t);
+  //      DEFINE_STRONG_INT_TYPE(Megabytes, int64_t);
+  //
+  //  If you want to be able to (explicitly) construct an instance of Bytes from
+  //  an instance of Megabytes, simply define a converter function in the same
+  //  namespace as either Bytes or Megabytes (or both):
+  //
+  //      Megabytes StrongIntConvert(Bytes arg, Megabytes* /* unused */) {
+  //        return Megabytes((arg >> 20).value());
+  //      };
+  //
+  //  The second argument is needed to differentiate conversions, and it always
+  //  passed as NULL.
+  template <typename ArgTagType, typename ArgNativeType,
+            typename ArgValidatorType>
+  explicit constexpr StrongInt(
+      StrongInt<ArgTagType, ArgNativeType, ArgValidatorType> arg)
+      // We have to pass both the "from" type and the "to" type as args for the
+      // conversions to be differentiated.  The converter can not be a template
+      // because explicit template call syntax defeats ADL.
+      : value_(
+            StrongIntConvert(arg, static_cast<StrongInt*>(nullptr)).value()) {}
+
+  // Explicit initialization from a numeric primitive.
+  template <
+      class T,
+      class = std::enable_if_t<std::is_same_v<
+          decltype(static_cast<ValueType>(std::declval<T>())), ValueType>>>
+  explicit constexpr StrongInt(T init_value)
+      : value_((ValidatorType::template ValidateInit<ValueType>(init_value),
+                static_cast<ValueType>(init_value))) {}
+
+  // Use the default copy constructor, assignment, and destructor.
+
+  // Accesses the raw value.
   constexpr ValueType value() const { return value_; }
 
+  // Accesses the raw value, with cast.
+  // Primarily for compatibility with int-type.h
   template <typename ValType>
   constexpr ValType value() const {
     return static_cast<ValType>(value_);
@@ -224,87 +336,143 @@ class StrongInt {
   // Explicitly cast the raw value only if the underlying value is convertible
   // to T.
   template <typename T,
-            typename = std::enable_if_t<std::conjunction_v<
+            typename = absl::enable_if_t<absl::conjunction<
                 std::bool_constant<std::numeric_limits<T>::is_integer>,
-                std::is_convertible<ValueType, T>>>>
+                std::is_convertible<ValueType, T>>::value>>
   constexpr explicit operator T() const {
-    return static_cast<T>(value_);
+    return value_;
   }
 
-  // -- UNARY OPERATORS --------------------------------------------------------
-  ThisType& operator++() {  // prefix ++
+  // Metadata functions.
+  static constexpr StrongInt Max() {
+    return StrongInt(std::numeric_limits<ValueType>::max());
+  }
+  static constexpr StrongInt Min() {
+    return StrongInt(std::numeric_limits<ValueType>::min());
+  }
+
+  // Unary operators.
+  bool operator!() const { return value_ == 0; }
+  StrongInt operator+() const { return StrongInt(value_); }
+  StrongInt operator-() const {
+    ValidatorType::template ValidateNegate<ValueType>(value_);
+    return StrongInt(-value_);
+  }
+  StrongInt operator~() const {
+    ValidatorType::template ValidateBitNot<ValueType>(value_);
+    return StrongInt(ValueType(~value_));
+  }
+
+  // Increment and decrement operators.
+  StrongInt& operator++() {  // ++x
+    ValidatorType::template ValidateAdd<ValueType>(value_, ValueType(1));
     ++value_;
     return *this;
   }
-  const ThisType operator++(int v) {  // postfix ++
-    ThisType temp(*this);
+  StrongInt operator++(int /*postfix_flag*/) {  // x++
+    ValidatorType::template ValidateAdd<ValueType>(value_, ValueType(1));
+    StrongInt temp(*this);
     ++value_;
     return temp;
   }
-  ThisType& operator--() {  // prefix --
+  StrongInt& operator--() {  // --x
+    ValidatorType::template ValidateSubtract<ValueType>(value_, ValueType(1));
     --value_;
     return *this;
   }
-  const ThisType operator--(int v) {  // postfix --
-    ThisType temp(*this);
+  StrongInt operator--(int /*postfix_flag*/) {  // x--
+    ValidatorType::template ValidateSubtract<ValueType>(value_, ValueType(1));
+    StrongInt temp(*this);
     --value_;
     return temp;
   }
 
-  constexpr bool operator!() const { return value_ == 0; }
-  constexpr const ThisType operator+() const { return ThisType(value_); }
-  constexpr const ThisType operator-() const { return ThisType(-value_); }
-  constexpr const ThisType operator~() const { return ThisType(~value_); }
-
-  // -- ASSIGNMENT OPERATORS ---------------------------------------------------
-  // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
-  // and %= for both ThisType and ValueType.
-#define STRONG_INT_TYPE_ASSIGNMENT_OP(op)             \
-  ThisType& operator op(const ThisType & arg_value) { \
-    value_ op arg_value.value();                      \
-    return *this;                                     \
-  }                                                   \
-  ThisType& operator op(ValueType arg_value) {        \
-    value_ op arg_value;                              \
-    return *this;                                     \
-  }
-  STRONG_INT_TYPE_ASSIGNMENT_OP(+=);
-  STRONG_INT_TYPE_ASSIGNMENT_OP(-=);
-  STRONG_INT_TYPE_ASSIGNMENT_OP(*=);
-  STRONG_INT_TYPE_ASSIGNMENT_OP(/=);
-  STRONG_INT_TYPE_ASSIGNMENT_OP(<<=);  // NOLINT
-  STRONG_INT_TYPE_ASSIGNMENT_OP(>>=);  // NOLINT
-  STRONG_INT_TYPE_ASSIGNMENT_OP(%=);
-#undef STRONG_INT_TYPE_ASSIGNMENT_OP
-
-  ThisType& operator=(ValueType arg_value) {
-    value_ = arg_value;
+  // Action-Assignment operators.
+  StrongInt& operator+=(StrongInt arg) {
+    ValidatorType::template ValidateAdd<ValueType>(value_, arg.value());
+    value_ += arg.value();
     return *this;
+  }
+  StrongInt& operator-=(StrongInt arg) {
+    ValidatorType::template ValidateSubtract<ValueType>(value_, arg.value());
+    value_ -= arg.value();
+    return *this;
+  }
+  template <typename ArgType,
+            std::enable_if_t<!IsStrongIntV<ArgType>>* = nullptr>
+  StrongInt& operator*=(ArgType arg) {
+    ValidatorType::template ValidateMultiply<ValueType, ArgType>(value_, arg);
+    value_ *= arg;
+    return *this;
+  }
+  template <typename ArgType,
+            std::enable_if_t<!IsStrongIntV<ArgType>>* = nullptr>
+  StrongInt& operator/=(ArgType arg) {
+    ValidatorType::template ValidateDivide<ValueType, ArgType>(value_, arg);
+    value_ /= arg;
+    return *this;
+  }
+  template <typename ArgType,
+            std::enable_if_t<!IsStrongIntV<ArgType>>* = nullptr>
+  StrongInt& operator%=(ArgType arg) {
+    ValidatorType::template ValidateModulo<ValueType, ArgType>(value_, arg);
+    value_ %= arg;
+    return *this;
+  }
+  StrongInt& operator<<=(int64_t arg) {  // NOLINT(whitespace/operators)
+    ValidatorType::template ValidateLeftShift<ValueType>(value_, arg);
+    value_ <<= arg;
+    return *this;
+  }
+  StrongInt& operator>>=(int64_t arg) {  // NOLINT(whitespace/operators)
+    ValidatorType::template ValidateRightShift<ValueType>(value_, arg);
+    value_ >>= arg;
+    return *this;
+  }
+  StrongInt& operator&=(StrongInt arg) {
+    ValidatorType::template ValidateBitAnd<ValueType>(value_, arg.value());
+    value_ &= arg.value();
+    return *this;
+  }
+  StrongInt& operator|=(StrongInt arg) {
+    ValidatorType::template ValidateBitOr<ValueType>(value_, arg.value());
+    value_ |= arg.value();
+    return *this;
+  }
+  StrongInt& operator^=(StrongInt arg) {
+    ValidatorType::template ValidateBitXor<ValueType>(value_, arg.value());
+    value_ ^= arg.value();
+    return *this;
+  }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const StrongInt& i) {
+    return H::combine(std::move(h), i.value_);
   }
 
  private:
   // The integer value of type ValueType.
   ValueType value_;
 
-  COMPILE_ASSERT(std::is_integral<ValueType>::value,
-                 invalid_integer_type_for_id_type_);
-} ABSL_ATTRIBUTE_PACKED;
+  static_assert(std::numeric_limits<ValueType>::is_integer,
+                "invalid integer type for strong int");
+};
 
-// -- NON-MEMBER STREAM OPERATORS ----------------------------------------------
-// We provide the << operator, primarily for logging purposes.  Currently, there
-// seems to be no need for an >> operator.
-template <typename StrongIntName, typename ValueType>
-std::ostream& operator<<(std::ostream& os,  // NOLINT
-                         StrongInt<StrongIntName, ValueType> arg) {
-  return os << arg.value();
-}
-
-// Define AbslStringify, for absl::StrAppend, absl::StrCat, and absl::StrFormat.
+// Define AbslStringify, for logging, absl::StrCat, and absl::StrFormat.
+// Abseil logging prefers using AbslStringify over operator<<.
 //
 // When using StrongInt with absl::StrFormat, use the "%v" specifier.
+//
+// Note: The user is also able to provide a custom AbslStringify. Example:
+//
+//    DEFINE_STRONG_INT_TYPE(MyStrongInt, int64_t);
+//
+//    template <typename Sink>
+//    void AbslStringify(Sink &sink, MyStrongInt arg) { ... }
 template <typename Sink, typename... T>
 void AbslStringify(Sink& sink, StrongInt<T...> arg) {
   using ValueType = typename decltype(arg)::ValueType;
+
   // int8_t/uint8_t are not supported by the "%v" specifier due to it being
   // ambiguous whether an integer or character should be printed.
   if constexpr (std::is_same_v<ValueType, int8_t>) {
@@ -316,74 +484,136 @@ void AbslStringify(Sink& sink, StrongInt<T...> arg) {
   }
 }
 
-// -- NON-MEMBER ARITHMETIC OPERATORS ------------------------------------------
-// We support only the +, -, *, and / operators with the same StrongInt and
-// ValueType types.  The reason is to allow simple manipulation on these IDs
-// when used as indices in vectors and arrays.
-//
-// NB: Although it is possible to do StrongInt * StrongInt and StrongInt /
-// StrongInt, it is probably non-sensical from a dimensionality analysis
-// perspective.
-#define STRONG_INT_TYPE_ARITHMETIC_OP(op)                                     \
-  template <typename StrongIntName, typename ValueType>                       \
-  constexpr StrongInt<StrongIntName, ValueType> operator op(                  \
-      StrongInt<StrongIntName, ValueType> id_1,                               \
-      StrongInt<StrongIntName, ValueType> id_2) {                             \
-    return StrongInt<StrongIntName, ValueType>(id_1.value() op id_2.value()); \
-  }                                                                           \
-  template <typename StrongIntName, typename ValueType>                       \
-  constexpr StrongInt<StrongIntName, ValueType> operator op(                  \
-      StrongInt<StrongIntName, ValueType> id,                                 \
-      typename StrongInt<StrongIntName, ValueType>::ValueType arg_val) {      \
-    return StrongInt<StrongIntName, ValueType>(id.value() op arg_val);        \
-  }                                                                           \
-  template <typename StrongIntName, typename ValueType>                       \
-  constexpr StrongInt<StrongIntName, ValueType> operator op(                  \
-      typename StrongInt<StrongIntName, ValueType>::ValueType arg_val,        \
-      StrongInt<StrongIntName, ValueType> id) {                               \
-    return StrongInt<StrongIntName, ValueType>(arg_val op id.value());        \
-  }
-STRONG_INT_TYPE_ARITHMETIC_OP(+);
-STRONG_INT_TYPE_ARITHMETIC_OP(-);
-STRONG_INT_TYPE_ARITHMETIC_OP(*);
-STRONG_INT_TYPE_ARITHMETIC_OP(/);
-STRONG_INT_TYPE_ARITHMETIC_OP(<<);  // NOLINT
-STRONG_INT_TYPE_ARITHMETIC_OP(>>);  // NOLINT
-STRONG_INT_TYPE_ARITHMETIC_OP(%);
-#undef STRONG_INT_TYPE_ARITHMETIC_OP
+template <typename TagType, typename ValueType>
+static std::string IntParseError(absl::string_view text) {
+  return absl::Substitute("'$0' is not a valid $1 [min: $2, max: $3]", text,
+                          TagType::TypeName(),
+                          std::numeric_limits<ValueType>::min(),
+                          std::numeric_limits<ValueType>::max());
+}
 
-// -- NON-MEMBER COMPARISON OPERATORS ------------------------------------------
-// Static inline comparison operators.  We allow all comparison operators among
-// the following types (OP \in [==, !=, <, <=, >, >=]:
-//   StrongInt<StrongIntName, ValueType> OP StrongInt<StrongIntName, ValueType>
-//   StrongInt<StrongIntName, ValueType> OP ValueType
-//   ValueType OP StrongInt<StrongIntName, ValueType>
-#define STRONG_INT_TYPE_COMPARISON_OP(op)                            \
-  template <typename StrongIntName, typename ValueType>              \
-  static inline constexpr bool operator op(                          \
-      StrongInt<StrongIntName, ValueType> id_1,                      \
-      StrongInt<StrongIntName, ValueType> id_2) {                    \
-    return id_1.value() op id_2.value();                             \
-  }                                                                  \
-  template <typename StrongIntName, typename ValueType>              \
-  static inline constexpr bool operator op(                          \
-      StrongInt<StrongIntName, ValueType> id,                        \
-      typename StrongInt<StrongIntName, ValueType>::ValueType val) { \
-    return id.value() op val;                                        \
-  }                                                                  \
-  template <typename StrongIntName, typename ValueType>              \
-  static inline constexpr bool operator op(                          \
-      typename StrongInt<StrongIntName, ValueType>::ValueType val,   \
-      StrongInt<StrongIntName, ValueType> id) {                      \
-    return val op id.value();                                        \
+// Allows typed strings to be used as ABSL_FLAG values.
+template <typename TagType, typename ValueType, typename ValidatorType>
+bool AbslParseFlag(absl::string_view text,
+                   StrongInt<TagType, ValueType, ValidatorType>* out,
+                   std::string* error) {
+  ValueType value;
+  if constexpr (sizeof(ValueType) >= 4) {
+    if (!absl::SimpleAtoi(text, &value)) {
+      *error = IntParseError<TagType, ValueType>(text);
+      return false;
+    }
+  } else {
+    // Why doesn't absl::SimpleAtoi support smaller int types?
+    int32_t larger_value;
+    if (!absl::SimpleAtoi(text, &larger_value) ||
+        larger_value > std::numeric_limits<ValueType>::max() ||
+        larger_value < std::numeric_limits<ValueType>::min()) {
+      *error = IntParseError<TagType, ValueType>(text);
+      return false;
+    }
+
+    value = static_cast<ValueType>(larger_value);
   }
-STRONG_INT_TYPE_COMPARISON_OP(==);  // NOLINT
-STRONG_INT_TYPE_COMPARISON_OP(!=);  // NOLINT
-STRONG_INT_TYPE_COMPARISON_OP(<);   // NOLINT
-STRONG_INT_TYPE_COMPARISON_OP(<=);  // NOLINT
-STRONG_INT_TYPE_COMPARISON_OP(>);   // NOLINT
-STRONG_INT_TYPE_COMPARISON_OP(>=);  // NOLINT
-#undef STRONG_INT_TYPE_COMPARISON_OP
+
+  *out = StrongInt<TagType, ValueType, ValidatorType>(value);
+  return true;
+}
+
+template <typename TagType, typename ValueType, typename ValidatorType>
+std::string AbslUnparseFlag(
+    const StrongInt<TagType, ValueType, ValidatorType>& val) {
+  return absl::StrCat(val.value());
+}
+
+// Provide the << operator, primarily for logging purposes.
+template <typename TagType, typename ValueType, typename ValidatorType>
+std::ostream& operator<<(std::ostream& os,
+                         StrongInt<TagType, ValueType, ValidatorType> arg) {
+  return os << arg.value();
+}
+
+// Provide the << operator, primarily for logging purposes. Specialized for
+// int8_t so that an integer and not a character is printed.
+template <typename TagType, typename ValidatorType>
+std::ostream& operator<<(std::ostream& os,
+                         StrongInt<TagType, int8_t, ValidatorType> arg) {
+  return os << static_cast<int>(arg.value());
+}
+
+// Provide the << operator, primarily for logging purposes. Specialized for
+// uint8_t so that an integer and not a character is printed.
+template <typename TagType, typename ValidatorType>
+std::ostream& operator<<(std::ostream& os,
+                         StrongInt<TagType, uint8_t, ValidatorType> arg) {
+  return os << static_cast<unsigned int>(arg.value());
+}
+
+// Define operators that take two StrongInt arguments.
+#define STRONG_INT_VS_STRONG_INT_BINARY_OP(op, validator)                 \
+  template <typename TagType, typename ValueType, typename ValidatorType> \
+  constexpr StrongInt<TagType, ValueType, ValidatorType> operator op(     \
+      StrongInt<TagType, ValueType, ValidatorType> lhs,                   \
+      StrongInt<TagType, ValueType, ValidatorType> rhs) {                 \
+    return ValidatorType::template validator<ValueType>(lhs.value(),      \
+                                                        rhs.value()),     \
+           StrongInt<TagType, ValueType, ValidatorType>(                  \
+               static_cast<ValueType>(lhs.value() op rhs.value()));       \
+  }
+STRONG_INT_VS_STRONG_INT_BINARY_OP(+, ValidateAdd);
+STRONG_INT_VS_STRONG_INT_BINARY_OP(-, ValidateSubtract);
+STRONG_INT_VS_STRONG_INT_BINARY_OP(&, ValidateBitAnd);
+STRONG_INT_VS_STRONG_INT_BINARY_OP(|, ValidateBitOr);
+STRONG_INT_VS_STRONG_INT_BINARY_OP(^, ValidateBitXor);
+#undef STRONG_INT_VS_STRONG_INT_BINARY_OP
+
+// Define operators that take one StrongInt and one native arithmetic argument.
+#define STRONG_INT_VS_NUMERIC_BINARY_OP(op, validator)                     \
+  template <typename TagType, typename ValueType, typename ValidatorType,  \
+            typename NumType,                                              \
+            std::enable_if_t<!IsStrongIntV<NumType>>* = nullptr>           \
+  constexpr StrongInt<TagType, ValueType, ValidatorType> operator op(      \
+      StrongInt<TagType, ValueType, ValidatorType> lhs, NumType rhs) {     \
+    return ValidatorType::template validator<ValueType>(lhs.value(), rhs), \
+           StrongInt<TagType, ValueType, ValidatorType>(                   \
+               static_cast<ValueType>(lhs.value() op rhs));                \
+  }
+// This is used for commutative operators between one StrongInt and one native
+// integer argument. That is a long way of saying "multiplication".
+#define NUMERIC_VS_STRONG_INT_BINARY_OP(op, validator)                     \
+  template <typename TagType, typename ValueType, typename ValidatorType,  \
+            typename NumType,                                              \
+            std::enable_if_t<!IsStrongIntV<NumType>>* = nullptr>           \
+  constexpr StrongInt<TagType, ValueType, ValidatorType> operator op(      \
+      NumType lhs, StrongInt<TagType, ValueType, ValidatorType> rhs) {     \
+    return ValidatorType::template validator<ValueType>(rhs.value(), lhs), \
+           StrongInt<TagType, ValueType, ValidatorType>(                   \
+               static_cast<ValueType>(rhs.value() op lhs));                \
+  }
+STRONG_INT_VS_NUMERIC_BINARY_OP(*, ValidateMultiply);
+NUMERIC_VS_STRONG_INT_BINARY_OP(*, ValidateMultiply);
+STRONG_INT_VS_NUMERIC_BINARY_OP(/, ValidateDivide);
+STRONG_INT_VS_NUMERIC_BINARY_OP(%, ValidateModulo);
+STRONG_INT_VS_NUMERIC_BINARY_OP(<<, ValidateLeftShift);
+STRONG_INT_VS_NUMERIC_BINARY_OP(>>, ValidateRightShift);
+#undef STRONG_INT_VS_NUMERIC_BINARY_OP
+#undef NUMERIC_VS_STRONG_INT_BINARY_OP
+
+// Define comparison operators.  We allow all comparison operators.
+#define STRONG_INT_COMPARISON_OP(op)                                      \
+  template <typename TagType, typename ValueType, typename ValidatorType> \
+  constexpr bool operator op(                                             \
+      StrongInt<TagType, ValueType, ValidatorType> lhs,                   \
+      StrongInt<TagType, ValueType, ValidatorType> rhs) {                 \
+    return lhs.value() op rhs.value();                                    \
+  }
+STRONG_INT_COMPARISON_OP(==);  // NOLINT(whitespace/operators)
+STRONG_INT_COMPARISON_OP(!=);  // NOLINT(whitespace/operators)
+STRONG_INT_COMPARISON_OP(<);   // NOLINT(whitespace/operators)
+STRONG_INT_COMPARISON_OP(<=);  // NOLINT(whitespace/operators)
+STRONG_INT_COMPARISON_OP(>);   // NOLINT(whitespace/operators)
+STRONG_INT_COMPARISON_OP(>=);  // NOLINT(whitespace/operators)
+#undef STRONG_INT_COMPARISON_OP
 
 // Support for-range loops. Enables easier looping over ranges of StrongInts,
 // especially looping over sub-ranges of StrongVectors.
@@ -443,13 +673,81 @@ template <typename IntType>
 StrongIntRange<IntType> MakeStrongIntRange(IntType begin, IntType end) {
   return StrongIntRange<IntType>(begin, end);
 }
+
 }  // namespace util_intops
 
-// Allows it to be used as a key to hashable containers.
+// Defines the StrongInt using value_type and typedefs it to type_name, with no
+// validation of under/overflow situations.
+// The struct int_type_name ## _tag_ trickery is needed to ensure that a new
+// type is created per type_name.
+#define DEFINE_STRONG_INT_TYPE(type_name, value_type)                       \
+  struct type_name##_strong_int_tag_ {                                      \
+    static constexpr absl::string_view TypeName() { return #type_name; }    \
+  };                                                                        \
+  typedef ::util_intops::StrongInt<type_name##_strong_int_tag_, value_type, \
+                                   ::util_intops::NullStrongIntValidator>   \
+      type_name;
+
+// Numeric_limits override for strong int.
 namespace std {
-template <typename StrongIntName, typename ValueType>
-struct hash<util_intops::StrongInt<StrongIntName, ValueType>>
-    : util_intops::StrongInt<StrongIntName, ValueType>::Hasher {};
+// Allow StrongInt to be used as a key to hashable containers.
+// NOLINTNEXTLINE(google3-runtime-std-hash-specialization)
+template <typename Tag, typename Value, typename Validator>
+struct hash<util_intops::StrongInt<Tag, Value, Validator>>
+    : ::util_intops::StrongInt<Tag, Value, Validator>::Hasher {};
+
+template <typename TagType, typename NativeType, typename ValidatorType>
+struct numeric_limits<
+    util_intops::StrongInt<TagType, NativeType, ValidatorType>> {
+ private:
+  using StrongIntT = util_intops::StrongInt<TagType, NativeType, ValidatorType>;
+
+ public:
+  // NOLINTBEGIN(google3-readability-class-member-naming)
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = numeric_limits<NativeType>::is_signed;
+  static constexpr bool is_integer = numeric_limits<NativeType>::is_integer;
+  static constexpr bool is_exact = numeric_limits<NativeType>::is_exact;
+  static constexpr bool has_infinity = numeric_limits<NativeType>::has_infinity;
+  static constexpr bool has_quiet_NaN =
+      numeric_limits<NativeType>::has_quiet_NaN;
+  static constexpr bool has_signaling_NaN =
+      numeric_limits<NativeType>::has_signaling_NaN;
+  static constexpr float_denorm_style has_denorm =
+      numeric_limits<NativeType>::has_denorm;
+  static constexpr bool has_denorm_loss =
+      numeric_limits<NativeType>::has_denorm_loss;
+  static constexpr float_round_style round_style =
+      numeric_limits<NativeType>::round_style;
+  static constexpr bool is_iec559 = numeric_limits<NativeType>::is_iec559;
+  static constexpr bool is_bounded = numeric_limits<NativeType>::is_bounded;
+  static constexpr bool is_modulo = numeric_limits<NativeType>::is_modulo;
+  static constexpr int digits = numeric_limits<NativeType>::digits;
+  static constexpr int digits10 = numeric_limits<NativeType>::digits10;
+  static constexpr int max_digits10 = numeric_limits<NativeType>::max_digits10;
+  static constexpr int radix = numeric_limits<NativeType>::radix;
+  static constexpr int min_exponent = numeric_limits<NativeType>::min_exponent;
+  static constexpr int min_exponent10 =
+      numeric_limits<NativeType>::min_exponent10;
+  static constexpr int max_exponent = numeric_limits<NativeType>::max_exponent;
+  static constexpr int max_exponent10 =
+      numeric_limits<NativeType>::max_exponent10;
+  static constexpr bool traps = numeric_limits<NativeType>::traps;
+  static constexpr bool tinyness_before =
+      numeric_limits<NativeType>::tinyness_before;
+  // NOLINTEND(google3-readability-class-member-naming)
+
+  static constexpr StrongIntT(min)() { return StrongIntT(StrongIntT::Min()); }
+  static constexpr StrongIntT lowest() { return StrongIntT(StrongIntT::Min()); }
+  static constexpr StrongIntT(max)() { return StrongIntT(StrongIntT::Max()); }
+  static constexpr StrongIntT epsilon() { return StrongIntT(); }
+  static constexpr StrongIntT round_error() { return StrongIntT(); }
+  static constexpr StrongIntT infinity() { return StrongIntT(); }
+  static constexpr StrongIntT quiet_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT signaling_NaN() { return StrongIntT(); }
+  static constexpr StrongIntT denorm_min() { return StrongIntT(); }
+};
+
 }  // namespace std
 
 #endif  // OR_TOOLS_BASE_STRONG_INT_H_

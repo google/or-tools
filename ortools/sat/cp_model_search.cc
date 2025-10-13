@@ -188,6 +188,7 @@ void AddExtraSchedulingPropagators(SatParameters& new_params) {
   new_params.set_use_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_area_energetic_reasoning_in_no_overlap_2d(true);
   new_params.set_use_try_edge_reasoning_in_no_overlap_2d(true);
+  new_params.set_no_overlap_2d_boolean_relations_limit(100);
 }
 
 // We want a random tie breaking among variables with equivalent values.
@@ -350,7 +351,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructUserSearchStrategy(
   };
 }
 
-// TODO(user): Implement a routing search.
+// TODO(user): Implement a routing search strategy.
 std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     const CpModelProto& cp_model_proto, Model* model) {
   if (ModelHasSchedulingConstraints(cp_model_proto)) {
@@ -378,7 +379,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructHeuristicSearchStrategy(
     heuristics.push_back(SchedulingSearchHeuristic(model));
     return SequentialSearch(std::move(heuristics));
   }
-  return PseudoCost(model);
+  return nullptr;
 }
 
 std::function<BooleanOrIntegerLiteral()>
@@ -426,23 +427,22 @@ std::function<BooleanOrIntegerLiteral()> ConstructHintSearchStrategy(
   return FollowHint(vars, values, model);
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructFixedSearchStrategy(
-    std::function<BooleanOrIntegerLiteral()> user_search,
-    std::function<BooleanOrIntegerLiteral()> heuristic_search,
-    std::function<BooleanOrIntegerLiteral()> integer_completion) {
+void ConstructFixedSearchStrategy(SearchHeuristics* h, Model* model) {
   // We start by the user specified heuristic.
   std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics;
-  if (user_search != nullptr) {
-    heuristics.push_back(user_search);
+  if (h->user_search != nullptr) {
+    heuristics.push_back(h->user_search);
   }
-  if (heuristic_search != nullptr) {
-    heuristics.push_back(heuristic_search);
+  if (h->heuristic_search != nullptr) {
+    heuristics.push_back(h->heuristic_search);
+  } else {
+    heuristics.push_back(PseudoCost(model));
   }
-  if (integer_completion != nullptr) {
-    heuristics.push_back(integer_completion);
+  if (h->integer_completion_search != nullptr) {
+    heuristics.push_back(h->integer_completion_search);
   }
 
-  return SequentialSearch(heuristics);
+  h->fixed_search = SequentialSearch(std::move(heuristics));
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
@@ -625,12 +625,12 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
 
   {
     SatParameters new_params = base_params;
-    new_params.set_use_variables_shaving_search(true);
     new_params.set_cp_model_presolve(true);
     new_params.set_cp_model_probing_level(0);
     new_params.set_symmetry_level(0);
     new_params.set_share_objective_bounds(false);
     new_params.set_share_level_zero_bounds(false);
+    new_params.set_no_overlap_2d_boolean_relations_limit(40);
 
     strategies["variables_shaving"] = new_params;
 
@@ -649,6 +649,9 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_probing_search(true);
     new_params.set_at_most_one_max_expansion_size(2);
+    // Use a small deterministic time to avoid spending too much time on
+    // shaving by default. The probing workers will increase it as needed.
+    new_params.set_shaving_search_deterministic_time(0.001);
     if (base_params.use_dual_scheduling_heuristics()) {
       AddExtraSchedulingPropagators(new_params);
     }
@@ -657,8 +660,8 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_linearization_level(0);
     strategies["probing_no_lp"] = new_params;
 
-    new_params.set_linearization_level(2);
     // We want to spend more time on the LP here.
+    new_params.set_linearization_level(2);
     new_params.set_add_lp_constraints_lazily(false);
     new_params.set_root_lp_iterations(100'000);
     strategies["probing_max_lp"] = new_params;
@@ -674,6 +677,29 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     new_params.set_use_dynamic_precedence_in_disjunctive(false);
     new_params.set_use_dynamic_precedence_in_cumulative(false);
     strategies["fixed"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["fixed_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["fixed_max_lp"] = new_params;
+  }
+
+  // Portfolio search.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::PORTFOLIO_SEARCH);
+    strategies["portfolio"] = new_params;
+
+    new_params.set_linearization_level(0);
+    strategies["portfolio_no_lp"] = new_params;
+
+    new_params.set_linearization_level(2);
+    new_params.set_add_lp_constraints_lazily(false);
+    new_params.set_root_lp_iterations(100'000);
+    strategies["portfolio_max_lp"] = new_params;
   }
 
   // Quick restart.
@@ -722,7 +748,6 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     SatParameters new_params = base_params;
     new_params.set_use_shared_tree_search(true);
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_linearization_level(0);
 
     // These settings don't make sense with shared tree search, turn them off as
     // they can break things.
@@ -751,10 +776,12 @@ absl::flat_hash_map<std::string, SatParameters> GetNamedParameters(
     lns_params.set_cp_model_probing_level(0);
     lns_params.set_symmetry_level(0);
     lns_params.set_find_big_linear_overlap(false);
+    lns_params.set_find_clauses_that_are_exactly_one(false);
 
     lns_params.set_log_search_progress(false);
     lns_params.set_debug_crash_on_bad_hint(false);  // Can happen in lns.
-    lns_params.set_solution_pool_size(1);  // Keep the best solution found.
+    lns_params.set_solution_pool_size(1);     // Keep the best solution found.
+    lns_params.set_alternative_pool_size(0);  // Disable.
     strategies["lns"] = lns_params;
 
     // Note that we only do this for the derived parameters. The strategy "lns"
@@ -915,9 +942,7 @@ std::vector<SatParameters> GetFullWorkerParameters(
 
     // TODO(user): Enable shaving search in interleave mode.
     // Currently it do not respect ^C, and has no per chunk time limit.
-    if ((params.use_objective_shaving_search() ||
-         params.use_variables_shaving_search()) &&
-        params.interleave_search()) {
+    if ((params.use_objective_shaving_search()) && params.interleave_search()) {
       continue;
     }
 

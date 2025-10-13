@@ -27,7 +27,9 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
+#include "absl/numeric/int128.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -40,6 +42,7 @@
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -850,8 +853,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
   }
 
   int num_added = 0;
-  int num_skipped_checks = 0;
-  const int kCheckFrequency = 100;
+  TimeLimitCheckEveryNCalls time_limit_check(1000, time_limit_);
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   std::vector<double> orthogonality_score(new_constraints_by_score.size(), 1.0);
   for (int i = 0; i < constraint_limit; ++i) {
@@ -863,10 +865,7 @@ bool LinearConstraintManager::ChangeLp(glop::BasisState* solution_state,
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints_by_score.size(); ++j) {
       // Checks the time limit, and returns if the lp has changed.
-      if (++num_skipped_checks >= kCheckFrequency) {
-        if (time_limit_->LimitReached()) return current_lp_is_changed_;
-        num_skipped_checks = 0;
-      }
+      if (time_limit_check.LimitReached()) return current_lp_is_changed_;
 
       const ConstraintIndex new_index = new_constraints_by_score[j].first;
       if (constraint_infos_[new_index].is_in_lp) continue;
@@ -958,17 +957,23 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
 
 bool LinearConstraintManager::DebugCheckConstraint(
     const LinearConstraint& cut) {
-  if (model_->Get<DebugSolution>() == nullptr) return true;
-  const auto& debug_solution = *(model_->Get<DebugSolution>());
+  const DebugSolution* debug_solution = model_->Get<DebugSolution>();
+  if (debug_solution == nullptr || debug_solution->proto_values.empty()) {
+    return true;
+  }
 
-  IntegerValue activity(0);
+  absl::int128 activity(0);
   for (int i = 0; i < cut.num_terms; ++i) {
     const IntegerVariable var = cut.vars[i];
     const IntegerValue coeff = cut.coeffs[i];
-    CHECK(debug_solution.ivar_has_value[var]);
-    activity += coeff * debug_solution.ivar_values[var];
+    if (var >= debug_solution->ivar_has_value.size() ||
+        !debug_solution->ivar_has_value[var]) {
+      return true;
+    }
+    activity +=
+        absl::int128(coeff.value()) * debug_solution->ivar_values[var].value();
   }
-  if (activity > cut.ub || activity < cut.lb) {
+  if (activity > cut.ub.value() || activity < cut.lb.value()) {
     LOG(INFO) << cut.DebugString();
     LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
               << cut.ub << "]";
@@ -977,15 +982,45 @@ bool LinearConstraintManager::DebugCheckConstraint(
   return true;
 }
 
+void LinearConstraintManager::CacheReducedCostsInfo() {
+  if (reduced_costs_is_cached_) return;
+  reduced_costs_is_cached_ = true;
+
+  const absl::int128 ub = reduced_cost_constraint_.ub.value();
+  absl::int128 level_zero_lb = 0;
+  for (int i = 0; i < reduced_cost_constraint_.num_terms; ++i) {
+    IntegerVariable var = reduced_cost_constraint_.vars[i];
+    IntegerValue coeff = reduced_cost_constraint_.coeffs[i];
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+
+    const IntegerValue lb = integer_trail_.LevelZeroLowerBound(var);
+    level_zero_lb += absl::int128(coeff.value()) * absl::int128(lb.value());
+
+    if (lb == integer_trail_.LevelZeroUpperBound(var)) continue;
+    const LiteralIndex lit = integer_encoder_.GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, lb + 1));
+    if (lit != kNoLiteralIndex) {
+      reduced_costs_map_[Literal(lit)] = coeff;
+    }
+  }
+  const absl::int128 gap = ub - level_zero_lb;
+  if (gap > 0) {
+    reduced_costs_gap_ = gap;
+  } else {
+    reduced_costs_gap_ = 0;
+    reduced_costs_map_.clear();
+  }
+}
+
 void TopNCuts::AddCut(
     LinearConstraint ct, absl::string_view name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_solution) {
   if (ct.num_terms == 0) return;
-  const double activity = ComputeActivity(ct, lp_solution);
-  const double violation =
-      std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
-  const double l2_norm = ComputeL2Norm(ct);
-  cuts_.Add({std::string(name), std::move(ct)}, violation / l2_norm);
+  const double normalized_violation = ct.NormalizedViolation(lp_solution);
+  cuts_.Add({std::string(name), std::move(ct)}, normalized_violation);
 }
 
 void TopNCuts::TransferToManager(LinearConstraintManager* manager) {

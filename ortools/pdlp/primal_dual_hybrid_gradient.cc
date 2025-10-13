@@ -11,6 +11,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// We solve a QP, which we call the "original QP", by applying preprocessing
+// including presolve and rescaling, which produces a new QP that we call the
+// "working QP". We then solve the working QP using the Primal Dual Hybrid
+// Gradient algorithm (PDHG). The optimality criteria are evaluated using the
+// original QP. There are three main modules in this file:
+// * The free function `PrimalDualHybridGradient()`, which is the user API, and
+//   is responsible for input validation that doesn't use
+//   ShardedQuadraticProgram, creating a `PreprocessSolver`, and calling
+//   `PreprocessSolver::PreprocessAndSolve()`.
+// * The class `PreprocessSolver`, which is responsible for everything that
+//   touches the original QP, including input validation that uses
+//   ShardedQuadraticProgram, the preprocessing, converting solutions to the
+//   working QP back to solutions to the original QP, and termination checks. It
+//   also creates a `Solver` object and calls `Solver::Solve()`.
+// * The class `Solver`, which is responsible for everything that only touches
+//   the working QP. It keeps a pointer to `PreprocessSolver` and calls methods
+//   on it when it needs access to the original QP, e.g. termination checks.
+//   When feasibility polishing is enabled the main solve's `Solver` object
+//   creates additional `Solver` objects periodically to do the feasibility
+//   polishing (in `Solver::TryPrimalPolishing()` and
+//   `Solver::TryDualPolishing()`).
+// The main reason for having two separate classes `PreprocessSolver` and
+// `Solver` is the fact that feasibility polishing mode uses a single
+// `PreprocessSolver` object with multiple `Solver` objects.
+
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 
 #include <algorithm>
@@ -28,7 +53,9 @@
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -37,7 +64,6 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/parameters.pb.h"
@@ -313,6 +339,7 @@ SolverResult ConstructSolverResult(VectorXd primal_solution,
                       .solve_log = std::move(solve_log)};
 }
 
+// See comment at top of file.
 class PreprocessSolver {
  public:
   // Assumes that `qp` and `params` are valid.
@@ -505,6 +532,7 @@ class PreprocessSolver {
   IterationStatsCallback iteration_stats_callback_;
 };
 
+// See comment at top of file.
 class Solver {
  public:
   // `preprocess_solver` should not be nullptr, and the `PreprocessSolver`
@@ -556,6 +584,15 @@ class Solver {
   // cause infinite and NaN values.
   constexpr static double kDivergentMovement = 1.0e100;
 
+  // The total number of iterations in feasibility polishing is at most
+  // `4 * iterations_completed_ / kFeasibilityIterationFraction`.
+  // One factor of two is because there are both primal and dual feasibility
+  // polishing phases, and the other factor of two is because
+  // `next_feasibility_polishing_iteration` increases by a factor of 2 each
+  // feasibility polishing phase, so the sum of iteration limits is at most
+  // twice the last value.
+  constexpr static int kFeasibilityIterationFraction = 8;
+
   // Attempts to solve primal and dual feasibility subproblems starting at the
   // average iterate, for at most `iteration_limit` iterations each. If
   // successful, returns a `SolverResult`, otherwise nullopt. Appends
@@ -583,7 +620,8 @@ class Solver {
 
   NextSolutionAndDelta ComputeNextDualSolution(
       double dual_step_size, double extrapolation_factor,
-      const NextSolutionAndDelta& next_primal) const;
+      const NextSolutionAndDelta& next_primal_solution,
+      const VectorXd* absl_nullable next_primal_product = nullptr) const;
 
   std::pair<double, double> ComputeMovementTerms(
       const VectorXd& delta_primal, const VectorXd& delta_dual) const;
@@ -593,6 +631,10 @@ class Solver {
 
   double ComputeNonlinearity(const VectorXd& delta_primal,
                              const VectorXd& next_dual_product) const;
+
+  // Sets current_primal_product_ and current_dual_product_ based on
+  // current_primal_solution_ and current_dual_solution_ respectively.
+  void SetCurrentPrimalAndDualProducts();
 
   // Creates all the simple-to-compute statistics in stats.
   IterationStats CreateSimpleIterationStats(RestartChoice restart_used) const;
@@ -698,6 +740,9 @@ class Solver {
   WallTimer timer_;
   int iterations_completed_;
   int num_rejected_steps_;
+  // A cache of `constraint_matrix * current_primal_solution_`.
+  // Malitsky-Pock linesearch only.
+  std::optional<VectorXd> current_primal_product_;
   // A cache of `constraint_matrix.transpose() * current_dual_solution_`.
   VectorXd current_dual_product_;
   // The primal point at which the algorithm was last restarted from, or
@@ -1834,31 +1879,41 @@ Solver::NextSolutionAndDelta Solver::ComputeNextPrimalSolution(
 
 Solver::NextSolutionAndDelta Solver::ComputeNextDualSolution(
     double dual_step_size, double extrapolation_factor,
-    const NextSolutionAndDelta& next_primal_solution) const {
+    const NextSolutionAndDelta& next_primal_solution,
+    const VectorXd* absl_nullable next_primal_product) const {
   const int64_t dual_size = ShardedWorkingQp().DualSize();
   NextSolutionAndDelta result = {
       .value = VectorXd(dual_size),
       .delta = VectorXd(dual_size),
   };
   const QuadraticProgram& qp = WorkingQp();
-  VectorXd extrapolated_primal(ShardedWorkingQp().PrimalSize());
-  ShardedWorkingQp().PrimalSharder().ParallelForEachShard(
-      [&](const Sharder::Shard& shard) {
-        shard(extrapolated_primal) =
-            (shard(next_primal_solution.value) +
-             extrapolation_factor * shard(next_primal_solution.delta));
-      });
-  // TODO(user): Refactor this multiplication so that we only do one matrix
-  // vector multiply for the primal variable. This only applies to Malitsky and
-  // Pock and not to the adaptive step size rule.
+  std::optional<VectorXd> extrapolated_primal;
+  if (!next_primal_product) {
+    extrapolated_primal.emplace(ShardedWorkingQp().PrimalSize());
+    ShardedWorkingQp().PrimalSharder().ParallelForEachShard(
+        [&](const Sharder::Shard& shard) {
+          shard(*extrapolated_primal) =
+              (shard(next_primal_solution.value) +
+               extrapolation_factor * shard(next_primal_solution.delta));
+        });
+  }
   ShardedWorkingQp().TransposedConstraintMatrixSharder().ParallelForEachShard(
       [&](const Sharder::Shard& shard) {
-        VectorXd temp =
-            shard(current_dual_solution_) -
-            dual_step_size *
-                shard(ShardedWorkingQp().TransposedConstraintMatrix())
-                    .transpose() *
-                extrapolated_primal;
+        VectorXd temp;
+        if (next_primal_product) {
+          CHECK(current_primal_product_.has_value());
+          temp = shard(current_dual_solution_) -
+                 dual_step_size *
+                     (-extrapolation_factor * shard(*current_primal_product_) +
+                      (extrapolation_factor + 1) * shard(*next_primal_product));
+        } else {
+          temp = shard(current_dual_solution_) -
+                 dual_step_size *
+                     shard(ShardedWorkingQp().TransposedConstraintMatrix())
+                         .transpose() *
+                     extrapolated_primal.value();
+        }
+
         // Each element of the argument of `.cwiseMin()` is the critical point
         // of the respective 1D minimization problem if it's negative.
         // Likewise the argument to the `.cwiseMax()` is the critical point if
@@ -1901,6 +1956,21 @@ double Solver::ComputeNonlinearity(const VectorXd& delta_primal,
       });
 }
 
+void Solver::SetCurrentPrimalAndDualProducts() {
+  if (params_.linesearch_rule() ==
+      PrimalDualHybridGradientParams::MALITSKY_POCK_LINESEARCH_RULE) {
+    current_primal_product_ = TransposedMatrixVectorProduct(
+        ShardedWorkingQp().TransposedConstraintMatrix(),
+        current_primal_solution_,
+        ShardedWorkingQp().TransposedConstraintMatrixSharder());
+  } else {
+    current_primal_product_.reset();
+  }
+  current_dual_product_ = TransposedMatrixVectorProduct(
+      WorkingQp().constraint_matrix, current_dual_solution_,
+      ShardedWorkingQp().ConstraintMatrixSharder());
+}
+
 IterationStats Solver::CreateSimpleIterationStats(
     RestartChoice restart_used) const {
   IterationStats stats;
@@ -1941,8 +2011,10 @@ LocalizedLagrangianBounds Solver::ComputeLocalizedBoundsAtCurrent() const {
       ShardedWorkingQp(), current_primal_solution_, current_dual_solution_,
       PrimalDualNorm::kEuclideanNorm, primal_weight_,
       distance_traveled_by_current,
-      /*primal_product=*/nullptr, &current_dual_product_,
-      params_.use_diagonal_qp_trust_region_solver(),
+      /*primal_product=*/current_primal_product_.has_value()
+          ? &current_primal_product_.value()
+          : nullptr,
+      &current_dual_product_, params_.use_diagonal_qp_trust_region_solver(),
       params_.diagonal_qp_trust_region_solver_tolerance());
 }
 
@@ -2189,9 +2261,7 @@ void Solver::ApplyRestartChoice(const RestartChoice restart_to_apply) {
       }
       current_primal_solution_ = primal_average_.ComputeAverage();
       current_dual_solution_ = dual_average_.ComputeAverage();
-      current_dual_product_ = TransposedMatrixVectorProduct(
-          WorkingQp().constraint_matrix, current_dual_solution_,
-          ShardedWorkingQp().ConstraintMatrixSharder());
+      SetCurrentPrimalAndDualProducts();
       break;
   }
   primal_weight_ = ComputeNewPrimalWeight();
@@ -2255,6 +2325,36 @@ IterationStats WorkFromFeasibilityPolishing(const SolveLog& solve_log) {
   return result;
 }
 
+bool TerminationReasonIsInterrupted(const TerminationReason reason) {
+  return reason == TERMINATION_REASON_INTERRUPTED_BY_USER;
+}
+
+bool TerminationReasonIsWorkLimitNotInterrupted(
+    const TerminationReason reason) {
+  return reason == TERMINATION_REASON_ITERATION_LIMIT ||
+         reason == TERMINATION_REASON_TIME_LIMIT ||
+         reason == TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT;
+}
+
+// Note: `TERMINATION_REASON_INTERRUPTED_BY_USER` is treated as a work limit
+// (that was determined in real-time by the user).
+bool TerminationReasonIsWorkLimit(const TerminationReason reason) {
+  return TerminationReasonIsWorkLimitNotInterrupted(reason) ||
+         TerminationReasonIsInterrupted(reason);
+}
+
+bool DoFeasibilityPolishingAfterLimitsReached(
+    const PrimalDualHybridGradientParams& params,
+    const TerminationReason reason) {
+  if (TerminationReasonIsWorkLimitNotInterrupted(reason)) {
+    return params.apply_feasibility_polishing_after_limits_reached();
+  }
+  if (TerminationReasonIsInterrupted(reason)) {
+    return params.apply_feasibility_polishing_if_solver_is_interrupted();
+  }
+  return false;
+}
+
 std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     const IterationType iteration_type, const bool force_numerical_termination,
     const std::atomic<bool>* interrupt_solve,
@@ -2272,12 +2372,12 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
   IterationStats stats = CreateSimpleIterationStats(restart);
   IterationStats full_work_stats =
       AddWorkStats(stats, work_from_feasibility_polishing);
+  std::optional<TerminationReasonAndPointType> simple_termination_reason =
+      CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                     full_work_stats, interrupt_solve);
   const bool check_termination =
       major_iteration_cycle % params_.termination_check_frequency() == 0 ||
-      CheckSimpleTerminationCriteria(params_.termination_criteria(),
-                                     full_work_stats, interrupt_solve)
-          .has_value() ||
-      force_numerical_termination;
+      simple_termination_reason.has_value() || force_numerical_termination;
   // We check termination on every major iteration.
   DCHECK(!is_major_iteration || check_termination);
   if (check_termination) {
@@ -2304,6 +2404,19 @@ std::optional<SolverResult> Solver::MajorIterationAndTerminationCheck(
     }
     // We've terminated.
     if (maybe_termination_reason.has_value()) {
+      if (iteration_type == IterationType::kNormal &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, maybe_termination_reason->reason)) {
+        const std::optional<SolverResult> feasibility_result =
+            TryFeasibilityPolishing(
+                iterations_completed_ / kFeasibilityIterationFraction,
+                interrupt_solve, solve_log);
+        if (feasibility_result.has_value()) {
+          LOG(INFO) << "Returning result from feasibility polishing after "
+                       "limits reached";
+          return *feasibility_result;
+        }
+      }
       IterationStats terminating_full_stats =
           AddWorkStats(stats, work_from_feasibility_polishing);
       return PickSolutionAndConstructSolverResult(
@@ -2364,6 +2477,14 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       params_.malitsky_pock_parameters().linesearch_contraction_factor();
   const double dual_weight = primal_weight_ * primal_weight_;
   int inner_iterations = 0;
+  VectorXd next_primal_product(current_dual_solution_.size());
+  ShardedWorkingQp().TransposedConstraintMatrixSharder().ParallelForEachShard(
+      [&](const Sharder::Shard& shard) {
+        shard(next_primal_product) =
+            shard(ShardedWorkingQp().TransposedConstraintMatrix()).transpose() *
+            next_primal_solution.value;
+      });
+
   for (bool accepted_step = false; !accepted_step; ++inner_iterations) {
     if (inner_iterations >= 60) {
       LogInnerIterationLimitHit();
@@ -2375,7 +2496,7 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
         new_primal_step_size / primal_step_size;
     NextSolutionAndDelta next_dual_solution = ComputeNextDualSolution(
         dual_weight * new_primal_step_size, new_last_two_step_sizes_ratio,
-        next_primal_solution);
+        next_primal_solution, &next_primal_product);
 
     VectorXd next_dual_product = TransposedMatrixVectorProduct(
         WorkingQp().constraint_matrix, next_dual_solution.value,
@@ -2403,6 +2524,7 @@ InnerStepOutcome Solver::TakeMalitskyPockStep() {
       current_primal_solution_ = std::move(next_primal_solution.value);
       current_dual_solution_ = std::move(next_dual_solution.value);
       current_dual_product_ = std::move(next_dual_product);
+      current_primal_product_ = std::move(next_primal_product);
       primal_average_.Add(current_primal_solution_,
                           /*weight=*/new_primal_step_size);
       dual_average_.Add(current_dual_solution_,
@@ -2476,6 +2598,7 @@ InnerStepOutcome Solver::TakeAdaptiveStep() {
       current_primal_solution_ = std::move(next_primal_solution.value);
       current_dual_solution_ = std::move(next_dual_solution.value);
       current_dual_product_ = std::move(next_dual_product);
+      current_primal_product_.reset();
       current_primal_delta_ = std::move(next_primal_solution.delta);
       current_dual_delta_ = std::move(next_dual_solution.delta);
       primal_average_.Add(current_primal_solution_, /*weight=*/step_size_);
@@ -2541,6 +2664,7 @@ InnerStepOutcome Solver::TakeConstantSizeStep() {
   current_primal_solution_ = std::move(next_primal_solution.value);
   current_dual_solution_ = std::move(next_dual_solution.value);
   current_dual_product_ = std::move(next_dual_product);
+  current_primal_product_.reset();
   current_primal_delta_ = std::move(next_primal_solution.delta);
   current_dual_delta_ = std::move(next_dual_solution.delta);
   primal_average_.Add(current_primal_solution_, /*weight=*/step_size_);
@@ -2573,15 +2697,6 @@ FeasibilityPolishingDetails BuildFeasibilityPolishingDetails(
   return details;
 }
 
-// Note: `TERMINATION_REASON_INTERRUPTED_BY_USER` is treated as a work limit
-// (that was determined in real-time by the user).
-bool TerminationReasonIsWorkLimit(const TerminationReason reason) {
-  return reason == TERMINATION_REASON_ITERATION_LIMIT ||
-         reason == TERMINATION_REASON_TIME_LIMIT ||
-         reason == TERMINATION_REASON_KKT_MATRIX_PASS_LIMIT ||
-         reason == TERMINATION_REASON_INTERRUPTED_BY_USER;
-}
-
 std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     const int iteration_limit, const std::atomic<bool>* interrupt_solve,
     SolveLog& solve_log) {
@@ -2600,12 +2715,20 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
   // polishing, it is usually increased, and an experiment (on MIPLIB2017)
   // shows that this test reduces the iteration count by 3-4% on average.
   if (!ObjectiveGapMet(optimality_criteria, first_convergence_info)) {
-    if (params_.verbosity_level() >= 2) {
-      SOLVER_LOG(&preprocess_solver_->Logger(),
-                 "Skipping feasibility polishing because the objective gap "
-                 "is too large.");
+    std::optional<TerminationReasonAndPointType> simple_termination_reason =
+        CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                       TotalWorkSoFar(solve_log),
+                                       interrupt_solve);
+    if (!(simple_termination_reason.has_value() &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, simple_termination_reason->reason))) {
+      if (params_.verbosity_level() >= 2) {
+        SOLVER_LOG(&preprocess_solver_->Logger(),
+                   "Skipping feasibility polishing because the objective gap "
+                   "is too large.");
+      }
+      return std::nullopt;
     }
-    return std::nullopt;
   }
 
   if (params_.verbosity_level() >= 2) {
@@ -2623,7 +2746,17 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
   }
   if (TerminationReasonIsWorkLimit(
           primal_result.solve_log.termination_reason())) {
-    return std::nullopt;
+    // Have we also reached the overall work limit? If so, consider finishing
+    // the final polishing phase.
+    std::optional<TerminationReasonAndPointType> simple_termination_reason =
+        CheckSimpleTerminationCriteria(params_.termination_criteria(),
+                                       TotalWorkSoFar(solve_log),
+                                       interrupt_solve);
+    if (!(simple_termination_reason.has_value() &&
+          DoFeasibilityPolishingAfterLimitsReached(
+              params_, simple_termination_reason->reason))) {
+      return std::nullopt;
+    }
   } else if (primal_result.solve_log.termination_reason() !=
              TERMINATION_REASON_OPTIMAL) {
     // Note: `TERMINATION_REASON_PRIMAL_INFEASIBLE` could happen normally, but
@@ -2651,9 +2784,29 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
         TerminationReason_Name(dual_result.solve_log.termination_reason()));
   }
 
+  IterationStats full_stats = TotalWorkSoFar(solve_log);
+  std::optional<TerminationReasonAndPointType> simple_termination_reason =
+      CheckSimpleTerminationCriteria(params_.termination_criteria(), full_stats,
+                                     interrupt_solve);
   if (TerminationReasonIsWorkLimit(
           dual_result.solve_log.termination_reason())) {
-    return std::nullopt;
+    // Have we also reached the overall work limit? If so, consider falling out
+    // of the "if" test and returning the polishing solution anyway.
+    if (simple_termination_reason.has_value() &&
+        DoFeasibilityPolishingAfterLimitsReached(
+            params_, simple_termination_reason->reason)) {
+      preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
+          params_, primal_result.primal_solution, dual_result.dual_solution,
+          POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
+          full_stats.add_convergence_information(), nullptr);
+      return ConstructSolverResult(
+          std::move(primal_result.primal_solution),
+          std::move(dual_result.dual_solution), full_stats,
+          simple_termination_reason->reason,
+          POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION, solve_log);
+    } else {
+      return std::nullopt;
+    }
   } else if (dual_result.solve_log.termination_reason() !=
              TERMINATION_REASON_OPTIMAL) {
     // Note: The comment in the corresponding location when checking the
@@ -2665,7 +2818,6 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
     return std::nullopt;
   }
 
-  IterationStats full_stats = TotalWorkSoFar(solve_log);
   preprocess_solver_->ComputeConvergenceAndInfeasibilityFromWorkingSolution(
       params_, primal_result.primal_solution, dual_result.dual_solution,
       POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
@@ -2689,12 +2841,16 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
                                       full_stats,
                                       preprocess_solver_->OriginalBoundNorms(),
                                       /*force_numerical_termination=*/false);
-  if (earned_termination.has_value()) {
-    return ConstructSolverResult(std::move(primal_result.primal_solution),
-                                 std::move(dual_result.dual_solution),
-                                 full_stats, earned_termination->reason,
-                                 POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION,
-                                 solve_log);
+  if (earned_termination.has_value() ||
+      (simple_termination_reason.has_value() &&
+       DoFeasibilityPolishingAfterLimitsReached(
+           params_, simple_termination_reason->reason))) {
+    return ConstructSolverResult(
+        std::move(primal_result.primal_solution),
+        std::move(dual_result.dual_solution), full_stats,
+        earned_termination.has_value() ? earned_termination->reason
+                                       : simple_termination_reason->reason,
+        POINT_TYPE_FEASIBILITY_POLISHING_SOLUTION, solve_log);
   }
   // Note: A typical termination check would now call
   // `CheckSimpleTerminationCriteria`. However, there is no obvious iterate to
@@ -2708,15 +2864,22 @@ std::optional<SolverResult> Solver::TryFeasibilityPolishing(
 
 TerminationCriteria ReduceWorkLimitsByPreviousWork(
     TerminationCriteria criteria, const int iteration_limit,
-    const IterationStats& previous_work) {
-  criteria.set_iteration_limit(std::max(
-      0, std::min(iteration_limit, criteria.iteration_limit() -
-                                       previous_work.iteration_number())));
-  criteria.set_kkt_matrix_pass_limit(
-      std::max(0.0, criteria.kkt_matrix_pass_limit() -
-                        previous_work.cumulative_kkt_matrix_passes()));
-  criteria.set_time_sec_limit(std::max(
-      0.0, criteria.time_sec_limit() - previous_work.cumulative_time_sec()));
+    const IterationStats& previous_work,
+    bool apply_feasibility_polishing_after_limits_reached) {
+  if (apply_feasibility_polishing_after_limits_reached) {
+    criteria.set_iteration_limit(iteration_limit);
+    criteria.set_kkt_matrix_pass_limit(std::numeric_limits<double>::infinity());
+    criteria.set_time_sec_limit(std::numeric_limits<double>::infinity());
+  } else {
+    criteria.set_iteration_limit(std::max(
+        0, std::min(iteration_limit, criteria.iteration_limit() -
+                                         previous_work.iteration_number())));
+    criteria.set_kkt_matrix_pass_limit(
+        std::max(0.0, criteria.kkt_matrix_pass_limit() -
+                          previous_work.cumulative_kkt_matrix_passes()));
+    criteria.set_time_sec_limit(std::max(
+        0.0, criteria.time_sec_limit() - previous_work.cumulative_time_sec()));
+  }
   return criteria;
 }
 
@@ -2725,9 +2888,13 @@ SolverResult Solver::TryPrimalPolishing(
     const std::atomic<bool>* interrupt_solve, SolveLog& solve_log) {
   PrimalDualHybridGradientParams primal_feasibility_params = params_;
   *primal_feasibility_params.mutable_termination_criteria() =
-      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
-                                     iteration_limit,
-                                     TotalWorkSoFar(solve_log));
+      ReduceWorkLimitsByPreviousWork(
+          params_.termination_criteria(), iteration_limit,
+          TotalWorkSoFar(solve_log),
+          params_.apply_feasibility_polishing_after_limits_reached());
+  if (params_.apply_feasibility_polishing_if_solver_is_interrupted()) {
+    interrupt_solve = nullptr;
+  }
 
   // This will save the original objective after the swap.
   VectorXd objective;
@@ -2785,9 +2952,13 @@ SolverResult Solver::TryDualPolishing(VectorXd starting_dual_solution,
                                       SolveLog& solve_log) {
   PrimalDualHybridGradientParams dual_feasibility_params = params_;
   *dual_feasibility_params.mutable_termination_criteria() =
-      ReduceWorkLimitsByPreviousWork(params_.termination_criteria(),
-                                     iteration_limit,
-                                     TotalWorkSoFar(solve_log));
+      ReduceWorkLimitsByPreviousWork(
+          params_.termination_criteria(), iteration_limit,
+          TotalWorkSoFar(solve_log),
+          params_.apply_feasibility_polishing_after_limits_reached());
+  if (params_.apply_feasibility_polishing_if_solver_is_interrupted()) {
+    interrupt_solve = nullptr;
+  }
 
   // These will initially contain the homogenous variable and constraint
   // bounds, but will contain the original variable and constraint bounds
@@ -2854,9 +3025,7 @@ SolverResult Solver::Solve(const IterationType iteration_type,
   // restart.
 
   ratio_last_two_step_sizes_ = 1;
-  current_dual_product_ = TransposedMatrixVectorProduct(
-      WorkingQp().constraint_matrix, current_dual_solution_,
-      ShardedWorkingQp().ConstraintMatrixSharder());
+  SetCurrentPrimalAndDualProducts();
 
   // This is set to true if we can't proceed any more because of numerical
   // issues. We may or may not have found the optimal solution.
@@ -2883,14 +3052,6 @@ SolverResult Solver::Solve(const IterationType iteration_type,
     if (params_.use_feasibility_polishing() &&
         iteration_type == IterationType::kNormal &&
         iterations_completed_ >= next_feasibility_polishing_iteration) {
-      // The total number of iterations in feasibility polishing is at most
-      // `4 * iterations_completed_ / kFeasibilityIterationFraction`.
-      // One factor of two is because there are both primal and dual feasibility
-      // polishing phases, and the other factor of two is because
-      // `next_feasibility_polishing_iteration` increases by a factor of 2 each
-      // feasibility polishing phase, so the sum of iteration limits is at most
-      // twice the last value.
-      const int kFeasibilityIterationFraction = 8;
       const std::optional<SolverResult> feasibility_result =
           TryFeasibilityPolishing(
               iterations_completed_ / kFeasibilityIterationFraction,
@@ -2940,6 +3101,7 @@ SolverResult PrimalDualHybridGradient(
                                   std::move(iteration_stats_callback));
 }
 
+// See comment at top of file.
 SolverResult PrimalDualHybridGradient(
     QuadraticProgram qp, const PrimalDualHybridGradientParams& params,
     std::optional<PrimalAndDualSolution> initial_solution,

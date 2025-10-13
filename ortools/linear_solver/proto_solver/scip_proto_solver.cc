@@ -17,49 +17,61 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <memory>
 #include <numeric>
 #include <optional>
-#include <set>
 #include <string>
 #include <vector>
 
+#include "absl/base/attributes.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_set.h"
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/ascii.h"
-#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
-#include "ortools/gscip/legacy_scip_params.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/linear_solver/proto_solver/scip_params.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/util/lazy_mutable_copy.h"
+#include "scip/cons_and.h"
 #include "scip/cons_disjunction.h"
+#include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
+#include "scip/cons_or.h"
 #include "scip/cons_quadratic.h"
+#include "scip/cons_sos1.h"
+#include "scip/cons_sos2.h"
+#include "scip/def.h"
 #include "scip/pub_var.h"
-#include "scip/scip.h"
+#include "scip/scip_cons.h"
+#include "scip/scip_general.h"
+#include "scip/scip_message.h"
 #include "scip/scip_numerics.h"
 #include "scip/scip_param.h"
 #include "scip/scip_prob.h"
+#include "scip/scip_sol.h"
+#include "scip/scip_solve.h"
+#include "scip/scip_solvingstats.h"
 #include "scip/scip_var.h"
 #include "scip/scipdefplugins.h"
-#include "scip/set.h"
-#include "scip/struct_paramset.h"
+#include "scip/type_clock.h"
 #include "scip/type_cons.h"
-#include "scip/type_paramset.h"
+#include "scip/type_prob.h"
+#include "scip/type_scip.h"
+#include "scip/type_sol.h"
+#include "scip/type_stat.h"
 #include "scip/type_var.h"
 
 ABSL_FLAG(std::string, scip_proto_solver_output_cip_file, "",
@@ -304,7 +316,16 @@ absl::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
 
   std::vector<SCIP_VAR*> vars;
   std::vector<double> vals;
+  // Constraints created by add_abs_constraint.
   std::vector<SCIP_CONS*> cons;
+  // Make sure the constraints don't leak when we exit this scope.
+  absl::Cleanup cons_cleanup = [&]() {
+    for (SCIP_CONS* c : cons) {
+      const absl::Status status = SCIP_TO_STATUS(SCIPreleaseCons(scip, &c));
+      LOG_IF(ERROR, !status.ok()) << status;
+    }
+    cons.clear();
+  };
   auto add_abs_constraint = [&](absl::string_view name_prefix) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
@@ -562,6 +583,7 @@ absl::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
 
   return absl::OkStatus();
 }
+
 }  // namespace
 
 // Returns "" iff the model seems valid for SCIP, else returns a human-readable
@@ -922,9 +944,9 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
       return variable_value;
     };
 
-    // NOTE(user): As of SCIP 7.0.1, getting the pointer to all
-    // solutions is as fast as getting the pointer to the best solution.
-    // See scip/src/scip/scip_sol.c?l=2264&rcl=322332899.
+    // NOTE: As of SCIP 7.0.1, getting the pointer to all solutions is as fast
+    // as getting the pointer to the best solution.
+    // See https://github.com/scipopt/scip/blob/v701/src/scip/scip_sol.c#L2264.
     SCIP_SOL** const scip_solutions = SCIPgetSols(scip);
     response.set_objective_value(SCIPgetSolOrigObj(scip, scip_solutions[0]));
     response.set_best_objective_bound(SCIPgetDualbound(scip));

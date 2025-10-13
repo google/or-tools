@@ -66,6 +66,12 @@ struct LinearConstraint {
   LinearConstraint() = default;
   LinearConstraint(IntegerValue _lb, IntegerValue _ub) : lb(_lb), ub(_ub) {}
 
+  // Compute the normalized violation of the constraint.
+  // For a cut, this is the usual definition of its efficacy.
+  double NormalizedViolation(
+      const util_intops::StrongVector<IntegerVariable, double>& lp_values)
+      const;
+
   // Resize the LinearConstraint to have space for num_terms. We always
   // re-allocate if the size is different to always be tight in memory.
   void resize(int size) {
@@ -109,6 +115,18 @@ struct LinearConstraint {
       return false;
     }
     return true;
+  }
+
+  // We rarelly need to copy a LinearConstraint and it should almost always
+  // be moved instead, so we don't want a copy constructor. This can be used
+  // if one really need to copy it.
+  void CopyFrom(const LinearConstraint& other) {
+    const int n = other.num_terms;
+    resize(n);
+    lb = other.lb;
+    ub = other.ub;
+    std::memcpy(vars.get(), other.vars.get(), n * sizeof(IntegerVariable));
+    std::memcpy(coeffs.get(), other.coeffs.get(), n * sizeof(IntegerValue));
   }
 
   bool operator==(const LinearConstraint& other) const {
@@ -234,7 +252,7 @@ class LinearConstraintBuilder {
   ABSL_MUST_USE_RESULT bool AddDecomposedProduct(
       absl::Span<const LiteralValueValue> product);
 
-  // Add literal * coeff to the constaint. Returns false and do nothing if the
+  // Add literal * coeff to the constraint. Returns false and do nothing if the
   // given literal didn't have an integer view.
   ABSL_MUST_USE_RESULT bool AddLiteralTerm(
       Literal lit, IntegerValue coeff = IntegerValue(1));
@@ -288,6 +306,8 @@ class LinearConstraintBuilder {
   // bounds.
   LinearExpression BuildExpression();
 
+  int NumTerms() const { return terms_.size(); }
+
  private:
   const IntegerEncoder* encoder_;
   IntegerValue lb_;
@@ -310,8 +330,8 @@ double ComputeActivity(
 // linear relaxation. This is a bit relaxed compared to what we require for
 // generic linear constraint that are used in our CP propagators.
 //
-// If this check pass, our constraint should be safe to use in our simplication
-// code, our cut computation, etc...
+// If this check pass, our constraint should be safe to use in our
+// simplification code, our cut computation, etc...
 bool PossibleOverflow(const IntegerTrail& integer_trail,
                       const LinearConstraint& constraint);
 
@@ -327,7 +347,7 @@ double ScalarProduct(const LinearConstraint& constraint1,
                      const LinearConstraint& constraint2);
 
 // Computes the GCD of the constraint coefficient, and divide them by it. This
-// also tighten the constraint bounds assumming all the variables are integer.
+// also tighten the constraint bounds assuming all the variables are integer.
 void DivideByGCD(LinearConstraint* constraint);
 
 // Removes the entries with a coefficient of zero.

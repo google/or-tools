@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 316
+// NEXT TAG: 337
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -139,6 +139,21 @@ message SatParameters {
   // conflict. When this is true, such clauses are detached and later removed
   // from the problem.
   optional bool subsumption_during_conflict_analysis = 56 [default = true];
+
+  // If true, try to backtrack as little as possible on conflict and re-imply
+  // the clauses later.
+  // This means we discard less propagation than traditional backjumping, but
+  // requites additional bookkeeping to handle reimplication.
+  // See: https://doi.org/10.1007/978-3-319-94144-8_7
+  optional bool use_chronological_backtracking = 330 [default = false];
+
+  // If chronological backtracking is enabled, this is the maximum number of
+  // levels we will backjump over, otherwise we will backtrack.
+  optional int32 max_backjump_levels = 331 [default = 50];
+
+  // If chronological backtracking is enabled, this is the minimum number of
+  // conflicts before we will consider backjumping.
+  optional int32 chronological_backtrack_min_conflicts = 332 [default = 1000];
 
   // ==========================================================================
   // Clause database management
@@ -411,6 +426,15 @@ message SatParameters {
   // occurrences of not(x) is not greater than this parameter.
   optional int32 presolve_bve_threshold = 54 [default = 500];
 
+  // Internal parameter. During BVE, if we eliminate a variable x, by default we
+  // will push all clauses containing x and all clauses containing not(x) to the
+  // postsolve. However, it is possible to write the postsolve code so that only
+  // one such set is needed. The idea is that, if we push the set containing a
+  // literal l, is to set l to false except if it is needed to satisfy one of
+  // the clause in the set. This is always beneficial, but for historical
+  // reason, not all our postsolve algorithm support this.
+  optional bool filter_sat_postsolve_clauses = 324 [default = false];
+
   // During presolve, we apply BVE only if this weight times the number of
   // clauses plus the number of clause literals is not increased.
   optional int32 presolve_bve_clause_weight = 55 [default = 3];
@@ -451,6 +475,14 @@ message SatParameters {
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
 
+  // If we try to load at most ones and exactly ones constraints when running
+  // the pure SAT presolve. Or if we just ignore them.
+  //
+  // If one detects at_most_one via merge_at_most_one_work_limit or exactly one
+  // with find_clauses_that_are_exactly_one, it might be good to also set this
+  // to true.
+  optional bool load_at_most_ones_in_sat_presolve = 335 [default = false];
+
   // If cp_model_presolve is true and there is a large proportion of fixed
   // variable after the first model copy, remap all the model to a dense set of
   // variable before the full presolve even starts. This should help for LNS on
@@ -475,9 +507,15 @@ message SatParameters {
   // Permutations (#Variables = #Values) are always expanded.
   optional bool expand_alldiff_constraints = 170 [default = false];
 
+  // Max domain size for all_different constraints to be expanded.
+  optional int32 max_alldiff_domain_size = 320 [default = 256];
+
   // If true, expand the reservoir constraints by creating booleans for all
   // possible precedences between event and encoding the constraint.
   optional bool expand_reservoir_constraints = 182 [default = true];
+
+  // Max domain size for expanding linear2 constraints (ax + by ==/!= c).
+  optional int32 max_domain_size_for_linear2_expansion = 336 [default = 8];
 
   // Mainly useful for testing.
   //
@@ -565,6 +603,13 @@ message SatParameters {
   // integer variable corresponding to the common expression and greatly reduce
   // the number of non-zero.
   optional bool find_big_linear_overlap = 234 [default = true];
+
+  // By propagating (or just using binary clauses), one can detect that all
+  // literal of a clause are actually in at most one relationship. Thus this
+  // constraint can be promoted to an exactly one constraints. This should help
+  // as it convey more structure. Note that this is expensive, so we have a
+  // deterministic limit in place.
+  optional bool find_clauses_that_are_exactly_one = 333 [default = true];
 
   // ==========================================================================
   // Inprocessing
@@ -691,16 +736,26 @@ message SatParameters {
   // Allows sharing of the bounds of modified variables at level 0.
   optional bool share_level_zero_bounds = 114 [default = true];
 
+  // Allows sharing of the bounds on linear2 discovered at level 0. This is
+  // mainly interesting on scheduling type of problems when we branch on
+  // precedences.
+  //
+  // Warning: This currently non-deterministic.
+  optional bool share_linear2_bounds = 326 [default = false];
+
   // Allows sharing of new learned binary clause between workers.
   optional bool share_binary_clauses = 203 [default = true];
 
   // Allows sharing of short glue clauses between workers.
   // Implicitly disabled if share_binary_clauses is false.
-  optional bool share_glue_clauses = 285 [default = false];
+  optional bool share_glue_clauses = 285 [default = true];
 
   // Minimize and detect subsumption of shared clauses immediately after they
   // are imported.
   optional bool minimize_shared_clauses = 300 [default = true];
+
+  // The amount of dtime between each export of shared glue clauses.
+  optional double share_glue_clauses_dtime = 322 [default = 1.0];
 
   // ==========================================================================
   // Debugging parameters
@@ -803,6 +858,11 @@ message SatParameters {
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_precedences_in_disjunctive_constraint = 74 [default = true];
 
+  // At root level, we might compute the transitive closure of "precedences"
+  // relations so that we can exploit that in scheduling problems. Setting this
+  // to zero disable the feature.
+  optional int32 transitive_precedences_work_limit = 327 [default = 1000000];
+
   // Create one literal for each disjunction of two pairs of tasks. This slows
   // down the solve time, but improves the lower bound of the objective in the
   // makespan case. This will be triggered if the number of intervals is less or
@@ -876,6 +936,21 @@ message SatParameters {
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_disjunctive_constraint_in_cumulative = 80 [default = true];
 
+  // If less than this number of boxes are present in a no-overlap 2d, we
+  // create 4 Booleans per pair of boxes:
+  // - Box 2 is after Box 1 on x.
+  // - Box 1 is after Box 2 on x.
+  // - Box 2 is after Box 1 on y.
+  // - Box 1 is after Box 2 on y.
+  //
+  // Note that at least one of them must be true, and at most one on x and one
+  // on y can be true.
+  //
+  // This can significantly help in closing small problem. The SAT reasoning
+  // can be a lot more powerful when we take decision on such positional
+  // relations.
+  optional int32 no_overlap_2d_boolean_relations_limit = 321 [default = 10];
+
   // When this is true, the no_overlap_2d constraint is reinforced with
   // propagators from the cumulative constraints. It consists of ignoring the
   // position of rectangles in one position and projecting the no_overlap_2d on
@@ -916,6 +991,15 @@ message SatParameters {
   optional int32 maximum_regions_to_split_in_disconnected_no_overlap_2d = 315
       [default = 0];
 
+  // When set, this activates a propagator for the no_overlap_2d constraint that
+  // uses any eventual linear constraints of the model in the form
+  // `{start interval 1} - {end interval 2} + c*w <= ub` to detect that two
+  // intervals must overlap in one dimension for some values of `w`. This is
+  // particularly useful for problems where the distance between two boxes is
+  // part of the model.
+  optional bool use_linear3_for_no_overlap_2d_precedences = 323
+      [default = true];
+
   // When set, it activates a few scheduling parameters to improve the lower
   // bound of scheduling problems. This is only effective with multiple workers
   // as it modifies the reduced_cost, lb_tree_search, and probing workers.
@@ -942,11 +1026,28 @@ message SatParameters {
   optional int32 routing_cut_subset_size_for_tight_binary_relation_bound = 313
       [default = 0];
 
+  // Similar to above, but with an even stronger algorithm in O(n!). We try to
+  // be defensive and abort early or not run that often. Still the value of
+  // that parameter shouldn't really be much more than 10.
+  optional int32 routing_cut_subset_size_for_exact_binary_relation_bound = 316
+      [default = 8];
+
+  // Similar to routing_cut_subset_size_for_exact_binary_relation_bound but
+  // use a bound based on shortest path distances (which respect triangular
+  // inequality). This allows to derive bounds that are valid for any superset
+  // of a given subset. This is slow, so it shouldn't really be larger than 10.
+  optional int32 routing_cut_subset_size_for_shortest_paths_bound = 318
+      [default = 8];
+
   // The amount of "effort" to spend in dynamic programming for computing
   // routing cuts. This is in term of basic operations needed by the algorithm
   // in the worst case, so a value like 1e8 should take less than a second to
   // compute.
   optional double routing_cut_dp_effort = 314 [default = 1e7];
+
+  // If the length of an infeasible path is less than this value, a cut will be
+  // added to exclude it.
+  optional int32 routing_cut_max_infeasible_path_length = 317 [default = 6];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {
@@ -1019,12 +1120,14 @@ message SatParameters {
   optional int32 probing_num_combinations_limit = 272 [default = 20000];
 
   // Add a shaving phase (where the solver tries to prove that the lower or
-  // upper bound of a variable are infeasible) to the probing search.
-  optional bool use_shaving_in_probing_search = 204 [default = true];
+  // upper bound of a variable are infeasible) to the probing search. (<= 0
+  // disables it).
+  optional double shaving_deterministic_time_in_probing_search = 204
+      [default = 0.001];
 
   // Specifies the amount of deterministic time spent of each try at shaving a
   // bound in the shaving search.
-  optional double shaving_search_deterministic_time = 205 [default = 0.001];
+  optional double shaving_search_deterministic_time = 205 [default = 0.1];
 
   // Specifies the threshold between two modes in the shaving procedure.
   // If the range of the variable/objective is less than this threshold, then
@@ -1042,8 +1145,9 @@ message SatParameters {
   optional bool use_objective_shaving_search = 253 [default = false];
 
   // This search takes all Boolean or integer variables, and maximize or
-  // minimize them in order to reduce their domain.
-  optional bool use_variables_shaving_search = 289 [default = false];
+  // minimize them in order to reduce their domain. -1 is automatic, otherwise
+  // value 0 disables it, and 1, 2, or 3 changes something.
+  optional int32 variables_shaving_level = 289 [default = -1];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.
@@ -1148,7 +1252,7 @@ message SatParameters {
   // the same subtrees as one another.
   // Specifying a negative number uses a heuristic to select an appropriate
   // number of shared tree workeres based on the total number of workers.
-  optional int32 shared_tree_num_workers = 235 [default = 0];
+  optional int32 shared_tree_num_workers = 235 [default = -1];
 
   // Set on shared subtree workers. Users should not set this directly.
   optional bool use_shared_tree_search = 236 [default = false];
@@ -1206,13 +1310,20 @@ message SatParameters {
   // SPLIT_STRATEGY_BALANCED_TREE and SPLIT_STRATEGY_DISCREPANCY.
   optional int32 shared_tree_balance_tolerance = 305 [default = 1];
 
-  // Whether we enumerate all solutions of a problem without objective. Note
-  // that setting this to true automatically disable some presolve reduction
-  // that can remove feasible solution. That is it has the same effect as
-  // setting keep_all_feasible_solutions_in_presolve.
+  // How much dtime a worker will wait between proposing splits.
+  // This limits the contention in splitting the shared tree, and also reduces
+  // the number of too-easy subtrees that are generates.
+  optional double shared_tree_split_min_dtime = 328 [default = 0.1];
+
+  // Whether we enumerate all solutions of a problem without objective.
   //
-  // TODO(user): Do not do that and let the user choose what behavior is best by
-  // setting keep_all_feasible_solutions_in_presolve ?
+  // WARNING:
+  // - This can be used with num_workers > 1 but then each solutions can be
+  //   found more than once, so it is up to the client to deduplicate them.
+  // - If keep_all_feasible_solutions_in_presolve is unset, we will set it to
+  //   true as otherwise, many feasible solution can just be removed by the
+  //   presolve. It is still possible to manually set this to false if one only
+  //   wants to enumerate all solutions of the presolved model.
   optional bool enumerate_all_solutions = 87 [default = false];
 
   // If true, we disable the presolve reductions that remove feasible solutions
@@ -1277,9 +1388,20 @@ message SatParameters {
   optional bool use_lns_only = 101 [default = false];
 
   // Size of the top-n different solutions kept by the solver.
-  // This parameter must be > 0.
-  // Currently this only impact the "base" solution chosen for a LNS fragment.
+  // This parameter must be > 0. Currently, having this larger than one mainly
+  // impact the "base" solution chosen for a LNS/LS fragment.
   optional int32 solution_pool_size = 193 [default = 3];
+
+  // If solution_pool_size is <= this, we will use DP to keep a "diverse" set
+  // of solutions (the one further apart via hamming distance) in the pool.
+  // Setting this to large value might be slow, especially if your solution are
+  // large.
+  optional int32 solution_pool_diversity_limit = 329 [default = 10];
+
+  // In order to not get stuck in local optima, when this is non-zero, we try to
+  // also work on "older" solutions with a worse objective value so we get a
+  // chance to follow a different LS/LNS trajectory.
+  optional int32 alternative_pool_size = 325 [default = 1];
 
   // Turns on relaxation induced neighborhood generator.
   optional bool use_rins_lns = 129 [default = true];

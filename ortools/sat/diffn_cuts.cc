@@ -128,8 +128,7 @@ struct DiffnEnergyEvent : DiffnBaseEvent {
         ", x_start_max = ", x_start_max.value(),
         ", x_end_min = ", x_end_min.value(),
         ", x_end_max = ", x_end_max.value(), ", y_min = ", y_min.value(),
-        ", y_max = ", y_max.value(), ", y_size = ", y_size.DebugString(),
-        ", energy = ",
+        ", y_max = ", y_max.value(), ", y_size = ", y_size, ", energy = ",
         decomposed_energy.empty()
             ? "{}"
             : absl::StrCat(decomposed_energy.size(), " terms"),
@@ -373,15 +372,14 @@ DiffnCtEvent::DiffnCtEvent(int t, const SchedulingConstraintHelper* x_helper)
     : DiffnBaseEvent(t, x_helper) {}
 
 std::string DiffnCtEvent::DebugString() const {
-  return absl::StrCat("DiffnCtEvent(x_end = ", x_end.DebugString(),
-                      ", x_start_min = ", x_start_min.value(),
-                      ", x_start_max = ", x_start_max.value(),
-                      ", x_size_min = ", x_size_min.value(),
-                      ", x_lp_end = ", x_lp_end, ", y_min = ", y_min.value(),
-                      ", y_max = ", y_max.value(),
-                      ", y_size_min = ", y_size_min.value(),
-                      ", energy_min = ", energy_min.value(),
-                      ", use_energy = ", use_energy, ", lifted = ", lifted);
+  return absl::StrCat(
+      "DiffnCtEvent(x_end = ", x_end, ", x_start_min = ", x_start_min.value(),
+      ", x_start_max = ", x_start_max.value(),
+      ", x_size_min = ", x_size_min.value(), ", x_lp_end = ", x_lp_end,
+      ", y_min = ", y_min.value(), ", y_max = ", y_max.value(),
+      ", y_size_min = ", y_size_min.value(),
+      ", energy_min = ", energy_min.value(), ", use_energy = ", use_energy,
+      ", lifted = ", lifted);
 }
 
 // We generate the cut from the Smith's rule from:
@@ -483,7 +481,7 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
     // Best cut so far for this loop.
     int best_end = -1;
     double best_efficacy = 0.01;
-    IntegerValue best_min_rhs = 0;
+    IntegerValue best_min_total_area = 0;
     bool best_use_subset_sum = false;
 
     // Used in the first term of the rhs of the equation.
@@ -548,16 +546,16 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       const IntegerValue rhs_second_term =
           CeilRatio(square_sum_energy, reachable_capacity);
 
-      IntegerValue min_rhs = CapAddI(sum_event_areas, rhs_second_term);
-      if (AtMinOrMaxInt64I(min_rhs)) break;
-      min_rhs = CeilRatio(min_rhs, 2);
+      IntegerValue min_total_area = CapAddI(sum_event_areas, rhs_second_term);
+      if (AtMinOrMaxInt64I(min_total_area)) break;
+      min_total_area = CeilRatio(min_total_area, 2);
 
       // shift contribution by current_start_min.
-      if (!AddProductTo(sum_energy, current_start_min, &min_rhs)) break;
+      if (!AddProductTo(sum_energy, current_start_min, &min_total_area)) break;
 
       // The efficacy of the cut is the normalized violation of the above
       // equation. We will normalize by the sqrt of the sum of squared energies.
-      const double efficacy = (ToDouble(min_rhs) - lp_contrib) /
+      const double efficacy = (ToDouble(min_total_area) - lp_contrib) /
                               std::sqrt(ToDouble(sum_square_energy));
 
       // For a given start time, we only keep the best cut.
@@ -569,13 +567,13 @@ void GenerateNoOvelap2dCompletionTimeCuts(absl::string_view cut_name,
       if (efficacy > best_efficacy) {
         best_efficacy = efficacy;
         best_end = i;
-        best_min_rhs = min_rhs;
+        best_min_total_area = min_total_area;
         best_use_subset_sum =
             reachable_capacity < y_max_of_subset - y_min_of_subset;
       }
     }
     if (best_end != -1) {
-      LinearConstraintBuilder cut(model, best_min_rhs, kMaxIntegerValue);
+      LinearConstraintBuilder cut(model, best_min_total_area, kMaxIntegerValue);
       bool is_lifted = false;
       bool add_energy_to_name = false;
       for (int i = 0; i <= best_end; ++i) {
@@ -668,11 +666,11 @@ CutGenerator CreateNoOverlap2dCompletionTimeCutGenerator(
       if (!helper->SynchronizeAndSetDirection(false, false, false)) {
         return false;
       }
-      generate_cuts("NoOverlap2dXCompletionTime_mirror");
+      generate_cuts("NoOverlap2dXCompletionTime");
       if (!helper->SynchronizeAndSetDirection(false, false, true)) {
         return false;
       }
-      generate_cuts("NoOverlap2dYCompletionTime_mirror");
+      generate_cuts("NoOverlap2dYCompletionTime");
     }
     return true;
   };

@@ -14,6 +14,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 /// <summary>
 ///   Sample showing how to model and solve a capacitated vehicle routing
@@ -271,8 +272,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
         }
 
         // Solving
-        RoutingSearchParameters search_parameters =
-            operations_research_constraint_solver.DefaultRoutingSearchParameters();
+        RoutingSearchParameters search_parameters = RoutingGlobals.DefaultRoutingSearchParameters();
         search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.AllUnperformed;
 
         Console.WriteLine("Search...");
@@ -298,13 +298,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows
             for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle)
             {
                 String route = "Vehicle " + vehicle + ": ";
-                long order = model.Start(vehicle);
-                if (model.IsEnd(solution.Value(model.NextVar(order))))
+                if (!model.IsVehicleUsed(solution, vehicle))
                 {
                     route += "Empty";
                 }
                 else
                 {
+                    long order = model.Start(vehicle);
                     for (; !model.IsEnd(order); order = solution.Value(model.NextVar(order)))
                     {
                         IntVar local_load = capacity_dimension.CumulVar(order);

@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,7 +25,7 @@ cc_library(
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:model",
         "//ortools/sat:sat_parameters_cc_proto",
-        "//ortools/util:time_limit",
-        "@com_google_absl//absl/log:check",
+        "//ortools/sat:util",
+        "@abseil-cpp//absl/log:check",
     ],
 )

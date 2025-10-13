@@ -13,16 +13,35 @@
 
 #include "ortools/math_opt/solvers/xpress_solver.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/log/check.h"
+#include "absl/memory/memory.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
+#include "absl/types/span.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/math_opt/core/inverted_bounds.h"
 #include "ortools/math_opt/core/math_opt_proto_utils.h"
+#include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
-#include "ortools/math_opt/cpp/solve_result.h"
+#include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
+#include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -70,20 +89,19 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .indicator_constraints = SupportType::kNotSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
-    const ModelProto& input_model, const SolverInterface::InitArgs& init_args) {
+    const ModelProto& model, const InitArgs&) {
   if (!XpressIsCorrectlyInstalled()) {
     return absl::InvalidArgumentError("Xpress is not correctly installed.");
   }
   RETURN_IF_ERROR(
-      ModelIsSupported(input_model, kXpressSupportedStructures, "XPRESS"));
+      ModelIsSupported(model, kXpressSupportedStructures, "XPRESS"));
 
   // We can add here extra checks that are not made in ModelIsSupported
   // (for example, if XPRESS does not support multi-objective with quad terms)
 
-  ASSIGN_OR_RETURN(std::unique_ptr<Xpress> xpr,
-                   Xpress::New(input_model.name()));
+  ASSIGN_OR_RETURN(auto xpr, Xpress::New(model.name()));
   auto xpress_solver = absl::WrapUnique(new XpressSolver(std::move(xpr)));
-  RETURN_IF_ERROR(xpress_solver->LoadModel(input_model));
+  RETURN_IF_ERROR(xpress_solver->LoadModel(model));
   return xpress_solver;
 }
 
@@ -103,7 +121,7 @@ absl::Status XpressSolver::AddNewVariables(
   int n_variables = xpress_->GetNumberOfVariables();
   for (int j = 0; j < num_new_variables; ++j) {
     const VarId id = new_variables.ids(j);
-    InsertOrDie(&variables_map_, id, j + n_variables);
+    gtl::InsertOrDie(&variables_map_, id, j + n_variables);
     variable_type[j] =
         new_variables.integers(j) ? XPRS_INTEGER : XPRS_CONTINUOUS;
     if (new_variables.integers(j)) {
@@ -138,7 +156,7 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   for (int i = 0; i < num_new_constraints; ++i) {
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
-        InsertKeyOrDie(&linear_constraints_map_, id);
+        gtl::InsertKeyOrDie(&linear_constraints_map_, id);
     const double lb = constraints.lower_bounds(i);
     const double ub = constraints.upper_bounds(i);
     constraint_data.lower_bound = lb;
@@ -223,10 +241,9 @@ absl::Status XpressSolver::ChangeCoefficients(
 
 absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     const SolveParametersProto& parameters,
-    const ModelSolveParametersProto& model_parameters,
-    MessageCallback message_cb,
-    const CallbackRegistrationProto& callback_registration, Callback cb,
-    const SolveInterrupter* interrupter) {
+    const ModelSolveParametersProto& model_parameters, MessageCallback,
+    const CallbackRegistrationProto& callback_registration, Callback,
+    const SolveInterrupter*) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kXpressSupportedStructures, "XPRESS"));
   const absl::Time start = absl::Now();
@@ -239,8 +256,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // Check that bounds are not inverted just before solve
   // XPRESS returns "infeasible" when bounds are inverted
   {
-    ASSIGN_OR_RETURN(const InvertedBounds inv_bounds, ListInvertedBounds());
-    RETURN_IF_ERROR(inv_bounds.ToStatus());
+    ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
+                     ListInvertedBounds());
+    RETURN_IF_ERROR(inverted_bounds.ToStatus());
   }
 
   // Set initial basis
@@ -327,11 +345,11 @@ absl::Status XpressSolver::SetLpIterLimits(
   // explicitly to their default values, else the parameters could be kept
   // between solves.
   if (parameters.has_iteration_limit()) {
-    RETURN_IF_ERROR(
-        xpress_->SetIntControl(XPRS_LPITERLIMIT, parameters.iteration_limit()))
+    RETURN_IF_ERROR(xpress_->SetIntControl(
+        XPRS_LPITERLIMIT, static_cast<int>(parameters.iteration_limit())))
         << "Could not set XPRS_LPITERLIMIT";
-    RETURN_IF_ERROR(
-        xpress_->SetIntControl(XPRS_BARITERLIMIT, parameters.iteration_limit()))
+    RETURN_IF_ERROR(xpress_->SetIntControl(
+        XPRS_BARITERLIMIT, static_cast<int>(parameters.iteration_limit())))
         << "Could not set XPRS_BARITERLIMIT";
   } else {
     RETURN_IF_ERROR(xpress_->ResetIntControl(XPRS_LPITERLIMIT))
@@ -359,8 +377,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::ExtractSolveResultProto(
 }
 
 absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
-  if (lp_algorithm_ == LP_ALGORITHM_PRIMAL_SIMPLEX && isPrimalFeasible() ||
-      xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL) {
+  if ((lp_algorithm_ == LP_ALGORITHM_PRIMAL_SIMPLEX) &&
+      (isPrimalFeasible() ||
+       xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL)) {
     // When primal simplex algorithm is used, XPRESS uses LPOBJVAL to store the
     // primal problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
@@ -369,8 +388,9 @@ absl::StatusOr<double> XpressSolver::GetBestPrimalBound() const {
 }
 
 absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
-  if (lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX && isPrimalFeasible() ||
-      xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL) {
+  if ((lp_algorithm_ == LP_ALGORITHM_DUAL_SIMPLEX) &&
+      (isPrimalFeasible() ||
+       xpress_lp_status_.primal_status == XPRS_LP_OPTIMAL)) {
     // When dual simplex algorithm is used, XPRESS uses LPOBJVAL to store the
     // dual problem's objective value
     return xpress_->GetDoubleAttr(XPRS_LPOBJVAL);
@@ -565,7 +585,7 @@ absl::Status XpressSolver::SetXpressStartingBasis(const BasisProto& basis) {
 }
 
 absl::StatusOr<std::optional<BasisProto>> XpressSolver::GetBasisIfAvailable(
-    const SolveParametersProto& parameters) {
+    const SolveParametersProto&) {
   std::vector<int> xprs_variable_basis_status;
   std::vector<int> xprs_constraint_basis_status;
   if (!xpress_
@@ -691,18 +711,17 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
   }
 }
 
-absl::StatusOr<bool> XpressSolver::Update(
-    const ModelUpdateProto& model_update) {
+absl::StatusOr<bool> XpressSolver::Update(const ModelUpdateProto&) {
   // Not implemented yet
   return false;
 }
 
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                                         MessageCallback message_cb,
-                                         const SolveInterrupter* interrupter) {
+XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
+                                         MessageCallback,
+                                         const SolveInterrupter*) {
   return absl::UnimplementedError(
-      "XpressSolver cannot compute infeasible subsystem yet");
+      "XPRESS does not provide a method to compute an infeasible subsystem");
 }
 
 absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {

@@ -11,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+# Description: python wrapping of the libraries in ../
 
-# Python wrapper for ..
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:defs.bzl", "py_test")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 # OSS solvers
 bool_flag(
@@ -27,9 +27,7 @@ bool_flag(
 
 config_setting(
     name = "use_cbc",
-    flag_values = {
-        ":with_cbc": "true",
-    },
+    flag_values = {":with_cbc": "true"},
 )
 
 bool_flag(
@@ -39,9 +37,7 @@ bool_flag(
 
 config_setting(
     name = "use_scip",
-    flag_values = {
-        ":with_scip": "true",
-    },
+    flag_values = {":with_scip": "true"},
 )
 
 # knapsack_solver
@@ -54,7 +50,7 @@ cc_library(
 pybind_extension(
     name = "knapsack_solver",
     srcs = ["knapsack_solver.cc"],
-    copts = [] + select({
+    copts = select({
         ":use_cbc": ["-DUSE_CBC"],
         "//conditions:default": [],
     }) + select({
@@ -65,43 +61,15 @@ pybind_extension(
     deps = [
         ":knapsack_solver_doc",
         "//ortools/algorithms:knapsack_solver_lib",
-        "@com_google_absl//absl/strings",
     ],
 )
 
 py_test(
     name = "knapsack_solver_test",
+    size = "small",
     srcs = ["knapsack_solver_test.py"],
-    python_version = "PY3",
     deps = [
         ":knapsack_solver",
-        requirement("absl-py"),
-    ],
-)
-
-# set_cover
-pybind_extension(
-    name = "set_cover",
-    srcs = ["set_cover.cc"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//ortools/algorithms:set_cover_cc_proto",
-        "//ortools/algorithms:set_cover_heuristics",
-        "//ortools/algorithms:set_cover_invariant",
-        "//ortools/algorithms:set_cover_model",
-        "//ortools/algorithms:set_cover_reader",
-        "@com_google_absl//absl/strings",
-        "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
-    ],
-)
-
-py_test(
-    name = "set_cover_test",
-    srcs = ["set_cover_test.py"],
-    python_version = "PY3",
-    deps = [
-        ":set_cover",
-        "//ortools/algorithms:set_cover_py_pb2",
         requirement("absl-py"),
     ],
 )

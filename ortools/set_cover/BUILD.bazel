@@ -1,0 +1,317 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# Description:
+# A solver for weighted set covering with side constraints
+
+proto_library(
+    name = "set_cover_proto",
+    srcs = ["set_cover.proto"],
+    deps = [
+        "//ortools/util:int128_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "set_cover_cc_proto",
+    deps = [":set_cover_proto"],
+)
+
+py_proto_library(
+    name = "set_cover_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":set_cover_proto"],
+)
+
+cc_library(
+    name = "base_types",
+    hdrs = ["base_types.h"],
+    deps = [
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "base_types_test",
+    srcs = ["base_types_test.cc"],
+    deps = [
+        ":base_types",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/types:span",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "set_cover_lagrangian",
+    srcs = ["set_cover_lagrangian.cc"],
+    hdrs = ["set_cover_lagrangian.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/algorithms:adjustable_k_ary_heap",
+        "//ortools/base:threadpool",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_model",
+    srcs = ["set_cover_model.cc"],
+    hdrs = ["set_cover_model.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        "//ortools/algorithms:radix_sort",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_invariant",
+    srcs = ["set_cover_invariant.cc"],
+    hdrs = ["set_cover_invariant.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_model",
+        "//ortools/base",
+        "//ortools/base:mathutil",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_heuristics",
+    srcs = ["set_cover_heuristics.cc"],
+    hdrs = ["set_cover_heuristics.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/algorithms:adjustable_k_ary_heap",
+        "//ortools/base",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/numeric:bits",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_mip",
+    srcs = ["set_cover_mip.cc"],
+    hdrs = ["set_cover_mip.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/linear_solver",
+        "//ortools/lp_data:base",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "set_cover_reader",
+    srcs = ["set_cover_reader.cc"],
+    hdrs = ["set_cover_reader.h"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_model",
+        "//ortools/base:file",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "assignment",
+    srcs = ["assignment.cc"],
+    hdrs = ["assignment.h"],
+    deps = [
+        ":base_types",
+        ":capacity_invariant",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:mathutil",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "assignment_test",
+    srcs = ["assignment_test.cc"],
+    deps = [
+        ":assignment",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_binary(
+    name = "set_cover_solve",
+    srcs = ["set_cover_solve.cc"],
+    deps = [
+        ":base_types",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_model",
+        ":set_cover_reader",
+        "//ortools/base",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+cc_test(
+    name = "set_cover_test",
+    size = "medium",
+    timeout = "eternal",
+    srcs = ["set_cover_test.cc"],
+    tags = ["manual"],
+    deps = [
+        ":base_types",
+        ":set_cover_cc_proto",
+        ":set_cover_heuristics",
+        ":set_cover_invariant",
+        ":set_cover_mip",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_text_proto",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+# Side constraint: capacity.
+
+proto_library(
+    name = "capacity_proto",
+    srcs = ["capacity.proto"],
+)
+
+cc_proto_library(
+    name = "capacity_cc_proto",
+    deps = [":capacity_proto"],
+)
+
+py_proto_library(
+    name = "capacity_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":capacity_proto"],
+)
+
+cc_library(
+    name = "capacity_model",
+    srcs = ["capacity_model.cc"],
+    hdrs = ["capacity_model.h"],
+    deps = [
+        ":base_types",
+        ":capacity_cc_proto",
+        ":set_cover_model",
+        "//ortools/base:intops",
+        "//ortools/base:strong_vector",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "capacity_model_test",
+    srcs = ["capacity_model_test.cc"],
+    deps = [
+        ":capacity_model",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "capacity_invariant",
+    srcs = ["capacity_invariant.cc"],
+    hdrs = ["capacity_invariant.h"],
+    deps = [
+        ":base_types",
+        ":capacity_model",
+        ":set_cover_model",
+        "//ortools/util:saturated_arithmetic",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+    ],
+)
+
+cc_test(
+    name = "capacity_invariant_test",
+    srcs = ["capacity_invariant_test.cc"],
+    deps = [
+        ":capacity_invariant",
+        ":capacity_model",
+        ":set_cover_model",
+        "//ortools/base:gmock_main",
+    ],
+)

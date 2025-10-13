@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -23,6 +24,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -32,9 +34,29 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_FLAG(bool, cp_model_dump_models, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
+          "protos (original model, presolved model, mapping model) in text "
+          "format to 'FLAGS_cp_model_dump_prefix'{model|presolved_model|"
+          "mapping_model}.pb.txt.");
+
+#if defined(_MSC_VER)
+ABSL_FLAG(std::string, cp_model_dump_prefix, ".\\",
+          "Prefix filename for all dumped files");
+#else
+ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
+          "Prefix filename for all dumped files");
+#endif
+
+ABSL_FLAG(bool, cp_model_dump_submodels, false,
+          "DEBUG ONLY. When set to true, solve will dump all "
+          "lns or objective_shaving submodels proto in text format to "
+          "'FLAGS_cp_model_dump_prefix'xxx.pb.txt.");
 
 namespace operations_research {
 namespace sat {
@@ -162,6 +184,7 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       AddIndices(ct.routes().literals(), literals);
+      // The node expressions are not used by the constraint itself.
       break;
     case ConstraintProto::ConstraintCase::kInverse:
       AddIndices(ct.inverse().f_direct(), variables);
@@ -657,6 +680,24 @@ void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
   }
 }
 
+void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
+                      LinearConstraintProto* linear) {
+  linear->Clear();
+  for (const int lit : literals) {
+    if (RefIsPositive(lit)) {
+      linear->add_vars(lit);
+      linear->add_coeffs(1);
+    } else {
+      linear->add_vars(NegatedRef(lit));
+      linear->add_coeffs(-1);
+      lb -= 1;
+      ub -= 1;
+    }
+  }
+  linear->add_domain(lb);
+  linear->add_domain(ub);
+}
+
 bool SafeAddLinearExpressionToLinearConstraint(
     const LinearExpressionProto& expr, int64_t coefficient,
     LinearConstraintProto* linear) {
@@ -955,60 +996,165 @@ void SetupTextFormatPrinter(google::protobuf::TextFormat::Printer* printer) {
 }
 #endif  // !defined(__PORTABLE_PLATFORM__)
 
-bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out) {
-  out->clear();
-
-  // We should have no objective, only unassigned Boolean, and only bool_or and
-  // bool_and.
-  if (cp_model.has_objective()) return false;
+namespace {
+bool ModelHasOnlyClausesAndBooleanVariables(const CpModelProto& cp_model,
+                                            int* num_clauses) {
   const int num_vars = cp_model.variables().size();
+  *num_clauses = 0;
   for (int v = 0; v < num_vars; ++v) {
-    if (cp_model.variables(v).domain().size() != 2) return false;
-    if (cp_model.variables(v).domain(0) != 0) return false;
-    if (cp_model.variables(v).domain(1) != 1) return false;
+    const auto& domain = cp_model.variables(v).domain();
+    if (domain.size() != 2) return false;
+    const int64_t lb = domain.Get(0);
+    const int64_t ub = domain.Get(1);
+    if (lb == ub) {
+      if (lb != 0 && lb != 1) return false;
+      ++(*num_clauses);
+    } else if (lb != 0 || ub != 1) {
+      return false;
+    }
   }
-  int num_clauses = 0;
   for (const ConstraintProto& ct : cp_model.constraints()) {
     if (ct.constraint_case() == ConstraintProto::kBoolOr) {
-      ++num_clauses;
+      ++(*num_clauses);
     } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      num_clauses += ct.bool_and().literals().size();
+      *num_clauses += ct.bool_and().literals().size();
     } else {
       return false;
     }
   }
+  return true;
+}
 
-  // We can convert.
-  std::string start;
-  absl::StrAppend(out, "p cnf ", num_vars, " ", num_clauses, "\n");
+bool ModelIsMaxSat(const CpModelProto& cp_model) {
+  // We should only have only bool_or and bool_and, and an integral objective.
+  int num_clauses = 0;
+  if (!cp_model.has_objective()) return false;
+  const CpObjectiveProto& obj = cp_model.objective();
+  const double scaling = obj.scaling_factor() == 0 ? 1.0 : obj.scaling_factor();
+  if (std::round(scaling) != scaling) return false;
+  if (std::round(obj.offset()) != obj.offset()) return false;
+  return ModelHasOnlyClausesAndBooleanVariables(cp_model, &num_clauses);
+}
+
+bool ModelIsPureSat(const CpModelProto& cp_model, int* num_clauses) {
+  // We just ignore the objective if there is one, and the model should just
+  // contain bool_or and bool_and.
+  return ModelHasOnlyClausesAndBooleanVariables(cp_model, num_clauses);
+}
+
+void ConvertSatCpModelProtoToClauses(
+    const CpModelProto& cp_model,
+    std::function<void(const std::vector<Literal>&)> add_clause) {
+  const int num_vars = cp_model.variables().size();
+  for (int v = 0; v < num_vars; ++v) {
+    const auto& domain = cp_model.variables(v).domain();
+    const int64_t lb = domain.Get(0);
+    const int64_t ub = domain.Get(1);
+    if (lb == ub) {
+      add_clause({Literal(BooleanVariable(v), lb == 1)});
+    }
+  }
+  auto literal = [](int lit) {
+    return Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit));
+  };
+  std::vector<Literal> clause;
   for (const ConstraintProto& ct : cp_model.constraints()) {
     if (ct.constraint_case() == ConstraintProto::kBoolOr) {
-      CHECK(ct.enforcement_literal().empty());
-      for (const int lit : ct.bool_or().literals()) {
-        const int value =
-            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
-                .SignedValue();
-        absl::StrAppend(out, value, " ");
-      }
-      absl::StrAppend(out, "0\n");
-    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
-      CHECK(!ct.enforcement_literal().empty());
-      start.clear();
+      clause.clear();
       for (const int lit : ct.enforcement_literal()) {
-        const int value =
-            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
-                .SignedValue();
-        absl::StrAppend(&start, -value, " ");
+        clause.push_back(literal(lit).Negated());
       }
+      for (const int lit : ct.bool_or().literals()) {
+        clause.push_back(literal(lit));
+      }
+      add_clause(clause);
+    } else if (ct.constraint_case() == ConstraintProto::kBoolAnd) {
       for (const int lit : ct.bool_and().literals()) {
-        const int value =
-            Literal(BooleanVariable(PositiveRef(lit)), RefIsPositive(lit))
-                .SignedValue();
-        absl::StrAppend(out, start, value, " 0\n");
+        clause.clear();
+        for (const int lit : ct.enforcement_literal()) {
+          clause.push_back(literal(lit).Negated());
+        }
+        clause.push_back(literal(lit));
+        add_clause(clause);
       }
     }
   }
+}
+}  // namespace
 
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out) {
+  out->clear();
+
+  const int num_vars = cp_model.variables().size();
+  int num_clauses = 0;
+  if (!ModelIsPureSat(cp_model, &num_clauses)) return false;
+
+  absl::StrAppend(out, "p cnf ", num_vars, " ", num_clauses, "\n");
+  ConvertSatCpModelProtoToClauses(
+      cp_model, [&out](absl::Span<const Literal> clause) {
+        for (const Literal lit : clause) {
+          absl::StrAppend(out, lit.SignedValue(), " ");
+        }
+        absl::StrAppend(out, "0\n");
+      });
+  return true;
+}
+
+bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out) {
+  out->clear();
+
+  if (!ModelIsMaxSat(cp_model)) return false;
+
+  ConvertSatCpModelProtoToClauses(
+      cp_model, [&out](const std::vector<Literal>& clause) {
+        absl::StrAppend(out, "h ");
+        for (const Literal lit : clause) {
+          absl::StrAppend(out, lit.SignedValue(), " ");
+        }
+        absl::StrAppend(out, "0\n");
+      });
+
+  // Add the objective for MaxSAT problems.
+  const CpObjectiveProto& obj = cp_model.objective();
+
+  // MaxSAT is maximization, CP-SAT is minimization by default.
+  // All weights must be > 0.
+  //
+  // If we maximize (b1 + b2) in CP-SAT, we will have
+  // obj = minimize(-b1 - b2), scaling factor = -1.
+  // In wcnf, we want 1 b1 0; 1 b2 0;
+  //
+  // If we minimize (b1 + b2), in CP-SAT, we will have
+  // obj = b1 + b2, scaling factor = 1 (or non set).
+  // In wcnf, we want 1 -b1 0; 1 -b2 0;
+  //
+  // Note that the objective displayed by a max-sat solve will thus not match
+  // the real objective (it misses an offset and possibly a negation).
+  for (int i = 0; i < obj.vars().size(); ++i) {
+    const int64_t opp_coeff = -obj.coeffs(i);
+    const Literal lit = Literal(BooleanVariable(PositiveRef(obj.vars(i))),
+                                RefIsPositive(obj.vars(i)));
+    if (opp_coeff > 0) {
+      absl::StrAppend(out, opp_coeff, " ", lit.SignedValue(), " 0\n");
+    } else if (opp_coeff < 0) {
+      absl::StrAppend(out, -opp_coeff, " ", lit.Negated().SignedValue(),
+                      " 0\n");
+    }
+  }
+  return true;
+}
+
+bool LoadCpModelInDratProofHandler(const CpModelProto& cp_model,
+                                   DratProofHandler* drat_proof_handler) {
+  const int num_vars = cp_model.variables().size();
+  int num_clauses = 0;
+  if (!ModelIsPureSat(cp_model, &num_clauses)) return false;
+
+  drat_proof_handler->SetNumVariables(num_vars);
+  ConvertSatCpModelProtoToClauses(
+      cp_model, [&drat_proof_handler](const std::vector<Literal>& clause) {
+        drat_proof_handler->AddProblemClause(clause);
+      });
   return true;
 }
 

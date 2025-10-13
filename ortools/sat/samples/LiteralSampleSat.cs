@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
 using System;
 using Google.OrTools.Sat;
 
@@ -23,3 +24,4 @@ public class LiteralSampleSat
         ILiteral not_x = x.Not();
     }
 }
+// [END program]

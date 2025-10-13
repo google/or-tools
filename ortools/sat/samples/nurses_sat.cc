@@ -23,7 +23,10 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/init_google.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -138,10 +141,6 @@ void NurseSat() {
 
   // Display the first five solutions.
   // [START solution_printer]
-  // Create an atomic Boolean that will be periodically checked by the limit.
-  std::atomic<bool> stopped(false);
-  model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-
   const int kSolutionLimit = 5;
   int num_solutions = 0;
   model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
@@ -165,7 +164,7 @@ void NurseSat() {
     }
     num_solutions++;
     if (num_solutions >= kSolutionLimit) {
-      stopped = true;
+      StopSearch(&model);
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));
@@ -186,7 +185,9 @@ void NurseSat() {
 }  // namespace sat
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::sat::NurseSat();
   return EXIT_SUCCESS;
 }

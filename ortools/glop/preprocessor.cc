@@ -44,11 +44,6 @@ namespace glop {
 using ::util::Reverse;
 
 namespace {
-// Returns an interval as an human readable string for debugging.
-std::string IntervalString(Fractional lb, Fractional ub) {
-  return absl::StrFormat("[%g, %g]", lb, ub);
-}
-
 #if defined(_MSC_VER)
 double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
 #endif
@@ -2435,7 +2430,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
     const Fractional coefficient_ratio = coefficient / matrix_entry.coeff;
     // Check if coefficient_ratio is integer.
     if (!IsIntegerWithinTolerance(
-            coefficient_ratio, parameters_.solution_feasibility_tolerance())) {
+            coefficient_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }
@@ -2444,7 +2440,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
   if (IsFinite(constraint_lb)) {
     const Fractional lower_bound_ratio = constraint_lb / matrix_entry.coeff;
     if (!IsIntegerWithinTolerance(
-            lower_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+            lower_bound_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }
@@ -2453,7 +2450,8 @@ bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
   if (IsFinite(constraint_ub)) {
     const Fractional upper_bound_ratio = constraint_ub / matrix_entry.coeff;
     if (!IsIntegerWithinTolerance(
-            upper_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+            upper_bound_ratio,
+            Fractional(parameters_.solution_feasibility_tolerance()))) {
       return false;
     }
   }
@@ -2941,11 +2939,12 @@ MatrixEntry SingletonPreprocessor::GetSingletonColumnMatrixEntry(
       return MatrixEntry(e.row(), col, e.coefficient());
     }
   }
-
+  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a column that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
+  // COV_NF_END
 }
 
 MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
@@ -2957,11 +2956,12 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
       return MatrixEntry(row, col, e.coefficient());
     }
   }
-
+  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a row that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
+  // COV_NF_END
 }
 
 // --------------------------------------------------------

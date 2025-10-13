@@ -26,9 +26,10 @@
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
@@ -219,6 +220,18 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
   while (true) {
+    if (DEBUG_MODE) {
+      // The solver usually always solve a "restricted decision problem"
+      // obj < current_best. So when we have an optimal solution, then the
+      // problem is UNSAT, and any clauses we learn can break the debug
+      // solution. So we disable this checks once we found an optimal solution.
+      const DebugSolution* debug_sol = model->Get<DebugSolution>();
+      if (debug_sol && integer_trail->LowerBound(objective_var) <=
+                           debug_sol->inner_objective_value) {
+        model->GetOrCreate<DebugSolution>()->Clear();
+      }
+    }
+
     const SatSolver::Status result = search->SolveIntegerProblem();
     if (result != SatSolver::FEASIBLE) return result;
 
@@ -593,8 +606,8 @@ void CoreBasedOptimizer::ComputeNextStratificationThreshold() {
 bool CoreBasedOptimizer::CoverOptimization() {
   if (!sat_solver_->ResetToLevelZero()) return false;
 
-  // We set a fix deterministic time limit per all sub-solve and skip to the
-  // next core if the sum of the subsolve is also over this limit.
+  // We set a fix deterministic time limit per all sub-solves and skip to the
+  // next core if the sum of the sub-solves is also over this limit.
   constexpr double max_dtime_per_core = 0.5;
   const double old_time_limit = parameters_->max_deterministic_time();
   parameters_->set_max_deterministic_time(max_dtime_per_core);

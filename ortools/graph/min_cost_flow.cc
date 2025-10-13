@@ -18,15 +18,16 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/base/attributes.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/generic_max_flow.h"
 #include "ortools/graph/graph.h"
@@ -58,10 +59,12 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
 
   const NodeIndex max_num_nodes = graph_->node_capacity();
   if (max_num_nodes > 0) {
-    first_admissible_arc_.assign(max_num_nodes, Graph::kNilArc);
-    node_potential_.assign(max_num_nodes, 0);
-    node_excess_.assign(max_num_nodes, 0);
-    initial_node_excess_.assign(max_num_nodes, 0);
+    first_admissible_arc_ = std::make_unique<ArcIndex[]>(max_num_nodes);
+    std::fill(first_admissible_arc_.get(),
+              first_admissible_arc_.get() + max_num_nodes, Graph::kNilArc);
+    node_potential_ = std::make_unique<CostValue[]>(max_num_nodes);
+    node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
+    initial_node_excess_ = std::make_unique<FlowQuantity[]>(max_num_nodes);
   }
   const ArcIndex max_num_arcs = graph_->arc_capacity();
   if (max_num_arcs > 0) {
@@ -162,8 +165,9 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
     return false;
   }
 
-  std::vector<FlowQuantity> max_node_excess = node_excess_;
-  std::vector<FlowQuantity> min_node_excess = node_excess_;
+  std::vector<FlowQuantity> max_node_excess(
+      node_excess_.get(), node_excess_.get() + graph_->num_nodes());
+  std::vector<FlowQuantity> min_node_excess = max_node_excess;
   for (ArcIndex arc = 0; arc < graph_->num_arcs(); ++arc) {
     const FlowQuantity capacity = residual_arc_capacity_[arc];
     CHECK_GE(capacity, 0);
@@ -188,8 +192,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
 
         // Adjust and recompute min_node_excess[node].
         min_node_excess[node] = node_excess_[node];
-        for (OutgoingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
-          const int arc = it.Index();
+        for (const ArcIndex arc : graph_->OutgoingArcs(node)) {
           residual_arc_capacity_[arc] =
               std::min(residual_arc_capacity_[arc], upper_bound);
           min_node_excess[node] =
@@ -204,8 +207,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType,
 
         // Adjust and recompute max_node_excess[node].
         max_node_excess[node] = node_excess_[node];
-        for (IncomingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
-          const int arc = it.Index();
+        for (const ArcIndex arc : graph_->IncomingArcs(node)) {
           residual_arc_capacity_[arc] =
               std::min(residual_arc_capacity_[arc], upper_bound);
           max_node_excess[node] =
@@ -456,7 +458,8 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
   }
 
   status_ = NOT_SOLVED;
-  node_potential_.assign(node_potential_.size(), 0);
+  std::fill(node_potential_.get(),
+            node_potential_.get() + graph_->node_capacity(), 0);
 
   ResetFirstAdmissibleArcs();
   if (!ScaleCosts()) return false;
@@ -999,7 +1002,6 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcDirect(
 // the header so it can work with any graph implementation?
 template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
-template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
 template class GenericMinCostFlow<
     ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
 template class GenericMinCostFlow<::util::ReverseArcListGraph<int64_t, int64_t>,

@@ -13,13 +13,11 @@
 
 #include "ortools/pdlp/primal_dual_hybrid_gradient.h"
 
-#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <optional>
-#include <ostream>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -29,12 +27,11 @@
 #include "Eigen/SparseCore"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
-#include "absl/status/status.h"
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -1520,7 +1517,6 @@ TEST(PrimalDualHybridGradientTest, EmptyQp) {
 }
 
 TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
-  std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
   params.mutable_termination_criteria()
       ->mutable_simple_optimality_criteria()
@@ -1529,7 +1525,7 @@ TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
       ->mutable_simple_optimality_criteria()
       ->set_eps_optimal_relative(0.0);
 
-  interrupt_solve.store(true);
+  std::atomic<bool> interrupt_solve = true;
   const SolverResult output =
       PrimalDualHybridGradient(TestLp(), params, &interrupt_solve);
   EXPECT_EQ(output.solve_log.termination_reason(),
@@ -1537,7 +1533,6 @@ TEST(PrimalDualHybridGradientTest, RespectsInterrupt) {
 }
 
 TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
-  std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
   params.mutable_termination_criteria()
       ->mutable_simple_optimality_criteria()
@@ -1546,7 +1541,7 @@ TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
       ->mutable_simple_optimality_criteria()
       ->set_eps_optimal_relative(0.0);
 
-  interrupt_solve.store(false);
+  std::atomic<bool> interrupt_solve = false;
   auto callback = [&](const IterationCallbackInfo& info) {
     if (info.iteration_stats.iteration_number() >= 10) {
       interrupt_solve.store(true);
@@ -1562,7 +1557,6 @@ TEST(PrimalDualHybridGradientTest, RespectsInterruptFromCallback) {
 }
 
 TEST(PrimalDualHybridGradientTest, IgnoresFalseInterrupt) {
-  std::atomic<bool> interrupt_solve;
   PrimalDualHybridGradientParams params;
   params.mutable_termination_criteria()
       ->mutable_simple_optimality_criteria()
@@ -1572,7 +1566,7 @@ TEST(PrimalDualHybridGradientTest, IgnoresFalseInterrupt) {
       ->set_eps_optimal_relative(0.0);
   params.mutable_termination_criteria()->set_kkt_matrix_pass_limit(1);
 
-  interrupt_solve.store(false);
+  std::atomic<bool> interrupt_solve = false;
   const SolverResult output =
       PrimalDualHybridGradient(TestLp(), params, &interrupt_solve);
   EXPECT_EQ(output.solve_log.termination_reason(),
@@ -1791,6 +1785,143 @@ TEST_F(FeasibilityPolishingPrimalTest, FeasibilityPolishingFindsValidSolution) {
               EigenArrayNear<double>({1.0 - output.dual_solution[0],
                                       1.001 - output.dual_solution[0]},
                                      1.0e-12));
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       NoPolishingAfterIterationLimitWhenPolishingAfterLimitsDisabled) {
+  // Feasibility polishing would solve the problem the first time it is
+  // attempted, which would be at iteration 100.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_after_limits_reached(false);
+  params_.mutable_termination_criteria()->set_iteration_limit(50);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingAfterIterationLimitWhenPolishingAfterLimitsEnabled) {
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_after_limits_reached(true);
+  params_.mutable_termination_criteria()->set_iteration_limit(50);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingTerminatesAfterIterationLimitWhenPolishingAfterLimitsDisabled) {
+  // Feasibility polishing will be triggered at iteration 100. The iteration
+  // limit prevents primal polishing from completing.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_after_limits_reached(false);
+  params_.mutable_termination_criteria()->set_iteration_limit(101);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingContinuesAfterIterationLimitWhenPolishingAfterLimitsEnabled) {
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_after_limits_reached(true);
+  params_.mutable_termination_criteria()->set_iteration_limit(101);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingStopsAfterContinuingAfterIterationLimitWhenNotOptimal) {
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_after_limits_reached(true);
+  params_.mutable_termination_criteria()->set_iteration_limit(101);
+  auto* opt_criteria = params_.mutable_termination_criteria()
+                           ->mutable_detailed_optimality_criteria();
+  opt_criteria->set_eps_optimal_primal_residual_absolute(1.0e-16);
+  opt_criteria->set_eps_optimal_primal_residual_relative(0.0);
+  opt_criteria->set_eps_optimal_dual_residual_absolute(1.0e-16);
+  opt_criteria->set_eps_optimal_dual_residual_relative(0.0);
+  opt_criteria->set_eps_optimal_objective_gap_absolute(1.0e-16);
+  opt_criteria->set_eps_optimal_objective_gap_relative(0.0);
+  SolverResult output = PrimalDualHybridGradient(lp_, params_);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_ITERATION_LIMIT);
+  // 100 main iterations + at most 12 primal feasibility polishing iterations
+  // + at most 12 dual feasibility polishing iterations.
+  EXPECT_LE(output.solve_log.iteration_count(), 124);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       NoPolishingAfterInterruptWhenPolishingAfterInterruptDisabled) {
+  // Feasibility polishing would solve the problem the first time it is
+  // attempted, which would be at iteration 100.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_if_solver_is_interrupted(false);
+  std::atomic<bool> interrupt_solve = false;
+  auto callback = [&](const IterationCallbackInfo& info) {
+    if (info.iteration_stats.iteration_number() >= 50) {
+      interrupt_solve.store(true);
+    }
+  };
+  SolverResult output =
+      PrimalDualHybridGradient(lp_, params_, &interrupt_solve,
+                               /*message_callback=*/nullptr, callback);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INTERRUPTED_BY_USER);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingAfterInterruptWhenPolishingAfterInterruptEnabled) {
+  // Feasibility polishing would solve the problem the first time it is
+  // attempted, which would be at iteration 100.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_if_solver_is_interrupted(true);
+  std::atomic<bool> interrupt_solve = false;
+  auto callback = [&](const IterationCallbackInfo& info) {
+    if (info.iteration_stats.iteration_number() >= 50) {
+      interrupt_solve.store(true);
+    }
+  };
+  SolverResult output =
+      PrimalDualHybridGradient(lp_, params_, &interrupt_solve,
+                               /*message_callback=*/nullptr, callback);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingTerminatesAfterInterruptWhenPolishingAfterInterruptDisabled) {
+  // Feasibility polishing would solve the problem the first time it is
+  // attempted, which would be at iteration 100.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_if_solver_is_interrupted(false);
+  std::atomic<bool> interrupt_solve = false;
+  auto callback = [&](const IterationCallbackInfo& info) {
+    if (info.iteration_type == IterationType::kPrimalFeasibility) {
+      interrupt_solve.store(true);
+    }
+  };
+  SolverResult output =
+      PrimalDualHybridGradient(lp_, params_, &interrupt_solve,
+                               /*message_callback=*/nullptr, callback);
+  EXPECT_EQ(output.solve_log.termination_reason(),
+            TERMINATION_REASON_INTERRUPTED_BY_USER);
+}
+
+TEST_F(FeasibilityPolishingPrimalTest,
+       PolishingContinuesAfterInterruptWhenPolishingAfterInterruptEnabled) {
+  // Feasibility polishing would solve the problem the first time it is
+  // attempted, which would be at iteration 100.
+  params_.set_use_feasibility_polishing(true);
+  params_.set_apply_feasibility_polishing_if_solver_is_interrupted(true);
+  std::atomic<bool> interrupt_solve = false;
+  auto callback = [&](const IterationCallbackInfo& info) {
+    if (info.iteration_type == IterationType::kPrimalFeasibility) {
+      interrupt_solve.store(true);
+    }
+  };
+  SolverResult output =
+      PrimalDualHybridGradient(lp_, params_, &interrupt_solve,
+                               /*message_callback=*/nullptr, callback);
+  EXPECT_EQ(output.solve_log.termination_reason(), TERMINATION_REASON_OPTIMAL);
 }
 
 TEST_F(FeasibilityPolishingPrimalTest, FeasibilityPolishingDetailsInLog) {

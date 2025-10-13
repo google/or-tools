@@ -16,15 +16,20 @@
 
 #include <cstdint>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/enforcement.h"
+#include "ortools/sat/enforcement_helper.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -47,7 +52,8 @@ std::function<void(Model*)> AllDifferentBinary(
 std::function<void(Model*)> AllDifferentOnBounds(
     absl::Span<const IntegerVariable> vars);
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<AffineExpression>& expressions);
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const AffineExpression> expressions);
 
 // This constraint forces all variables to take different values. This is meant
 // to be used as a complement to an alldifferent decomposition like
@@ -139,10 +145,10 @@ class AllDifferentConstraint : PropagatorInterface {
 // Implements the all different bound consistent propagator with explanation.
 // That is, given n affine expressions that must take different values, this
 // propagates the bounds of each expression as much as possible. The key is to
-// detect the so called Hall interval which are interval of size k that contains
-// the domain of k expressinos. Because all the variables must take different
-// values, we can deduce that the domain of the other variables cannot contains
-// such Hall interval.
+// detect the so called Hall intervals which are intervals of size k that
+// contain the domain of k expressions. Because all the variables must take
+// different values, we can deduce that the domain of the other variables cannot
+// contain such Hall interval.
 //
 // We use a "fast" O(n log n) algorithm.
 //
@@ -151,8 +157,9 @@ class AllDifferentConstraint : PropagatorInterface {
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
 class AllDifferentBoundsPropagator : public PropagatorInterface {
  public:
-  AllDifferentBoundsPropagator(absl::Span<const AffineExpression> expressions,
-                               IntegerTrail* integer_trail);
+  AllDifferentBoundsPropagator(absl::Span<const Literal> enforcement_literals,
+                               absl::Span<const AffineExpression> expressions,
+                               Model* model);
 
   // This type is neither copyable nor movable.
   AllDifferentBoundsPropagator(const AllDifferentBoundsPropagator&) = delete;
@@ -160,7 +167,6 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
       delete;
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   // We locally cache the lb/ub for faster sorting and to guarantee some
@@ -170,6 +176,8 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
     IntegerValue lb;
     IntegerValue ub;
   };
+
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
   // Fills integer_reason_ with the reason why we have the given hall interval.
   void FillHallReason(IntegerValue hall_lb, IntegerValue hall_ub);
@@ -206,22 +214,23 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 
   IntegerValue GetValue(int index) const { return base_ + IntegerValue(index); }
 
-  IntegerTrail* integer_trail_;
+  const IntegerTrail& integer_trail_;
+  EnforcementHelper& enforcement_helper_;
+  EnforcementId enforcement_id_;
 
   // These vector will be either sorted by lb or by -ub.
   std::vector<CachedBounds> bounds_;
   std::vector<CachedBounds> negated_bounds_;
 
-  // The list of Hall intervalls detected so far, sorted.
+  // The list of Hall intervals detected so far, sorted.
   std::vector<IntegerValue> hall_starts_;
   std::vector<IntegerValue> hall_ends_;
 
   // Non-consecutive intervals related data-structures.
   IntegerValue base_;
-  std::vector<int> indices_to_clear_;
   std::vector<int> index_to_start_index_;
   std::vector<int> index_to_end_index_;
-  std::vector<bool> index_is_present_;
+  SparseBitset<int> index_is_present_;
   std::vector<AffineExpression> index_to_expr_;
 
   // Temporary integer reason.

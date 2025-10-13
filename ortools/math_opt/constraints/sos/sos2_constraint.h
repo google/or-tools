@@ -27,6 +27,7 @@
 #include "ortools/math_opt/constraints/util/model_util.h"
 #include "ortools/math_opt/cpp/variable_and_expressions.h"
 #include "ortools/math_opt/storage/model_storage.h"
+#include "ortools/math_opt/storage/model_storage_item.h"
 
 namespace operations_research::math_opt {
 
@@ -34,17 +35,16 @@ namespace operations_research::math_opt {
 // Usually this type is passed by copy.
 //
 // This type implements https://abseil.io/docs/cpp/guides/hash.
-class Sos2Constraint {
+class Sos2Constraint final : public ModelStorageItem {
  public:
   // The typed integer used for ids.
   using IdType = Sos2ConstraintId;
 
-  inline Sos2Constraint(const ModelStorage* storage, Sos2ConstraintId id);
+  inline Sos2Constraint(ModelStorageCPtr storage, Sos2ConstraintId id);
 
   inline int64_t id() const;
 
   inline Sos2ConstraintId typed_id() const;
-  inline const ModelStorage* storage() const;
 
   inline int64_t num_expressions() const;
   LinearExpression Expression(int index) const;
@@ -70,7 +70,6 @@ class Sos2Constraint {
                                   const Sos2Constraint& constraint);
 
  private:
-  const ModelStorage* storage_;
   Sos2ConstraintId id_;
 };
 
@@ -87,33 +86,31 @@ int64_t Sos2Constraint::id() const { return id_.value(); }
 
 Sos2ConstraintId Sos2Constraint::typed_id() const { return id_; }
 
-const ModelStorage* Sos2Constraint::storage() const { return storage_; }
-
 int64_t Sos2Constraint::num_expressions() const {
-  return storage_->constraint_data(id_).num_expressions();
+  return storage()->constraint_data(id_).num_expressions();
 }
 
 bool Sos2Constraint::has_weights() const {
-  return storage_->constraint_data(id_).has_weights();
+  return storage()->constraint_data(id_).has_weights();
 }
 
 double Sos2Constraint::weight(int index) const {
-  return storage_->constraint_data(id_).weight(index);
+  return storage()->constraint_data(id_).weight(index);
 }
 
 absl::string_view Sos2Constraint::name() const {
-  if (storage_->has_constraint(id_)) {
-    return storage_->constraint_data(id_).name();
+  if (storage()->has_constraint(id_)) {
+    return storage()->constraint_data(id_).name();
   }
   return kDeletedConstraintDefaultDescription;
 }
 
 std::vector<Variable> Sos2Constraint::NonzeroVariables() const {
-  return AtomicConstraintNonzeroVariables(*storage_, id_);
+  return AtomicConstraintNonzeroVariables(*storage(), id_);
 }
 
 bool operator==(const Sos2Constraint& lhs, const Sos2Constraint& rhs) {
-  return lhs.id_ == rhs.id_ && lhs.storage_ == rhs.storage_;
+  return lhs.id_ == rhs.id_ && lhs.storage() == rhs.storage();
 }
 
 bool operator!=(const Sos2Constraint& lhs, const Sos2Constraint& rhs) {
@@ -122,7 +119,7 @@ bool operator!=(const Sos2Constraint& lhs, const Sos2Constraint& rhs) {
 
 template <typename H>
 H AbslHashValue(H h, const Sos2Constraint& constraint) {
-  return H::combine(std::move(h), constraint.id_.value(), constraint.storage_);
+  return H::combine(std::move(h), constraint.id_.value(), constraint.storage());
 }
 
 std::ostream& operator<<(std::ostream& ostr, const Sos2Constraint& constraint) {
@@ -137,15 +134,15 @@ std::ostream& operator<<(std::ostream& ostr, const Sos2Constraint& constraint) {
 }
 
 std::string Sos2Constraint::ToString() const {
-  if (storage_->has_constraint(id_)) {
+  if (storage()->has_constraint(id_)) {
     return internal::SosConstraintToString(*this, "SOS2");
   }
   return std::string(kDeletedConstraintDefaultDescription);
 }
 
-Sos2Constraint::Sos2Constraint(const ModelStorage* const storage,
+Sos2Constraint::Sos2Constraint(const ModelStorageCPtr storage,
                                const Sos2ConstraintId id)
-    : storage_(storage), id_(id) {}
+    : ModelStorageItem(storage), id_(id) {}
 
 }  // namespace operations_research::math_opt
 

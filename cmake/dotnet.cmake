@@ -20,6 +20,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -133,6 +134,7 @@ file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
   )
@@ -240,7 +242,9 @@ function(add_dotnet_test)
   add_custom_command(
     OUTPUT ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_TEST_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy ${TEST_FILE_NAME} ${DOTNET_TEST_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${TEST_FILE_NAME}
+      ${DOTNET_TEST_DIR}/
     MAIN_DEPENDENCY ${TEST_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
@@ -251,19 +255,19 @@ function(add_dotnet_test)
     ${DOTNET_EXECUTABLE} build --nologo -c Release ${TEST_NAME}.csproj
     COMMAND ${CMAKE_COMMAND} -E touch ${DOTNET_TEST_DIR}/timestamp
     DEPENDS
-    ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
-    ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
-    dotnet_package
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.csproj
+      ${DOTNET_TEST_DIR}/${TEST_NAME}.cs
+      dotnet_package
     BYPRODUCTS
-    ${DOTNET_TEST_DIR}/bin
-    ${DOTNET_TEST_DIR}/obj
+      ${DOTNET_TEST_DIR}/bin
+      ${DOTNET_TEST_DIR}/obj
     VERBATIM
     COMMENT "Compiling .Net ${COMPONENT_NAME}/${TEST_NAME}.cs (${DOTNET_TEST_DIR}/timestamp)"
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   add_custom_target(dotnet_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
-    ${DOTNET_TEST_DIR}/timestamp
+      ${DOTNET_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${DOTNET_TEST_DIR})
 
   if(BUILD_TESTING)
@@ -311,6 +315,7 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  constraint_solver
+ routing
  sat
  util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
@@ -377,6 +382,9 @@ set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
 set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
 set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
 
+set(need_unix_bzip2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_BZip2}>>")
+set(need_windows_bzip2_lib "$<AND:${is_windows},$<BOOL:${BUILD_BZip2}>>")
+
 set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
 set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 
@@ -394,6 +402,9 @@ set(need_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 
 set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
+
+set(need_unix_scip_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_SCIP}>>")
+set(need_windows_scip_lib "$<AND:${is_windows},$<BOOL:${BUILD_SCIP}>>")
 
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
 set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
@@ -497,7 +508,7 @@ if(BUILD_DOTNET_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Doxyfile.in ${PROJECT_BINARY_DIR}/dotnet/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -509,6 +520,8 @@ if(BUILD_DOTNET_DOC)
         dotnet_package
         ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
         ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/dotnet/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating .Net API documentation with Doxygen"
@@ -691,8 +704,10 @@ if(NOT EXAMPLE_FILE_NAME)
   add_custom_command(
     OUTPUT ${DOTNET_EXAMPLE_DIR}/${EXAMPLE_NAME}.cs
     COMMAND ${CMAKE_COMMAND} -E make_directory ${DOTNET_EXAMPLE_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_FILE_NAME} ${DOTNET_EXAMPLE_DIR}/
-      MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${EXAMPLE_FILE_NAME}
+      ${DOTNET_EXAMPLE_DIR}/
+    MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
     VERBATIM
     WORKING_DIRECTORY ${DOTNET_EXAMPLE_DIR})
 

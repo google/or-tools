@@ -23,7 +23,7 @@
 
 #include "Eigen/Core"
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/quadratic_program.h"
 #include "ortools/pdlp/sharded_optimization_utils.h"

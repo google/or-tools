@@ -22,6 +22,7 @@
 #include <functional>
 #include <new>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -35,6 +36,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/cliques.h"
+#include "ortools/sat/container.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -175,6 +177,7 @@ class ClauseManager : public SatPropagator {
   bool Propagate(Trail* trail) final;
   absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
                                    int64_t conflict_id) const final;
+  void Reimply(Trail* trail, int old_trail_index) final;
 
   // Returns the reason of the variable at given trail_index. This only works
   // for variable propagated by this class and is almost the same as Reason()
@@ -201,7 +204,7 @@ class ClauseManager : public SatPropagator {
   // Detaches the given clause right away.
   //
   // TODO(user): It might be better to have a "slower" mode in
-  // PropagateOnFalse() that deal with detached clauses in the watcher list and
+  // Propagate() that deal with detached clauses in the watcher list and
   // is activated until the next CleanUpWatchers() calls.
   void Detach(SatClause* clause);
 
@@ -230,7 +233,7 @@ class ClauseManager : public SatPropagator {
     return &clauses_info_;
   }
 
-  // Total number of clauses inspected during calls to PropagateOnFalse().
+  // Total number of clauses inspected during calls to Propagate().
   int64_t num_inspected_clauses() const { return num_inspected_clauses_; }
   int64_t num_inspected_clause_literals() const {
     return num_inspected_clause_literals_;
@@ -345,13 +348,9 @@ class ClauseManager : public SatPropagator {
   // enqueued on the trail. Returns false if a contradiction was encountered.
   bool AttachAndPropagate(SatClause* clause, Trail* trail);
 
-  // Launches all propagation when the given literal becomes false.
-  // Returns false if a contradiction was encountered.
-  bool PropagateOnFalse(Literal false_literal, Trail* trail);
-
   // Attaches the given clause to the event: the given literal becomes false.
   // The blocking_literal can be any literal from the clause, it is used to
-  // speed up PropagateOnFalse() by skipping the clause if it is true.
+  // speed up Propagate() by skipping the clause if it is true.
   void AttachOnFalse(Literal literal, Literal blocking_literal,
                      SatClause* clause);
 
@@ -516,14 +515,17 @@ class BinaryImplicationGraph : public SatPropagator {
   bool Propagate(Trail* trail) final;
   absl::Span<const Literal> Reason(const Trail& trail, int trail_index,
                                    int64_t conflict_id) const final;
+  void Reimply(Trail* trail, int old_trail_index) final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
 
-  // Returns true if there is no constraints in this class.
-  bool IsEmpty() const final {
-    return num_implications_ == 0 && at_most_ones_.empty();
-  }
+  // Returns the "size" of this class, that is 2 * num_boolean_variables as
+  // updated by the larger Resize() call.
+  int64_t literal_size() const { return implications_and_amos_.size(); }
+
+  // Returns true if no constraints where ever added to this class.
+  bool IsEmpty() const final { return no_constraint_ever_added_; }
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).
@@ -614,8 +616,8 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // Returns the list of literal "directly" implied by l. Beware that this can
   // easily change behind your back if you modify the solver state.
-  const absl::InlinedVector<Literal, 6>& Implications(Literal l) const {
-    return implications_[l];
+  absl::Span<const Literal> Implications(Literal l) const {
+    return implications_and_amos_[l].literals();
   }
 
   // Returns the representative of the equivalence class of l (or l itself if it
@@ -721,9 +723,14 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns the number of current implications. Note that a => b and not(b)
   // => not(a) are counted separately since they appear separately in our
   // propagation lists. The number of size 2 clauses that represent the same
-  // thing is half this number.
-  int64_t num_implications() const { return num_implications_; }
-  int64_t literal_size() const { return implications_.size(); }
+  // thing is half this number. This should only be used in logs.
+  int64_t ComputeNumImplicationsForLog() const {
+    int64_t result = 0;
+    for (const auto& list : implications_and_amos_) {
+      result += list.num_literals();
+    }
+    return result;
+  }
 
   // Extract all the binary clauses managed by this class. The Output type must
   // support an AddBinaryClause(Literal a, Literal b) function.
@@ -739,9 +746,9 @@ class BinaryImplicationGraph : public SatPropagator {
     // twice.
     absl::flat_hash_set<std::pair<LiteralIndex, LiteralIndex>>
         duplicate_detection;
-    for (LiteralIndex i(0); i < implications_.size(); ++i) {
+    for (LiteralIndex i(0); i < implications_and_amos_.size(); ++i) {
       const Literal a = Literal(i).Negated();
-      for (const Literal b : implications_[i]) {
+      for (const Literal b : implications_and_amos_[i].literals()) {
         // Note(user): We almost always have both a => b and not(b) => not(a) in
         // our implications_ database. Except if ComputeTransitiveReduction()
         // was aborted early, but in this case, if only one is present, the
@@ -809,6 +816,13 @@ class BinaryImplicationGraph : public SatPropagator {
   void ResetWorkDone() { work_done_in_mark_descendants_ = 0; }
   int64_t WorkDone() const { return work_done_in_mark_descendants_; }
 
+  // Returns all the literals that are implied directly or indirectly by `root`.
+  // The result must be used before the next call to this function.
+  // It is also possible to use LiteralIsImplied() to find in O(1) if one
+  // literal is in the list.
+  absl::Span<const Literal> GetAllImpliedLiterals(Literal root);
+  bool LiteralIsImplied(Literal l) const { return is_marked_[l]; }
+
   // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
   template <bool use_weight = true>
   std::vector<Literal> ExpandAtMostOneWithWeight(
@@ -826,6 +840,14 @@ class BinaryImplicationGraph : public SatPropagator {
   // Clean up implications list that might have duplicates.
   void RemoveDuplicates();
 
+  // Returns an at most one "index" for all the at_most_ones containing this
+  // literal. Warning: the indices are not necessarily super dense. This can be
+  // used to detect that two literals are in the same AMO (i.e. if they share
+  // the same index).
+  absl::Span<const int> AtMostOneIndices(Literal lit) const {
+    return implications_and_amos_[lit].offsets();
+  }
+
  private:
   // Mark implications_[a] for cleanup in RemoveDuplicates().
   void NotifyPossibleDuplicate(Literal a);
@@ -837,9 +859,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
-  // Fill is_marked_ with all the descendant of root.
+  // Fill is_marked_ with all the descendant of root, and returns them.
   // Note that this also use bfs_stack_.
-  void MarkDescendants(Literal root);
+  absl::Span<const Literal> MarkDescendants(Literal root);
 
   // Expands greedily the given at most one until we get a maximum clique in
   // the underlying incompatibility graph. Note that there is no guarantee that
@@ -859,7 +881,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // If the final AMO size is smaller than the at_most_one_expansion_size
   // parameters, we fully expand it.
-  bool CleanUpAndAddAtMostOnes(int base_index);
+  ABSL_MUST_USE_RESULT bool CleanUpAndAddAtMostOnes(int base_index);
 
   // To be used in DCHECKs().
   bool InvariantsAreOk();
@@ -874,47 +896,34 @@ class BinaryImplicationGraph : public SatPropagator {
   Trail* trail_;
   DratProofHandler* drat_proof_handler_ = nullptr;
 
+  // When problems do not have any implications or at_most_ones this allows to
+  // reduce the number of work we do here. This will be set to true the first
+  // time something is added.
+  bool no_constraint_ever_added_ = true;
+
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
 
-  // This is indexed by the Index() of a literal. Each list stores the
-  // literals that are implied if the index literal becomes true.
-  //
-  // Using InlinedVector helps quite a bit because on many problems, a literal
-  // only implies a few others. Note that on a 64 bits computer we get exactly
-  // 6 inlined int32_t elements without extra space, and the size of the inlined
-  // vector is 4 times 64 bits.
-  //
-  // TODO(user): We could be even more efficient since a size of int32_t is
-  // enough for us and we could store in common the inlined/not-inlined size.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<Literal, 6>>
-      implications_;
-  int64_t num_implications_ = 0;
+  // This is indexed by the Index() of a literal. Each entry stores two lists:
+  //  - A list of literals that are implied if the index literal becomes true.
+  //  - A set of offsets that point to the starts of AMO constraints in
+  //    at_most_one_buffer_. When LiteralIndex is true, then all entry in the at
+  //    most one constraint must be false except the one referring to
+  //    LiteralIndex.
+  util_intops::StrongVector<LiteralIndex, LiteralsOrOffsets>
+      implications_and_amos_;
 
   // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
   util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;
   std::vector<Literal> to_clean_;
 
-  // Internal representation of at_most_one constraints. Each entry point to the
-  // start of a constraint in the buffer.
-  //
-  // TRICKY: The first literal is actually the size of the at_most_one.
-  // Most users should just use AtMostOne(start).
-  //
-  // When LiteralIndex is true, then all entry in the at most one
-  // constraint must be false except the one referring to LiteralIndex.
-  //
-  // TODO(user): We could be more cache efficient by combining this with
-  // implications_ in some way. Do some propagation speed benchmark.
-  util_intops::StrongVector<LiteralIndex, absl::InlinedVector<int32_t, 6>>
-      at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
   const int at_most_one_max_expansion_size_;
   int at_most_one_iterator_ = 0;
 
-  // Invariant: implies_something_[l] should be true iff implications_[l] or
-  // at_most_ones_[l] might be non-empty.
+  // Invariant: implies_something_[l] should be true iff
+  // implications_and_amos_[l] might be non-empty.
   //
   // For problems with a large number of variables and sparse implications_ or
   // at_most_ones_ entries, checking this is way faster during

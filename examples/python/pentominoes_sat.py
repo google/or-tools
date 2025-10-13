@@ -31,7 +31,6 @@ from typing import Dict, List
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 
@@ -144,7 +143,7 @@ def generate_and_solve_problem(pieces: Dict[str, List[List[int]]]) -> None:
     # Solve the model.
     solver = cp_model.CpSolver()
     if _PARAMS.value:
-        text_format.Parse(_PARAMS.value, solver.parameters)
+        solver.parameters.parse_text_format(_PARAMS.value)
     status = solver.solve(model)
 
     print(

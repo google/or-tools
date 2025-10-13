@@ -19,9 +19,10 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/gmock.h"
 #include "ortools/base/path.h"
 #include "ortools/routing/parsers/tsplib_parser.h"
 

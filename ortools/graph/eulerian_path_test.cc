@@ -15,11 +15,10 @@
 
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 #include "ortools/graph/graph.h"
 
 namespace operations_research {

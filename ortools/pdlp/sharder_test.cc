@@ -16,18 +16,21 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <random>
+#include <tuple>
 #include <vector>
 
 #include "Eigen/Core"
 #include "Eigen/SparseCore"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/pdlp/scheduler.h"
+#include "ortools/pdlp/solvers.pb.h"
 
 namespace operations_research::pdlp {
 namespace {
@@ -426,35 +429,42 @@ TEST(ScaledColL2Norm, SmallExample) {
   EXPECT_THAT(answer, ElementsAre(std::sqrt(54), 1.0, 6.0, std::sqrt(41)));
 }
 
-class VariousSizesTest : public testing::TestWithParam<int64_t> {};
+class VariousSizesAndSchedulerTest
+    : public testing::TestWithParam<
+          std::tuple</*size=*/int64_t, SchedulerType>> {};
 
-TEST_P(VariousSizesTest, LargeMatVec) {
-  const int64_t size = GetParam();
+TEST_P(VariousSizesAndSchedulerTest, LargeMatVec) {
+  const auto [size, scheduler_type] = GetParam();
   Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> mat =
       LargeSparseMatrix(size);
   const int num_threads = 5;
   const int shards_per_thread = 3;
-  GoogleThreadPoolScheduler scheduler(num_threads);
-  Sharder sharder(mat, shards_per_thread * num_threads, &scheduler);
+  std::unique_ptr<Scheduler> scheduler =
+      MakeScheduler(scheduler_type, num_threads);
+  Sharder sharder(mat, shards_per_thread * num_threads, scheduler.get());
   VectorXd rhs = VectorXd::Random(size);
   VectorXd direct = mat.transpose() * rhs;
   VectorXd threaded = TransposedMatrixVectorProduct(mat, rhs, sharder);
   EXPECT_LE((direct - threaded).norm(), 1.0e-8);
 }
 
-TEST_P(VariousSizesTest, LargeVectors) {
-  const int64_t size = GetParam();
+TEST_P(VariousSizesAndSchedulerTest, LargeVectors) {
+  const auto [size, scheduler_type] = GetParam();
   const int num_threads = 5;
-  GoogleThreadPoolScheduler scheduler(num_threads);
-  Sharder sharder(size, num_threads, &scheduler);
+  std::unique_ptr<Scheduler> scheduler =
+      MakeScheduler(scheduler_type, num_threads);
+  Sharder sharder(size, num_threads, scheduler.get());
   VectorXd vec = VectorXd::Random(size);
   const double direct = vec.squaredNorm();
   const double threaded = SquaredNorm(vec, sharder);
   EXPECT_THAT(threaded, DoubleNear(direct, size * 1.0e-14));
 }
 
-INSTANTIATE_TEST_SUITE_P(VariousSizesTestInstantiation, VariousSizesTest,
-                         testing::Values(10, 1000, 100 * 1000));
+INSTANTIATE_TEST_SUITE_P(
+    VariousSizesAndSchedulerTestInstantiation, VariousSizesAndSchedulerTest,
+    testing::Combine(testing::Values(10, 1000, 100 * 1000),
+                     testing::Values(SCHEDULER_TYPE_GOOGLE_THREADPOOL,
+                                     SCHEDULER_TYPE_EIGEN_THREADPOOL)));
 
 }  // namespace
 }  // namespace operations_research::pdlp

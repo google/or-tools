@@ -22,7 +22,6 @@
 #include "absl/strings/str_join.h"
 #include "ortools/base/init_google.h"
 #include "ortools/graph/dag_constrained_shortest_path.h"
-#include "ortools/graph/dag_shortest_path.h"
 #include "ortools/graph/graph.h"
 // [END imports]
 
@@ -98,8 +97,9 @@ int main(int argc, char** argv) {
       constrained_shortest_path_on_dag(&graph, &weights, &resources,
                                        topological_order, sources, destinations,
                                        &max_resources);
-  operations_research::PathWithLength initial_constrained_shortest_path =
-      constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
+  operations_research::GraphPathWithLength<util::StaticGraph<>>
+      initial_constrained_shortest_path =
+          constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
 
   std::cout << "Initial distance: " << initial_constrained_shortest_path.length
             << std::endl;
@@ -118,8 +118,9 @@ int main(int argc, char** argv) {
     weights[permutation[free_from_source]] = 0;
     weights[permutation[n + free_to_dest]] = 0;
 
-    operations_research::PathWithLength constrained_shortest_path =
-        constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
+    operations_research::GraphPathWithLength<util::StaticGraph<>>
+        constrained_shortest_path =
+            constrained_shortest_path_on_dag.RunConstrainedShortestPathOnDag();
     std::cout << "source -> " << free_from_source << " and " << free_to_dest
               << " -> dest are now free" << std::endl;
     std::string label = absl::StrCat("_", free_from_source, "_", free_to_dest);

@@ -41,7 +41,6 @@
 #include "absl/random/random.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "ortools/base/macros.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -76,7 +75,7 @@ class SatWrapper {
   // the SAT solver is not able to prove it; After some decisions / learned
   // conflicts, the SAT solver might be able to prove UNSAT and so this will
   // return true.
-  bool IsModelUnsat() const { return sat_solver_->IsModelUnsat(); }
+  bool IsModelUnsat() const { return sat_solver_->ModelIsUnsat(); }
 
   // Return the current solver VariablesAssignment.
   const sat::VariablesAssignment& SatAssignment() const {
@@ -99,7 +98,7 @@ class SatWrapper {
   // Backtracks the last decision if any.
   void BacktrackOneLevel();
 
-  // Bactracks all the decisions.
+  // Backtracks all the decisions.
   void BacktrackAll();
 
   // Extracts any new information learned during the search.
@@ -639,7 +638,7 @@ class LocalSearchAssignmentIterator {
 
   // For each set of explored decisions, we store it in this table so that we
   // don't explore decisions (a, b) and later (b, a) for instance. The decisions
-  // are converted to int32_t, sorted and padded with 0 before beeing inserted
+  // are converted to int32_t, sorted and padded with 0 before being inserted
   // here.
   //
   // TODO(user): We may still miss some equivalent states because it is possible

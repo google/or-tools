@@ -89,6 +89,10 @@
       <Link>pdlp/%(Filename)%(Extension)</Link>
     </Compile>
 
+    <Compile Include="@DOTNET_PROJECT_DIR@/ortools/routing/*.cs">
+      <Link>routing/%(Filename)%(Extension)</Link>
+    </Compile>
+
     <Compile Include="@DOTNET_PROJECT_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
@@ -171,6 +175,11 @@
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/routing/*.proto">
+      <PackagePath>content/routing</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="@PROJECT_SOURCE_DIR@/ortools/sat/*.proto">
       <PackagePath>content/sat</PackagePath>
       <Pack>true</Pack>
@@ -184,7 +193,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.29.3"/>
+    <PackageReference Include="Google.Protobuf" Version="3.32.0"/>
   </ItemGroup>
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->

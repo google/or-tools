@@ -16,6 +16,7 @@
 #include <stdint.h>
 
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "absl/log/check.h"
@@ -33,67 +34,75 @@
 namespace operations_research {
 namespace sat {
 
+SolutionCallback::SolutionCallback() {
+  // We create a dummy response.
+  response_ = std::make_shared<CpSolverResponse>();
+}
+
 SolutionCallback::~SolutionCallback() = default;
 
 void SolutionCallback::Run(
     const operations_research::sat::CpSolverResponse& response) const {
-  response_ = response;
+  response_ = std::make_shared<CpSolverResponse>(response);
   has_response_ = true;
   OnSolutionCallback();
 }
 
 int64_t SolutionCallback::NumBooleans() const {
-  return response_.num_booleans();
+  return response_->num_booleans();
 }
 
 int64_t SolutionCallback::NumBranches() const {
-  return response_.num_branches();
+  return response_->num_branches();
 }
 
 int64_t SolutionCallback::NumConflicts() const {
-  return response_.num_conflicts();
+  return response_->num_conflicts();
 }
 
 int64_t SolutionCallback::NumBinaryPropagations() const {
-  return response_.num_binary_propagations();
+  return response_->num_binary_propagations();
 }
 
 int64_t SolutionCallback::NumIntegerPropagations() const {
-  return response_.num_integer_propagations();
+  return response_->num_integer_propagations();
 }
 
-double SolutionCallback::WallTime() const { return response_.wall_time(); }
+double SolutionCallback::WallTime() const { return response_->wall_time(); }
 
-double SolutionCallback::UserTime() const { return response_.user_time(); }
+double SolutionCallback::UserTime() const { return response_->user_time(); }
 
 double SolutionCallback::DeterministicTime() const {
-  return response_.deterministic_time();
+  return response_->deterministic_time();
 }
 
 double SolutionCallback::ObjectiveValue() const {
-  return response_.objective_value();
+  return response_->objective_value();
 }
 
 double SolutionCallback::BestObjectiveBound() const {
-  return response_.best_objective_bound();
+  return response_->best_objective_bound();
 }
 
 int64_t SolutionCallback::SolutionIntegerValue(int index) const {
-  return index >= 0 ? response_.solution(index)
-                    : -response_.solution(-index - 1);
+  return index >= 0 ? response_->solution(index)
+                    : -response_->solution(-index - 1);
 }
 
 bool SolutionCallback::SolutionBooleanValue(int index) const {
-  return index >= 0 ? response_.solution(index) != 0
-                    : response_.solution(-index - 1) == 0;
+  return index >= 0 ? response_->solution(index) != 0
+                    : response_->solution(-index - 1) == 0;
 }
 
 void SolutionCallback::StopSearch() const {
   if (wrapper_ != nullptr) wrapper_->StopSearch();
 }
 
-const operations_research::sat::CpSolverResponse& SolutionCallback::Response()
-    const {
+operations_research::sat::CpSolverResponse SolutionCallback::Response() const {
+  return *response_;
+}
+
+std::shared_ptr<CpSolverResponse> SolutionCallback::SharedResponse() const {
   return response_;
 }
 
@@ -102,6 +111,10 @@ void SolutionCallback::SetWrapperClass(SolveWrapper* wrapper) const {
 }
 
 bool SolutionCallback::HasResponse() const { return has_response_; }
+
+SolveWrapper::SolveWrapper() {
+  shared_time_limit_ = model_.GetOrCreate<ModelSharedTimeLimit>();
+}
 
 void SolveWrapper::SetParameters(
     const operations_research::sat::SatParameters& parameters) {
@@ -155,9 +168,7 @@ operations_research::sat::CpSolverResponse SolveWrapper::Solve(
   return operations_research::sat::SolveCpModel(model_proto, &model_);
 }
 
-void SolveWrapper::StopSearch() {
-  model_.GetOrCreate<ModelSharedTimeLimit>()->Stop();
-}
+void SolveWrapper::StopSearch() { shared_time_limit_->Stop(); }
 
 std::string CpSatHelper::ModelStats(
     const operations_research::sat::CpModelProto& model_proto) {

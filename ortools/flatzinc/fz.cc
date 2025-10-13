@@ -27,13 +27,16 @@
 #include <vector>
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
+#include "absl/flags/usage.h"
 #include "absl/log/check.h"
+#include "absl/log/flags.h"
 #include "absl/log/initialize.h"
+#include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
@@ -48,7 +51,7 @@ ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, search_all_solutions, false, "Search for all solutions.");
 ABSL_FLAG(bool, display_all_solutions, false,
           "Display all improving solutions.");
-ABSL_FLAG(bool, free_search, false,
+ABSL_FLAG(bool, free_search, !kOrToolsMode,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
 ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");
@@ -63,6 +66,12 @@ ABSL_FLAG(bool, fz_logging, false,
           "Print logging information from the flatzinc interpreter.");
 ABSL_FLAG(bool, ortools_mode, kOrToolsMode,
           "Display solutions in the flatzinc format");
+ABSL_FLAG(bool, fz_check_all_solutions, DEBUG_MODE,
+          "Checks all solutions returned by the solver.");
+ABSL_FLAG(bool, ignore_redundant_constraints, false,
+          "Ignore redundant constraints.");
+ABSL_FLAG(bool, ignore_symmetry_breaking_constraints, false,
+          "Ignore symmetry breaking constraints.");
 
 namespace operations_research {
 namespace fz {
@@ -156,6 +165,28 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename,
   *parse_duration = timer.GetDuration();
   SOLVER_LOG(logger, "File ", (input_is_filename ? input : "stdin"),
              " parsed in ", absl::ToInt64Milliseconds(*parse_duration), " ms");
+
+  int num_redundant_constraints = 0;
+  int num_symmetry_breaking_constraints = 0;
+  for (Constraint* ct : model.constraints()) {
+    if (ct->is_redundant && absl::GetFlag(FLAGS_ignore_redundant_constraints)) {
+      ++num_redundant_constraints;
+      ct->MarkAsInactive();
+    }
+    if (ct->is_symmetric_breaking &&
+        absl::GetFlag(FLAGS_ignore_symmetry_breaking_constraints)) {
+      ++num_symmetry_breaking_constraints;
+      ct->MarkAsInactive();
+    }
+  }
+  if (num_redundant_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored redundant constraints: ",
+               num_redundant_constraints);
+  }
+  if (num_symmetry_breaking_constraints > 0) {
+    SOLVER_LOG(logger, "  - ignored symmetry breaking constraints: ",
+               num_symmetry_breaking_constraints);
+  }
   SOLVER_LOG(logger, "");
 
   // Print statistics.
@@ -193,6 +224,7 @@ int main(int argc, char** argv) {
     std::string currentLine;
     while (std::getline(std::cin, currentLine)) {
       input.append(currentLine);
+      input.append("\n");
     }
   } else {
     if (residual_flags.empty()) {
@@ -231,10 +263,23 @@ int main(int argc, char** argv) {
   parameters.max_time_in_seconds =
       absl::GetFlag(FLAGS_time_limit) - absl::ToInt64Seconds(parse_duration);
   parameters.ortools_mode = absl::GetFlag(FLAGS_ortools_mode);
+  parameters.check_all_solutions = absl::GetFlag(FLAGS_fz_check_all_solutions);
 
   operations_research::SolverLogger solution_logger;
   solution_logger.SetLogToStdOut(true);
   solution_logger.EnableLogging(parameters.ortools_mode);
+
+  if (absl::GetFlag(FLAGS_time_limit) > 0 &&
+      parse_duration > absl::Seconds(absl::GetFlag(FLAGS_time_limit))) {
+    if (parameters.ortools_mode) {
+      SOLVER_LOG(&solution_logger, "%% TIMEOUT");
+    }
+    if (parameters.log_search_progress) {
+      SOLVER_LOG(&logger, "CpSolverResponse summary:");
+      SOLVER_LOG(&logger, "status: UNKNOWN");
+    }
+    return EXIT_SUCCESS;
+  }
 
   operations_research::sat::SolveFzWithCpModelProto(model, parameters,
                                                     absl::GetFlag(FLAGS_params),

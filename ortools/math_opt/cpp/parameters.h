@@ -24,16 +24,15 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "absl/types/span.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/glop/parameters.pb.h"  // IWYU pragma: export
-#include "ortools/gscip/gscip.pb.h"      // IWYU pragma: export
 #include "ortools/math_opt/cpp/enums.h"  // IWYU pragma: export
 #include "ortools/math_opt/parameters.pb.h"
-#include "ortools/math_opt/solvers/gurobi.pb.h"  // IWYU pragma: export
-#include "ortools/math_opt/solvers/highs.pb.h"   // IWYU pragma: export
-#include "ortools/pdlp/solvers.pb.h"             // IWYU pragma: export
-#include "ortools/sat/sat_parameters.pb.h"       // IWYU pragma: export
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"  // IWYU pragma: export
+#include "ortools/math_opt/solvers/gurobi.pb.h"       // IWYU pragma: export
+#include "ortools/math_opt/solvers/highs.pb.h"        // IWYU pragma: export
+#include "ortools/pdlp/solvers.pb.h"                  // IWYU pragma: export
+#include "ortools/sat/sat_parameters.pb.h"            // IWYU pragma: export
 
 namespace operations_research {
 namespace math_opt {
@@ -114,7 +113,7 @@ enum class SolverType {
   //
   // Supports LP, MIP, and nonconvex integer quadratic problems.
   // A fast option, but has special licensing.
-  kXpress = SOLVER_TYPE_XPRESS
+  kXpress = SOLVER_TYPE_XPRESS,
 };
 
 MATH_OPT_DEFINE_ENUM(SolverType, SOLVER_TYPE_UNSPECIFIED);

@@ -1,7 +1,7 @@
 FROM ortools/cmake:system_deps_swig AS env
 
 ENV PATH=/root/.local/bin:$PATH
-RUN pacman -Syu --noconfirm pybind11
+#RUN pacman -Syu --noconfirm pybind11
 RUN pacman -Syu --noconfirm python \
  python-setuptools python-wheel python-virtualenv \
  python-pip python-protobuf python-numpy python-pandas
@@ -15,6 +15,7 @@ COPY . .
 FROM devel AS build
 # Archlinux do not provide pybind11 protobuf package
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
+ -DBUILD_pybind11=ON \
  -DBUILD_pybind11_abseil=ON \
  -DBUILD_pybind11_protobuf=ON \
  -DUSE_COINOR=ON \

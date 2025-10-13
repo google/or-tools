@@ -17,8 +17,9 @@
 #include <limits>
 #include <vector>
 
+#include "absl/base/macros.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/macros.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -26,8 +27,8 @@ namespace {
 
 const int kInvalidSolution = -1;
 
-bool IsSolutionValid(const std::vector<int64_t>& profits,
-                     const std::vector<std::vector<int64_t> >& weights,
+bool IsSolutionValid(absl::Span<const int64_t> profits,
+                     absl::Span<const std::vector<int64_t>> weights,
                      const std::vector<int64_t>& capacities,
                      const std::vector<bool>& best_solution,
                      int64_t optimal_profit) {
@@ -59,7 +60,7 @@ int64_t SolveKnapsackProblemUsingSpecificSolverAndReduction(
   std::vector<int64_t> profits(profit_array, profit_array + number_of_items);
   std::vector<int64_t> capacities(capacity_array,
                                   capacity_array + number_of_dimensions);
-  std::vector<std::vector<int64_t> > weights;
+  std::vector<std::vector<int64_t>> weights;
   for (int i = 0; i < number_of_dimensions; ++i) {
     const int64_t* one_dimension = weight_array + number_of_items * i;
     std::vector<int64_t> weights_one_dimension(one_dimension,
@@ -484,7 +485,7 @@ TEST(KnapsackSolverTest, SolveTwoDimensionsSettingPrimaryPropagator) {
   std::vector<int64_t> profits(kProfitArray, kProfitArray + kArraySize);
   std::vector<int64_t> capacities(kCapacityArray,
                                   kCapacityArray + kNumberOfDimensions);
-  std::vector<std::vector<int64_t> > weights;
+  std::vector<std::vector<int64_t>> weights;
   for (int i = 0; i < kNumberOfDimensions; ++i) {
     const int64_t* one_dimension = kWeightArray + kArraySize * i;
     std::vector<int64_t> weights_one_dimension(one_dimension,

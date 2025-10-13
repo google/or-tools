@@ -11,9 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
@@ -30,9 +32,6 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gscip",
-        "//ortools/gscip:gscip_cc_proto",
-        "//ortools/gscip:gscip_parameters",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
         "//ortools/math_opt:model_cc_proto",
@@ -48,59 +47,29 @@ cc_library(
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_submatrix",
         "//ortools/math_opt/core:sparse_vector_view",
-        "//ortools/math_opt/solvers/gscip:gscip_solver_constraint_handler",
+        "//ortools/math_opt/solvers/gscip",
+        "//ortools/math_opt/solvers/gscip:gscip_cc_proto",
+        "//ortools/math_opt/solvers/gscip:gscip_parameters",
+        "//ortools/math_opt/solvers/gscip:math_opt_gscip_solver_constraint_handler",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/log:die_if_null",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
         "@scip",
     ],
     alwayslink = 1,
-)
-
-cc_test(
-    name = "gscip_solver_test",
-    size = "medium",
-    srcs = ["gscip_solver_test.cc"],
-    shard_count = 10,
-    deps = [
-        ":gscip_solver",
-        "//ortools/base:gmock",
-        "//ortools/base:gmock_main",
-        "//ortools/gscip:gscip_parameters",
-        "//ortools/math_opt/cpp:matchers",
-        "//ortools/math_opt/cpp:math_opt",
-        "//ortools/math_opt/solver_tests:callback_tests",
-        "//ortools/math_opt/solver_tests:generic_tests",
-        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
-        "//ortools/math_opt/solver_tests:invalid_input_tests",
-        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
-        "//ortools/math_opt/solver_tests:ip_multiple_solutions_tests",
-        "//ortools/math_opt/solver_tests:ip_parameter_tests",
-        "//ortools/math_opt/solver_tests:logical_constraint_tests",
-        "//ortools/math_opt/solver_tests:mip_tests",
-        "//ortools/math_opt/solver_tests:multi_objective_tests",
-        "//ortools/math_opt/solver_tests:qc_tests",
-        "//ortools/math_opt/solver_tests:qp_tests",
-        "//ortools/math_opt/solver_tests:second_order_cone_tests",
-        "//ortools/math_opt/solver_tests:status_tests",
-        "//ortools/math_opt/testing:param_name",
-        "//ortools/port:scoped_std_stream_capture",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-    ],
 )
 
 cc_library(
@@ -113,7 +82,6 @@ cc_library(
         "//ortools/base:logging",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:solution_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
@@ -122,12 +90,12 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/math_opt/solvers/gurobi:g_gurobi",
         "//ortools/util:solve_interrupter",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -150,7 +118,6 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:protoutil",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt:callback_cc_proto",
         "//ortools/math_opt:infeasible_subsystem_cc_proto",
@@ -173,19 +140,19 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
         "//ortools/util:testing_utils",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/meta:type_traits",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/meta:type_traits",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
     ],
     alwayslink = 1,
 )
@@ -226,16 +193,16 @@ cc_library(
         "//ortools/util:solve_interrupter",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
 )
@@ -271,15 +238,15 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/sat:sat_parameters_cc_proto",
         "//ortools/util:solve_interrupter",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
     ],
     alwayslink = 1,
 )
@@ -314,7 +281,7 @@ cc_test(
     name = "cp_sat_solver_test",
     timeout = "eternal",
     srcs = ["cp_sat_solver_test.cc"],
-    shard_count = 10,
+    tags = ["manual"],
     deps = [
         ":cp_sat_solver",
         "//ortools/base:gmock_main",
@@ -335,7 +302,7 @@ cc_test(
         "//ortools/math_opt/solver_tests:second_order_cone_tests",
         "//ortools/math_opt/solver_tests:status_tests",
         "//ortools/math_opt/testing:param_name",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -345,8 +312,8 @@ cc_library(
     hdrs = ["message_callback_data.h"],
     deps = [
         "//ortools/math_opt/core:solver_interface",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
     ],
 )
 
@@ -356,9 +323,9 @@ cc_test(
     deps = [
         ":message_callback_data",
         "//ortools/base:gmock_main",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -377,11 +344,11 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/pdlp:primal_dual_hybrid_gradient",
         "//ortools/pdlp:quadratic_program",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
         "@eigen",
     ],
 )
@@ -392,7 +359,6 @@ cc_library(
         "pdlp_solver.cc",
         "pdlp_solver.h",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         ":pdlp_bridge",
         "//ortools/base:protoutil",
@@ -417,12 +383,12 @@ cc_library(
         "//ortools/pdlp:solvers_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
     ],
     alwayslink = 1,
 )
@@ -431,7 +397,6 @@ cc_test(
     name = "pdlp_solver_test",
     size = "small",
     srcs = ["pdlp_solver_test.cc"],
-    shard_count = 10,
     deps = [
         ":pdlp_solver",
         "//ortools/base:gmock",
@@ -455,7 +420,7 @@ cc_test(
         "//ortools/math_opt/solver_tests:second_order_cone_tests",
         "//ortools/math_opt/solver_tests:status_tests",
         "//ortools/pdlp:solve_log_cc_proto",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -465,6 +430,11 @@ cc_library(
         "glpk_solver.cc",
         "glpk_solver.h",
     ],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     visibility = ["//visibility:public"],
     deps = [
         ":glpk_cc_proto",
@@ -495,16 +465,16 @@ cc_library(
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
         "//ortools/util:solve_interrupter",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
         "@glpk",
     ],
     alwayslink = 1,
@@ -513,6 +483,11 @@ cc_library(
 cc_test(
     name = "glpk_solver_test",
     srcs = ["glpk_solver_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":glpk_solver",
         "//ortools/base:gmock_main",
@@ -537,9 +512,9 @@ cc_test(
         "//ortools/math_opt/solver_tests:second_order_cone_tests",
         "//ortools/math_opt/solver_tests:status_tests",
         "//ortools/math_opt/testing:param_name",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
     ],
 )
 
@@ -558,6 +533,9 @@ py_proto_library(
     deps = [":osqp_proto"],
 )
 
+# Highs has a large number of asan failures that are easy to trigger. Further, our version of Highs
+# is very out of date, some (but not all) of these have already been fixed. For use in google3, we
+# generally do not recommend Highs, and if it is used, we would recommend using a subprocess solver.
 cc_library(
     name = "highs_solver",
     srcs = [
@@ -585,15 +563,15 @@ cc_library(
         "//ortools/math_opt/core:sparse_vector_view",
         "//ortools/util:solve_interrupter",
         "//ortools/util:status_macros",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/cleanup",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:string_view",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/time",
         "@highs",
     ],
     alwayslink = 1,
@@ -603,7 +581,8 @@ cc_test(
     name = "highs_solver_test",
     srcs = ["highs_solver_test.cc"],
     flaky = 1,
-    shard_count = 10,
+    # See note above ":highs_solver" rule.
+    tags = ["nosan"],
     deps = [
         ":highs_cc_proto",
         ":highs_solver",
@@ -622,13 +601,25 @@ cc_test(
         "//ortools/math_opt/solver_tests:multi_objective_tests",
         "//ortools/math_opt/solver_tests:status_tests",
         "//ortools/math_opt/testing:param_name",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
 proto_library(
     name = "gurobi_proto",
     srcs = ["gurobi.proto"],
+)
+
+cc_proto_library(
+    name = "gurobi_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
+)
+
+py_proto_library(
+    name = "gurobi_py_pb2",
+    visibility = ["//visibility:public"],
+    deps = [":gurobi_proto"],
 )
 
 proto_library(
@@ -646,18 +637,6 @@ py_proto_library(
     deps = [":glpk_proto"],
 )
 
-cc_proto_library(
-    name = "gurobi_cc_proto",
-    visibility = ["//visibility:public"],
-    deps = [":gurobi_proto"],
-)
-
-py_proto_library(
-    name = "gurobi_py_pb2",
-    visibility = ["//visibility:public"],
-    deps = [":gurobi_proto"],
-)
-
 proto_library(
     name = "highs_proto",
     srcs = ["highs.proto"],
@@ -673,4 +652,71 @@ cc_proto_library(
 py_proto_library(
     name = "highs_py_pb2",
     deps = [":highs_proto"],
+)
+
+cc_library(
+    name = "xpress_solver",
+    srcs = [
+        "xpress_solver.cc",
+        "xpress_solver.h",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//ortools/base:linked_hash_map",
+        "//ortools/base:map_util",
+        "//ortools/base:protoutil",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:callback_cc_proto",
+        "//ortools/math_opt:infeasible_subsystem_cc_proto",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_parameters_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:parameters_cc_proto",
+        "//ortools/math_opt:result_cc_proto",
+        "//ortools/math_opt:solution_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:inverted_bounds",
+        "//ortools/math_opt/core:math_opt_proto_utils",
+        "//ortools/math_opt/core:solver_interface",
+        "//ortools/math_opt/core:sparse_vector_view",
+        "//ortools/math_opt/solvers/xpress:g_xpress",
+        "//ortools/math_opt/validators:callback_validator",
+        "//ortools/port:proto_utils",
+        "//ortools/third_party_solvers:xpress_environment",
+        "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "xpress_solver_test",
+    srcs = ["xpress_solver_test.cc"],
+    deps = [
+        ":xpress_solver",
+        "//ortools/base:gmock",  # Not gunit_main: we have a custom main().
+        "//ortools/math_opt/cpp:math_opt",
+        "//ortools/math_opt/solver_tests:callback_tests",
+        "//ortools/math_opt/solver_tests:generic_tests",
+        "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
+        "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:logical_constraint_tests",
+        "//ortools/math_opt/solver_tests:lp_incomplete_solve_tests",
+        "//ortools/math_opt/solver_tests:lp_model_solve_parameters_tests",
+        "//ortools/math_opt/solver_tests:lp_parameter_tests",
+        "//ortools/math_opt/solver_tests:lp_tests",
+        "//ortools/math_opt/solver_tests:multi_objective_tests",
+        "//ortools/math_opt/solver_tests:qc_tests",
+        "//ortools/math_opt/solver_tests:qp_tests",
+        "//ortools/math_opt/solver_tests:second_order_cone_tests",
+        "//ortools/math_opt/solver_tests:status_tests",
+        "//ortools/third_party_solvers:xpress_environment",
+        "@abseil-cpp//absl/log",
+    ],
 )

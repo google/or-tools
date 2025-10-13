@@ -21,6 +21,7 @@
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -28,16 +29,12 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/proto_utils.h"
-#if defined(USE_LP_PARSER)
 #include "re2/re2.h"
-#endif  // defined(USE_LP_PARSER)
 
-#if defined(USE_LP_PARSER)
 namespace operations_research {
 namespace glop {
 
@@ -238,6 +235,24 @@ bool LPParser::ParseConstraint(StringPiece constraint) {
   return true;
 }
 
+namespace {
+
+template <class>
+constexpr bool dependent_false = false;  // workaround before CWG2518/P2593R1
+
+template <typename T>
+bool SimpleAtoFractional(absl::string_view str, T* value) {
+  if constexpr (std::is_same_v<T, double>) {
+    return absl::SimpleAtod(str, value);
+  } else if constexpr (std::is_same_v<T, float>) {
+    return absl::SimpleAtof(str, value);
+  } else {
+    static_assert(dependent_false<T>, "Unsupported fractional type");
+    return false;
+  }
+}
+}  // namespace
+
 bool LPParser::SetVariableBounds(ColIndex col, Fractional lb, Fractional ub) {
   if (bounded_variables_.find(col) == bounded_variables_.end()) {
     // The variable was not bounded yet, thus reset its bounds.
@@ -253,7 +268,7 @@ bool LPParser::SetVariableBounds(ColIndex col, Fractional lb, Fractional ub) {
 }
 
 TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
-                       double* consumed_coeff) {
+                       Fractional* consumed_coeff) {
   DCHECK(consumed_name != nullptr);
   DCHECK(consumed_coeff != nullptr);
   // We use LazyRE2 everywhere so that all the patterns are just compiled once
@@ -308,7 +323,7 @@ TokenType ConsumeToken(StringPiece* sp, std::string* consumed_name,
   static const LazyRE2 kValuePattern = {
       R"(\s*([0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?))"};
   if (RE2::Consume(sp, *kValuePattern, &coeff)) {
-    if (!absl::SimpleAtod(coeff, consumed_coeff)) {
+    if (!SimpleAtoFractional(coeff, consumed_coeff)) {
       // Note: If absl::SimpleAtod(), Consume(), and kValuePattern are correct,
       // this should never happen.
       LOG(ERROR) << "Text: " << coeff << " was matched by RE2 to be "
@@ -465,5 +480,3 @@ absl::StatusOr<MPModelProto> ModelProtoFromLpFormat(absl::string_view model) {
 }
 
 }  // namespace operations_research
-
-#endif  // defined(USE_LP_PARSER)

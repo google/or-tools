@@ -35,6 +35,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
@@ -49,7 +50,6 @@
 #include "absl/time/time.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/threadpool.h"
@@ -1376,7 +1376,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
 
 void MPSolver::Clear() {
   {
-    absl::MutexLock lock(&global_count_mutex_);
+    absl::MutexLock lock(global_count_mutex_);
     global_num_variables_ += variables_.size();
     global_num_constraints_ += constraints_.size();
   }
@@ -1909,13 +1909,13 @@ int64_t MPSolver::global_num_constraints_ = 0;
 
 // static
 int64_t MPSolver::global_num_variables() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_variables_;
 }
 
 // static
 int64_t MPSolver::global_num_constraints() {
-  absl::MutexLock lock(&global_count_mutex_);
+  absl::MutexLock lock(global_count_mutex_);
   return global_num_constraints_;
 }
 

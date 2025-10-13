@@ -8,11 +8,18 @@ FROM ubuntu:22.04 AS env
 #############
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -qq \
-&& apt install -yq git wget build-essential cmake lsb-release zlib1g-dev \
+&& apt install -yq git wget build-essential lsb-release zlib1g-dev \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENTRYPOINT ["/usr/bin/bash", "-c"]
-CMD ["/usr/bin/bash"]
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["/bin/bash"]
+
+# Install CMake 3.31.0
+RUN ARCH=$(uname -m) \
+&& wget -q "https://cmake.org/files/v3.31/cmake-3.31.0-linux-${ARCH}.sh" \
+&& chmod a+x cmake-3.31.0-linux-${ARCH}.sh \
+&& ./cmake-3.31.0-linux-${ARCH}.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.31.0-linux-${ARCH}.sh
 
 # Install SWIG
 RUN apt-get update -qq \
@@ -24,7 +31,7 @@ RUN apt-get update -qq \
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu
 # see: https://github.com/dotnet/core/pull/7423/files
 RUN apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-6.0 \
+&& apt-get install -yq dotnet-sdk-8.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
@@ -57,12 +64,12 @@ COPY or-tools.snk /root/or-tools.snk
 ENV DOTNET_SNK=/root/or-tools.snk
 
 ARG SRC_GIT_BRANCH
-ENV SRC_GIT_BRANCH ${SRC_GIT_BRANCH:-main}
+ENV SRC_GIT_BRANCH=${SRC_GIT_BRANCH:-main}
 ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 
 ARG OR_TOOLS_PATCH
-ENV OR_TOOLS_PATCH ${OR_TOOLS_PATCH:-9999}
+ENV OR_TOOLS_PATCH=${OR_TOOLS_PATCH:-9999}
 
 # Download sources
 # use SRC_GIT_SHA1 to modify the command
@@ -84,7 +91,6 @@ RUN make archive_cpp
 # .Net
 ## build
 FROM cpp_build AS dotnet_build
-ENV USE_DOTNET_CORE_31=OFF
 RUN make detect_dotnet \
 && make dotnet JOBS=8
 ## archive

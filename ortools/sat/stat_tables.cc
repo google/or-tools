@@ -37,7 +37,7 @@
 namespace operations_research::sat {
 
 SharedStatTables::SharedStatTables() {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   timing_table_.push_back(
       {"Task timing", "n [     min,      max]      avg      dev     time",
@@ -61,7 +61,7 @@ SharedStatTables::SharedStatTables() {
                              "Overflow", "Bad", "BadScaling"});
 
   lp_manager_table_.push_back({"Lp pool", "Constraints", "Updates", "Simplif",
-                               "Merged", "Shortened", "Split", "Strenghtened",
+                               "Merged", "Shortened", "Split", "Strengthened",
                                "Cuts/Call"});
 
   lns_table_.push_back(
@@ -73,13 +73,13 @@ SharedStatTables::SharedStatTables() {
 }
 
 void SharedStatTables::AddTimingStat(const SubSolver& subsolver) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   timing_table_.push_back({FormatName(subsolver.name()), subsolver.TimingInfo(),
                            subsolver.DeterministicTimingInfo()});
 }
 
 void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   CpSolverResponse r;
   model->GetOrCreate<SharedResponseManager>()->FillSolveStatsInResponse(model,
                                                                         &r);
@@ -92,7 +92,7 @@ void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
 }
 
 void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   SatSolver::Counters counters = model->GetOrCreate<SatSolver>()->counters();
   clauses_table_.push_back(
       {FormatName(name), FormatCounter(counters.num_minimizations),
@@ -109,7 +109,7 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
 }
 
 void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
 
   // Sum per component for the lp_table.
   int64_t num_compo = 0;
@@ -129,7 +129,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
   int64_t num_merged_constraints = 0;
   int64_t num_shortened_constraints = 0;
   int64_t num_split_constraints = 0;
-  int64_t num_coeff_strenghtening = 0;
+  int64_t num_coeff_strengthening = 0;
   int64_t num_cuts = 0;
   int64_t num_add_cut_calls = 0;
 
@@ -187,7 +187,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
     num_merged_constraints += manager.num_merged_constraints();
     num_shortened_constraints += manager.num_shortened_constraints();
     num_split_constraints += manager.num_split_constraints();
-    num_coeff_strenghtening += manager.num_coeff_strenghtening();
+    num_coeff_strengthening += manager.num_coeff_strenghtening();
     num_cuts += manager.num_cuts();
     num_add_cut_calls += manager.num_add_cut_calls();
 
@@ -222,7 +222,7 @@ void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
                                FormatCounter(num_merged_constraints),
                                FormatCounter(num_shortened_constraints),
                                FormatCounter(num_split_constraints),
-                               FormatCounter(num_coeff_strenghtening),
+                               FormatCounter(num_coeff_strengthening),
                                absl::StrCat(FormatCounter(num_cuts), "/",
                                             FormatCounter(num_add_cut_calls))});
 }
@@ -233,7 +233,7 @@ void SharedStatTables::AddLnsStat(absl::string_view name,
                                   int64_t num_improving_calls,
                                   double difficulty,
                                   double deterministic_limit) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   const double fully_solved_proportion =
       static_cast<double>(num_fully_solved_calls) /
       static_cast<double>(std::max(int64_t{1}, num_calls));
@@ -251,7 +251,7 @@ void SharedStatTables::AddLsStat(absl::string_view name, int64_t num_batches,
                                  int64_t num_backtracks,
                                  int64_t num_weight_updates,
                                  int64_t num_scores_computed) {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   ls_table_.push_back(
       {FormatName(name), FormatCounter(num_batches),
        FormatCounter(num_restarts), FormatCounter(num_linear_moves),
@@ -263,7 +263,7 @@ void SharedStatTables::AddLsStat(absl::string_view name, int64_t num_batches,
 void SharedStatTables::Display(SolverLogger* logger) {
   if (!logger->LoggingIsEnabled()) return;
 
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   if (timing_table_.size() > 1) SOLVER_LOG(logger, FormatTable(timing_table_));
   if (search_table_.size() > 1) SOLVER_LOG(logger, FormatTable(search_table_));
   if (clauses_table_.size() > 1) {

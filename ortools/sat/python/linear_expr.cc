@@ -21,9 +21,14 @@
 #include <utility>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/fp_roundtrip_conv.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -67,10 +72,10 @@ std::shared_ptr<LinearExpr> LinearExpr::ConstantFloat(double value) {
   return std::make_shared<FloatConstant>(value);
 }
 
-std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> LinearExpr::Add(std::shared_ptr<LinearExpr> other) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(expr);
+  exprs.push_back(other);
   return std::make_shared<SumArray>(exprs);
 }
 
@@ -84,12 +89,11 @@ std::shared_ptr<LinearExpr> LinearExpr::AddFloat(double cst) {
   return std::make_shared<FloatAffine>(shared_from_this(), 1.0, cst);
 }
 
-std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> LinearExpr::Sub(std::shared_ptr<LinearExpr> other) {
   std::vector<std::shared_ptr<LinearExpr>> exprs;
   exprs.push_back(shared_from_this());
-  exprs.push_back(expr);
-  const std::vector<int64_t> coeffs = {1, -1};
-  return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
+  exprs.push_back(other->MulInt(-1));
+  return std::make_shared<SumArray>(exprs);
 }
 
 std::shared_ptr<LinearExpr> LinearExpr::SubInt(int64_t cst) {
@@ -100,6 +104,15 @@ std::shared_ptr<LinearExpr> LinearExpr::SubInt(int64_t cst) {
 std::shared_ptr<LinearExpr> LinearExpr::SubFloat(double cst) {
   if (cst == 0.0) return shared_from_this();
   return std::make_shared<FloatAffine>(shared_from_this(), 1.0, -cst);
+}
+
+std::shared_ptr<LinearExpr> LinearExpr::RSub(
+    std::shared_ptr<LinearExpr> other) {
+  std::vector<std::shared_ptr<LinearExpr>> exprs;
+  exprs.push_back(shared_from_this());
+  exprs.push_back(other);
+  const std::vector<int64_t> coeffs = {-1, 1};
+  return std::make_shared<IntWeightedSum>(exprs, coeffs, 0);
 }
 
 std::shared_ptr<LinearExpr> LinearExpr::RSubInt(int64_t cst) {
@@ -130,20 +143,24 @@ void FloatExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
                                     double coeff) {
   to_process_.push_back(std::make_pair(expr, coeff));
 }
+
 void FloatExprVisitor::AddConstant(double constant) { offset_ += constant; }
-void FloatExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
-                                   double coeff) {
+
+void FloatExprVisitor::AddVarCoeff(std::shared_ptr<IntVar> var, double coeff) {
   canonical_terms_[var] += coeff;
 }
-double FloatExprVisitor::Process(std::shared_ptr<LinearExpr> expr,
-                                 std::vector<std::shared_ptr<BaseIntVar>>* vars,
-                                 std::vector<double>* coeffs) {
-  AddToProcess(expr, 1.0);
+
+void FloatExprVisitor::ProcessAll() {
   while (!to_process_.empty()) {
     const auto [expr, coeff] = to_process_.back();
     to_process_.pop_back();
     expr->VisitAsFloat(*this, coeff);
   }
+}
+
+double FloatExprVisitor::Process(std::vector<std::shared_ptr<IntVar>>* vars,
+                                 std::vector<double>* coeffs) {
+  ProcessAll();
 
   vars->clear();
   coeffs->clear();
@@ -156,9 +173,20 @@ double FloatExprVisitor::Process(std::shared_ptr<LinearExpr> expr,
   return offset_;
 }
 
+double FloatExprVisitor::Evaluate(const CpSolverResponse& solution) {
+  ProcessAll();
+
+  for (const auto& [var, coeff] : canonical_terms_) {
+    if (coeff == 0) continue;
+    offset_ += coeff * solution.solution(var->index());
+  }
+  return offset_;
+}
+
 FlatFloatExpr::FlatFloatExpr(std::shared_ptr<LinearExpr> expr) {
   FloatExprVisitor lin;
-  offset_ = lin.Process(expr, &vars_, &coeffs_);
+  lin.AddToProcess(expr, 1.0);
+  offset_ = lin.Process(&vars_, &coeffs_);
 }
 
 void FlatFloatExpr::VisitAsFloat(FloatExprVisitor& lin, double c) {
@@ -290,7 +318,7 @@ std::string FlatIntExpr::DebugString() const {
   return absl::StrCat(
       "FlatIntExpr([",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
+                    [](std::string* out, std::shared_ptr<IntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], [", absl::StrJoin(coeffs_, ", "), "], ", offset_, ")");
@@ -314,8 +342,20 @@ SumArray::SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
   DCHECK_GE(exprs_.size(), 2);
 }
 
-void SumArray::AddInPlace(std::shared_ptr<LinearExpr> expr) {
+std::shared_ptr<LinearExpr> SumArray::AddInPlace(
+    std::shared_ptr<LinearExpr> expr) {
   exprs_.push_back(std::move(expr));
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddIntInPlace(int64_t cst) {
+  int_offset_ += cst;
+  return shared_from_this();
+}
+
+std::shared_ptr<LinearExpr> SumArray::AddFloatInPlace(double cst) {
+  double_offset_ += cst;
+  return shared_from_this();
 }
 
 bool SumArray::VisitAsInt(IntExprVisitor& lin, int64_t c) {
@@ -386,8 +426,8 @@ std::string SumArray::DebugString() const {
 }
 
 FloatWeightedSum::FloatWeightedSum(
-    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-    const std::vector<double>& coeffs, double offset)
+    absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+    absl::Span<const double> coeffs, double offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {
@@ -463,8 +503,8 @@ std::string FloatWeightedSum::DebugString() const {
 }
 
 IntWeightedSum::IntWeightedSum(
-    const std::vector<std::shared_ptr<LinearExpr>>& exprs,
-    const std::vector<int64_t>& coeffs, int64_t offset)
+    absl::Span<const std::shared_ptr<LinearExpr>> exprs,
+    absl::Span<const int64_t> coeffs, int64_t offset)
     : exprs_(exprs.begin(), exprs.end()),
       coeffs_(coeffs.begin(), coeffs.end()),
       offset_(offset) {}
@@ -707,8 +747,7 @@ void IntExprVisitor::AddToProcess(std::shared_ptr<LinearExpr> expr,
 
 void IntExprVisitor::AddConstant(int64_t constant) { offset_ += constant; }
 
-void IntExprVisitor::AddVarCoeff(std::shared_ptr<BaseIntVar> var,
-                                 int64_t coeff) {
+void IntExprVisitor::AddVarCoeff(std::shared_ptr<IntVar> var, int64_t coeff) {
   canonical_terms_[var] += coeff;
 }
 
@@ -721,7 +760,7 @@ bool IntExprVisitor::ProcessAll() {
   return true;
 }
 
-bool IntExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
+bool IntExprVisitor::Process(std::vector<std::shared_ptr<IntVar>>* vars,
                              std::vector<int64_t>* coeffs, int64_t* offset) {
   if (!ProcessAll()) return false;
   vars->clear();
@@ -735,10 +774,8 @@ bool IntExprVisitor::Process(std::vector<std::shared_ptr<BaseIntVar>>* vars,
   return true;
 }
 
-bool IntExprVisitor::Evaluate(std::shared_ptr<LinearExpr> expr,
-                              const CpSolverResponse& solution,
+bool IntExprVisitor::Evaluate(const CpSolverResponse& solution,
                               int64_t* value) {
-  AddToProcess(expr, 1);
   if (!ProcessAll()) return false;
 
   *value = offset_;
@@ -749,64 +786,150 @@ bool IntExprVisitor::Evaluate(std::shared_ptr<LinearExpr> expr,
   return true;
 }
 
-bool BaseIntVarComparator::operator()(std::shared_ptr<BaseIntVar> lhs,
-                                      std::shared_ptr<BaseIntVar> rhs) const {
+// TODO(user): This hash method does not distinguish between variables with
+// the same index and different models.
+int64_t Literal::Hash() const { return absl::HashOf(index()); }
+
+bool IntVarComparator::operator()(std::shared_ptr<IntVar> lhs,
+                                  std::shared_ptr<IntVar> rhs) const {
   return lhs->index() < rhs->index();
 }
 
-BaseIntVar::BaseIntVar(int index, bool is_boolean)
-    : index_(index), is_boolean_(is_boolean) {}
-
-std::shared_ptr<Literal> BaseIntVar::negated() {
-  if (negated_ == nullptr) {
-    std::shared_ptr<BaseIntVar> self =
-        std::static_pointer_cast<BaseIntVar>(shared_from_this());
-    negated_ = std::make_shared<NotBooleanVariable>(self);
+std::string IntVar::name() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return "";
   }
-  return negated_;
+  return model_proto_->variables(index_).name();
 }
 
-int NotBooleanVariable::index() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return -var->index() - 1;
+void IntVar::SetName(absl::string_view name) {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return;
+  }
+  if (name.empty()) {
+    model_proto_->mutable_variables(index_)->clear_name();
+  } else {
+    model_proto_->mutable_variables(index_)->set_name(name);
+  }
 }
+
+Domain IntVar::domain() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return Domain();
+  }
+  return ReadDomainFromProto(model_proto_->variables(index_));
+}
+
+void IntVar::SetDomain(const Domain& domain) {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return;
+  }
+  FillDomainInProto(domain, model_proto_->mutable_variables(index_));
+}
+
+std::shared_ptr<CpModelProto> IntVar::model_proto() const {
+  return model_proto_;
+}
+
+IntegerVariableProto* IntVar::proto() const {
+  if (model_proto_ == nullptr || index_ >= model_proto_->variables_size()) {
+    return nullptr;
+  }
+  return model_proto_->mutable_variables(index_);
+}
+
+bool IntVar::is_boolean() const {
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return false;
+  return var_proto->domain_size() == 2 && var_proto->domain(0) >= 0 &&
+         var_proto->domain(1) <= 1;
+}
+
+bool IntVar::is_fixed() const {
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return false;
+  return var_proto->domain_size() == 2 &&
+         var_proto->domain(0) == var_proto->domain(1);
+}
+
+std::shared_ptr<Literal> IntVar::negated() const {
+  return std::make_shared<NotBooleanVariable>(model_proto_, index_);
+}
+
+namespace {
+std::string VarDomainToString(IntegerVariableProto* var_proto) {
+  std::string domain_str;
+  for (int i = 0; i < var_proto->domain_size(); i += 2) {
+    const int64_t lb = var_proto->domain(i);
+    const int64_t ub = var_proto->domain(i + 1);
+    if (i > 0) absl::StrAppend(&domain_str, ", ");
+    if (lb == ub) {
+      absl::StrAppend(&domain_str, lb);
+    } else {
+      absl::StrAppend(&domain_str, lb, "..", ub);
+    }
+  }
+  return domain_str;
+}
+
+}  // namespace
+
+std::string IntVar::ToString() const {
+  std::string var_name = name();
+  IntegerVariableProto* var_proto = proto();
+  if (var_name.empty()) {
+    if (is_fixed() && var_proto != nullptr && var_proto->domain_size() >= 2) {
+      return absl::StrCat(var_proto->domain(0));
+    } else if (is_boolean()) {
+      return absl::StrCat("b", index_);
+    } else {
+      return absl::StrCat("x", index_);
+    }
+  }
+  return var_name;
+}
+
+std::string IntVar::DebugString() const {
+  std::string var_name = name();
+  if (var_name.empty()) {
+    if (is_boolean()) {
+      var_name = absl::StrCat("b", index_);
+    } else {
+      var_name = absl::StrCat("x", index_);
+    }
+  }
+  IntegerVariableProto* var_proto = proto();
+  if (var_proto == nullptr) return var_name;
+  return absl::StrCat(var_name, "(", VarDomainToString(var_proto), ")");
+}
+
+int NotBooleanVariable::index() const { return NegatedRef(var_index_); }
 
 /**
  * Returns the negation of the current literal, that is the original Boolean
  * variable.
  */
-std::shared_ptr<Literal> NotBooleanVariable::negated() {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return var;
+std::shared_ptr<Literal> NotBooleanVariable::negated() const {
+  return std::make_shared<IntVar>(model_proto_, var_index_);
 }
 
 bool NotBooleanVariable::VisitAsInt(IntExprVisitor& lin, int64_t c) {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  lin.AddVarCoeff(var, -c);
+  lin.AddVarCoeff(std::make_shared<IntVar>(model_proto_, var_index_), -c);
   lin.AddConstant(c);
   return true;
 }
 
 void NotBooleanVariable::VisitAsFloat(FloatExprVisitor& lin, double c) {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  lin.AddVarCoeff(var, -c);
+  lin.AddVarCoeff(std::make_shared<IntVar>(model_proto_, var_index_), -c);
   lin.AddConstant(c);
 }
 
 std::string NotBooleanVariable::ToString() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return absl::StrCat("not(", var->ToString(), ")");
+  return absl::StrCat("not(", negated()->ToString(), ")");
 }
 
 std::string NotBooleanVariable::DebugString() const {
-  std::shared_ptr<BaseIntVar> var = var_.lock();
-  CHECK(var != nullptr);  // Cannot happen as checked in the pybind11 code.
-  return absl::StrCat("NotBooleanVariable(index=", var->index(), ")");
+  return absl::StrCat("NotBooleanVariable(var_index=", var_index_, ")");
 }
 
 BoundedLinearExpression::BoundedLinearExpression(
@@ -828,7 +951,7 @@ BoundedLinearExpression::BoundedLinearExpression(
 }
 
 const Domain& BoundedLinearExpression::bounds() const { return bounds_; }
-const std::vector<std::shared_ptr<BaseIntVar>>& BoundedLinearExpression::vars()
+const std::vector<std::shared_ptr<IntVar>>& BoundedLinearExpression::vars()
     const {
   return vars_;
 }
@@ -916,7 +1039,7 @@ std::string BoundedLinearExpression::DebugString() const {
   return absl::StrCat(
       "BoundedLinearExpression(vars=[",
       absl::StrJoin(vars_, ", ",
-                    [](std::string* out, std::shared_ptr<BaseIntVar> var) {
+                    [](std::string* out, std::shared_ptr<IntVar> var) {
                       absl::StrAppend(out, var->DebugString());
                     }),
       "], coeffs=[", absl::StrJoin(coeffs_, ", "), "], offset=", offset_,

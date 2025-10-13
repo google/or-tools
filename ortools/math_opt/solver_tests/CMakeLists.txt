@@ -22,7 +22,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
   TESTING
 )
@@ -36,7 +36,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     absl::status
     absl::strings
@@ -56,7 +56,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
@@ -72,7 +72,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
@@ -88,7 +88,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
@@ -104,7 +104,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_base_solver_test
   TESTING
@@ -118,7 +118,7 @@ ortools_cxx_library(
 #  SOURCES
 #    "unregistered_solver_test.cc"
 #  LINK_LIBRARIES
-#    GTest::gmock
+#    ortools::base_gmock
 #    GTest::gmock_main
 #)
 
@@ -131,7 +131,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     absl::status
     ortools::math_opt_matchers
@@ -148,7 +148,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
@@ -164,7 +164,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::strings
     ortools::math_opt_matchers
   TESTING
@@ -179,7 +179,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_base_solver_test
@@ -195,7 +195,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     absl::status
     absl::strings
@@ -212,7 +212,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     absl::status
     ortools::math_opt_base_solver_test
@@ -228,7 +228,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
@@ -244,7 +244,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
   TESTING
@@ -259,7 +259,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
   TESTING
@@ -274,7 +274,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
   TESTING
@@ -289,7 +289,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
   TESTING
@@ -304,7 +304,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
   TESTING
@@ -324,19 +324,19 @@ ortools_cxx_library(
   TESTING
 )
 
+if(USE_SCIP AND USE_GLOP)
 ortools_cxx_test(
   NAME
     ${_PREFIX}_test_models_test
   SOURCES
     "test_models_test.cc"
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     GTest::gmock_main
     ortools::math_opt_test_models
     ortools::math_opt_matchers
-    #ortools::math_opt_glop_solver
-    #ortools::math_opt_gscipt_solver
 )
+endif()
 
 ortools_cxx_library(
   NAME
@@ -347,7 +347,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     ortools::math_opt_matchers
     ortools::math_opt_test_models
@@ -363,7 +363,7 @@ ortools_cxx_library(
   TYPE
     STATIC
   LINK_LIBRARIES
-    GTest::gmock
+    ortools::base_gmock
     absl::log
     absl::status
     absl::strings

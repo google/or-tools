@@ -3,11 +3,11 @@ FROM ortools/cmake:debian_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-debian
 RUN apt-get update -qq \
 && apt-get install -yq wget gpg apt-transport-https \
-&& wget -q "https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
+&& wget -q "https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb" -O packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && rm packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-6.0 \
+&& apt-get install -yq dotnet-sdk-8.0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd

@@ -1,3 +1,16 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Renames all yy to orfz_ in public functions.
 %define api.prefix {orfz_}
 
@@ -34,6 +47,9 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 // Code in the implementation file.
 %code {
+#include <cstdint>
+
+#include "absl/log/check.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/flatzinc/parser_util.cc"
@@ -218,27 +234,16 @@ variable_or_constant_declaration:
 }
 | ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
-  // Declaration of a (named) constant array: See rule above.
+  // Declaration of a (named) set constant array: See rule above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
-  const int64_t num_constants = $5;
-  const Domain& domain = $8;
+  const int64_t num_domains = $5;
+  // const Domain& domain = $8;
   const std::string& identifier = $10;
   const std::vector<Domain>* const assignments = $14;
   const std::vector<Annotation>* const annotations = $11;
   CHECK(assignments != nullptr);
-  CHECK_EQ(num_constants, assignments->size());
-
-  if (!AllDomainsHaveOneValue(*assignments)) {
-    context->domain_array_map[identifier] = *assignments;
-    // TODO(user): check that all assignments are included in the domain.
-  } else {
-    std::vector<int64_t> values(num_constants);
-    for (int i = 0; i < num_constants; ++i) {
-      values[i] = (*assignments)[i].values.front();
-      CHECK(domain.Contains(values[i]));
-    }
-    context->integer_array_map[identifier] = values;
-  }
+  CHECK_EQ(num_domains, assignments->size());
+  context->domain_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
 }
@@ -256,10 +261,27 @@ variable_or_constant_declaration:
   Variable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
-  } else if (assignment.variable == nullptr) {  // just an integer constant.
-    CHECK(domain.Contains(assignment.value));
-    var = model->AddVariable(
-        identifier, Domain::IntegerValue(assignment.value), introduced);
+    CHECK_EQ(var->domain.is_a_set, domain.is_a_set);
+  } else if (assignment.variable == nullptr) {  // A constant.
+    if (assignment.is_float) {
+      // Assigned to an float constant.
+      const double value = assignment.float_value;
+      var = model->AddVariable(
+          identifier, Domain::FloatValue(value), introduced);
+    } else if (assignment.is_domain) {
+      // TODO(user): Check that the assignment is included in the domain.
+      // We force the set domain because we can have the following code:
+      //   var set of {0,18}: x = {0,18};
+      // where the second domain is not tagged as a set.
+      //
+      // Assigned to a set constant.
+      var = model->AddVariable(
+          identifier, assignment.domain, introduced, domain.is_a_set);
+    } else {
+      CHECK(domain.Contains(assignment.value));
+      var = model->AddVariable(
+          identifier, Domain::IntegerValue(assignment.value), introduced);
+    }
   } else {  // a variable.
     var = assignment.variable;
     var->Merge(identifier, domain, introduced);
@@ -296,13 +318,21 @@ variable_or_constant_declaration:
     const std::string var_name = absl::StrFormat("%s[%d]", identifier, i + 1);
     if (assignments == nullptr) {
       vars[i] = model->AddVariable(var_name, domain, introduced);
-    } else if ((*assignments)[i].variable == nullptr) {
+    } else if ((*assignments)[i].variable == nullptr) {  // A constant.
       if ((*assignments)[i].is_float) {
         // Assigned to an float constant.
         const double value = (*assignments)[i].float_value;
-        //CHECK(domain.Contains(value));
         vars[i] =
             model->AddVariable(var_name, Domain::FloatValue(value), introduced);
+      } else if ((*assignments)[i].is_domain) {
+        // TODO(user): Check that the assignment is included in the domain.
+        // We force the set domain because we can have the following code:
+        //   var set of {0,18}: x = {0,18};
+        // where the second domain is not tagged as a set.
+        //
+        // Assigned to a set constant.
+        vars[i] = model->AddVariable(
+            var_name, (*assignments)[i].domain, introduced, domain.is_a_set);
       } else {
         // Assigned to an integer constant.
         const int64_t value = (*assignments)[i].value;
@@ -373,6 +403,14 @@ var_or_value_array:  // Cannot be empty.
 var_or_value:
   IVALUE { $$ = VarRefOrValue::Value($1); }  // An integer value.
 | DVALUE { $$ = VarRefOrValue::FloatValue($1); } // A float value.
+| IVALUE DOTDOT IVALUE {
+   $$ = VarRefOrValue::DomainValue(Domain::Interval($1, $3));
+}
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = VarRefOrValue::DomainValue(Domain::IntegerList(std::move(*$2)));
+  delete $2;
+}
 | IDENTIFIER {
   // A reference to an existing integer constant or variable.
   const std::string& id = $1;
@@ -500,7 +538,9 @@ constraint :
   const std::vector<Argument>& arguments = *$4;
   std::vector<Annotation>* const annotations = $6;
 
-  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"));
+  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"),
+                       ContainsId(annotations, "symmetry_breaking"),
+                       ContainsId(annotations, "redundant"));
   delete annotations;
   delete $4;
 }

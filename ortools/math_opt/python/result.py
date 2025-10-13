@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,11 +18,13 @@ import datetime
 import enum
 from typing import Dict, Iterable, List, Optional, overload
 
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
+from ortools.math_opt.python import linear_constraints as linear_constraints_mod
 from ortools.math_opt.python import model
 from ortools.math_opt.python import solution
+from ortools.math_opt.python import variables as variables_mod
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 _NO_DUAL_SOLUTION_ERROR = (
     "Best solution does not have an associated dual feasible solution."
@@ -458,9 +461,10 @@ class SolveResult:
         """
         if not self.solutions:
             return False
+        sol = self.solutions[0]
         return (
-            self.solutions[0].primal_solution is not None
-            and self.solutions[0].primal_solution.feasibility_status
+            sol.primal_solution is not None
+            and sol.primal_solution.feasibility_status
             == solution.SolutionStatus.FEASIBLE
         )
 
@@ -483,8 +487,9 @@ class SolveResult:
         """
         if not self.has_primal_feasible_solution():
             raise ValueError("No primal feasible solution available.")
-        assert self.solutions[0].primal_solution is not None
-        return self.solutions[0].primal_solution.objective_value
+        sol = self.solutions[0]
+        assert sol.primal_solution is not None
+        return sol.primal_solution.objective_value
 
     def best_objective_bound(self) -> float:
         """Returns a bound on the best possible objective value.
@@ -495,13 +500,17 @@ class SolveResult:
         return self.termination.objective_bounds.dual_bound
 
     @overload
-    def variable_values(self, variables: None = ...) -> Dict[model.Variable, float]: ...
+    def variable_values(
+        self, variables: None = ...
+    ) -> Dict[variables_mod.Variable, float]: ...
 
     @overload
-    def variable_values(self, variables: model.Variable) -> float: ...
+    def variable_values(self, variables: variables_mod.Variable) -> float: ...
 
     @overload
-    def variable_values(self, variables: Iterable[model.Variable]) -> List[float]: ...
+    def variable_values(
+        self, variables: Iterable[variables_mod.Variable]
+    ) -> List[float]: ...
 
     def variable_values(self, variables=None):
         """The variable values from the best primal feasible solution.
@@ -524,15 +533,14 @@ class SolveResult:
         """
         if not self.has_primal_feasible_solution():
             raise ValueError("No primal feasible solution available.")
-        assert self.solutions[0].primal_solution is not None
+        sol = self.solutions[0]
+        assert sol.primal_solution is not None
         if variables is None:
-            return self.solutions[0].primal_solution.variable_values
-        if isinstance(variables, model.Variable):
-            return self.solutions[0].primal_solution.variable_values[variables]
+            return sol.primal_solution.variable_values
+        if isinstance(variables, variables_mod.Variable):
+            return sol.primal_solution.variable_values[variables]
         if isinstance(variables, Iterable):
-            return [
-                self.solutions[0].primal_solution.variable_values[v] for v in variables
-            ]
+            return [sol.primal_solution.variable_values[v] for v in variables]
         raise TypeError(
             "unsupported type in argument for "
             f"variable_values: {type(variables).__name__!r}"
@@ -560,14 +568,14 @@ class SolveResult:
     @overload
     def ray_variable_values(
         self, variables: None = ...
-    ) -> Dict[model.Variable, float]: ...
+    ) -> Dict[variables_mod.Variable, float]: ...
 
     @overload
-    def ray_variable_values(self, variables: model.Variable) -> float: ...
+    def ray_variable_values(self, variables: variables_mod.Variable) -> float: ...
 
     @overload
     def ray_variable_values(
-        self, variables: Iterable[model.Variable]
+        self, variables: Iterable[variables_mod.Variable]
     ) -> List[float]: ...
 
     def ray_variable_values(self, variables=None):
@@ -593,7 +601,7 @@ class SolveResult:
             raise ValueError("No primal ray available.")
         if variables is None:
             return self.primal_rays[0].variable_values
-        if isinstance(variables, model.Variable):
+        if isinstance(variables, variables_mod.Variable):
             return self.primal_rays[0].variable_values[variables]
         if isinstance(variables, Iterable):
             return [self.primal_rays[0].variable_values[v] for v in variables]
@@ -614,23 +622,26 @@ class SolveResult:
         """
         if not self.solutions:
             return False
+        sol = self.solutions[0]
         return (
-            self.solutions[0].dual_solution is not None
-            and self.solutions[0].dual_solution.feasibility_status
-            == solution.SolutionStatus.FEASIBLE
+            sol.dual_solution is not None
+            and sol.dual_solution.feasibility_status == solution.SolutionStatus.FEASIBLE
         )
 
     @overload
     def dual_values(
         self, linear_constraints: None = ...
-    ) -> Dict[model.LinearConstraint, float]: ...
-
-    @overload
-    def dual_values(self, linear_constraints: model.LinearConstraint) -> float: ...
+    ) -> Dict[linear_constraints_mod.LinearConstraint, float]: ...
 
     @overload
     def dual_values(
-        self, linear_constraints: Iterable[model.LinearConstraint]
+        self, linear_constraints: linear_constraints_mod.LinearConstraint
+    ) -> float: ...
+
+    @overload
+    def dual_values(
+        self,
+        linear_constraints: Iterable[linear_constraints_mod.LinearConstraint],
     ) -> List[float]: ...
 
     def dual_values(self, linear_constraints=None):
@@ -661,29 +672,31 @@ class SolveResult:
         """
         if not self.has_dual_feasible_solution():
             raise ValueError(_NO_DUAL_SOLUTION_ERROR)
-        assert self.solutions[0].dual_solution is not None
+        sol = self.solutions[0]
+        assert sol.dual_solution is not None
         if linear_constraints is None:
-            return self.solutions[0].dual_solution.dual_values
-        if isinstance(linear_constraints, model.LinearConstraint):
-            return self.solutions[0].dual_solution.dual_values[linear_constraints]
+            return sol.dual_solution.dual_values
+        if isinstance(linear_constraints, linear_constraints_mod.LinearConstraint):
+            return sol.dual_solution.dual_values[linear_constraints]
         if isinstance(linear_constraints, Iterable):
-            return [
-                self.solutions[0].dual_solution.dual_values[c]
-                for c in linear_constraints
-            ]
+            return [sol.dual_solution.dual_values[c] for c in linear_constraints]
         raise TypeError(
             "unsupported type in argument for "
             f"dual_values: {type(linear_constraints).__name__!r}"
         )
 
     @overload
-    def reduced_costs(self, variables: None = ...) -> Dict[model.Variable, float]: ...
+    def reduced_costs(
+        self, variables: None = ...
+    ) -> Dict[variables_mod.Variable, float]: ...
 
     @overload
-    def reduced_costs(self, variables: model.Variable) -> float: ...
+    def reduced_costs(self, variables: variables_mod.Variable) -> float: ...
 
     @overload
-    def reduced_costs(self, variables: Iterable[model.Variable]) -> List[float]: ...
+    def reduced_costs(
+        self, variables: Iterable[variables_mod.Variable]
+    ) -> List[float]: ...
 
     def reduced_costs(self, variables=None):
         """The reduced costs associated to the best solution.
@@ -710,13 +723,14 @@ class SolveResult:
         """
         if not self.has_dual_feasible_solution():
             raise ValueError(_NO_DUAL_SOLUTION_ERROR)
-        assert self.solutions[0].dual_solution is not None
+        sol = self.solutions[0]
+        assert sol.dual_solution is not None
         if variables is None:
-            return self.solutions[0].dual_solution.reduced_costs
-        if isinstance(variables, model.Variable):
-            return self.solutions[0].dual_solution.reduced_costs[variables]
+            return sol.dual_solution.reduced_costs
+        if isinstance(variables, variables_mod.Variable):
+            return sol.dual_solution.reduced_costs[variables]
         if isinstance(variables, Iterable):
-            return [self.solutions[0].dual_solution.reduced_costs[v] for v in variables]
+            return [sol.dual_solution.reduced_costs[v] for v in variables]
         raise TypeError(
             "unsupported type in argument for "
             f"reduced_costs: {type(variables).__name__!r}"
@@ -736,14 +750,17 @@ class SolveResult:
     @overload
     def ray_dual_values(
         self, linear_constraints: None = ...
-    ) -> Dict[model.LinearConstraint, float]: ...
-
-    @overload
-    def ray_dual_values(self, linear_constraints: model.LinearConstraint) -> float: ...
+    ) -> Dict[linear_constraints_mod.LinearConstraint, float]: ...
 
     @overload
     def ray_dual_values(
-        self, linear_constraints: Iterable[model.LinearConstraint]
+        self, linear_constraints: linear_constraints_mod.LinearConstraint
+    ) -> float: ...
+
+    @overload
+    def ray_dual_values(
+        self,
+        linear_constraints: Iterable[linear_constraints_mod.LinearConstraint],
     ) -> List[float]: ...
 
     def ray_dual_values(self, linear_constraints=None):
@@ -770,12 +787,13 @@ class SolveResult:
         """
         if not self.has_dual_ray():
             raise ValueError("No dual ray available.")
+        ray = self.dual_rays[0]
         if linear_constraints is None:
-            return self.dual_rays[0].dual_values
-        if isinstance(linear_constraints, model.LinearConstraint):
-            return self.dual_rays[0].dual_values[linear_constraints]
+            return ray.dual_values
+        if isinstance(linear_constraints, linear_constraints_mod.LinearConstraint):
+            return ray.dual_values[linear_constraints]
         if isinstance(linear_constraints, Iterable):
-            return [self.dual_rays[0].dual_values[v] for v in linear_constraints]
+            return [ray.dual_values[v] for v in linear_constraints]
         raise TypeError(
             "unsupported type in argument for "
             f"ray_dual_values: {type(linear_constraints).__name__!r}"
@@ -784,13 +802,15 @@ class SolveResult:
     @overload
     def ray_reduced_costs(
         self, variables: None = ...
-    ) -> Dict[model.Variable, float]: ...
+    ) -> Dict[variables_mod.Variable, float]: ...
 
     @overload
-    def ray_reduced_costs(self, variables: model.Variable) -> float: ...
+    def ray_reduced_costs(self, variables: variables_mod.Variable) -> float: ...
 
     @overload
-    def ray_reduced_costs(self, variables: Iterable[model.Variable]) -> List[float]: ...
+    def ray_reduced_costs(
+        self, variables: Iterable[variables_mod.Variable]
+    ) -> List[float]: ...
 
     def ray_reduced_costs(self, variables=None):
         """The reduced costs from the first dual ray.
@@ -813,12 +833,13 @@ class SolveResult:
         """
         if not self.has_dual_ray():
             raise ValueError("No dual ray available.")
+        ray = self.dual_rays[0]
         if variables is None:
-            return self.dual_rays[0].reduced_costs
-        if isinstance(variables, model.Variable):
-            return self.dual_rays[0].reduced_costs[variables]
+            return ray.reduced_costs
+        if isinstance(variables, variables_mod.Variable):
+            return ray.reduced_costs[variables]
         if isinstance(variables, Iterable):
-            return [self.dual_rays[0].reduced_costs[v] for v in variables]
+            return [ray.reduced_costs[v] for v in variables]
         raise TypeError(
             "unsupported type in argument for "
             f"ray_reduced_costs: {type(variables).__name__!r}"
@@ -841,16 +862,17 @@ class SolveResult:
     @overload
     def constraint_status(
         self, linear_constraints: None = ...
-    ) -> Dict[model.LinearConstraint, solution.BasisStatus]: ...
+    ) -> Dict[linear_constraints_mod.LinearConstraint, solution.BasisStatus]: ...
 
     @overload
     def constraint_status(
-        self, linear_constraints: model.LinearConstraint
+        self, linear_constraints: linear_constraints_mod.LinearConstraint
     ) -> solution.BasisStatus: ...
 
     @overload
     def constraint_status(
-        self, linear_constraints: Iterable[model.LinearConstraint]
+        self,
+        linear_constraints: Iterable[linear_constraints_mod.LinearConstraint],
     ) -> List[solution.BasisStatus]: ...
 
     def constraint_status(self, linear_constraints=None):
@@ -880,15 +902,14 @@ class SolveResult:
         """
         if not self.has_basis():
             raise ValueError(_NO_BASIS_ERROR)
-        assert self.solutions[0].basis is not None
+        basis = self.solutions[0].basis
+        assert basis is not None
         if linear_constraints is None:
-            return self.solutions[0].basis.constraint_status
-        if isinstance(linear_constraints, model.LinearConstraint):
-            return self.solutions[0].basis.constraint_status[linear_constraints]
+            return basis.constraint_status
+        if isinstance(linear_constraints, linear_constraints_mod.LinearConstraint):
+            return basis.constraint_status[linear_constraints]
         if isinstance(linear_constraints, Iterable):
-            return [
-                self.solutions[0].basis.constraint_status[c] for c in linear_constraints
-            ]
+            return [basis.constraint_status[c] for c in linear_constraints]
         raise TypeError(
             "unsupported type in argument for "
             f"constraint_status: {type(linear_constraints).__name__!r}"
@@ -897,14 +918,16 @@ class SolveResult:
     @overload
     def variable_status(
         self, variables: None = ...
-    ) -> Dict[model.Variable, solution.BasisStatus]: ...
-
-    @overload
-    def variable_status(self, variables: model.Variable) -> solution.BasisStatus: ...
+    ) -> Dict[variables_mod.Variable, solution.BasisStatus]: ...
 
     @overload
     def variable_status(
-        self, variables: Iterable[model.Variable]
+        self, variables: variables_mod.Variable
+    ) -> solution.BasisStatus: ...
+
+    @overload
+    def variable_status(
+        self, variables: Iterable[variables_mod.Variable]
     ) -> List[solution.BasisStatus]: ...
 
     def variable_status(self, variables=None):
@@ -930,13 +953,14 @@ class SolveResult:
         """
         if not self.has_basis():
             raise ValueError(_NO_BASIS_ERROR)
-        assert self.solutions[0].basis is not None
+        basis = self.solutions[0].basis
+        assert basis is not None
         if variables is None:
-            return self.solutions[0].basis.variable_status
-        if isinstance(variables, model.Variable):
-            return self.solutions[0].basis.variable_status[variables]
+            return basis.variable_status
+        if isinstance(variables, variables_mod.Variable):
+            return basis.variable_status[variables]
         if isinstance(variables, Iterable):
-            return [self.solutions[0].basis.variable_status[v] for v in variables]
+            return [basis.variable_status[v] for v in variables]
         raise TypeError(
             "unsupported type in argument for "
             f"variable_status: {type(variables).__name__!r}"
@@ -1008,7 +1032,10 @@ def _upgrade_termination(
 
 
 def parse_solve_result(
-    proto: result_pb2.SolveResultProto, mod: model.Model
+    proto: result_pb2.SolveResultProto,
+    mod: model.Model,
+    *,
+    validate: bool = True,
 ) -> SolveResult:
     """Returns a SolveResult equivalent to the input proto."""
     result = SolveResult()
@@ -1019,11 +1046,17 @@ def parse_solve_result(
     result.termination = parse_termination(_upgrade_termination(proto))
     result.solve_stats = parse_solve_stats(proto.solve_stats)
     for solution_proto in proto.solutions:
-        result.solutions.append(solution.parse_solution(solution_proto, mod))
+        result.solutions.append(
+            solution.parse_solution(solution_proto, mod, validate=validate)
+        )
     for primal_ray_proto in proto.primal_rays:
-        result.primal_rays.append(solution.parse_primal_ray(primal_ray_proto, mod))
+        result.primal_rays.append(
+            solution.parse_primal_ray(primal_ray_proto, mod, validate=validate)
+        )
     for dual_ray_proto in proto.dual_rays:
-        result.dual_rays.append(solution.parse_dual_ray(dual_ray_proto, mod))
+        result.dual_rays.append(
+            solution.parse_dual_ray(dual_ray_proto, mod, validate=validate)
+        )
     if proto.HasField("gscip_output"):
         result.gscip_specific_output = proto.gscip_output
     elif proto.HasField("osqp_output"):

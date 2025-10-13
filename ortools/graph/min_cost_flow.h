@@ -173,8 +173,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/graph/graph.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/zvector.h"
@@ -408,8 +408,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef int64_t CostValue;
   typedef int64_t FlowQuantity;
-  typedef typename Graph::IncomingArcIterator IncomingArcIterator;
-  typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
       OutgoingOrOppositeIncomingArcIterator;
   typedef ZVector<ArcIndex> ArcIndexArray;
@@ -592,11 +590,11 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // An array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
-  std::vector<FlowQuantity> node_excess_;
+  std::unique_ptr<FlowQuantity[]> node_excess_;
 
   // An array representing the potential (or price function) for
   // each node in graph_.
-  std::vector<CostValue> node_potential_;
+  std::unique_ptr<CostValue[]> node_potential_;
 
   // An array representing the residual_capacity for each arc in graph_.
   // Residual capacities enable one to represent the capacity and flow for all
@@ -620,7 +618,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   ZVector<ArcFlowType> residual_arc_capacity_;
 
   // An array representing the first admissible arc for each node in graph_.
-  std::vector<ArcIndex> first_admissible_arc_;
+  std::unique_ptr<ArcIndex[]> first_admissible_arc_;
 
   // A stack used for managing active nodes in the algorithm.
   // Note that the papers cited above recommend the use of a queue, but
@@ -649,7 +647,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // An array containing the initial excesses (i.e. the supplies) for each
   // node. This is used to create the max-flow-based feasibility checker.
-  std::vector<FlowQuantity> initial_node_excess_;
+  std::unique_ptr<FlowQuantity[]> initial_node_excess_;
 
   // Statistics about this class.
   StatsGroup stats_;
@@ -677,7 +675,6 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
 extern template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
 extern template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
-extern template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
 extern template class GenericMinCostFlow<
     ::util::ReverseArcStaticGraph<uint16_t, int32_t>>;
 extern template class GenericMinCostFlow<

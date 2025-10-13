@@ -191,9 +191,7 @@ for idx, (c_block, s, e) in enumerate(
         )
         FULL_TEXT += "\n".join(filtered_lines) + "\n"
 
-nbook["cells"].append(
-    v4.new_code_cell(source=FULL_TEXT, id="code")
-)
+nbook["cells"].append(v4.new_code_cell(source=FULL_TEXT, id="code"))
 
 jsonform = v4.writes(nbook) + "\n"
 

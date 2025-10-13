@@ -2,7 +2,6 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/main)
 \
 [![NuGet version](https://img.shields.io/nuget/v/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
 [![NuGet download](https://img.shields.io/nuget/dt/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)

@@ -59,8 +59,8 @@ struct Neighborhood {
   // True if neighborhood generator was able to generate a neighborhood.
   bool is_generated = false;
 
-  // True if an optimal solution to the neighborhood is also an optimal solution
-  // to the original model.
+  // False if an optimal solution to the neighborhood is also an optimal
+  // solution to the original model.
   bool is_reduced = false;
 
   // True if this neighborhood was just obtained by fixing some variables.
@@ -109,6 +109,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
+                              ModelSharedTimeLimit* global_time_limit,
                               SharedBoundsManager* shared_bounds = nullptr);
 
   // SubSolver interface.
@@ -155,25 +156,25 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Returns the list of "active" variables.
   std::vector<int> ActiveVariables() const {
     std::vector<int> result;
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     result = active_variables_;
     return result;
   }
 
   int NumActiveVariables() const {
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     return active_variables_.size();
   }
 
   std::vector<int> ActiveObjectiveVariables() const {
     std::vector<int> result;
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     result = active_objective_variables_;
     return result;
   }
 
   bool DifficultyMeansFullNeighborhood(double difficulty) const {
-    absl::ReaderMutexLock lock(&graph_mutex_);
+    absl::ReaderMutexLock lock(graph_mutex_);
     const int target_size =
         static_cast<int>(std::ceil(difficulty * active_variables_.size()));
     return target_size == active_variables_.size();
@@ -194,6 +195,14 @@ class NeighborhoodGeneratorHelper : public SubSolver {
     result = active_objective_variables_;
     return result;
   }
+
+  // Returns the vector of objective variables that are not already at their
+  // best possible value. The graph_mutex_ must be locked before calling this
+  // method.
+  std::vector<int> ImprovableObjectiveVariablesWhileHoldingLock(
+      const CpSolverResponse& initial_solution) const
+      ABSL_SHARED_LOCKS_REQUIRED(graph_mutex_)
+          ABSL_LOCKS_EXCLUDED(domain_mutex_);
 
   // Constraints <-> Variables graph.
   // Important:
@@ -314,6 +323,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   const CpModelProto& model_proto_;
   int shared_bounds_id_;
   SharedBoundsManager* shared_bounds_;
+  ModelSharedTimeLimit* global_time_limit_;
   SharedResponseManager* shared_response_;
 
   // Arena holding the memory of the CpModelProto* of this class. This saves the
@@ -332,9 +342,12 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Constraints by types. This never changes.
   std::vector<std::vector<int>> type_to_constraints_;
 
-  // Whether a model_proto_ variable appear in the objective. This never
+  // Whether a model_proto_ variable appears in the objective. This never
   // changes.
   std::vector<bool> is_in_objective_;
+  // If a model_proto_ variable has a positive coefficient in the objective.
+  // This never changes.
+  std::vector<bool> has_positive_objective_coefficient_;
 
   // A copy of CpModelProto where we did some basic presolving to remove all
   // constraint that are always true. The Variable-Constraint graph is based on
@@ -368,7 +381,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   std::vector<int> tmp_row_;
 
-  mutable absl::Mutex domain_mutex_;
+  mutable absl::Mutex domain_mutex_ ABSL_ACQUIRED_AFTER(graph_mutex_);
 };
 
 // Base class for a CpModelProto neighborhood generator.
@@ -457,33 +470,33 @@ class NeighborhoodGenerator {
   double GetUCBScore(int64_t total_num_calls) const;
 
   void AddSolveData(SolveData data) {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     solve_data_.push_back(data);
   }
 
   // Process all the recently added solve data and update this generator
-  // score and difficulty. This returns the sum of the deterministic time of
+  // score and difficulty. This returns list of the deterministic time of
   // each SolveData.
-  double Synchronize();
+  absl::Span<const double> Synchronize();
 
   // Returns a short description of the generator.
   std::string name() const { return name_; }
 
   // Number of times this generator was called.
   int64_t num_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_calls_;
   }
 
   // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
   int64_t num_fully_solved_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_fully_solved_calls_;
   }
 
   // Out of num_calls(), how many improved the given solution.
   int64_t num_improving_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_improving_calls_;
   }
 
@@ -491,19 +504,19 @@ class NeighborhoodGenerator {
   // the best solution. Note that this count improvement to the best known
   // solution not the base one used to generate one neighborhood.
   int64_t num_consecutive_non_improving_calls() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return num_consecutive_non_improving_calls_;
   }
 
   // The current difficulty of this generator
   double difficulty() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return difficulty_.value();
   }
 
   // The current time limit that the sub-solve should use on this generator.
   double deterministic_limit() const {
-    absl::MutexLock mutex_lock(&generator_mutex_);
+    absl::MutexLock mutex_lock(generator_mutex_);
     return deterministic_limit_;
   }
 
@@ -515,6 +528,7 @@ class NeighborhoodGenerator {
 
  private:
   std::vector<SolveData> solve_data_;
+  std::vector<double> tmp_dtimes_;
 
   // Current parameters to be used when generating/solving a neighborhood with
   // this generator. Only updated on Synchronize().

@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
@@ -22,11 +25,13 @@ cc_library(
         "//ortools/math_opt/constraints/util:model_util",
         "//ortools/math_opt/cpp:key_types",
         "//ortools/math_opt/cpp:variable_and_expressions",
+        "//ortools/math_opt/elemental:elements",
         "//ortools/math_opt/storage:model_storage",
+        "//ortools/math_opt/storage:model_storage_item",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/math_opt/storage:sparse_matrix",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -42,7 +47,7 @@ cc_test(
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/math_opt/storage:sparse_matrix",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -54,11 +59,12 @@ cc_library(
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:model_update_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/elemental:elements",
         "//ortools/math_opt/storage:atomic_constraint_storage",
         "//ortools/math_opt/storage:model_storage_types",
         "//ortools/math_opt/storage:sparse_coefficient_map",
         "//ortools/math_opt/storage:sparse_matrix",
-        "@com_google_absl//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:flat_hash_set",
     ],
 )
 
@@ -91,7 +97,7 @@ cc_library(
         "//ortools/math_opt/validators:scalar_validator",
         "//ortools/math_opt/validators:sparse_matrix_validator",
         "//ortools/math_opt/validators:sparse_vector_validator",
-        "@com_google_absl//absl/status",
+        "@abseil-cpp//absl/status",
     ],
 )
 
@@ -104,8 +110,8 @@ cc_test(
         "//ortools/math_opt:model_cc_proto",
         "//ortools/math_opt:sparse_containers_cc_proto",
         "//ortools/math_opt/core:model_summary",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/types:span",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/types:span",
     ],
 )

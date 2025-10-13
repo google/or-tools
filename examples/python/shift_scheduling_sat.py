@@ -17,7 +17,6 @@
 from absl import app
 from absl import flags
 
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 _OUTPUT_PROTO = flags.DEFINE_string(
@@ -31,7 +30,7 @@ _PARAMS = flags.DEFINE_string(
 def negated_bounded_span(
     works: list[cp_model.BoolVarT], start: int, length: int
 ) -> list[cp_model.BoolVarT]:
-    """Filters an isolated sub-sequence of variables assined to True.
+    """Filters an isolated sub-sequence of variables assigned to True.
 
     Extract the span of Boolean variables [start, start + length), negate them,
     and if there is variables to the left/right of this span, surround the span by
@@ -275,7 +274,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
         (3, 1, 0),
     ]
 
-    # daily demands for work shifts (morning, afternon, night) for each day
+    # daily demands for work shifts (morning, afternoon, night) for each day
     # of the week starting on Monday.
     weekly_cover_demands = [
         (2, 3, 1),  # Monday
@@ -410,7 +409,7 @@ def solve_shift_scheduling(params: str, output_proto: str):
     # Solve the model.
     solver = cp_model.CpSolver()
     if params:
-        text_format.Parse(params, solver.parameters)
+        solver.parameters.parse_text_format(params)
     solution_printer = cp_model.ObjectiveSolutionPrinter()
     status = solver.solve(model, solution_printer)
 

@@ -12,15 +12,13 @@
 # limitations under the License.
 
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
-load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
-
-exports_files(["model_exporter_swig_helper.h"])
 
 # OSS solvers
 bool_flag(
@@ -97,7 +95,7 @@ config_setting(
 
 bool_flag(
     name = "with_highs",
-    build_setting_default = False,
+    build_setting_default = True,
 )
 
 config_setting(
@@ -171,6 +169,7 @@ cc_library(
     name = "linear_solver",
     srcs = [
         "gurobi_interface.cc",
+        "gurobi_util.cc",
         "linear_expr.cc",
         "linear_solver.cc",
         "linear_solver_callback.cc",
@@ -211,6 +210,7 @@ cc_library(
         "//conditions:default": [],
     }),
     hdrs = [
+        "gurobi_util.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
@@ -258,15 +258,12 @@ cc_library(
         ":model_validator",
         "//ortools/base",
         "//ortools/base:accurate_sum",
-        "//ortools/base:dynamic_library",
         "//ortools/base:hash",
         "//ortools/base:logging",
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",
         "//ortools/base:timer",
-        "//ortools/gurobi:environment",
-        "//ortools/gurobi:gurobi_util",
         "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/port:file",
@@ -274,14 +271,15 @@ cc_library(
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:lp_utils",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "//ortools/third_party_solvers:xpress_environment",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
-        "//ortools/xpress:environment",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/types:optional",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:optional",
     ] + select({
         ":use_bop": [
             "//ortools/bop:bop_parameters_cc_proto",
@@ -311,9 +309,15 @@ cc_library(
         "//conditions:default": [],
     }) + select({
         ":use_scip": [
-            "//ortools/gscip:legacy_scip_params",
+            "//ortools/linear_solver/proto_solver:scip_params",
             "//ortools/linear_solver/proto_solver:scip_proto_solver",
             "@scip",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":use_highs": [
+            "//ortools/linear_solver/proto_solver:highs_proto_solver",
+            "@highs",
         ],
         "//conditions:default": [],
     }),
@@ -333,13 +337,29 @@ cc_library(
         "//ortools/port:proto_utils",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:optional",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "gurobi_util",
+    srcs = ["gurobi_util.cc"],
+    hdrs = ["gurobi_util.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -348,8 +368,8 @@ cc_library(
     hdrs = ["scip_helper_macros.h"],
     deps = [
         "//ortools/base:status_macros",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -366,30 +386,30 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:status_macros",
         "//ortools/util:fp_utils",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
 cc_binary(
     name = "solve",
     srcs = ["solve.cc"],
-    defines = ["USE_LP_PARSER"],
     deps = [
         ":linear_solver",
         ":linear_solver_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/lp_data:lp_parser",
-        "//ortools/lp_data:model_reader",
         "//ortools/lp_data:mps_reader",
         "//ortools/lp_data:sol_reader",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/time",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/time",
     ],
 )
 

@@ -29,6 +29,8 @@
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/strong_int.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/graph_io.h"
 #include "ortools/util/flat_matrix.h"
@@ -75,13 +77,7 @@ TEST(TopologicalOrderIsValidTest, ValidateTopologicalOrder) {
 TEST(ShortestPathOnDagTest, EmptyGraph) {
   EXPECT_DEATH(ShortestPathsOnDag(/*num_nodes=*/0, /*arcs_with_length=*/{},
                                   /*source=*/0, /*destination=*/0),
-               "num_nodes\\(\\) > 0");
-}
-
-TEST(ShortestPathOnDagTest, NoArcGraph) {
-  EXPECT_DEATH(ShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
-                                  /*source=*/0, /*destination=*/0),
-               "num_arcs\\(\\) > 0");
+               "num_nodes > 0");
 }
 
 TEST(ShortestPathOnDagTest, NonExistingSourceBecauseNegative) {
@@ -95,7 +91,7 @@ TEST(ShortestPathOnDagTest, NonExistingSourceBecauseTooLarge) {
   EXPECT_DEATH(
       ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, 0.0}},
                          /*source=*/3, /*destination=*/1),
-      "num_nodes\\(\\)");
+      "num_nodes");
 }
 
 TEST(ShortestPathOnDagTest, NonExistingDestinationBecauseNegative) {
@@ -109,7 +105,7 @@ TEST(ShortestPathOnDagTest, NonExistingDestinationBecauseTooLarge) {
   EXPECT_DEATH(
       ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, 0.0}},
                          /*source=*/0, /*destination=*/3),
-      "num_nodes\\(\\)");
+      "num_nodes");
 }
 
 TEST(ShortestPathOnDagTest, Cycle) {
@@ -135,6 +131,17 @@ TEST(ShortestPathOnDagTest, SimpleGraph) {
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
       FieldsAre(/*length=*/8.0, /*arc_path=*/ElementsAre(0, 2),
                 /*node_path=*/ElementsAre(source, a, destination)));
+}
+
+TEST(ShortestPathOnDagTest, GraphsWithNoArcs) {
+  EXPECT_THAT(ShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
+                                 /*source=*/0, /*destination=*/0),
+              FieldsAre(/*length=*/0, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/ElementsAre(0)));
+  EXPECT_THAT(ShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{},
+                                 /*source=*/0, /*destination=*/1),
+              FieldsAre(/*length=*/kInf, /*arc_path=*/IsEmpty(),
+                        /*node_path=*/IsEmpty()));
 }
 
 TEST(ShortestPathOnDagTest, SourceIsDestination) {
@@ -280,6 +287,37 @@ TEST(ShortestPathOnDagTest, UpdateCost) {
       ShortestPathsOnDag(num_nodes, arcs_with_length, source, destination),
       FieldsAre(/*length=*/1.0, /*arc_path=*/ElementsAre(1, 3),
                 /*node_path=*/ElementsAre(source, b, destination)));
+}
+
+DEFINE_STRONG_INT_TYPE(NodeIndex, int32_t);
+DEFINE_STRONG_INT_TYPE(ArcIndex, int32_t);
+
+TEST(ShortestPathsOnDagWrapperTest, StrongIndices) {
+  const NodeIndex source_1(0);
+  const NodeIndex source_2(1);
+  const NodeIndex destination(2);
+  const NodeIndex num_nodes(3);
+  util::ListGraph<NodeIndex, ArcIndex> graph(num_nodes,
+                                             /*arc_capacity=*/ArcIndex(2));
+
+  using ArcLengths = util_intops::StrongVector<ArcIndex, double>;
+  ArcLengths arc_lengths;
+  graph.AddArc(source_1, destination);
+  arc_lengths.push_back(-6.0);
+  graph.AddArc(source_2, destination);
+  arc_lengths.push_back(3.0);
+  const std::vector<NodeIndex> topological_order = {source_2, source_1,
+                                                    destination};
+  ShortestPathsOnDagWrapper<util::ListGraph<NodeIndex, ArcIndex>, ArcLengths>
+      shortest_path_on_dag(&graph, &arc_lengths, topological_order);
+  shortest_path_on_dag.RunShortestPathOnDag({source_1, source_2});
+
+  EXPECT_TRUE(shortest_path_on_dag.IsReachable(destination));
+  EXPECT_THAT(shortest_path_on_dag.LengthTo(destination), -6.0);
+  EXPECT_THAT(shortest_path_on_dag.ArcPathTo(destination),
+              ElementsAre(ArcIndex(0)));
+  EXPECT_THAT(shortest_path_on_dag.NodePathTo(destination),
+              ElementsAre(source_1, destination));
 }
 
 TEST(ShortestPathsOnDagWrapperTest, MultipleSources) {
@@ -567,8 +605,8 @@ void BM_RandomDag(benchmark::State& state) {
   const int num_nodes = state.range(0);
   const int num_arcs = num_nodes * state.range(1);
   const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate at most 20 scenarios of random arc lengths.
-  const int num_scenarios = std::min(20, (int)state.iterations());
+  // Generate 10 scenarios of random arc lengths.
+  const int num_scenarios = 10;
   std::vector<std::vector<double>> arc_lengths_scenarios;
   for (int _ = 0; _ < num_scenarios; ++_) {
     arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));
@@ -594,7 +632,8 @@ BENCHMARK(BM_RandomDag)
     ->ArgPair(1 << 16, 4)
     ->ArgPair(1 << 16, 16)
     ->ArgPair(1 << 22, 4)
-    ->ArgPair(1 << 22, 16);
+    ->ArgPair(1 << 22, 16)
+    ->ArgPair(1 << 26, 4);  // Don't go bigger, can't run on work station.
 
 void BM_LineDag(benchmark::State& state) {
   const int num_nodes = state.range(0);
@@ -629,14 +668,7 @@ TEST(KShortestPathOnDagTest, EmptyGraph) {
   EXPECT_DEATH(
       KShortestPathsOnDag(/*num_nodes=*/0, /*arcs_with_length=*/{},
                           /*source=*/0, /*destination=*/0, /*path_count=*/2),
-      "num_nodes\\(\\) > 0");
-}
-
-TEST(KShortestPathOnDagTest, NoArcGraph) {
-  EXPECT_DEATH(
-      KShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
-                          /*source=*/0, /*destination=*/0, /*path_count=*/2),
-      "num_arcs\\(\\) > 0");
+      "num_nodes > 0");
 }
 
 TEST(KShortestPathOnDagTest, NonExistingSourceBecauseNegative) {
@@ -650,7 +682,7 @@ TEST(KShortestPathOnDagTest, NonExistingSourceBecauseTooLarge) {
   EXPECT_DEATH(
       KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{{0, 1, 0.0}},
                           /*source=*/3, /*destination=*/1, /*path_count=*/2),
-      "num_nodes\\(\\)");
+      "num_nodes");
 }
 
 TEST(KShortestPathOnDagTest, NonExistingDestinationBecauseNegative) {
@@ -687,6 +719,19 @@ TEST(KShortestPathOnDagTest, OnlyHasOnePath) {
               ElementsAre(FieldsAre(
                   /*length=*/2.0, /*arc_path=*/ElementsAre(0, 1),
                   /*node_path=*/ElementsAre(source, a, destination))));
+}
+
+TEST(KShortestPathOnDagTest, GraphsWithNoArcs) {
+  EXPECT_THAT(
+      KShortestPathsOnDag(/*num_nodes=*/1, /*arcs_with_length=*/{},
+                          /*source=*/0, /*destination=*/0, /*path_count=*/2),
+      ElementsAre(FieldsAre(/*length=*/0, /*arc_path=*/IsEmpty(),
+                            /*node_path=*/ElementsAre(0))));
+  EXPECT_THAT(
+      KShortestPathsOnDag(/*num_nodes=*/2, /*arcs_with_length=*/{},
+                          /*source=*/0, /*destination=*/1, /*path_count=*/2),
+      ElementsAre(FieldsAre(/*length=*/kInf, /*arc_path=*/IsEmpty(),
+                            /*node_path=*/IsEmpty())));
 }
 
 TEST(KShortestPathOnDagTest, SourceIsDestination) {
@@ -925,6 +970,38 @@ TEST(KShortestPathOnDagTest, UpdateCost) {
                       /*node_path=*/ElementsAre(source, a, destination))));
 }
 
+TEST(KShortestPathsOnDagWrapperTest, StrongIndices) {
+  const NodeIndex source_1(0);
+  const NodeIndex source_2(1);
+  const NodeIndex destination(2);
+  const NodeIndex num_nodes(3);
+  util::ListGraph<NodeIndex, ArcIndex> graph(num_nodes,
+                                             /*arc_capacity=*/ArcIndex(2));
+
+  using ArcLengths = util_intops::StrongVector<ArcIndex, double>;
+  ArcLengths arc_lengths;
+  graph.AddArc(source_1, destination);
+  arc_lengths.push_back(-6.0);
+  graph.AddArc(source_2, destination);
+  arc_lengths.push_back(3.0);
+  const std::vector<NodeIndex> topological_order = {source_2, source_1,
+                                                    destination};
+  const int path_count = 2;
+  KShortestPathsOnDagWrapper<util::ListGraph<NodeIndex, ArcIndex>, ArcLengths>
+      shortest_paths_on_dag(&graph, &arc_lengths, topological_order,
+                            path_count);
+  shortest_paths_on_dag.RunKShortestPathOnDag({source_1, source_2});
+
+  EXPECT_TRUE(shortest_paths_on_dag.IsReachable(destination));
+  EXPECT_THAT(shortest_paths_on_dag.LengthsTo(destination),
+              ElementsAre(-6.0, 3.0));
+  EXPECT_THAT(shortest_paths_on_dag.ArcPathsTo(destination),
+              ElementsAre(ElementsAre(ArcIndex(0)), ElementsAre(ArcIndex(1))));
+  EXPECT_THAT(shortest_paths_on_dag.NodePathsTo(destination),
+              ElementsAre(ElementsAre(source_1, destination),
+                          ElementsAre(source_2, destination)));
+}
+
 TEST(KShortestPathsOnDagWrapperTest, MultipleSources) {
   const int source_1 = 0;
   const int source_2 = 1;
@@ -1122,8 +1199,8 @@ void BM_RandomDag_K(benchmark::State& state) {
   const int num_arcs = num_nodes * state.range(1);
   const int path_count = state.range(2);
   const auto [graph, topological_order] = BuildRandomDag(num_nodes, num_arcs);
-  // Generate at most 20 scenarios of random arc lengths.
-  const int num_scenarios = std::min(20, (int)state.iterations());
+  // Generate 10 scenarios of random arc lengths.
+  const int num_scenarios = 10;
   std::vector<std::vector<double>> arc_lengths_scenarios;
   for (int _ = 0; _ < num_scenarios; ++_) {
     arc_lengths_scenarios.push_back(GenerateRandomLengths(graph));

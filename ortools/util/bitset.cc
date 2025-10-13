@@ -13,8 +13,10 @@
 
 #include "ortools/util/bitset.h"
 
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"
+#include <cstdint>
+
+#include "absl/flags/flag.h"
+#include "absl/log/check.h"
 
 ABSL_FLAG(int, bitset_small_bitset_count, 8,
           "threshold to count bits with buckets");

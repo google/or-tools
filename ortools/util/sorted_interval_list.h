@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <ostream>
@@ -32,21 +33,41 @@ namespace operations_research {
  * Represents a closed interval [start, end]. We must have start <= end.
  */
 struct ClosedInterval {
+#if !defined(SWIG)
+  /**
+   * An iterator over the values of a ClosedInterval object.
+   *
+   * To iterate over the values, you can use either a range for loop:
+   *
+   * ClosedInterval interval = {0, 100};
+   * for (const int64_t value : interval) { Work(value); }
+   *
+   * or a classical for loop:
+   * for (auto it = begin(interval); it != end(interval); ++it) { Work(*it); }
+   *
+   * The iterator is designed to be very efficient, using just a single counter.
+   * It works correctly for any combination of `start` and `end` except the full
+   * int64_t range (start == INT64_MIN && end == INT64_MAX).
+   */
+  class Iterator;
+#endif  // !defined(SWIG)
+
   ClosedInterval() {}
+  explicit ClosedInterval(int64_t v) : start(v), end(v) {}
   ClosedInterval(int64_t s, int64_t e) : start(s), end(e) {
     DLOG_IF(DFATAL, s > e) << "Invalid ClosedInterval(" << s << ", " << e
                            << ")";
   }
 
   std::string DebugString() const;
-  bool operator==(const ClosedInterval& other) const {
+  constexpr bool operator==(const ClosedInterval& other) const {
     return start == other.start && end == other.end;
   }
 
   // Because we mainly manipulate vector of disjoint intervals, we only need to
   // sort by the start. We do not care about the order in which interval with
   // the same start appear since they will always be merged into one interval.
-  bool operator<(const ClosedInterval& other) const {
+  constexpr bool operator<(const ClosedInterval& other) const {
     return start < other.start;
   }
 
@@ -58,6 +79,11 @@ struct ClosedInterval {
   int64_t start = 0;  // Inclusive.
   int64_t end = 0;    // Inclusive.
 };
+
+#if !defined(SWIG)
+inline ClosedInterval::Iterator begin(ClosedInterval interval);
+inline ClosedInterval::Iterator end(ClosedInterval interval);
+#endif  // !defined(SWIG)
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
 std::ostream& operator<<(std::ostream& out,
@@ -647,6 +673,69 @@ class SortedDisjointIntervalList {
 
   IntervalSet intervals_;
 };
+
+// Implementation details.
+
+#if !defined(SWIG)
+class ClosedInterval::Iterator {
+ public:
+  using value_type = int64_t;
+  using difference_type = std::ptrdiff_t;
+
+  Iterator(const Iterator&) = default;
+
+  int64_t operator*() const { return static_cast<int64_t>(current_); }
+
+  Iterator& operator++() {
+    ++current_;
+    return *this;
+  }
+  void operator++(int) { ++current_; }
+
+  bool operator==(Iterator other) const { return current_ == other.current_; }
+  bool operator!=(Iterator other) const { return current_ != other.current_; }
+
+  Iterator& operator=(const Iterator&) = default;
+
+  static Iterator Begin(ClosedInterval interval) {
+    AssertNotFullInt64Range(interval);
+    return Iterator(static_cast<uint64_t>(interval.start));
+  }
+  static Iterator End(ClosedInterval interval) {
+    AssertNotFullInt64Range(interval);
+    return Iterator(static_cast<uint64_t>(interval.end) + 1);
+  }
+
+ private:
+  explicit Iterator(uint64_t current) : current_(current) {}
+
+  // Triggers a DCHECK-failure when `interval` represents the full int64_t
+  // range.
+  static void AssertNotFullInt64Range(ClosedInterval interval) {
+    DCHECK_NE(static_cast<uint64_t>(interval.start),
+              static_cast<uint64_t>(interval.end) + 1)
+        << "Iteration over the full int64_t range is not supported.";
+  }
+
+  // Implementation note: In C++, integer overflow is well-defined only for
+  // unsigned integers. To avoid any compilation issues or UBSan failures, the
+  // iterator uses uint64_t internally and relies on the fact that since C++20
+  // unsigned->signed conversion is well-defined for all values using modulo
+  // arithmetic.
+  uint64_t current_;
+};
+#if __cplusplus >= 202002L
+static_assert(std::input_iterator<ClosedInterval::Iterator>);
+#endif
+// begin()/end() are required for iteration over ClosedInterval in a range for
+// loop.
+inline ClosedInterval::Iterator begin(ClosedInterval interval) {
+  return ClosedInterval::Iterator::Begin(interval);
+}
+inline ClosedInterval::Iterator end(ClosedInterval interval) {
+  return ClosedInterval::Iterator::End(interval);
+}
+#endif  // !defined(SWIG)
 
 }  // namespace operations_research
 

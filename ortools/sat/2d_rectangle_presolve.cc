@@ -28,9 +28,10 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/minimum_vertex_cover.h"
 #include "ortools/graph/strongly_connected_components.h"
@@ -1523,7 +1524,6 @@ Disjoint2dPackingResult DetectDisjointRegionIn2dPacking(
   // If we are here, that means that the space where boxes can be placed is not
   // connected.
   Disjoint2dPackingResult result;
-  absl::flat_hash_set<int> component_set;
   for (const std::vector<int>& component : space_components) {
     Rectangle bin_bounding_box = occupiable_space[component[0]];
     for (int i = 1; i < component.size(); ++i) {

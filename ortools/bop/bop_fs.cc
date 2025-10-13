@@ -23,12 +23,12 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "ortools/algorithms/sparse_permutation.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -345,7 +345,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   }
 
   // This can be proved during the call to RestoreSolverToAssumptionLevel().
-  if (sat_propagator_->IsModelUnsat()) {
+  if (sat_propagator_->ModelIsUnsat()) {
     // The solution is proved optimal (if any).
     learned_info->lower_bound = best_cost;
     return best_cost == std::numeric_limits<int64_t>::max()

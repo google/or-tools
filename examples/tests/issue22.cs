@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
+using Google.OrTools.Routing;
 
 public class Issue22Test
 {

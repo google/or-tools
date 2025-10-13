@@ -41,10 +41,14 @@
 // Here is how the algorithm works:
 // Let us denote the nodes to be visited by their indices 0 .. n - 1
 // Let us pick 0 as the starting node.
-// Let d(i,j) denote the distance (or cost) from i to j.
-// f(S, j) where S is a set of nodes and j is a node in S is defined as follows:
+// Let cost(i,j) denote the cost (or distance) to go from i to j.
+// f(S, j), where S is a set of nodes and j is a node in S, is defined as the
+// total cost of the shortest path from 0 to j going through all nodes of S.
+//
+// We can prove easily that it satisfy the following relation:
 // f(S, j) = min (i in S \ {j},  f(S \ {j}, i) + cost(i, j))
 //                                           (j is an element of S)
+//
 // Note that this formulation, from the original Held-Karp paper is a bit
 // different, but equivalent to the one used in Caseau and Laburthe, Solving
 // Small TSPs with Constraints, 1997, ICLP
@@ -73,6 +77,8 @@
 // To implement dynamic programming, we store the preceding results of
 // computing f(S,j) in an array M[Offset(S,j)]. See the comments about
 // LatticeMemoryManager::BaseOffset() to see how this is computed.
+// This is really what brings the performance of the algorithm, because memory
+// is accessed in sequential order, without risking to thrash the cache.
 //
 // Keywords: Traveling Salesman, Hamiltonian Path, Dynamic Programming,
 //           Held, Karp.
@@ -88,8 +94,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_or_function.h"
@@ -129,9 +135,9 @@ class Set {
   typedef Integer IntegerType;
 
   // Useful constants.
-  static constexpr Integer One = static_cast<Integer>(1);
-  static constexpr Integer Zero = static_cast<Integer>(0);
-  static const int MaxCardinality = 8 * sizeof(Integer);  // NOLINT
+  static constexpr Integer kOne = Integer{1};
+  static constexpr Integer kZero = Integer{0};
+  static constexpr int kMaxCardinality = std::numeric_limits<Integer>::digits;
 
   // Construct a set from an Integer.
   explicit Set(Integer n) : value_(n) {
@@ -143,22 +149,22 @@ class Set {
   Integer value() const { return value_; }
 
   static Set FullSet(Integer card) {
-    return card == 0 ? Set(0) : Set(~Zero >> (MaxCardinality - card));
+    return card == 0 ? Set(0) : Set(~kZero >> (kMaxCardinality - card));
   }
 
   // Returns the singleton set with 'n' as its only element.
-  static Set Singleton(Integer n) { return Set(One << n); }
+  static Set Singleton(Integer n) { return Set(kOne << n); }
 
   // Returns a set equal to the calling object, with element n added.
   // If n is already in the set, no operation occurs.
-  Set AddElement(int n) const { return Set(value_ | (One << n)); }
+  Set AddElement(int n) const { return Set(value_ | (kOne << n)); }
 
   // Returns a set equal to the calling object, with element n removed.
   // If n is not in the set, no operation occurs.
-  Set RemoveElement(int n) const { return Set(value_ & ~(One << n)); }
+  Set RemoveElement(int n) const { return Set(value_ & ~(kOne << n)); }
 
   // Returns true if the calling set contains element n.
-  bool Contains(int n) const { return ((One << n) & value_) != 0; }
+  bool Contains(int n) const { return ((kOne << n) & value_) != 0; }
 
   // Returns true if 'other' is included in the calling set.
   bool Includes(Set other) const {
@@ -178,7 +184,7 @@ class Set {
   Set RemoveSmallestElement() const { return Set(value_ & (value_ - 1)); }
 
   // Returns the rank of an element in a set. For the set 11100, ElementRank(4)
-  // would return 2. (Ranks start at zero).
+  // would return 2. (Ranks start at kZero).
   int ElementRank(int n) const {
     DCHECK(Contains(n)) << "n = " << n << ", value_ = " << value_;
     return SingletonRank(Singleton(n));
@@ -355,12 +361,12 @@ class LatticeMemoryManager {
 template <typename Set, typename CostType>
 void LatticeMemoryManager<Set, CostType>::Init(int max_card) {
   DCHECK_LT(0, max_card);
-  DCHECK_GE(Set::MaxCardinality, max_card);
+  DCHECK_LE(max_card, Set::kMaxCardinality);
   if (max_card <= max_card_) return;
   max_card_ = max_card;
   binomial_coefficients_.resize(max_card_ + 1);
 
-  // Initialize binomial_coefficients_ using Pascal's triangle recursion.
+  // Initialize binomial_coefficients_ using Pascal's triangle recurrence
   for (int n = 0; n <= max_card_; ++n) {
     binomial_coefficients_[n].resize(n + 2);
     binomial_coefficients_[n][0] = 1;
@@ -471,8 +477,8 @@ class HamiltonianPathSolver {
   // we limit ourselves to 32 cites.
   // This is why we define the type NodeSet to be 32-bit wide.
   // TODO(user): remove this limitation by using pruning techniques.
-  typedef uint32_t Integer;
-  typedef Set<Integer> NodeSet;
+  using Integer = uint32_t;
+  using NodeSet = Set<Integer>;
 
   explicit HamiltonianPathSolver(CostFunction cost);
   HamiltonianPathSolver(int num_nodes, CostFunction cost);
@@ -553,7 +559,7 @@ class HamiltonianPathSolver {
   // Returns the cost value between two nodes.
   CostType Cost(int i, int j) { return cost_(i, j); }
 
-  // Does all the Dynamic Progamming iterations.
+  // Does all the Dynamic Programming iterations.
   void Solve();
 
   // Computes a path by looking at the information in mem_.
@@ -618,7 +624,7 @@ HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
       robustness_checked_(false),
       triangle_inequality_checked_(false),
       solved_(false) {
-  CHECK_GE(NodeSet::MaxCardinality, num_nodes_);
+  CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
   CHECK(cost_.Check());
 }
 
@@ -636,7 +642,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::ChangeCostMatrix(
   solved_ = false;
   cost_.Reset(cost);
   num_nodes_ = num_nodes;
-  CHECK_GE(NodeSet::MaxCardinality, num_nodes_);
+  CHECK_GE(NodeSet::kMaxCardinality, num_nodes_);
   CHECK(cost_.Check());
 }
 
@@ -701,7 +707,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
 
   const NodeSet full_set = NodeSet::FullSet(num_nodes_);
 
-  // Get the cost of the tsp from node 0. It is the path that leaves 0 and goes
+  // Get the cost of the TSP from node 0. It is the path that leaves 0 and goes
   // through all other nodes, and returns at 0, with minimal cost.
   tsp_cost_ = mem_.Value(full_set, 0);
   tsp_path_ = ComputePath(tsp_cost_, full_set, 0);
@@ -744,7 +750,7 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::ComputePath(
       const CostType partial_cost = mem_.Value(subset, src);
       const CostType incumbent_cost =
           Saturated<CostType>::Add(partial_cost, Cost(src, dest));
-      // Take precision into account when CosttType is float or double.
+      // Take precision into account when CostType is float or double.
       // There is no visible penalty in the case CostType is an integer type.
       if (std::abs(Saturated<CostType>::Sub(current_cost, incumbent_cost)) <=
           std::numeric_limits<CostType>::epsilon() * current_cost) {

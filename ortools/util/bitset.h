@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -849,19 +848,13 @@ class SparseBitset {
   SparseBitset(const SparseBitset&) = delete;
   SparseBitset& operator=(const SparseBitset&) = delete;
   IntegerType size() const { return bitset_.size(); }
-  void SparseClearAll() {
-    for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
-    to_clear_.clear();
-  }
-  void ClearAll() {
-    bitset_.ClearAll();
-    to_clear_.clear();
-  }
+  void ResetAllToFalse() { ClearAndResize(size()); }
   void ClearAndResize(IntegerType size) {
     // As of 19/03/2014, experiments show that this is a reasonable threshold.
     const int kSparseThreshold = 300;
     if (to_clear_.size() * kSparseThreshold < size) {
-      SparseClearAll();
+      for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
+      to_clear_.clear();
       bitset_.Resize(size);
     } else {
       bitset_.ClearAndResize(size);
@@ -891,6 +884,9 @@ class SparseBitset {
 
   // A bit hacky for really hot loop.
   typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
+  typename Bitset64<IntegerType>::ConstView BitsetConstView() {
+    return bitset_.const_view();
+  }
   void SetUnsafe(typename Bitset64<IntegerType>::View view, IntegerType index) {
     view.Set(index);
     to_clear_.push_back(index);
@@ -911,9 +907,9 @@ class SparseBitset {
   // This is useful to iterate on the "set" positions while clearing them for
   // instance. This way, after the loop, a client can call this for efficiency.
   void NotifyAllClear() {
-    if (DEBUG_MODE) {
-      for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
-    }
+#if !defined(NDEBUG)
+    for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
+#endif
     to_clear_.clear();
   }
 

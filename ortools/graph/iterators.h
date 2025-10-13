@@ -16,8 +16,11 @@
 #ifndef UTIL_GRAPH_ITERATORS_H_
 #define UTIL_GRAPH_ITERATORS_H_
 
+#include <cstddef>
 #include <iterator>
-#include <vector>
+#include <utility>
+
+#include "absl/log/check.h"
 
 namespace util {
 
@@ -34,22 +37,35 @@ namespace util {
 // And a client will use it like this:
 //
 // for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
+//
+// Note that `BeginEndWrapper` is conceptually a borrowed range as per the C++
+// standard (`std::ranges::borrowed_range`):
+// "The concept borrowed_range defines the requirements of a range such that a
+// function can take it by value and return iterators obtained from it without
+// danger of dangling". We cannot `static_assert` this property though as
+// `std::ranges` is prohibited in google3.
 template <typename Iterator>
 class BeginEndWrapper {
  public:
   using const_iterator = Iterator;
   using value_type = typename std::iterator_traits<Iterator>::value_type;
 
+  // If `Iterator` is default-constructible, an empty range.
+  BeginEndWrapper() = default;
+
   BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
+
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
+
+  // Available only if `Iterator` is a random access iterator.
   size_t size() const { return end_ - begin_; }
 
   bool empty() const { return begin() == end(); }
 
  private:
-  const Iterator begin_;
-  const Iterator end_;
+  Iterator begin_;
+  Iterator end_;
 };
 
 // Inline wrapper methods, to make the client code even simpler.
@@ -100,34 +116,106 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
-// Simple iterator on an integer range, see IntegerRange below.
+// Simple iterator on an integer range, see `IntegerRange` below.
+// `IntegerType` can be any signed integer type, or strong integer type that
+// defines usual operations (e.g. `gtl::IntType<T>`).
 template <typename IntegerType>
 class IntegerRangeIterator
-    : public std::iterator<std::input_iterator_tag, IntegerType> {
+// TODO(b/385094969): In C++17, `std::iterator_traits<Iterator>` required
+// explicitly specifying the iterator category. Remove this when backwards
+// compatibility with C++17 is no longer needed.
+#if __cplusplus < 201703L
+    : public std::iterator<std::input_iterator_tag, IntegerType>
+#endif
+{
  public:
+  using difference_type = ptrdiff_t;
+  using value_type = IntegerType;
+#if __cplusplus >= 201703L && __cplusplus < 202002L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = IntegerType*;
+  using reference = IntegerType&;
+#endif
+
+  IntegerRangeIterator() : index_{} {}
+
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
-  IntegerRangeIterator(const IntegerRangeIterator& other)
-      : index_(other.index_) {}
-  IntegerRangeIterator& operator=(const IntegerRangeIterator& other) {
-    index_ = other.index_;
-  }
-  bool operator!=(const IntegerRangeIterator& other) const {
-    // This may seems weird, but using < instead of != avoid almost-infinite
-    // loop if one use IntegerRange<int>(1, 0) below for instance.
-    return index_ < other.index_;
-  }
+
+  IntegerType operator*() const { return index_; }
+
+  // TODO(b/385094969): Use `=default` when backwards compatibility with C++17
+  // is no longer needed.
   bool operator==(const IntegerRangeIterator& other) const {
     return index_ == other.index_;
   }
-  IntegerType operator*() const { return index_; }
+  bool operator!=(const IntegerRangeIterator& other) const {
+    return index_ != other.index_;
+  }
+  bool operator<(const IntegerRangeIterator& other) const {
+    return index_ < other.index_;
+  }
+  bool operator>(const IntegerRangeIterator& other) const {
+    return index_ > other.index_;
+  }
+  bool operator<=(const IntegerRangeIterator& other) const {
+    return index_ <= other.index_;
+  }
+  bool operator>=(const IntegerRangeIterator& other) const {
+    return index_ >= other.index_;
+  }
+
   IntegerRangeIterator& operator++() {
     ++index_;
     return *this;
   }
+
   IntegerRangeIterator operator++(int) {
-    IntegerRangeIterator previous_position(*this);
-    ++index_;
-    return previous_position;
+    auto tmp = *this;
+    ++*this;
+    return tmp;
+  }
+
+  IntegerRangeIterator& operator+=(difference_type n) {
+    index_ += n;
+    return *this;
+  }
+
+  IntegerRangeIterator& operator--() {
+    --index_;
+    return *this;
+  }
+
+  IntegerRangeIterator operator--(int) {
+    auto tmp = *this;
+    --*this;
+    return tmp;
+  }
+
+  IntegerRangeIterator& operator-=(difference_type n) {
+    index_ -= n;
+    return *this;
+  }
+
+  IntegerType operator[](difference_type n) const { return index_ + n; }
+
+  friend IntegerRangeIterator operator+(IntegerRangeIterator it,
+                                        difference_type n) {
+    return IntegerRangeIterator(it.index_ + n);
+  }
+
+  friend IntegerRangeIterator operator+(difference_type n,
+                                        IntegerRangeIterator it) {
+    return IntegerRangeIterator(it.index_ + n);
+  }
+
+  friend IntegerRangeIterator operator-(IntegerRangeIterator it,
+                                        difference_type n) {
+    return IntegerRangeIterator(it.index_ - n);
+  }
+
+  friend difference_type operator-(const IntegerRangeIterator l,
+                                   const IntegerRangeIterator r) {
+    return static_cast<difference_type>(l.index_ - r.index_);
   }
 
  private:
@@ -146,34 +234,62 @@ class IntegerRangeIterator
 template <typename IntegerType>
 class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
  public:
+  // Requires `begin <= end`.
   IntegerRange(IntegerType begin, IntegerType end)
       : BeginEndWrapper<IntegerRangeIterator<IntegerType>>(
             IntegerRangeIterator<IntegerType>(begin),
-            IntegerRangeIterator<IntegerType>(end)) {}
+            IntegerRangeIterator<IntegerType>(end)) {
+    DCHECK_LE(begin, end);
+  }
 };
 
-// Allow iterating over a vector<T> as a mutable vector<T*>.
-template <class T>
-struct MutableVectorIteration {
-  explicit MutableVectorIteration(std::vector<T>* v) : v_(v) {}
-  struct Iterator {
-    explicit Iterator(typename std::vector<T>::iterator it) : it_(it) {}
-    T* operator*() { return &*it_; }
-    Iterator& operator++() {
-      it_++;
-      return *this;
-    }
-    bool operator!=(const Iterator& other) const { return other.it_ != it_; }
+// A helper class for implementing list graph iterators: This does pointer
+// chasing on `next` until `sentinel` is found. `Tag` allows distinguishing
+// different iterators with the same index type and sentinel.
+template <typename IndexT, const IndexT& sentinel, typename Tag>
+class ChasingIterator
+#if __cplusplus < 201703L
+    : public std::iterator<std::input_iterator_tag, IndexT>
+#endif
+{
+ public:
+  using difference_type = ptrdiff_t;
+  using value_type = IndexT;
+#if __cplusplus >= 201703L && __cplusplus < 202002L
+  using iterator_category = std::input_iterator_tag;
+  using pointer = IndexT*;
+  using reference = IndexT&;
+#endif
 
-   private:
-    typename std::vector<T>::iterator it_;
-  };
-  Iterator begin() { return Iterator(v_->begin()); }
-  Iterator end() { return Iterator(v_->end()); }
+  ChasingIterator() : index_(sentinel), next_(nullptr) {}
+
+  ChasingIterator(IndexT index, const IndexT* next)
+      : index_(index), next_(next) {}
+
+  IndexT operator*() const { return index_; }
+
+  ChasingIterator& operator++() {
+    index_ = next_[static_cast<ptrdiff_t>(index_)];
+    return *this;
+  }
+  ChasingIterator operator++(int) {
+    auto tmp = *this;
+    index_ = next_[static_cast<ptrdiff_t>(index_)];
+    return tmp;
+  }
+
+  friend bool operator==(const ChasingIterator& l, const ChasingIterator& r) {
+    return l.index_ == r.index_;
+  }
+  friend bool operator!=(const ChasingIterator& l, const ChasingIterator& r) {
+    return l.index_ != r.index_;
+  }
 
  private:
-  std::vector<T>* const v_;
+  IndexT index_;
+  const IndexT* next_;
 };
+
 }  // namespace util
 
 #endif  // UTIL_GRAPH_ITERATORS_H_

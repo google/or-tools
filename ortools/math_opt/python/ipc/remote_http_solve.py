@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
 """Solve MathOpt models via HTTP request to the OR API."""
 
 import json
-from typing import List, Optional, Tuple
+from typing import Optional
 from google.protobuf import json_format
 import requests
 from ortools.service.v1 import optimization_pb2
@@ -39,7 +40,8 @@ def remote_http_solve(
     endpoint: Optional[str] = _DEFAULT_ENDPOINT,
     api_key: Optional[str] = None,
     deadline_sec: Optional[float] = _DEFAULT_DEADLINE_SEC,
-) -> Tuple[mathopt.SolveResult, List[str]]:
+    resources: Optional[mathopt.SolverResources] = None,
+) -> tuple[mathopt.SolveResult, list[str]]:
     """Solves a MathOpt model via HTTP request to the OR API.
 
     Args:
@@ -50,6 +52,7 @@ def remote_http_solve(
       endpoint: An URI identifying the service for remote solves.
       api_key: Key to the OR API.
       deadline_sec: The number of seconds before the request times out.
+      resources: Hints on resources requested for the solve.
 
     Returns:
       A SolveResult containing the termination reason, solution(s) and stats.
@@ -63,7 +66,7 @@ def remote_http_solve(
         # TODO(b/306709279): Relax this when unauthenticated solves are allowed.
         raise ValueError("api_key can't be None when solving remotely")
 
-    payload = _build_json_payload(model, solver_type, params, model_params)
+    payload = _build_json_payload(model, solver_type, params, model_params, resources)
 
     session = create_optimization_service_session(api_key, deadline_sec)
     response = session.post(
@@ -115,6 +118,7 @@ def _build_json_payload(
     solver_type: mathopt.SolverType,
     params: Optional[mathopt.SolveParameters],
     model_params: Optional[mathopt.ModelSolveParameters],
+    resources: Optional[mathopt.SolverResources],
 ):
     """Builds a JSON payload.
 
@@ -123,6 +127,7 @@ def _build_json_payload(
       solver_type: The underlying solver to use.
       params: Optional configuration of the underlying solver.
       model_params: Optional configuration of the solver that is model specific.
+      resources: Hints on resources requested for the solve.
 
     Returns:
       A JSON object with a MathOpt model and corresponding parameters.
@@ -133,10 +138,12 @@ def _build_json_payload(
     """
     params = params or mathopt.SolveParameters()
     model_params = model_params or mathopt.ModelSolveParameters()
+    resources = resources or mathopt.SolverResources()
     try:
         request = rpc_pb2.SolveRequest(
             model=model.export_model(),
             solver_type=solver_type.value,
+            resources=resources.to_proto(),
             parameters=params.to_proto(),
             model_parameters=model_params.to_proto(),
         )
@@ -149,7 +156,7 @@ def _build_json_payload(
 
 def _build_solve_result(
     json_response: bytes, model: mathopt.Model
-) -> Tuple[mathopt.SolveResult, List[str]]:
+) -> tuple[mathopt.SolveResult, list[str]]:
     """Parses a JSON representation of a response to a SolveResult object.
 
     Args:

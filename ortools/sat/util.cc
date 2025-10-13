@@ -20,11 +20,13 @@
 #include <limits>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/numeric/bits.h"
 #include "absl/numeric/int128.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
@@ -126,8 +128,8 @@ void RandomizeDecisionHeuristic(absl::BitGenRef random,
 
 namespace {
 
-// This will be optimized into one division. I tested that in other places:
-// 3/ortools/sat/integer_test.cc;l=1223-1228;bpv=0
+// This will be optimized into one division. I tested that in
+// `BM_DivisionAndRemainderAlternative` (sat/integer_test.cc)
 //
 // Note that I am not 100% sure we need the indirection for the optimization
 // to kick in though, but this seemed safer given our weird r[i ^ 1] inputs.
@@ -1005,6 +1007,132 @@ int64_t MaxBoundedSubsetSumExact::MaxSubsetSum(
     result = std::max(result, span_a[i] + span_b[j]);
     if (result == bin_size) return bin_size;
   }
+  return result;
+}
+
+std::vector<int> FindMostDiverseSubset(int k, int n,
+                                       absl::Span<const int64_t> distances,
+                                       std::vector<int64_t>& buffer,
+                                       int always_pick_mask) {
+  DCHECK_LE(k, n);
+  std::vector<int> result;
+  result.reserve(k);
+
+  if (k == n) {
+    for (int i = 0; i < n; ++i) result.push_back(i);
+    return result;
+  }
+
+  if (k == n - 1) {
+    // We just exclude the one closer to all the other.
+    int64_t worse = std::numeric_limits<int64_t>::max();
+    int to_exclude = -1;
+    for (int i = 0; i < n; ++i) {
+      if ((always_pick_mask >> i) & 1) continue;
+
+      int64_t score = 0;
+      for (int j = 0; j < n; ++j) {
+        if (i != j) score += distances[i * n + j];
+      }
+      if (score < worse) {
+        worse = score;
+        to_exclude = i;
+      }
+    }
+
+    CHECK_NE(to_exclude, -1);
+    for (int i = 0; i < n; ++i) {
+      if (i != to_exclude) result.push_back(i);
+    }
+    return result;
+  }
+
+  CHECK_LE(n, 25);
+  const int limit = 1 << n;
+  buffer.assign(limit, 0);
+  int best_mask;
+  int best_value = -1;
+  for (unsigned int mask = 1; mask < limit; ++mask) {
+    const int hamming_weight = absl::popcount(mask);
+
+    // TODO(user): Increase mask by more than one ? but counting to 1k is fast
+    // anyway.
+    if (hamming_weight > k) continue;
+    int low_bit = -1;
+    int64_t sum = 0;
+    for (int i = 0; i < n; ++i) {
+      if ((mask >> i) & 1) {
+        if (low_bit == -1) {
+          low_bit = i;
+        } else {
+          sum += distances[low_bit * n + i];
+        }
+      }
+    }
+    buffer[mask] = buffer[mask ^ (1 << low_bit)] + sum;
+    if (hamming_weight == k && buffer[mask] > best_value) {
+      if ((mask & always_pick_mask) != always_pick_mask) continue;
+      best_value = buffer[mask];
+      best_mask = mask;
+    }
+  }
+
+  for (int i = 0; i < n; ++i) {
+    if ((best_mask >> i) & 1) {
+      result.push_back(i);
+    }
+  }
+  return result;
+}
+
+std::vector<std::pair<int, int>> HeuristicallySplitLongLinear(
+    absl::Span<const int64_t> coeffs) {
+  std::vector<std::pair<int, int>> result;
+  if (coeffs.empty()) return result;
+
+  // Split an interval [0, size) into num_parts mostly equal parts.
+  const auto append_splits = [&result](int offset, int size, int num_parts) {
+    int previous_start = 0;
+    for (int64_t b = 0; b < num_parts; ++b) {
+      const int next_start = static_cast<int64_t>(b + 1) * size / num_parts;
+      result.push_back({offset + previous_start, next_start - previous_start});
+      previous_start = next_start;
+    }
+  };
+
+  const int num_terms = coeffs.size();
+  const int num_buckets = static_cast<int>(std::round(std::sqrt(num_terms)));
+
+  int num_differents = 1;
+  for (int i = 1; i < num_terms; ++i) {
+    if (coeffs[i - 1] != coeffs[i]) ++num_differents;
+  }
+
+  // If we don't have many different coefficients, we always create parts
+  // with exactly the same coeffs. We split large part evenly into size /
+  // expected_part_size.
+  if (num_differents < 20) {
+    const int expected_part_size = num_terms / num_buckets;
+
+    for (int i = 0; i < num_terms;) {
+      int j = i + 1;
+      for (; j < num_terms; ++j) {
+        if (coeffs[j] != coeffs[i]) break;
+      }
+
+      const int local_size = j - i;
+      const int num_local_buckets =
+          MathUtil::CeilOfRatio(local_size, expected_part_size);
+      append_splits(i, local_size, num_local_buckets);
+
+      i = j;
+    }
+
+    return result;
+  }
+
+  // Otherwise we just split into num_buckets buckets.
+  append_splits(0, num_terms, num_buckets);
   return result;
 }
 

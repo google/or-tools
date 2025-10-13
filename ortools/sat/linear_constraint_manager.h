@@ -190,6 +190,7 @@ class LinearConstraintManager {
   explicit LinearConstraintManager(Model* model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        integer_encoder_(*model->GetOrCreate<IntegerEncoder>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         expanded_lp_solution_(*model->GetOrCreate<ModelLpValues>()),
         expanded_reduced_costs_(*model->GetOrCreate<ModelReducedCosts>()),
@@ -283,6 +284,32 @@ class LinearConstraintManager {
   // does not violate the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint& cut);
 
+  // Getter "ReducedCosts" API for cuts.
+  // One need to call CacheReducedCostsInfo() before accessing this, otherwise
+  // these will just always return zero.
+  //
+  // It is not possible to set together to true a set of literals 'l' such that
+  // sum_l GetLiteralReducedCost(l) > ReducedCostsGap(). Note that we only
+  // return non-negative "reduced costs" here.
+  void CacheReducedCostsInfo();
+  absl::int128 ReducedCostsGap() const { return reduced_costs_gap_; }
+  absl::int128 GetLiteralReducedCost(Literal l) const {
+    const auto it = reduced_costs_map_.find(l);
+    if (it == reduced_costs_map_.end()) return 0;
+    return absl::int128(it->second.value());
+  }
+
+  // This is quick. Work will happen on CacheReducedCostsInfo().
+  // This way if no one use the information, we don't was time.
+  // See for instance co-1000.mps where this can be slow and we never use
+  // the information.
+  void SetReducedCostsAsLinearConstraint(const LinearConstraint& ct) {
+    reduced_costs_gap_ = 0;
+    reduced_costs_map_.clear();
+    reduced_costs_is_cached_ = false;
+    reduced_cost_constraint_.CopyFrom(ct);
+  }
+
  private:
   // Heuristic that decide which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
@@ -320,6 +347,7 @@ class LinearConstraintManager {
 
   const SatParameters& sat_parameters_;
   const IntegerTrail& integer_trail_;
+  const IntegerEncoder& integer_encoder_;
 
   // Set at true by Add()/SimplifyConstraint() and at false by ChangeLp().
   bool current_lp_is_changed_ = false;
@@ -338,6 +366,12 @@ class LinearConstraintManager {
   // contained in constraints_ and the code is still okay if we do not merge the
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
+
+  // Reduced costs data used by some routing cuts.
+  bool reduced_costs_is_cached_ = false;
+  absl::int128 reduced_costs_gap_ = 0;
+  absl::flat_hash_map<Literal, IntegerValue> reduced_costs_map_;
+  LinearConstraint reduced_cost_constraint_;
 
   int64_t num_constraint_updates_ = 0;
   int64_t num_simplifications_ = 0;

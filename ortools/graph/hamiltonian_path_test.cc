@@ -15,18 +15,19 @@
 
 #include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <functional>
+#include <limits>
 #include <random>
 #include <string>
 #include <vector>
 
+#include "absl/base/macros.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/macros.h"
 
 namespace operations_research {
 

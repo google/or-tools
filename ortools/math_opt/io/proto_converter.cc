@@ -61,7 +61,7 @@ absl::Status IsSupported(const MPModelProto& model) {
 
 bool AnyVarNamed(const MPModelProto& model) {
   for (const MPVariableProto& var : model.variable()) {
-    if (var.name().length() > 0) {
+    if (!var.name().empty()) {
       return true;
     }
   }
@@ -70,7 +70,7 @@ bool AnyVarNamed(const MPModelProto& model) {
 
 bool AnyConstraintNamed(const MPModelProto& model) {
   for (const MPConstraintProto& constraint : model.constraint()) {
-    if (constraint.name().length() > 0) {
+    if (!constraint.name().empty()) {
       return true;
     }
   }
@@ -140,7 +140,7 @@ QuadraticConstraintProto QuadraticConstraintFromMPModelToMathOpt(
   QuadraticConstraintProto out_constraint;
   out_constraint.set_lower_bound(in_constraint.lower_bound());
   out_constraint.set_upper_bound(in_constraint.upper_bound());
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   LinearTermsFromMPModelToMathOpt(
       in_constraint.var_index(), in_constraint.coefficient(),
       *out_constraint.mutable_linear_terms()->mutable_ids(),
@@ -155,7 +155,7 @@ QuadraticConstraintProto QuadraticConstraintFromMPModelToMathOpt(
 SosConstraintProto SosConstraintFromMPModelToMathOpt(
     const MPSosConstraint& in_constraint, const absl::string_view name) {
   SosConstraintProto out_constraint;
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   for (const int j : in_constraint.var_index()) {
     LinearExpressionProto& expr = *out_constraint.add_expressions();
     expr.add_ids(j);
@@ -172,7 +172,7 @@ absl::StatusOr<IndicatorConstraintProto>
 IndicatorConstraintFromMPModelToMathOpt(
     const MPIndicatorConstraint& in_constraint, const absl::string_view name) {
   IndicatorConstraintProto out_constraint;
-  out_constraint.set_name(std::string(name));
+  out_constraint.set_name(name);
   out_constraint.set_indicator_id(in_constraint.var_index());
   out_constraint.set_activate_on_zero(in_constraint.has_var_value() &&
                                       in_constraint.var_value() == 0);
@@ -317,7 +317,7 @@ MPModelProtoToMathOptModel(const ::operations_research::MPModelProto& model) {
 
   for (const MPGeneralConstraintProto& general_constraint :
        model.general_constraint()) {
-    const std::string& in_name = general_constraint.name();
+    absl::string_view in_name = general_constraint.name();
     switch (general_constraint.general_constraint_case()) {
       case MPGeneralConstraintProto::kQuadraticConstraint: {
         (*output.mutable_quadratic_constraints())

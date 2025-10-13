@@ -26,12 +26,11 @@
 // }
 //
 
+#include <cstddef>
 #include <iterator>
-#include <type_traits>
 
-#include "absl/types/span.h"
 #include "google/protobuf/descriptor.pb.h"
-
+#include "google/protobuf/repeated_field.h"
 namespace google::protobuf::contrib::utils {
 
 using google::protobuf::GetEnumDescriptor;
@@ -177,8 +176,19 @@ namespace internal {
 template <typename E>
 class RepeatedEnumView {
  public:
-  class Iterator : public std::iterator<std::input_iterator_tag, E> {
+  class Iterator
+#if __cplusplus < 201703L
+      : public std::iterator<std::input_iterator_tag, E>
+#endif
+  {
    public:
+    using difference_type = ptrdiff_t;
+    using value_type = E;
+#if __cplusplus >= 201703L
+    using iterator_category = std::input_iterator_tag;
+    using pointer = E*;
+    using reference = E&;
+#endif
     explicit Iterator(RepeatedField<int>::const_iterator ptr) : ptr_(ptr) {}
     bool operator==(const Iterator& it) const { return ptr_ == it.ptr_; }
     bool operator!=(const Iterator& it) const { return ptr_ != it.ptr_; }

@@ -27,6 +27,7 @@ if(NOT USE_PDLP)
 endif()
 if(NOT USE_SCIP)
   list(FILTER _SRCS EXCLUDE REGEX "/scip_proto_solver.")
+  list(FILTER _SRCS EXCLUDE REGEX "/scip_params.")
 endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver_proto_solver)
@@ -46,7 +47,7 @@ target_link_libraries(${NAME} PRIVATE
   absl::status
   absl::str_format
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
-  $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   $<$<BOOL:${USE_HIGHS}>:highs::highs>
   ${PROJECT_NAMESPACE}::ortools_proto)
 #add_library(${PROJECT_NAMESPACE}::linear_solver_proto_solver ALIAS ${NAME})

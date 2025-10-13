@@ -25,14 +25,11 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/types/optional.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/proto_solver/highs_proto_solver.h"
 #include "ortools/linear_solver/proto_solver/proto_utils.h"
-#include "ortools/port/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
@@ -106,6 +103,7 @@ class HighsInterface : public MPSolverInterface {
   void NonIncrementalChange();
 
   const bool solve_as_a_mip_;
+  std::optional<HighsSolveInfo> solve_info_;
 };
 
 HighsInterface::HighsInterface(MPSolver* const solver, bool solve_as_a_mip)
@@ -117,23 +115,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   // Reset extraction as this interface is not incremental yet.
   Reset();
   ExtractModel();
-
-  SetParameters(param);
-  if (quiet_) {
-    // parameters_.set_verbosity_level(0);
-  } else {
-    // parameters_.set_verbosity_level(3);
-  }
-
-  solver_->SetSolverSpecificParametersAsString(
-      solver_->solver_specific_parameter_string_);
-
-  // Time limit.
-  if (solver_->time_limit()) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    // parameters_.mutable_termination_criteria()->set_time_sec_limit(
-    //     static_cast<double>(solver_->time_limit()) / 1000.0);
-  }
 
   // Mark variables and constraints as extracted.
   for (int i = 0; i < solver_->variables_.size(); ++i) {
@@ -151,9 +132,19 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
                               ? MPModelRequest::HIGHS_MIXED_INTEGER_PROGRAMMING
                               : MPModelRequest::HIGHS_LINEAR_PROGRAMMING);
 
+  SetParameters(param);
+  request.set_enable_internal_solver_output(!quiet_);
+  request.set_solver_specific_parameters(
+      solver_->solver_specific_parameter_string_);
+  if (solver_->time_limit()) {
+    request.set_solver_time_limit_seconds(
+        static_cast<double>(solver_->time_limit()) / 1000.0);
+  }
+
   // Set parameters.
+  solve_info_ = HighsSolveInfo();
   absl::StatusOr<MPSolutionResponse> response =
-      HighsSolveProto(std::move(request));
+      HighsSolveProto(std::move(request), &*solve_info_);
 
   if (!response.ok()) {
     LOG(ERROR) << "Unexpected error solving with Highs: " << response.status();
@@ -163,7 +154,6 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
   result_status_ = static_cast<MPSolver::ResultStatus>(response->status());
-  LOG_IF(DFATAL, !response->has_solver_specific_info()) << *response;
 
   if (response->status() == MPSOLVER_FEASIBLE ||
       response->status() == MPSOLVER_OPTIMAL) {
@@ -176,7 +166,10 @@ MPSolver::ResultStatus HighsInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-void HighsInterface::Reset() { ResetExtractionInformation(); }
+void HighsInterface::Reset() {
+  ResetExtractionInformation();
+  solve_info_.reset();
+}
 
 void HighsInterface::SetOptimizationDirection(bool maximize) {
   NonIncrementalChange();
@@ -228,8 +221,9 @@ int64_t HighsInterface::iterations() const {
 }
 
 int64_t HighsInterface::nodes() const {
-  LOG(DFATAL) << "Number of nodes only available for discrete problems";
-  return MPSolverInterface::kUnknownNumberOfNodes;
+  QCHECK(solve_info_.has_value())
+      << "Number of nodes only available after solve";
+  return solve_info_->mip_node_count;
 }
 
 MPSolver::BasisStatus HighsInterface::row_status(int constraint_index) const {

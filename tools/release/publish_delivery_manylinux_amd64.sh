@@ -109,7 +109,7 @@ function main() {
   local -r RELEASE_DIR="$(cd -P -- "$(dirname -- "$0")" && pwd -P)"
   echo "RELEASE_DIR: '${RELEASE_DIR}'" | tee -a publish.log
 
-  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a build.log)
+  (cd "${ROOT_DIR}" && make print-OR_TOOLS_VERSION | tee -a publish.log)
 
   local -r ORTOOLS_BRANCH=$(git rev-parse --abbrev-ref HEAD)
   local -r ORTOOLS_SHA1=$(git rev-parse --verify HEAD)
@@ -124,8 +124,9 @@ function main() {
       "publish_$1"
       exit ;;
     all)
+      #publish_dotnet
       publish_java
-      publish_python
+      #publish_python
       exit ;;
     *)
       >&2 echo "Target '${1}' unknown"

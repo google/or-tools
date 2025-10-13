@@ -46,55 +46,53 @@
 static const char* __doc_operations_research_sat_python_AbslHashValue =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar =
-    R"doc(A class to hold a variable index. It is the base class for Integer
-variables.)doc";
+static const char* __doc_operations_research_sat_python_IntVar =
+    R"doc(A class to hold an integer or Boolean variable)doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_2 =
-    R"doc(A class to hold a variable index. It is the base class for Integer
-variables.)doc";
+static const char* __doc_operations_research_sat_python_IntVar_2 =
+    R"doc(A class to hold an integer or Boolean variable)doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVarComparator =
+static const char* __doc_operations_research_sat_python_IntVarComparator =
     R"doc(Compare the indices of variables.)doc";
 
 static const char*
-    __doc_operations_research_sat_python_BaseIntVarComparator_operator_call =
+    __doc_operations_research_sat_python_IntVarComparator_operator_call =
         R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_BaseIntVar =
+static const char* __doc_operations_research_sat_python_IntVar_IntVar =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_sat_python_BaseIntVar_BaseIntVar_2 = R"doc()doc";
-
-static const char* __doc_operations_research_sat_python_BaseIntVar_DebugString =
+static const char* __doc_operations_research_sat_python_IntVar_IntVar_2 =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_ToString =
+static const char* __doc_operations_research_sat_python_IntVar_DebugString =
     R"doc()doc";
 
-static const char*
-    __doc_operations_research_sat_python_BaseIntVar_VisitAsFloat = R"doc()doc";
-
-static const char* __doc_operations_research_sat_python_BaseIntVar_VisitAsInt =
+static const char* __doc_operations_research_sat_python_IntVar_ToString =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_index =
+static const char* __doc_operations_research_sat_python_IntVar_VisitAsFloat =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_index_2 =
+static const char* __doc_operations_research_sat_python_IntVar_VisitAsInt =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_is_boolean =
+static const char* __doc_operations_research_sat_python_IntVar_index =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_IntVar_index_2 =
+    R"doc()doc";
+
+static const char* __doc_operations_research_sat_python_IntVar_is_boolean =
     R"doc(Returns true if the variable has a Boolean domain (0 or 1).)doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_negated =
+static const char* __doc_operations_research_sat_python_IntVar_negated =
     R"doc(Returns the negation of the current variable.)doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_negated_2 =
+static const char* __doc_operations_research_sat_python_IntVar_negated_2 =
     R"doc()doc";
 
-static const char* __doc_operations_research_sat_python_BaseIntVar_operator_lt =
+static const char* __doc_operations_research_sat_python_IntVar_operator_lt =
     R"doc()doc";
 
 static const char*
@@ -644,7 +642,7 @@ model.add(cp_model.LinearExpr.weighted_sum(expressions, coefficients) >= 0)
 ```)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_Add =
-    R"doc(Returns (this) + (expr).)doc";
+    R"doc(Returns (this) + (other).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_AddFloat =
     R"doc(Returns (this) + (cst).)doc";
@@ -728,6 +726,9 @@ static const char* __doc_operations_research_sat_python_LinearExpr_NeCst =
 static const char* __doc_operations_research_sat_python_LinearExpr_Neg =
     R"doc(Returns -(this).)doc";
 
+static const char* __doc_operations_research_sat_python_LinearExpr_RSub =
+    R"doc(Returns (other) - (this).)doc";
+
 static const char* __doc_operations_research_sat_python_LinearExpr_RSubFloat =
     R"doc(Returns (cst) - (this).)doc";
 
@@ -735,7 +736,7 @@ static const char* __doc_operations_research_sat_python_LinearExpr_RSubInt =
     R"doc(Returns (cst) - (this).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_Sub =
-    R"doc(Returns (this) - (expr).)doc";
+    R"doc(Returns (this) - (other).)doc";
 
 static const char* __doc_operations_research_sat_python_LinearExpr_SubFloat =
     R"doc(Returns (this) - (cst).)doc";

@@ -2,11 +2,11 @@ package com.google.ortools.contrib;
 
 import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
-import com.google.ortools.constraintsolver.FirstSolutionStrategy;
-import com.google.ortools.constraintsolver.RoutingIndexManager;
-import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingSearchParameters;
-import com.google.ortools.constraintsolver.main;
+import com.google.ortools.routing.FirstSolutionStrategy;
+import com.google.ortools.routing.RoutingIndexManager;
+import com.google.ortools.routing.RoutingModel;
+import com.google.ortools.routing.RoutingSearchParameters;
+import com.google.ortools.routing.Globals;
 import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
 
@@ -70,7 +70,7 @@ public class SimpleRoutingTest {
     RoutingModel routing = new RoutingModel(manager);
     RoutingSearchParameters parameters =
         RoutingSearchParameters.newBuilder()
-            .mergeFrom(main.defaultRoutingSearchParameters())
+            .mergeFrom(Globals.defaultRoutingSearchParameters())
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
             .build();
     NodeDistance distances = new NodeDistance(manager, costMatrix);

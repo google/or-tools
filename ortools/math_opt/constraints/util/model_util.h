@@ -52,7 +52,7 @@ std::vector<Variable> AtomicConstraintNonzeroVariables(
 }
 
 // Duck-types on `ConstraintType` having a typedef for the associated `IdType`,
-// and having a `(const ModelStorage*, IdType)` constructor.
+// and having a `(ModelStorageCPtr, IdType)` constructor.
 template <typename ConstraintType>
 std::vector<ConstraintType> AtomicConstraints(const ModelStorage& storage) {
   using IdType = typename ConstraintType::IdType;

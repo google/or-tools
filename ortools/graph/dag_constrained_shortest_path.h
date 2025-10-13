@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <vector>
 
 #include "absl/algorithm/container.h"
@@ -79,13 +80,20 @@ PathWithLength ConstrainedShortestPathsOnDag(
 // -----------------------------------------------------------------------------
 // Advanced API.
 // -----------------------------------------------------------------------------
+template <class GraphType>
+struct GraphPathWithLength {
+  double length = 0.0;
+  // The returned arc indices points into the `arcs_with_length` passed to the
+  // function below.
+  std::vector<typename GraphType::ArcIndex> arc_path;
+  std::vector<typename GraphType::NodeIndex>
+      node_path;  // includes the source node.
+};
+
 // A wrapper that holds the memory needed to run many constrained shortest path
 // computations efficiently on the given DAG (on which resources do not change).
-// `GraphType` can use one of the interfaces defined in `util/graph/graph.h`.
+// `GraphType` can use one of the interfaces defined in `ortools/graph/graph.h`.
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 class ConstrainedShortestPathsOnDagWrapper {
  public:
   using NodeIndex = typename GraphType::NodeIndex;
@@ -128,7 +136,7 @@ class ConstrainedShortestPathsOnDagWrapper {
   // Returns {+inf, {}, {}} if there is no constrained path of finite length
   // wihtin resources constraints from one node in `sources` to one node in
   // `destinations`.
-  PathWithLength RunConstrainedShortestPathOnDag();
+  GraphPathWithLength<GraphType> RunConstrainedShortestPathOnDag();
 
   // For benchmarking and informational purposes, returns the number of labels
   // generated in the call of `RunConstrainedShortestPathOnDag()`.
@@ -201,6 +209,9 @@ class ConstrainedShortestPathsOnDagWrapper {
   absl::Span<const NodeIndex> destinations_;
   const int num_resources_;
 
+  // Set to a node if and only if this node is in both `sources_` and
+  // `destinations_`.
+  std::optional<NodeIndex> source_is_destination_ = std::nullopt;
   // Data about *reachable* sub-graphs split in two for bidirectional search.
   // Reachable nodes are nodes that can be reached given the resources
   // constraints, i.e., for each resource, the sum of the minimum resource to
@@ -258,16 +269,16 @@ class ConstrainedShortestPathsOnDagWrapper {
   std::vector<int> node_num_labels_[2];
 };
 
-std::vector<int> GetInversePermutation(absl::Span<const int> permutation);
+namespace internal {
+template <typename T>
+std::vector<T> GetInversePermutation(const std::vector<T>& permutation);
+}  // namespace internal
 
 // -----------------------------------------------------------------------------
 // Implementation.
 // -----------------------------------------------------------------------------
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 ConstrainedShortestPathsOnDagWrapper<GraphType>::
     ConstrainedShortestPathsOnDagWrapper(
         const GraphType* graph, const std::vector<double>* arc_lengths,
@@ -318,13 +329,15 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
           << absl::StrFormat(
                  "max_resource cannot be negative not +inf nor NaN");
     }
-    std::vector<bool> is_source(graph->num_nodes(), false);
-    for (const NodeIndex source : sources) {
-      is_source[source] = true;
-    }
-    for (const NodeIndex destination : destinations) {
-      CHECK(!is_source[destination])
-          << "A node cannot be both a source and destination";
+  }
+  std::vector<bool> is_source(graph->num_nodes(), false);
+  for (const NodeIndex source : sources) {
+    is_source[source] = true;
+  }
+  for (const NodeIndex destination : destinations) {
+    if (is_source[destination]) {
+      source_is_destination_ = destination;
+      return;
     }
   }
 
@@ -348,7 +361,7 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
   std::vector<ArcIndex> full_permutation;
   full_backward_graph.Build(&full_permutation);
   const std::vector<ArcIndex> full_inverse_arc_indices =
-      GetInversePermutation(full_permutation);
+      internal::GetInversePermutation(full_permutation);
   std::vector<std::vector<double>> backward_arc_resources(num_resources_);
   for (int r = 0; r < num_resources_; ++r) {
     backward_arc_resources[r] = (*arc_resources)[r];
@@ -521,11 +534,12 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
-PathWithLength ConstrainedShortestPathsOnDagWrapper<
+GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
     GraphType>::RunConstrainedShortestPathOnDag() {
+  if (source_is_destination_.has_value()) {
+    return {
+        .length = 0, .arc_path = {}, .node_path = {*source_is_destination_}};
+  }
   // Assign lengths on sub-relevant graphs.
   std::vector<double> sub_arc_lengths[2];
   for (const Direction dir : {FORWARD, BACKWARD}) {
@@ -638,9 +652,6 @@ PathWithLength ConstrainedShortestPathsOnDagWrapper<
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 void ConstrainedShortestPathsOnDagWrapper<GraphType>::
     RunHalfConstrainedShortestPathOnDag(
         const GraphType& reverse_graph, absl::Span<const double> arc_lengths,
@@ -766,9 +777,6 @@ void ConstrainedShortestPathsOnDagWrapper<GraphType>::
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 typename GraphType::ArcIndex
 ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
     const GraphType& graph, absl::Span<const double> arc_lengths,
@@ -821,9 +829,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
     for (int label_to_index = first_label_to;
          label_to_index < first_label_to + num_labels_to; ++label_to_index) {
       const double length_to = backward_lengths[label_to_index];
-      if (arc_length + length_to >= best_label_pair.length) {
-        continue;
-      }
       for (int label_from_index = first_label_from;
            label_from_index < first_label_from + num_labels_from;
            ++label_from_index) {
@@ -856,9 +861,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::MergeHalfRuns(
 }
 
 template <class GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 std::vector<typename GraphType::ArcIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
     const int best_label_index,
@@ -878,9 +880,6 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::ArcPathTo(
 }
 
 template <typename GraphType>
-#if __cplusplus >= 202002L
-  requires DagGraphType<GraphType>
-#endif
 std::vector<typename GraphType::NodeIndex>
 ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathImpliedBy(
     absl::Span<const ArcIndex> arc_path, const GraphType& graph) const {
@@ -895,6 +894,21 @@ ConstrainedShortestPathsOnDagWrapper<GraphType>::NodePathImpliedBy(
   node_path.push_back(graph.Head(arc_path.back()));
   return node_path;
 }
+
+namespace internal {
+
+template <typename T>
+std::vector<T> GetInversePermutation(const std::vector<T>& permutation) {
+  std::vector<T> inverse_permutation(permutation.size());
+  if (!permutation.empty()) {
+    for (T i = 0; i < permutation.size(); ++i) {
+      inverse_permutation[permutation[i]] = i;
+    }
+  }
+  return inverse_permutation;
+}
+
+}  // namespace internal
 
 }  // namespace operations_research
 

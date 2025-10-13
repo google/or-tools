@@ -90,7 +90,7 @@ TEST(FlakyTest, Issue3108) {
   SatParameters parameters;
   parameters.set_log_search_progress(true);
   parameters.set_cp_model_probing_level(0);
-  parameters.set_num_search_workers(1);
+  parameters.set_num_workers(1);
   const CpSolverResponse response =
       SolveWithParameters(model_proto, parameters);
   EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);

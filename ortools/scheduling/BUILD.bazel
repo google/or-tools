@@ -11,19 +11,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
+# This directory contains scheduling libraries to solve different types of
+# scheduling problem.
+
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+### RCPSP ###
+proto_library(
+    name = "rcpsp_proto",
+    srcs = ["rcpsp.proto"],
+)
+
+cc_proto_library(
+    name = "rcpsp_cc_proto",
+    deps = [":rcpsp_proto"],
+)
+
+py_proto_library(
+    name = "rcpsp_py_pb2",
+    deps = [":rcpsp_proto"],
+)
+
+cc_library(
+    name = "rcpsp_parser",
+    srcs = ["rcpsp_parser.cc"],
+    hdrs = ["rcpsp_parser.h"],
+    deps = [
+        ":rcpsp_cc_proto",
+        "//ortools/base:path",
+        "//ortools/util:filelineiter",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+### Jobshop Scheduling ###
 proto_library(
     name = "jobshop_scheduling_proto",
     srcs = ["jobshop_scheduling.proto"],
-    deps = [
-        "@com_google_protobuf//:wrappers_proto",
-    ],
+    deps = ["@protobuf//:wrappers_proto"],
 )
 
 cc_proto_library(
@@ -39,42 +71,17 @@ cc_library(
         ":jobshop_scheduling_cc_proto",
         "//ortools/base",
         "//ortools/base:path",
+        "//ortools/base:types",
         "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@protobuf//:wrappers_cc_proto",
     ],
 )
 
-proto_library(
-    name = "rcpsp_proto",
-    srcs = ["rcpsp.proto"],
-)
-
-cc_proto_library(
-    name = "rcpsp_cc_proto",
-    deps = [":rcpsp_proto"],
-)
-
-py_proto_library(
-    name = "rcpsp_py_proto",
-    deps = [":rcpsp_proto"],
-)
-
-cc_library(
-    name = "rcpsp_parser",
-    srcs = ["rcpsp_parser.cc"],
-    hdrs = ["rcpsp_parser.h"],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":rcpsp_cc_proto",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:path",
-        "//ortools/util:filelineiter",
-        "@com_google_absl//absl/strings",
-    ],
-)
-
+### Course Scheduling ###
 proto_library(
     name = "course_scheduling_proto",
     srcs = ["course_scheduling.proto"],
@@ -82,6 +89,5 @@ proto_library(
 
 cc_proto_library(
     name = "course_scheduling_cc_proto",
-    visibility = ["//visibility:public"],
     deps = [":course_scheduling_proto"],
 )

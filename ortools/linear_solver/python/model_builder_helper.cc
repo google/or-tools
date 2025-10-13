@@ -439,11 +439,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddInPlace(other);
-              return expr;
-            }
-            return expr->Add(other);
+            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           "Returns the sum of `self` and `other`.")
@@ -453,26 +449,43 @@ PYBIND11_MODULE(model_builder_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(cst);
-              return expr;
-            }
-            return expr->AddFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
+                                   : expr->AddFloat(cst);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
-      .def("__radd__", &LinearExpr::Add, py::arg("other").none(false),
-           "Returns `self` + `other`.")
+      .def(
+          "__radd__",
+          [](py::object self,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            const int num_uses = Py_REFCNT(self.ptr());
+            std::shared_ptr<SumArray> expr =
+                self.cast<std::shared_ptr<SumArray>>();
+            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+          },
+          py::arg("cst"), "Returns `self` + `cst`.")
       .def(
           "__radd__",
           [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(cst);
-              return expr;
-            }
-            return expr->AddFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
+                                   : expr->AddFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` + `cst`.")
+      .def(
+          "__iadd__",
+          [](std::shared_ptr<SumArray> expr,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            return expr->AddInPlace(other);
+          },
+          py::arg("other").none(false),
+          "Returns the sum of `self` and `other`.")
+      .def(
+          "__iadd__",
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddFloatInPlace(cst);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
       .def(
@@ -482,11 +495,8 @@ PYBIND11_MODULE(model_builder_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddInPlace(other->Neg());
-              return expr;
-            }
-            return expr->Sub(other);
+            return (num_uses == 4) ? expr->AddInPlace(other->Neg())
+                                   : expr->Sub(other);
           },
           py::arg("other").none(false), "Returns `self` - `other`.")
       .def(
@@ -495,11 +505,23 @@ PYBIND11_MODULE(model_builder_helper, m) {
             const int num_uses = Py_REFCNT(self.ptr());
             std::shared_ptr<SumArray> expr =
                 self.cast<std::shared_ptr<SumArray>>();
-            if (num_uses == 4) {
-              expr->AddFloatInPlace(-cst);
-              return expr;
-            }
-            return expr->SubFloat(cst);
+            return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
+                                   : expr->SubFloat(cst);
+          },
+          py::arg("cst"), "Returns `self` - `cst`.")
+      .def(
+          "__isub__",
+          [](std::shared_ptr<SumArray> expr,
+             std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
+            expr->AddInPlace(other->Neg());
+            return expr->AddInPlace(other->Neg());
+          },
+          py::arg("other").none(false), "Returns `self` - `other`.")
+      .def(
+          "__isub__",
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return expr->AddFloatInPlace(-cst);
           },
           py::arg("cst"), "Returns `self` - `cst`.")
       .def_property_readonly(
@@ -511,25 +533,6 @@ PYBIND11_MODULE(model_builder_helper, m) {
   py::class_<AffineExpr, std::shared_ptr<AffineExpr>, LinearExpr>(m,
                                                                   "AffineExpr")
       .def(py::init<std::shared_ptr<LinearExpr>, double, double>())
-      .def("__add__", &AffineExpr::Add, py::arg("other").none(false),
-           "Returns `self` + `other`.")
-      .def("__add__", &AffineExpr::AddFloat, py::arg("cst"),
-           "Returns `self` + `cst`.")
-      .def("__radd__", &AffineExpr::Add, py::arg("other").none(false),
-           "Returns `self` + `other`.")
-      .def("__radd__", &AffineExpr::AddFloat, py::arg("cst"),
-           "Returns `self` + `cst`.")
-      .def("__sub__", &AffineExpr::Sub, py::arg("other").none(false),
-           "Returns `self` - `other`.")
-      .def("__sub__", &AffineExpr::SubFloat, py::arg("cst"),
-           "Returns `self` - `cst`.")
-      .def("__rsub__", &AffineExpr::RSubFloat, py::arg("cst"),
-           "Returns `cst` - `self`.")
-      .def("__mul__", &AffineExpr::MulFloat, py::arg("cst"),
-           "Returns `self` * `cst`.")
-      .def("__rmul__", &AffineExpr::MulFloat, py::arg("cst"),
-           "Returns `self` * `cst`.")
-      .def("__neg__", &AffineExpr::Neg, "Returns -`self`.")
       .def_property_readonly("expression", &AffineExpr ::expression)
       .def_property_readonly("coefficient", &AffineExpr::coefficient)
       .def_property_readonly("offset", &AffineExpr::offset);
@@ -583,8 +586,7 @@ PYBIND11_MODULE(model_builder_helper, m) {
                         absl::StrCat("Evaluating a BoundedLinearExpression '",
                                      self.ToString(),
                                      "'instance as a Boolean is "
-                                     "not supported.")
-                            .c_str());
+                                     "not supported."));
              return false;
            })
       .def("__str__", &BoundedLinearExpression::ToString)
@@ -619,19 +621,10 @@ PYBIND11_MODULE(model_builder_helper, m) {
            py::arg("mps_string"))
       .def("import_from_mps_file", &ModelBuilderHelper::ImportFromMpsFile,
            py::arg("mps_file"))
-#if defined(USE_LP_PARSER)
       .def("import_from_lp_string", &ModelBuilderHelper::ImportFromLpString,
            py::arg("lp_string"))
       .def("import_from_lp_file", &ModelBuilderHelper::ImportFromLpFile,
            py::arg("lp_file"))
-#else
-            .def("import_from_lp_string", [](const std::string& lp_string) {
-              LOG(INFO) << "Parsing LP string is not compiled in";
-            })
-            .def("import_from_lp_file", [](const std::string& lp_file) {
-              LOG(INFO) << "Parsing LP file is not compiled in";
-            })
-#endif
       .def(
           "fill_model_from_sparse_data",
           [](ModelBuilderHelper* helper,

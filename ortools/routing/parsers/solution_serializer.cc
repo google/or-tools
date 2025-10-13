@@ -340,7 +340,7 @@ std::string RoutingSolution::SerializeToNEARPLIBSolutionFile() const {
 
 namespace {
 RoutingSolution::Route RouteFromVector(
-    const std::vector<int64_t>& route_int,
+    absl::Span<const int64_t> route_int,
     std::optional<int64_t> depot = std::nullopt);
 
 std::vector<RoutingSolution::Route> RoutesFromVector(
@@ -355,7 +355,7 @@ std::vector<RoutingSolution::Route> RoutesFromVector(
   return solution_routes;
 }
 
-RoutingSolution::Route RouteFromVector(const std::vector<int64_t>& route_int,
+RoutingSolution::Route RouteFromVector(absl::Span<const int64_t> route_int,
                                        std::optional<int64_t> forced_depot) {
   // One route in input: from the node indices, create a Route object (not yet
   // a RoutingSolution one).

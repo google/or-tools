@@ -19,8 +19,10 @@
 #include <random>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/random.h"
+#include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/stl_util.h"
@@ -248,8 +250,13 @@ TEST(DynamicPartitionTest, FingerprintStressTest) {
   // The size are just indicative (in opt mode, we stress it a bit more).
   //
   // Timing as of 2014-04-30, on forge: fastbuild=7.5s, opt=22s.
-  const int kNumPartitions = DEBUG_MODE ? 1000 : 4000;
-  const int kPartitionSize = DEBUG_MODE ? 10 : 12;
+#if defined(NDEBUG)
+  const int kNumPartitions = 4000;
+  const int kPartitionSize = 12;
+#else
+  const int kNumPartitions = 1000;
+  const int kPartitionSize = 10;
+#endif
   const int kMaxNumParts = 3;
   std::mt19937 random(12345);
   std::vector<std::unique_ptr<DynamicPartition>> partitions(kNumPartitions);

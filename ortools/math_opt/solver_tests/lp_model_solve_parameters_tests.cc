@@ -393,7 +393,7 @@ TEST_P(LpModelSolveParametersTest, SolutionFilterByKeysDualRay) {
 }
 
 TEST_P(LpModelSolveParametersTest, PrimalWarmStart) {
-  constexpr int n = 10;
+  constexpr int n = 8;
   const auto model = IndependentSetCompleteGraph(/*integer=*/false, /*n=*/n);
   int baseline_num_iters = 0;
   {

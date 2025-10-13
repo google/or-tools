@@ -11,10 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
-load("@com_google_protobuf//bazel:java_proto_library.bzl", "java_proto_library")
-load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
-load("@rules_python//python:proto.bzl", "py_proto_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
 
 package(default_visibility = [
     "//ortools/math_opt:__subpackages__",
@@ -68,7 +68,7 @@ proto_library(
     srcs = ["result.proto"],
     deps = [
         ":solution_proto",
-        "@com_google_protobuf//:duration_proto",
+        "@protobuf//:duration_proto",
     ],
 )
 
@@ -134,7 +134,7 @@ py_proto_library(
 proto_library(
     name = "parameters_proto",
     srcs = ["parameters.proto"],
-    deps = ["@com_google_protobuf//:duration_proto"],
+    deps = ["@protobuf//:duration_proto"],
 )
 
 proto_library(

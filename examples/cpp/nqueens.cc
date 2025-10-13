@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // N-queens problem
 //
 //  unique solutions: http://www.research.att.com/~njas/sequences/A000170
@@ -29,6 +28,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/types.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
 ABSL_FLAG(bool, print, false, "If true, print one of the solution.");

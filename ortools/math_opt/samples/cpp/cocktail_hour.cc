@@ -31,6 +31,7 @@
 //     ortools/math_opt/examples/cpp/cocktail_hour \
 //     -- --num_ingredients 10 --mode latex | pdflatex -output-directory /tmp
 // will create a PDF in /tmp.
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <ostream>

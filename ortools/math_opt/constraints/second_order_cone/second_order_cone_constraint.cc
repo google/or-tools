@@ -30,7 +30,7 @@
 namespace operations_research::math_opt {
 
 LinearExpression SecondOrderConeConstraint::UpperBound() const {
-  return ToLinearExpression(*storage_,
+  return ToLinearExpression(*storage(),
                             storage()->constraint_data(id_).upper_bound);
 }
 
@@ -40,7 +40,7 @@ std::vector<LinearExpression> SecondOrderConeConstraint::ArgumentsToNorm()
   std::vector<LinearExpression> args;
   args.reserve(data.arguments_to_norm.size());
   for (const LinearExpressionData& arg_data : data.arguments_to_norm) {
-    args.push_back(ToLinearExpression(*storage_, arg_data));
+    args.push_back(ToLinearExpression(*storage(), arg_data));
   }
   return args;
 }
@@ -58,9 +58,9 @@ std::string SecondOrderConeConstraint::ToString() const {
       str << ", ";
     }
     leading_comma = true;
-    str << ToLinearExpression(*storage_, arg_data);
+    str << ToLinearExpression(*storage(), arg_data);
   }
-  str << "}||₂ ≤ " << ToLinearExpression(*storage_, data.upper_bound);
+  str << "}||₂ ≤ " << ToLinearExpression(*storage(), data.upper_bound);
   return str.str();
 }
 

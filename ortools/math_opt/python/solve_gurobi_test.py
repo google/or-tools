@@ -24,9 +24,11 @@ from ortools.math_opt.python import callback
 from ortools.math_opt.python import compute_infeasible_subsystem_result
 from ortools.math_opt.python import init_arguments
 from ortools.math_opt.python import model
+from ortools.math_opt.python import model_parameters
 from ortools.math_opt.python import parameters
 from ortools.math_opt.python import result
 from ortools.math_opt.python import solve
+from ortools.math_opt.python import sparse_containers
 
 
 _Bounds = compute_infeasible_subsystem_result.ModelSubsetBounds
@@ -82,6 +84,87 @@ class SolveTest(absltest.TestCase):
             msg=res.termination,
         )
         self.assertAlmostEqual(2.0, res.termination.objective_bounds.primal_bound)
+
+    def test_hierarchical_objectives(self) -> None:
+        mod = model.Model()
+        # The model is:
+        #   max    x + y + 2 z
+        #   s.t.   x + y + z <= 1.5
+        #          x, y in [0, 1]
+        #          z binary
+        # With secondary objective
+        #   max y
+        #
+        # The first problem is solved by any convex combination of:
+        #   (0.5, 0, 1) and (0, 0.5, 1)
+        # But with the secondary objective, the unique solution is (0, 0.5, 1), with
+        # a primary objective value of 2.5 and secondary objective value of 0.5.
+        x = mod.add_variable(lb=0, ub=1)
+        y = mod.add_variable(lb=0, ub=1)
+        z = mod.add_binary_variable()
+        mod.add_linear_constraint(x + y + z <= 1.5)
+        mod.maximize(x + y + 2 * z)
+        aux = mod.add_maximization_objective(y, priority=1)
+
+        res = solve.solve(mod, parameters.SolverType.GUROBI)
+        self.assertEqual(
+            res.termination.reason,
+            result.TerminationReason.OPTIMAL,
+            msg=res.termination,
+        )
+        self.assertAlmostEqual(res.objective_value(), 2.5, delta=1e-4)
+        self.assertAlmostEqual(res.variable_values(x), 0.0, delta=1e-4)
+        self.assertAlmostEqual(res.variable_values(y), 0.5, delta=1e-4)
+        self.assertAlmostEqual(res.variable_values(z), 1.0, delta=1e-4)
+        prim_sol = res.solutions[0].primal_solution
+        self.assertIsNotNone(prim_sol)
+        self.assertDictEqual(prim_sol.auxiliary_objective_values, {aux: 0.5})
+
+    def test_quadratic_dual(self) -> None:
+        mod = model.Model()
+        x = mod.add_variable()
+        mod.minimize(x)
+        c = mod.add_quadratic_constraint(expr=x * x, ub=1.0)
+        params = parameters.SolveParameters()
+        params.gurobi.param_values["QCPDual"] = "1"
+        res = solve.solve(mod, parameters.SolverType.GUROBI, params=params)
+        self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
+        sol = res.solutions[0]
+        primal = sol.primal_solution
+        dual = sol.dual_solution
+        self.assertIsNotNone(primal)
+        self.assertIsNotNone(dual)
+        self.assertAlmostEqual(primal.variable_values[x], -1.0)
+        self.assertAlmostEqual(dual.quadratic_dual_values[c], -0.5)
+
+    def test_quadratic_dual_filter(self) -> None:
+        # Same as the previous test, but now with a filter on the quadratic duals
+        # that are returned.
+        mod = model.Model()
+        x = mod.add_variable()
+        mod.minimize(x)
+        mod.add_quadratic_constraint(expr=x * x, ub=1.0)
+        params = parameters.SolveParameters()
+        params.gurobi.param_values["QCPDual"] = "1"
+        mod_params = model_parameters.ModelSolveParameters(
+            quadratic_dual_values_filter=sparse_containers.QuadraticConstraintFilter(
+                filtered_items={}
+            )
+        )
+        res = solve.solve(
+            mod,
+            parameters.SolverType.GUROBI,
+            params=params,
+            model_params=mod_params,
+        )
+        self.assertEqual(res.termination.reason, result.TerminationReason.OPTIMAL)
+        sol = res.solutions[0]
+        primal = sol.primal_solution
+        dual = sol.dual_solution
+        self.assertIsNotNone(primal)
+        self.assertIsNotNone(dual)
+        self.assertAlmostEqual(primal.variable_values[x], -1.0)
+        self.assertEmpty(dual.quadratic_dual_values)
 
     def test_compute_infeasible_subsystem_infeasible(self):
         mod = model.Model()
@@ -191,6 +274,28 @@ class SolveTest(absltest.TestCase):
                 parameters.SolverType.GUROBI,
                 streamable_init_args=_init_args(_bad_isv_key),
             )
+
+    def test_compute_infeasible_subsystem_duplicated_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+        with self.assertRaisesRegex(ValueError, "duplicate name"):
+            solve.compute_infeasible_subsystem(
+                opt_model,
+                parameters.SolverType.GUROBI,
+            )
+
+    def test_compute_infeasible_subsystem_remove_names(self):
+        opt_model = model.Model()
+        opt_model.add_binary_variable(name="x")
+        opt_model.add_binary_variable(name="x")
+        # We test that remove_names was taken into account by testing that no error
+        # is raised.
+        solve.compute_infeasible_subsystem(
+            opt_model,
+            parameters.SolverType.GUROBI,
+            remove_names=True,
+        )
 
 
 if __name__ == "__main__":

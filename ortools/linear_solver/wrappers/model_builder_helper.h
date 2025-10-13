@@ -26,8 +26,6 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/fixed_array.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_join.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/util/solve_interrupter.h"
@@ -63,12 +61,12 @@ class LinearExpr : public std::enable_shared_from_this<LinearExpr> {
   static std::shared_ptr<LinearExpr> Constant(double value);
 
   std::shared_ptr<LinearExpr> Add(std::shared_ptr<LinearExpr> expr);
-  std::shared_ptr<LinearExpr> AddFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> AddFloat(double cst);
   std::shared_ptr<LinearExpr> Sub(std::shared_ptr<LinearExpr> expr);
-  std::shared_ptr<LinearExpr> SubFloat(double cst);
-  std::shared_ptr<LinearExpr> RSubFloat(double cst);
-  std::shared_ptr<LinearExpr> MulFloat(double cst);
-  std::shared_ptr<LinearExpr> Neg();
+  virtual std::shared_ptr<LinearExpr> SubFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> RSubFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> MulFloat(double cst);
+  virtual std::shared_ptr<LinearExpr> Neg();
 
   std::shared_ptr<BoundedLinearExpression> Eq(std::shared_ptr<LinearExpr> rhs);
   std::shared_ptr<BoundedLinearExpression> EqCst(double rhs);
@@ -150,61 +148,17 @@ class FlatExpr : public LinearExpr {
 class SumArray : public LinearExpr {
  public:
   explicit SumArray(std::vector<std::shared_ptr<LinearExpr>> exprs,
-                    double offset)
-      : exprs_(std::move(exprs)), offset_(offset) {}
+                    double offset);
   ~SumArray() override = default;
 
-  void Visit(ExprVisitor& lin, double c) override {
-    for (int i = 0; i < exprs_.size(); ++i) {
-      lin.AddToProcess(exprs_[i], c);
-    }
-    if (offset_ != 0.0) {
-      lin.AddConstant(offset_ * c);
-    }
-  }
+  void Visit(ExprVisitor& lin, double c) override;
 
-  std::string ToString() const override {
-    if (exprs_.empty()) {
-      if (offset_ != 0.0) {
-        return absl::StrCat(offset_);
-      }
-    }
-    std::string s = "(";
-    for (int i = 0; i < exprs_.size(); ++i) {
-      if (i > 0) {
-        absl::StrAppend(&s, " + ");
-      }
-      absl::StrAppend(&s, exprs_[i]->ToString());
-    }
-    if (offset_ != 0.0) {
-      if (offset_ > 0.0) {
-        absl::StrAppend(&s, " + ", offset_);
-      } else {
-        absl::StrAppend(&s, " - ", -offset_);
-      }
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  std::string DebugString() const override {
-    std::string s = absl::StrCat(
-        "SumArray(",
-        absl::StrJoin(exprs_, ", ",
-                      [](std::string* out, std::shared_ptr<LinearExpr> expr) {
-                        absl::StrAppend(out, expr->DebugString());
-                      }));
-    if (offset_ != 0.0) {
-      absl::StrAppend(&s, ", offset=", offset_);
-    }
-    absl::StrAppend(&s, ")");
-    return s;
-  }
-
-  void AddInPlace(std::shared_ptr<LinearExpr> expr) { exprs_.push_back(expr); }
-  void AddFloatInPlace(double cst) { offset_ += cst; }
-  int num_exprs() const { return exprs_.size(); }
-  double offset() const { return offset_; }
+  std::string ToString() const override;
+  std::string DebugString() const override;
+  std::shared_ptr<LinearExpr> AddInPlace(std::shared_ptr<LinearExpr> expr);
+  std::shared_ptr<LinearExpr> AddFloatInPlace(double cst);
+  int num_exprs() const;
+  double offset() const;
 
  private:
   std::vector<std::shared_ptr<LinearExpr>> exprs_;
@@ -243,11 +197,11 @@ class AffineExpr : public LinearExpr {
   double coefficient() const { return coeff_; }
   double offset() const { return offset_; }
 
-  std::shared_ptr<LinearExpr> AddFloat(double cst);
-  std::shared_ptr<LinearExpr> SubFloat(double cst);
-  std::shared_ptr<LinearExpr> RSubFloat(double cst);
-  std::shared_ptr<LinearExpr> MulFloat(double cst);
-  std::shared_ptr<LinearExpr> Neg();
+  std::shared_ptr<LinearExpr> AddFloat(double cst) override;
+  std::shared_ptr<LinearExpr> SubFloat(double cst) override;
+  std::shared_ptr<LinearExpr> RSubFloat(double cst) override;
+  std::shared_ptr<LinearExpr> MulFloat(double cst) override;
+  std::shared_ptr<LinearExpr> Neg() override;
 
  private:
   std::shared_ptr<LinearExpr> expr_;
@@ -355,7 +309,7 @@ class BoundedLinearExpression {
 // to be wrapped by SWIG correctly:
 // 1) Their types must include the full operations_research::
 //    namespace.
-// 2) Their names must correspond to the ones declared in the .i
+// 2) Their names must correspond to the ones declared in the .swig
 //    file (see the java/ and csharp/ subdirectories).
 
 // Helper for importing/exporting models and model protobufs.
@@ -382,10 +336,8 @@ class ModelBuilderHelper {
 
   bool ImportFromMpsString(const std::string& mps_string);
   bool ImportFromMpsFile(const std::string& mps_file);
-#if defined(USE_LP_PARSER)
   bool ImportFromLpString(const std::string& lp_string);
   bool ImportFromLpFile(const std::string& lp_file);
-#endif  // defined(USE_LP_PARSER)
 
   const MPModelProto& model() const;
   MPModelProto* mutable_model();

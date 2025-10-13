@@ -31,12 +31,13 @@
 #include "absl/functional/bind_front.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/binary_search.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/combine_solutions.h"
 #include "ortools/sat/constraint_violation.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -132,21 +133,24 @@ void FeasibilityJumpSolver::ImportState() {
 
 void FeasibilityJumpSolver::ReleaseState() { states_->Release(state_); }
 
-void FeasibilityJumpSolver::Initialize() {
-  is_initialized_ = true;
-
+bool FeasibilityJumpSolver::Initialize() {
   // For now we just disable or enable it.
   // But in the future we might have more variation.
   if (params_.feasibility_jump_linearization_level() == 0) {
-    evaluator_ =
-        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_);
+    evaluator_ = std::make_unique<LsEvaluator>(linear_model_->model_proto(),
+                                               params_, &time_limit_);
   } else {
-    evaluator_ =
-        std::make_unique<LsEvaluator>(linear_model_->model_proto(), params_,
-                                      linear_model_->ignored_constraints(),
-                                      linear_model_->additional_constraints());
+    evaluator_ = std::make_unique<LsEvaluator>(
+        linear_model_->model_proto(), params_,
+        linear_model_->ignored_constraints(),
+        linear_model_->additional_constraints(), &time_limit_);
   }
 
+  if (time_limit_.LimitReached()) {
+    evaluator_.reset();
+    return false;
+  }
+  is_initialized_ = true;
   const int num_variables = linear_model_->model_proto().variables().size();
   var_domains_.resize(num_variables);
   for (int v = 0; v < num_variables; ++v) {
@@ -162,6 +166,7 @@ void FeasibilityJumpSolver::Initialize() {
       var_occurs_in_non_linear_constraint_[v] = true;
     }
   }
+  return true;
 }
 
 namespace {
@@ -346,7 +351,11 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
   return [this] {
     // We delay initialization to the first task as it might be a bit slow
     // to scan the whole model, so we want to do this part in parallel.
-    if (!is_initialized_) Initialize();
+    if (!is_initialized_) {
+      if (!Initialize()) {
+        return;
+      }
+    }
 
     // Load the next state to work on.
     ImportState();
@@ -355,8 +364,7 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     // still finish each batch though). We will also reset the luby sequence.
     bool new_best_solution_was_found = false;
     if (type() == SubSolver::INCOMPLETE) {
-      const int64_t best =
-          shared_response_->SolutionsRepository().GetBestRank();
+      const int64_t best = shared_response_->GetBestSolutionObjective().value();
       if (best < state_->last_solution_rank) {
         states_->ResetLubyCounter();
         new_best_solution_was_found = true;
@@ -385,11 +393,9 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
           new_best_solution_was_found) {
         if (type() == SubSolver::INCOMPLETE) {
           // Choose a base solution for this neighborhood.
-          std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
-              solution = shared_response_->SolutionsRepository()
-                             .GetRandomBiasedSolution(random_);
-          state_->solution = solution->variable_values;
-          state_->base_solution = solution;
+          state_->base_solution =
+              shared_response_->SolutionPool().GetSolutionToImprove(random_);
+          state_->solution = state_->base_solution->variable_values;
           ++state_->num_solutions_imported;
         } else {
           if (!first_time) {
@@ -418,6 +424,10 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     }
 
     // Between chunk, we synchronize bounds.
+    //
+    // TODO(user): This do not play well with optimizing solution whose
+    // objective lag behind... Basically, we can run LS on old solution but will
+    // only consider it feasible if it improve the best known solution.
     bool recompute_compound_weights = false;
     if (linear_model_->model_proto().has_objective()) {
       const IntegerValue lb = shared_response_->GetInnerObjectiveLowerBound();
@@ -491,15 +501,15 @@ std::function<void()> FeasibilityJumpSolver::GenerateTask(int64_t /*task_id*/) {
     ++state_->counters.num_batches;
     if (DoSomeLinearIterations() && DoSomeGeneralIterations()) {
       // Checks for infeasibility induced by the non supported constraints.
+      //
+      // TODO(user): Checking the objective is faster and we could avoid to
+      // check feasibility if we are not going to keep the solution anyway.
       if (SolutionIsFeasible(linear_model_->model_proto(), state_->solution)) {
         auto pointers = PushAndMaybeCombineSolution(
             shared_response_, linear_model_->model_proto(), state_->solution,
             absl::StrCat(name(), "_", state_->options.name(), "(",
                          OneLineStats(), ")"),
-            state_->base_solution == nullptr
-                ? absl::Span<const int64_t>()
-                : state_->base_solution->variable_values,
-            /*model=*/nullptr);
+            state_->base_solution);
         // If we pushed a new solution, we use it as a new "base" so that we
         // will have a smaller delta on the next solution we find.
         state_->base_solution = pointers.pushed_solution;

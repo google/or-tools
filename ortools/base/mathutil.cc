@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "absl/log/check.h"
 #if defined(_MSC_VER)
 #define _USE_MATH_DEFINES
 #include <cmath>
 #endif
 
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 
 namespace operations_research {
@@ -32,7 +32,7 @@ double MathUtil::Stirling(double n) {
 
 double MathUtil::LogCombinations(int n, int k) {
   CHECK_GE(n, k);
-  CHECK_GT(n, 0);
+  CHECK_GE(n, 0);
   CHECK_GE(k, 0);
 
   // use symmetry to pick the shorter calculation

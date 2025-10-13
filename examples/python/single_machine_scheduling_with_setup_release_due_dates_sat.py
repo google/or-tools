@@ -17,7 +17,6 @@
 from typing import Sequence
 from absl import app
 from absl import flags
-from google.protobuf import text_format
 from ortools.sat.python import cp_model
 
 # ----------------------------------------------------------------------------
@@ -498,7 +497,7 @@ def single_machine_scheduling():
     # Solve.
     solver = cp_model.CpSolver()
     if parameters:
-        text_format.Parse(parameters, solver.parameters)
+        solver.parameters.parse_text_format(parameters)
     solution_printer = SolutionPrinter()
     solver.best_bound_callback = lambda a: print(f"New objective lower bound: {a}")
     solver.solve(model, solution_printer)

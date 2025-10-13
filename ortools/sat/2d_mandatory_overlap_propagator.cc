@@ -19,10 +19,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/scheduling_helpers.h"
@@ -49,6 +51,7 @@ MandatoryOverlapPropagator::~MandatoryOverlapPropagator() {
 }
 
 bool MandatoryOverlapPropagator::Propagate() {
+  if (!helper_.IsEnforced()) return true;
   if (!helper_.SynchronizeAndSetDirection()) return false;
 
   mandatory_regions_.clear();
@@ -56,18 +59,22 @@ bool MandatoryOverlapPropagator::Propagate() {
   bool has_zero_area_boxes = false;
   absl::Span<const TaskTime> tasks =
       helper_.x_helper().TaskByIncreasingNegatedStartMax();
-  for (int i = tasks.size() - 1; i >= 0; --i) {
+  for (int i = tasks.size(); --i >= 0;) {
     const int b = tasks[i].task_index;
     if (!helper_.IsPresent(b)) continue;
-    const ItemWithVariableSize item = helper_.GetItemWithVariableSize(b);
-    if (item.x.start_max > item.x.end_min ||
-        item.y.start_max > item.y.end_min) {
-      continue;
-    }
-    mandatory_regions_.push_back({.x_min = item.x.start_max,
-                                  .x_max = item.x.end_min,
-                                  .y_min = item.y.start_max,
-                                  .y_max = item.y.end_min});
+
+    const IntegerValue x_start_max = helper_.x_helper().StartMax(b);
+    const IntegerValue x_end_min = helper_.x_helper().EndMin(b);
+    if (x_start_max > x_end_min) continue;
+
+    const IntegerValue y_start_max = helper_.y_helper().StartMax(b);
+    const IntegerValue y_end_min = helper_.y_helper().EndMin(b);
+    if (y_start_max > y_end_min) continue;
+
+    mandatory_regions_.push_back({.x_min = x_start_max,
+                                  .x_max = x_end_min,
+                                  .y_min = y_start_max,
+                                  .y_max = y_end_min});
     mandatory_regions_index_.push_back(b);
 
     if (mandatory_regions_.back().SizeX() == 0 ||

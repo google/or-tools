@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
 cc_library(
     name = "g_gurobi",
     srcs = [
@@ -27,16 +29,17 @@ cc_library(
         "//ortools/base:logging",
         "//ortools/base:source_location",
         "//ortools/base:status_macros",
-        "//ortools/gurobi:environment",
         "//ortools/gurobi/isv_public:gurobi_isv",
         "//ortools/math_opt/solvers:gurobi_cc_proto",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/log:die_if_null",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:str_format",
-        "@com_google_absl//absl/types:span",
+        "//ortools/third_party_solvers:gurobi_environment",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/log:vlog_is_on",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/types:span",
     ],
 )

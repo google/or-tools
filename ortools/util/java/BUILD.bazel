@@ -11,63 +11,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Description: java wrapping of the code in ../
+# Description: java wrapping of (some of) the code in ../, plus
+# some generic utilities for SWIG java.
 
-load("//bazel:swig_java.bzl", "ortools_java_wrap_cc")
+load("//bazel:swig_java.bzl", "java_wrap_cc")
 
-config_setting(
-    name = "on_linux",
-    constraint_values = ["@platforms//os:linux"],
-)
-
-config_setting(
-    name = "on_macos",
-    constraint_values = ["@platforms//os:macos"],
-)
-
-config_setting(
-    name = "on_windows",
-    constraint_values = ["@platforms//os:windows"],
-)
-
-filegroup(
-    name = "vector_swig",
-    srcs = [
-        "vector.i",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-filegroup(
-    name = "proto_swig",
-    srcs = [
+# These .swig files are currently just included in other .swig files.
+# TODO(user): Create dedicated java_wrap_cc rules and unit tests.
+exports_files(
+    [
+        "absl_string_view.swig",
         "proto.i",
+        "sorted_interval_list.swig",
+        "tuple_set.swig",
+        "vector.swig",
     ],
-    visibility = ["//visibility:public"],
 )
 
-filegroup(
-    name = "sorted_interval_list_swig",
-    srcs = [
-        "sorted_interval_list.i",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-ortools_java_wrap_cc(
+java_wrap_cc(
     name = "sorted_interval_list",
-    src = "sorted_interval_list.i",
+    srcs = ["sorted_interval_list.swig"],
     package = "com.google.ortools.util",
     swig_includes = [
-        ":vector_swig",
+        ":vector.swig",
         "//ortools/base:base_swig",
     ],
     swig_opt = select({
-        "on_linux": "-DSWIGWORDSIZE64",
+        "@platforms//os:linux": "-DSWIGWORDSIZE64",
         "//conditions:default": "",
     }),
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base",
         "//ortools/util:sorted_interval_list",
     ],
 )

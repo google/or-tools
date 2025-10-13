@@ -72,7 +72,7 @@ void BufferedMessageCallback::OnMessage(absl::string_view message) {
   }
   std::vector<std::string> messages;
   {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     messages = message_callback_data_.Parse(message);
   }
   // Do not hold lock during callback to user code.
@@ -87,7 +87,7 @@ void BufferedMessageCallback::Flush() {
   }
   std::vector<std::string> messages;
   {
-    absl::MutexLock lock(&mutex_);
+    absl::MutexLock lock(mutex_);
     messages = message_callback_data_.Flush();
   }
   // Do not hold lock during callback to user code.

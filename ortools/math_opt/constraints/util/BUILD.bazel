@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 package(default_visibility = ["//ortools/math_opt:__subpackages__"])
 
 cc_library(
@@ -23,8 +26,8 @@ cc_library(
         "//ortools/math_opt/storage:linear_expression_data",
         "//ortools/math_opt/storage:model_storage",
         "//ortools/math_opt/storage:sparse_coefficient_map",
-        "@com_google_absl//absl/algorithm:container",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

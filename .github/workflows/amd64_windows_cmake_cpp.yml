@@ -1,7 +1,17 @@
 # ref: https://github.com/actions/runner-images
 name: amd64 Windows CMake C++
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
 
 # Building using the github runner environement directly.
 jobs:
@@ -9,42 +19,65 @@ jobs:
     strategy:
       matrix:
         cmake: [
-          {generator: "Visual Studio 17 2022", config: Release, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
-          {generator: "Visual Studio 17 2022", config: Debug, build_target: ALL_BUILD, test_target: RUN_TESTS, install_target: INSTALL},
+          {name: "VS2022", generator: "Visual Studio 17 2022", config: Release},
+          # {name: "VS2022", generator: "Visual Studio 17 2022", config: Debug}, # too many symbols
         ]
       fail-fast: false
-    name: Windows • VS 2022 (${{ matrix.cmake.config }}) • C++
+    name: amd64•Windows•CMake(${{matrix.cmake.name}},${{matrix.cmake.config}})•C++
     runs-on: windows-latest
     env:
+      deps_src_key: amd64_windows_cpp_deps_src
+      deps_build_key: amd64_windows_cpp_deps_build_${{matrix.cmake.config}}
       CTEST_OUTPUT_ON_FAILURE: 1
     steps:
-      - uses: actions/checkout@v4
-      - name: Check cmake
+      - uses: actions/checkout@v5
+
+      # CONFIGURING CACHES
+      - name: Cache CMake dependency source code
+        uses: actions/cache@v4
+        with:
+          key: ${{env.deps_src_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: ${{github.workspace}}/build/_deps/*-src
+      - name: Cache CMake dependency build
+        uses: actions/cache@v4
+        with:
+          key: ${{env.deps_build_key}}-${{hashFiles('CMakeLists.txt', 'cmake/**')}}
+          path: |
+            ${{github.workspace}}/build/_deps/*-build
+            ${{github.workspace}}/build/_deps/*-subbuild
+
+      - name: Check CMake
         run: |
           cmake --version
           cmake -G || true
       - name: Configure
         run: >
           cmake -S. -Bbuild
-          -G "${{ matrix.cmake.generator }}"
-          -DCMAKE_CONFIGURATION_TYPES=${{ matrix.cmake.config }}
+          -G "${{matrix.cmake.generator}}"
+          -DCMAKE_CONFIGURATION_TYPES=${{matrix.cmake.config}}
           -DBUILD_DEPS=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.build_target }}
+          --config ${{matrix.cmake.config}}
+          --target ALL_BUILD
           -v -j2
       - name: Test
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.test_target }}
+          --config ${{matrix.cmake.config}}
+          --target RUN_TESTS
           -v
       - name: Install
         run: >
           cmake --build build
-          --config ${{ matrix.cmake.config }}
-          --target ${{ matrix.cmake.install_target }}
+          --config ${{matrix.cmake.config}}
+          --target INSTALL
           -v
+
+  amd64_windows_cmake_cpp:
+    runs-on: ubuntu-latest
+    needs: native
+    steps:
+      - uses: actions/checkout@v5

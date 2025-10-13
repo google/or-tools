@@ -11,11 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <limits>
+#include <cstdio>
+#include <cstdlib>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/log/log.h"
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
 #include "ortools/math_opt/solver_tests/callback_tests.h"
@@ -32,7 +35,7 @@
 #include "ortools/math_opt/solver_tests/qp_tests.h"
 #include "ortools/math_opt/solver_tests/second_order_cone_tests.h"
 #include "ortools/math_opt/solver_tests/status_tests.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -246,11 +249,11 @@ INSTANTIATE_TEST_SUITE_P(XpressStatusTest, StatusTest,
 }  // namespace math_opt
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   printf("Running main() from %s\n", __FILE__);
   testing::InitGoogleTest(&argc, argv);
   if (operations_research::XpressIsCorrectlyInstalled()) {
-  return RUN_ALL_TESTS();
+    return RUN_ALL_TESTS();
   } else {
     LOG(INFO) << "XPress MP is not correctly installed, skipping";
     return EXIT_SUCCESS;

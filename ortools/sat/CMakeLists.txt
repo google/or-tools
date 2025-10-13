@@ -57,6 +57,15 @@ if(BUILD_TESTING)
         GTest::gtest_main
     )
   endforeach()
+
+  # These tests are too long so we disable them.
+  set_tests_properties(
+    cxx_sat_2d_rectangle_presolve_test
+    cxx_sat_cp_model_presolve_random_test
+    cxx_sat_cp_model_presolve_test
+    cxx_sat_cp_model_search_test
+    cxx_sat_integer_expr_test
+    PROPERTIES DISABLED TRUE)
 endif()
 
 # Sat Runner

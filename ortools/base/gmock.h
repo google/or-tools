@@ -14,8 +14,49 @@
 #ifndef OR_TOOLS_BASE_GMOCK_H_
 #define OR_TOOLS_BASE_GMOCK_H_
 
-#include "gmock/gmock.h"
-#include "ortools/base/message_matchers.h"
-#include "ortools/base/status_matchers.h"
+#include "absl/status/status_matchers.h"
+#include "ortools/base/gmock.h"
+#include "protobuf-matchers/protocol-buffer-matchers.h"
+
+namespace testing {
+using ::protobuf_matchers::EqualsProto;
+using ::protobuf_matchers::EquivToProto;
+namespace proto {
+using ::protobuf_matchers::proto::Approximately;
+using ::protobuf_matchers::proto::IgnoringFieldPaths;
+using ::protobuf_matchers::proto::IgnoringFields;
+using ::protobuf_matchers::proto::IgnoringRepeatedFieldOrdering;
+using ::protobuf_matchers::proto::Partially;
+using ::protobuf_matchers::proto::TreatingNaNsAsEqual;
+using ::protobuf_matchers::proto::WhenDeserialized;
+using ::protobuf_matchers::proto::WhenDeserializedAs;
+using ::protobuf_matchers::proto::WithDifferencerConfig;
+}  // namespace proto
+}  // namespace testing
+
+namespace testing::status {
+using ::absl_testing::IsOk;
+using ::absl_testing::IsOkAndHolds;
+using ::absl_testing::StatusIs;
+}  // namespace testing::status
+
+// Macros for testing the results of functions that return absl::Status or
+// absl::StatusOr<T> (for any type T).
+#define EXPECT_OK(expression) EXPECT_THAT(expression, ::testing::status::IsOk())
+#define ASSERT_OK(expression) ASSERT_THAT(expression, ::testing::status::IsOk())
+
+#define STATUS_MATCHERS_IMPL_CONCAT_INNER_(x, y) x##y
+#define STATUS_MATCHERS_IMPL_CONCAT_(x, y) \
+  STATUS_MATCHERS_IMPL_CONCAT_INNER_(x, y)
+
+#undef ASSERT_OK_AND_ASSIGN
+#define ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
+  ASSERT_OK_AND_ASSIGN_IMPL_(            \
+      STATUS_MATCHERS_IMPL_CONCAT_(_status_or_value, __COUNTER__), lhs, rexpr)
+
+#define ASSERT_OK_AND_ASSIGN_IMPL_(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                               \
+  ASSERT_TRUE(statusor.ok()) << statusor.status();       \
+  lhs = std::move(statusor.value())
 
 #endif  // OR_TOOLS_BASE_GMOCK_H_

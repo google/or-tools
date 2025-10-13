@@ -15,19 +15,17 @@
 
 #include <atomic>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <utility>
 
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_int.h"
 
 namespace operations_research {
 
 void SolveInterrupter::Interrupt() {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
 
   // Here we don't use compare_exchange_strong since we need to hold the lock
   // before changing the value of interrupted_ anyway. So there is no need to
@@ -42,10 +40,10 @@ void SolveInterrupter::Interrupt() {
   // of if this function has called it.
   interrupted_ = true;
 
-  // We are holding the lock while calling callbacks. This make it impossible to
-  // call Interrupt(), AddInterruptionCallback(), or
+  // We are holding the lock while calling callbacks. This makes it impossible
+  // to call Interrupt(), AddInterruptionCallback(), or
   // RemoveInterruptionCallback() from a callback but it ensures that external
-  // code that can modify callbacks_ will wait the end of Interrupt.
+  // code that can modify callbacks_ will wait until the end of Interrupt.
   for (const auto& [callback_id, callback] : callbacks_) {
     callback();
   }
@@ -53,7 +51,7 @@ void SolveInterrupter::Interrupt() {
 
 SolveInterrupter::CallbackId SolveInterrupter::AddInterruptionCallback(
     Callback callback) const {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
 
   // We must make this call while holding the lock since we want to be sure that
   // the calls to the callbacks_ won't occur before we registered the new
@@ -74,7 +72,7 @@ SolveInterrupter::CallbackId SolveInterrupter::AddInterruptionCallback(
 }
 
 void SolveInterrupter::RemoveInterruptionCallback(CallbackId id) const {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   CHECK_EQ(callbacks_.erase(id), 1) << "unregistered callback id: " << id;
 }
 

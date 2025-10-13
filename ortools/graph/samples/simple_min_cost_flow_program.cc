@@ -18,6 +18,9 @@
 #include <cstdint>
 #include <vector>
 
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "ortools/base/init_google.h"
 #include "ortools/graph/min_cost_flow.h"
 // [END import]
 
@@ -81,7 +84,9 @@ void SimpleMinCostFlowProgram() {
 
 }  // namespace operations_research
 
-int main() {
+int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, true);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::SimpleMinCostFlowProgram();
   return EXIT_SUCCESS;
 }

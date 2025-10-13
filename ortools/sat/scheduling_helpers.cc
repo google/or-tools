@@ -14,18 +14,16 @@
 #include "ortools/sat/scheduling_helpers.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <functional>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/strong_vector.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
@@ -48,9 +46,13 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
     : model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(sat_solver_->Assignment()),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
+      root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
+      enforcement_id_(-1),
       starts_(std::move(starts)),
       ends_(std::move(ends)),
       sizes_(std::move(sizes)),
@@ -87,8 +89,12 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
     : model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
       assignment_(sat_solver_->Assignment()),
+      trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
-      precedence_relations_(model->GetOrCreate<PrecedenceRelations>()),
+      linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
+      root_level_lin2_bounds_(model->GetOrCreate<RootLevelLinear2Bounds>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()),
+      enforcement_id_(-1),
       capacity_(num_tasks),
       cached_size_min_(new IntegerValue[capacity_]),
       cached_start_min_(new IntegerValue[capacity_]),
@@ -101,7 +107,13 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(int num_tasks,
   CHECK_EQ(NumTasks(), num_tasks);
 }
 
+bool SchedulingConstraintHelper::IsEnforced() const {
+  return enforcement_helper_.Status(enforcement_id_) ==
+         EnforcementStatus::IS_ENFORCED;
+}
+
 bool SchedulingConstraintHelper::Propagate() {
+  if (!IsEnforced()) return true;
   recompute_all_cache_ = true;
   for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
@@ -109,12 +121,15 @@ bool SchedulingConstraintHelper::Propagate() {
 
 bool SchedulingConstraintHelper::IncrementalPropagate(
     const std::vector<int>& watch_indices) {
+  if (!IsEnforced()) return true;
   for (const int t : watch_indices) recompute_cache_.Set(t);
   for (const int id : propagator_ids_) watcher_->CallOnNextPropagate(id);
   return true;
 }
 
-void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
+void SchedulingConstraintHelper::RegisterWith(
+    GenericLiteralWatcher* watcher,
+    absl::Span<const Literal> enforcement_literals) {
   const int id = watcher->Register(this);
   const int num_tasks = starts_.size();
   for (int t = 0; t < num_tasks; ++t) {
@@ -129,10 +144,12 @@ void SchedulingConstraintHelper::RegisterWith(GenericLiteralWatcher* watcher) {
     // Note that IncrementalPropagate() will do nothing if this is the only
     // change except waking up registered propagators.
     if (!IsPresent(t) && !IsAbsent(t)) {
-      watcher_->WatchLiteral(Literal(reason_for_presence_[t]), id);
+      watcher->WatchLiteral(Literal(reason_for_presence_[t]), id);
     }
   }
   watcher->SetPropagatorPriority(id, 0);
+  enforcement_id_ =
+      enforcement_helper_.Register(enforcement_literals, watcher, id);
 }
 
 bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
@@ -154,19 +171,19 @@ bool SchedulingConstraintHelper::UpdateCachedValues(int t) {
 
   // Detect first if we have a conflict using the relation start + size = end.
   if (dmax < 0) {
-    ClearReason();
+    ResetReason();
     AddSizeMaxReason(t, dmax);
     return PushTaskAbsence(t);
   }
   if (smin + dmin - emax > 0) {
-    ClearReason();
+    ResetReason();
     AddStartMinReason(t, smin);
     AddSizeMinReason(t, dmin);
     AddEndMaxReason(t, emax);
     return PushTaskAbsence(t);
   }
   if (smax + dmax - emin < 0) {
-    ClearReason();
+    ResetReason();
     AddStartMaxReason(t, smax);
     AddSizeMaxReason(t, dmax);
     AddEndMinReason(t, emin);
@@ -246,7 +263,9 @@ void SchedulingConstraintHelper::InitSortedVectors() {
 
   recompute_all_cache_ = true;
   recompute_cache_.Resize(num_tasks);
+  non_fixed_intervals_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
+    non_fixed_intervals_[t] = t;
     recompute_cache_.Set(t);
   }
 
@@ -313,8 +332,22 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   }
 
   if (recompute_all_cache_) {
-    for (int t = 0; t < recompute_cache_.size(); ++t) {
+    for (const int t : non_fixed_intervals_) {
       if (!UpdateCachedValues(t)) return false;
+    }
+
+    // We also update non_fixed_intervals_ at level zero so that we will never
+    // scan them again.
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      int new_size = 0;
+      for (const int t : non_fixed_intervals_) {
+        if (IsPresent(t) && StartIsFixed(t) && EndIsFixed(t) &&
+            SizeIsFixed(t)) {
+          continue;
+        }
+        non_fixed_intervals_[new_size++] = t;
+      }
+      non_fixed_intervals_.resize(new_size);
     }
   } else {
     for (const int t : recompute_cache_) {
@@ -326,33 +359,16 @@ bool SchedulingConstraintHelper::SynchronizeAndSetTimeDirection(
   return true;
 }
 
-// TODO(user): be more precise when we know a and b are in disjunction.
-// we really just need start_b > start_a, or even >= if duration is non-zero.
 IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
-    int a, int b, bool add_reason_if_after) {
+    int a, int b) {
   const AffineExpression before = ends_[a];
   const AffineExpression after = starts_[b];
-  if (before.var == kNoIntegerVariable || before.coeff != 1 ||
-      after.var == kNoIntegerVariable || after.coeff != 1) {
-    return kMinIntegerValue;
-  }
-
-  // We take the max of the level zero offset and the one coming from a
-  // conditional precedence at true.
-  const IntegerValue conditional_offset =
-      precedence_relations_->GetConditionalOffset(before.var, after.var);
-  const IntegerValue known = integer_trail_->LevelZeroLowerBound(after.var) -
-                             integer_trail_->LevelZeroUpperBound(before.var);
-  const IntegerValue offset = std::max(conditional_offset, known);
-
+  const LinearExpression2 expr(before.var, after.var, before.coeff,
+                               -after.coeff);
+  const IntegerValue expr_ub = linear2_bounds_->UpperBound(expr);
   const IntegerValue needed_offset = before.constant - after.constant;
-  const IntegerValue distance = offset - needed_offset;
-  if (add_reason_if_after && distance >= 0 && known < conditional_offset) {
-    for (const Literal l : precedence_relations_->GetConditionalEnforcements(
-             before.var, after.var)) {
-      literal_reason_.push_back(l.Negated());
-    }
-  }
+  const IntegerValue ub_of_end_minus_start = expr_ub + needed_offset;
+  const IntegerValue distance = -ub_of_end_minus_start;
   return distance;
 }
 
@@ -360,39 +376,31 @@ IntegerValue SchedulingConstraintHelper::GetCurrentMinDistanceBetweenTasks(
 // associated to task a before task b. However we only call this for task that
 // are in detectable precedence, which means the normal precedence or linear
 // propagator should have already propagated that Boolean too.
-bool SchedulingConstraintHelper::PropagatePrecedence(int a, int b) {
+bool SchedulingConstraintHelper::NotifyLevelZeroPrecedence(int a, int b) {
   CHECK(IsPresent(a));
   CHECK(IsPresent(b));
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
 
-  const AffineExpression before = ends_[a];
-  const AffineExpression after = starts_[b];
-  if (after.coeff != 1) return true;
-  if (before.coeff != 1) return true;
-  if (after.var == kNoIntegerVariable) return true;
-  if (before.var == kNoIntegerVariable) return true;
-  if (before.var == after.var) {
-    if (before.constant <= after.constant) {
-      return true;
-    } else {
+  // Convert ends_[a] <= starts[b] to linear2 <= rhs and canonicalize.
+  const auto [expr, rhs] = EncodeDifferenceLowerThan(ends_[a], starts_[b], 0);
+
+  // Trivial case.
+  if (expr.coeffs[0] == 0 && expr.coeffs[1] == 0) {
+    if (rhs < 0) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+    return true;
   }
-  const IntegerValue offset = before.constant - after.constant;
-  if (precedence_relations_->Add(before.var, after.var, offset)) {
+
+  if (root_level_lin2_bounds_->AddUpperBound(expr, rhs)) {
     VLOG(2) << "new relation " << TaskDebugString(a)
             << " <= " << TaskDebugString(b);
-    if (before.var == NegationOf(after.var)) {
-      AddWeightedSumLowerOrEqual({}, {before.var}, {int64_t{2}},
-                                 -offset.value(), model_);
-    } else {
-      // TODO(user): Adding new constraint during propagation might not be the
-      // best idea as it can create some complication.
-      AddWeightedSumLowerOrEqual({}, {before.var, after.var},
-                                 {int64_t{1}, int64_t{-1}}, -offset.value(),
-                                 model_);
-    }
+    // TODO(user): Adding new constraint during propagation might not be the
+    // best idea as it can create some complication.
+    AddWeightedSumLowerOrEqual({}, {expr.vars[0], expr.vars[1]},
+                               {expr.coeffs[0].value(), expr.coeffs[1].value()},
+                               rhs.value(), model_);
     if (sat_solver_->ModelIsUnsat()) return false;
   }
   return true;
@@ -460,6 +468,24 @@ SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
   return task_by_increasing_shifted_start_min_;
 }
 
+absl::Span<const CachedTaskBounds>
+SchedulingConstraintHelper::TaskByIncreasingNegatedShiftedEndMax() {
+  if (recompute_negated_shifted_end_max_) {
+    recompute_negated_shifted_end_max_ = false;
+    bool is_sorted = true;
+    IntegerValue previous = kMinIntegerValue;
+    for (CachedTaskBounds& ref : task_by_negated_shifted_end_max_) {
+      ref.time = -ShiftedEndMax(ref.task_index);
+      is_sorted = is_sorted && ref.time >= previous;
+      previous = ref.time;
+    }
+    if (is_sorted) return task_by_negated_shifted_end_max_;
+    IncrementalSort(task_by_negated_shifted_end_max_.begin(),
+                    task_by_negated_shifted_end_max_.end());
+  }
+  return task_by_negated_shifted_end_max_;
+}
+
 // TODO(user): Avoid recomputing it if nothing changed.
 const std::vector<SchedulingConstraintHelper::ProfileEvent>&
 SchedulingConstraintHelper::GetEnergyProfile() {
@@ -486,11 +512,63 @@ SchedulingConstraintHelper::GetEnergyProfile() {
   return energy_profile_;
 }
 
-// Produces a relaxed reason for StartMax(before) < EndMin(after).
-void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
-                                                         int after) {
-  AddOtherReason(before);
-  AddOtherReason(after);
+bool SchedulingConstraintHelper::TaskIsBeforeOrIsOverlapping(int before,
+                                                             int after) {
+  const auto [expr, ub] =
+      EncodeDifferenceLowerThan(starts_[before], ends_[after], -1);
+  return linear2_bounds_->UpperBound(expr) <= ub;
+}
+
+void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
+    int before, int after) {
+  FlagItemAsUsedInReason(before);
+  FlagItemAsUsedInReason(after);
+
+  // We compute this as an optimization, since for fixed sizes all linear2
+  // options are equivalent.
+  const bool fixed_size = sizes_[before].var == kNoIntegerVariable &&
+                          sizes_[after].var == kNoIntegerVariable &&
+                          starts_[before].var == ends_[before].var &&
+                          starts_[after].var == ends_[after].var;
+
+  // Prefer the straightforward linear2 explanation as it is more likely this
+  // comes from level zero or a single enforcement literal. Also handle the
+  // fixed size case. This explains with at most two integer bounds.
+  {
+    const auto [expr, ub] =
+        EncodeDifferenceLowerThan(starts_[before], ends_[after], -1);
+    if (fixed_size || linear2_bounds_->UpperBound(expr) <= ub) {
+      linear2_bounds_->AddReasonForUpperBoundLowerThan(
+          expr, ub, &literal_reason_, &integer_reason_);
+      return;
+    }
+  }
+
+  // Another choice of Linear2. We need Start(before) < End(after). We rewrite
+  // as:
+  //    End(before) - Size(before) < Start(after) + Size(after)
+  //
+  // Note that the generic code below not based on linear2 will not work
+  // if we can only get a good bound for End(before)-Start(after), so we also
+  // handle it here even if the linear2 is not known.
+  //
+  // TODO(user): check also the linear2 constructed with (end_before,
+  // end_after) and (start_after, start_before). Or maybe keep a index of pair
+  // of intervals that have non-trivial linear2 bounds and use that instead.
+  {
+    const auto [expr, ub] = EncodeDifferenceLowerThan(
+        ends_[before], starts_[after], SizeMin(before) + SizeMin(after) - 1);
+    if (linear2_bounds_->UpperBound(expr) <= ub) {
+      AddSizeMinReason(before);
+      AddSizeMinReason(after);
+      linear2_bounds_->AddReasonForUpperBoundLowerThan(
+          expr, ub, &literal_reason_, &integer_reason_);
+      return;
+    }
+  }
+
+  // We will explain StartMax(before) < EndMin(after);
+  DCHECK_LT(StartMax(before), EndMin(after));
 
   // The reason will be a linear expression greater than a value. Note that all
   // coeff must be positive, and we will use the variable lower bound.
@@ -540,15 +618,15 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
 }
 
 bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral lit) {
-  CHECK(other_helper_ == nullptr);
+  CHECK(extra_explanation_callback_ == nullptr);
   return integer_trail_->Enqueue(lit, literal_reason_, integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
     int t, IntegerLiteral lit) {
   if (IsAbsent(t)) return true;
-  AddOtherReason(t);
-  ImportOtherReasons();
+  FlagItemAsUsedInReason(t);
+  RunCallbackIfSet();
   if (IsOptional(t)) {
     return integer_trail_->ConditionalEnqueue(
         PresenceLiteral(t), lit, &literal_reason_, &integer_reason_);
@@ -599,13 +677,13 @@ bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
   if (IsAbsent(t)) return true;
   if (!IsOptional(t)) return ReportConflict();
 
-  AddOtherReason(t);
+  FlagItemAsUsedInReason(t);
 
   if (IsPresent(t)) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]).Negated());
     return ReportConflict();
   }
-  ImportOtherReasons();
+  RunCallbackIfSet();
   integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]).Negated(),
                                  literal_reason_, integer_reason_);
   return true;
@@ -615,20 +693,65 @@ bool SchedulingConstraintHelper::PushTaskPresence(int t) {
   DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
   DCHECK(!IsPresent(t));
 
-  AddOtherReason(t);
+  FlagItemAsUsedInReason(t);
 
   if (IsAbsent(t)) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]));
     return ReportConflict();
   }
-  ImportOtherReasons();
+  RunCallbackIfSet();
   integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
                                  literal_reason_, integer_reason_);
   return true;
 }
 
+bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,
+                                                          int t_after) {
+  CHECK_NE(t_before, t_after);
+  if (IsAbsent(t_before)) return true;
+  if (IsAbsent(t_after)) return true;
+  if (!IsPresent(t_before) && !IsPresent(t_after)) return true;
+
+  const auto [expr, rhs] =
+      EncodeDifferenceLowerThan(ends_[t_before], starts_[t_after], 0);
+  const auto status = linear2_bounds_->GetStatus(expr, kMinIntegerValue, rhs);
+
+  if (status == RelationStatus::IS_TRUE) return true;
+
+  if (status == RelationStatus::IS_FALSE) {
+    LinearExpression2 negated_expr = expr;
+    negated_expr.Negate();
+    linear2_bounds_->AddReasonForUpperBoundLowerThan(
+        negated_expr, -rhs - 1, &literal_reason_, &integer_reason_);
+    if (!IsPresent(t_before)) {
+      AddPresenceReason(t_after);
+      return PushTaskAbsence(t_before);
+    } else if (!IsPresent(t_after)) {
+      AddPresenceReason(t_before);
+      return PushTaskAbsence(t_after);
+    } else {
+      AddPresenceReason(t_before);
+      AddPresenceReason(t_after);
+      return ReportConflict();
+    }
+  }
+
+  if (!IsPresent(t_before) || !IsPresent(t_after)) return true;
+
+  AddPresenceReason(t_before);
+  AddPresenceReason(t_after);
+
+  FlagItemAsUsedInReason(t_before);
+  FlagItemAsUsedInReason(t_after);
+  RunCallbackIfSet();
+
+  return linear2_bounds_->EnqueueLowerOrEqual(expr, rhs, literal_reason_,
+                                              integer_reason_);
+}
+
 bool SchedulingConstraintHelper::ReportConflict() {
-  ImportOtherReasons();
+  RunCallbackIfSet();
+
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
 }
 
@@ -639,20 +762,22 @@ void SchedulingConstraintHelper::WatchAllTasks(int id) {
   propagator_ids_.push_back(id);
 }
 
-void SchedulingConstraintHelper::AddOtherReason(int t) {
-  if (other_helper_ == nullptr || already_added_to_other_reasons_[t]) return;
-  already_added_to_other_reasons_[t] = true;
-  const int mapped_t = map_to_other_helper_[t];
-  other_helper_->AddStartMaxReason(mapped_t, event_for_other_helper_);
-  other_helper_->AddEndMinReason(mapped_t, event_for_other_helper_ + 1);
+void SchedulingConstraintHelper::FlagItemAsUsedInReason(int t) {
+  if (extra_explanation_callback_ == nullptr) {
+    return;
+  }
+  used_items_for_reason_.Set(t);
 }
 
-void SchedulingConstraintHelper::ImportOtherReasons() {
-  if (other_helper_ != nullptr) ImportOtherReasons(*other_helper_);
+void SchedulingConstraintHelper::RunCallbackIfSet() {
+  if (extra_explanation_callback_ == nullptr) return;
+  extra_explanation_callback_(used_items_for_reason_.PositionsSetAtLeastOnce(),
+                              &literal_reason_, &integer_reason_);
 }
 
-void SchedulingConstraintHelper::ImportOtherReasons(
+void SchedulingConstraintHelper::ImportReasonsFromOther(
     const SchedulingConstraintHelper& other_helper) {
+  CHECK(other_helper.extra_explanation_callback_ == nullptr);
   literal_reason_.insert(literal_reason_.end(),
                          other_helper.literal_reason_.begin(),
                          other_helper.literal_reason_.end());
@@ -824,18 +949,28 @@ bool SchedulingDemandHelper::DemandIsFixed(int t) const {
 }
 
 bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
-  if (value < EnergyMin(t)) {
-    if (helper_->IsOptional(t)) {
-      return helper_->PushTaskAbsence(t);
-    } else {
-      return helper_->ReportConflict();
-    }
-  } else if (!decomposed_energies_[t].empty()) {
+  if (helper_->IsAbsent(t)) return true;
+  if (value < EnergyMin(t)) return helper_->PushTaskAbsence(t);
+
+  if (!decomposed_energies_[t].empty()) {
     for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
       if (fixed_size * fixed_demand > value) {
-        if (assignment_.LiteralIsTrue(lit)) return helper_->ReportConflict();
+        // `lit` encodes that the energy is higher than value. So either lit
+        // must be false or the task must be absent.
         if (assignment_.LiteralIsFalse(lit)) continue;
-        if (!helper_->PushLiteral(lit.Negated())) return false;
+        if (assignment_.LiteralIsTrue(lit)) {
+          // Task must be absent.
+          if (helper_->PresenceLiteral(t) != lit) {
+            helper_->AddLiteralReason(lit.Negated());
+          }
+          return helper_->PushTaskAbsence(t);
+        }
+        if (helper_->IsPresent(t)) {
+          // Task is present, `lit` must be false.
+          DCHECK(!helper_->IsOptional(t) || helper_->PresenceLiteral(t) != lit);
+          helper_->AddPresenceReason(t);
+          if (!helper_->PushLiteral(lit.Negated())) return false;
+        }
       }
     }
   } else {
@@ -848,7 +983,7 @@ bool SchedulingDemandHelper::DecreaseEnergyMax(int t, IntegerValue value) {
 void SchedulingDemandHelper::AddDemandMinReason(int t) {
   DCHECK_LT(t, demands_.size());
   if (demands_[t].var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
+    helper_->AddIntegerReason(
         integer_trail_->LowerBoundAsLiteral(demands_[t].var));
   }
 }
@@ -857,8 +992,7 @@ void SchedulingDemandHelper::AddDemandMinReason(int t,
                                                 IntegerValue min_demand) {
   DCHECK_LT(t, demands_.size());
   if (demands_[t].var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
-        demands_[t].GreaterOrEqual(min_demand));
+    helper_->AddIntegerReason(demands_[t].GreaterOrEqual(min_demand));
   }
 }
 
@@ -866,16 +1000,16 @@ void SchedulingDemandHelper::AddEnergyMinReason(int t) {
   // We prefer these reason in order.
   const IntegerValue value = cached_energies_min_[t];
   if (DecomposedEnergyMin(t) >= value) {
-    auto* reason = helper_->MutableLiteralReason();
-    const int old_size = reason->size();
     for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
       if (assignment_.LiteralIsTrue(lit)) {
-        reason->resize(old_size);
-        reason->push_back(lit.Negated());
+        helper_->AddLiteralReason(lit.Negated());
         return;
-      } else if (fixed_size * fixed_demand < value &&
-                 assignment_.LiteralIsFalse(lit)) {
-        reason->push_back(lit);
+      }
+    }
+    for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
+      if (fixed_size * fixed_demand < value &&
+          assignment_.LiteralIsFalse(lit)) {
+        helper_->AddLiteralReason(lit);
       }
     }
   } else if (SimpleEnergyMin(t) >= value) {
@@ -965,17 +1099,15 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
   helper_->AddEndMinReason(t, end_min);
   helper_->AddEndMaxReason(t, end_max);
 
-  auto* literal_reason = helper_->MutableLiteralReason();
-  const int old_size = literal_reason->size();
-
   DCHECK(!decomposed_energies_[t].empty());
   for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
     // Should be the same in most cases.
     if (assignment_.LiteralIsTrue(lit)) {
-      literal_reason->resize(old_size);
-      literal_reason->push_back(lit.Negated());
+      helper_->AddLiteralReason(lit.Negated());
       return;
     }
+  }
+  for (const auto [lit, fixed_size, fixed_demand] : decomposed_energies_[t]) {
     if (assignment_.LiteralIsFalse(lit)) {
       const IntegerValue alt_em = std::max(end_min, start_min + fixed_size);
       const IntegerValue alt_sm = std::min(start_max, end_max - fixed_size);
@@ -983,9 +1115,28 @@ void SchedulingDemandHelper::AddEnergyMinInWindowReason(
           fixed_demand *
           std::min({alt_em - window_start, window_end - alt_sm, fixed_size});
       if (energy_min >= actual_energy_min) continue;
-      literal_reason->push_back(lit);
+      helper_->AddLiteralReason(lit);
     }
   }
+}
+
+void SchedulingConstraintHelper::AddReasonForUpperBoundLowerThan(
+    LinearExpression2 expr, IntegerValue ub) {
+  linear2_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, &literal_reason_,
+                                                   &integer_reason_);
+}
+
+void SchedulingConstraintHelper::AppendAndResetReason(
+    std::vector<IntegerLiteral>* integer_reason,
+    std::vector<Literal>* literal_reason) {
+  RunCallbackIfSet();
+  for (const IntegerLiteral l : integer_reason_) {
+    integer_reason->push_back(l);
+  }
+  for (const Literal l : literal_reason_) {
+    literal_reason->push_back(l);
+  }
+  ResetReason();
 }
 
 void AddIntegerVariableFromIntervals(const SchedulingConstraintHelper* helper,

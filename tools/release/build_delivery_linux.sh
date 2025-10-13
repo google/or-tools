@@ -30,6 +30,7 @@ ${BOLD}DESCRIPTION${RESET}
 
 ${BOLD}OPTIONS${RESET}
 \t-h --help: display this help text
+\tarchive: build all (C++, .Net, Java) archives
 \tdotnet: build all .Net packages
 \tjava: build all Java packages
 \tpython: build all Pyhon packages
@@ -172,7 +173,7 @@ function build_java() {
     GPG_EXTRA="-DGPG_ARGS=${GPG_ARGS}"
   fi
 
-  # shellcheck disable=SC2086: cmake fail to parse empty string ""
+  # shellcheck disable=SC2086 # cmake fail to parse empty string ""
   cmake -S. -Btemp_java -DBUILD_SAMPLES=OFF -DBUILD_EXAMPLES=OFF \
  -DBUILD_JAVA=ON -DSKIP_GPG=OFF ${GPG_EXTRA}
   cmake --build temp_java -j8 -v
@@ -208,7 +209,7 @@ function build_python() {
   command -v python3 | xargs echo "python3: " | tee -a build.log
   python3 -c "import platform as p; print(p.platform())" | tee -a build.log
   python3 -m pip install --upgrade --user --break-system-package pip
-  python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf virtualenv
+  python3 -m pip install --upgrade --user --break-system-package wheel absl-py mypy mypy-protobuf virtualenv "typing-extensions>=4.12"
   echo "check protoc-gen-mypy..."
   command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
   protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log

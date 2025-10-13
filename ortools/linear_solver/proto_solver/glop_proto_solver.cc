@@ -23,8 +23,8 @@
 #include <utility>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
-#include "ortools/base/logging.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters_validation.h"
 #include "ortools/linear_solver/linear_solver.pb.h"

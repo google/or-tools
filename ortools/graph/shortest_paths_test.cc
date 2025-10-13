@@ -67,9 +67,7 @@ void CheckPathDataRow(const GraphType& graph,
                       const PathDistance expected_distances[],
                       typename GraphType::NodeIndex tail) {
   int index = tail * graph.num_nodes();
-  for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
-       iterator.Next()) {
-    const typename GraphType::NodeIndex head(iterator.Index());
+  for (const typename GraphType::NodeIndex head : graph.AllNodes()) {
     CheckPathDataPair(container, distance_container, expected_distances[index],
                       expected_paths[index], tail, head);
     ++index;
@@ -97,9 +95,7 @@ void CheckPathData(const GraphType& graph,
                    const GenericPathContainer<GraphType>& distance_container,
                    const typename GraphType::NodeIndex expected_paths[],
                    const PathDistance expected_distances[]) {
-  for (typename GraphType::NodeIterator iterator(graph); iterator.Ok();
-       iterator.Next()) {
-    const typename GraphType::NodeIndex tail(iterator.Index());
+  for (const typename GraphType::NodeIndex tail : graph.AllNodes()) {
     CheckPathDataRow(graph, container, distance_container, expected_paths,
                      expected_distances, tail);
   }
@@ -243,9 +239,9 @@ class GraphShortestPathsDeathTest : public testing::Test {};
 template <typename GraphType>
 class GraphShortestPathsTest : public testing::Test {};
 
-typedef testing::Types<
-    ::util::ListGraph<>, ::util::StaticGraph<>, ::util::ReverseArcListGraph<>,
-    ::util::ReverseArcStaticGraph<>, ::util::ReverseArcMixedGraph<>>
+typedef testing::Types<::util::ListGraph<>, ::util::StaticGraph<>,
+                       ::util::ReverseArcListGraph<>,
+                       ::util::ReverseArcStaticGraph<>>
     GraphTypesForShortestPathsTesting;
 
 TYPED_TEST_SUITE(GraphShortestPathsDeathTest,

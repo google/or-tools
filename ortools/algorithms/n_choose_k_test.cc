@@ -28,14 +28,14 @@
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
 #include "ortools/base/dump_vars.h"
-//#include "ortools/base/fuzztest.h"
+#include "ortools/base/fuzztest.h"
 #include "ortools/base/gmock.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/util/flat_matrix.h"
 
 namespace operations_research {
 namespace {
-//using ::fuzztest::NonNegative;
+using ::fuzztest::NonNegative;
 using ::testing::HasSubstr;
 using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
@@ -271,12 +271,11 @@ void MatchesLogCombinations(int n, int k) {
         << " (value: " << approx << "), which fits in int64_t";
   }
 }
-/*
 FUZZ_TEST(NChooseKTest, MatchesLogCombinations)
     // Ideally we'd test with `uint64_t`, but `LogCombinations` only accepts
     // `int`.
     .WithDomains(NonNegative<int>(), NonNegative<int>());
-*/
+
 template <int kMaxN, auto algo>
 void BM_NChooseK(benchmark::State& state) {
   static constexpr int kNumInputs = 1000;

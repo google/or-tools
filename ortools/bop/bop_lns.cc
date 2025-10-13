@@ -21,10 +21,10 @@
 
 #include "absl/cleanup/cleanup.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/random/bit_gen_ref.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/bop/bop_base.h"
 #include "ortools/bop/bop_parameters.pb.h"
@@ -110,7 +110,7 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
       /*use_lower_bound=*/false, sat::Coefficient(0),
       /*use_upper_bound=*/true, sat::Coefficient(num_relaxed_vars), &cst);
 
-  if (sat_solver_->IsModelUnsat()) return BopOptimizerBase::ABORT;
+  if (sat_solver_->ModelIsUnsat()) return BopOptimizerBase::ABORT;
 
   // It sounds like a good idea to force the solver to find a similar solution
   // from the current one. On another side, this is already somewhat enforced by
@@ -255,7 +255,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
   const double initial_dt = sat_propagator_->deterministic_time();
   auto sat_propagator_cleanup =
       ::absl::MakeCleanup([initial_dt, this, &learned_info, &time_limit]() {
-        if (!sat_propagator_->IsModelUnsat()) {
+        if (!sat_propagator_->ModelIsUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();
           ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
@@ -289,7 +289,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
             << problem_state.original_problem().num_variables();
 
     // Special case if the difficulty is too high.
-    if (!sat_propagator_->IsModelUnsat()) {
+    if (!sat_propagator_->ModelIsUnsat()) {
       if (sat_propagator_->CurrentDecisionLevel() == 0) {
         VLOG(2) << "Nothing fixed!";
         adaptive_difficulty_.DecreaseParameter();
@@ -300,7 +300,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     // Since everything is already set-up, we try the sat_propagator_ with
     // a really low conflict limit. This allow to quickly skip over UNSAT
     // cases without the costly new problem setup.
-    if (!sat_propagator_->IsModelUnsat()) {
+    if (!sat_propagator_->ModelIsUnsat()) {
       sat::SatParameters params;
       params.set_max_number_of_conflicts(
           local_parameters.max_number_of_conflicts_for_quick_check());
@@ -329,13 +329,13 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     // propagator_ will be used to construct the local problem below.
     // Note that calling RestoreSolverToAssumptionLevel() might actually prove
     // the infeasibility. It is important to check the UNSAT status afterward.
-    if (!sat_propagator_->IsModelUnsat()) {
+    if (!sat_propagator_->ModelIsUnsat()) {
       sat_propagator_->RestoreSolverToAssumptionLevel();
     }
 
     // Check if the problem is proved UNSAT, by previous the search or the
     // RestoreSolverToAssumptionLevel() call above.
-    if (sat_propagator_->IsModelUnsat()) {
+    if (sat_propagator_->ModelIsUnsat()) {
       return problem_state.solution().IsFeasible()
                  ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
                  : BopOptimizerBase::INFEASIBLE;
@@ -466,7 +466,7 @@ void ObjectiveBasedNeighborhood::GenerateNeighborhood(
       break;
     }
     sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
-    if (sat_propagator->IsModelUnsat()) return;
+    if (sat_propagator->ModelIsUnsat()) return;
   }
 }
 
@@ -515,7 +515,7 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
   for (const sat::Literal literal : to_fix) {
     if (variable_is_relaxed[literal.Variable().value()]) continue;
     sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
-    if (sat_propagator->IsModelUnsat()) return;
+    if (sat_propagator->ModelIsUnsat()) return;
   }
 }
 
@@ -595,7 +595,7 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
         }
       }
     }
-    if (sat_propagator->IsModelUnsat()) return;
+    if (sat_propagator->ModelIsUnsat()) return;
   }
   VLOG(2) << "target:" << target << " relaxed:" << num_relaxed << " actual:"
           << num_variables - sat_propagator->LiteralTrail().Index();

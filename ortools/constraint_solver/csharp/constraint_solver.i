@@ -34,7 +34,7 @@ class ConstraintSolverParameters;
 class RegularLimitParameters;
 }  // namespace operations_research
 
-%module(directors="1") operations_research;
+%module(directors="1") ConstraintSolverGlobals;
 #pragma SWIG nowarn=473
 
 %{
@@ -947,13 +947,13 @@ PROTO_INPUT(operations_research::CpModel,
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 
-// Add needed import to operations_research_constraint_solver.cs
+// Add needed import to ConstraintSolverGlobals.cs
 %pragma(csharp) moduleimports=%{
 %}
 
 namespace operations_research {
 // Globals
-// IMPORTANT(user): Global will be placed in operations_research_constraint_solver.cs
+// IMPORTANT(user): Global will be placed in ConstraintSolverGlobals.cs
 // Ignored:
 %ignore FillValues;
 }  // namespace operations_research

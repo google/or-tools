@@ -13,10 +13,11 @@
 
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 
+#include <climits>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -24,18 +25,17 @@
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/source_location.h"
 #include "ortools/base/status_builder.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/xpress/environment.h"
+#include "ortools/third_party_solvers/xpress_environment.h"
 
 namespace operations_research::math_opt {
 
 namespace {
-bool checkInt32Overflow(const unsigned int value) { return value > INT32_MAX; }
+bool checkInt32Overflow(const std::size_t value) { return value > INT32_MAX; }
 }  // namespace
 
 constexpr int kXpressOk = 0;
@@ -59,8 +59,7 @@ Xpress::Xpress(XPRSprob& model) : xpress_model_(ABSL_DIE_IF_NULL(model)) {
   initIntControlDefaults();
 }
 
-absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(
-    const std::string& model_name) {
+absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(absl::string_view) {
   bool correctlyLoaded = initXpressEnv();
   CHECK(correctlyLoaded);
   XPRSprob model;
@@ -69,8 +68,8 @@ absl::StatusOr<std::unique_ptr<Xpress>> Xpress::New(
   return absl::WrapUnique(new Xpress(model));
 }
 
-absl::Status Xpress::SetProbName(const std::string& name) {
-  std::string truncated = name;
+absl::Status Xpress::SetProbName(absl::string_view name) {
+  std::string truncated(name);
   auto maxLength = GetIntAttr(XPRS_MAXPROBNAMELENGTH);
   if (truncated.length() > maxLength.value_or(INT_MAX)) {
     truncated = truncated.substr(0, maxLength.value_or(INT_MAX));
@@ -78,11 +77,10 @@ absl::Status Xpress::SetProbName(const std::string& name) {
   return ToStatus(XPRSsetprobname(xpress_model_, truncated.c_str()));
 }
 
-void XPRS_CC Xpress::printXpressMessage(XPRSprob prob, void* data,
-                                        const char* sMsg, int nLen,
-                                        int nMsgLvl) {
+void XPRS_CC Xpress::printXpressMessage(XPRSprob, void*, const char* sMsg, int,
+                                        int) {
   if (sMsg) {
-    std::cout << sMsg << std::endl;
+    LOG(INFO) << sMsg;
   }
 }
 
@@ -127,7 +125,7 @@ absl::Status Xpress::AddVars(const absl::Span<const int> vbegin,
   if (!obj.empty()) {
     c_obj = const_cast<double*>(obj.data());
   }
-  // TODO: look into int64 support for number of vars (use XPRSaddcols64)
+  // TODO: look into int64_t support for number of vars (use XPRSaddcols64)
   return ToStatus(XPRSaddcols(xpress_model_, num_vars, 0, c_obj, nullptr,
                               nullptr, nullptr, lb.data(), ub.data()));
 }
@@ -141,7 +139,8 @@ absl::Status Xpress::AddConstrs(const absl::Span<const char> sense,
         "RHS must have one element per constraint.");
   }
   return ToStatus(XPRSaddrows(xpress_model_, num_cons, 0, sense.data(),
-                              rhs.data(), rng.data(), NULL, NULL, NULL));
+                              rhs.data(), rng.data(), nullptr, nullptr,
+                              nullptr));
 }
 
 absl::Status Xpress::AddConstrs(const absl::Span<const char> rowtype,
@@ -174,16 +173,16 @@ absl::Status Xpress::SetObjectiveSense(bool maximize) {
 }
 
 absl::Status Xpress::SetLinearObjective(
-    double offset, const absl::Span<const int> colind,
-    const absl::Span<const double> coefficients) {
+    double constant, const absl::Span<const int> col_index,
+    const absl::Span<const double> obj_coeffs) {
   static int indexes[1] = {-1};
-  double xprs_values[1] = {-offset};
+  double xprs_values[1] = {-constant};
   RETURN_IF_ERROR(ToStatus(XPRSchgobj(xpress_model_, 1, indexes, xprs_values)))
       << "Failed to set objective offset in XPRESS";
 
-  const int n_cols = static_cast<int>(colind.size());
+  const int n_cols = static_cast<int>(col_index.size());
   return ToStatus(
-      XPRSchgobj(xpress_model_, n_cols, colind.data(), coefficients.data()));
+      XPRSchgobj(xpress_model_, n_cols, col_index.data(), obj_coeffs.data()));
 }
 
 absl::Status Xpress::SetQuadraticObjective(
@@ -197,7 +196,7 @@ absl::Status Xpress::SetQuadraticObjective(
 absl::Status Xpress::ChgCoeffs(absl::Span<const int> rowind,
                                absl::Span<const int> colind,
                                absl::Span<const double> values) {
-  const long n_coefs = static_cast<long>(rowind.size());
+  const XPRSint64 n_coefs = static_cast<XPRSint64>(rowind.size());
   return ToStatus(XPRSchgmcoef64(xpress_model_, n_coefs, rowind.data(),
                                  colind.data(), values.data()));
 }

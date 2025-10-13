@@ -23,9 +23,10 @@
 
 #include "absl/container/inlined_vector.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
 #include "absl/types/span.h"
 #include "ortools/base/iterator_adaptors.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
@@ -33,8 +34,8 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/scheduling.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -83,6 +84,7 @@ void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool CumulativeEnergyConstraint::Propagate() {
+  if (!helper_->IsEnforced()) return true;
   // This only uses one time direction, but the helper might be used elsewhere.
   // TODO(user): just keep the current direction?
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
@@ -162,7 +164,7 @@ bool CumulativeEnergyConstraint::Propagate() {
       // a lower one, we could maybe have propagated more the minimum capacity.
       // investigate.
       if (new_capacity_min > integer_trail_->LowerBound(capacity_)) {
-        helper_->ClearReason();
+        helper_->ResetReason();
         for (int event = critical_event; event < num_events; event++) {
           if (start_event_is_present_[event]) {
             const int task = start_event_task_time_[event].task_index;
@@ -195,7 +197,7 @@ bool CumulativeEnergyConstraint::Propagate() {
       // several times, making this algorithm O(n^2 log n). Is there a way
       // to get the best pruning in one go? This looks like edge-finding not
       // being able to converge in one pass, so it might not be easy.
-      helper_->ClearReason();
+      helper_->ResetReason();
       int critical_event;
       int event_with_new_energy_max;
       IntegerValue new_energy_max;
@@ -219,7 +221,7 @@ bool CumulativeEnergyConstraint::Propagate() {
         }
       }
       if (capacity_.var != kNoIntegerVariable) {
-        helper_->MutableIntegerReason()->push_back(
+        helper_->AddIntegerReason(
             integer_trail_->UpperBoundAsLiteral(capacity_.var));
       }
 
@@ -266,6 +268,7 @@ CumulativeIsAfterSubsetConstraint::CumulativeIsAfterSubsetConstraint(
 }
 
 bool CumulativeIsAfterSubsetConstraint::Propagate() {
+  if (!helper_->IsEnforced()) return true;
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
 
   IntegerValue best_time = kMaxIntegerValue;
@@ -348,7 +351,7 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
   if (best_bound > integer_trail_->LowerBound(var_to_push_)) {
     // Compute the reason.
     // It is just the reason for the energy after time.
-    helper_->ClearReason();
+    helper_->ResetReason();
     for (int t = 0; t < helper_->NumTasks(); ++t) {
       if (!is_in_subtasks_[t]) continue;
       if (!helper_->IsPresent(t)) continue;
@@ -368,7 +371,7 @@ bool CumulativeIsAfterSubsetConstraint::Propagate() {
       demands_->AddDemandMinReason(t);
     }
     if (capacity_.var != kNoIntegerVariable) {
-      helper_->MutableIntegerReason()->push_back(
+      helper_->AddIntegerReason(
           integer_trail_->UpperBoundAsLiteral(capacity_.var));
     }
 
@@ -491,7 +494,7 @@ bool CumulativeDualFeasibleEnergyConstraint::FindAndPropagateConflict(
                                        OrthogonalPackingResult::Coord::kCoordY,
                                        demands_->LevelZeroDemandMin(task));
   }
-  helper_->ClearReason();
+  helper_->ResetReason();
   for (const auto& item : result.GetItemsParticipatingOnConflict()) {
     const int task = index_to_task[item.index];
 
@@ -507,13 +510,14 @@ bool CumulativeDualFeasibleEnergyConstraint::FindAndPropagateConflict(
     demands_->AddDemandMinReason(task, item.size_y);
   }
   if (capacity_.var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
+    helper_->AddIntegerReason(
         integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
   return helper_->ReportConflict();
 }
 
 bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
+  if (!helper_->IsEnforced()) return true;
   if (!helper_->SynchronizeAndSetTimeDirection(true)) return false;
   if (!demands_->CacheAllEnergyValues()) return true;
 
@@ -593,13 +597,13 @@ bool CumulativeDualFeasibleEnergyConstraint::Propagate() {
       demands_->AddDemandMinReason(current_task);
 
       if (capacity_.var != kNoIntegerVariable) {
-        helper_->MutableIntegerReason()->push_back(
+        helper_->AddIntegerReason(
             integer_trail_->UpperBoundAsLiteral(capacity_));
       }
 
       const AffineExpression size = helper_->Sizes()[current_task];
       if (size.var != kNoIntegerVariable) {
-        helper_->MutableIntegerReason()->push_back(size.GreaterOrEqual(1));
+        helper_->AddIntegerReason(size.GreaterOrEqual(1));
       }
 
       return helper_->ReportConflict();

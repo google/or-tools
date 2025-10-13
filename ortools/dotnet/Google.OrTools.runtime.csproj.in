@@ -29,10 +29,10 @@
       $<@need_unix_zlib_lib@:;$<TARGET_SONAME_FILE:ZLIB::ZLIB>>
       $<@need_windows_zlib_lib@:;$<TARGET_FILE:ZLIB::ZLIB>>
 
+      $<@need_unix_bzip2_lib@:;$<TARGET_SONAME_FILE:BZip2::BZip2>>
+      $<@need_windows_bzip2_lib@:;$<TARGET_FILE:BZip2::BZip2>>
+
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::base>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_optional_access>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::bad_variant_access>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::city>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::civil_time>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::cord>>
@@ -78,16 +78,16 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_format>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_globals>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_structured_proto>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_message>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_internal_proto>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_severity>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::log_sink>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::low_level_hash>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::malloc_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_distributions>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_entropy_pool>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_platform>>
-      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
@@ -111,6 +111,7 @@
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::throw_delegate>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::time>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::time_zone>>
+      $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::tracing_internal>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
       $<@need_unix_absl_lib@:;$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
       $<@need_windows_absl_lib@:;$<TARGET_FILE:absl::abseil_dll>>
@@ -129,8 +130,11 @@
       $<@need_cgl_lib@:;$<TARGET_SONAME_FILE:Coin::Cgl>>
       $<@need_cbc_lib@:;$<TARGET_SONAME_FILE:Coin::Cbc>;$<TARGET_SONAME_FILE:Coin::OsiCbc>;$<TARGET_SONAME_FILE:Coin::CbcSolver>>
 
-      $<@need_unix_highs_lib@:;$<TARGET_SONAME_FILE:highs>>
-      $<@need_windows_highs_lib@:;$<TARGET_FILE:highs>>
+      $<@need_unix_highs_lib@:;$<TARGET_SONAME_FILE:highs::highs>>
+      $<@need_windows_highs_lib@:;$<TARGET_FILE:highs::highs>>
+
+      $<@need_unix_scip_lib@:;$<TARGET_SONAME_FILE:SCIP::libscip>>
+      $<@need_windows_scip_lib@:;$<TARGET_FILE:SCIP::libscip>>
 
       $<@need_unix_ortools_lib@:;$<TARGET_SONAME_FILE:ortools>>
       $<@need_windows_ortools_lib@:;$<TARGET_FILE:ortools>>

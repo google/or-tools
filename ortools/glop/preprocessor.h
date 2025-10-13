@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
 // This file contains the presolving code for a LinearProgram.
 //
 // A classical reference is:
@@ -83,13 +82,13 @@ class Preprocessor {
   // tolerance).
   bool IsSmallerWithinFeasibilityTolerance(Fractional a, Fractional b) const {
     return ::operations_research::IsSmallerWithinTolerance(
-        a, b, parameters_.solution_feasibility_tolerance());
+        a, b, Fractional(parameters_.solution_feasibility_tolerance()));
   }
   bool IsSmallerWithinPreprocessorZeroTolerance(Fractional a,
                                                 Fractional b) const {
     // TODO(user): use an absolute tolerance here to be even more defensive?
     return ::operations_research::IsSmallerWithinTolerance(
-        a, b, parameters_.preprocessor_zero_tolerance());
+        a, b, Fractional(parameters_.preprocessor_zero_tolerance()));
   }
 
   ProblemStatus status_;

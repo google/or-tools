@@ -1,0 +1,75 @@
+// Copyright 2010-2025 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package operations_research;
+
+option java_package = "com.google.ortools.setcover";
+option java_multiple_files = true;
+
+// Represents a capacity constraint to be used in conjunction with a
+// SetCoverProto. This constraint only considers one dimension.
+//
+// Such a capacity constraint mathematically looks like:
+//     min_capacity <= \sum_{e in elements} weight_e * x_e <= max_capacity
+// where either `min_capacity` or `max_capacity` can be omitted. `x_e` indicates
+// for a given solution `x` whether the element `e` is selected and counts for
+// this capacity constraint (`x_e == 1`) or not (`x_e == 0`). The weights are
+// given in `capacity_term`, each of them being a reference to an element being
+// present in a subset (in set-covering parlance) and its weight.
+//
+// For instance, this constraint can be used together with a set-covering
+// problem where parcels (element) must be covered by trucks (subsets) while
+// respecting truck capacities (this object). Each element can be covered by a
+// given set of trucks (set-covering problem); if an element is taken within a
+// truck, it uses some capacity for this truck (such as weight).
+//
+// In particular, this representation does not imply that a given element must
+// have the same weight in all the capacity constraints of a set-covering
+// problem (e.g., the same parcel might have different weights depending on
+// which truck is being considered).
+message CapacityConstraintProto {
+  message CapacityTerm {
+    // The subset this weight corresponds to (index of the subset in the
+    // `subset` repeated field in `SetCoverProto`).
+    int64 subset = 1;
+
+    message ElementWeightPair {
+      // The element this weight corresponds to (value of `element` in
+      // `SetCoverProto.Subset`).
+      int64 element = 1;
+
+      // The weight of the element.
+      int64 weight = 2;
+    }
+
+    repeated ElementWeightPair element_weights = 2;
+  }
+
+  // The list of terms in the constraint.
+  //
+  // The list is supposed to be in canonical form, which means it is sorted
+  // first by increasing subset index then increasing element index.
+  // No duplicate term is allowed (two terms for the same element in the same
+  // subset).
+  repeated CapacityTerm capacity_term = 1;
+
+  // The minimum amount of resource that must be consumed. At least one of
+  // `min_capacity` and `max_capacity` must be present.
+  int64 min_capacity = 2;
+
+  // The maximum amount of resource that can be consumed. At least one of
+  // `min_capacity` and `max_capacity` must be present.
+  int64 max_capacity = 3;
+}

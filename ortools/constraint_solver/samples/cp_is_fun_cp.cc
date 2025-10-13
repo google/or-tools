@@ -20,12 +20,14 @@
 // This problem has 72 different solutions in base 10.
 // [START import]
 #include <cstdint>
+#include <cstdlib>
 #include <vector>
 
-#include "absl/flags/flag.h"
-#include "absl/log/flags.h"
+#include "absl/base/log_severity.h"
+#include "absl/log/check.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 // [END import]
 
@@ -147,7 +149,7 @@ void CPIsFunCp() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::CPIsFunCp();
   return EXIT_SUCCESS;
 }

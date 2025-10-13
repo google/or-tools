@@ -31,6 +31,7 @@
 #include "gtest/gtest.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/parse_test_proto.h"
+#include "ortools/base/parse_text_proto.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -87,6 +88,7 @@ void AddFixedWeightedSumReif(Literal is_eq,
 }
 
 using ::google::protobuf::contrib::parse_proto::ParseTestProto;
+using ::google::protobuf::contrib::parse_proto::ParseTextOrDie;
 
 CpSolverResponse SolveAndCheck(
     const CpModelProto& initial_model, absl::string_view extra_parameters = "",
@@ -94,7 +96,7 @@ CpSolverResponse SolveAndCheck(
   SatParameters params;
   params.set_enumerate_all_solutions(true);
   if (!extra_parameters.empty()) {
-    params.MergeFromString(extra_parameters);
+    params.MergeFrom(ParseTextOrDie<SatParameters>(extra_parameters));
   }
   auto observer = [&](const CpSolverResponse& response) {
     VLOG(2) << response;
@@ -476,7 +478,7 @@ TEST(LinMinTest, OnlyOnePossibleCandidate) {
   LinearExpression min_expr;
   min_expr.vars.push_back(min);
   min_expr.coeffs.push_back(1);
-  AddIsEqualToMinOf(min_expr, exprs, &model);
+  AddIsEqualToMinOf(/*enforcement_literals=*/{}, min_expr, exprs, &model);
 
   // So far everything is normal.
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
@@ -531,7 +533,7 @@ TEST(LinMinTest, OnlyOnePossibleExpr) {
   LinearExpression min_expr;
   min_expr.vars.push_back(min);
   min_expr.coeffs.push_back(1);
-  AddIsEqualToMinOf(min_expr, exprs, &model);
+  AddIsEqualToMinOf(/*enforcement_literals=*/{}, min_expr, exprs, &model);
 
   // So far everything is normal.
   EXPECT_EQ(SatSolver::FEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
@@ -552,6 +554,134 @@ TEST(LinMinTest, OnlyOnePossibleExpr) {
   // Test infeasibility.
   model.Add(LowerOrEqual(min, -15));
   EXPECT_EQ(SatSolver::INFEASIBLE, model.GetOrCreate<SatSolver>()->Solve());
+}
+
+TEST(LinMinTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(1, 2)),
+                                    model.Add(NewIntegerVariable(0, 3)),
+                                    model.Add(NewIntegerVariable(-2, 4))};
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  LinearExpression expr1;  // 2x0 + 3x1 - 5
+  expr1.vars = {vars[0], vars[1]};
+  expr1.coeffs = {2, 3};
+  expr1.offset = -5;
+  expr1 = CanonicalizeExpr(expr1);
+  EXPECT_EQ(-3, expr1.Min(*integer_trail));
+  EXPECT_EQ(8, expr1.Max(*integer_trail));
+
+  LinearExpression expr2;  // 2x1 - 5x2 + 6
+  expr2.vars = {vars[1], vars[2]};
+  expr2.coeffs = {2, -5};
+  expr2.offset = 6;
+  expr2 = CanonicalizeExpr(expr2);
+  EXPECT_EQ(-14, expr2.Min(*integer_trail));
+  EXPECT_EQ(22, expr2.Max(*integer_trail));
+
+  LinearExpression min_expr;  // 2x0 + 3x2
+  min_expr.vars = {vars[0], vars[2]};
+  min_expr.coeffs = {2, 3};
+  min_expr.offset = -50;
+  min_expr = CanonicalizeExpr(min_expr);
+  EXPECT_EQ(-54, min_expr.Min(*integer_trail));
+  EXPECT_EQ(-34, min_expr.Max(*integer_trail));
+
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  // Always false if enforced (min_expr is always strictly smaller than expr1
+  // and expr2).
+  AddIsEqualToMinOf({b}, min_expr, {expr1, expr2}, &model);
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+}
+
+TEST(LinMinTest, NotAlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  std::vector<IntegerVariable> vars{model.Add(NewIntegerVariable(1, 2)),
+                                    model.Add(NewIntegerVariable(0, 3)),
+                                    model.Add(NewIntegerVariable(-2, 4))};
+  IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
+  LinearExpression expr1;  // 2x0 + 3x1 - 5
+  expr1.vars = {vars[0], vars[1]};
+  expr1.coeffs = {2, 3};
+  expr1.offset = -5;
+  expr1 = CanonicalizeExpr(expr1);
+  EXPECT_EQ(-3, expr1.Min(*integer_trail));
+  EXPECT_EQ(8, expr1.Max(*integer_trail));
+
+  LinearExpression expr2;  // 2x1 - 5x2 + 6
+  expr2.vars = {vars[1], vars[2]};
+  expr2.coeffs = {2, -5};
+  expr2.offset = 6;
+  expr2 = CanonicalizeExpr(expr2);
+  EXPECT_EQ(-14, expr2.Min(*integer_trail));
+  EXPECT_EQ(22, expr2.Max(*integer_trail));
+
+  LinearExpression min_expr;  // 2x0 + 3x2
+  min_expr.vars = {vars[0], vars[2]};
+  min_expr.coeffs = {2, 3};
+  min_expr = CanonicalizeExpr(min_expr);
+  EXPECT_EQ(-4, min_expr.Min(*integer_trail));
+  EXPECT_EQ(16, min_expr.Max(*integer_trail));
+
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  AddIsEqualToMinOf({b}, min_expr, {expr1, expr2}, &model);
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+}
+
+TEST(LinMinTest, CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables {
+      name: 'b'
+      domain: [ 0, 1 ]
+    }
+    variables {
+      name: 'x'
+      domain: [ 0, 6 ]
+    }
+    variables {
+      name: 'y'
+      domain: [ 1, 7 ]
+    }
+    variables {
+      name: 'z'
+      domain: [ -5, 5 ]
+    }
+    constraints {
+      enforcement_literal: 0
+      lin_max {
+        target {
+          vars: [ 1, 2, 3 ]
+          coeffs: [ 2, -2, 1 ]
+          offset: 5
+        }
+        exprs { vars: 1 coeffs: 1 offset: 1 }
+        exprs { vars: 2 coeffs: 1 offset: 2 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "linearization_level:2", &solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  CpModelProto reference_model = initial_model;
+  reference_model.mutable_constraints(0)->clear_enforcement_literal();
+  absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = 0; x <= 6; ++x) {
+    for (int y = 1; y <= 7; ++y) {
+      for (int z = -5; z <= 5; ++z) {
+        reference_solutions.insert({0, x, y, z});
+      }
+    }
+  }
+  const CpSolverResponse reference_response = SolveAndCheck(
+      reference_model, "linearization_level:2", &reference_solutions);
+  EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(solutions, reference_solutions);
 }
 
 // Propagates a * b = p by hand. Return false if the domains are empty,
@@ -625,7 +755,7 @@ TEST(ProductConstraintTest, RandomCases) {
 
     bool perfect_propagation = true;
     bool ok_propagation = true;
-    model.Add(ProductConstraint(vars[0], vars[1], vars[2]));
+    model.Add(ProductConstraint({}, vars[0], vars[1], vars[2]));
     const bool result = model.GetOrCreate<SatSolver>()->Propagate();
     if (expected_result != result) {
       if (expected_result) {
@@ -1072,6 +1202,74 @@ TEST(ProductPropagationTest, LargeDomain) {
   EXPECT_EQ(solutions, expected);
 }
 
+TEST(ProductPropagationTest, AlwaysFalseWithTwoEnforcementLiterals) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal c = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable p = model.Add(NewIntegerVariable(50, 100));
+  // Always false if enforced (x.y always less than p).
+  model.Add(ProductConstraint({b, c}, x, y, p));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(c));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(y, 0, 5);
+  EXPECT_BOUNDS_EQ(p, 50, 100);
+}
+
+TEST(ProductPropagationTest, AlwaysFalseWithOneUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable p = model.Add(NewIntegerVariable(50, 100));
+  // Always false if enforced (x.y always less than p).
+  model.Add(ProductConstraint({b}, x, y, p));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(y, 0, 5);
+  EXPECT_BOUNDS_EQ(p, 50, 100);
+}
+
+TEST(ProductPropagationTest, AlwaysFalseWithOneUnassignedEnforcementLiteral2) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable p = model.Add(NewIntegerVariable(-100, -50));
+  // Always false if enforced (x.y always greater than p).
+  model.Add(ProductConstraint({b}, x, y, p));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(y, 0, 5);
+  EXPECT_BOUNDS_EQ(p, -100, -50);
+}
+
+TEST(ProductPropagationTest,
+     NotAlwaysFalseWithOneUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable y = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable p = model.Add(NewIntegerVariable(0, 100));
+  model.Add(ProductConstraint({b}, x, y, p));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(y, 0, 5);
+  EXPECT_BOUNDS_EQ(p, 0, 100);
+}
+
 TEST(DivisionConstraintTest, CheckAllSolutions) {
   absl::BitGen random;
   const int kMaxValue = 100;
@@ -1229,7 +1427,7 @@ TEST(DivisionConstraintTest, CheckAllPropagationsRandomProblem) {
     const IntegerVariable var_x = model.Add(NewIntegerVariable(x_min, x_max));
     const IntegerVariable var_y = model.Add(NewIntegerVariable(y_min, y_max));
     const IntegerVariable var_z = model.Add(NewIntegerVariable(z_min, z_max));
-    model.Add(DivisionConstraint(var_x, var_y, var_z));
+    model.Add(DivisionConstraint({}, var_x, var_y, var_z));
     const bool result = model.GetOrCreate<SatSolver>()->Propagate();
     if (result) {
       EXPECT_BOUNDS_EQ(var_x, expected_x_min, expected_x_max);
@@ -1239,6 +1437,54 @@ TEST(DivisionConstraintTest, CheckAllPropagationsRandomProblem) {
       EXPECT_EQ(expected_x_max, std::numeric_limits<int>::min());
     }
   }
+}
+
+TEST(DivisionConstraintTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable denom = model.Add(NewIntegerVariable(2, 3));
+  const IntegerVariable div = model.Add(NewIntegerVariable(3, 5));
+  // Always false if enforced (num / denom always less than div).
+  model.Add(DivisionConstraint({b}, num, denom, div));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(denom, 2, 3);
+  EXPECT_BOUNDS_EQ(div, 3, 5);
+}
+
+TEST(DivisionConstraintTest, AlwaysFalseWithUnassignedEnforcementLiteral2) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable denom = model.Add(NewIntegerVariable(2, 3));
+  const IntegerVariable div = model.Add(NewIntegerVariable(-5, -3));
+  // Always false if enforced (num / denom always greater than div).
+  model.Add(DivisionConstraint({b}, num, denom, div));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(denom, 2, 3);
+  EXPECT_BOUNDS_EQ(div, -5, -3);
+}
+
+TEST(DivisionConstraintTest, NotAlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable denom = model.Add(NewIntegerVariable(2, 3));
+  const IntegerVariable div = model.Add(NewIntegerVariable(1, 5));
+  model.Add(DivisionConstraint({b}, num, denom, div));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(denom, 2, 3);
+  EXPECT_BOUNDS_EQ(div, 1, 5);
 }
 
 TEST(DivisionConstraintTest, CheckAllSolutionsOnExprs) {
@@ -1360,7 +1606,7 @@ void TestAllDivisionValues(int64_t min_a, int64_t max_a, int64_t b,
       min_c == max_c
           ? AffineExpression(IntegerValue(min_c))
           : AffineExpression(model.Add(NewIntegerVariable(min_c, max_c)));
-  model.Add(FixedDivisionConstraint(var_a, IntegerValue(b), var_c));
+  model.Add(FixedDivisionConstraint({}, var_a, IntegerValue(b), var_c));
   const bool result = model.GetOrCreate<SatSolver>()->Propagate();
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   if (result) {
@@ -1394,7 +1640,7 @@ bool PropagateFixedDivision(int64_t a, int64_t max_a, int64_t b, int64_t c,
   Model model;
   const IntegerVariable var_a = model.Add(NewIntegerVariable(a, max_a));
   const IntegerVariable var_c = model.Add(NewIntegerVariable(c, max_c));
-  model.Add(FixedDivisionConstraint(var_a, IntegerValue(b), var_c));
+  model.Add(FixedDivisionConstraint({}, var_a, IntegerValue(b), var_c));
   const bool result = model.GetOrCreate<SatSolver>()->Propagate();
   if (result) {
     EXPECT_BOUNDS_EQ(var_a, new_a, new_max_a);
@@ -1435,6 +1681,50 @@ TEST(FixedDivisionConstraintTest, ExpectedPropagation) {
       /*b=*/5, /*c=*/3, std::numeric_limits<int64_t>::max() - 3,
       /*new_a=*/15, std::numeric_limits<int64_t>::max() / 2,
       /*new_c=*/3, std::numeric_limits<int64_t>::max() / 10));
+}
+
+TEST(FixedDivisionConstraintTest, AlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable div = model.Add(NewIntegerVariable(3, 5));
+  // Always false if enforced (num / denom always less than div).
+  model.Add(FixedDivisionConstraint({b}, num, 2, div));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(div, 3, 5);
+}
+
+TEST(FixedDivisionConstraintTest,
+     AlwaysFalseWithUnassignedEnforcementLiteral2) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable div = model.Add(NewIntegerVariable(-5, -3));
+  // Always false if enforced (num / denom always greater than div).
+  model.Add(FixedDivisionConstraint({b}, num, 2, div));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(div, -5, -3);
+}
+
+TEST(FixedDivisionConstraintTest,
+     NotAlwaysFalseWithUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable num = model.Add(NewIntegerVariable(3, 5));
+  const IntegerVariable div = model.Add(NewIntegerVariable(1, 5));
+  model.Add(FixedDivisionConstraint({b}, num, 2, div));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(num, 3, 5);
+  EXPECT_BOUNDS_EQ(div, 1, 5);
 }
 
 TEST(ModuloConstraintTest, CheckAllSolutions) {
@@ -1531,7 +1821,7 @@ TEST(ModuloConstraintTest, CheckAllPropagationsRandomProblem) {
     const IntegerVariable var = model.Add(NewIntegerVariable(var_min, var_max));
     const IntegerVariable target =
         model.Add(NewIntegerVariable(target_min, target_max));
-    model.Add(FixedModuloConstraint(var, IntegerValue(mod), target));
+    model.Add(FixedModuloConstraint({}, var, IntegerValue(mod), target));
     const bool result = model.GetOrCreate<SatSolver>()->Propagate();
     if (result) {
       EXPECT_BOUNDS_EQ(var, expected_var_min, expected_var_max);
@@ -1548,6 +1838,84 @@ TEST(ModuloConstraintTest, CheckAllPropagationsRandomProblem) {
   }
 }
 
+bool TestModuloPropagationWhenFalse(int min_var, int max_var, int mod,
+                                    int min_target, int max_target) {
+  bool is_always_false = true;
+  for (int var = min_var; var <= max_var; ++var) {
+    for (int target = min_target; target <= max_target; ++target) {
+      if (var % mod == target) {
+        is_always_false = false;
+        break;
+      }
+    }
+  }
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable var = model.Add(NewIntegerVariable(min_var, max_var));
+  const IntegerVariable target =
+      model.Add(NewIntegerVariable(min_target, max_target));
+  model.Add(FixedModuloConstraint({b}, var, IntegerValue(mod), target));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_EQ(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b),
+            is_always_false)
+      << "min_var = " << min_var << " max_var = " << max_var << " mod = " << mod
+      << " min_target = " << min_target << " max_target = " << max_target;
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsTrue(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(var, min_var, max_var);
+  EXPECT_BOUNDS_EQ(target, min_target, max_target);
+  return is_always_false;
+}
+
+TEST(ModuloConstraintTest, CheckPropagationWhenFalse) {
+  bool propagated_when_false = false;
+  for (int min_var = -15; min_var <= 15; ++min_var) {
+    for (int max_var = min_var; max_var <= min_var + 5; ++max_var) {
+      for (int min_target = -4; min_target <= 4; ++min_target) {
+        for (int max_target = min_target; max_target <= 4; ++max_target) {
+          propagated_when_false |= TestModuloPropagationWhenFalse(
+              min_var, max_var, 3, min_target, max_target);
+        }
+      }
+    }
+  }
+  EXPECT_TRUE(propagated_when_false);
+}
+
+TEST(ModuloConstraintTest,
+     CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'b' domain: 0 domain: 1 }
+    variables { name: 'x' domain: -10 domain: 10 }
+    variables { name: 'y' domain: -3 domain: 3 }
+    constraints {
+      enforcement_literal: 0
+      int_mod {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { offset: 10 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  CpModelProto reference_model = initial_model;
+  reference_model.mutable_constraints(0)->clear_enforcement_literal();
+  absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = -10; x <= 10; ++x) {
+    for (int y = -3; y <= 3; ++y) {
+      reference_solutions.insert({0, x, y});
+    }
+  }
+  const CpSolverResponse reference_response =
+      SolveAndCheck(reference_model, "", &reference_solutions);
+  EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(solutions, reference_solutions);
+}
+
 bool TestSquarePropagation(std::pair<int64_t, int64_t> initial_domain_x,
                            std::pair<int64_t, int64_t> initial_domain_s,
                            std::pair<int64_t, int64_t> expected_domain_x,
@@ -1557,7 +1925,7 @@ bool TestSquarePropagation(std::pair<int64_t, int64_t> initial_domain_x,
       NewIntegerVariable(initial_domain_x.first, initial_domain_x.second));
   IntegerVariable s = model.Add(
       NewIntegerVariable(initial_domain_s.first, initial_domain_s.second));
-  model.Add(ProductConstraint(x, x, s));
+  model.Add(ProductConstraint({}, x, x, s));
   const bool result = model.GetOrCreate<SatSolver>()->Propagate();
   if (result) {
     EXPECT_BOUNDS_EQ(x, expected_domain_x.first, expected_domain_x.second);
@@ -1596,6 +1964,65 @@ TEST(SquareConstraintTest, LargestSquare) {
   CHECK_GE(CapProd(square + 1, square + 1), max);
   EXPECT_TRUE(TestSquarePropagation({0, max}, {0, max}, {0, square},
                                     {0, square * square}));
+}
+
+TEST(SquareConstraintTest, AlwaysFalseWithTwoEnforcementLiterals) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const Literal c = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable s = model.Add(NewIntegerVariable(50, 100));
+  // Always false if enforced (x^2 always less than s).
+  model.Add(ProductConstraint({b, c}, x, x, s));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(c));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(s, 50, 100);
+}
+
+TEST(SquareConstraintTest, AlwaysFalseWithOneUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable s = model.Add(NewIntegerVariable(50, 100));
+  // Always false if enforced (x^2 always less than s).
+  model.Add(ProductConstraint({b}, x, x, s));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(s, 50, 100);
+}
+
+TEST(SquareConstraintTest, AlwaysFalseWithOneUnassignedEnforcementLiteral2) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable s = model.Add(NewIntegerVariable(-100, -50));
+  // Always false if enforced (x^2 always greater than s).
+  model.Add(ProductConstraint({b}, x, x, s));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_TRUE(model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(s, -100, -50);
+}
+
+TEST(SquareConstraintTest, NotAlwaysFalseWithOneUnassignedEnforcementLiteral) {
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(0, 5));
+  const IntegerVariable s = model.Add(NewIntegerVariable(0, 100));
+  model.Add(ProductConstraint({b}, x, x, s));
+  // Nothing should be propagated.
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsAssigned(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, 0, 5);
+  EXPECT_BOUNDS_EQ(s, 0, 100);
 }
 
 TEST(LevelZeroEqualityTest, BasicExample) {

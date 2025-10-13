@@ -17,7 +17,9 @@
 #define UTIL_GRAPH_IO_H_
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -29,10 +31,9 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/numbers.h"
-#include "ortools/graph/graph.h"
 #include "ortools/util/filelineiter.h"
 
 namespace util {
@@ -97,12 +98,12 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
     } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        adj.push_back(graph.Head(arc));
+        adj.push_back(static_cast<uint64_t>(graph.Head(arc)));
       }
       if (format == PRINT_GRAPH_ADJACENCY_LISTS_SORTED) {
         std::sort(adj.begin(), adj.end());
       }
-      if (node != 0) out += '\n';
+      if (node != typename Graph::NodeIndex(0)) out += '\n';
       absl::StrAppend(&out, static_cast<uint64_t>(node), ": ",
                       absl::StrJoin(adj, " "));
     }
@@ -164,12 +165,12 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
       }
     }
   }
-
+  // COV_NF_START
   if (fclose(f) != 0) {
     return absl::Status(absl::StatusCode::kInternal,
                         "Could not close file '" + filename + "'");
   }
-
+  // COV_NF_END
   return ::absl::OkStatus();
 }
 

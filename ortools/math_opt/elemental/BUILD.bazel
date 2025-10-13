@@ -1,0 +1,558 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+cc_library(
+    name = "attributes",
+    hdrs = ["attributes.h"],
+    visibility = ["//ortools/math_opt:__subpackages__"],
+    deps = [
+        ":arrays",
+        ":elements",
+        ":symmetry",
+        "//ortools/base:array",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "attributes_test",
+    srcs = ["attributes_test.cc"],
+    deps = [
+        ":arrays",
+        ":attributes",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "elemental",
+    srcs = [
+        "elemental.cc",
+        "elemental_export_model.cc",
+        "elemental_from_proto.cc",
+        "elemental_to_string.cc",
+    ],
+    hdrs = ["elemental.h"],
+    visibility = ["//ortools/math_opt:__subpackages__"],
+    deps = [
+        ":arrays",
+        ":attr_key",
+        ":attr_storage",
+        ":attributes",
+        ":derived_data",
+        ":diff",
+        ":element_ref_tracker",
+        ":element_storage",
+        ":elements",
+        ":symmetry",
+        ":thread_safe_id_map",
+        "//ortools/base:status_macros",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "//ortools/math_opt/core:model_summary",
+        "//ortools/math_opt/validators:model_validator",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/log:die_if_null",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+        "@abseil-cpp//absl/types:span",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "elemental_test",
+    srcs = ["elemental_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":diff",
+        ":elemental",
+        ":elemental_matcher",
+        ":elements",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "derived_data",
+    hdrs = ["derived_data.h"],
+    visibility = ["//ortools/math_opt:__subpackages__"],
+    deps = [
+        ":arrays",
+        ":attr_key",
+        ":attributes",
+        ":elements",
+        "//ortools/util:fp_roundtrip_conv",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "derived_data_test",
+    srcs = ["derived_data_test.cc"],
+    deps = [
+        ":arrays",
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":elements",
+        ":symmetry",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+    ],
+)
+
+cc_library(
+    name = "element_storage",
+    srcs = ["element_storage.cc"],
+    hdrs = ["element_storage.h"],
+    deps = [
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "element_storage_test",
+    srcs = ["element_storage_test.cc"],
+    deps = [
+        ":element_storage",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "element_diff",
+    hdrs = ["element_diff.h"],
+    deps = ["@abseil-cpp//absl/container:flat_hash_set"],
+)
+
+cc_test(
+    name = "element_diff_test",
+    srcs = ["element_diff_test.cc"],
+    deps = [
+        ":element_diff",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "diff",
+    srcs = ["diff.cc"],
+    hdrs = ["diff.h"],
+    deps = [
+        "derived_data",
+        ":attr_diff",
+        ":attr_key",
+        ":attributes",
+        ":element_diff",
+        ":elements",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "diff_test",
+    srcs = ["diff_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":diff",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "attr_storage",
+    hdrs = ["attr_storage.h"],
+    deps = [
+        ":attr_key",
+        ":symmetry",
+        "//ortools/base:map_util",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "attr_storage_test",
+    srcs = ["attr_storage_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attr_storage",
+        ":symmetry",
+        "//ortools/base:gmock_main",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "attr_diff",
+    hdrs = ["attr_diff.h"],
+    deps = [
+        ":attr_key",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "attr_diff_test",
+    srcs = ["attr_diff_test.cc"],
+    deps = [
+        ":attr_diff",
+        ":attr_key",
+        ":symmetry",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "attr_key",
+    hdrs = ["attr_key.h"],
+    visibility = ["//ortools/math_opt:__subpackages__"],
+    deps = [
+        ":elements",
+        ":symmetry",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "attr_key_test",
+    srcs = ["attr_key_test.cc"],
+    deps = [
+        ":attr_key",
+        ":elements",
+        ":symmetry",
+        ":testing",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/meta:type_traits",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@google_benchmark//:benchmark",
+    ],
+)
+
+cc_library(
+    name = "arrays",
+    hdrs = ["arrays.h"],
+    visibility = ["//ortools/math_opt/elemental:__subpackages__"],
+)
+
+cc_library(
+    name = "elemental_differencer",
+    srcs = ["elemental_differencer.cc"],
+    hdrs = ["elemental_differencer.h"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":elemental",
+        ":elements",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "elemental_differencer_test",
+    srcs = ["elemental_differencer_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":elemental",
+        ":elemental_differencer",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_test(
+    name = "arrays_test",
+    srcs = ["arrays_test.cc"],
+    deps = [
+        ":arrays",
+        "//ortools/base:array",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "elemental_export_model_test",
+    srcs = ["elemental_export_model_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":elemental",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "elemental_to_string_test",
+    srcs = ["elemental_to_string_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":elemental",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "safe_attr_ops_test",
+    srcs = ["safe_attr_ops_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":elemental",
+        ":elements",
+        ":safe_attr_ops",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+cc_library(
+    name = "safe_attr_ops",
+    hdrs = ["safe_attr_ops.h"],
+    visibility = ["//ortools/math_opt/elemental/c_api:__subpackages__"],
+    deps = [
+        ":derived_data",
+        ":elemental",
+        "//ortools/base:status_macros",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "testing",
+    testonly = 1,
+    hdrs = ["testing.h"],
+    deps = [":attr_key"],
+)
+
+cc_library(
+    name = "tagged_id",
+    hdrs = ["tagged_id.h"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "tagged_id_test",
+    srcs = ["tagged_id_test.cc"],
+    deps = [
+        ":tagged_id",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "symmetry",
+    hdrs = ["symmetry.h"],
+    deps = [
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "elemental_matcher",
+    testonly = 1,
+    srcs = ["elemental_matcher.cc"],
+    hdrs = ["elemental_matcher.h"],
+    deps = [
+        ":elemental",
+        ":elemental_differencer",
+        "//ortools/base:gmock",
+        "@abseil-cpp//absl/base:core_headers",
+    ],
+)
+
+cc_library(
+    name = "element_ref_tracker",
+    hdrs = ["element_ref_tracker.h"],
+    deps = [
+        ":attr_key",
+        ":elements",
+        "//ortools/base:map_util",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+    ],
+)
+
+cc_library(
+    name = "elements",
+    srcs = ["elements.cc"],
+    hdrs = ["elements.h"],
+    visibility = ["//ortools/math_opt:__subpackages__"],
+    deps = [
+        ":tagged_id",
+        "//ortools/base:array",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "elements_test",
+    srcs = ["elements_test.cc"],
+    deps = [
+        ":elements",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/hash:hash_testing",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "elemental_matcher_test",
+    srcs = ["elemental_matcher_test.cc"],
+    deps = [
+        ":elemental",
+        ":elemental_differencer",
+        ":elemental_matcher",
+        ":elements",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "element_ref_tracker_test",
+    srcs = ["element_ref_tracker_test.cc"],
+    deps = [
+        ":attr_key",
+        ":element_ref_tracker",
+        ":elements",
+        ":symmetry",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_library(
+    name = "thread_safe_id_map",
+    hdrs = ["thread_safe_id_map.h"],
+    deps = [
+        "//ortools/base:stl_util",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "thread_safe_id_map_test",
+    srcs = ["thread_safe_id_map_test.cc"],
+    deps = [
+        ":thread_safe_id_map",
+        "//ortools/base:gmock_main",
+    ],
+)
+
+cc_test(
+    name = "elemental_from_proto_test",
+    srcs = ["elemental_from_proto_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":elemental",
+        ":elemental_matcher",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/status",
+    ],
+)
+
+cc_test(
+    name = "elemental_update_from_proto_test",
+    srcs = ["elemental_update_from_proto_test.cc"],
+    deps = [
+        ":attr_key",
+        ":attributes",
+        ":derived_data",
+        ":elemental",
+        ":elemental_matcher",
+        ":elements",
+        "//ortools/base:gmock_main",
+        "//ortools/math_opt:model_cc_proto",
+        "//ortools/math_opt:model_update_cc_proto",
+        "//ortools/math_opt:sparse_containers_cc_proto",
+        "@abseil-cpp//absl/status",
+    ],
+)

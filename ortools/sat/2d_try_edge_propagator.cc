@@ -21,10 +21,9 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/log/check.h"
-#include "ortools/algorithms/set_cover_heuristics.h"
-#include "ortools/algorithms/set_cover_invariant.h"
-#include "ortools/algorithms/set_cover_model.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
+#include "absl/log/vlog_is_on.h"
+#include "absl/types/span.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer.h"
@@ -33,6 +32,10 @@
 #include "ortools/sat/no_overlap_2d_helper.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/set_cover_heuristics.h"
+#include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_model.h"
 
 namespace operations_research {
 namespace sat {
@@ -116,9 +119,10 @@ bool TryEdgeRectanglePropagator::CanPlace(
       .x_max = position.first + active_box_ranges_[box_index].x_size,
       .y_min = position.second,
       .y_max = position.second + active_box_ranges_[box_index].y_size};
+  const absl::Span<const Rectangle> mandatory_regions = mandatory_regions_;
   for (const int i : has_mandatory_region_) {
     if (i == box_index) continue;
-    const Rectangle& mandatory_region = mandatory_regions_[i];
+    const Rectangle& mandatory_region = mandatory_regions[i];
     if (!mandatory_region.IsDisjoint(placed_box)) {
       if (with_conflict != nullptr) {
         with_conflict->AppendToLastVector(i);
@@ -132,6 +136,7 @@ bool TryEdgeRectanglePropagator::CanPlace(
 }
 
 bool TryEdgeRectanglePropagator::Propagate() {
+  if (!helper_.IsEnforced()) return true;
   if (!helper_.SynchronizeAndSetDirection(
           x_is_forward_after_swap_, y_is_forward_after_swap_, swap_x_and_y_)) {
     return false;
@@ -148,10 +153,12 @@ bool TryEdgeRectanglePropagator::Propagate() {
 
   // If a mandatory region is changed, we need to replace any cached box that
   // now became overlapping with it.
+  const int num_active_ranges = active_box_ranges_.size();
   for (const int mandatory_idx : changed_mandatory_) {
-    for (int i = 0; i < active_box_ranges_.size(); i++) {
+    const Rectangle& mandatory_region = mandatory_regions_[mandatory_idx];
+    for (int i = 0; i < num_active_ranges; i++) {
       if (i == mandatory_idx || !is_in_cache_[i]) continue;
-      if (!placed_boxes_[i].IsDisjoint(mandatory_regions_[mandatory_idx])) {
+      if (!placed_boxes_[i].IsDisjoint(mandatory_region)) {
         changed_item_.push_back(i);
         is_in_cache_[i] = false;
       }
@@ -322,10 +329,12 @@ std::vector<int> TryEdgeRectanglePropagator::GetMinimumProblemWithPropagation(
   }
   DCHECK(model.ComputeFeasibility());
   SetCoverInvariant inv(&model);
-  GreedySolutionGenerator greedy_search(&inv);
+  LazyElementDegreeSolutionGenerator greedy_search(&inv);
   CHECK(greedy_search.NextSolution());
+  LazySteepestSearch steepest_search(&inv);
+  CHECK(steepest_search.NextSolution());
   GuidedLocalSearch search(&inv);
-  CHECK(search.NextSolution(100));
+  CHECK(search.SetMaxIterations(100).NextSolution());
   DCHECK(inv.CheckConsistency(
       SetCoverInvariant::ConsistencyLevel::kFreeAndUncovered));
 
@@ -360,7 +369,7 @@ bool TryEdgeRectanglePropagator::ExplainAndPropagate(
         found_propagations) {
   for (const auto& [box_index, new_x_min] : found_propagations) {
     const RectangleInRange& box = active_box_ranges_[box_index];
-    helper_.ClearReason();
+    helper_.ResetReason();
 
     const std::vector<int> minimum_problem_with_propagator =
         GetMinimumProblemWithPropagation(

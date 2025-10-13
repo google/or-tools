@@ -17,7 +17,7 @@
 #include <cstdlib>
 
 #include "absl/log/check.h"
-#include "ortools/base/logging.h"
+#include "absl/log/log.h"
 #include "ortools/glop/basis_representation.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/update_row.h"
@@ -238,11 +238,14 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
   const Fractional pivot = -direction[leaving_row];
   DCHECK_NE(pivot, 0.0);
 
+  const ColIndex first_slack =
+      compact_matrix_.num_cols() - RowToColIndex(compact_matrix_.num_rows());
+
   // Note that this should be precise because of the call to
   // TestEnteringEdgeNormPrecision().
   const Fractional entering_squared_norm = edge_squared_norms_[entering_col];
   const Fractional leaving_squared_norm =
-      std::max(1.0, entering_squared_norm / Square(pivot));
+      std::max(Fractional(1.0), entering_squared_norm / Square(pivot));
 
   int stat_lower_bounded_norms = 0;
   const Fractional factor = 2.0 / pivot;
@@ -253,7 +256,9 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional scalar_product =
-        view.ColumnScalarProduct(col, direction_left_inverse);
+        col >= first_slack
+            ? direction_left_inverse_[col - first_slack]
+            : view.ColumnScalarProduct(col, direction_left_inverse);
     num_operations_ += view.ColumnNumEntries(col).value();
 
     // Update the edge squared norm of this column. Note that the update
@@ -288,7 +293,7 @@ void PrimalEdgeNorms::UpdateDevexWeights(
   const Fractional entering_norm = sqrt(PreciseSquaredNorm(direction));
   const Fractional pivot_magnitude = std::abs(direction[leaving_row]);
   const Fractional leaving_norm =
-      std::max(1.0, entering_norm / pivot_magnitude);
+      std::max(Fractional(1.0), entering_norm / pivot_magnitude);
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional update_vector_norm = std::abs(coeff) * leaving_norm;

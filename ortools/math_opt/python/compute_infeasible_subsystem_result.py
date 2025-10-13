@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +20,10 @@ from typing import FrozenSet, Mapping
 import immutabledict
 
 from ortools.math_opt import infeasible_subsystem_pb2
+from ortools.math_opt.python import linear_constraints as linear_constraints_mod
 from ortools.math_opt.python import model
 from ortools.math_opt.python import result
+from ortools.math_opt.python import variables as variables_mod
 
 
 @dataclasses.dataclass(frozen=True)
@@ -72,13 +75,13 @@ class ModelSubset:
         constraints are included in the subset.
     """
 
-    variable_bounds: Mapping[model.Variable, ModelSubsetBounds] = (
+    variable_bounds: Mapping[variables_mod.Variable, ModelSubsetBounds] = (
         immutabledict.immutabledict()
     )
-    variable_integrality: FrozenSet[model.Variable] = frozenset()
-    linear_constraints: Mapping[model.LinearConstraint, ModelSubsetBounds] = (
-        immutabledict.immutabledict()
-    )
+    variable_integrality: FrozenSet[variables_mod.Variable] = frozenset()
+    linear_constraints: Mapping[
+        linear_constraints_mod.LinearConstraint, ModelSubsetBounds
+    ] = immutabledict.immutabledict()
 
     def empty(self) -> bool:
         """Returns true if all the nested constraint collections are empty.

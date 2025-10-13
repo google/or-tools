@@ -147,14 +147,12 @@
 
 #include <stddef.h>
 
-#include <functional>
 #include <iosfwd>
 #include <ostream>  // NOLINT
 #include <type_traits>
 
-#include "absl/base/port.h"
+#include "absl/base/attributes.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/macros.h"
 
 namespace gtl {
 
@@ -191,15 +189,19 @@ class IntType {
   }
 
   // Note that this may change from time to time without notice.
-  // See .
   struct Hasher {
     size_t operator()(const IntType& arg) const {
       return static_cast<size_t>(arg.value());
     }
   };
 
+  template <typename H>
+  friend H AbslHashValue(H h, const IntType& i) {
+    return H::combine(std::move(h), i.value());
+  }
+
  public:
-  // Default c'tor initializing value_ to 0.
+  // Default constructor initializing value_ to 0.
   constexpr IntType() : value_(0) {}
   // C'tor explicitly initializing from a ValueType.
   constexpr explicit IntType(ValueType value) : value_(value) {}
@@ -247,14 +249,14 @@ class IntType {
   // -- ASSIGNMENT OPERATORS ---------------------------------------------------
   // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
   // and %= for both ThisType and ValueType.
-#define INT_TYPE_ASSIGNMENT_OP(op)                    \
-  ThisType& operator op(const ThisType & arg_value) { \
-    value_ op arg_value.value();                      \
-    return *this;                                     \
-  }                                                   \
-  ThisType& operator op(ValueType arg_value) {        \
-    value_ op arg_value;                              \
-    return *this;                                     \
+#define INT_TYPE_ASSIGNMENT_OP(op)                   \
+  ThisType& operator op(const ThisType& arg_value) { \
+    value_ op arg_value.value();                     \
+    return *this;                                    \
+  }                                                  \
+  ThisType& operator op(ValueType arg_value) {       \
+    value_ op arg_value;                             \
+    return *this;                                    \
   }
   INT_TYPE_ASSIGNMENT_OP(+=);
   INT_TYPE_ASSIGNMENT_OP(-=);
@@ -273,9 +275,6 @@ class IntType {
  private:
   // The integer value of type ValueType.
   ValueType value_;
-
-  COMPILE_ASSERT(std::is_integral<ValueType>::value,
-                 invalid_integer_type_for_id_type_);
 } ABSL_ATTRIBUTE_PACKED;
 
 // -- NON-MEMBER STREAM OPERATORS ----------------------------------------------
@@ -356,12 +355,5 @@ INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 #undef INT_TYPE_COMPARISON_OP
 
 }  // namespace gtl
-
-// Allows it to be used as a key to hashable containers.
-namespace std {
-template <typename IntTypeName, typename ValueType>
-struct hash<gtl::IntType<IntTypeName, ValueType> >
-    : gtl::IntType<IntTypeName, ValueType>::Hasher {};
-}  // namespace std
 
 #endif  // OR_TOOLS_BASE_INT_TYPE_H_

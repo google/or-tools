@@ -14,14 +14,15 @@
 """Helper macro to compile and test code samples."""
 
 load("@pip_deps//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
 
 PYTHON_DEPS = [
     "//ortools/init/python:init",
     "//ortools/linear_solver/python:model_builder",
     "//ortools/sat/python:cp_model",
     "//ortools/sat/colab:visualization",
-    "//ortools/scheduling:rcpsp_py_proto",
+    "//ortools/scheduling:rcpsp_py_pb2",
     "//ortools/scheduling/python:rcpsp",
     requirement("absl-py"),
     requirement("numpy"),
@@ -38,8 +39,6 @@ def code_sample_compile_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_test_py(name):
@@ -49,8 +48,6 @@ def code_sample_test_py(name):
         srcs = [name + ".py"],
         main = name + ".py",
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_test_arg_py(name, suffix, args, data):
@@ -62,8 +59,6 @@ def code_sample_test_arg_py(name, suffix, args, data):
         data = data,
         args = args,
         deps = PYTHON_DEPS,
-        python_version = "PY3",
-        srcs_version = "PY3",
     )
 
 def code_sample_py(name):

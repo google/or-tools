@@ -21,9 +21,12 @@
 #include <string>
 #include <vector>
 
+#include "ortools/sat/drat_proof_handler.h"
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
+#include "absl/flags/declare.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -36,6 +39,11 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
+ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
 namespace sat {
@@ -137,6 +145,22 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
     proto->add_domain(interval.start);
     proto->add_domain(interval.end);
   }
+}
+
+template <typename ProtoWithDomain>
+void FillDomainInProto(int64_t lb, int64_t ub, ProtoWithDomain* proto) {
+  proto->clear_domain();
+  proto->mutable_domain()->Reserve(2);
+  proto->add_domain(lb);
+  proto->add_domain(ub);
+}
+
+template <typename ProtoWithDomain>
+void FillDomainInProto(int64_t value, ProtoWithDomain* proto) {
+  proto->clear_domain();
+  proto->mutable_domain()->Reserve(2);
+  proto->add_domain(value);
+  proto->add_domain(value);
 }
 
 // Reads a Domain from the domain field of a proto.
@@ -254,6 +278,10 @@ void AddLinearExpressionToLinearConstraint(const LinearExpressionProto& expr,
 void AddWeightedLiteralToLinearConstraint(int lit, int64_t coeff,
                                           LinearConstraintProto* linear,
                                           int64_t* offset);
+
+// Sets `linear` to the constraint "lb <= sum(`literals`) <= ub".
+void LiteralsToLinear(absl::Span<const int> literals, int64_t lb, int64_t ub,
+                      LinearConstraintProto* linear);
 
 // Same method, but returns if the addition was possible without overflowing.
 bool SafeAddLinearExpressionToLinearConstraint(
@@ -397,7 +425,16 @@ H AbslHashValue(H h, const LinearConstraintProto& m) {
   return h;
 }
 
-bool ConvertCpModelProtoToCnf(const CpModelProto& cp_mode, std::string* out);
+bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out);
+
+// This returns a wcnf model in the 2022 (new) format:
+//     https://maxsat-evaluations.github.io/2022/rules.html
+bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
+
+// Loads the model in the DratProofHandler and returns true if successful.
+// Returns false if the model is not pure SAT.
+bool LoadCpModelInDratProofHandler(const CpModelProto& cp_model,
+                                   DratProofHandler* drat_proof_handler);
 
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);

@@ -13,10 +13,12 @@
 
 // Knowing that we see 20 heads and 56 legs,
 // how many pheasants and rabbits are we looking at ?
-#include "absl/flags/flag.h"
-#include "absl/log/flags.h"
+#include <cstdlib>
+
+#include "absl/base/log_severity.h"
+#include "absl/log/globals.h"
+#include "absl/log/log.h"
 #include "ortools/base/init_google.h"
-#include "ortools/base/logging.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
@@ -60,7 +62,7 @@ void RunConstraintProgrammingExample() {
 
 int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
-  absl::SetFlag(&FLAGS_stderrthreshold, 0);
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   operations_research::RunConstraintProgrammingExample();
   return EXIT_SUCCESS;
 }

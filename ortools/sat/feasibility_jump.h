@@ -43,6 +43,7 @@
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research::sat {
 
@@ -374,7 +375,7 @@ class SharedLsStates {
   // This is thread safe. If we respect the max_parallelism guarantee, then
   // all states should be independent.
   LsState* GetNextState() {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     int next = -1;
     const int num_states = states_.size();
     for (int i = 0; i < num_states; ++i) {
@@ -399,7 +400,7 @@ class SharedLsStates {
   }
 
   void Release(LsState* state) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     for (int i = 0; i < states_.size(); ++i) {
       if (state == states_[i].get()) {
         taken_[i] = false;
@@ -409,7 +410,7 @@ class SharedLsStates {
   }
 
   void ResetLubyCounter() {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     luby_counter_ = 0;
   }
 
@@ -420,7 +421,7 @@ class SharedLsStates {
   // Also if options.use_restart, then num_batches_before_change is only
   // modified under lock, so this code should be thread safe.
   void ConfigureNextLubyRestart(LsState* state) {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     const int factor = std::max(1, params_.feasibility_jump_restart_factor());
     CHECK(state->options.use_restart);
     const int64_t next = factor * SUniv(++luby_counter_);
@@ -431,7 +432,7 @@ class SharedLsStates {
   void CollectStatistics(const LsState& state) {
     if (state.counters.num_batches == 0) return;
 
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     options_to_stats_[state.options].AddFrom(state.counters);
     options_to_num_restarts_[state.options]++;
   }
@@ -484,7 +485,9 @@ class FeasibilityJumpSolver : public SubSolver {
         shared_hints_(shared_hints),
         stat_tables_(stat_tables),
         random_(params_),
-        var_domains_(shared_bounds) {}
+        var_domains_(shared_bounds) {
+    shared_time_limit_->UpdateLocalLimit(&time_limit_);
+  }
 
   // If VLOG_IS_ON(1), it will export a bunch of statistics.
   ~FeasibilityJumpSolver() override;
@@ -507,7 +510,7 @@ class FeasibilityJumpSolver : public SubSolver {
     if (shared_response_->ProblemIsSolved()) return false;
     if (shared_time_limit_->LimitReached()) return false;
 
-    return (shared_response_->SolutionsRepository().NumSolutions() > 0) ==
+    return shared_response_->HasFeasibleSolution() ==
            (type() == SubSolver::INCOMPLETE);
   }
 
@@ -517,7 +520,8 @@ class FeasibilityJumpSolver : public SubSolver {
   void ImportState();
   void ReleaseState();
 
-  void Initialize();
+  // Return false if we could not initialize the evaluator in the time limit.
+  bool Initialize();
   void ResetCurrentSolution(bool use_hint, bool use_objective,
                             double perturbation_probability);
   void PerturbateCurrentSolution(double perturbation_probability);
@@ -589,6 +593,7 @@ class FeasibilityJumpSolver : public SubSolver {
   SatParameters params_;
   std::shared_ptr<SharedLsStates> states_;
   ModelSharedTimeLimit* shared_time_limit_;
+  TimeLimit time_limit_;
   SharedResponseManager* shared_response_;
   SharedLsSolutionRepository* shared_hints_;
   SharedStatTables* stat_tables_;

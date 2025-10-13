@@ -61,8 +61,11 @@ template <typename ValueType>
 class SharedSolutionRepository {
  public:
   explicit SharedSolutionRepository(int num_solutions_to_keep,
-                                    absl::string_view name = "")
-      : name_(name), num_solutions_to_keep_(num_solutions_to_keep) {}
+                                    absl::string_view name = "",
+                                    int source_id = -1)
+      : name_(name),
+        num_solutions_to_keep_(num_solutions_to_keep),
+        source_id_(source_id) {}
 
   // The solution format used by this class.
   struct Solution {
@@ -84,6 +87,8 @@ class SharedSolutionRepository {
     // Should be private: only SharedSolutionRepository should modify this.
     mutable int num_selected = 0;
 
+    int source_id;  // Internal information.
+
     bool operator==(const Solution& other) const {
       return rank == other.rank && variable_values == other.variable_values;
     }
@@ -100,10 +105,11 @@ class SharedSolutionRepository {
   int NumSolutions() const;
 
   // Returns the solution #i where i must be smaller than NumSolutions().
+  // Returns nullptr if i is out of range.
   std::shared_ptr<const Solution> GetSolution(int index) const;
 
-  // Returns the rank of the best known solution.
-  // You shouldn't call this if NumSolutions() is zero.
+  // Returns the rank of the best known solution. If there is no solution, this
+  // will return std::numeric_limits<int64_t>::max().
   int64_t GetBestRank() const;
 
   std::vector<std::shared_ptr<const Solution>> GetBestNSolutions(int n) const;
@@ -131,28 +137,65 @@ class SharedSolutionRepository {
   // set of added solutions is the same.
   //
   // Works in O(num_solutions_to_keep_).
-  void Synchronize();
+  //
+  // If f() is provided, it will be called on all new solutions.
+  void Synchronize(std::function<void(const Solution& solution)> f = nullptr);
 
   std::vector<std::string> TableLineStats() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return {FormatName(name_), FormatCounter(num_added_),
             FormatCounter(num_queried_), FormatCounter(num_synchronization_)};
   }
 
+  int64_t NumRecentlyNonImproving() const {
+    absl::MutexLock mutex_lock(mutex_);
+    return num_non_improving_;
+  }
+
+  void ClearSolutionsAndIncreaseSourceId() {
+    absl::MutexLock mutex_lock(mutex_);
+    new_solutions_.clear();
+    solutions_.clear();
+    ++source_id_;
+  }
+
+  int source_id() const {
+    absl::MutexLock mutex_lock(mutex_);
+    return source_id_;
+  }
+
+  int num_queried() const {
+    absl::MutexLock mutex_lock(mutex_);
+    return num_queried_;
+  }
+
+  int num_solutions_to_keep() const { return num_solutions_to_keep_; }
+
+  void SetDiversityLimit(int value) { diversity_limit_ = value; }
+
  protected:
   const std::string name_;
   const int num_solutions_to_keep_;
+  int diversity_limit_ = 10;
 
   mutable absl::Mutex mutex_;
+  int source_id_ ABSL_GUARDED_BY(mutex_);
   int64_t num_added_ ABSL_GUARDED_BY(mutex_) = 0;
   mutable int64_t num_queried_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t num_synchronization_ ABSL_GUARDED_BY(mutex_) = 0;
+
+  mutable int64_t num_queried_at_last_sync_ ABSL_GUARDED_BY(mutex_) = 0;
+  mutable int64_t num_non_improving_ ABSL_GUARDED_BY(mutex_) = 0;
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
   mutable std::vector<int> tmp_indices_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> solutions_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::shared_ptr<Solution>> new_solutions_ ABSL_GUARDED_BY(mutex_);
+
+  // For computing orthogonality.
+  std::vector<int64_t> ABSL_GUARDED_BY(mutex_) distances_;
+  std::vector<int64_t> ABSL_GUARDED_BY(mutex_) buffer_;
 };
 
 // Solutions coming from the LP.
@@ -163,6 +206,77 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
                                          "lp solutions") {}
 
   void NewLPSolution(std::vector<double> lp_solution);
+};
+
+// This stores all the feasible solutions the solver know about.
+// Moreover, for meta-heuristics, we keep them in different buckets.
+class SharedSolutionPool {
+ public:
+  explicit SharedSolutionPool(const SatParameters& parameters_)
+      : best_solutions_(parameters_.solution_pool_size(), "best_solutions"),
+        alternative_path_(parameters_.alternative_pool_size(),
+                          "alternative_path", /*source_id=*/0) {
+    best_solutions_.SetDiversityLimit(
+        parameters_.solution_pool_diversity_limit());
+  }
+
+  const SharedSolutionRepository<int64_t>& BestSolutions() const {
+    return best_solutions_;
+  }
+
+  // Note that the given random generator is likely local to the thread calling
+  // this.
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
+  GetSolutionToImprove(absl::BitGenRef random) const {
+    // If we seems to have trouble making progress, work on the alternative
+    // path too.
+    if (alternative_path_.num_solutions_to_keep() > 0 &&
+        best_solutions_.NumRecentlyNonImproving() > 100 &&
+        absl::Bernoulli(random, 0.5) && alternative_path_.NumSolutions() > 0) {
+      // Tricky: We might clear the alternative_path_ between NumSolutions()
+      // and this call.
+      auto result = alternative_path_.GetRandomBiasedSolution(random);
+      if (result != nullptr) return result;
+    }
+
+    if (best_solutions_.NumSolutions() > 0) {
+      return best_solutions_.GetRandomBiasedSolution(random);
+    }
+    return nullptr;
+  }
+
+  std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution> Add(
+      SharedSolutionRepository<int64_t>::Solution solution);
+
+  void Synchronize(absl::BitGenRef random);
+
+  void AddTableStats(std::vector<std::vector<std::string>>* table) const {
+    table->push_back(best_solutions_.TableLineStats());
+    table->push_back(alternative_path_.TableLineStats());
+  }
+
+ private:
+  // Currently we only have two "pools" of solutions.
+  SharedSolutionRepository<int64_t> best_solutions_;
+  SharedSolutionRepository<int64_t> alternative_path_;
+
+  // We also keep a list of possible "path seeds" in n buckets defined according
+  // to the objective value of the solution. These are updated on Synchronize().
+  // Bucket i will only contain the last seen solution in the internal objective
+  // range [ranks_[i], ranks_[i + 1]).
+  //
+  // ranks_[0] should always be min_rank_, and seeds_[0] should be one of the
+  // best known solution. We usually never select seeds_[0] but keep it around
+  // for later in case new best solutions are found.
+  absl::Mutex mutex_;
+  int64_t max_rank_ ABSL_GUARDED_BY(mutex_) =
+      std::numeric_limits<int64_t>::min();
+  int64_t min_rank_ ABSL_GUARDED_BY(mutex_) =
+      std::numeric_limits<int64_t>::max();
+  std::vector<int64_t> ranks_;
+  std::vector<
+      std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>>
+      ABSL_GUARDED_BY(mutex_) seeds_;
 };
 
 // Set of best solution from the feasibility jump workers.
@@ -207,7 +321,7 @@ class SharedIncompleteSolutionManager {
   std::vector<double> PopLast();
 
   std::vector<std::string> TableLineStats() const {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     return {FormatName("pump"), FormatCounter(num_added_),
             FormatCounter(num_queried_)};
   }
@@ -316,6 +430,13 @@ class SharedResponseManager {
   void Synchronize();
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
+  IntegerValue GetBestSolutionObjective() {
+    if (solution_pool_.BestSolutions().NumSolutions() > 0) {
+      return solution_pool_.BestSolutions().GetBestRank();
+    } else {
+      return GetInnerObjectiveUpperBound();
+    }
+  }
 
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
@@ -361,7 +482,8 @@ class SharedResponseManager {
   // stored in the repository.
   std::shared_ptr<const SharedSolutionRepository<int64_t>::Solution>
   NewSolution(absl::Span<const int64_t> solution_values,
-              const std::string& solution_info, Model* model = nullptr);
+              absl::string_view solution_info, Model* model = nullptr,
+              int source_id = -1);
 
   // Changes the solution to reflect the fact that the "improving" problem is
   // infeasible. This means that if we have a solution, we have proven
@@ -369,7 +491,7 @@ class SharedResponseManager {
   //
   // Note that this shouldn't be called before the solution is actually
   // reported. We check for this case in NewSolution().
-  void NotifyThatImprovingProblemIsInfeasible(const std::string& worker_info);
+  void NotifyThatImprovingProblemIsInfeasible(absl::string_view worker_info);
 
   // Adds to the shared response a subset of assumptions that are enough to
   // make the problem infeasible.
@@ -380,14 +502,13 @@ class SharedResponseManager {
   // OPTIMAL and consider the problem solved.
   bool ProblemIsSolved() const;
 
+  bool HasFeasibleSolution() const {
+    return solution_pool_.BestSolutions().NumSolutions() > 0;
+  }
+
   // Returns the underlying solution repository where we keep a set of best
   // solutions.
-  const SharedSolutionRepository<int64_t>& SolutionsRepository() const {
-    return solutions_;
-  }
-  SharedSolutionRepository<int64_t>* MutableSolutionsRepository() {
-    return &solutions_;
-  }
+  const SharedSolutionPool& SolutionPool() const { return solution_pool_; }
 
   // Debug only. Set dump prefix for solutions written to file.
   void set_dump_prefix(absl::string_view dump_prefix) {
@@ -399,8 +520,8 @@ class SharedResponseManager {
 
   // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(absl::string_view prefix, absl::string_view message);
-  void LogMessageWithThrottling(const std::string& prefix,
-                                const std::string& message);
+  void LogMessageWithThrottling(absl::string_view prefix,
+                                absl::string_view message);
   bool LoggingIsEnabled() const;
 
   void AppendResponseToBeMerged(const CpSolverResponse& response);
@@ -433,11 +554,12 @@ class SharedResponseManager {
   // Generates a response for callbacks and GetResponse().
   CpSolverResponse GetResponseInternal(
       absl::Span<const int64_t> variable_values,
-      const std::string& solution_info) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      absl::string_view solution_info) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const SatParameters& parameters_;
   const WallTimer& wall_timer_;
   ModelSharedTimeLimit* shared_time_limit_;
+  ModelRandomGenerator* random_;
   CpObjectiveProto const* objective_or_null_ = nullptr;
 
   mutable absl::Mutex mutex_;
@@ -450,7 +572,7 @@ class SharedResponseManager {
   CpSolverStatus synchronized_best_status_ ABSL_GUARDED_BY(mutex_) =
       CpSolverStatus::UNKNOWN;
   std::vector<int> unsat_cores_ ABSL_GUARDED_BY(mutex_);
-  SharedSolutionRepository<int64_t> solutions_;  // Thread-safe.
+  SharedSolutionPool solution_pool_;  // Thread-safe.
 
   int num_solutions_ ABSL_GUARDED_BY(mutex_) = 0;
   int64_t inner_objective_lower_bound_ ABSL_GUARDED_BY(mutex_) =
@@ -622,108 +744,87 @@ class SharedBoundsManager {
 // It has a finite size internal buffer that is a small multiple of the batch
 // size.
 //
-// This class is thread-safe, the idea is to have one per worker plus a
-// global one to deduplicate between workers to minimize contention.
-//
 // This uses a finite buffer, so some clauses may be dropped if we generate too
-// many more than we export, but that is rarely a problem because we never
-// overfill the "global" stream, and if we drop a clause on a worker, one of the
-// following will most likely happen:
+// many more than we export, but that is rarely a problem because if we drop a
+// clause on a worker, one of the following will most likely happen:
 //   1. Some other worker learns the clause and shares it later.
 //   2. All other workers also learn and drop the clause.
 //   3. No other worker learns the clause, so it was not that helpful anyway.
 //
 // Note that this uses literals as encoded in a cp_model.proto. Thus, the
 // literals can be negative numbers.
+//
+// TODO(user): This class might not want to live in this file now it no
+// longer needs to be thread-safe.
 class UniqueClauseStream {
  public:
   static constexpr int kMinClauseSize = 3;
   static constexpr int kMaxClauseSize = 32;
+  static constexpr int kMinLbd = 2;
+  static constexpr int kMaxLbd = 5;
   // Export 4KiB of clauses per batch.
   static constexpr int kMaxLiteralsPerBatch = 4096 / sizeof(int);
-  // Bound the total literals we buffer, approximately enforced so shorter
-  // clauses can replace longer ones. This can be larger than
-  // kMaxLiteralsPerBatch (hence the separate constant), but experiments suggest
-  // that this doesn't help.
-  static constexpr int kMaxBufferedLiterals = kMaxLiteralsPerBatch;
 
   UniqueClauseStream();
   // Move only - this is an expensive class to copy.
   UniqueClauseStream(const UniqueClauseStream&) = delete;
   UniqueClauseStream(UniqueClauseStream&&) = default;
 
-  // Adds the clause to a future batch and returns true if the clause was added.
-  // Otherwise returns false. This may return false if the buffer is full.
-  // It will not block the clause if it is dropped to avoid unbounded growth of
-  // the hash table.
-  bool Add(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
+  // Adds the clause to a future batch and returns true if the clause is new,
+  // otherwise returns false.
+  bool Add(absl::Span<const int> clause, int lbd = 2);
 
-  // Lazily deletes a clause with the same hash, returns true if it was present.
-  // The deleted clause will not be exported (either via NextBatch or
-  // FillUpstreamBuffer). A clause with the same hash may be re-added after
-  // calling Delete. If another clause with the same hash is added before the
-  // deleted clause is emitted then both clauses may be emitted.
-  bool Delete(absl::Span<const int> clause) ABSL_LOCKS_EXCLUDED(mutex_);
+  // Stop a clause being added to future batches.
+  // Returns true if the clause is new.
+  // This is approximate and can have false positives and negatives, it is still
+  // guaranteed to prevent adding the same clause twice to the next batch.
+  bool BlockClause(absl::Span<const int> clause);
 
-  // Returns a set of clauses totalling up to kMaxLiteralsPerBatch and removes
-  // exported clauses from the internal buffer.
-  CompactVectorVector<int> NextBatch() ABSL_LOCKS_EXCLUDED(mutex_);
+  // Returns a set of clauses totalling up to kMaxLiteralsPerBatch and clears
+  // the internal buffer.
+  // Increases the LBD threshold if the batch is underfull, and decreases it if
+  // too many clauses were dropped.
+  CompactVectorVector<int> NextBatch();
 
-  // Adds up to max_clauses_to_export clauses of a given size to upstream and
-  // removes them from the internal buffer.
-  int FillUpstreamBuffer(UniqueClauseStream& upstream, int clause_size,
-                         int max_clauses_to_export) ABSL_LOCKS_EXCLUDED(mutex_);
-
-  // Returns the number of literals in the buffer in clauses with size <=
-  // max_size.
-  int NumBufferedLiteralsOfSize(int size) const ABSL_LOCKS_EXCLUDED(mutex_) {
-    absl::MutexLock lock(&mutex_);
-    return NumLiteralsOfSize(size);
+  void ClearFingerprints() {
+    old_fingerprints_.clear();
+    fingerprints_.clear();
+    fingerprints_.reserve(kMaxFingerprints);
   }
-  int NumBufferedLiterals() const ABSL_LOCKS_EXCLUDED(mutex_);
 
-  // Returns true if the stream can accept a clause of the specified size and
-  // LBD without dropping it.
-  bool CanAccept(int size, int lbd) const;
+  // Returns the number of buffered literals in clauses of a given size.
+  int NumLiteralsOfSize(int size) const;
+  int NumBufferedLiterals() const;
 
-  // Delete longest clauses while keeping at least kMaxBufferedLiterals.
-  // This guarantees that CanAccept will return the same result as before, and
-  // at least the next batch will contain the same clauses, but we will emit
-  // fewer old, long clauses in the future.
-  void RemoveWorstClauses();
-
-  int lbd_threshold() const ABSL_LOCKS_EXCLUDED(mutex_) {
-    absl::MutexLock lock(&mutex_);
-    return lbd_threshold_;
-  }
-  void set_lbd_threshold(int lbd) ABSL_LOCKS_EXCLUDED(mutex_);
+  int lbd_threshold() const { return lbd_threshold_; }
+  void set_lbd_threshold(int lbd_threshold) { lbd_threshold_ = lbd_threshold; }
 
   // Computes a hash that is independent of the order of literals in the clause.
   static size_t HashClause(absl::Span<const int> clause, size_t hash_seed = 0);
 
  private:
-  bool BlockClause(absl::Span<const int> clause)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  std::vector<int>* MutableBufferForSize(int size)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+  // This needs to be >> the number of clauses we can plausibly learn in
+  // a few seconds.
+  constexpr static size_t kMaxFingerprints = 1024 * 1024 / sizeof(size_t);
+  constexpr static int kNumSizes = kMaxClauseSize - kMinClauseSize + 1;
+
+  std::vector<int>* MutableBufferForSize(int size) {
     return &clauses_by_size_[size - kMinClauseSize];
   }
-  absl::Span<const int> BufferForSize(int size) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_) {
+  absl::Span<const int> BufferForSize(int size) const {
     return clauses_by_size_[size - kMinClauseSize];
   }
-  absl::Span<const int> NextClause(int size) const
-      ABSL_SHARED_LOCKS_REQUIRED(mutex_);
-  void PopClause(int size) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  absl::Span<const int> NextClause(int size) const;
+  void PopClause(int size);
   // Computes the number of clauses of a given size.
-  int NumClausesOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
-  int NumLiteralsOfSize(int size) const ABSL_SHARED_LOCKS_REQUIRED(mutex_);
+  int NumClausesOfSize(int size) const;
 
-  mutable absl::Mutex mutex_;
-  int lbd_threshold_ ABSL_GUARDED_BY(mutex_) = 2;
-  absl::flat_hash_set<size_t> fingerprints_ ABSL_GUARDED_BY(mutex_);
-  std::array<std::vector<int>, kMaxClauseSize - kMinClauseSize + 1>
-      clauses_by_size_ ABSL_GUARDED_BY(mutex_);
+  int lbd_threshold_ = kMinLbd;
+  int64_t dropped_literals_since_last_batch_ = 0;
+
+  absl::flat_hash_set<size_t> fingerprints_;
+  absl::flat_hash_set<size_t> old_fingerprints_;
+  std::array<std::vector<int>, kNumSizes> clauses_by_size_;
 };
 
 // This class holds clauses found and shared by workers.
@@ -735,14 +836,15 @@ class UniqueClauseStream {
 // literals can be negative numbers.
 class SharedClausesManager {
  public:
-  explicit SharedClausesManager(bool always_synchronize,
-                                absl::Duration share_frequency);
+  explicit SharedClausesManager(bool always_synchronize);
   void AddBinaryClause(int id, int lit1, int lit2);
 
   // Returns new glue clauses.
   // The spans are guaranteed to remain valid until the next call to
   // SyncClauses().
-  std::vector<absl::Span<const int>> GetUnseenClauses(int id);
+  const CompactVectorVector<int>& GetUnseenClauses(int id);
+
+  void AddBatch(int id, CompactVectorVector<int> batch);
 
   // Fills new_clauses with
   //   {{lit1 of clause1, lit2 of clause1},
@@ -752,15 +854,7 @@ class SharedClausesManager {
                               std::vector<std::pair<int, int>>* new_clauses);
 
   // Ids are used to identify which worker is exporting/importing clauses.
-  int RegisterNewId();
-  void SetWorkerNameForId(int id, absl::string_view worker_name);
-
-  // A worker can add or remove clauses from its own clause set.
-  // Retains ownership of the returned ClauseFilter.
-  UniqueClauseStream* GetClauseStream(int id) {
-    absl::ReaderMutexLock mutex_lock(&mutex_);
-    return &id_to_clause_stream_[id];
-  }
+  int RegisterNewId(absl::string_view worker_name, bool may_terminate_early);
 
   // Search statistics.
   void LogStatistics(SolverLogger* logger);
@@ -770,8 +864,12 @@ class SharedClausesManager {
   void Synchronize();
 
  private:
-  static constexpr int kMinBatches = 10;
-  absl::Mutex mutex_;
+  // Returns true if `reader_id` should read batches produced by `writer_id`.
+  bool ShouldReadBatch(int reader_id, int writer_id)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  static constexpr int kMinBatches = 64;
+  mutable absl::Mutex mutex_;
 
   // Binary clauses:
   // Cache to avoid adding the same binary clause twice.
@@ -782,22 +880,124 @@ class SharedClausesManager {
   std::vector<int> id_to_last_processed_binary_clause_ ABSL_GUARDED_BY(mutex_);
   int last_visible_binary_clause_ ABSL_GUARDED_BY(mutex_) = 0;
 
-  // Longer clauses:
-  UniqueClauseStream all_clauses_ ABSL_GUARDED_BY(mutex_);
   // This is slightly subtle - we need to track the batches that might be
-  // currently being processed by each worker.
+  // currently being processed by each worker to make sure we don't erase any
+  // batch that a worker might currently be reading.
   std::vector<int> id_to_last_returned_batch_ ABSL_GUARDED_BY(mutex_);
   std::vector<int> id_to_last_finished_batch_ ABSL_GUARDED_BY(mutex_);
+
   std::deque<CompactVectorVector<int>> batches_ ABSL_GUARDED_BY(mutex_);
-  std::deque<UniqueClauseStream> id_to_clause_stream_ ABSL_GUARDED_BY(mutex_);
-  WallTimer share_timer_ ABSL_GUARDED_BY(mutex_);
+  // pending_batches_ contains clauses produced by individual workers that have
+  // not yet been merged into batches_, which can be read by other workers. When
+  // this is long enough they will be merged into a single batch and appended to
+  // batches_.
+  std::vector<CompactVectorVector<int>> pending_batches_
+      ABSL_GUARDED_BY(mutex_);
+  int num_full_workers_ ABSL_GUARDED_BY(mutex_) = 0;
 
   const bool always_synchronize_ = true;
-  const absl::Duration share_frequency_;
 
   // Stats:
-  std::vector<int64_t> id_to_clauses_exported_;
-  absl::flat_hash_map<int, std::string> id_to_worker_name_;
+  std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_num_updated_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
+};
+
+// A class that allows to exchange root level bounds on linear2.
+//
+// TODO(user): Add Synchronize() support and only publish new bounds when this
+// is called.
+class SharedLinear2Bounds {
+ public:
+  int RegisterNewId(std::string worker_name);
+  void LogStatistics(SolverLogger* logger);
+
+  // This should only contain canonicalized expression.
+  // See the code for IsCanonicalized() for the definition.
+  struct Key {
+    int vars[2];
+    IntegerValue coeffs[2];
+
+    bool IsCanonicalized() {
+      return vars[0] >= 0 && vars[1] >= 0 && vars[0] < vars[1] &&
+             std::gcd(coeffs[0].value(), coeffs[1].value()) == 1;
+    }
+
+    bool operator==(const Key& o) const {
+      return vars[0] == o.vars[0] && vars[1] == o.vars[1] &&
+             coeffs[0] == o.coeffs[0] && coeffs[1] == o.coeffs[1];
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const Key& k) {
+      return H::combine(std::move(h), k.vars[0], k.vars[1], k.coeffs[0],
+                        k.coeffs[1]);
+    }
+
+    template <typename Sink>
+    friend void AbslStringify(Sink& sink, const Key& k) {
+      absl::Format(&sink, "%d X%d + %d X%d", k.coeffs[0].value(), k.vars[0],
+                   k.coeffs[1].value(), k.vars[1]);
+    }
+  };
+
+  // Exports new bounds on the given expr (should be canonicalized).
+  void Add(int id, Key expr, IntegerValue lb, IntegerValue ub);
+
+  // This is called less often, and maybe not every-worker that exports want to
+  // export, so we use a separate id space. Because we rely on hash map to
+  // check if a bound is new, it is not such a big deal that a worker re-read
+  // once the bounds it exported.
+  int RegisterNewImportId(std::string name);
+
+  // Returns the linear2 and their bounds.
+  // We only return changes since the last call with the same id.
+  std::vector<std::pair<Key, std::pair<IntegerValue, IntegerValue>>>
+  NewlyUpdatedBounds(int import_id);
+
+  // This is not filled by NewlyUpdatedBounds() because we want to track the
+  // bounds that were not already known by the worker at the time of the import,
+  // and we don't have this information here.
+  void NotifyNumImported(int import_id, int num) {
+    absl::MutexLock mutex_lock(mutex_);
+    import_id_to_num_imported_[import_id] += num;
+  }
+
+ private:
+  void MaybeCompressNewlyUpdateKeys() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
+  absl::Mutex mutex_;
+
+  // The best known bounds for each key.
+  absl::flat_hash_map<Key, std::pair<IntegerValue, IntegerValue>> shared_bounds_
+      ABSL_GUARDED_BY(mutex_);
+
+  // Ever growing list of updated position in shared_bounds_.
+  // Note that we do reduce it in MaybeCompressNewlyUpdateKeys(), but that
+  // requires all registered workers to have at least imported some bounds.
+  //
+  // TODO(user): use indirect addressing so that newly_updated_keys_ can just
+  // deal with indices, and it is a bit tighter memory wise? We also avoid
+  // hash-lookups on NewlyUpdatedBounds(). But since this is only called at
+  // level zero on new bounds, I don't think we care.
+  std::vector<Key> newly_updated_keys_;
+
+  // For import.
+  std::vector<std::string> import_id_to_name_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> import_id_to_index_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int> import_id_to_num_imported_ ABSL_GUARDED_BY(mutex_);
+
+  // Just for reporting at the end of the solve.
+  struct Stats {
+    int64_t num_new = 0;
+    int64_t num_update = 0;
+    int64_t num_imported = 0;  // Copy of import_id_to_num_imported_.
+    bool empty() const {
+      return num_new == 0 && num_update == 0 && num_imported == 0;
+    }
+  };
+  std::vector<Stats> id_to_stats_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
 };
 
 // Simple class to add statistics by name and print them at the end.
@@ -818,22 +1018,23 @@ class SharedStatistics {
 
 template <typename ValueType>
 int SharedSolutionRepository<ValueType>::NumSolutions() const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return solutions_.size();
 }
 
 template <typename ValueType>
 std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetSolution(int i) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
+  if (i >= solutions_.size()) return nullptr;
   ++num_queried_;
   return solutions_[i];
 }
 
 template <typename ValueType>
 int64_t SharedSolutionRepository<ValueType>::GetBestRank() const {
-  absl::MutexLock mutex_lock(&mutex_);
-  CHECK_GT(solutions_.size(), 0);
+  absl::MutexLock mutex_lock(mutex_);
+  if (solutions_.empty()) return std::numeric_limits<int64_t>::max();
   return solutions_[0]->rank;
 }
 
@@ -841,12 +1042,13 @@ template <typename ValueType>
 std::vector<std::shared_ptr<
     const typename SharedSolutionRepository<ValueType>::Solution>>
 SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
-  absl::MutexLock mutex_lock(&mutex_);
-  // Sorted and unique.
-  DCHECK(absl::c_is_sorted(
-      solutions_,
-      [](const std::shared_ptr<const Solution>& a,
-         const std::shared_ptr<const Solution>& b) { return *a < *b; }));
+  absl::MutexLock mutex_lock(mutex_);
+  // Sorted by rank and unique.
+  DCHECK(absl::c_is_sorted(solutions_,
+                           [](const std::shared_ptr<const Solution>& a,
+                              const std::shared_ptr<const Solution>& b) {
+                             return a->rank < b->rank;
+                           }));
   DCHECK(absl::c_adjacent_find(solutions_,
                                [](const std::shared_ptr<const Solution>& a,
                                   const std::shared_ptr<const Solution>& b) {
@@ -864,7 +1066,7 @@ SharedSolutionRepository<ValueType>::GetBestNSolutions(int n) const {
 template <typename ValueType>
 ValueType SharedSolutionRepository<ValueType>::GetVariableValueInSolution(
     int var_index, int solution_index) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
   return solutions_[solution_index]->variable_values[var_index];
 }
 
@@ -873,35 +1075,42 @@ template <typename ValueType>
 std::shared_ptr<const typename SharedSolutionRepository<ValueType>::Solution>
 SharedSolutionRepository<ValueType>::GetRandomBiasedSolution(
     absl::BitGenRef random) const {
-  absl::MutexLock mutex_lock(&mutex_);
+  absl::MutexLock mutex_lock(mutex_);
+  if (solutions_.empty()) return nullptr;
   ++num_queried_;
-  const int64_t best_rank = solutions_[0]->rank;
+  int index = 0;
 
-  // As long as we have solution with the best objective that haven't been
-  // explored too much, we select one uniformly. Otherwise, we select a solution
-  // from the pool uniformly.
-  //
-  // Note(user): Because of the increase of num_selected, this is dependent on
-  // the order of call. It should be fine for "determinism" because we do
-  // generate the task of a batch always in the same order.
-  const int kExplorationThreshold = 100;
+  if (solutions_.size() > 1) {
+    const int64_t best_rank = solutions_[0]->rank;
 
-  // Select all the best solution with a low enough selection count.
-  tmp_indices_.clear();
-  for (int i = 0; i < solutions_.size(); ++i) {
-    std::shared_ptr<const Solution> solution = solutions_[i];
-    if (solution->rank == best_rank &&
-        solution->num_selected <= kExplorationThreshold) {
-      tmp_indices_.push_back(i);
+    // As long as we have solution with the best objective that haven't been
+    // explored too much, we select one uniformly. Otherwise, we select a
+    // solution from the pool uniformly.
+    //
+    // Note(user): Because of the increase of num_selected, this is dependent on
+    // the order of call. It should be fine for "determinism" because we do
+    // generate the task of a batch always in the same order.
+    const int kExplorationThreshold = 100;
+
+    // Select all the best solution with a low enough selection count.
+    tmp_indices_.clear();
+    for (int i = 0; i < solutions_.size(); ++i) {
+      std::shared_ptr<const Solution> solution = solutions_[i];
+      if (solution->rank == best_rank &&
+          solution->num_selected <= kExplorationThreshold) {
+        tmp_indices_.push_back(i);
+      }
+    }
+
+    if (tmp_indices_.empty()) {
+      index = absl::Uniform<int>(random, 0, solutions_.size());
+    } else {
+      index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
     }
   }
 
-  int index = 0;
-  if (tmp_indices_.empty()) {
-    index = absl::Uniform<int>(random, 0, solutions_.size());
-  } else {
-    index = tmp_indices_[absl::Uniform<int>(random, 0, tmp_indices_.size())];
-  }
+  CHECK_GE(index, 0);
+  CHECK_LT(index, solutions_.size());
   solutions_[index]->num_selected++;
   return solutions_[index];
 }
@@ -913,40 +1122,154 @@ SharedSolutionRepository<ValueType>::Add(Solution solution) {
       std::make_shared<Solution>(std::move(solution));
   if (num_solutions_to_keep_ <= 0) return std::move(solution_ptr);
   {
-    absl::MutexLock mutex_lock(&mutex_);
+    absl::MutexLock mutex_lock(mutex_);
     ++num_added_;
+    solution_ptr->source_id = source_id_;
     new_solutions_.push_back(solution_ptr);
   }
   return solution_ptr;
 }
 
 template <typename ValueType>
-void SharedSolutionRepository<ValueType>::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
-  if (new_solutions_.empty()) return;
+void SharedSolutionRepository<ValueType>::Synchronize(
+    std::function<void(const Solution& solution)> f) {
+  absl::MutexLock mutex_lock(mutex_);
+  if (new_solutions_.empty()) {
+    const int64_t diff = num_queried_ - num_queried_at_last_sync_;
+    num_non_improving_ += diff;
+    num_queried_at_last_sync_ = num_queried_;
+    return;
+  }
+
+  if (f != nullptr) {
+    gtl::STLStableSortAndRemoveDuplicates(
+        &new_solutions_,
+        [](const std::shared_ptr<Solution>& a,
+           const std::shared_ptr<Solution>& b) { return *a < *b; });
+    for (const auto& ptr : new_solutions_) {
+      f(*ptr);
+    }
+  }
+
+  const int64_t old_best_rank = solutions_.empty()
+                                    ? std::numeric_limits<int64_t>::max()
+                                    : solutions_[0]->rank;
 
   solutions_.insert(solutions_.end(), new_solutions_.begin(),
                     new_solutions_.end());
   new_solutions_.clear();
 
   // We use a stable sort to keep the num_selected count for the already
-  // existing solutions.
-  //
-  // TODO(user): Introduce a notion of orthogonality to diversify the pool?
+  // existing solutions (in case of duplicates).
   gtl::STLStableSortAndRemoveDuplicates(
       &solutions_, [](const std::shared_ptr<Solution>& a,
                       const std::shared_ptr<Solution>& b) { return *a < *b; });
+  const int64_t new_best_rank = solutions_[0]->rank;
+
+  // If we have more than num_solutions_to_keep_ solutions with the best rank,
+  // select them via orthogonality.
+  if (solutions_.size() > num_solutions_to_keep_ &&
+      num_solutions_to_keep_ > 1) {
+    int num_best = 1;
+    while (num_best < solutions_.size() &&
+           solutions_[num_best]->rank == new_best_rank) {
+      ++num_best;
+    }
+
+    if (num_best > num_solutions_to_keep_ &&
+        num_solutions_to_keep_ <= diversity_limit_) {
+      // We should only be here if a new solution (not in our current set) was
+      // found. It could be one we saw before but forgot about. We put one
+      // first.
+      for (auto& solution : solutions_) {
+        if (solution->num_selected == 0) {
+          // TODO(user): randomize amongst new solution?
+          std::swap(solutions_[0], solution);
+          break;
+        }
+      }
+
+      // We are going to be in O(n^2 * solution_size + 2^n),
+      // so keep n <= diversity_limit_.
+      solutions_.resize(std::min(diversity_limit_, num_best));
+
+      // Fill the pairwise distances.
+      const int n = solutions_.size();
+      distances_.resize(n * n);
+      const int size = solutions_[0]->variable_values.size();
+      for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+          int64_t dist = 0;
+          for (int k = 0; k < size; ++k) {
+            if (solutions_[i]->variable_values[k] !=
+                solutions_[j]->variable_values[k]) {
+              ++dist;
+            }
+          }
+          distances_[i * n + j] = distances_[j * n + i] = dist;
+        }
+      }
+
+      // In order to not get stuck on a subset that always maximize the sum of
+      // orthogonality, we pick the first element (which should be a new one
+      // thanks to the swap above), and we maximize the sum of orthogonality
+      // with the rest.
+      //
+      // This way, as we find new solution, the set changes slowly.
+      //
+      // TODO(user): When n == num_solutions_to_keep_ + 1, there is
+      // a faster algo thant 2^n since there is only n possible sets. Fix.
+      const std::vector<int> selected =
+          FindMostDiverseSubset(num_solutions_to_keep_, n, distances_, buffer_,
+                                /*always_pick_mask = */ 1);
+
+      DCHECK(std::is_sorted(selected.begin(), selected.end()));
+      int new_size = 0;
+      for (const int s : selected) {
+        solutions_[new_size++] = std::move(solutions_[s]);
+      }
+      solutions_.resize(new_size);
+
+      if (VLOG_IS_ON(3)) {
+        int min_count = std::numeric_limits<int>::max();
+        int max_count = 0;
+        for (const auto& s : solutions_) {
+          CHECK(s != nullptr);
+          min_count = std::min(s->num_selected, min_count);
+          max_count = std::max(s->num_selected, max_count);
+        }
+        int64_t score = 0;
+        for (const int i : selected) {
+          for (const int j : selected) {
+            if (i > j) score += distances_[i * n + j];
+          }
+        }
+        LOG(INFO) << name_ << " rank=" << new_best_rank
+                  << " num=" << num_solutions_to_keep_ << "/" << num_best
+                  << " orthogonality=" << score << " count=[" << min_count
+                  << ", " << max_count << "]";
+      }
+    }
+  }
+
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
-
+  CHECK(!solutions_.empty());
   if (!solutions_.empty()) {
-    VLOG(2) << "Solution pool update:" << " num_solutions=" << solutions_.size()
+    VLOG(4) << "Solution pool update:" << " num_solutions=" << solutions_.size()
             << " min_rank=" << solutions_[0]->rank
             << " max_rank=" << solutions_.back()->rank;
   }
 
   num_synchronization_++;
+  if (new_best_rank < old_best_rank) {
+    num_non_improving_ = 0;
+  } else {
+    const int64_t diff = num_queried_ - num_queried_at_last_sync_;
+    num_non_improving_ += diff;
+  }
+  num_queried_at_last_sync_ = num_queried_;
 }
 
 }  // namespace sat

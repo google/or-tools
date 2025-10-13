@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
 # Code specific to GLPK used in glpk_solver.cc.
 package(default_visibility = ["//ortools/math_opt/solvers:__subpackages__"])
 
@@ -18,15 +21,20 @@ cc_library(
     name = "rays",
     srcs = ["rays.cc"],
     hdrs = ["rays.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         "//ortools/base:logging",
         "//ortools/base:status_macros",
         "//ortools/glpk:glpk_computational_form",
         "//ortools/glpk:glpk_formatters",
-        "@com_google_absl//absl/log:check",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings",
         "@glpk",
     ],
 )
@@ -35,15 +43,25 @@ cc_library(
     name = "glpk_sparse_vector",
     srcs = ["glpk_sparse_vector.cc"],
     hdrs = ["glpk_sparse_vector.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         "//ortools/base:logging",
-        "@com_google_absl//absl/log:check",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
 cc_test(
     name = "glpk_sparse_vector_test",
     srcs = ["glpk_sparse_vector_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":glpk_sparse_vector",
         "//ortools/base:gmock_main",
@@ -54,11 +72,21 @@ cc_library(
     name = "gap",
     srcs = ["gap.cc"],
     hdrs = ["gap.h"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
 )
 
 cc_test(
     name = "gap_test",
     srcs = ["gap_test.cc"],
+    target_compatible_with =
+        select({
+            "//ortools/linear_solver:use_glpk": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
     deps = [
         ":gap",
         "//ortools/base:gmock_main",

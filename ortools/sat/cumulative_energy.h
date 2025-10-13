@@ -22,11 +22,11 @@
 #include "ortools/sat/2d_orthogonal_packing.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/scheduling_helpers.h"
 #include "ortools/sat/synchronization.h"
-#include "ortools/sat/theta_tree.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/scheduling.h"
 
 namespace operations_research {
 namespace sat {
@@ -83,7 +83,7 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
 };
 
 // Given that the "tasks" are part of a cumulative constraint, this adds a
-// constraint that propagate the fact that: var >= max(end of substasks) +
+// constraint that propagate the fact that: var >= max(end of subtasks) +
 // offset.
 //
 // TODO(user): I am not sure this is the best way, but it does at least push

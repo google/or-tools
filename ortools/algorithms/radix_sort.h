@@ -30,9 +30,6 @@
 // But the worst-case performance of RadixSort() is much faster than the
 // worst-case performance of std::sort().
 // To be sure, you should benchmark your use case.
-//
-// TODO: it could be even faster than that when the values are in [0..N) for a
-// known value N that's significantly lower than the max integer value.
 
 #include <algorithm>
 #include <cstddef>
@@ -45,23 +42,35 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/casts.h"
+#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
+#include "absl/numeric/bits.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 
 namespace operations_research {
 
 // Sorts an array of int, double, or other numeric types. Up to ~10x faster than
-// std::sort() when size ≥ 8k: go/radix-sort-bench. See file-level comment.
+// std::sort() when size ≥ 8k. See file-level comment for more details.
 template <typename T>
-void RadixSort(absl::Span<T> values);
+void RadixSort(
+    absl::Span<T> values,
+    // ADVANCED USAGE: if you're sorting nonnegative integers, and suspect that
+    // their values use less bits than their full bit width, you may improve
+    // performance by setting `num_bits` to a lower value, for example
+    // NumBitsForZeroTo(max_value). It might even be faster to scan the values
+    // once just to do that, e.g., RadixSort(values,
+    // NumBitsForZeroTo(*absl::c_max_element(values)));
+    int num_bits = sizeof(T) * 8);
+
+template <typename T>
+int NumBitsForZeroTo(T max_value);
 
 // ADVANCED USAGE: For power users who know which radix_width or num_passes
 // they need, possibly differing from the canonical values used by RadixSort().
 template <typename T, int radix_width, int num_passes>
 void RadixSortTpl(absl::Span<T> values);
 
-// TODO(user): Support arbitrary types with an int() or other numerical getter.
 // TODO(user): Support the user providing already-allocated memory buffers
 //              for the radix counts and/or for the temporary vector<T> copy.
 
@@ -240,49 +249,101 @@ void RadixSortTpl(absl::Span<T> values) {
   }
 }
 
-// TODO(user): Expose an API that takes the "max value" as argument, for
-// users who want to take advantage of that knowledge to reduce the number of
-// passes.
 template <typename T>
-void RadixSort(absl::Span<T> values) {
-  switch (sizeof(T)) {
-    case 1:
-      if (values.size() < 300) {
-        absl::c_sort(values);
+int NumBitsForZeroTo(T max_value) {
+  if constexpr (!std::is_integral_v<T>) {
+    return sizeof(T) * 8;
+  } else {
+    using U = std::make_unsigned_t<T>;
+    DCHECK_GE(max_value, 0);
+    return std::numeric_limits<U>::digits - absl::countl_zero<U>(max_value);
+  }
+}
+
+#ifdef NDEBUG
+const bool DEBUG_MODE = false;
+#else
+const bool DEBUG_MODE = true;
+#endif
+
+template <typename T>
+void RadixSort(absl::Span<T> values, int num_bits) {
+  // Debug-check that num_bits is valid w.r.t. the values given.
+  if constexpr (DEBUG_MODE) {
+    if constexpr (!std::is_integral_v<T>) {
+      DCHECK_EQ(num_bits, sizeof(T) * 8);
+    } else if (!values.empty()) {
+      auto minmax_it = absl::c_minmax_element(values);
+      const T min_val = *minmax_it.first;
+      const T max_val = *minmax_it.second;
+      if (num_bits == 0) {
+        DCHECK_EQ(max_val, 0);
       } else {
-        RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/1>(values);
+        using U = std::make_unsigned_t<T>;
+        // We only shift by num_bits - 1, to avoid to potentially shift by the
+        // entire bit width, which would be undefined behavior.
+        DCHECK_LE(static_cast<U>(max_val) >> (num_bits - 1), 1);
+        DCHECK_LE(static_cast<U>(min_val) >> (num_bits - 1), 1);
       }
-      return;
-    case 2:
-      if (values.size() < 300) {
-        absl::c_sort(values);
+    }
+  }
+
+  // This shortcut here is important to have early, guarded by as few "if"
+  // branches as possible, for the use case where the array is very small.
+  // For larger arrays below, the overhead of a few "if" is negligible.
+  if (values.size() < 300) {
+    absl::c_sort(values);
+    return;
+  }
+
+  // TODO(user): More complex decision tree, based on benchmarks. This one
+  // is already nice, but some cases can surely be optimized.
+  if (num_bits <= 16) {
+    if (num_bits <= 8) {
+      RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/1>(values);
+    } else {
+      RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/2>(values);
+    }
+  } else if (num_bits <= 32) {  // num_bits ∈ [17..32]
+    if (values.size() < 1000) {
+      if (num_bits <= 24) {
+        RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/3>(values);
       } else {
-        RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/2>(values);
-      }
-      return;
-    case 4:
-      if (values.size() < 300) {
-        absl::c_sort(values);
-      } else if (values.size() < 1000) {
         RadixSortTpl<T, /*radix_width=*/8, /*num_passes=*/4>(values);
-      } else if (values.size() < 2'500'000) {
-        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/3>(values);
-      } else {
-        RadixSortTpl<T, /*radix_width=*/16, /*num_passes=*/2>(values);
       }
-      return;
-    case 8:
-      if (values.size() < 5000) {
-        absl::c_sort(values);
-      } else if (values.size() < 1'500'000) {
+    } else if (values.size() < 2'500'000) {
+      if (num_bits <= 22) {
+        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/2>(values);
+      } else {
+        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/3>(values);
+      }
+    } else {
+      RadixSortTpl<T, /*radix_width=*/16, /*num_passes=*/2>(values);
+    }
+  } else if (num_bits <= 64) {  // num_bits ∈ [33..64]
+    if (values.size() < 5000) {
+      absl::c_sort(values);
+    } else if (values.size() < 1'500'000) {
+      if (num_bits <= 33) {
+        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/3>(values);
+      } else if (num_bits <= 44) {
+        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/4>(values);
+      } else if (num_bits <= 55) {
+        RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/5>(values);
+      } else {
         RadixSortTpl<T, /*radix_width=*/11, /*num_passes=*/6>(values);
+      }
+    } else {
+      if (num_bits <= 48) {
+        RadixSortTpl<T, /*radix_width=*/16, /*num_passes=*/3>(values);
       } else {
         RadixSortTpl<T, /*radix_width=*/16, /*num_passes=*/4>(values);
       }
-      return;
+    }
+  } else {
+    LOG(DFATAL) << "RadixSort() called with unsupported value type";
+    absl::c_sort(values);
   }
-  LOG(DFATAL) << "RadixSort() called with unsupported value type";
-  absl::c_sort(values);
 }
 
 }  // namespace operations_research

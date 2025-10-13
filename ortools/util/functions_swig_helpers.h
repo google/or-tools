@@ -15,7 +15,7 @@
 #define OR_TOOLS_UTIL_FUNCTIONS_SWIG_HELPERS_H_
 
 // This file contains class definitions for the wrapping of C++ std::functions
-// in Java. It is #included by java/functions.i.
+// in Java. It is #included by java/functions.swig.
 
 #include <cstdint>
 #include <string>

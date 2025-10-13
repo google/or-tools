@@ -11,20 +11,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Python wrapper for model_builder.
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
-load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
 
+# Python wrapper for model_builder.
 pybind_extension(
     name = "model_builder_helper",
     srcs = ["model_builder_helper.cc"],
     visibility = ["//visibility:public"],
     deps = [
+        "//ortools/base:logging",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/linear_solver:model_exporter",
         "//ortools/linear_solver/wrappers:model_builder_helper",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/hash",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
         "@eigen",
         "@pybind11_protobuf//pybind11_protobuf:native_proto_caster",
     ],
@@ -39,11 +45,10 @@ py_test(
     ],
     deps = [
         ":model_builder_helper",
-        ":model_builder_numbers",
-        "//ortools/linear_solver:linear_solver_py_pb2",
         requirement("absl-py"),
         requirement("numpy"),
         requirement("scipy"),
+        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
 
@@ -78,11 +83,16 @@ py_test(
     ],
     deps = [
         ":model_builder",
+        ":model_builder_helper",
+        "@protobuf//:protobuf_python",
         requirement("absl-py"),
+        requirement("numpy"),
         requirement("pandas"),
         "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )
+
+## Proto solver
 
 py_binary(
     name = "solve_model",
@@ -90,6 +100,5 @@ py_binary(
     deps = [
         ":model_builder",
         requirement("absl-py"),
-        "//ortools/linear_solver:linear_solver_py_pb2",
     ],
 )

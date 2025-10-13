@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_MAPPING_H_
 #define OR_TOOLS_SAT_CP_MODEL_MAPPING_H_
 
+#include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
@@ -23,7 +25,6 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer_base.h"
-#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -163,8 +164,10 @@ class CpModelMapping {
     return reverse_boolean_map_[var];
   }
   int GetProtoVariableFromIntegerVariable(IntegerVariable var) const {
-    if (var.value() >= reverse_integer_map_.size()) return -1;
-    return reverse_integer_map_[var];
+    DCHECK(VariableIsPositive(var));
+    const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+    if (index >= reverse_integer_map_.end_index()) return -1;
+    return reverse_integer_map_[index];
   }
 
   // This one should only be used when we have a mapping.
@@ -187,6 +190,29 @@ class CpModelMapping {
     }
     expr.offset = IntegerValue(expr_proto.offset());
     return CanonicalizeExpr(expr);
+  }
+
+  // Returns the min/max activity of the linear constraint under the current
+  // integer_trail bounds.
+  std::pair<int64_t, int64_t> ComputeMinMaxActivity(
+      const LinearConstraintProto& proto, IntegerTrail* integer_trail) {
+    int64_t sum_min = 0;
+    int64_t sum_max = 0;
+
+    for (int i = 0; i < proto.vars_size(); ++i) {
+      const int64_t coeff = proto.coeffs(i);
+      const IntegerVariable var = this->Integer(proto.vars(i));
+      const int64_t lb = integer_trail->LowerBound(var).value();
+      const int64_t ub = integer_trail->UpperBound(var).value();
+      if (coeff >= 0) {
+        sum_min += coeff * lb;
+        sum_max += coeff * ub;
+      } else {
+        sum_min += coeff * ub;
+        sum_max += coeff * lb;
+      }
+    }
+    return {sum_min, sum_max};
   }
 
   // For logging only, these are not super efficient.
@@ -223,7 +249,7 @@ class CpModelMapping {
   // index. The value of -1 is used to indicate that there is no correspondence
   // (i.e. this variable is only used internally).
   util_intops::StrongVector<BooleanVariable, int> reverse_boolean_map_;
-  util_intops::StrongVector<IntegerVariable, int> reverse_integer_map_;
+  util_intops::StrongVector<PositiveOnlyIndex, int> reverse_integer_map_;
 
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().

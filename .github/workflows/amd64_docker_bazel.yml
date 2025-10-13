@@ -1,0 +1,46 @@
+# ref: https://github.com/docker-library/official-images
+name: amd64 Docker Bazel
+
+on:
+  push:
+    branches:
+      - main
+      - v99bugfix
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  bazel:
+    strategy:
+      matrix:
+        distro: [
+          almalinux,
+          # alpine,
+          archlinux,
+          debian,
+          fedora,
+          opensuse,
+          rockylinux,
+          ubuntu
+        ]
+      fail-fast: false
+    name: amd64•${{matrix.distro}}•Bazel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check docker
+        run: |
+          docker info
+          docker buildx ls
+      - name: Build env image
+        run: make --directory=bazel amd64_${{matrix.distro}}_env
+      - name: Build devel image
+        run: make --directory=bazel amd64_${{matrix.distro}}_devel
+      - name: Build project
+        run: make --directory=bazel amd64_${{matrix.distro}}_build
+      - name: Test project
+        run: make --directory=bazel amd64_${{matrix.distro}}_test

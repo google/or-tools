@@ -20,6 +20,7 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
+set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -97,6 +98,7 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/routing/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
   )
@@ -206,11 +208,13 @@ function(add_java_test)
   add_custom_command(
     OUTPUT ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
-    ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy ${TEST_FILE_NAME} ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${TEST_FILE_NAME}
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/
     MAIN_DEPENDENCY ${TEST_FILE_NAME}
     VERBATIM
-    )
+  )
 
   string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
   configure_file(
@@ -223,17 +227,17 @@ function(add_java_test)
     COMMAND ${MAVEN_EXECUTABLE} compile -B
     COMMAND ${CMAKE_COMMAND} -E touch ${JAVA_TEST_DIR}/timestamp
     DEPENDS
-    ${JAVA_TEST_DIR}/pom.xml
-    ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
-    java_package
+      ${JAVA_TEST_DIR}/pom.xml
+      ${JAVA_TEST_DIR}/${JAVA_TEST_PATH}/${TEST_NAME}.java
+      java_package
     BYPRODUCTS
-    ${JAVA_TEST_DIR}/target
+      ${JAVA_TEST_DIR}/target
     COMMENT "Compiling Java ${COMPONENT_NAME}/${TEST_NAME}.java (${JAVA_TEST_DIR}/timestamp)"
     WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
   add_custom_target(java_${COMPONENT_NAME}_${TEST_NAME} ALL
     DEPENDS
-    ${JAVA_TEST_DIR}/timestamp
+      ${JAVA_TEST_DIR}/timestamp
     WORKING_DIRECTORY ${JAVA_TEST_DIR})
 
   if(BUILD_TESTING)
@@ -257,6 +261,7 @@ foreach(SUBPROJECT IN ITEMS
  init
  linear_solver
  constraint_solver
+ routing
  sat
  util)
   add_subdirectory(ortools/${SUBPROJECT}/java)
@@ -280,6 +285,9 @@ set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
 set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
 set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
 
+set(need_unix_bzip2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_BZip2}>>")
+set(need_windows_bzip2_lib "$<AND:${is_windows},$<BOOL:${BUILD_BZip2}>>")
+
 set(need_unix_absl_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_absl}>>")
 set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 
@@ -298,6 +306,9 @@ set(need_unix_cbc_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Cbc}>>")
 set(need_unix_highs_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_HIGHS}>>")
 set(need_windows_highs_lib "$<AND:${is_windows},$<BOOL:${BUILD_HIGHS}>>")
 
+set(need_unix_scip_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_SCIP}>>")
+set(need_windows_scip_lib "$<AND:${is_windows},$<BOOL:${BUILD_SCIP}>>")
+
 set(is_ortools_shared "$<STREQUAL:$<TARGET_PROPERTY:ortools,TYPE>,SHARED_LIBRARY>")
 set(need_unix_ortools_lib "$<AND:${is_not_windows},${is_ortools_shared}>")
 set(need_windows_ortools_lib "$<AND:${is_windows},${is_ortools_shared}>")
@@ -312,11 +323,13 @@ add_custom_command(
     $<${need_windows_zlib_lib}:$<TARGET_FILE:ZLIB::ZLIB>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
   COMMAND ${CMAKE_COMMAND} -E
+    $<IF:$<BOOL:${BUILD_BZip2}>,copy,true>
+    $<${need_unix_bzip2_lib}:$<TARGET_SONAME_FILE:BZip2::BZip2>>
+    $<${need_windows_bzip2_lib}:$<TARGET_FILE:BZip2::BZip2>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+  COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_absl}>,copy,true>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::base>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_any_cast_impl>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_optional_access>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::bad_variant_access>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::city>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::civil_time>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::cord>>
@@ -362,16 +375,16 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_format>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_globals>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_log_sink_set>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_structured_proto>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_message>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_nullguard>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_internal_proto>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_severity>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::log_sink>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::low_level_hash>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::malloc_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_distributions>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_entropy_pool>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_platform>>
-    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_pool_urbg>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::random_internal_randen_hwaes_impl>>
@@ -394,6 +407,7 @@ add_custom_command(
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::synchronization>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::throw_delegate>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::time>>
+    $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::tracing_internal>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::time_zone>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::utf8_for_code_point>>
     $<${need_unix_absl_lib}:$<TARGET_SONAME_FILE:absl::vlog_config_internal>>
@@ -441,8 +455,14 @@ add_custom_command(
 
   COMMAND ${CMAKE_COMMAND} -E
     $<IF:$<BOOL:${BUILD_HIGHS}>,copy,true>
-    $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs>>
-    $<${need_windows_highs_lib}:$<TARGET_FILE:highs>>
+    $<${need_unix_highs_lib}:$<TARGET_SONAME_FILE:highs::highs>>
+    $<${need_windows_highs_lib}:$<TARGET_FILE:highs::highs>>
+    ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
+
+  COMMAND ${CMAKE_COMMAND} -E
+  $<IF:$<BOOL:${BUILD_SCIP}>,copy,true>
+  $<${need_unix_scip_lib}:$<TARGET_SONAME_FILE:SCIP::libscip>>
+    $<${need_windows_scip_lib}:$<TARGET_FILE:SCIP::libscip>>
     ${JAVA_RESSOURCES_PATH}/${JAVA_NATIVE_PROJECT}/
 
   COMMAND ${CMAKE_COMMAND} -E
@@ -550,7 +570,7 @@ if(BUILD_JAVA_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/java/Doxyfile.in ${PROJECT_BINARY_DIR}/java/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -562,6 +582,8 @@ if(BUILD_JAVA_DOC)
         java_package
         ${PROJECT_BINARY_DIR}/java/Doxyfile
         ${PROJECT_BINARY_DIR}/java/doxygen-awesome.css
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
+        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/java/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating Java API documentation with Doxygen"
@@ -640,8 +662,10 @@ function(add_java_sample)
     OUTPUT ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/${SAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
       ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples
-    COMMAND ${CMAKE_COMMAND} -E copy ${SAMPLE_FILE_NAME} ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/
-      MAIN_DEPENDENCY ${SAMPLE_FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${SAMPLE_FILE_NAME}
+      ${SAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME_LOWER}/samples/
+    MAIN_DEPENDENCY ${SAMPLE_FILE_NAME}
     VERBATIM
   )
 
@@ -728,8 +752,10 @@ if(NOT EXAMPLE_FILE_NAME)
     OUTPUT ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/${EXAMPLE_NAME}.java
     COMMAND ${CMAKE_COMMAND} -E make_directory
       ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}
-    COMMAND ${CMAKE_COMMAND} -E copy ${EXAMPLE_FILE_NAME} ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/
-      MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${EXAMPLE_FILE_NAME}
+      ${JAVA_EXAMPLE_DIR}/${JAVA_SRC_PATH}/${COMPONENT_NAME}/
+    MAIN_DEPENDENCY ${EXAMPLE_FILE_NAME}
     VERBATIM
   )
 

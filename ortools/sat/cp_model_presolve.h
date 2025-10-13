@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/integer_base.h"
 #include "ortools/sat/presolve_context.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_base.h"
@@ -42,15 +44,14 @@ namespace operations_research {
 namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
-// by mapping[i]. The definition of variables i is also moved to its new index.
-// If mapping[i] < 0 the variable can be ignored if possible. If it is not
-// possible, then we will use a new index for it (at the end) and the mapping
-// will be updated to reflect that.
+// by mapping[i] in the working model. The definition of variables i is also
+// moved to its new index. If mapping[i] < 0 the variable can be ignored if
+// possible. If it is not possible, then we will use a new index for it (at the
+// end) and the mapping will be updated to reflect that.
 //
 // The image of the mapping should be dense in [0, reverse_mapping->size()).
-void ApplyVariableMapping(absl::Span<int> mapping,
-                          std::vector<int>* reverse_mapping,
-                          CpModelProto* proto);
+void ApplyVariableMapping(PresolveContext* context, absl::Span<int> mapping,
+                          std::vector<int>* reverse_mapping);
 
 // Presolves the initial content of presolved_model.
 //
@@ -166,7 +167,8 @@ class CpModelPresolver {
                                   LinearArgumentProto* proto);
 
   // For the linear constraints, we have more than one function.
-  bool CanonicalizeLinear(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool CanonicalizeLinear(ConstraintProto* ct,
+                                               bool* changed);
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
@@ -271,6 +273,10 @@ class CpModelPresolver {
   // transforms them into maximal cliques.
   void TransformIntoMaxCliques();
 
+  // Checks if there are any clauses that can be transformed to an at most
+  // one constraint.
+  void TransformClausesToExactlyOne();
+
   // Converts bool_or and at_most_one of size 2 to bool_and.
   void ConvertToBoolAnd();
 
@@ -298,7 +304,11 @@ class CpModelPresolver {
   void LookAtVariableWithDegreeTwo(int var);
   void ProcessVariableInTwoAtMostOrExactlyOne(int var);
 
-  void MergeNoOverlapConstraints();
+  bool MergeCliqueConstraintsHelper(std::vector<std::vector<Literal>>& cliques,
+                                    std::string_view entry_name,
+                                    PresolveTimer& timer);
+  bool MergeNoOverlapConstraints();
+  bool MergeNoOverlap2DConstraints();
 
   // Assumes that all [constraint_index, multiple] in block are linear
   // constraint that contains multiple * common_part and perform the
@@ -346,7 +356,8 @@ class CpModelPresolver {
   bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
-  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
+                                                  std::string_view reason);
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
@@ -387,6 +398,13 @@ class CpModelPresolver {
   MaxBoundedSubsetSum lb_infeasible_;
   MaxBoundedSubsetSum ub_feasible_;
   MaxBoundedSubsetSum ub_infeasible_;
+
+  // We have an hash-map of know relation between two variables.
+  // In particular, this will include all known precedences a <= b.
+  //
+  // We reuse an IntegerVariable/IntegerValue based class via
+  // GetLinearExpression2FromProto() only visible in the .cc.
+  BestBinaryRelationBounds known_linear2_;
 
   struct IntervalConstraintEq {
     const CpModelProto* working_model;

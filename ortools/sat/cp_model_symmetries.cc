@@ -379,7 +379,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         break;
       }
       case ConstraintProto::kAtMostOne: {
-        if (constraint.at_most_one().literals().size() == 2) {
+        if (constraint.at_most_one().literals().size() == 2 &&
+            constraint.enforcement_literal().empty()) {
           // Treat it as an implication to avoid creating a node.
           add_implication(constraint.at_most_one().literals(0),
                           NegatedRef(constraint.at_most_one().literals(1)));
@@ -427,6 +428,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
             constraint.lin_max().target();
 
         const int target_node = make_linear_expr_node(target_expr, color);
+        CHECK_EQ(constraint_node, target_node);
 
         for (int i = 0; i < constraint.lin_max().exprs_size(); ++i) {
           const LinearExpressionProto& expr = constraint.lin_max().exprs(i);
@@ -538,9 +540,13 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
       case ConstraintProto::kCircuit: {
         // Note that this implementation will generate the same graph for a
         // circuit constraint with two disconnected components and two circuit
-        // constraints with one component each.
+        // constraints with one component each, unless there is an enforcement
+        // literal.
         const int num_arcs = constraint.circuit().literals().size();
         absl::flat_hash_map<int, int> circuit_node_to_symmetry_node;
+        if (!constraint.enforcement_literal().empty()) {
+          CHECK_EQ(constraint_node, new_node(color));
+        }
         std::vector<int64_t> arc_color = color;
         arc_color.push_back(1);
         for (int i = 0; i < num_arcs; ++i) {
@@ -558,6 +564,9 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
           const int tail_node = circuit_node_to_symmetry_node[tail];
           // To make the graph directed, we add two arcs on the head but not on
           // the tail.
+          if (!constraint.enforcement_literal().empty()) {
+            graph->AddArc(constraint_node, arc_node);
+          }
           graph->AddArc(tail_node, arc_node);
           graph->AddArc(arc_node, get_literal_node(literal));
           graph->AddArc(arc_node, head_node);
@@ -583,6 +592,9 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
     // part. This way we can reuse the same get_literal_node() function.
     if (constraint.constraint_case() != ConstraintProto::kBoolAnd ||
         constraint.enforcement_literal().size() > 1) {
+      if (!constraint.enforcement_literal().empty()) {
+        CHECK_LT(constraint_node, initial_equivalence_classes->size());
+      }
       for (const int ref : constraint.enforcement_literal()) {
         graph->AddArc(constraint_node, get_literal_node(ref));
       }
@@ -646,7 +658,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 void FindCpModelSymmetries(
     const SatParameters& params, const CpModelProto& problem,
     std::vector<std::unique_ptr<SparsePermutation>>* generators,
-    double deterministic_limit, SolverLogger* logger) {
+    SolverLogger* logger, TimeLimit* solver_time_limit) {
   CHECK(generators != nullptr);
   generators->clear();
 
@@ -678,10 +690,11 @@ void FindCpModelSymmetries(
     return;
   }
 
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromDeterministicTime(
+      params.symmetry_detection_deterministic_time_limit());
+  time_limit->MergeWithGlobalTimeLimit(solver_time_limit);
   GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/false);
   std::vector<int> factorized_automorphism_group_size;
-  std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromDeterministicTime(deterministic_limit);
   const absl::Status status = symmetry_finder.FindSymmetries(
       &equivalence_classes, generators, &factorized_automorphism_group_size,
       time_limit.get());
@@ -767,14 +780,13 @@ void LogOrbitInformation(absl::Span<const int> var_to_orbit_index,
 }  // namespace
 
 void DetectAndAddSymmetryToProto(const SatParameters& params,
-                                 CpModelProto* proto, SolverLogger* logger) {
+                                 CpModelProto* proto, SolverLogger* logger,
+                                 TimeLimit* time_limit) {
   SymmetryProto* symmetry = proto->mutable_symmetry();
   symmetry->Clear();
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(params, *proto, &generators,
-                        params.symmetry_detection_deterministic_time_limit(),
-                        logger);
+  FindCpModelSymmetries(params, *proto, &generators, logger, time_limit);
   if (generators.empty()) {
     proto->clear_symmetry();
     return;
@@ -968,10 +980,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
   }
 
   std::vector<std::unique_ptr<SparsePermutation>> generators;
-  FindCpModelSymmetries(
-      params, proto, &generators,
-      context->params().symmetry_detection_deterministic_time_limit(),
-      context->logger());
+  FindCpModelSymmetries(params, proto, &generators, context->logger(),
+                        context->time_limit());
 
   // Remove temporary affine relation.
   context->working_model->mutable_constraints()->DeleteSubrange(
@@ -1455,6 +1465,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
       if (row_has_at_most_one_true[row]) {
         context->UpdateRuleStats(
             "symmetry: fixed all but one to false in orbitope row");
+        context->solution_crush().MaybeSwapOrbitopeColumns(
+            orbitope, row, num_processed_rows - 1, true);
         for (int j = num_processed_rows; j < num_cols; ++j) {
           if (!context->SetLiteralToFalse(orbitope[row][j])) return false;
         }
@@ -1462,6 +1474,8 @@ bool DetectAndExploitSymmetriesInPresolve(PresolveContext* context) {
         CHECK(row_has_at_most_one_false[row]);
         context->UpdateRuleStats(
             "symmetry: fixed all but one to true in orbitope row");
+        context->solution_crush().MaybeSwapOrbitopeColumns(
+            orbitope, row, num_processed_rows - 1, false);
         for (int j = num_processed_rows; j < num_cols; ++j) {
           if (!context->SetLiteralToTrue(orbitope[row][j])) return false;
         }

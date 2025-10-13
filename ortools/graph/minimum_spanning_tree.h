@@ -134,8 +134,11 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
     int GetHeapIndex() const { return heap_index; }
     bool operator<(const Entry& other) const { return value > other.value; }
 
-    NodeIndex node;
+    // In the typical case, `NodeIndex` is 4 bytes, so having fields in this
+    // order is optimal in terms of memory usage and cache locality across all
+    // values of `sizeof(ArcValueType)`.
     ArcValueType value;
+    NodeIndex node;
     int heap_index;
   };
 
@@ -143,7 +146,9 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
   std::vector<Entry> entries;
   std::vector<bool> touched_entry(graph.num_nodes(), false);
   for (NodeIndex node : graph.AllNodes()) {
-    entries.push_back({node, std::numeric_limits<ArcValueType>::max(), -1});
+    entries.push_back({.value = std::numeric_limits<ArcValueType>::max(),
+                       .node = node,
+                       .heap_index = -1});
   }
   entries[0].value = 0;
   pq.Add(&entries[0]);

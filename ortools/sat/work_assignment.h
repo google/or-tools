@@ -34,6 +34,7 @@
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
@@ -135,10 +136,10 @@ class ProtoTrail {
   // the decision.
   absl::Span<const ProtoLiteral> Implications(int level) const;
   void AddImplication(int level, ProtoLiteral implication) {
-    auto it = implication_level_.find(implication);
-    if (it != implication_level_.end() && it->second <= level) return;
+    auto it = assigned_at_level_.find(implication);
+    if (it != assigned_at_level_.end() && it->second <= level) return;
     MutableImplications(level).push_back(implication);
-    implication_level_[implication] = level;
+    assigned_at_level_[implication] = level;
   }
 
   IntegerValue ObjectiveLb(int level) const {
@@ -149,24 +150,30 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Literals() const { return literals_; }
 
   const std::vector<ProtoLiteral>& TargetPhase() const { return target_phase_; }
+
+  // Returns the target phase and clears it.
+  std::vector<ProtoLiteral> TakeTargetPhase() {
+    return std::move(target_phase_);
+  }
   void ClearTargetPhase() { target_phase_.clear(); }
   // Appends a literal to the target phase, returns false if the phase is full.
   bool AddPhase(const ProtoLiteral& lit) {
     if (target_phase_.size() >= kMaxPhaseSize) return false;
-    if (!implication_level_.contains(lit)) {
+    if (!IsAssigned(lit)) {
       target_phase_.push_back(lit);
     }
     return true;
   }
-  void SetTargetPhase(absl::Span<const ProtoLiteral> phase) {
-    ClearTargetPhase();
-    for (const ProtoLiteral& lit : phase) {
-      if (!AddPhase(lit)) break;
-    }
+  void SetTargetPhase(std::vector<ProtoLiteral> phase) {
+    target_phase_ = std::move(phase);
+  }
+  bool IsAssigned(const ProtoLiteral& lit) const {
+    return assigned_at_level_.contains(lit) ||
+           assigned_at_level_.contains(lit.Negated());
   }
 
  private:
-  // 256 ProtoLiterals take up 4KiB
+  // Store up to 4 KiB of literals in the target phase.
   static constexpr int kMaxPhaseSize = 256;
 
   std::vector<ProtoLiteral>& MutableImplications(int level) {
@@ -179,7 +186,7 @@ class ProtoTrail {
   // Extra implications that can be propagated at each level but were never
   // branches in the shared tree.
   std::vector<std::vector<ProtoLiteral>> implications_;
-  absl::flat_hash_map<ProtoLiteral, int> implication_level_;
+  absl::flat_hash_map<ProtoLiteral, int> assigned_at_level_;
 
   // The index in the literals_/node_ids_ vectors for the start of each level.
   std::vector<int> decision_indexes_;
@@ -204,6 +211,7 @@ class SharedTreeManager {
 
   int NumWorkers() const { return num_workers_; }
   int NumNodes() const ABSL_LOCKS_EXCLUDED(mu_);
+  int MaxPathDepth() const { return max_path_depth_; }
 
   // Syncs the state of path with the shared search tree.
   // Clears `path` and returns false if the assigned subtree is closed or a
@@ -217,12 +225,15 @@ class SharedTreeManager {
   // solutions. Clears path.
   void CloseTree(ProtoTrail& path, int level);
 
-  // Called by workers in order to split the shared tree.
-  // `path` may or may not be extended by one level, branching on `decision`.
-  void ProposeSplit(ProtoTrail& path, ProtoLiteral decision);
+  // Attempts to split the tree repeatedly with the given decisions.
+  // `path` will be extended with the accepted splits, the opposite branches
+  // will be added as unassigned leaves.
+  // Returns the number of splits accepted.
+  int TrySplitTree(absl::Span<const ProtoLiteral> decisions, ProtoTrail& path)
+      ABSL_LOCKS_EXCLUDED(mu_);
 
   void Restart() {
-    absl::MutexLock l(&mu_);
+    absl::MutexLock l(mu_);
     RestartLockHeld();
   }
 
@@ -255,6 +266,8 @@ class SharedTreeManager {
   // Returns the NodeTrailInfo for `node` or it's closest non-closed,
   // non-implied ancestor. `node` must be valid, never returns nullptr.
   NodeTrailInfo* GetTrailInfo(Node* node);
+  bool TrySplitTreeLockHeld(ProtoLiteral decision, ProtoTrail& path)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void Split(std::vector<std::pair<Node*, int>>& nodes, ProtoLiteral lit)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   Node* MakeSubtree(Node* parent, ProtoLiteral literal)
@@ -270,6 +283,7 @@ class SharedTreeManager {
   mutable absl::Mutex mu_;
   const SatParameters& params_;
   const int num_workers_;
+  const int max_path_depth_;
   SharedResponseManager* const shared_response_manager_;
 
   // Stores the node id of the root, this is used to handle global restarts.
@@ -277,7 +291,7 @@ class SharedTreeManager {
 
   // Stores the nodes in the search tree.
   std::deque<Node> nodes_ ABSL_GUARDED_BY(mu_);
-  std::vector<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
+  std::deque<Node*> unassigned_leaves_ ABSL_GUARDED_BY(mu_);
 
   // How many splits we should generate now to keep the desired number of
   // leaves.
@@ -287,7 +301,7 @@ class SharedTreeManager {
   // communication overhead. If we exceed this, workers become portfolio
   // workers when no unassigned leaves are available.
   const int max_nodes_;
-  int num_leaves_assigned_ ABSL_GUARDED_BY(mu_) = 0;
+  int num_leaves_assigned_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
 
   // Temporary vectors used to maintain the state of the tree when nodes are
   // closed and/or children are updated.
@@ -295,7 +309,6 @@ class SharedTreeManager {
   std::vector<Node*> to_update_ ABSL_GUARDED_BY(mu_);
 
   int64_t num_restarts_ ABSL_GUARDED_BY(mu_) = 0;
-  int64_t num_syncs_since_restart_ ABSL_GUARDED_BY(mu_) = 0;
   int num_closed_nodes_ ABSL_GUARDED_BY(mu_) = 0;
 };
 
@@ -317,7 +330,7 @@ class SharedTreeWorker {
   Literal DecodeDecision(ProtoLiteral literal);
   std::optional<ProtoLiteral> EncodeDecision(Literal decision);
   bool NextDecision(LiteralIndex* decision_index);
-  void MaybeProposeSplit();
+  void MaybeProposeSplits();
   bool ShouldReplaceSubtree();
   bool FinishedMinRestarts() const {
     return assigned_tree_.MaxLevel() > 0 &&
@@ -339,6 +352,7 @@ class SharedTreeWorker {
   CpModelMapping* mapping_;
   SatSolver* sat_solver_;
   Trail* trail_;
+  BinaryImplicationGraph* binary_propagator_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   const ObjectiveDefinition* objective_;
@@ -355,13 +369,9 @@ class SharedTreeWorker {
   ProtoTrail assigned_tree_;
   std::vector<Literal> assigned_tree_literals_;
   std::vector<std::vector<Literal>> assigned_tree_implications_;
+  double next_split_dtime_ = 0;
 
-  // True if the last decision may split the assigned tree and has not yet been
-  // proposed to the SharedTreeManager.
-  // We propagate the decision before sharing with the SharedTreeManager so we
-  // don't share any decision that immediately leads to conflict.
-  bool new_split_available_ = false;
-
+  std::vector<ProtoLiteral> tmp_splits_;
   std::vector<Literal> reason_;
   // Stores the average LBD of learned clauses for each tree assigned since it
   // was assigned.

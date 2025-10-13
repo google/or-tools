@@ -284,7 +284,7 @@ def task_allocation_sat() -> None:
     solver = cp_model.CpSolver()
     # Uses the portfolion of heuristics.
     solver.parameters.log_search_progress = True
-    solver.parameters.num_search_workers = 16
+    solver.parameters.num_workers = 16
     solver.solve(model)
 
 

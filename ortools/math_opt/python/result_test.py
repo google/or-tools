@@ -17,7 +17,6 @@ import math
 
 from absl.testing import absltest
 from ortools.pdlp import solve_log_pb2
-from ortools.gscip import gscip_pb2
 from ortools.math_opt import result_pb2
 from ortools.math_opt import solution_pb2
 from ortools.math_opt import sparse_containers_pb2
@@ -26,6 +25,7 @@ from ortools.math_opt.python import result
 from ortools.math_opt.python import solution
 from ortools.math_opt.python.testing import compare_proto
 from ortools.math_opt.solvers import osqp_pb2
+from ortools.math_opt.solvers.gscip import gscip_pb2
 
 
 class TerminationTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
@@ -209,7 +209,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.variable_values([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.variable_values(20)  # pytype: disable=wrong-arg-types
+            res.variable_values(20)
 
     def test_primal_solution_no_feasible(self) -> None:
         mod = model.Model(name="test_model")
@@ -293,7 +293,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.reduced_costs([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.reduced_costs(20)  # pytype: disable=wrong-arg-types
+            res.reduced_costs(20)
         # Dual values.
         self.assertDictEqual(res.dual_values(), {c: 3.0, d: 4.0})
         self.assertEqual(res.dual_values()[c], 3.0)
@@ -305,7 +305,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.dual_values([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.dual_values(20)  # pytype: disable=wrong-arg-types
+            res.dual_values(20)
 
     def test_dual_solution_no_feasible(self) -> None:
         mod = model.Model(name="test_model")
@@ -391,7 +391,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_variable_values([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_variable_values(20)  # pytype: disable=wrong-arg-types
+            res.ray_variable_values(20)
 
     def test_primal_ray_no_ray(self) -> None:
         res = result.SolveResult()
@@ -426,7 +426,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_reduced_costs([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_reduced_costs(20)  # pytype: disable=wrong-arg-types
+            res.ray_reduced_costs(20)
         # Dual values.
         self.assertDictEqual(res.ray_dual_values(), {c: 3.0, d: 4.0})
         self.assertEqual(res.ray_dual_values()[c], 3.0)
@@ -438,7 +438,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.ray_dual_values([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.ray_dual_values(20)  # pytype: disable=wrong-arg-types
+            res.ray_dual_values(20)
 
     def test_dual_ray_no_ray(self) -> None:
         res = result.SolveResult()
@@ -496,7 +496,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.variable_status([y, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.variable_status(20)  # pytype: disable=wrong-arg-types
+            res.variable_status(20)
         # Constraint status
         self.assertDictEqual(
             res.constraint_status(),
@@ -514,7 +514,7 @@ class SolveResultAuxiliaryFunctionsTest(absltest.TestCase):
         with self.assertRaisesRegex(KeyError, ".*string"):
             res.constraint_status([d, "string"])
         with self.assertRaisesRegex(TypeError, ".*int"):
-            res.constraint_status(20)  # pytype: disable=wrong-arg-types
+            res.constraint_status(20)
 
     def test_basis_no_basis_in_best_solution(self) -> None:
         mod = model.Model(name="test_model")
@@ -1146,6 +1146,87 @@ class SolveResultTest(compare_proto.MathOptProtoAssertions, absltest.TestCase):
 
         self.assert_protos_equiv(r.to_proto(), r_proto)
         self.assertEqual(result.parse_solve_result(r_proto, mod), r)
+
+    def test_solution_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_OPTIMAL,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                ),
+            ),
+            solutions=[
+                solution_pb2.SolutionProto(
+                    primal_solution=solution_pb2.PrimalSolutionProto(
+                        variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                            ids=[2], values=[4.0]
+                        ),
+                        feasibility_status=solution_pb2.SOLUTION_STATUS_FEASIBLE,
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.solutions, 1)
+        # TODO: b/215588365 - make a local variable so pytype is happy
+        primal = res.solutions[0].primal_solution
+        self.assertIsNotNone(primal)
+        self.assertDictEqual(primal.variable_values, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
+
+    def test_primal_ray_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_UNBOUNDED,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
+                ),
+            ),
+            primal_rays=[
+                solution_pb2.PrimalRayProto(
+                    variable_values=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[2], values=[4.0]
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.primal_rays, 1)
+        self.assertDictEqual(res.primal_rays[0].variable_values, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
+
+    def test_dual_ray_validation(self) -> None:
+        mod = model.Model(name="test_model")
+        proto = result_pb2.SolveResultProto(
+            termination=result_pb2.TerminationProto(
+                reason=result_pb2.TERMINATION_REASON_INFEASIBLE,
+                problem_status=result_pb2.ProblemStatusProto(
+                    primal_status=result_pb2.FEASIBILITY_STATUS_INFEASIBLE,
+                    dual_status=result_pb2.FEASIBILITY_STATUS_FEASIBLE,
+                ),
+            ),
+            dual_rays=[
+                solution_pb2.DualRayProto(
+                    reduced_costs=sparse_containers_pb2.SparseDoubleVectorProto(
+                        ids=[2], values=[4.0]
+                    )
+                )
+            ],
+        )
+        res = result.parse_solve_result(proto, mod, validate=False)
+        bad_var = mod.get_variable(2, validate=False)
+        self.assertLen(res.dual_rays, 1)
+        self.assertDictEqual(res.dual_rays[0].reduced_costs, {bad_var: 4.0})
+        with self.assertRaises(KeyError):
+            result.parse_solve_result(proto, mod, validate=True)
 
 
 if __name__ == "__main__":

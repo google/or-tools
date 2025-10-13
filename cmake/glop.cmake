@@ -81,7 +81,6 @@ add_library(glop)
 target_sources(glop PRIVATE
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
-  ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.cc
   ortools/base/file.h
@@ -89,7 +88,6 @@ target_sources(glop PRIVATE
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/sysinfo.cc
   ortools/base/sysinfo.h
   ortools/base/timer.h
@@ -130,6 +128,8 @@ target_sources(glop PRIVATE
   ortools/lp_data/lp_data.h
   ortools/lp_data/lp_data_utils.cc
   ortools/lp_data/lp_data_utils.h
+  ortools/lp_data/lp_parser.cc
+  ortools/lp_data/lp_parser.h
   ortools/lp_data/lp_print_utils.cc
   ortools/lp_data/lp_print_utils.h
   ortools/lp_data/lp_types.cc
@@ -145,8 +145,8 @@ target_sources(glop PRIVATE
   ortools/lp_data/sparse.cc
   ortools/lp_data/sparse.h
   ortools/lp_data/sparse_column.cc
-  ortools/port/sysinfo.h
   ortools/port/sysinfo.cc
+  ortools/port/sysinfo.h
   ortools/util/file_util.cc
   ortools/util/file_util.h
   ortools/util/fp_utils.cc
@@ -160,14 +160,7 @@ target_sources(glop PRIVATE
   ortools/util/strong_integers.h
   ortools/util/time_limit.cc
   ortools/util/time_limit.h
-  )
-if(BUILD_LP_PARSER)
-  target_sources(glop PRIVATE
-    ortools/base/case.cc
-    ortools/base/case.h
-    ortools/lp_data/lp_parser.cc
-    ortools/lp_data/lp_parser.h)
-endif()
+)
 
 if(WIN32)
   list(APPEND GLOP_COMPILE_DEFINITIONS "__WIN32__")
@@ -252,6 +245,7 @@ add_dependencies(glop glop_proto)
 
 target_link_libraries(glop PUBLIC
   ZLIB::ZLIB
+  BZip2::BZip2
   absl::memory
   absl::hash
   absl::flags
@@ -267,6 +261,7 @@ target_link_libraries(glop PUBLIC
   absl::str_format
   absl::random_random
   protobuf::libprotobuf
+  ${RE2_DEPS}
   )
 if(WIN32)
   #target_link_libraries(glop PUBLIC psapi.lib ws2_32.lib)
@@ -305,14 +300,12 @@ install(DIRECTORY ortools/glop
 install(FILES
   ortools/base/accurate_sum.h
   ortools/base/base_export.h
-  ortools/base/basictypes.h
   ortools/base/commandlineflags.h
   ortools/base/file.h
   ortools/base/gzipstring.h
   ortools/base/hash.h
   ortools/base/int_type.h
   ortools/base/logging.h
-  ortools/base/macros.h
   ortools/base/recordio.h
   ortools/base/strong_int.h
   ortools/base/strong_vector.h

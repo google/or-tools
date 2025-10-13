@@ -27,8 +27,8 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -36,9 +36,14 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
+#include "ortools/sat/primary_variables.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
+
+ABSL_FLAG(bool, cp_model_check_dependent_variables, false,
+          "When true, check that solutions can be computed only from their "
+          "free variables.");
 
 namespace operations_research {
 namespace sat {
@@ -279,17 +284,8 @@ std::string ValidateLinearExpression(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateAffineExpression(const CpModelProto& model,
-                                     const LinearExpressionProto& expr) {
-  if (expr.vars_size() > 1) {
-    return absl::StrCat("expression must be affine: ",
-                        ProtobufShortDebugString(expr));
-  }
-  return ValidateLinearExpression(model, expr);
-}
-
-std::string ValidateConstantAffineExpression(
-    const CpModelProto& model, const LinearExpressionProto& expr) {
+std::string ValidateConstantExpression(const CpModelProto& model,
+                                       const LinearExpressionProto& expr) {
   if (!expr.vars().empty()) {
     return absl::StrCat("expression must be constant: ",
                         ProtobufShortDebugString(expr));
@@ -332,9 +328,9 @@ std::string ValidateIntModConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(0)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().exprs(1)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_mod().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_mod().target()));
 
   const LinearExpressionProto mod_expr = ct.int_mod().exprs(1);
   if (MinOfExpression(model, mod_expr) <= 0) {
@@ -354,9 +350,9 @@ std::string ValidateIntProdConstraint(const CpModelProto& model,
   }
 
   for (const LinearExpressionProto& expr : ct.int_prod().exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_prod().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_prod().target()));
 
   // Detect potential overflow.
   Domain product_domain(1);
@@ -400,9 +396,9 @@ std::string ValidateIntDivConstraint(const CpModelProto& model,
                         ProtobufShortDebugString(ct));
   }
 
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(0)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().exprs(1)));
-  RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, ct.int_div().target()));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().exprs(0)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().exprs(1)));
+  RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, ct.int_div().target()));
 
   const LinearExpressionProto& denom = ct.int_div().exprs(1);
   const int64_t offset = denom.offset();
@@ -492,15 +488,15 @@ std::string ValidateElementConstraint(const CpModelProto& model,
 
   if (in_linear_format) {
     RETURN_IF_NOT_EMPTY(
-        ValidateAffineExpression(model, element.linear_index()));
+        ValidateLinearExpression(model, element.linear_index()));
     RETURN_IF_NOT_EMPTY(
-        ValidateAffineExpression(model, element.linear_target()));
+        ValidateLinearExpression(model, element.linear_target()));
     for (const LinearExpressionProto& expr : element.exprs()) {
-      RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+      RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
       LinearExpressionProto overflow_detection = ct.element().linear_target();
       AppendToOverflowValidator(expr, &overflow_detection, -1);
-      overflow_detection.set_offset(overflow_detection.offset() -
-                                    expr.offset());
+      const int64_t offset = CapSub(overflow_detection.offset(), expr.offset());
+      overflow_detection.set_offset(offset);
       if (PossibleIntegerOverflow(model, overflow_detection.vars(),
                                   overflow_detection.coeffs(),
                                   overflow_detection.offset())) {
@@ -543,7 +539,7 @@ std::string ValidateTableConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : arg.exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   return "";
 }
@@ -570,7 +566,7 @@ std::string ValidateAutomatonConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : automaton.exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   absl::flat_hash_map<std::pair<int64_t, int64_t>, int64_t> tail_label_to_head;
   for (int i = 0; i < num_transistions; ++i) {
@@ -625,7 +621,8 @@ std::string ValidateGraphInput(bool is_route, const GraphProto& graph) {
   return "";
 }
 
-std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
+std::string ValidateRoutesConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
   int max_node = 0;
   absl::flat_hash_set<int> nodes;
   for (const int node : ct.routes().tails()) {
@@ -647,12 +644,24 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
         "All nodes in a route constraint must have incident arcs");
   }
 
-  // If the demands field is present, it must be of size nodes.size().
-  if (!ct.routes().demands().empty() &&
-      ct.routes().demands().size() != nodes.size()) {
-    return absl::StrCat(
-        "If the demands fields is set, it must be of size num_nodes:",
-        nodes.size());
+  for (const RoutesConstraintProto::NodeExpressions& dimension :
+       ct.routes().dimensions()) {
+    if (dimension.exprs().size() != nodes.size()) {
+      return absl::StrCat(
+          "If the dimensions field in a route constraint is set, its elements "
+          "must be of size num_nodes:",
+          nodes.size());
+    }
+    for (const LinearExpressionProto& expr : dimension.exprs()) {
+      for (const int v : expr.vars()) {
+        if (!VariableReferenceIsValid(model, v)) {
+          return absl::StrCat("Out of bound integer variable ", v,
+                              " in route constraint ",
+                              ProtobufShortDebugString(ct));
+        }
+      }
+      RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
+    }
   }
 
   return ValidateGraphInput(/*is_route=*/true, ct.routes());
@@ -660,12 +669,6 @@ std::string ValidateRoutesConstraint(const ConstraintProto& ct) {
 
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
-  if (ct.enforcement_literal().size() > 1) {
-    return absl::StrCat(
-        "Interval with more than one enforcement literals are currently not "
-        "supported: ",
-        ProtobufShortDebugString(ct));
-  }
   const IntervalConstraintProto& arg = ct.interval();
 
   if (!arg.has_start()) {
@@ -790,9 +793,6 @@ std::string ValidateNoOverlap2DConstraint(const CpModelProto& model,
 
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
-  if (ct.enforcement_literal_size() > 0) {
-    return "Reservoir does not support enforcement literals.";
-  }
   if (ct.reservoir().time_exprs().size() !=
       ct.reservoir().level_changes().size()) {
     return absl::StrCat(
@@ -800,7 +800,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
         ProtobufShortDebugString(ct));
   }
   for (const LinearExpressionProto& expr : ct.reservoir().time_exprs()) {
-    RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
     // We want to be able to safely put time_exprs[i]-time_exprs[j] in a linear.
     if (MinOfExpression(model, expr) <=
             -std::numeric_limits<int64_t>::max() / 4 ||
@@ -812,7 +812,7 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
     }
   }
   for (const LinearExpressionProto& expr : ct.reservoir().level_changes()) {
-    RETURN_IF_NOT_EMPTY(ValidateConstantAffineExpression(model, expr));
+    RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
   }
   if (ct.reservoir().min_level() > 0) {
     return absl::StrCat(
@@ -861,14 +861,32 @@ std::string ValidateObjective(const CpModelProto& model,
                         ProtobufShortDebugString(obj));
   }
   for (const int v : obj.vars()) {
-    if (!VariableReferenceIsValid(model, v)) {
+    if (!VariableIndexIsValid(model, v)) {
       return absl::StrCat("Out of bound integer variable ", v,
                           " in objective: ", ProtobufShortDebugString(obj));
     }
   }
-  if (PossibleIntegerOverflow(model, obj.vars(), obj.coeffs())) {
+  std::pair<int64_t, int64_t> bounds;
+  if (PossibleIntegerOverflow(model, obj.vars(), obj.coeffs(), 0, &bounds)) {
     return "Possible integer overflow in objective: " +
            ProtobufDebugString(obj);
+  }
+  if (!std::isfinite(model.objective().offset())) {
+    return "Objective offset must be finite: " + ProtobufDebugString(obj);
+  }
+  if (model.objective().scaling_factor() != 0 &&
+      model.objective().scaling_factor() != 1 &&
+      model.objective().scaling_factor() != -1) {
+    if (!std::isfinite(
+            std::abs(model.objective().scaling_factor() * bounds.first) +
+            std::abs(model.objective().offset())) ||
+        !std::isfinite(
+            std::abs(model.objective().scaling_factor() * bounds.second) +
+            std::abs(model.objective().offset()))) {
+      return "Possible floating point overflow in objective when multiplied by "
+             "the scaling factor: " +
+             ProtobufDebugString(obj);
+    }
   }
   return "";
 }
@@ -900,6 +918,27 @@ std::string ValidateFloatingPointObjective(double max_valid_magnitude,
   }
   if (!std::isfinite(obj.offset())) {
     return absl::StrCat("Offset must be finite in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
+  double sum_min = obj.offset();
+  double sum_max = obj.offset();
+  for (int i = 0; i < obj.vars().size(); ++i) {
+    const int ref = obj.vars(i);
+    const auto& var_proto = model.variables(PositiveRef(ref));
+    const int64_t min_domain = var_proto.domain(0);
+    const int64_t max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    const double coeff = RefIsPositive(ref) ? obj.coeffs(i) : -obj.coeffs(i);
+    const double prod1 = min_domain * coeff;
+    const double prod2 = max_domain * coeff;
+
+    // Note that we use min/max with zero to disallow "alternative" terms and
+    // be sure that we cannot have an overflow if we do the computation in a
+    // different order.
+    sum_min += std::min(0.0, std::min(prod1, prod2));
+    sum_max += std::max(0.0, std::max(prod1, prod2));
+  }
+  if (!std::isfinite(2.0 * sum_min) || !std::isfinite(2.0 * sum_max)) {
+    return absl::StrCat("Possible floating point overflow in objective: ",
                         ProtobufShortDebugString(obj));
   }
   return "";
@@ -944,13 +983,17 @@ std::string ValidateSearchStrategies(const CpModelProto& model) {
       }
     }
     for (const LinearExpressionProto& expr : strategy.exprs()) {
+      if (expr.vars_size() > 1) {
+        return absl::StrCat("expression must be affine in strategy: ",
+                            ProtobufShortDebugString(strategy));
+      }
       for (const int var : expr.vars()) {
         if (!VariableReferenceIsValid(model, var)) {
           return absl::StrCat("Invalid variable reference in strategy: ",
                               ProtobufShortDebugString(strategy));
         }
       }
-      if (!ValidateAffineExpression(model, expr).empty()) {
+      if (!ValidateLinearExpression(model, expr).empty()) {
         return absl::StrCat("Invalid affine expr in strategy: ",
                             ProtobufShortDebugString(strategy));
       }
@@ -1008,7 +1051,8 @@ std::string ValidateSolutionHint(const CpModelProto& model) {
 
 bool PossibleIntegerOverflow(const CpModelProto& model,
                              absl::Span<const int> vars,
-                             absl::Span<const int64_t> coeffs, int64_t offset) {
+                             absl::Span<const int64_t> coeffs, int64_t offset,
+                             std::pair<int64_t, int64_t>* implied_domain) {
   if (offset == std::numeric_limits<int64_t>::min()) return true;
   int64_t sum_min = -std::abs(offset);
   int64_t sum_max = +std::abs(offset);
@@ -1040,6 +1084,9 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
   // pass but not -expr!
   if (sum_min < -std::numeric_limits<int64_t>::max() / 2) return true;
   if (sum_max > std::numeric_limits<int64_t>::max() / 2) return true;
+  if (implied_domain) {
+    *implied_domain = {sum_min, sum_max};
+  }
   return false;
 }
 
@@ -1070,21 +1117,16 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
   for (int c = 0; c < model.constraints_size(); ++c) {
     RETURN_IF_NOT_EMPTY(ValidateVariablesUsedInConstraint(model, c));
 
-    // By default, a constraint does not support enforcement literals except if
-    // explicitly stated by setting this to true below.
-    bool support_enforcement = false;
-
     // Other non-generic validations.
     const ConstraintProto& ct = model.constraints(c);
     switch (ct.constraint_case()) {
       case ConstraintProto::ConstraintCase::kBoolOr:
-        support_enforcement = true;
-        break;
       case ConstraintProto::ConstraintCase::kBoolAnd:
-        support_enforcement = true;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+      case ConstraintProto::ConstraintCase::kExactlyOne:
+      case ConstraintProto::ConstraintCase::kBoolXor:
         break;
       case ConstraintProto::ConstraintCase::kLinear:
-        support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kLinMax: {
@@ -1112,7 +1154,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
         for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {
-          RETURN_IF_NOT_EMPTY(ValidateAffineExpression(model, expr));
+          RETURN_IF_NOT_EMPTY(ValidateLinearExpression(model, expr));
         }
         break;
       case ConstraintProto::ConstraintCase::kElement:
@@ -1120,7 +1162,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         break;
       case ConstraintProto::ConstraintCase::kTable:
         RETURN_IF_NOT_EMPTY(ValidateTableConstraint(model, ct));
-        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kAutomaton:
         RETURN_IF_NOT_EMPTY(ValidateAutomatonConstraint(model, ct));
@@ -1130,11 +1171,10 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
             ValidateGraphInput(/*is_route=*/false, ct.circuit()));
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(ct));
+        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
-        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         constraints_using_intervals.push_back(c);
@@ -1152,21 +1192,6 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         return "The dummy constraint should never appear in a model.";
       default:
         break;
-    }
-
-    // Because some client set fixed enforcement literal which are supported
-    // in the presolve for all constraints, we just check that there is no
-    // non-fixed enforcement.
-    if (!support_enforcement && !ct.enforcement_literal().empty()) {
-      for (const int ref : ct.enforcement_literal()) {
-        const int var = PositiveRef(ref);
-        const Domain domain = ReadDomainFromProto(model.variables(var));
-        if (domain.Size() != 1) {
-          return absl::StrCat(
-              "Enforcement literal not supported in constraint: ",
-              ProtobufShortDebugString(ct));
-        }
-      }
     }
   }
 
@@ -1195,6 +1220,12 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
            "objective.";
   }
   if (model.has_objective()) {
+    if (model.objective().scaling_factor() != 0 &&
+        !std::isnormal(model.objective().scaling_factor())) {
+      return "A model cannot have an objective with a nan, inf or subnormal "
+             "scaling factor";
+    }
+
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
 
     if (model.objective().integer_scaling_factor() != 0 ||
@@ -1936,6 +1967,23 @@ bool SolutionIsFeasible(const CpModelProto& model,
     VLOG(2) << "Checker scaled objective = " << scaled_objective;
   }
 
+  return true;
+}
+
+bool SolutionCanBeOptimal(const CpModelProto& model,
+                          absl::Span<const int64_t> variable_values) {
+  if (absl::GetFlag(FLAGS_cp_model_check_dependent_variables)) {
+    const VariableRelationships relationships =
+        ComputeVariableRelationships(model);
+    std::vector<int64_t> all_variables(variable_values.begin(),
+                                       variable_values.end());
+    for (const int var : relationships.secondary_variables) {
+      all_variables[var] = -999999;  // Those values should be overwritten.
+    }
+    CHECK(ComputeAllVariablesFromPrimaryVariables(model, relationships,
+                                                  &all_variables));
+    CHECK(absl::MakeSpan(all_variables) == variable_values);
+  }
   return true;
 }
 

@@ -11,7 +11,7 @@ You can find here the documentation for the two following OR-Tools components.
     **note:** We **strongly recommend** using the [CP-SAT solver](../../sat)
     rather than the original CP solver.
 
-*   [Routing Solver](ROUTING.md)
+*   [Routing Solver](../../routing/docs/ROUTING.md)
 
     A specialized library for identifying best vehicle routes given constraints.
 

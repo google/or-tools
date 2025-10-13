@@ -14,9 +14,7 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <functional>
-#include <limits>
 #include <utility>
 #include <vector>
 
@@ -27,6 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -74,13 +73,13 @@ std::function<void(Model*)> AllDifferentBinary(
 }
 
 std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<AffineExpression>& expressions) {
-  return [=](Model* model) {
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const AffineExpression> expressions) {
+  return [=, expressions = std::vector<AffineExpression>(
+                 expressions.begin(), expressions.end())](Model* model) {
     if (expressions.empty()) return;
-    auto* constraint = new AllDifferentBoundsPropagator(
-        expressions, model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    model->TakeOwnership(new AllDifferentBoundsPropagator(enforcement_literals,
+                                                          expressions, model));
   };
 }
 
@@ -94,10 +93,8 @@ std::function<void(Model*)> AllDifferentOnBounds(
     for (const IntegerVariable var : vars) {
       expressions.push_back(AffineExpression(var));
     }
-    auto* constraint = new AllDifferentBoundsPropagator(
-        expressions, model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    model->TakeOwnership(new AllDifferentBoundsPropagator(
+        /*enforcement_literals=*/{}, expressions, model));
   };
 }
 
@@ -416,24 +413,35 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    absl::Span<const AffineExpression> expressions, IntegerTrail* integer_trail)
-    : integer_trail_(integer_trail) {
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const AffineExpression> expressions, Model* model)
+    : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+      enforcement_helper_(*model->GetOrCreate<EnforcementHelper>()) {
   CHECK(!expressions.empty());
 
   // We need +2 for sentinels.
   const int capacity = expressions.size() + 2;
   index_to_start_index_.resize(capacity);
   index_to_end_index_.resize(capacity);
-  index_is_present_.resize(capacity, false);
+  index_is_present_.Resize(capacity);
   index_to_expr_.resize(capacity, kNoIntegerVariable);
 
   for (int i = 0; i < expressions.size(); ++i) {
     bounds_.push_back({expressions[i]});
     negated_bounds_.push_back({expressions[i].Negated()});
   }
+
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
+                                                 RegisterWith(watcher));
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
+  const EnforcementStatus status = enforcement_helper_.Status(enforcement_id_);
+  if (status != EnforcementStatus::IS_ENFORCED &&
+      status != EnforcementStatus::CAN_PROPAGATE_ENFORCEMENT) {
+    return true;
+  }
   if (!PropagateLowerBounds()) return false;
 
   // Note that it is not required to swap back bounds_ and negated_bounds_.
@@ -477,8 +485,8 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
 bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // Start by filling the cached bounds and sorting by increasing lb.
   for (CachedBounds& entry : bounds_) {
-    entry.lb = integer_trail_->LowerBound(entry.expr);
-    entry.ub = integer_trail_->UpperBound(entry.expr);
+    entry.lb = integer_trail_.LowerBound(entry.expr);
+    entry.ub = integer_trail_.UpperBound(entry.expr);
   }
   IncrementalSort(bounds_.begin(), bounds_.end(),
                   [](CachedBounds a, CachedBounds b) { return a.lb < b.lb; });
@@ -535,11 +543,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   // Make sure we change our base_ so that GetIndex() fit in our buffers.
   base_ = min_lb - IntegerValue(1);
 
-  // Sparse cleaning of index_is_present_.
-  for (const int i : indices_to_clear_) {
-    index_is_present_[i] = false;
-  }
-  indices_to_clear_.clear();
+  index_is_present_.ResetAllToFalse();
 
   // Sort bounds by increasing ub.
   std::sort(bounds.begin(), bounds.end(),
@@ -564,9 +568,17 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
         const IntegerValue he = hall_ends_[hall_index];
         FillHallReason(hs, he);
         integer_reason_.push_back(expr.GreaterOrEqual(hs));
-        if (!integer_trail_->SafeEnqueue(expr.GreaterOrEqual(he + 1),
-                                         integer_reason_)) {
-          return false;
+        if (enforcement_helper_.Status(enforcement_id_) ==
+            EnforcementStatus::IS_ENFORCED) {
+          if (!enforcement_helper_.SafeEnqueue(enforcement_id_,
+                                               expr.GreaterOrEqual(he + 1),
+                                               integer_reason_)) {
+            return false;
+          }
+        } else if (he >= entry.ub) {
+          integer_reason_.push_back(expr.LowerOrEqual(entry.ub));
+          return enforcement_helper_.PropagateWhenFalse(
+              enforcement_id_, /*literal_reason=*/{}, integer_reason_);
         }
       }
     }
@@ -600,18 +612,17 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
     {
       index_to_start_index_[new_index] = start_index;
       index_to_expr_[new_index] = expr;
-      index_is_present_[new_index] = true;
-      indices_to_clear_.push_back(new_index);
+      index_is_present_.Set(new_index);
     }
 
     // In most situation, we cannot have a conflict now, because it should have
     // been detected before by pushing an interval lower bound past its upper
     // bound. However, it is possible that when we push one bound, other bounds
     // change. So if the upper bound is smaller than the current interval end,
-    // we abort so that the conflit reason will be better on the next call to
+    // we abort so that the conflict reason will be better on the next call to
     // the propagator.
     const IntegerValue end = GetValue(end_index);
-    if (end > integer_trail_->UpperBound(expr)) return true;
+    if (end > integer_trail_.UpperBound(expr)) return true;
 
     // If we have a new Hall interval, add it to the set. Note that it will
     // always be last, and if it overlaps some previous Hall intervals, it
@@ -634,13 +645,13 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   return true;
 }
 
-void AllDifferentBoundsPropagator::RegisterWith(
-    GenericLiteralWatcher* watcher) {
+int AllDifferentBoundsPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const CachedBounds& entry : bounds_) {
     watcher->WatchAffineExpression(entry.expr, id);
   }
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
+  return id;
 }
 
 }  // namespace sat
