@@ -121,6 +121,8 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_ALGORITHM 1049
 #define XPRS_STOPSTATUS 1179
 #define XPRS_SOLVESTATUS 1394
+#define XPRS_OBJECTIVES 1397
+#define XPRS_SOLVEDOBJS 1399
 #define XPRS_OBJVAL 2118
 #define XPRS_BARPRIMALOBJ 4001
 #define XPRS_BARDUALOBJ 4002
@@ -505,6 +507,15 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_AT_UPPER 2
 #define XPRS_FREE_SUPER 3
 
+// ***************************************************************************
+// * values related to Objective control                                     *
+// ***************************************************************************
+#define XPRS_OBJECTIVE_PRIORITY 20001
+#define XPRS_OBJECTIVE_WEIGHT 20002
+#define XPRS_OBJECTIVE_ABSTOL 20003
+#define XPRS_OBJECTIVE_RELTOL 20004
+#define XPRS_OBJECTIVE_RHS 20005
+
 // Let's not reformat for rest of the file.
 // NOLINTBEGIN(whitespace/line_length)
 // clang-format off
@@ -524,6 +535,8 @@ extern std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontr
 extern std::function<int(XPRSprob prob, int control, XPRSint64 value)> XPRSsetintcontrol64;
 extern std::function<int(XPRSprob prob, int control, double value)> XPRSsetdblcontrol;
 extern std::function<int(XPRSprob prob, int control, const char* value)> XPRSsetstrcontrol;
+extern std::function<int(XPRSprob prob, int objidx, int control, int value)> XPRSsetobjintcontrol;
+extern std::function<int(XPRSprob prob, int objidx, int control, double value)> XPRSsetobjdblcontrol;
 OR_DLL extern std::function<int(XPRSprob prob, int control, int* p_value)> XPRSgetintcontrol;
 OR_DLL extern std::function<int(XPRSprob prob, int control, XPRSint64* p_value)> XPRSgetintcontrol64;
 OR_DLL extern std::function<int(XPRSprob prob, int control, double* p_value)> XPRSgetdblcontrol;
@@ -531,6 +544,8 @@ OR_DLL extern std::function<int(XPRSprob prob, int control, char* value, int max
 OR_DLL extern std::function<int(XPRSprob prob, int attrib, int* p_value)> XPRSgetintattrib;
 OR_DLL extern std::function<int(XPRSprob prob, int attrib, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringattrib;
 OR_DLL extern std::function<int(XPRSprob prob, int attrib, double* p_value)> XPRSgetdblattrib;
+extern std::function<int(XPRSprob prob, int objidx, int attrib, double* p_value)> XPRSgetobjdblattrib;
+extern std::function<int(XPRSprob prob, int objidx, const double solution[], double* p_objval)> XPRScalcobjn;
 extern std::function<int(XPRSprob prob, const char* name, int* p_id, int* p_type)> XPRSgetcontrolinfo;
 OR_DLL extern std::function<int(XPRSprob prob, double objcoef[], int first, int last)> XPRSgetobj;
 OR_DLL extern std::function<int(XPRSprob prob, double rhs[], int first, int last)> XPRSgetrhs;
@@ -544,6 +559,7 @@ extern std::function<int(XPRSprob prob, int* status, double djs[], int first, in
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows;
 extern std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols;
+extern std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[], int priority, double weight)> XPRSaddobj;
 extern std::function<int(XPRSprob prob, int type, const char names[], int first, int last)> XPRSaddnames;
 extern std::function<int(XPRSprob prob, int type, char names[], int first, int last)>  XPRSgetnames;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[])> XPRSdelcols;

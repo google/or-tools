@@ -499,19 +499,19 @@ class ScopedSolverContext {
         case XPRS_TYPE_INT:  // fallthrough
         case XPRS_TYPE_INT64:
           if (!absl::SimpleAtoi(value, &l))
-            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+            return util::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is not an integer";
           if (type == XPRS_TYPE_INT && (l > std::numeric_limits<int>::max() ||
                                         l < std::numeric_limits<int>::min()))
-            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+            return util::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is out of range";
           RETURN_IF_ERROR(Set(id, l));
           break;
         case XPRS_TYPE_DOUBLE:
           if (!absl::SimpleAtod(value, &d))
-            return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+            return util::InvalidArgumentErrorBuilder()
                    << "value " << value << " for " << name
                    << " is not a floating pointer number";
           RETURN_IF_ERROR(Set(id, d));
@@ -520,7 +520,7 @@ class ScopedSolverContext {
           RETURN_IF_ERROR(Set(id, value));
           break;
         default:
-          return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+          return util::InvalidArgumentErrorBuilder()
                  << "bad control type for " << name;
       }
     }
@@ -537,7 +537,10 @@ class ScopedSolverContext {
           variables_map,
       gtl::linked_hash_map<XpressSolver::LinearConstraintId,
                            XpressSolver::LinearConstraintData> const&
-          linear_constraints_map) {
+          linear_constraints_map,
+      gtl::linked_hash_map<XpressSolver::AuxiliaryObjectiveId,
+                           XpressSolver::XpressMultiObjectiveIndex> const&
+          objectives_map) {
     ASSIGN_OR_RETURN(int const cols, shared_ctx.xpress->GetIntAttr(XPRS_COLS));
     ASSIGN_OR_RETURN(int const rows, shared_ctx.xpress->GetIntAttr(XPRS_ROWS));
     // Set initial basis
@@ -577,7 +580,7 @@ class ScopedSolverContext {
           mipStart.push_back(value);
         }
         if (mipStart.size() > cols)
-          return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+          return util::InvalidArgumentErrorBuilder()
                  << "more solution hints than columns";
         RETURN_IF_ERROR(shared_ctx.xpress->AddMIPSol(
             static_cast<int>(mipStart.size()), mipStart.data(), colind.data(),
@@ -603,15 +606,60 @@ class ScopedSolverContext {
       }
 
       if (colind.size() > 0)
-        return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+        return util::InvalidArgumentErrorBuilder()
                << "more branching priorities than columns";
       RETURN_IF_ERROR(shared_ctx.xpress->LoadDirs(
           static_cast<int>(colind.size()), colind.data(), priority.data(),
           nullptr, nullptr, nullptr));
     }
 
-    /** TODO: Install (multi-)objective parameters. */
-    // ObjectiveMap<ObjectiveParameters> objective_parameters;
+    // Objective parameters: primary/single objective
+    if (model_parameters.has_primary_objective_parameters()) {
+      auto const& p = model_parameters.primary_objective_parameters();
+      // Objective violation tolerances only need to be installed for
+      // multi-objective models. We just set them blindly here. They don't
+      // hurt for a single-objective model.
+      if (p.has_objective_degradation_absolute_tolerance()) {
+        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+            0, XPRS_OBJECTIVE_ABSTOL,
+            p.objective_degradation_absolute_tolerance()));
+      }
+      if (p.has_objective_degradation_relative_tolerance()) {
+        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+            0, XPRS_OBJECTIVE_RELTOL,
+            p.objective_degradation_relative_tolerance()));
+      }
+      if (p.has_time_limit()) {
+        // We support a time limit but only if there is one single objective.
+        if (objectives_map.size() > 0) {
+          return util::InvalidArgumentErrorBuilder()
+                 << "Xpress does not support per-objective time limits";
+        }
+        ASSIGN_OR_RETURN(auto l,
+                         util_time::DecodeGoogleApiProto(p.time_limit()));
+
+        RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(
+            XPRS_TIMELIMIT, absl::ToDoubleSeconds(l)));
+      }
+    }
+    // Objective parameters: auxiliary objectives
+    for (auto const& [id, p] :
+         model_parameters.auxiliary_objective_parameters()) {
+      if (p.has_objective_degradation_absolute_tolerance()) {
+        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+            objectives_map.at(id), XPRS_OBJECTIVE_ABSTOL,
+            p.objective_degradation_absolute_tolerance()));
+      }
+      if (p.has_objective_degradation_relative_tolerance()) {
+        RETURN_IF_ERROR(shared_ctx.xpress->SetObjectiveDoubleControl(
+            objectives_map.at(id), XPRS_OBJECTIVE_RELTOL,
+            p.objective_degradation_relative_tolerance()));
+      }
+      if (p.has_time_limit()) {
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress does not support per-objective time limits";
+      }
+    }
 
     if (model_parameters.lazy_linear_constraint_ids_size() > 0) {
       std::vector<int> delayedRows;
@@ -620,7 +668,7 @@ class ScopedSolverContext {
         delayedRows.push_back(linear_constraints_map.at(idx).constraint_index);
       }
       if (delayedRows.size() > rows)
-        return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+        return util::InvalidArgumentErrorBuilder()
                << "more lazy constraints than rows";
 
       RETURN_IF_ERROR(shared_ctx.xpress->LoadDelayedRows(
@@ -666,7 +714,7 @@ class ScopedSolverContext {
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .integer_variables = SupportType::kSupported,
-    .multi_objectives = SupportType::kNotSupported,
+    .multi_objectives = SupportType::kSupported,
     .quadratic_objectives = SupportType::kSupported,
     .quadratic_constraints = SupportType::kNotSupported,
     .second_order_cone_constraints = SupportType::kNotSupported,
@@ -697,7 +745,19 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   RETURN_IF_ERROR(AddNewVariables(input_model.variables()));
   RETURN_IF_ERROR(AddNewLinearConstraints(input_model.linear_constraints()));
   RETURN_IF_ERROR(ChangeCoefficients(input_model.linear_constraint_matrix()));
-  RETURN_IF_ERROR(AddSingleObjective(input_model.objective()));
+  RETURN_IF_ERROR(AddObjective(input_model.objective(), std::nullopt,
+                               !input_model.auxiliary_objectives().empty()));
+  // Tests expect an error on duplicate priorities, so raise one.
+  absl::flat_hash_set<AuxiliaryObjectiveId> prios = {
+      input_model.objective().priority()};
+  for (auto const& [id, obj] : input_model.auxiliary_objectives()) {
+    auto const prio = obj.priority();
+    if (!prios.insert(prio).second) {
+      return util::InvalidArgumentErrorBuilder()
+             << "repeated objective priority: " << prio;
+    }
+    RETURN_IF_ERROR(AddObjective(obj, id, true));
+  }
   return absl::OkStatus();
 }
 absl::Status XpressSolver::AddNewVariables(
@@ -794,20 +854,56 @@ absl::Status XpressSolver::AddNewLinearConstraints(
   return xpress_->AddConstrs(constraint_sense, constraint_rhs, constraint_rng);
 }
 
-absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
-  // Sense
-  RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
-  // Linear terms
-  std::vector<int> index;
-  index.reserve(objective.linear_coefficients().ids_size());
-  for (const int64_t id : objective.linear_coefficients().ids()) {
-    index.push_back(variables_map_.at(id));
+absl::Status XpressSolver::AddObjective(
+    const ObjectiveProto& objective,
+    std::optional<AuxiliaryObjectiveId> objective_id, bool multiobj) {
+  double weight = 1.0;
+  bool haveId = objective_id.has_value();
+
+  if (multiobj) {
+    // In ortools smaller priority means more important, in Xpress,
+    // higher priority means more important, so we must invert priorities.
+    // Moreover, in Xpress priorities are 32bit.
+    // In ortools it seems unspecified what happens to objectives with the
+    // same priority, in Xpress these are merged.
+    if (objective.priority() <= INT_MIN || objective.priority() > INT_MAX) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Xpress only supports 32bit signed integers as objective "
+                "priority, not "
+             << objective.priority();
+    }
   }
-  RETURN_IF_ERROR(xpress_->SetLinearObjective(
-      objective.offset(), index, objective.linear_coefficients().values()));
+
+  // Set/adjust objective sense.
+  if (!multiobj) {
+    // Not a multi-objective model
+    RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
+  } else if (!objective_id.has_value()) {
+    // First objective in multi-objective.
+    RETURN_IF_ERROR(xpress_->SetObjectiveSense(objective.maximize()));
+    is_multiobj_ = true;
+  } else {
+    // Auxiliary objective in multi-objective. Xpress does not support
+    // different objective senses for different objectives. So if the sense
+    // does not match we set the weight to -1.0 to inver the objective
+    // coefficients.
+    ASSIGN_OR_RETURN(double const objsen,
+                     xpress_->GetDoubleAttr(XPRS_OBJSENSE));
+    if (objective.maximize() != (objsen < 0.0)) {
+      weight = -1.0;
+    }
+  }
+
+  // Extract the objective.
+  // First do quadratic terms since these are illegal for auxiliary objectives
   // Quadratic terms
   const int num_terms = objective.quadratic_coefficients().row_ids().size();
   if (num_terms > 0) {
+    if (multiobj && objective_id.has_value()) {
+      return util::InvalidArgumentErrorBuilder()
+             << "Xpress does not support quadratic terms in anything but the "
+                "first objective";
+    }
     std::vector<int> first_var_index(num_terms);
     std::vector<int> second_var_index(num_terms);
     std::vector<double> coefficients(num_terms);
@@ -825,6 +921,41 @@ absl::Status XpressSolver::AddSingleObjective(const ObjectiveProto& objective) {
     RETURN_IF_ERROR(xpress_->SetQuadraticObjective(
         first_var_index, second_var_index, coefficients));
   }
+
+  // Linear terms
+  std::vector<int> index;
+  index.reserve(objective.linear_coefficients().ids_size());
+  for (const int64_t id : objective.linear_coefficients().ids()) {
+    index.push_back(variables_map_.at(id));
+  }
+
+  if (multiobj) {
+    if (!objective_id.has_value()) {
+      // Primary objective
+      RETURN_IF_ERROR(xpress_->SetLinearObjective(
+          objective.offset(), index, objective.linear_coefficients().values()));
+      RETURN_IF_ERROR(xpress_->SetObjectiveIntControl(
+          0, XPRS_OBJECTIVE_PRIORITY,
+          // checked above
+          static_cast<int>(-objective.priority())));
+      RETURN_IF_ERROR(
+          xpress_->SetObjectiveDoubleControl(0, XPRS_OBJECTIVE_WEIGHT, weight));
+    } else {
+      // Auxiliary objective
+      ASSIGN_OR_RETURN(
+          int const newid,
+          xpress_->AddObjective(
+              objective.offset(), static_cast<int>(index.size()), index.data(),
+              objective.linear_coefficients().values().data(),
+              // checked above
+              static_cast<int>(-objective.priority()), weight));
+      gtl::InsertOrDie(&objectives_map_, objective_id.value(), newid);
+    }
+  } else {
+    RETURN_IF_ERROR(xpress_->SetLinearObjective(
+        objective.offset(), index, objective.linear_coefficients().values()));
+  }
+
   return absl::OkStatus();
 }
 
@@ -876,7 +1007,8 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
   RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
   RETURN_IF_ERROR(solveContext.ApplyModelParameters(
-      model_parameters, variables_map_, linear_constraints_map_));
+      model_parameters, variables_map_, linear_constraints_map_,
+      objectives_map_));
   // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
   // the best algorithm. Note that we do not pass flags to the function
   // either. We assume that algorithms are configured via controls like
@@ -944,6 +1076,23 @@ absl::StatusOr<double> XpressSolver::GetBestDualBound() const {
   return objsen * kMinusInf;
 }
 
+/** Extend a solution with multi-objective information (if there is more than
+ * one objective).
+ */
+absl::Status XpressSolver::ExtendWithMultiobj(SolutionProto& solution) {
+  // We may not have solved for all objectives, so make sure we query only
+  // those that were solved.
+  ASSIGN_OR_RETURN(int const nSolved, xpress_->GetIntAttr(XPRS_SOLVEDOBJS));
+  auto* objvals =
+      solution.mutable_primal_solution()->mutable_auxiliary_objective_values();
+  for (auto const& [ortoolsId, xpressId] : objectives_map_) {
+    ASSIGN_OR_RETURN(double const thisobj,
+                     xpress_->CalculateObjectiveN(xpressId, nullptr));
+    (*objvals)[ortoolsId] = thisobj;
+  }
+  return absl::OkStatus();
+}
+
 absl::Status XpressSolver::AppendSolution(
     SolveResultProto& solve_result,
     const ModelSolveParametersProto& model_parameters,
@@ -960,6 +1109,7 @@ absl::Status XpressSolver::AppendSolution(
       ASSIGN_OR_RETURN(const double objval,
                        xpress_->GetDoubleAttr(XPRS_OBJVAL));
       solution.mutable_primal_solution()->set_objective_value(objval);
+      RETURN_IF_ERROR(ExtendWithMultiobj(solution));
       XpressVectorToSparseDoubleVector(
           x, variables_map_,
           *solution.mutable_primal_solution()->mutable_variable_values(),
@@ -996,6 +1146,7 @@ absl::Status XpressSolver::AppendSolution(
           primals, variables_map_,
           *solution.mutable_primal_solution()->mutable_variable_values(),
           model_parameters.variable_values_filter());
+      RETURN_IF_ERROR(ExtendWithMultiobj(solution));
     } else if (storeSolutions) {
       // Even if we are not primal feasible, store the results we obtained
       // from XPRSgetlpsolution(). The feasibility status of this vector

@@ -111,6 +111,7 @@ class XpressSolver : public SolverInterface {
   absl::StatusOr<SolveResultProto> ExtractSolveResultProto(
       absl::Time start, const ModelSolveParametersProto& model_parameters,
       const SolveParametersProto& solve_parameters);
+  absl::Status ExtendWithMultiobj(SolutionProto& solution);
   absl::Status AppendSolution(SolveResultProto& solve_result,
                               const ModelSolveParametersProto& model_parameters,
                               const SolveParametersProto& solve_parameters);
@@ -131,7 +132,9 @@ class XpressSolver : public SolverInterface {
   absl::Status AddNewLinearConstraints(
       const LinearConstraintsProto& constraints);
   absl::Status AddNewVariables(const VariablesProto& new_variables);
-  absl::Status AddSingleObjective(const ObjectiveProto& objective);
+  absl::Status AddObjective(const ObjectiveProto& objective,
+                            std::optional<AuxiliaryObjectiveId> objective_id,
+                            bool multiobj);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
@@ -155,6 +158,10 @@ class XpressSolver : public SolverInterface {
   // Xpress-numbered linear constraint and extra information.
   gtl::linked_hash_map<LinearConstraintId, LinearConstraintData>
       linear_constraints_map_;
+  // Internal correspondence from objective proto IDs to Xpress-numbered
+  // objectives.
+  gtl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
+      objectives_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {
@@ -164,6 +171,7 @@ class XpressSolver : public SolverInterface {
   SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
 
+  bool is_multiobj_ = false;
   bool is_mip_ = false;
   // Results of the last solve
   int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;

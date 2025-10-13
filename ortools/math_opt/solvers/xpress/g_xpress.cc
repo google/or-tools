@@ -345,6 +345,15 @@ absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
   return result;
 }
 
+absl::StatusOr<double> Xpress::GetObjectiveDoubleAttr(int objidx,
+                                                      int attribute) const {
+  double result;
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetobjdblattrib(xpress_model_, objidx, attribute, &result)))
+      << "Error getting Xpress objective double attribute: " << attribute;
+  return result;
+}
+
 int Xpress::GetNumberOfConstraints() const {
   int n;
   XPRSgetintattrib(xpress_model_, XPRS_ROWS, &n);
@@ -439,6 +448,47 @@ absl::Status Xpress::LoadDirs(int len, int const* cols, int const* prio,
                               char const* dir, double const* up,
                               double const* down) {
   return ToStatus(XPRSloaddirs(xpress_model_, len, cols, prio, dir, up, down));
+}
+
+absl::Status Xpress::SetObjectiveIntControl(int obj, int control, int value) {
+  return ToStatus(XPRSsetobjintcontrol(xpress_model_, obj, control, value));
+}
+absl::Status Xpress::SetObjectiveDoubleControl(int obj, int control,
+                                               double value) {
+  return ToStatus(XPRSsetobjdblcontrol(xpress_model_, obj, control, value));
+}
+absl::StatusOr<int> Xpress::AddObjective(double constant, int ncols,
+                                         int const* colind,
+                                         double const* objcoef, int priority,
+                                         double weight) {
+  ASSIGN_OR_RETURN(int const objs, GetIntAttr(XPRS_OBJECTIVES));
+  if (objs == INT_MAX) {
+    return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
+           << "too many objectives";
+  }
+  int ret = XPRSaddobj(xpress_model_, ncols, colind, objcoef, priority, weight);
+  if (ret) {
+    return ToStatus(ret);
+  }
+  if (constant != 0.0) {
+    ret =
+        XPRSsetobjdblcontrol(xpress_model_, objs, XPRS_OBJECTIVE_RHS, constant);
+    if (ret) {
+      XPRSdelobj(xpress_model_, objs);
+      return ToStatus(ret);
+    }
+  }
+  return objs;
+}
+
+absl::StatusOr<double> Xpress::CalculateObjectiveN(int objidx,
+                                                   double const* solution) {
+  double objval;
+  int ret = XPRScalcobjn(xpress_model_, objidx, solution, &objval);
+  if (ret) {
+    return ToStatus(ret);
+  }
+  return objval;
 }
 
 }  // namespace operations_research::math_opt

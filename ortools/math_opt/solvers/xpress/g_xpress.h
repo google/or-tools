@@ -67,6 +67,8 @@ class Xpress {
   absl::StatusOr<int> GetIntAttr(int attribute) const;
 
   absl::StatusOr<double> GetDoubleAttr(int attribute) const;
+  absl::StatusOr<double> GetObjectiveDoubleAttr(int objidx,
+                                                int attribute) const;
 
   absl::Status AddVars(std::size_t count, absl::Span<const double> obj,
                        absl::Span<const double> lb, absl::Span<const double> ub,
@@ -143,6 +145,14 @@ class Xpress {
   absl::Status LoadDelayedRows(int len, int const* rows);
   absl::Status LoadDirs(int len, int const* cols, int const* prio,
                         char const* dir, double const* up, double const* down);
+
+  absl::Status SetObjectiveIntControl(int obj, int control, int value);
+  absl::Status SetObjectiveDoubleControl(int obj, int control, double value);
+  absl::StatusOr<int> AddObjective(double constant, int ncols,
+                                   int const* colind, double const* objcoef,
+                                   int priority, double weight);
+  absl::StatusOr<double> CalculateObjectiveN(int objidx,
+                                             double const* solution);
 
  private:
   XPRSprob xpress_model_;
