@@ -113,6 +113,7 @@ class ScopedCallback {
     ctx = context;
     RETURN_IF_ERROR(
         ProtoT::Add(ctx->xpress, low_level_cb, reinterpret_cast<void*>(this)));
+    or_tools_cb = cb;
     return absl::OkStatus();
   }
 
@@ -291,6 +292,28 @@ class ScopedSolverContext {
   ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
     shared_ctx.xpress = xpress;
   }
+  absl::Status Set(int id, int32_t const& value) {
+    return Set(id, int64_t(value));
+  }
+  absl::Status Set(int id, int64_t const& value) {
+    ASSIGN_OR_RETURN(int64_t old, shared_ctx.xpress->GetIntControl64(id));
+    modifiedControls.push_back({OneControl::INT_CONTROL, id, old, 0.0, ""});
+    RETURN_IF_ERROR(shared_ctx.xpress->SetIntControl64(id, value));
+    return absl::OkStatus();
+  }
+  absl::Status Set(int id, double const& value) {
+    ASSIGN_OR_RETURN(double old, shared_ctx.xpress->GetDblControl(id));
+    modifiedControls.push_back({OneControl::DBL_CONTROL, id, 0LL, old, ""});
+    RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(id, value));
+    return absl::OkStatus();
+  }
+  absl::Status Set(int id, std::string const& value) {
+    ASSIGN_OR_RETURN(std::string old, shared_ctx.xpress->GetStrControl(id));
+    modifiedControls.push_back({OneControl::STR_CONTROL, id, 0LL, 0.0, old});
+    RETURN_IF_ERROR(shared_ctx.xpress->SetStrControl(id, value));
+    return absl::OkStatus();
+  }
+
   absl::Status AddCallbacks(MessageCallback message_callback,
                             const SolveInterrupter* interrupter) {
     if (message_callback)
@@ -323,11 +346,12 @@ class ScopedSolverContext {
   absl::Status ApplyParameters(const SolveParametersProto& parameters,
                                MessageCallback message_callback) {
     std::vector<std::string> warnings;
-    ASSIGN_OR_RETURN(bool const isMIP, xpress->IsMIP());
+    ASSIGN_OR_RETURN(bool const isMIP, shared_ctx.xpress->IsMIP());
     if (parameters.enable_output()) {
       // This is considered only if no message callback is set.
       if (!message_callback) {
-        RETURN_IF_ERROR(messageCallback.Add(this, stdoutMessageCallback));
+        RETURN_IF_ERROR(
+            messageCallback.Add(&shared_ctx, stdoutMessageCallback));
       }
     }
     absl::Duration time_limit = absl::InfiniteDuration();
@@ -469,7 +493,8 @@ class ScopedSolverContext {
       int id, type;
       int64_t l;
       double d;
-      RETURN_IF_ERROR(xpress->GetControlInfo(name.c_str(), &id, &type));
+      RETURN_IF_ERROR(
+          shared_ctx.xpress->GetControlInfo(name.c_str(), &id, &type));
       switch (type) {
         case XPRS_TYPE_INT:  // fallthrough
         case XPRS_TYPE_INT64:
@@ -513,8 +538,8 @@ class ScopedSolverContext {
       gtl::linked_hash_map<XpressSolver::LinearConstraintId,
                            XpressSolver::LinearConstraintData> const&
           linear_constraints_map) {
-    ASSIGN_OR_RETURN(int const cols, xpress->GetIntAttr(XPRS_COLS));
-    ASSIGN_OR_RETURN(int const rows, xpress->GetIntAttr(XPRS_ROWS));
+    ASSIGN_OR_RETURN(int const cols, shared_ctx.xpress->GetIntAttr(XPRS_COLS));
+    ASSIGN_OR_RETURN(int const rows, shared_ctx.xpress->GetIntAttr(XPRS_ROWS));
     // Set initial basis
     if (model_parameters.has_initial_basis()) {
       auto const& basis = model_parameters.initial_basis();
@@ -531,8 +556,8 @@ class ScopedSolverContext {
             MathOptToXpressBasisStatus(static_cast<BasisStatusProto>(value),
                                        true);
       }
-      RETURN_IF_ERROR(xpress->SetStartingBasis(xpress_constr_basis_status,
-                                               xpress_var_basis_status));
+      RETURN_IF_ERROR(shared_ctx.xpress->SetStartingBasis(
+          xpress_constr_basis_status, xpress_var_basis_status));
     }
     std::vector<int> colind;
 
@@ -554,7 +579,7 @@ class ScopedSolverContext {
         if (mipStart.size() > cols)
           return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
                  << "more solution hints than columns";
-        RETURN_IF_ERROR(xpress->AddMIPSol(
+        RETURN_IF_ERROR(shared_ctx.xpress->AddMIPSol(
             static_cast<int>(mipStart.size()), mipStart.data(), colind.data(),
             absl::StrCat("SolutionHint", cnt).c_str()));
         ++cnt;
@@ -580,9 +605,9 @@ class ScopedSolverContext {
       if (colind.size() > 0)
         return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
                << "more branching priorities than columns";
-      RETURN_IF_ERROR(xpress->LoadDirs(static_cast<int>(colind.size()),
-                                       colind.data(), priority.data(), nullptr,
-                                       nullptr, nullptr));
+      RETURN_IF_ERROR(shared_ctx.xpress->LoadDirs(
+          static_cast<int>(colind.size()), colind.data(), priority.data(),
+          nullptr, nullptr, nullptr));
     }
 
     /** TODO: Install (multi-)objective parameters. */
@@ -598,43 +623,35 @@ class ScopedSolverContext {
         return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
                << "more lazy constraints than rows";
 
-      RETURN_IF_ERROR(xpress->LoadDelayedRows(
+      RETURN_IF_ERROR(shared_ctx.xpress->LoadDelayedRows(
           static_cast<int>(delayedRows.size()), delayedRows.data()));
     }
 
     return absl::OkStatus();
   }
   /** Interrupt the current solve with the given reason. */
-  void Interrupt(int reason) { CHECK_OK(xpress->Interrupt(reason)); }
-  /** Reraise any pending exception from a callback. */
-  void ReraiseCallbackException() {
-    if (callbackException) {
-      std::exception_ptr old = callbackException;
-      callbackException = nullptr;
-      std::rethrow_exception(old);
+  void Interrupt(int reason) { CHECK_OK(shared_ctx.xpress->Interrupt(reason)); }
+
+  void ReraiseException() {
+    if (shared_ctx.callbackException) {
+      std::exception_ptr ex = shared_ctx.callbackException;
+      shared_ctx.callbackException = nullptr;
+      std::rethrow_exception(ex);
     }
-  }
-  /** Set exception raised in callback.
-   * Will not overwrite an existing pending exception.
-   */
-  void SetCallbackException(std::exception_ptr ex) {
-    const absl::MutexLock lock(&mutex);
-    if (!callbackException) callbackException = ex;
   }
 
   ~ScopedSolverContext() {
-  ~SolveContext() {
     for (auto it = modifiedControls.rbegin(); it != modifiedControls.rend();
          ++it) {
       switch (it->type) {
         case OneControl::INT_CONTROL:
-          CHECK_OK(xpress->SetIntControl64(it->id, it->l));
+          CHECK_OK(shared_ctx.xpress->SetIntControl64(it->id, it->l));
           break;
         case OneControl::DBL_CONTROL:
-          CHECK_OK(xpress->SetDblControl(it->id, it->d));
+          CHECK_OK(shared_ctx.xpress->SetDblControl(it->id, it->d));
           break;
         case OneControl::STR_CONTROL:
-          CHECK_OK(xpress->SetStrControl(it->id, it->s.c_str()));
+          CHECK_OK(shared_ctx.xpress->SetStrControl(it->id, it->s.c_str()));
           break;
       }
     }
@@ -643,51 +660,8 @@ class ScopedSolverContext {
     if (shared_ctx.callbackException)
       std::rethrow_exception(shared_ctx.callbackException);
   }
-
-  absl::Status Set(int id, int32_t const& value) {
-    return Set(id, int64_t(value));
-  }
-  absl::Status Set(int id, int64_t const& value) {
-    ASSIGN_OR_RETURN(int64_t old, xpress->GetIntControl64(id));
-    modifiedControls.push_back({OneControl::INT_CONTROL, id, old, 0.0, ""});
-    RETURN_IF_ERROR(xpress->SetIntControl64(id, value));
-    return absl::OkStatus();
-  }
-  absl::Status Set(int id, double const& value) {
-    ASSIGN_OR_RETURN(double old, xpress->GetDblControl(id));
-    modifiedControls.push_back({OneControl::DBL_CONTROL, id, 0LL, old, ""});
-    RETURN_IF_ERROR(xpress->SetDblControl(id, value));
-    return absl::OkStatus();
-  }
-  absl::Status Set(int id, std::string const& value) {
-    ASSIGN_OR_RETURN(std::string old, xpress->GetStrControl(id));
-    modifiedControls.push_back({OneControl::STR_CONTROL, id, 0LL, 0.0, old});
-    RETURN_IF_ERROR(xpress->SetStrControl(id, value));
-    return absl::OkStatus();
-  }
 };
 
-template <typename T>
-absl::Status ScopedCallback<T>::Add(SolveContext* ctx,
-                                    typename T::DataType data) {
-  RETURN_IF_ERROR(T::Add(ctx->xpress, reinterpret_cast<void*>(this)));
-  callbackData = data;
-  context = ctx;
-  return absl::OkStatus();
-}
-template <typename T>
-void ScopedCallback<T>::Interrupt(int reason) {
-  context->Interrupt(reason);
-}
-template <typename T>
-void ScopedCallback<T>::SetCallbackException(std::exception_ptr ex) {
-  context->SetCallbackException(ex);
-}
-
-template <typename T>
-ScopedCallback<T>::~ScopedCallback() {
-  if (context) T::Remove(context->xpress, reinterpret_cast<void*>(this));
-}
 }  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
@@ -898,18 +872,22 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
 
   // Register callbacks and create scoped context to automatically if an
   // exception has been thrown during optimization.
-  {
-    ScopedSolverContext solveContext(xpress_.get());
-    RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-    RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
-    RETURN_IF_ERROR(solveContext.ApplyModelParameters(
+  ScopedSolverContext solveContext(xpress_.get());
+  RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
+  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
+  RETURN_IF_ERROR(solveContext.ApplyModelParameters(
       model_parameters, variables_map_, linear_constraints_map_));
-    // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
-    // the best algorithm. Note that we do not pass flags to the function either.
-    // We assume that algorithms are configured via controls like LPFLAGS.
-
-    RETURN_IF_ERROR(xpress_->Optimize("", &solvestatus_, &solstatus_));
-  }  
+  // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
+  // the best algorithm. Note that we do not pass flags to the function
+  // either. We assume that algorithms are configured via controls like
+  // LPFLAGS.
+  RETURN_IF_ERROR(xpress_->Optimize("", &solvestatus_, &solstatus_));
+  // Reraise any exception now. Note that we cannot just limit the scope of
+  // solveContext since its destructor will restore controls settings.
+  // On the other hand, when fetching results we need to check some controls
+  // (for example, BARALG to decide whether we need to report barrier or
+  // first order iterations).
+  solveContext.ReraiseException();
   RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
   RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
   ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
@@ -1393,9 +1371,6 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
 
   return absl::UnimplementedError(
       "XPRESS does not provide a method to compute an infeasible subsystem");
-  /** TODO:
-      solveContext.ReraiseCallbackException();
-  */
 }
 
 absl::StatusOr<InvertedBounds> XpressSolver::ListInvertedBounds() const {
