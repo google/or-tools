@@ -198,6 +198,7 @@ cc_library(
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
+        "//ortools/base:numbers",
         "//ortools/base:recordio",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",

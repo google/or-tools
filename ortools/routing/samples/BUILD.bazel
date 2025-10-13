@@ -11,54 +11,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Routing utilities, mostly parsers for routing problems.
+
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load(":code_samples.bzl", "code_sample_cc")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
-code_sample_cc(name = "simple_routing_program")
-
-code_sample_cc(name = "tsp")
-
-code_sample_cc(name = "tsp_circuit_board")
-
-code_sample_cc(name = "tsp_cities")
-
-code_sample_cc(name = "tsp_distance_matrix")
-
-code_sample_cc(name = "vrp")
-
-code_sample_cc(name = "vrp_breaks")
-
-code_sample_cc(name = "vrp_capacity")
-
-code_sample_cc(name = "vrp_drop_nodes")
-
-code_sample_cc(name = "vrp_global_span")
-
-code_sample_cc(name = "vrp_initial_routes")
-
-code_sample_cc(name = "vrp_pickup_delivery")
-
-code_sample_cc(name = "vrp_pickup_delivery_fifo")
-
-code_sample_cc(name = "vrp_pickup_delivery_lifo")
-
-code_sample_cc(name = "vrp_resources")
-
-code_sample_cc(name = "vrp_starts_ends")
-
-code_sample_cc(name = "vrp_time_windows")
-
-code_sample_cc(name = "vrp_with_time_limit")
+package(default_visibility = ["//visibility:public"])
 
 # cvrptw samples
+cc_binary(
+    name = "cvrptw_soft_capacity",
+    srcs = ["cvrptw_soft_capacity.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
+        "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
+    ],
+)
+
 cc_binary(
     name = "cvrptw",
     srcs = ["cvrptw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
+)
+
+run_binary_test(
+    name = "cvrptw_test",
+    size = "large",
+    args = ["--vrp_use_deterministic_random_seed"],
+    binary = ":cvrptw",
 )
 
 cc_binary(
@@ -66,20 +72,55 @@ cc_binary(
     srcs = ["cvrp_disjoint_tw.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
 )
+
+run_binary_test(
+    name = "cvrp_disjoint_tw_test",
+    size = "large",
+    args = ["--vrp_use_deterministic_random_seed"],
+    binary = ":cvrp_disjoint_tw",
+)
+
+# This test is temporarily down because the time dependent functionality is
+# being revised.
+# run_binary_test(
+#     name = "cvrptw_with_time_dependent_costs_test",
+#     size = "large",
+#     binary = ":cvrptw_with_time_dependent_costs",
+# )
 
 cc_binary(
     name = "cvrptw_with_breaks",
     srcs = ["cvrptw_with_breaks.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
         "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
 )
 
@@ -88,9 +129,26 @@ cc_binary(
     srcs = ["cvrptw_with_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
     ],
+)
+
+run_binary_test(
+    name = "cvrptw_with_resources_test",
+    size = "large",
+    args = ["--vrp_use_deterministic_random_seed"],
+    binary = ":cvrptw_with_resources",
 )
 
 cc_binary(
@@ -98,10 +156,27 @@ cc_binary(
     srcs = ["cvrptw_with_stop_times_and_resources.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
+        "@protobuf",
     ],
+)
+
+run_binary_test(
+    name = "cvrptw_with_stop_times_and_resources_test",
+    size = "large",
+    args = ["--vrp_use_deterministic_random_seed"],
+    binary = ":cvrptw_with_stop_times_and_resources",
 )
 
 cc_binary(
@@ -109,7 +184,429 @@ cc_binary(
     srcs = ["cvrptw_with_refueling.cc"],
     deps = [
         "//ortools/base",
+        "//ortools/constraint_solver:cp",
         "//ortools/routing",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "//ortools/routing:parameters_cc_proto",
+        "//ortools/routing:types",
         "//ortools/routing/parsers:cvrptw_lib",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/random",
+        "@protobuf",
+    ],
+)
+
+run_binary_test(
+    name = "cvrptw_with_refueling_test",
+    size = "large",
+    args = [
+        "--vrp_use_deterministic_random_seed",
+        "--cp_random_seed=144",
+    ],
+    binary = ":cvrptw_with_refueling",
+)
+
+cc_test(
+    name = "simple_routing_program_cc",
+    size = "medium",
+    srcs = ["simple_routing_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_cc",
+    size = "medium",
+    srcs = ["tsp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_circuit_board_cc",
+    size = "medium",
+    srcs = ["tsp_circuit_board.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_cities_cc",
+    size = "medium",
+    srcs = ["tsp_cities.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_cities_routes_cc",
+    size = "medium",
+    srcs = ["tsp_cities_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "tsp_distance_matrix_cc",
+    size = "medium",
+    srcs = ["tsp_distance_matrix.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_cc",
+    size = "medium",
+    srcs = ["vrp.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_breaks_cc",
+    size = "medium",
+    srcs = ["vrp_breaks.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "vrp_capacity_cc",
+    size = "medium",
+    srcs = ["vrp_capacity.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "vrp_drop_nodes_cc",
+    size = "medium",
+    srcs = ["vrp_drop_nodes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "vrp_global_span_cc",
+    size = "medium",
+    srcs = ["vrp_global_span.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_initial_routes_cc",
+    size = "medium",
+    srcs = ["vrp_initial_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "vrp_starts_ends_cc",
+    size = "medium",
+    srcs = ["vrp_starts_ends.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_fifo_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_fifo.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_pickup_delivery_lifo_cc",
+    size = "medium",
+    srcs = ["vrp_pickup_delivery_lifo.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_resources_cc",
+    size = "medium",
+    srcs = ["vrp_resources.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_routes_cc",
+    size = "medium",
+    srcs = ["vrp_routes.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_solution_callback_cc",
+    size = "medium",
+    srcs = ["vrp_solution_callback.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "vrp_time_windows_cc",
+    size = "medium",
+    srcs = ["vrp_time_windows.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "vrp_with_time_limit_cc",
+    size = "medium",
+    srcs = ["vrp_with_time_limit.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
+        "@protobuf//:duration_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "vrptw_store_solution_data_cc",
+    size = "medium",
+    srcs = ["vrptw_store_solution_data.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
+        "//ortools/routing",
+        "//ortools/routing:enums_cc_proto",
+        "//ortools/routing:index_manager",
+        "//ortools/routing:parameters",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:flags",
+        "@abseil-cpp//absl/log:globals",
     ],
 )

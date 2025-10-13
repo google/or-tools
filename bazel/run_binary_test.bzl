@@ -70,8 +70,8 @@ def run_binary_test(
     binary_pkg, binary_name = parse_label(binary)
     binary_path = "/".join([binary_pkg, binary_name])
 
-    # We would like to Include args in the generated shell script, so the "blaze-bin/.../test" can
-    # be run manually. Unfortunately expand_template does not resolve $(location) and other Make
+    # We would like to include args in the generated shell script, so that "blaze-bin/.../test" can
+    # be run manually. Unfortunately `expand_template` does not resolve $(location) and other Make
     # variables so we only pass them in `sh_test` below.
     expand_template(
         name = name + "_gensh",
