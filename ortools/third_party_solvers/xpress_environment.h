@@ -123,6 +123,10 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_SOLVESTATUS 1394
 #define XPRS_OBJECTIVES 1397
 #define XPRS_SOLVEDOBJS 1399
+#define XPRS_ORIGINALCOLS 1214
+#define XPRS_ORIGINALROWS 1124
+#define XPRS_ORIGINALMIPENTS 1191
+#define XPRS_ORIGINALSETS 1194
 #define XPRS_OBJVAL 2118
 #define XPRS_BARPRIMALOBJ 4001
 #define XPRS_BARDUALOBJ 4002
@@ -563,6 +567,7 @@ extern std::function<int(XPRSprob prob, int ncols, const int colind[], const dou
 extern std::function<int(XPRSprob prob, int type, const char names[], int first, int last)> XPRSaddnames;
 extern std::function<int(XPRSprob prob, int type, char names[], int first, int last)>  XPRSgetnames;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[])> XPRSdelcols;
+extern std::function<int(XPRSprob prob, int nsets, XPRSint64 nelems, const char settype[], const XPRSint64 start[], const int colind[], const double refval[])> XPRSaddsets64;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[], const char coltype[])> XPRSchgcoltype;
 extern std::function<int(XPRSprob prob, const int rowstat[], const int colstat[])> XPRSloadbasis;
 extern std::function<int(XPRSprob prob)> XPRSpostsolve;

@@ -135,6 +135,9 @@ class XpressSolver : public SolverInterface {
   absl::Status AddObjective(const ObjectiveProto& objective,
                             std::optional<AuxiliaryObjectiveId> objective_id,
                             bool multiobj);
+  absl::Status AddSOS(
+      const google::protobuf::Map<AnyConstraintId, SosConstraintProto>& sets,
+      bool sos1);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
@@ -162,6 +165,12 @@ class XpressSolver : public SolverInterface {
   // objectives.
   gtl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
       objectives_map_;
+  // Internal correspondence from SOS1 proto IDs to Xpress-numbered
+  // objectives.
+  gtl::linked_hash_map<Sos1ConstraintId, XpressSosConstraintIndex> sos1_map_;
+  // Internal correspondence from SOS2 proto IDs to Xpress-numbered
+  // objectives.
+  gtl::linked_hash_map<Sos2ConstraintId, XpressSosConstraintIndex> sos2_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {

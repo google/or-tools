@@ -206,6 +206,10 @@ LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
   return LogicalConstraintTestParameters(
       SolverType::kXpress, SolveParameters(),
       /*supports_integer_variables=*/true,
+      // Note: Xpress supports SOS, but it only supports SOSs that comprise
+      //       solely of variables (not expressions) and it does not support
+      //       duplicate entries. Many of the SOS tests construct things
+      //       like this, so we skip them.
       /*supports_sos1=*/false,
       /*supports_sos2=*/false,
       /*supports_indicator_constraints=*/false,

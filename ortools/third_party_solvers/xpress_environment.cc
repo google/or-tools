@@ -88,6 +88,7 @@ std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], 
 std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[], int priority, double weight)> XPRSaddobj = nullptr;
 std::function<int(XPRSprob prob, int type, const char names[], int first, int last)> XPRSaddnames = nullptr;
 std::function<int(XPRSprob prob, int type, char names[], int first, int last)> XPRSgetnames = nullptr;
+extern std::function<int(XPRSprob prob, int nsets, XPRSint64 nelems, const char settype[], const XPRSint64 start[], const int colind[], const double refval[])> XPRSaddsets64 = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[])> XPRSdelcols = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[], const char coltype[])> XPRSchgcoltype = nullptr;
 std::function<int(XPRSprob prob, const int rowstat[], const int colstat[])> XPRSloadbasis = nullptr;
@@ -177,6 +178,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddobj, "XPRSaddobj");
   xpress_dynamic_library->GetFunction(&XPRSaddnames, "XPRSaddnames");
   xpress_dynamic_library->GetFunction(&XPRSgetnames, "XPRSgetnames");
+  xpress_dynamic_library->GetFunction(&XPRSaddsets64, "XPRSaddsets64");
   xpress_dynamic_library->GetFunction(&XPRSdelcols, "XPRSdelcols");
   xpress_dynamic_library->GetFunction(&XPRSchgcoltype, "XPRSchgcoltype");
   xpress_dynamic_library->GetFunction(&XPRSloadbasis, "XPRSloadbasis");

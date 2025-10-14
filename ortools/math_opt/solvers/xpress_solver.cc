@@ -718,8 +718,8 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .quadratic_objectives = SupportType::kSupported,
     .quadratic_constraints = SupportType::kNotSupported,
     .second_order_cone_constraints = SupportType::kNotSupported,
-    .sos1_constraints = SupportType::kNotSupported,
-    .sos2_constraints = SupportType::kNotSupported,
+    .sos1_constraints = SupportType::kSupported,
+    .sos2_constraints = SupportType::kSupported,
     .indicator_constraints = SupportType::kNotSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
@@ -758,6 +758,8 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
     }
     RETURN_IF_ERROR(AddObjective(obj, id, true));
   }
+  RETURN_IF_ERROR(AddSOS(input_model.sos1_constraints(), true));
+  RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
   return absl::OkStatus();
 }
 absl::Status XpressSolver::AddNewVariables(
@@ -956,6 +958,54 @@ absl::Status XpressSolver::AddObjective(
         objective.offset(), index, objective.linear_coefficients().values()));
   }
 
+  return absl::OkStatus();
+}
+
+/** Add an SOS constraint.
+ * Note that in ortools an SOS constraint is made up from expressions and not
+ * just variables. Here, we only support SOSs in which each expression is just
+ * a single variable with coefficient 1.
+ * Also, ortools supports SOSs with identical elements and assumes that
+ * something like { x, x } is reduced to just { x }. This is debatable:
+ * If you consider { x, x } a set, then clearly it is the same as { x }.
+ * But if you consider "at most one of x and x may be non-zero", then { x, x }
+ * implies x=0. This is not how ortools interprets SOSs with duplicate entries
+ * (see the tests).
+ * We do not check for duplicate entries here, but Xpress will choke on them.
+ */
+absl::Status XpressSolver::AddSOS(
+    const google::protobuf::Map<AnyConstraintId, SosConstraintProto>& sets,
+    bool sos1) {
+  if (sets.empty()) return absl::OkStatus();
+  std::vector<XPRSint64> start;
+  std::vector<int> colind;
+  std::vector<double> refval;
+  ASSIGN_OR_RETURN(int nextId, xpress_->GetIntAttr(XPRS_ORIGINALSETS));
+  auto* sosmap = sos1 ? &sos1_map_ : &sos2_map_;
+  for (auto const& [sosId, sos] : sets) {
+    start.push_back(colind.size());
+    auto count = sos.expressions_size();
+    bool const has_weight = sos.weights_size() > 0;
+    for (decltype(count) i = 0; i < count; ++i) {
+      auto const& expr = sos.expressions(i);
+      double const weight = has_weight ? sos.weights(i) : (i + 1);
+      if (expr.offset() != 0.0)
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress only supports SOS on singleton variables (offset)";
+      if (expr.ids_size() != 1)
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress only supports SOS on singleton variables (multiple)";
+      if (expr.coefficients(0) != 1.0)
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress only supports SOS on singleton variables (non-unit)";
+      colind.push_back(variables_map_.at(expr.ids(0)));
+      refval.push_back(weight);
+    }
+    gtl::InsertOrDie(sosmap, sosId, nextId);
+    ++nextId;
+  }
+  std::vector<char> settype(start.size(), sos1 ? '1' : '2');
+  RETURN_IF_ERROR(xpress_->AddSets(settype, start, colind, refval));
   return absl::OkStatus();
 }
 

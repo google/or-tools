@@ -89,6 +89,10 @@ constexpr absl::string_view no_indicator_support_message =
 
 // We test SOS1 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "skipped since Xpress only supports SOS on variables (not "
+                    "expressions)";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   model.AddSos1Constraint({3.0 * x + 2.0}, {3.0});
@@ -105,6 +109,10 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
 
 // We test SOS2 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos2Model) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "skipped since Xpress only supports SOS on variables (not "
+                    "expressions)";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   model.AddSos2Constraint({3.0 * x + 2.0}, {3.0});

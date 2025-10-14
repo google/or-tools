@@ -491,4 +491,19 @@ absl::StatusOr<double> Xpress::CalculateObjectiveN(int objidx,
   return objval;
 }
 
+absl::Status Xpress::AddSets(absl::Span<char const> settype,
+                             absl::Span<XPRSint64 const> start,
+                             absl::Span<int const> colind,
+                             absl::Span<double const> refval) {
+  ASSIGN_OR_RETURN(int const oldSets, GetIntAttr(XPRS_ORIGINALSETS));
+  if (checkInt32Overflow(settype.size()) ||
+      checkInt32Overflow(std::size_t(oldSets) + settype.size())) {
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 SOSs");
+  }
+  return ToStatus(XPRSaddsets64(xpress_model_, static_cast<int>(settype.size()),
+                                colind.size(), settype.data(), start.data(),
+                                colind.data(), refval.data()));
+}
+
 }  // namespace operations_research::math_opt

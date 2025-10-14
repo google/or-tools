@@ -153,6 +153,10 @@ class Xpress {
                                    int priority, double weight);
   absl::StatusOr<double> CalculateObjectiveN(int objidx,
                                              double const* solution);
+  absl::Status AddSets(absl::Span<char const> settype,
+                       absl::Span<XPRSint64 const> start,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> refval);
 
  private:
   XPRSprob xpress_model_;
