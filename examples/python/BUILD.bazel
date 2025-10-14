@@ -278,7 +278,7 @@ run_binary_test(
     args = ["--input=$(rootpath //examples/python/testdata:salbp_20_1.alb)"],
     binary = ":line_balancing_sat_py3",
     data = ["//examples/python/testdata:salbp_20_1.alb"],
-    # test_grep_lines = ["objective: 3"],
+    grep_lines = ["objective: 3"],
 )
 
 py_binary(
@@ -318,7 +318,7 @@ py_binary(
     main = "music_playlist_sat.py",
     deps = [
         requirement("absl-py"),
-	"//ortools/sat/python:cp_model",
+        "//ortools/sat/python:cp_model",
     ],
 )
 
@@ -428,7 +428,7 @@ run_binary_test(
     args = ["--input=$(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
     binary = ":rcpsp_sat_py3",
     data = ["//ortools/scheduling/testdata:c1510_1.mm.txt"],
-    # test_grep_lines = ["objective: 21"],
+    grep_lines = ["objective: 21"],
 )
 
 run_binary_test(
@@ -436,7 +436,7 @@ run_binary_test(
     args = ["--input=$(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
     binary = ":rcpsp_sat_py3",
     data = ["//ortools/scheduling/testdata:j301_1.sm"],
-    # test_grep_lines = ["objective: 43"],
+    grep_lines = ["objective: 43"],
 )
 
 py_binary(

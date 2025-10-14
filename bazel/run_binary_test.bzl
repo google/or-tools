@@ -11,8 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""run_binary_test will run a xx_binary as test with the given args.
-"""
+"""run_binary_test will run a xx_binary as test with the given args."""
 
 load("@bazel_skylib//rules:expand_template.bzl", "expand_template")
 load("@rules_shell//shell:sh_test.bzl", "sh_test")
@@ -46,12 +45,24 @@ def parse_label(label):
             pkg = native.package_name() + ("/" + pkg2 if pkg2 else "")
     return pkg, target
 
+def get_check_contains_code(line):
+    return """
+if ! grep -qF "{line}" "${{LOGFILE}}"; then
+  cat "${{LOGFILE}}"
+  echo "---------------------------------------------------------------"
+  echo "FAILURE: string '{line}' was not found in the output."
+  echo "---------------------------------------------------------------"
+  exit 1
+fi
+    """.format(line = line)
+
 def run_binary_test(
         name,
         binary,
         template = "//bazel:test_runner_template",
         args = [],
         data = [],
+        grep_lines = [],
         **kwargs):
     """Create a sh_test to run the given binary as test.
 
@@ -61,6 +72,7 @@ def run_binary_test(
       template: template file for executing the binary target.
       args: args to use to run the binary.
       data: data files required by this test.
+      grep_lines: lines to grep for in the log file.
       **kwargs: other attributes that are applicable to tests, size, tags, etc.
 
     """
@@ -79,9 +91,8 @@ def run_binary_test(
         out = shell_script,
         testonly = 1,
         substitutions = {
-            "{package_name}": native.package_name(),
-            "{target}": name,
-            "{binary_path}": binary_path,
+            "{{binary_path}}": binary_path,
+            "{{post_script}}": "\n".join([get_check_contains_code(line) for line in grep_lines]),
         },
     )
     sh_test(

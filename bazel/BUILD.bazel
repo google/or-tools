@@ -35,6 +35,8 @@ compile_pip_requirements(
     requirements_txt = "notebook_requirements.txt",
 )
 
+package(default_visibility = ["//visibility:public"])
+
 filegroup(
     name = "test_runner_template",
     testonly = 1,
