@@ -157,6 +157,16 @@ class Xpress {
                        absl::Span<XPRSint64 const> start,
                        absl::Span<int const> colind,
                        absl::Span<double const> refval);
+  absl::Status SetIndicators(absl::Span<int const> rowind,
+                             absl::Span<int const> colind,
+                             absl::Span<int const> complement);
+  absl::Status AddRows(absl::Span<char const> rowtype,
+                       absl::Span<double const> rhs,
+                       absl::Span<double const> rng,
+                       absl::Span<XPRSint64 const> start,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> rowcoef);
+  absl::StatusOr<bool> IsBinary(int colidx);
 
  private:
   XPRSprob xpress_model_;

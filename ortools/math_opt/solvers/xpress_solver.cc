@@ -720,7 +720,7 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .second_order_cone_constraints = SupportType::kNotSupported,
     .sos1_constraints = SupportType::kSupported,
     .sos2_constraints = SupportType::kSupported,
-    .indicator_constraints = SupportType::kNotSupported};
+    .indicator_constraints = SupportType::kSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
     const ModelProto& model, const InitArgs&) {
@@ -760,6 +760,7 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   }
   RETURN_IF_ERROR(AddSOS(input_model.sos1_constraints(), true));
   RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
+  RETURN_IF_ERROR(AddIndicators(input_model.indicator_constraints()));
   return absl::OkStatus();
 }
 absl::Status XpressSolver::AddNewVariables(
@@ -798,6 +799,40 @@ absl::Status XpressSolver::AddNewVariables(
 XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress)
     : xpress_(std::move(g_xpress)) {}
 
+void XpressSolver::ParseBounds(double lb, double ub, char& sense, double& rhs,
+                               double& rng) {
+  sense = XPRS_EQUAL;
+  rhs = 0.0;
+  rng = 0.0;
+  const bool lb_is_xprs_neg_inf = lb <= kMinusInf;
+  const bool ub_is_xprs_pos_inf = ub >= kPlusInf;
+  if (lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
+    // We have a row
+    //   -inf <= expression <= inf
+    // Xpress has no way to submit this as a ranged constraint. For Xpress
+    // the upper bound of the constraint is just the ub and the lower bound
+    // is computed as ub-abs(lb). This would result in inf-inf=nan if you
+    // use IEEE infinity or XPRS_INFINITY - XPRS_INFINITY = 0. Both are wrong.
+    // So we explicitly register this as free row.
+    sense = XPRS_NONBINDING;
+    rhs = 0.0;
+    rng = 0.0;
+  } else if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
+    sense = XPRS_LESS_EQUAL;
+    rhs = ub;
+  } else if (!lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
+    sense = XPRS_GREATER_EQUAL;
+    rhs = lb;
+  } else if (lb == ub) {
+    sense = XPRS_EQUAL;
+    rhs = lb;
+  } else {
+    sense = XPRS_RANGE;
+    rhs = ub;
+    rng = ub - lb;
+  }
+}
+
 absl::Status XpressSolver::AddNewLinearConstraints(
     const LinearConstraintsProto& constraints) {
   // TODO: we might be able to improve performance by setting coefs also
@@ -813,41 +848,14 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     const int64_t id = constraints.ids(i);
     LinearConstraintData& constraint_data =
         gtl::InsertKeyOrDie(&linear_constraints_map_, id);
-    const double lb = constraints.lower_bounds(i);
-    const double ub = constraints.upper_bounds(i);
-    constraint_data.lower_bound = lb;
-    constraint_data.upper_bound = ub;
+    constraint_data.lower_bound = constraints.lower_bounds(i);
+    constraint_data.upper_bound = constraints.upper_bounds(i);
     constraint_data.constraint_index = i + n_constraints;
     char sense = XPRS_EQUAL;
     double rhs = 0.0;
     double rng = 0.0;
-    const bool lb_is_xprs_neg_inf = lb <= kMinusInf;
-    const bool ub_is_xprs_pos_inf = ub >= kPlusInf;
-    if (lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
-      // We have a row
-      //   -inf <= expression <= inf
-      // Xpress has no way to submit this as a ranged constraint. For Xpress
-      // the upper bound of the constraint is just the ub and the lower bound
-      // is computed as ub-abs(lb). This would result in inf-inf=nan if you
-      // use IEEE infinity or XPRS_INFINITY - XPRS_INFINITY = 0. Both are wrong.
-      // So we explicitly register this as free row.
-      sense = XPRS_NONBINDING;
-      rhs = 0.0;
-      rng = 0.0;
-    } else if (lb_is_xprs_neg_inf && !ub_is_xprs_pos_inf) {
-      sense = XPRS_LESS_EQUAL;
-      rhs = ub;
-    } else if (!lb_is_xprs_neg_inf && ub_is_xprs_pos_inf) {
-      sense = XPRS_GREATER_EQUAL;
-      rhs = lb;
-    } else if (lb == ub) {
-      sense = XPRS_EQUAL;
-      rhs = lb;
-    } else {
-      sense = XPRS_RANGE;
-      rhs = ub;
-      rng = ub - lb;
-    }
+    ParseBounds(constraint_data.lower_bound, constraint_data.upper_bound, sense,
+                rhs, rng);
     constraint_sense.emplace_back(sense);
     constraint_rhs.emplace_back(rhs);
     constraint_rng.emplace_back(rng);
@@ -1009,6 +1017,80 @@ absl::Status XpressSolver::AddSOS(
   return absl::OkStatus();
 }
 
+void XpressSolver::ParseLinear(SparseDoubleVectorProto const& expr, double lb,
+                               double ub, std::vector<int>& colind,
+                               std::vector<double>& coef, char& sense,
+                               double& rhs, double& rng) {
+  ParseBounds(lb, ub, sense, rhs, rng);
+  auto terms = expr.ids_size();
+  for (decltype(terms) i = 0; i < terms; ++i) {
+    colind.push_back(variables_map_.at(expr.ids(i)));
+    coef.push_back(expr.values(i));
+  }
+  /** TODO: How do we handle constant terms in expressions? */
+}
+
+absl::Status XpressSolver::AddIndicators(
+    const google::protobuf::Map<IndicatorConstraintId,
+                                IndicatorConstraintProto>& indicators) {
+  if (indicators.empty()) return absl::OkStatus();
+  // For XPRSaddrows()
+  size_t count = indicators.size();
+  std::vector<double> rhs(count);
+  std::vector<double> rng(count);
+  std::vector<char> sense(count);
+  std::vector<XPRSint64> start(count);
+  std::vector<int> colind;
+  std::vector<double> rowcoef;
+  // For XPRSsetindicators()
+  std::vector<int> i_rowind(count);
+  std::vector<int> i_colind(count);
+  std::vector<int> i_complement(count);
+  ASSIGN_OR_RETURN(int const oldRows, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  int next = 0;
+  for (auto const& [ortoolsId, indicator] : indicators) {
+    start[next] = colind.size();
+    ParseLinear(indicator.expression(), indicator.lower_bound(),
+                indicator.upper_bound(), colind, rowcoef, sense[next],
+                rhs[next], rng[next]);
+
+    // ortools tests require us to raise an error on ranged indicator
+    // constraints
+    if (sense[next] == XPRS_RANGE) {
+      return util::InvalidArgumentErrorBuilder()
+             << "indicator constraint on ranged constraint";
+    }
+
+    i_rowind[next] = oldRows + next;
+    if (indicator.has_indicator_id()) {
+      i_colind[next] = variables_map_.at(indicator.indicator_id());
+      i_complement[next] = indicator.activate_on_zero() ? -1 : 1;
+      /** TODO: Can we do a faster check? Directly in ortools? */
+      ASSIGN_OR_RETURN(bool const isBin, xpress_->IsBinary(i_colind[next]));
+      if (!isBin) {
+        // See the definition of nonbinary_indicator_ why we cannot raise
+        // an error right here.
+        nonbinary_indicator_ = true;
+      }
+    } else {
+      // By definition, this is an inactive constraint, see
+      // indicator_constraint.h
+      i_colind[next] = -1;
+      i_complement[next] = 0;
+      sense[next] = XPRS_NONBINDING;
+    }
+    LinearConstraintData& data =
+        gtl::InsertKeyOrDie(&indicator_map_, ortoolsId);
+    data.constraint_index = oldRows + next;
+    data.lower_bound = indicator.lower_bound();
+    data.upper_bound = indicator.upper_bound();
+    ++next;
+  }
+  RETURN_IF_ERROR(xpress_->AddRows(sense, rhs, rng, start, colind, rowcoef));
+  RETURN_IF_ERROR(xpress_->SetIndicators(i_rowind, i_colind, i_complement));
+  return absl::OkStatus();
+}
+
 absl::Status XpressSolver::ChangeCoefficients(
     const SparseDoubleMatrixProto& matrix) {
   const int num_coefficients = matrix.row_ids().size();
@@ -1049,6 +1131,11 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
     ASSIGN_OR_RETURN(const InvertedBounds inverted_bounds,
                      ListInvertedBounds());
     RETURN_IF_ERROR(inverted_bounds.ToStatus());
+  }
+  // Check that we don't have non-binary indicator variables
+  if (nonbinary_indicator_) {
+    return util::InvalidArgumentErrorBuilder()
+           << "indicator variable is not binary";
   }
 
   // Register callbacks and create scoped context to automatically if an

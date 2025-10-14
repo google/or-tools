@@ -127,6 +127,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_ORIGINALROWS 1124
 #define XPRS_ORIGINALMIPENTS 1191
 #define XPRS_ORIGINALSETS 1194
+#define XPRS_ORIGINALINDICATORS 1255
 #define XPRS_OBJVAL 2118
 #define XPRS_BARPRIMALOBJ 4001
 #define XPRS_BARDUALOBJ 4002
@@ -493,6 +494,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 // ***************************************************************************
 // * variable types                                                          *
 // ***************************************************************************
+#define XPRS_BINARY 'B'
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
 // ***************************************************************************
@@ -561,6 +563,7 @@ extern std::function<int(XPRSprob prob, int* status, double x[], int first, int 
 extern std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals;
 extern std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts;
 extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows;
+extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const XPRSint64 start[], const int colind[], const double rowcoef[])> XPRSaddrows64;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows;
 extern std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[], int priority, double weight)> XPRSaddobj;
@@ -580,6 +583,7 @@ OR_DLL extern std::function<int(XPRSprob prob, char coltype[], int first, int la
 extern std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds;
 extern std::function<int(XPRSprob prob, int length, const double solval[], const int colind[], const char* name)> XPRSaddmipsol;
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSloaddelayedrows;
+extern std::function<int(XPRSprob prob, int nrows, const int rowind[], const int colind[], const int complement[])> XPRSsetindicators;
 extern std::function<int(XPRSprob prob, int ndirs, const int colind[], const int priority[], const char dir[], const double uppseudo[], const double downpseudo[])> XPRSloaddirs;
 extern std::function<int(XPRSprob prob, double x[], double slack[], double duals[], double djs[])> XPRSgetlpsol;
 extern std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmipsol;

@@ -506,4 +506,59 @@ absl::Status Xpress::AddSets(absl::Span<char const> settype,
                                 colind.data(), refval.data()));
 }
 
+absl::Status Xpress::SetIndicators(absl::Span<int const> rowind,
+                                   absl::Span<int const> colind,
+                                   absl::Span<int const> complement) {
+  ASSIGN_OR_RETURN(int const oldInds, GetIntAttr(XPRS_ORIGINALINDICATORS));
+  if (checkInt32Overflow(rowind.size()) ||
+      checkInt32Overflow(std::size_t(oldInds) + rowind.size())) {
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 indicators");
+  }
+  if (rowind.size() != colind.size() || rowind.size() != complement.size()) {
+    return absl::InvalidArgumentError(
+        "inconsistent arguments to SetInidicators");
+  }
+  return ToStatus(
+      XPRSsetindicators(xpress_model_, static_cast<int>(rowind.size()),
+                        rowind.data(), colind.data(), complement.data()));
+}
+
+absl::Status Xpress::AddRows(absl::Span<char const> rowtype,
+                             absl::Span<double const> rhs,
+                             absl::Span<double const> rng,
+                             absl::Span<XPRSint64 const> start,
+                             absl::Span<int const> colind,
+                             absl::Span<double const> rowcoef) {
+  ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
+  if (checkInt32Overflow(rowtype.size()) ||
+      checkInt32Overflow(std::size_t(oldRows) + rowtype.size())) {
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 rows");
+  }
+  if (rowtype.size() != rhs.size() || rowtype.size() != rng.size() ||
+      rowtype.size() != start.size() || colind.size() != rowcoef.size())
+    return absl::InvalidArgumentError("inconsistent arguments to AddRows");
+  return ToStatus(XPRSaddrows64(xpress_model_, static_cast<int>(rowtype.size()),
+                                colind.size(), rowtype.data(), rhs.data(),
+                                rng.data(), start.data(), colind.data(),
+                                rowcoef.data()));
+}
+
+absl::StatusOr<bool> Xpress::IsBinary(int colidx) {
+  char ctype;
+  RETURN_IF_ERROR(
+      ToStatus(XPRSgetcoltype(xpress_model_, &ctype, colidx, colidx)));
+  if (ctype == XPRS_BINARY)
+    return true;
+  else if (ctype != XPRS_INTEGER)
+    return false;
+  double bnd;
+  RETURN_IF_ERROR(ToStatus(XPRSgetlb(xpress_model_, &bnd, colidx, colidx)));
+  if (bnd < 0.0 || bnd > 1.0) return false;
+  RETURN_IF_ERROR(ToStatus(XPRSgetub(xpress_model_, &bnd, colidx, colidx)));
+  if (bnd < 0.0 || bnd > 1.0) return false;
+  return true;
+}
+
 }  // namespace operations_research::math_opt

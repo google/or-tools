@@ -212,7 +212,7 @@ LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
       //       like this, so we skip them.
       /*supports_sos1=*/false,
       /*supports_sos2=*/false,
-      /*supports_indicator_constraints=*/false,
+      /*supports_indicator_constraints=*/true,
       /*supports_incremental_add_and_deletes=*/false,
       /*supports_incremental_variable_deletions=*/false,
       /*supports_deleting_indicator_variables=*/false,

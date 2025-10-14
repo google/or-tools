@@ -126,6 +126,11 @@ class XpressSolver : public SolverInterface {
   bool isPrimalFeasible() const;
   bool isDualFeasible() const;
 
+  void ParseBounds(double lb, double ub, char& sense, double& rhs, double& rng);
+  void ParseLinear(SparseDoubleVectorProto const& expr, double lb, double ub,
+                   std::vector<int>& colind, std::vector<double>& coef,
+                   char& sense, double& rhs, double& rng);
+
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);
 
@@ -138,6 +143,9 @@ class XpressSolver : public SolverInterface {
   absl::Status AddSOS(
       const google::protobuf::Map<AnyConstraintId, SosConstraintProto>& sets,
       bool sos1);
+  absl::Status AddIndicators(
+      const google::protobuf::Map<IndicatorConstraintId,
+                                  IndicatorConstraintProto>& indicators);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
@@ -166,11 +174,15 @@ class XpressSolver : public SolverInterface {
   gtl::linked_hash_map<AuxiliaryObjectiveId, XpressMultiObjectiveIndex>
       objectives_map_;
   // Internal correspondence from SOS1 proto IDs to Xpress-numbered
-  // objectives.
+  // SOS1 constraints.
   gtl::linked_hash_map<Sos1ConstraintId, XpressSosConstraintIndex> sos1_map_;
   // Internal correspondence from SOS2 proto IDs to Xpress-numbered
-  // objectives.
+  // SOS2 constraints.
   gtl::linked_hash_map<Sos2ConstraintId, XpressSosConstraintIndex> sos2_map_;
+  // Internal correspondence from indicator proto IDs to Xpress-numbered
+  // indicators.
+  gtl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
+      indicator_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {
@@ -180,6 +192,15 @@ class XpressSolver : public SolverInterface {
   SolutionStatusProto getDualSolutionStatus() const;
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;
 
+  /** Whether the model has a non-binary indicator variable.
+   * The behavior expected by ortools is that
+   * - we can happily create a model with non-binary indicators
+   * - this must fail at _solve_ time
+   * Xpress implicitly converts indicator variables to binaries, though,
+   * so we must keep track of this fact at build time and raise an error
+   * only at solve time.
+   */
+  bool nonbinary_indicator_ = false;
   bool is_multiobj_ = false;
   bool is_mip_ = false;
   // Results of the last solve
