@@ -3120,17 +3120,17 @@ TEST(QuadraticExpressionTest, EvaluateOnlyLinearExpression) {
   const Variable a(&storage, storage.AddVariable("a"));
   const Variable b(&storage, storage.AddVariable("b"));
 
-  const QuadraticExpression expr({}, {{a, 1.2}}, 3.4);
+  const QuadraticExpression expr({}, {{a, 1.5}}, 2.5);
   {
     VariableMap<double> variable_values;
     variable_values[a] = 10.0;
     variable_values[b] = 11.0;
-    EXPECT_THAT(expr.Evaluate(variable_values), 10 * 1.2 + 3.4);
-    EXPECT_THAT(expr.EvaluateWithDefaultZero(variable_values), 10 * 1.2 + 3.4);
+    EXPECT_THAT(expr.Evaluate(variable_values), 10 * 1.5 + 2.5);
+    EXPECT_THAT(expr.EvaluateWithDefaultZero(variable_values), 10 * 1.5 + 2.5);
   }
   {
     VariableMap<double> variable_values;
-    EXPECT_THAT(expr.EvaluateWithDefaultZero(variable_values), 3.4);
+    EXPECT_THAT(expr.EvaluateWithDefaultZero(variable_values), 2.5);
   }
 }
 
