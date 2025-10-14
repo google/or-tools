@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from absl import flags
+import os
 from absl.testing import absltest
 from ortools.scheduling.python import rcpsp
-
-FLAGS = flags.FLAGS
 
 
 class RcpspTest(absltest.TestCase):
 
     def testParseAndAccess(self):
+        test_srcdir = os.environ.get("TEST_SRCDIR")
+        data = "ortools/scheduling/testdata/j301_1.sm"
+        if test_srcdir:
+            filename = f"{test_srcdir}/_main/{data}"
+        else:
+            filename = f"../../../{data}"
         parser = rcpsp.RcpspParser()
-        data = "_main/ortools/scheduling/testdata/j301_1.sm"
-        filename = f"{FLAGS.test_srcdir}/{data}"
         self.assertTrue(parser.parse_file(filename))
         problem = parser.problem()
         self.assertLen(problem.resources, 4)
