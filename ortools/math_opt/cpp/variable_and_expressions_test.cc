@@ -3288,9 +3288,9 @@ TEST(QuadraticExpressionTest, OutputStreaming) {
   EXPECT_EQ(to_string(QuadraticExpression(
                 {}, {{a, 3}, {b, -5}, {a, -2}, {b, 0}}, -1)),
             "a - 5*b - 1");
-  EXPECT_EQ(to_string(QuadraticExpression(
-                {{a, b, -1.2}, {a, a, -1.3}, {b, b, 1.0}}, {{a, 1.4}}, 1.5)),
-            "-1.3*a² - 1.2*a*b + b² + 1.4*a + 1.5");
+  EXPECT_EQ(to_string(QuadraticExpression({{a, b, -2}, {a, a, -3}, {b, b, 1}},
+                                          {{a, 4}}, 5)),
+            "-3*a² - 2*a*b + b² + 4*a + 5");
   EXPECT_EQ(
       to_string(QuadraticExpression({{a, b, kRoundTripTestNumber}}, {}, 0.0)),
       absl::StrCat(kRoundTripTestNumberStr, "*a*b"));
