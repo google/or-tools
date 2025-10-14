@@ -11,103 +11,622 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# BUILD file to run python examples.
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
-load(":code_samples.bzl", "code_sample_compile_py", "code_sample_py", "code_sample_test_arg_py")
+package(default_visibility = ["//visibility:public"])
 
-code_sample_compile_py("arc_flow_cutting_stock_sat")
+py_binary(
+    name = "arc_flow_cutting_stock_sat_py3",
+    srcs = ["arc_flow_cutting_stock_sat.py"],
+    main = "arc_flow_cutting_stock_sat.py",
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        "//ortools/linear_solver/python:model_builder",
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("assignment_with_constraints_sat")
+py_binary(
+    name = "assignment_with_constraints_sat_py3",
+    srcs = ["assignment_with_constraints_sat.py"],
+    main = "assignment_with_constraints_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("balance_group_sat")
+run_binary_test(
+    name = "assignment_with_constraints_sat_py_test",
+    size = "medium",
+    binary = ":assignment_with_constraints_sat_py3",
+)
 
-code_sample_py("bus_driver_scheduling_sat")
+py_binary(
+    name = "balance_group_sat_py3",
+    srcs = ["balance_group_sat.py"],
+    main = "balance_group_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("car_sequencing_optimization_sat")
+run_binary_test(
+    name = "balance_group_sat_py_test",
+    size = "medium",
+    binary = ":balance_group_sat_py3",
+)
 
-code_sample_py("chemical_balance_sat")
+py_binary(
+    name = "bus_driver_scheduling_sat_py3",
+    srcs = ["bus_driver_scheduling_sat.py"],
+    main = "bus_driver_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("clustering_sat")
+run_binary_test(
+    name = "bus_driver_scheduling_sat_py_test",
+    size = "medium",
+    args = ["--params=max_time_in_seconds:40"],
+    binary = ":bus_driver_scheduling_sat_py3",
+)
 
-code_sample_py("cover_rectangle_sat")
+py_binary(
+    name = "car_sequencing_optimization_sat_py3",
+    srcs = ["car_sequencing_optimization_sat.py"],
+    main = "car_sequencing_optimization_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("flexible_job_shop_sat")
+run_binary_test(
+    name = "car_sequencing_optimization_sat_py_test",
+    size = "small",
+    binary = ":car_sequencing_optimization_sat_py3",
+)
 
-code_sample_py("gate_scheduling_sat")
+py_binary(
+    name = "chemical_balance_sat_py3",
+    srcs = ["chemical_balance_sat.py"],
+    main = "chemical_balance_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("golomb_sat")
+run_binary_test(
+    name = "chemical_balance_sat_py_test",
+    size = "medium",
+    binary = ":chemical_balance_sat_py3",
+)
 
-code_sample_py("hidato_sat")
+py_binary(
+    name = "clustering_sat_py3",
+    srcs = ["clustering_sat.py"],
+    main = "clustering_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("jobshop_ft06_distance_sat")
+run_binary_test(
+    name = "clustering_sat_py_test",
+    size = "medium",
+    binary = ":clustering_sat_py3",
+)
 
-code_sample_py("jobshop_ft06_sat")
+py_binary(
+    name = "cover_rectangle_sat_py3",
+    srcs = ["cover_rectangle_sat.py"],
+    main = "cover_rectangle_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("jobshop_with_maintenance_sat")
+run_binary_test(
+    name = "cover_rectangle_sat_py_test",
+    size = "medium",
+    binary = ":cover_rectangle_sat_py3",
+)
 
-code_sample_py("knapsack_2d_sat")
+py_binary(
+    name = "flexible_job_shop_sat_py3",
+    srcs = ["flexible_job_shop_sat.py"],
+    main = "flexible_job_shop_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
 
-code_sample_compile_py("line_balancing_sat")
+run_binary_test(
+    name = "flexible_job_shop_sat_py_test",
+    binary = ":flexible_job_shop_sat_py3",
+)
 
-code_sample_test_arg_py(
-    name = "line_balancing_sat",
-    args = ["--input $(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+py_binary(
+    name = "gate_scheduling_sat_py3",
+    srcs = ["gate_scheduling_sat.py"],
+    main = "gate_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/colab:visualization",
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "gate_scheduling_sat_py_test",
+    binary = ":gate_scheduling_sat_py3",
+)
+
+py_binary(
+    name = "golomb_sat_py3",
+    srcs = ["golomb_sat.py"],
+    main = "golomb_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "golomb_sat_py_test",
+    size = "medium",
+    binary = ":golomb_sat_py3",
+)
+
+py_binary(
+    name = "hidato_sat_py3",
+    srcs = ["hidato_sat.py"],
+    main = "hidato_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/colab:visualization",
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "hidato_sat_py_test",
+    binary = ":hidato_sat_py3",
+)
+
+py_binary(
+    name = "jobshop_ft06_distance_sat_py3",
+    srcs = ["jobshop_ft06_distance_sat.py"],
+    main = "jobshop_ft06_distance_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
+
+run_binary_test(
+    name = "jobshop_ft06_distance_sat_py_test",
+    binary = ":jobshop_ft06_distance_sat_py3",
+)
+
+py_binary(
+    name = "jobshop_ft06_sat_py3",
+    srcs = ["jobshop_ft06_sat.py"],
+    main = "jobshop_ft06_sat.py",
+    deps = [
+        "//ortools/sat/colab:visualization",
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "jobshop_ft06_sat_py_test",
+    binary = ":jobshop_ft06_sat_py3",
+)
+
+py_binary(
+    name = "jobshop_with_maintenance_sat_py3",
+    srcs = ["jobshop_with_maintenance_sat.py"],
+    main = "jobshop_with_maintenance_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "jobshop_with_maintenance_sat_py_test",
+    size = "medium",
+    binary = ":jobshop_with_maintenance_sat_py3",
+)
+
+py_binary(
+    name = "knapsack_2d_sat_py3",
+    srcs = ["knapsack_2d_sat.py"],
+    main = "knapsack_2d_sat.py",
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("pandas"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "knapsack_2d_sat_py_test",
+    size = "medium",
+    binary = ":knapsack_2d_sat_py3",
+)
+
+py_binary(
+    name = "line_balancing_sat_py3",
+    srcs = ["line_balancing_sat.py"],
+    main = "line_balancing_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "line_balancing_sat_salbp_20_1_py_test",
+    args = ["--input=$(rootpath //examples/python/testdata:salbp_20_1.alb)"],
+    binary = ":line_balancing_sat_py3",
     data = ["//examples/python/testdata:salbp_20_1.alb"],
-    suffix = "salbp_20_1",
+    # test_grep_lines = ["objective: 3"],
 )
 
-code_sample_py("maximize_combinations_sat")
-
-code_sample_py("maze_escape_sat")
-
-code_sample_py("no_wait_baking_scheduling_sat")
-
-code_sample_py("pell_equation_sat")
-
-code_sample_py("pentominoes_sat")
-
-code_sample_py("prize_collecting_tsp_sat")
-
-code_sample_py("prize_collecting_vrp_sat")
-
-code_sample_py("qubo_sat")
-
-code_sample_compile_py("rcpsp_sat")
-
-code_sample_test_arg_py(
-    name = "rcpsp_sat",
-    args = ["--input $(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
-    data = ["//ortools/scheduling/testdata:j301_1.sm"],
-    suffix = "j301_1",
+py_binary(
+    name = "maximize_combinations_sat_py3",
+    srcs = ["maximize_combinations_sat.py"],
+    main = "maximize_combinations_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
 )
 
-code_sample_test_arg_py(
-    name = "rcpsp_sat",
-    args = ["--input $(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
+run_binary_test(
+    name = "maximize_combinations_sat_py_test",
+    size = "medium",
+    binary = ":maximize_combinations_sat_py3",
+)
+
+py_binary(
+    name = "maze_escape_sat_py3",
+    srcs = ["maze_escape_sat.py"],
+    main = "maze_escape_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "maze_escape_sat_py_test",
+    binary = ":maze_escape_sat_py3",
+)
+
+py_binary(
+    name = "music_playlist_sat_py3",
+    srcs = ["music_playlist_sat.py"],
+    main = "music_playlist_sat.py",
+    deps = [
+        requirement("absl-py"),
+	"//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "music_playlist_sat_py_test",
+    binary = ":music_playlist_sat_py3",
+)
+
+py_binary(
+    name = "no_wait_baking_scheduling_sat_py3",
+    srcs = ["no_wait_baking_scheduling_sat.py"],
+    main = "no_wait_baking_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "no_wait_baking_scheduling_sat_py_test",
+    size = "medium",
+    binary = ":no_wait_baking_scheduling_sat_py3",
+)
+
+py_binary(
+    name = "pell_equation_sat_py3",
+    srcs = ["pell_equation_sat.py"],
+    main = "pell_equation_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "pell_equation_sat_py_test",
+    size = "medium",
+    binary = ":pell_equation_sat_py3",
+)
+
+py_binary(
+    name = "pentominoes_sat_py3",
+    srcs = ["pentominoes_sat.py"],
+    main = "pentominoes_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "pentominoes_sat_py_test",
+    size = "medium",
+    binary = ":pentominoes_sat_py3",
+)
+
+py_binary(
+    name = "prize_collecting_tsp_sat_py3",
+    srcs = ["prize_collecting_tsp_sat.py"],
+    main = "prize_collecting_tsp_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "prize_collecting_tsp_sat_py_test",
+    size = "medium",
+    binary = ":prize_collecting_tsp_sat_py3",
+)
+
+py_binary(
+    name = "prize_collecting_vrp_sat_py3",
+    srcs = ["prize_collecting_vrp_sat.py"],
+    main = "prize_collecting_vrp_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "prize_collecting_vrp_sat_py_test",
+    size = "medium",
+    binary = ":prize_collecting_vrp_sat_py3",
+)
+
+py_binary(
+    name = "qubo_sat_py3",
+    srcs = ["qubo_sat.py"],
+    main = "qubo_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "qubo_sat_py_test",
+    size = "medium",
+    binary = ":qubo_sat_py3",
+)
+
+run_binary_test(
+    name = "rcpsp_sat_c1510_1_py_test",
+    args = ["--input=$(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
+    binary = ":rcpsp_sat_py3",
     data = ["//ortools/scheduling/testdata:c1510_1.mm.txt"],
-    suffix = "c1510_1",
+    # test_grep_lines = ["objective: 21"],
 )
 
-code_sample_py("shift_scheduling_sat")
+run_binary_test(
+    name = "rcpsp_sat_j301_1_py_test",
+    args = ["--input=$(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
+    binary = ":rcpsp_sat_py3",
+    data = ["//ortools/scheduling/testdata:j301_1.sm"],
+    # test_grep_lines = ["objective: 43"],
+)
 
-code_sample_py("single_machine_scheduling_with_setup_release_due_dates_sat")
+py_binary(
+    name = "rcpsp_sat_py3",
+    srcs = ["rcpsp_sat.py"],
+    main = "rcpsp_sat.py",
+    deps = [
+        "//ortools/scheduling:rcpsp_py_pb2",
+        "//ortools/scheduling/python:rcpsp",
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("spread_robots_sat")
+py_binary(
+    name = "shift_scheduling_sat_py3",
+    srcs = ["shift_scheduling_sat.py"],
+    main = "shift_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("steel_mill_slab_sat")
+run_binary_test(
+    name = "shift_scheduling_sat_py_test",
+    args = ["--params=max_time_in_seconds:10"],
+    binary = ":shift_scheduling_sat_py3",
+)
 
-code_sample_py("sudoku_sat")
+py_binary(
+    name = "single_machine_scheduling_with_setup_release_due_dates_sat_py3",
+    srcs = ["single_machine_scheduling_with_setup_release_due_dates_sat.py"],
+    main = "single_machine_scheduling_with_setup_release_due_dates_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("task_allocation_sat")
+run_binary_test(
+    name = "single_machine_scheduling_with_setup_release_due_dates_sat_py_test",
+    size = "medium",
+    binary = ":single_machine_scheduling_with_setup_release_due_dates_sat_py3",
+)
 
-code_sample_py("tasks_and_workers_assignment_sat")
+py_binary(
+    name = "spread_robots_sat_py3",
+    srcs = ["spread_robots_sat.py"],
+    main = "spread_robots_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("test_scheduling_sat")
+run_binary_test(
+    name = "spread_robots_sat_py_test",
+    binary = ":spread_robots_sat_py3",
+)
 
-code_sample_py("tsp_sat")
+py_binary(
+    name = "steel_mill_slab_sat_py3",
+    srcs = ["steel_mill_slab_sat.py"],
+    main = "steel_mill_slab_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
 
-code_sample_py("vendor_scheduling_sat")
+run_binary_test(
+    name = "steel_mill_slab_sat_py_test",
+    binary = ":steel_mill_slab_sat_py3",
+)
 
-code_sample_py("wedding_optimal_chart_sat")
+py_binary(
+    name = "sudoku_sat_py3",
+    srcs = ["sudoku_sat.py"],
+    main = "sudoku_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
 
-code_sample_py("zebra_sat")
+run_binary_test(
+    name = "sudoku_sat_py_test",
+    binary = ":sudoku_sat_py3",
+)
+
+py_binary(
+    name = "task_allocation_sat_py3",
+    srcs = ["task_allocation_sat.py"],
+    main = "task_allocation_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "task_allocation_sat_py_test",
+    size = "medium",
+    binary = ":task_allocation_sat_py3",
+)
+
+py_binary(
+    name = "tasks_and_workers_assignment_sat_py3",
+    srcs = ["tasks_and_workers_assignment_sat.py"],
+    main = "tasks_and_workers_assignment_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "tasks_and_workers_assignment_sat_py_test",
+    size = "medium",
+    binary = ":tasks_and_workers_assignment_sat_py3",
+)
+
+py_binary(
+    name = "test_scheduling_sat_py3",
+    srcs = ["test_scheduling_sat.py"],
+    main = "test_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        requirement("pandas"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "test_scheduling_sat_py_test",
+    size = "medium",
+    binary = ":test_scheduling_sat_py3",
+)
+
+py_binary(
+    name = "tsp_sat_py3",
+    srcs = ["tsp_sat.py"],
+    main = "tsp_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
+
+run_binary_test(
+    name = "tsp_sat_py_test",
+    size = "medium",
+    binary = ":tsp_sat_py3",
+)
+
+py_binary(
+    name = "vendor_scheduling_sat_py3",
+    srcs = ["vendor_scheduling_sat.py"],
+    main = "vendor_scheduling_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "vendor_scheduling_sat_py_test",
+    size = "medium",
+    binary = ":vendor_scheduling_sat_py3",
+)
+
+py_binary(
+    name = "wedding_optimal_chart_sat_py3",
+    srcs = ["wedding_optimal_chart_sat.py"],
+    main = "wedding_optimal_chart_sat.py",
+    deps = [
+        requirement("absl-py"),
+        "//ortools/sat/python:cp_model",
+    ],
+)
+
+run_binary_test(
+    name = "wedding_optimal_chart_sat_py_test",
+    size = "medium",
+    binary = ":wedding_optimal_chart_sat_py3",
+)
+
+py_binary(
+    name = "zebra_sat_py3",
+    srcs = ["zebra_sat.py"],
+    main = "zebra_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
+
+run_binary_test(
+    name = "zebra_sat_py_test",
+    binary = ":zebra_sat_py3",
+)
