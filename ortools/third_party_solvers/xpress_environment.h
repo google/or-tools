@@ -579,6 +579,7 @@ extern std::function<int(XPRSprob prob, int objsense)> XPRSchgobjsense;
 extern std::function<int(XPRSprob prob, char* errmsg)> XPRSgetlasterror;
 extern std::function<int(XPRSprob prob, int rowstat[], int colstat[])> XPRSgetbasis;
 extern std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSwriteprob;
+extern std::function<int(XPRSprob prob, const char* filename)> XPRSsaveas;
 OR_DLL extern std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype;
 OR_DLL extern std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype;
 extern std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds;

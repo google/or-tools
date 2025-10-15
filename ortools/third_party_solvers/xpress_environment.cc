@@ -99,6 +99,7 @@ std::function<int(XPRSprob prob, int objsense)> XPRSchgobjsense = nullptr;
 std::function<int(XPRSprob prob, char* errmsg)> XPRSgetlasterror = nullptr;
 std::function<int(XPRSprob prob, int rowstat[], int colstat[])> XPRSgetbasis = nullptr;
 std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSwriteprob = nullptr;
+std::function<int(XPRSprob prob, const char* filename)> XPRSsaveas = nullptr;
 std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype = nullptr;
 std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype = nullptr;
 std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds = nullptr;
@@ -192,6 +193,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetlasterror, "XPRSgetlasterror");
   xpress_dynamic_library->GetFunction(&XPRSgetbasis, "XPRSgetbasis");
   xpress_dynamic_library->GetFunction(&XPRSwriteprob, "XPRSwriteprob");
+  xpress_dynamic_library->GetFunction(&XPRSsaveas, "XPRSsaveas");
   xpress_dynamic_library->GetFunction(&XPRSgetrowtype, "XPRSgetrowtype");
   xpress_dynamic_library->GetFunction(&XPRSgetcoltype, "XPRSgetcoltype");
   xpress_dynamic_library->GetFunction(&XPRSchgbounds, "XPRSchgbounds");

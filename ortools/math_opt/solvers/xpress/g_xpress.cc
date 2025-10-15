@@ -586,4 +586,14 @@ absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
   return absl::OkStatus();
 }
 
+absl::Status Xpress::WriteProb(std::string const& filename,
+                               std::string const& flags) {
+  return ToStatus(
+      XPRSwriteprob(xpress_model_, filename.c_str(), flags.c_str()));
+}
+
+absl::Status Xpress::SaveAs(std::string const& filename) {
+  return ToStatus(XPRSsaveas(xpress_model_, filename.c_str()));
+}
+
 }  // namespace operations_research::math_opt

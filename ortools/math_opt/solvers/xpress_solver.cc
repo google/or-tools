@@ -344,7 +344,8 @@ class ScopedSolverContext {
   }
   /** Setup model specific parameters. */
   absl::Status ApplyParameters(const SolveParametersProto& parameters,
-                               MessageCallback message_callback) {
+                               MessageCallback message_callback,
+                               std::string* export_model) {
     std::vector<std::string> warnings;
     ASSIGN_OR_RETURN(bool const isMIP, shared_ctx.xpress->IsMIP());
     if (parameters.enable_output()) {
@@ -490,6 +491,10 @@ class ScopedSolverContext {
          parameters.xpress().parameters()) {
       std::string const& name = parameter.name();
       std::string const& value = parameter.value();
+      if (name == "EXPORT_MODEL") {
+        if (export_model) *export_model = value;
+        continue;
+      }
       int id, type;
       int64_t l;
       double d;
@@ -1223,10 +1228,25 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // exception has been thrown during optimization.
   ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
+  std::string export_model = "";
+  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback,
+                                               &export_model));
   RETURN_IF_ERROR(solveContext.ApplyModelParameters(
       model_parameters, variables_map_, linear_constraints_map_,
       objectives_map_));
+
+  // We are ready to solve the problem. If we are asked to export the
+  // problem, then do that now. Depending on the file name extension we
+  // either create a save file or an LP/MPS file.
+  if (export_model.length() > 0) {
+    if (export_model.length() >= 4 &&
+        export_model.compare(export_model.length() - 4, 4, ".svf") == 0) {
+      RETURN_IF_ERROR(xpress_->SaveAs(export_model.c_str()));
+    } else {
+      RETURN_IF_ERROR(xpress_->WriteProb(export_model.c_str()));
+    }
+  }
+
   // Solve. We use the generic XPRSoptimize() and let Xpress decide what is
   // the best algorithm. Note that we do not pass flags to the function
   // either. We assume that algorithms are configured via controls like
@@ -1736,7 +1756,8 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
                                          const SolveInterrupter* interrupter) {
   ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
-  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback));
+  RETURN_IF_ERROR(
+      solveContext.ApplyParameters(parameters, message_callback, nullptr));
 
   return absl::UnimplementedError(
       "XPRESS does not provide a method to compute an infeasible subsystem");

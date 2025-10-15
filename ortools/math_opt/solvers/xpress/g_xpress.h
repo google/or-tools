@@ -172,6 +172,9 @@ class Xpress {
                        absl::Span<int const> qcol1, absl::Span<int const> qcol2,
                        absl::Span<double const> qcoef);
   absl::StatusOr<bool> IsBinary(int colidx);
+  absl::Status WriteProb(std::string const& filename,
+                         std::string const& flags = "");
+  absl::Status SaveAs(std::string const& filename);
 
  private:
   XPRSprob xpress_model_;
