@@ -16,9 +16,6 @@
 
 #include "ortools/constraint_solver/constraint_solver.h"
 
-#include <zconf.h>
-#include <zlib.h>
-
 #include <algorithm>
 #include <csetjmp>
 #include <cstdint>
@@ -42,6 +39,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/tuple_set.h"
+#include "zlib.h"
 
 // These flags are used to set the fields in the DefaultSolverParameters proto.
 ABSL_FLAG(bool, cp_trace_propagation, false,
