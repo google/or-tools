@@ -127,9 +127,13 @@ class XpressSolver : public SolverInterface {
   bool isDualFeasible() const;
 
   void ParseBounds(double lb, double ub, char& sense, double& rhs, double& rng);
-  void ParseLinear(SparseDoubleVectorProto const& expr, double lb, double ub,
-                   std::vector<int>& colind, std::vector<double>& coef,
-                   char& sense, double& rhs, double& rng);
+  void ParseLinear(SparseDoubleVectorProto const& expr,
+                   std::vector<int>& colind, std::vector<double>& coef);
+  void ParseQuadratic(QuadraticConstraintProto const& expr,
+                      std::vector<int>& lin_colind,
+                      std::vector<double>& lin_coef,
+                      std::vector<int>& quad_col1, std::vector<int>& quad_col2,
+                      std::vector<double>& quad_coef);
 
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);
@@ -146,6 +150,9 @@ class XpressSolver : public SolverInterface {
   absl::Status AddIndicators(
       const google::protobuf::Map<IndicatorConstraintId,
                                   IndicatorConstraintProto>& indicators);
+  absl::Status AddQuadraticConstraints(
+      const google::protobuf::Map<QuadraticConstraintId,
+                                  QuadraticConstraintProto>& constraints);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
@@ -183,6 +190,10 @@ class XpressSolver : public SolverInterface {
   // indicators.
   gtl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
       indicator_map_;
+  // Internal correspondence from indicator proto IDs to Xpress-numbered
+  // indicators.
+  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData>
+      quad_constraints_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {

@@ -716,7 +716,7 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .integer_variables = SupportType::kSupported,
     .multi_objectives = SupportType::kSupported,
     .quadratic_objectives = SupportType::kSupported,
-    .quadratic_constraints = SupportType::kNotSupported,
+    .quadratic_constraints = SupportType::kSupported,
     .second_order_cone_constraints = SupportType::kNotSupported,
     .sos1_constraints = SupportType::kSupported,
     .sos2_constraints = SupportType::kSupported,
@@ -761,6 +761,7 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   RETURN_IF_ERROR(AddSOS(input_model.sos1_constraints(), true));
   RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
   RETURN_IF_ERROR(AddIndicators(input_model.indicator_constraints()));
+  RETURN_IF_ERROR(AddQuadraticConstraints(input_model.quadratic_constraints()));
   return absl::OkStatus();
 }
 absl::Status XpressSolver::AddNewVariables(
@@ -1017,15 +1018,46 @@ absl::Status XpressSolver::AddSOS(
   return absl::OkStatus();
 }
 
-void XpressSolver::ParseLinear(SparseDoubleVectorProto const& expr, double lb,
-                               double ub, std::vector<int>& colind,
-                               std::vector<double>& coef, char& sense,
-                               double& rhs, double& rng) {
-  ParseBounds(lb, ub, sense, rhs, rng);
+void XpressSolver::ParseLinear(SparseDoubleVectorProto const& expr,
+                               std::vector<int>& colind,
+                               std::vector<double>& coef) {
   auto terms = expr.ids_size();
+  colind.reserve(colind.size() + terms);
+  coef.reserve(coef.size() + terms);
   for (decltype(terms) i = 0; i < terms; ++i) {
     colind.push_back(variables_map_.at(expr.ids(i)));
     coef.push_back(expr.values(i));
+  }
+  /** TODO: How do we handle constant terms in expressions? */
+}
+
+void XpressSolver::ParseQuadratic(QuadraticConstraintProto const& expr,
+                                  std::vector<int>& lin_colind,
+                                  std::vector<double>& lin_coef,
+                                  std::vector<int>& quad_col1,
+                                  std::vector<int>& quad_col2,
+                                  std::vector<double>& quad_coef) {
+  auto const& lin = expr.linear_terms();
+  auto linTerms = lin.ids_size();
+  lin_colind.reserve(lin_colind.size() + linTerms);
+  lin_coef.reserve(lin_coef.size() + linTerms);
+  for (decltype(linTerms) i = 0; i < linTerms; ++i) {
+    lin_colind.push_back(variables_map_.at(lin.ids(i)));
+    lin_coef.push_back(lin.values(i));
+  }
+  auto const& quad = expr.quadratic_terms();
+  auto quadTerms = quad.row_ids_size();
+  quad_col1.reserve(quad_col1.size() + quadTerms);
+  quad_col2.reserve(quad_col2.size() + quadTerms);
+  quad_coef.reserve(quad_coef.size() + quadTerms);
+  for (decltype(quadTerms) i = 0; i < quadTerms; ++i) {
+    int const col1 = variables_map_.at(quad.row_ids(i));
+    int const col2 = variables_map_.at(quad.column_ids(i));
+    double coef = quad.coefficients(i);
+    if (col1 != col2) coef *= 0.5;
+    quad_col1.push_back(col1);
+    quad_col2.push_back(col2);
+    quad_coef.push_back(coef);
   }
   /** TODO: How do we handle constant terms in expressions? */
 }
@@ -1050,16 +1082,16 @@ absl::Status XpressSolver::AddIndicators(
   int next = 0;
   for (auto const& [ortoolsId, indicator] : indicators) {
     start[next] = colind.size();
-    ParseLinear(indicator.expression(), indicator.lower_bound(),
-                indicator.upper_bound(), colind, rowcoef, sense[next],
+    ParseBounds(indicator.lower_bound(), indicator.upper_bound(), sense[next],
                 rhs[next], rng[next]);
-
     // ortools tests require us to raise an error on ranged indicator
     // constraints
     if (sense[next] == XPRS_RANGE) {
       return util::InvalidArgumentErrorBuilder()
              << "indicator constraint on ranged constraint";
     }
+
+    ParseLinear(indicator.expression(), colind, rowcoef);
 
     i_rowind[next] = oldRows + next;
     if (indicator.has_indicator_id()) {
@@ -1088,6 +1120,40 @@ absl::Status XpressSolver::AddIndicators(
   }
   RETURN_IF_ERROR(xpress_->AddRows(sense, rhs, rng, start, colind, rowcoef));
   RETURN_IF_ERROR(xpress_->SetIndicators(i_rowind, i_colind, i_complement));
+  return absl::OkStatus();
+}
+
+absl::Status XpressSolver::AddQuadraticConstraints(
+    const google::protobuf::Map<QuadraticConstraintId,
+                                QuadraticConstraintProto>& constraints) {
+  std::vector<int> lin_colind;
+  std::vector<double> lin_coef;
+  std::vector<int> quad_col1;
+  std::vector<int> quad_col2;
+  std::vector<double> quad_coef;
+  ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  for (const auto& [ortoolsId, quad] : constraints) {
+    // Xpress has no function to multiple quadratic rows in one shot, so we
+    // add the linear part one by one as well.
+    char sense;
+    double rhs;
+    double rng;
+    ParseBounds(quad.lower_bound(), quad.upper_bound(), sense, rhs, rng);
+    lin_colind.clear();
+    lin_coef.clear();
+    quad_col1.clear();
+    quad_col2.clear();
+    quad_coef.clear();
+    ParseQuadratic(quad, lin_colind, lin_coef, quad_col1, quad_col2, quad_coef);
+    RETURN_IF_ERROR(xpress_->AddQRow(sense, rhs, rng, lin_colind, lin_coef,
+                                     quad_col1, quad_col2, quad_coef));
+    LinearConstraintData& data =
+        gtl::InsertKeyOrDie(&indicator_map_, ortoolsId);
+    data.constraint_index = next;
+    data.lower_bound = quad.lower_bound();
+    data.upper_bound = quad.upper_bound();
+    ++next;
+  }
   return absl::OkStatus();
 }
 

@@ -561,4 +561,29 @@ absl::StatusOr<bool> Xpress::IsBinary(int colidx) {
   return true;
 }
 
+absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
+                             absl::Span<int const> colind,
+                             absl::Span<double const> rowcoef,
+                             absl::Span<int const> qcol1,
+                             absl::Span<int const> qcol2,
+                             absl::Span<double const> qcoef) {
+  ASSIGN_OR_RETURN(int const oldRows, GetIntAttr(XPRS_ORIGINALROWS));
+  if (checkInt32Overflow(std::size_t(oldRows) + 1))
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 rows");
+  XPRSint64 const start = 0;
+  RETURN_IF_ERROR(
+      ToStatus(XPRSaddrows64(xpress_model_, 1, colind.size(), &sense, &rhs,
+                             &rng, &start, colind.data(), rowcoef.data())));
+  if (qcol1.size() > 0) {
+    int const ret = XPRSaddqmatrix64(xpress_model_, oldRows, qcol1.size(),
+                                     qcol1.data(), qcol2.data(), qcoef.data());
+    if (ret != 0) {
+      XPRSdelrows(xpress_model_, 1, &oldRows);
+      return ToStatus(ret);
+    }
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace operations_research::math_opt

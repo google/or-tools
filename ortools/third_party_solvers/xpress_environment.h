@@ -567,6 +567,7 @@ extern std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtyp
 extern std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows;
 extern std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[], int priority, double weight)> XPRSaddobj;
+extern std::function<int(XPRSprob prob, int row, int ncoefs, const int rowqcol1[], int const rowqcol2[], const double rowqcoef[])> XPRSaddqmatrix64;
 extern std::function<int(XPRSprob prob, int type, const char names[], int first, int last)> XPRSaddnames;
 extern std::function<int(XPRSprob prob, int type, char names[], int first, int last)>  XPRSgetnames;
 extern std::function<int(XPRSprob prob, int ncols, const int colind[])> XPRSdelcols;

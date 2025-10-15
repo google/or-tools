@@ -166,6 +166,11 @@ class Xpress {
                        absl::Span<XPRSint64 const> start,
                        absl::Span<int const> colind,
                        absl::Span<double const> rowcoef);
+  absl::Status AddQRow(char sense, double rhs, double rng,
+                       absl::Span<int const> colind,
+                       absl::Span<double const> rowcoef,
+                       absl::Span<int const> qcol1, absl::Span<int const> qcol2,
+                       absl::Span<double const> qcoef);
   absl::StatusOr<bool> IsBinary(int colidx);
 
  private:

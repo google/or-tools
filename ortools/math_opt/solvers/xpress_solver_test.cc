@@ -247,6 +247,7 @@ std::vector<QpTestParameters> GetXpressQpTestParameters() {
   std::vector<QpTestParameters> test_parameters;
   for (int i = 0; i < 2; ++i) {
     test_parameters.push_back(
+        // TODO: Xpress also supports non-convex QP.
         QpTestParameters(SolverType::kXpress, SolveParameters(),
                          /*qp_support=*/QpSupportType::kConvexQp,
                          /*supports_incrementalism_not_modifying_qp=*/false,
@@ -267,7 +268,7 @@ std::vector<QcTestParameters> GetXpressQcTestParameters() {
   for (int i = 0; i < 2; ++i) {
     test_parameters.push_back(
         QcTestParameters(SolverType::kXpress, SolveParameters(),
-                         /*supports_qc=*/false,
+                         /*supports_qc=*/true,
                          /*supports_incremental_add_and_deletes=*/false,
                          /*supports_incremental_variable_deletions=*/false,
                          /*use_integer_variables=*/i != 0));
