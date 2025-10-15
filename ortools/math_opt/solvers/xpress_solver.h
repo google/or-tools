@@ -153,6 +153,9 @@ class XpressSolver : public SolverInterface {
   absl::Status AddQuadraticConstraints(
       const google::protobuf::Map<QuadraticConstraintId,
                                   QuadraticConstraintProto>& constraints);
+  absl::Status AddSecondOrderConeConstraints(
+      const google::protobuf::Map<SecondOrderConeConstraintId,
+                                  SecondOrderConeConstraintProto>& constraints);
   absl::Status ChangeCoefficients(const SparseDoubleMatrixProto& matrix);
 
   absl::Status LoadModel(const ModelProto& input_model);
@@ -190,10 +193,13 @@ class XpressSolver : public SolverInterface {
   // indicators.
   gtl::linked_hash_map<IndicatorConstraintId, LinearConstraintData>
       indicator_map_;
-  // Internal correspondence from indicator proto IDs to Xpress-numbered
-  // indicators.
+  // Internal correspondence from quadratic proto IDs to Xpress-numbered
+  // rows.
   gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData>
       quad_constraints_map_;
+  // Internal correspondence from second order cone constraint proto IDs to
+  // Xpress-numbered rows.
+  gtl::linked_hash_map<QuadraticConstraintId, LinearConstraintData> soc_map_;
 
   int get_model_index(XpressVariableIndex index) const { return index; }
   int get_model_index(const LinearConstraintData& index) const {

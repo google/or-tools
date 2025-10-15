@@ -284,7 +284,7 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(QcDualsTest);
 SecondOrderConeTestParameters GetXpressSecondOrderConeTestParameters() {
   return SecondOrderConeTestParameters(
       SolverType::kXpress, SolveParameters(),
-      /*supports_soc_constraints=*/false,
+      /*supports_soc_constraints=*/true,
       /*supports_incremental_add_and_deletes=*/false);
 }
 INSTANTIATE_TEST_SUITE_P(

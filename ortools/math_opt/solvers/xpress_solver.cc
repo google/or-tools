@@ -715,27 +715,84 @@ class ScopedSolverContext {
   }
 };
 
+/** Different modes for ExtractSingleton(). */
+typedef enum {
+  SingletonForSOS,      /**< SOS constraint. */
+  SingletonForSOCBound, /**< Second order cone constraint bound. */
+  SingletonForSOCNorm   /**< Second order cone constraint norm. */
+} SingletonType;
+
 // ortools supports SOS constraints and second order cone constraints on
 // expressions. Xpress only supports these constructs on singleton variables.
 // We could create auxiliary variables here, set each of them equal to one of
 // the expressions and then formulate SOS/SOC on the auxiliary variables.
 // This however seems a bit of overkill at the moment, so we just error out
 // if elements are non-singleton.
-absl::StatusOr<XpressSolver::VarId> ExtractSingleton(
-    LinearExpressionProto const& expr, char const* what) {
-  if (expr.offset() != 0.0)
+// Returns the variable of the singleton as return value and its coefficient
+// in *p_coef.
+absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
+    LinearExpressionProto const& expr, SingletonType type, double* p_coef) {
+  double const constant = expr.offset();
+  if (expr.ids_size() == 1 && constant == 0.0) {
+    // We have a single variable in the expression and no constant.
+    double const coef = expr.coefficients(0);
+    switch (type) {
+      case SingletonForSOS:
+        // A non-zero coefficient does not change anything, so is allowed.
+        if (coef == 0.0) {
+          return util::InvalidArgumentErrorBuilder()
+                 << "Xpress does not support coefficient " << coef << " in SOS";
+        }
+        break;
+      case SingletonForSOCBound:  // fallthrough
+      case SingletonForSOCNorm:
+        // We are going to square the coefficient, so anything non-negative
+        // is allowed.
+        if (coef < 0) {
+          return util::InvalidArgumentErrorBuilder()
+                 << "Xpress does not support coefficient " << coef
+                 << " in a second order cone constraint "
+                 << (type == SingletonForSOCBound ? "bound" : "norm");
+        }
+        break;
+    }
+    if (p_coef) *p_coef = coef;
+    return std::optional<XpressSolver::VarId>(expr.ids(0));
+  } else if (expr.ids_size() == 0) {
+    // The expression is constant.
+    switch (type) {
+      case SingletonForSOS:
+        // Any non-zero constant would force all other variables to 0.
+        // Any zero constant would be redundant.
+        // Both are edge cases that we do not support at the moment.
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress does not support constant expressions in SOS";
+      case SingletonForSOCBound:
+        // We are going to square the bound, so it should not be negative.
+        if (constant < 0.0) {
+          return util::InvalidArgumentErrorBuilder()
+                 << "Xpress does not support constant " << constant
+                 << " in a second order cone constraint bound";
+        }
+        break;
+      case SingletonForSOCNorm:
+        // Constant entries in the norm are not supported (we would have to
+        // move them to the right-hand side).
+        return util::InvalidArgumentErrorBuilder()
+               << "Xpress does not support constants in a second order cone "
+                  "constraint norm";
+    }
+    if (p_coef) *p_coef = constant;
+    return std::nullopt;
+  } else {
+    // Multiple coefficients
+    static char const* const name[] = {"SOS",
+                                       "second order cone constraint bound",
+                                       "second order cone constraint norm"};
     return util::InvalidArgumentErrorBuilder()
-           << "Xpress only supports " << what
-           << " on singleton variables (offset)";
-  if (expr.ids_size() != 1)
-    return util::InvalidArgumentErrorBuilder()
-           << "Xpress only supports " << what
-           << " on singleton variables (empty or multiple)";
-  if (expr.coefficients(0) != 1.0)
-    return util::InvalidArgumentErrorBuilder()
-           << "Xpress only supports " << what
-           << " on singleton variables (non-unit)";
-  return expr.ids(0);
+           << "Xpress does not support general linear expressions in "
+           << name[type];
+  }
 }
 
 }  // namespace
@@ -745,7 +802,15 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .multi_objectives = SupportType::kSupported,
     .quadratic_objectives = SupportType::kSupported,
     .quadratic_constraints = SupportType::kSupported,
-    .second_order_cone_constraints = SupportType::kNotSupported,
+    // Limitation: We only implemented support for constraints of type
+    //   norm(x1,...,xn) <= x0
+    // General linear expressions in the norm or in the bound are not
+    // supported at the moment. They must be emulated by the caller using
+    // auxiliary variables.
+    .second_order_cone_constraints = SupportType::kSupported,
+    // Limitation: We only implemented support for SOS constraints on singleton
+    // variables. General expressions in the SOS are not supported. They must
+    // be emulated by the caller using auxiliary variables.
     .sos1_constraints = SupportType::kSupported,
     .sos2_constraints = SupportType::kSupported,
     .indicator_constraints = SupportType::kSupported};
@@ -790,6 +855,8 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
   RETURN_IF_ERROR(AddSOS(input_model.sos2_constraints(), false));
   RETURN_IF_ERROR(AddIndicators(input_model.indicator_constraints()));
   RETURN_IF_ERROR(AddQuadraticConstraints(input_model.quadratic_constraints()));
+  RETURN_IF_ERROR(AddSecondOrderConeConstraints(
+      input_model.second_order_cone_constraints()));
   return absl::OkStatus();
 }
 absl::Status XpressSolver::AddNewVariables(
@@ -1026,8 +1093,11 @@ absl::Status XpressSolver::AddSOS(
     for (decltype(count) i = 0; i < count; ++i) {
       auto const& expr = sos.expressions(i);
       double const weight = has_weight ? sos.weights(i) : (i + 1);
-      ASSIGN_OR_RETURN(VarId const x, ExtractSingleton(expr, "SOS"));
-      colind.push_back(variables_map_.at(x));
+      // Note: A constant value in an SOS forces all others to zero. At the
+      //       moment we do not support this. We consider this an edge case.
+      ASSIGN_OR_RETURN(std::optional<VarId> x,
+                       ExtractSingleton(expr, SingletonForSOS, nullptr));
+      colind.push_back(variables_map_.at(x.value()));
       refval.push_back(weight);
     }
     gtl::InsertOrDie(sosmap, sosId, nextId);
@@ -1168,10 +1238,50 @@ absl::Status XpressSolver::AddQuadraticConstraints(
     RETURN_IF_ERROR(xpress_->AddQRow(sense, rhs, rng, lin_colind, lin_coef,
                                      quad_col1, quad_col2, quad_coef));
     LinearConstraintData& data =
-        gtl::InsertKeyOrDie(&indicator_map_, ortoolsId);
+        gtl::InsertKeyOrDie(&quad_constraints_map_, ortoolsId);
     data.constraint_index = next;
     data.lower_bound = quad.lower_bound();
     data.upper_bound = quad.upper_bound();
+    ++next;
+  }
+  return absl::OkStatus();
+}
+
+// Extract second order cone constraints.
+// Note that we only support
+//   sum(i in I) x_i^2 <= x_0^2
+absl::Status XpressSolver::AddSecondOrderConeConstraints(
+    const google::protobuf::Map<SecondOrderConeConstraintId,
+                                SecondOrderConeConstraintProto>& constraints) {
+  std::vector<int> cols;
+  std::vector<double> coefs;
+  ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  for (auto const& [ortoolsId, soc] : constraints) {
+    cols.clear();
+    coefs.clear();
+    double rhs = 0.0;
+    auto const& ub = soc.upper_bound();
+    double coef;
+    ASSIGN_OR_RETURN(std::optional<VarId> const x0,
+                     ExtractSingleton(ub, SingletonForSOCBound, &coef));
+    if (x0.has_value()) {
+      cols.push_back(variables_map_.at(x0.value()));
+      coefs.push_back(-coef * coef);
+    } else {
+      rhs = coef * coef;
+    }
+
+    for (auto const& arg : soc.arguments_to_norm()) {
+      ASSIGN_OR_RETURN(std::optional<VarId> const x,
+                       ExtractSingleton(arg, SingletonForSOCNorm, &coef));
+      cols.push_back(variables_map_.at(x.value()));
+      coefs.push_back(coef * coef);
+    }
+    RETURN_IF_ERROR(xpress_->AddQRow('L', rhs, 0.0, {}, {}, cols, cols, coefs));
+    LinearConstraintData& data = gtl::InsertKeyOrDie(&soc_map_, ortoolsId);
+    data.constraint_index = next;
+    data.lower_bound = kMinusInf;
+    data.upper_bound = 0.0;
     ++next;
   }
   return absl::OkStatus();
