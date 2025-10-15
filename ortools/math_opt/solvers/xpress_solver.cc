@@ -710,6 +710,29 @@ class ScopedSolverContext {
   }
 };
 
+// ortools supports SOS constraints and second order cone constraints on
+// expressions. Xpress only supports these constructs on singleton variables.
+// We could create auxiliary variables here, set each of them equal to one of
+// the expressions and then formulate SOS/SOC on the auxiliary variables.
+// This however seems a bit of overkill at the moment, so we just error out
+// if elements are non-singleton.
+absl::StatusOr<XpressSolver::VarId> ExtractSingleton(
+    LinearExpressionProto const& expr, char const* what) {
+  if (expr.offset() != 0.0)
+    return util::InvalidArgumentErrorBuilder()
+           << "Xpress only supports " << what
+           << " on singleton variables (offset)";
+  if (expr.ids_size() != 1)
+    return util::InvalidArgumentErrorBuilder()
+           << "Xpress only supports " << what
+           << " on singleton variables (empty or multiple)";
+  if (expr.coefficients(0) != 1.0)
+    return util::InvalidArgumentErrorBuilder()
+           << "Xpress only supports " << what
+           << " on singleton variables (non-unit)";
+  return expr.ids(0);
+}
+
 }  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
@@ -998,16 +1021,8 @@ absl::Status XpressSolver::AddSOS(
     for (decltype(count) i = 0; i < count; ++i) {
       auto const& expr = sos.expressions(i);
       double const weight = has_weight ? sos.weights(i) : (i + 1);
-      if (expr.offset() != 0.0)
-        return util::InvalidArgumentErrorBuilder()
-               << "Xpress only supports SOS on singleton variables (offset)";
-      if (expr.ids_size() != 1)
-        return util::InvalidArgumentErrorBuilder()
-               << "Xpress only supports SOS on singleton variables (multiple)";
-      if (expr.coefficients(0) != 1.0)
-        return util::InvalidArgumentErrorBuilder()
-               << "Xpress only supports SOS on singleton variables (non-unit)";
-      colind.push_back(variables_map_.at(expr.ids(0)));
+      ASSIGN_OR_RETURN(VarId const x, ExtractSingleton(expr, "SOS"));
+      colind.push_back(variables_map_.at(x));
       refval.push_back(weight);
     }
     gtl::InsertOrDie(sosmap, sosId, nextId);
