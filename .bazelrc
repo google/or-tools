@@ -82,7 +82,7 @@ build:ci --keep_going
 build:ci --test_output=errors
 
 # Skip tests that are too large to run on CI.
-build:ci --test_size_filters=small,-medium,-large,-enormous
+build:ci --test_tag_filters=-noci
 
 # Print information only about tests executed
 build:ci --test_summary=short
