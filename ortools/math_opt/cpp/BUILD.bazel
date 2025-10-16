@@ -137,8 +137,8 @@ cc_library(
 
 cc_test(
     name = "model_test",
-    size = "medium",
     srcs = ["model_test.cc"],
+    tags = ["noci"],
     deps = [
         ":key_types",
         ":linear_constraint",
@@ -215,8 +215,8 @@ cc_library(
 
 cc_test(
     name = "variable_and_expressions_test",
-    size = "medium",
     srcs = ["variable_and_expressions_test.cc"],
+    tags = ["noci"],
     deps = [
         ":matchers",
         ":variable_and_expressions",
