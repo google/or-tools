@@ -671,6 +671,11 @@ annotation_arguments:  // Cannot be empty.
 
 annotation:
   IVALUE DOTDOT IVALUE { $$ = Annotation::Interval($1, $3); }
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = Annotation::IntegerList(std::move(*$2));
+  delete $2;
+}
 | IVALUE { $$ = Annotation::IntegerValue($1); }
 | SVALUE { $$ = Annotation::String($1); }
 | IDENTIFIER {
