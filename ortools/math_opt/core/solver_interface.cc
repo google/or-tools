@@ -46,7 +46,7 @@ void AllSolversRegistry::Register(const SolverTypeProto solver_type,
                                   SolverInterface::Factory factory) {
   bool inserted;
   {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     inserted =
         registered_solvers_.emplace(solver_type, std::move(factory)).second;
   }
@@ -59,7 +59,7 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
     const SolverInterface::InitArgs& init_args) const {
   const SolverInterface::Factory* factory = nullptr;
   {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     factory = gtl::FindOrNull(registered_solvers_, solver_type);
   }
   if (factory == nullptr) {
@@ -75,14 +75,14 @@ absl::StatusOr<std::unique_ptr<SolverInterface>> AllSolversRegistry::Create(
 }
 
 bool AllSolversRegistry::IsRegistered(const SolverTypeProto solver_type) const {
-  const absl::MutexLock lock(&mutex_);
+  const absl::MutexLock lock(mutex_);
   return registered_solvers_.contains(solver_type);
 }
 
 std::vector<SolverTypeProto> AllSolversRegistry::RegisteredSolvers() const {
   std::vector<SolverTypeProto> result;
   {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     for (const auto& kv_pair : registered_solvers_) {
       result.push_back(kv_pair.first);
     }
@@ -94,7 +94,7 @@ std::vector<SolverTypeProto> AllSolversRegistry::RegisteredSolvers() const {
 std::string AllSolversRegistry::RegisteredSolversToString() const {
   std::vector<std::string> solver_names;
   {
-    const absl::MutexLock lock(&mutex_);
+    const absl::MutexLock lock(mutex_);
     for (const auto& kv_pair : registered_solvers_) {
       solver_names.push_back(ProtoEnumToString(kv_pair.first));
     }
