@@ -29,7 +29,6 @@
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research::routing {
-
 namespace {
 
 double DoubleEuc2DDistance(const Coordinates2<double>& from,
