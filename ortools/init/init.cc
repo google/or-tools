@@ -21,7 +21,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/init_google.h"
 #include "ortools/sat/cp_model_solver.h"
-#include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/third_party_solvers/gurobi_environment.h"
 
 namespace operations_research {
