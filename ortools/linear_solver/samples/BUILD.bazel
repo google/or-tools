@@ -11,49 +11,282 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":code_samples.bzl", "code_sample_cc", "code_sample_java", "code_sample_py")
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_java//java:java_binary.bzl", "java_binary")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 # Linear Solver
-code_sample_cc(name = "assignment_mip")
 
-code_sample_cc(name = "basic_example")
+cc_test(
+    name = "assignment_mip_test",
+    srcs = ["assignment_mip.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:logging",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "bin_packing_mip")
+cc_test(
+    name = "assignment_groups_mip_test",
+    srcs = ["assignment_groups_mip.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:logging",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
 
-code_sample_cc(name = "integer_programming_example")
+cc_test(
+    name = "assignment_task_sizes_mip_test",
+    srcs = ["assignment_task_sizes_mip.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:logging",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
 
-code_sample_cc(name = "linear_programming_example")
+cc_test(
+    name = "assignment_teams_mip_test",
+    srcs = ["assignment_teams_mip.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:logging",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
 
-code_sample_cc(name = "mip_var_array")
+cc_test(
+    name = "basic_example_test",
+    srcs = ["basic_example.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/init",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "multiple_knapsack_mip")
+cc_test(
+    name = "bin_packing_mip_test",
+    srcs = ["bin_packing_mip.cc"],
+    deps = ["//ortools/linear_solver"],
+)
 
-#code_sample_cc(name = "network_design_ilph")
+cc_test(
+    name = "linear_programming_example_test",
+    srcs = ["linear_programming_example.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "simple_lp_program")
+cc_test(
+    name = "integer_programming_example_test",
+    srcs = ["integer_programming_example.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "simple_mip_program")
+cc_test(
+    name = "mip_var_array_test",
+    srcs = ["mip_var_array.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
-code_sample_cc(name = "stigler_diet")
+cc_test(
+    name = "multiple_knapsack_mip_test",
+    srcs = ["multiple_knapsack_mip.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+        "@abseil-cpp//absl/strings:str_format",
+    ],
+)
+
+cc_test(
+    name = "simple_lp_program_test",
+    srcs = ["simple_lp_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "simple_mip_program_test",
+    srcs = ["simple_mip_program.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
+
+cc_test(
+    name = "stigler_diet_test",
+    srcs = ["stigler_diet.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
+    ],
+)
 
 # Model Builder
 
-code_sample_java(name = "AssignmentMb")
+py_test(
+    name = "assignment_mb_py3",
+    srcs = ["assignment_mb.py"],
+    main = "assignment_mb.py",
+    deps = [
+        requirement("pandas"),
+        "//ortools/linear_solver/python:model_builder",
+    ],
+)
 
-code_sample_java(name = "BinPackingMb")
+py_test(
+    name = "bin_packing_mb_py3",
+    srcs = ["bin_packing_mb.py"],
+    main = "bin_packing_mb.py",
+    deps = [
+        requirement("pandas"),
+        "//ortools/linear_solver/python:model_builder",
+    ],
+)
 
-code_sample_java(name = "CloneModelMb")
+py_test(
+    name = "clone_model_mb_py3",
+    srcs = ["clone_model_mb.py"],
+    main = "clone_model_mb.py",
+    deps = ["//ortools/linear_solver/python:model_builder"],
+)
 
-code_sample_java(name = "SimpleLpProgramMb")
+py_test(
+    name = "simple_lp_program_mb_py3",
+    srcs = ["simple_lp_program_mb.py"],
+    main = "simple_lp_program_mb.py",
+    deps = ["//ortools/linear_solver/python:model_builder"],
+)
 
-code_sample_java(name = "SimpleMipProgramMb")
+py_test(
+    name = "simple_mip_program_mb_py3",
+    srcs = ["simple_mip_program_mb.py"],
+    main = "simple_mip_program_mb.py",
+    deps = ["//ortools/linear_solver/python:model_builder"],
+)
 
-code_sample_py(name = "assignment_mb")
+java_binary(
+    name = "AssignmentMb",
+    srcs = ["AssignmentMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.AssignmentMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
 
-code_sample_py(name = "bin_packing_mb")
+run_binary_test(
+    name = "AssignmentMbTest",
+    binary = ":AssignmentMb",
+)
 
-code_sample_py(name = "clone_model_mb")
+java_binary(
+    name = "BinPackingMb",
+    srcs = ["BinPackingMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.BinPackingMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
 
-code_sample_py(name = "simple_lp_program_mb")
+run_binary_test(
+    name = "BinPackingMbTest",
+    binary = ":BinPackingMb",
+)
 
-code_sample_py(name = "simple_mip_program_mb")
+java_binary(
+    name = "CloneModelMb",
+    srcs = ["CloneModelMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.CloneModelMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "CloneModelMbTest",
+    binary = ":CloneModelMb",
+)
+
+java_binary(
+    name = "SimpleLpProgramMb",
+    srcs = ["SimpleLpProgramMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.SimpleLpProgramMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "SimpleLpProgramMbTest",
+    binary = ":SimpleLpProgramMb",
+)
+
+java_binary(
+    name = "SimpleMipProgramMb",
+    srcs = ["SimpleMipProgramMb.java"],
+    main_class = "com.google.ortools.linearsolver.samples.SimpleMipProgramMb",
+    deps = [
+        "//ortools/java/com/google/ortools:Loader",
+        "//ortools/java/com/google/ortools/modelbuilder",
+        "//ortools/linear_solver/java:modelbuilder",
+    ],
+)
+
+run_binary_test(
+    name = "SimpleMipProgramMbTest",
+    binary = ":SimpleMipProgramMb",
+)
