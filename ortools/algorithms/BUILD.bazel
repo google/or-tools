@@ -28,9 +28,7 @@ bool_flag(
 
 config_setting(
     name = "use_cbc",
-    flag_values = {
-        ":with_cbc": "true",
-    },
+    flag_values = {":with_cbc": "true"},
 )
 
 bool_flag(
@@ -40,9 +38,7 @@ bool_flag(
 
 config_setting(
     name = "use_scip",
-    flag_values = {
-        ":with_scip": "true",
-    },
+    flag_values = {":with_scip": "true"},
 )
 
 cc_library(
@@ -93,12 +89,12 @@ cc_library(
 
 cc_test(
     name = "radix_sort_test",
-    size = "medium",
     srcs = ["radix_sort_test.cc"],
     copts = select({
         "@platforms//os:windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
+    tags = ["noci"],
     deps = [
         ":radix_sort",
         "//ortools/base:dump_vars",
@@ -314,6 +310,7 @@ cc_library(
     hdrs = ["sparse_permutation.h"],
     deps = [
         "//ortools/base",
+        "//ortools/base:numbers",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
