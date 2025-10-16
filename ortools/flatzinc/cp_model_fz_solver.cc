@@ -256,8 +256,10 @@ struct CpModelProtoWithMapping {
   void IntDivConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void IntModConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
   void ArrayElementConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
-  void OrToolsArrayElementConstraint(const fz::Constraint& fz_ct,
-                                     ConstraintProto* ct);
+  void OrToolsConstantElementConstraint(const fz::Constraint& fz_ct,
+                                        ConstraintProto* ct);
+  void OrToolsVariableElementConstraint(const fz::Constraint& fz_ct,
+                                        ConstraintProto* ct);
   void OrToolsTableIntConstraint(const fz::Constraint& fz_ct,
                                  ConstraintProto* ct);
   void OrToolsRegular(const fz::Constraint& fz_ct, ConstraintProto* ct);
@@ -1566,7 +1568,26 @@ void CpModelProtoWithMapping::ArrayElementConstraint(
   }
 }
 
-void CpModelProtoWithMapping::OrToolsArrayElementConstraint(
+void CpModelProtoWithMapping::OrToolsConstantElementConstraint(
+    const fz::Constraint& fz_ct, ConstraintProto* ct) {
+  auto* arg = ct->mutable_element();
+
+  // Index.
+  *arg->mutable_linear_index() = LookupExpr(fz_ct.arguments[0]);
+  const int64_t index_min = fz_ct.arguments[1].values[0];
+  arg->mutable_linear_index()->set_offset(arg->linear_index().offset() -
+                                          index_min);
+
+  // Target.
+  *arg->mutable_linear_target() = LookupExpr(fz_ct.arguments[3]);
+
+  // Values.
+  for (const int64_t value : fz_ct.arguments[2].values) {
+    ct->mutable_element()->add_exprs()->set_offset(value);
+  }
+}
+
+void CpModelProtoWithMapping::OrToolsVariableElementConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
   auto* arg = ct->mutable_element();
 
@@ -2430,10 +2451,12 @@ const ConstraintToMethodMapType& GetConstraintMap() {
       {"array_var_int_element", &MPMap::ArrayElementConstraint},
       {"array_var_bool_element", &MPMap::ArrayElementConstraint},
       {"array_int_element_nonshifted", &MPMap::ArrayElementConstraint},
-      {"ortools_array_int_element", &MPMap::OrToolsArrayElementConstraint},
-      {"ortools_array_bool_element", &MPMap::OrToolsArrayElementConstraint},
-      {"ortools_array_var_int_element", &MPMap::OrToolsArrayElementConstraint},
-      {"ortools_array_var_bool_element", &MPMap::OrToolsArrayElementConstraint},
+      {"ortools_array_int_element", &MPMap::OrToolsConstantElementConstraint},
+      {"ortools_array_bool_element", &MPMap::OrToolsConstantElementConstraint},
+      {"ortools_array_var_int_element",
+       &MPMap::OrToolsVariableElementConstraint},
+      {"ortools_array_var_bool_element",
+       &MPMap::OrToolsVariableElementConstraint},
       {"ortools_table_bool", &MPMap::OrToolsTableIntConstraint},
       {"ortools_table_int", &MPMap::OrToolsTableIntConstraint},
       {"ortools_regular", &MPMap::OrToolsRegular},

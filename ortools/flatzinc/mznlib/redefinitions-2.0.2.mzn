@@ -38,7 +38,7 @@ predicate array_var_int_element_nonshifted(var int: idx,
                                            array [int] of int: x,
                                            var int: c) =
   ortools_array_int_element(idx, index_set(x), x, c);
-  
+
 predicate ortools_array_var_int_element(var int: idx,
                                         set of int: index_set_of_x,
                                         array [int] of var int: x,

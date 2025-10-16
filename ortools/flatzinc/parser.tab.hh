@@ -53,7 +53,7 @@
 extern int orfz_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 19 "ortools/flatzinc/parser.yy"
+#line 32 "ortools/flatzinc/parser.yy"
 
 #if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
 #define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
