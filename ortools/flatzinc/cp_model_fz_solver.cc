@@ -2434,6 +2434,7 @@ const ConstraintToMethodMapType& GetConstraintMap() {
       {"ortools_array_bool_element", &MPMap::OrToolsArrayElementConstraint},
       {"ortools_array_var_int_element", &MPMap::OrToolsArrayElementConstraint},
       {"ortools_array_var_bool_element", &MPMap::OrToolsArrayElementConstraint},
+      {"ortools_table_bool", &MPMap::OrToolsTableIntConstraint},
       {"ortools_table_int", &MPMap::OrToolsTableIntConstraint},
       {"ortools_regular", &MPMap::OrToolsRegular},
       {"ortools_arg_max_int", &MPMap::OrToolsArgMax},
