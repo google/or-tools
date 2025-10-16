@@ -630,8 +630,9 @@ cc_library(
 
 cc_test(
     name = "cp_model_search_test",
-    size = "medium",
+    size = "small",
     srcs = ["cp_model_search_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -895,6 +896,7 @@ cc_test(
         "//ortools/port:os",
         "//ortools/util:logging",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
     ],
@@ -1240,9 +1242,12 @@ cc_library(
 
 cc_test(
     name = "cp_model_presolve_test",
-    size = "medium",
+    size = "small",
     srcs = ["cp_model_presolve_test.cc"],
-    tags = ["noautofuzz"],
+    tags = [
+        "noautofuzz",
+        "noci",
+    ],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
@@ -1272,6 +1277,7 @@ cc_test(
     name = "cp_model_presolve_random_test",
     size = "medium",
     srcs = ["cp_model_presolve_random_test.cc"],
+    tags = ["noci"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_solver",
@@ -2272,6 +2278,7 @@ cc_test(
     name = "integer_expr_test",
     size = "medium",
     srcs = ["integer_expr_test.cc"],
+    tags = ["noci"],
     deps = [
         "cp_model_checker",
         "cp_model_solver",
@@ -3610,8 +3617,8 @@ cc_library(
 
 cc_test(
     name = "2d_rectangle_presolve_test",
-    size = "medium",
     srcs = ["2d_rectangle_presolve_test.cc"],
+    tags = ["noci"],
     deps = [
         ":2d_orthogonal_packing_testing",
         ":2d_rectangle_presolve",
