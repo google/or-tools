@@ -14,8 +14,9 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
-load("@rules_java//java:java_test.bzl", "java_test")
+load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
+load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 py_test(
     name = "all_different_except_zero_sample_sat_py3",
@@ -1034,417 +1035,513 @@ py_test(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-java_test(
+java_binary(
     name = "AssignmentGroupsSat",
     srcs = ["AssignmentGroupsSat.java"],
     main_class = "com.google.ortools.sat.samples.AssignmentGroupsSat",
-    test_class = "com.google.ortools.sat.samples.AssignmentGroupsSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "AssignmentGroupsSatTest",
+    binary = ":AssignmentGroupsSat",
+)
+
+java_binary(
     name = "AssignmentSat",
     srcs = ["AssignmentSat.java"],
     main_class = "com.google.ortools.sat.samples.AssignmentSat",
-    test_class = "com.google.ortools.sat.samples.AssignmentSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "AssignmentSatTest",
+    binary = ":AssignmentSat",
+)
+
+java_binary(
     name = "AssignmentTaskSizesSat",
     srcs = ["AssignmentTaskSizesSat.java"],
     main_class = "com.google.ortools.sat.samples.AssignmentTaskSizesSat",
-    test_class = "com.google.ortools.sat.samples.AssignmentTaskSizesSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "AssignmentTaskSizesSatTest",
+    binary = ":AssignmentTaskSizesSat",
+)
+
+java_binary(
     name = "AssignmentTeamsSat",
     srcs = ["AssignmentTeamsSat.java"],
     main_class = "com.google.ortools.sat.samples.AssignmentTeamsSat",
-    test_class = "com.google.ortools.sat.samples.AssignmentTeamsSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "AssignmentTeamsSatTest",
+    binary = ":AssignmentTeamsSat",
+)
+
+java_binary(
     name = "AssumptionsSampleSat",
     srcs = ["AssumptionsSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.AssumptionsSampleSat",
-    test_class = "com.google.ortools.sat.samples.AssumptionsSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "AssumptionsSampleSatTest",
+    binary = ":AssumptionsSampleSat",
+)
+
+java_binary(
     name = "BinPackingProblemSat",
     srcs = ["BinPackingProblemSat.java"],
     main_class = "com.google.ortools.sat.samples.BinPackingProblemSat",
-    test_class = "com.google.ortools.sat.samples.BinPackingProblemSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "BinPackingProblemSatTest",
+    binary = ":BinPackingProblemSat",
+)
+
+java_binary(
     name = "BoolOrSampleSat",
     srcs = ["BoolOrSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.BoolOrSampleSat",
-    test_class = "com.google.ortools.sat.samples.BoolOrSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "BoolOrSampleSatTest",
+    binary = ":BoolOrSampleSat",
+)
+
+java_binary(
     name = "ChannelingSampleSat",
     srcs = ["ChannelingSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.ChannelingSampleSat",
-    test_class = "com.google.ortools.sat.samples.ChannelingSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "ChannelingSampleSatTest",
+    binary = ":ChannelingSampleSat",
+)
+
+java_binary(
     name = "CloneModelSampleSat",
     srcs = ["CloneModelSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.CloneModelSampleSat",
-    test_class = "com.google.ortools.sat.samples.CloneModelSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "CloneModelSampleSatTest",
+    binary = ":CloneModelSampleSat",
+)
+
+java_binary(
     name = "CpIsFunSat",
     srcs = ["CpIsFunSat.java"],
     main_class = "com.google.ortools.sat.samples.CpIsFunSat",
-    test_class = "com.google.ortools.sat.samples.CpIsFunSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "CpIsFunSatTest",
+    binary = ":CpIsFunSat",
+)
+
+java_binary(
     name = "CpSatExample",
     srcs = ["CpSatExample.java"],
     main_class = "com.google.ortools.sat.samples.CpSatExample",
-    test_class = "com.google.ortools.sat.samples.CpSatExample",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "CpSatExampleTest",
+    binary = ":CpSatExample",
+)
+
+java_binary(
     name = "EarlinessTardinessCostSampleSat",
     srcs = ["EarlinessTardinessCostSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.EarlinessTardinessCostSampleSat",
-    test_class = "com.google.ortools.sat.samples.EarlinessTardinessCostSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "EarlinessTardinessCostSampleSatTest",
+    binary = ":EarlinessTardinessCostSampleSat",
+)
+
+java_binary(
     name = "IntervalSampleSat",
     srcs = ["IntervalSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.IntervalSampleSat",
-    test_class = "com.google.ortools.sat.samples.IntervalSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "IntervalSampleSatTest",
+    binary = ":IntervalSampleSat",
+)
+
+java_binary(
     name = "LiteralSampleSat",
     srcs = ["LiteralSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.LiteralSampleSat",
-    test_class = "com.google.ortools.sat.samples.LiteralSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "LiteralSampleSatTest",
+    binary = ":LiteralSampleSat",
+)
+
+java_binary(
     name = "MinimalJobshopSat",
     srcs = ["MinimalJobshopSat.java"],
     main_class = "com.google.ortools.sat.samples.MinimalJobshopSat",
-    test_class = "com.google.ortools.sat.samples.MinimalJobshopSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "MinimalJobshopSatTest",
+    binary = ":MinimalJobshopSat",
+)
+
+java_binary(
     name = "MultipleKnapsackSat",
     srcs = ["MultipleKnapsackSat.java"],
     main_class = "com.google.ortools.sat.samples.MultipleKnapsackSat",
-    test_class = "com.google.ortools.sat.samples.MultipleKnapsackSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "MultipleKnapsackSatTest",
+    binary = ":MultipleKnapsackSat",
+)
+
+java_binary(
     name = "NQueensSat",
     srcs = ["NQueensSat.java"],
     main_class = "com.google.ortools.sat.samples.NQueensSat",
-    test_class = "com.google.ortools.sat.samples.NQueensSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "NQueensSatTest",
+    binary = ":NQueensSat",
+)
+
+java_binary(
     name = "NoOverlapSampleSat",
     srcs = ["NoOverlapSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.NoOverlapSampleSat",
-    test_class = "com.google.ortools.sat.samples.NoOverlapSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "NoOverlapSampleSatTest",
+    binary = ":NoOverlapSampleSat",
+)
+
+java_binary(
     name = "NonLinearSat",
     srcs = ["NonLinearSat.java"],
     main_class = "com.google.ortools.sat.samples.NonLinearSat",
-    test_class = "com.google.ortools.sat.samples.NonLinearSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "NonLinearSatTest",
+    binary = ":NonLinearSat",
+)
+
+java_binary(
     name = "NursesSat",
     srcs = ["NursesSat.java"],
     main_class = "com.google.ortools.sat.samples.NursesSat",
-    test_class = "com.google.ortools.sat.samples.NursesSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "NursesSatTest",
+    binary = ":NursesSat",
+)
+
+java_binary(
     name = "OptionalIntervalSampleSat",
     srcs = ["OptionalIntervalSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.OptionalIntervalSampleSat",
-    test_class = "com.google.ortools.sat.samples.OptionalIntervalSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "OptionalIntervalSampleSatTest",
+    binary = ":OptionalIntervalSampleSat",
+)
+
+java_binary(
     name = "RabbitsAndPheasantsSat",
     srcs = ["RabbitsAndPheasantsSat.java"],
     main_class = "com.google.ortools.sat.samples.RabbitsAndPheasantsSat",
-    test_class = "com.google.ortools.sat.samples.RabbitsAndPheasantsSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "RabbitsAndPheasantsSatTest",
+    binary = ":RabbitsAndPheasantsSat",
+)
+
+java_binary(
     name = "RankingSampleSat",
     srcs = ["RankingSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.RankingSampleSat",
-    test_class = "com.google.ortools.sat.samples.RankingSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "RankingSampleSatTest",
+    binary = ":RankingSampleSat",
+)
+
+java_binary(
     name = "ReifiedSampleSat",
     srcs = ["ReifiedSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.ReifiedSampleSat",
-    test_class = "com.google.ortools.sat.samples.ReifiedSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "ReifiedSampleSatTest",
+    binary = ":ReifiedSampleSat",
+)
+
+java_binary(
     name = "ScheduleRequestsSat",
     srcs = ["ScheduleRequestsSat.java"],
     main_class = "com.google.ortools.sat.samples.ScheduleRequestsSat",
-    test_class = "com.google.ortools.sat.samples.ScheduleRequestsSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "ScheduleRequestsSatTest",
+    binary = ":ScheduleRequestsSat",
+)
+
+java_binary(
     name = "SearchForAllSolutionsSampleSat",
     srcs = ["SearchForAllSolutionsSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.SearchForAllSolutionsSampleSat",
-    test_class = "com.google.ortools.sat.samples.SearchForAllSolutionsSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "SearchForAllSolutionsSampleSatTest",
+    binary = ":SearchForAllSolutionsSampleSat",
+)
+
+java_binary(
     name = "SimpleSatProgram",
     srcs = ["SimpleSatProgram.java"],
     main_class = "com.google.ortools.sat.samples.SimpleSatProgram",
-    test_class = "com.google.ortools.sat.samples.SimpleSatProgram",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "SimpleSatProgramTest",
+    binary = ":SimpleSatProgram",
+)
+
+java_binary(
     name = "SolutionHintingSampleSat",
     srcs = ["SolutionHintingSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.SolutionHintingSampleSat",
-    test_class = "com.google.ortools.sat.samples.SolutionHintingSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "SolutionHintingSampleSatTest",
+    binary = ":SolutionHintingSampleSat",
+)
+
+java_binary(
     name = "SolveAndPrintIntermediateSolutionsSampleSat",
     srcs = ["SolveAndPrintIntermediateSolutionsSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.SolveAndPrintIntermediateSolutionsSampleSat",
-    test_class = "com.google.ortools.sat.samples.SolveAndPrintIntermediateSolutionsSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "SolveAndPrintIntermediateSolutionsSampleSatTest",
+    binary = ":SolveAndPrintIntermediateSolutionsSampleSat",
+)
+
+java_binary(
     name = "SolveWithTimeLimitSampleSat",
     srcs = ["SolveWithTimeLimitSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.SolveWithTimeLimitSampleSat",
-    test_class = "com.google.ortools.sat.samples.SolveWithTimeLimitSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "SolveWithTimeLimitSampleSatTest",
+    binary = ":SolveWithTimeLimitSampleSat",
+)
+
+java_binary(
     name = "StepFunctionSampleSat",
     srcs = ["StepFunctionSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.StepFunctionSampleSat",
-    test_class = "com.google.ortools.sat.samples.StepFunctionSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
         "//ortools/sat:sat_parameters_java_proto",
-        "//ortools/sat/java:sat",
         "//ortools/util/java:sorted_interval_list",
     ],
 )
 
-java_test(
+run_binary_test(
+    name = "StepFunctionSampleSatTest",
+    binary = ":StepFunctionSampleSat",
+)
+
+java_binary(
     name = "StopAfterNSolutionsSampleSat",
     srcs = ["StopAfterNSolutionsSampleSat.java"],
     main_class = "com.google.ortools.sat.samples.StopAfterNSolutionsSampleSat",
-    test_class = "com.google.ortools.sat.samples.StopAfterNSolutionsSampleSat",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/sat",
         "//ortools/sat:cp_model_java_proto",
-        "//ortools/sat/java:sat",
     ],
+)
+
+run_binary_test(
+    name = "StopAfterNSolutionsSampleSatTest",
+    binary = ":StopAfterNSolutionsSampleSat",
 )

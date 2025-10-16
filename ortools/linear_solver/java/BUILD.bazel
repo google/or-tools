@@ -14,36 +14,36 @@
 # Description: java wrapping of the C++ code at ../
 
 load("@contrib_rules_jvm//java:defs.bzl", "java_junit5_test")
-load("@rules_jvm_external//:defs.bzl", "artifact")
 load("//bazel:swig_java.bzl", "java_wrap_cc")
 
 java_wrap_cc(
     name = "modelbuilder",
     srcs = ["modelbuilder.swig"],
-    module = "modelbuilder",
     package = "com.google.ortools.modelbuilder",
     swig_includes = [
         "//ortools/base:base_swig",
         "//ortools/util/java:vector.swig",
     ],
     visibility = ["//visibility:public"],
-    deps = ["//ortools/linear_solver/wrappers:model_builder_helper"],
+    deps = [
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver/wrappers:model_builder_helper",
+    ],
 )
 
 java_junit5_test(
     name = "ModelBuilderTest",
     srcs = ["ModelBuilderTest.java"],
-    tags = ["unit"],
     test_class = "com.google.ortools.modelbuilder.ModelBuilderTest",
     deps = [
         "//ortools/java/com/google/ortools:Loader",
         "//ortools/java/com/google/ortools/modelbuilder",
         "//ortools/linear_solver/java:modelbuilder",
         "@maven//:com_google_truth_truth",
-        artifact("org.junit.jupiter:junit-jupiter-api"),
-        artifact("org.junit.jupiter:junit-jupiter-params"),
-        artifact("org.junit.jupiter:junit-jupiter-engine"),
-        artifact("org.junit.platform:junit-platform-launcher"),
-        artifact("org.junit.platform:junit-platform-reporting"),
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+        "@maven//:org_junit_jupiter_junit_jupiter_params",
+        "@maven//:org_junit_platform_junit_platform_launcher",
+        "@maven//:org_junit_platform_junit_platform_reporting",
     ],
 )
