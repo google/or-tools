@@ -22,16 +22,13 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
-#include "ortools/base/strong_int.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
-
-// The ID of a clause.
-DEFINE_STRONG_INT_TYPE(ClauseId, int64_t);
 
 // An incremental checker for LRAT proofs (https://arxiv.org/abs/1612.02353).
 class LratChecker {
@@ -93,11 +90,20 @@ class LratChecker {
 
   // Returns true if the unsatisfiability proof is valid and complete, i.e.
   // whether the empty clause has been successfully inferred.
-  bool Check() const { return complete_; }
+  bool Check() {
+    if (valid_ && !complete_) {
+      error_message_ = "empty clause not inferred";
+    }
+    return complete_;
+  }
 
   // Returns the reason of the first failed operation, or an empty string if all
   // operations were successful.
   std::string_view error_message() const { return error_message_; }
+
+  // Returns the number of times a unit propagation resulted in an already
+  // propagated literal.
+  int64_t num_warnings() const { return num_warnings_; }
 
  private:
   bool AddClauseInternal(ClauseId id, absl::Span<const Literal> clause,
@@ -119,6 +125,7 @@ class LratChecker {
   // Whether all the operations made so far were valid.
   bool valid_ = true;
   std::string error_message_;
+  int64_t num_warnings_ = 0;
 
   // Whether the proof is complete, i.e., whether the empty clause has been
   // successfully inferred.
@@ -131,6 +138,12 @@ class LratChecker {
   // Temporary set used to check the RAT property of an inferred clause.
   absl::flat_hash_set<ClauseId> tmp_clause_ids_;
 };
+
+template <typename Sink, typename... T>
+void AbslStringify(Sink& sink, LratChecker::RatIds arg) {
+  absl::Format(&sink, "resolvant_id=%d unit_ids=[%s]", arg.resolvant_id.value(),
+               absl::StrJoin(arg.unit_ids, " "));
+}
 
 }  // namespace sat
 }  // namespace operations_research

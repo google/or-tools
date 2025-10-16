@@ -251,10 +251,7 @@ class LinearPropagator : public PropagatorInterface,
                      IntegerValue upper_bound);
 
   // For LazyReasonInterface.
-  void Explain(int id, IntegerValue propagation_slack,
-               IntegerVariable var_to_explain, int trail_index,
-               std::vector<Literal>* literals_reason,
-               std::vector<int>* trail_indices_reason) final;
+  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
 
   void SetPushAffineUbForBinaryRelation() {
     push_affine_ub_for_binary_relations_ = true;

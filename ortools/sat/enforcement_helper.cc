@@ -69,9 +69,8 @@ bool EnforcementHelper::PropagateWhenFalse(
 
   // We also change the status right away.
   enforcement_propagator_.ChangeStatus(id, EnforcementStatus::IS_FALSE);
-  integer_trail_->EnqueueLiteral(Literal(unique_unassigned).Negated(),
-                                 temp_reason_, integer_reason);
-  return true;
+  return integer_trail_->SafeEnqueueLiteral(
+      Literal(unique_unassigned).Negated(), temp_reason_, integer_reason);
 }
 
 bool EnforcementHelper::Enqueue(
@@ -108,7 +107,7 @@ bool EnforcementHelper::ConditionalEnqueue(
                                             &temp_integer_reason_);
 }
 
-void EnforcementHelper::EnqueueLiteral(
+bool EnforcementHelper::EnqueueLiteral(
     EnforcementId id, Literal literal, absl::Span<const Literal> literal_reason,
     absl::Span<const IntegerLiteral> integer_reason) {
   temp_reason_.clear();

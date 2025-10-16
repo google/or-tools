@@ -1556,7 +1556,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_decision_strategy(
         self,
-        variables: Sequence[IntVar],
+        variables: Iterable[IntVar],
         var_strategy: cmh.DecisionStrategyProto.VariableSelectionStrategy,
         domain_strategy: cmh.DecisionStrategyProto.DomainReductionStrategy,
     ) -> None:

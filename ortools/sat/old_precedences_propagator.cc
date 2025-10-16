@@ -111,7 +111,7 @@ bool PrecedencesPropagator::Propagate() {
   }
 
   // Propagate the presence literals of the arcs that can't be added.
-  PropagateOptionalArcs(trail_);
+  if (!PropagateOptionalArcs(trail_)) return false;
 
   // Clean-up modified_vars_ to do as little as possible on the next call.
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
@@ -338,7 +338,7 @@ bool PrecedencesPropagator::AddPrecedenceWithOffsetIfNew(IntegerVariable i1,
 // This is because, for each lower bound changed, we inspect 500 arcs even
 // though they will never be propagated because the other bound is still at the
 // horizon. Find an even sparser algorithm?
-void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
+bool PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     // The variables are not in increasing order, so we need to continue.
     if (var >= impacted_potential_arcs_.size()) continue;
@@ -375,11 +375,14 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
           if (l != to_propagate) literal_reason_.push_back(l.Negated());
         }
         ++num_enforcement_pushes_;
-        integer_trail_->EnqueueLiteral(to_propagate.Negated(), literal_reason_,
-                                       integer_reason_);
+        if (!integer_trail_->EnqueueLiteral(to_propagate.Negated(),
+                                            literal_reason_, integer_reason_)) {
+          return false;
+        }
       }
     }
   }
+  return true;
 }
 
 IntegerValue PrecedencesPropagator::ArcOffset(const ArcInfo& arc) const {
@@ -617,8 +620,10 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
             }
             for (const Literal l : must_be_all_true) {
               if (trail_->Assignment().LiteralIsTrue(l)) continue;
-              integer_trail_->EnqueueLiteral(l, literal_reason_,
-                                             integer_reason_);
+              if (!integer_trail_->EnqueueLiteral(l, literal_reason_,
+                                                  integer_reason_)) {
+                return false;
+              }
             }
 
             // We just marked some optional variable as ignored, no need

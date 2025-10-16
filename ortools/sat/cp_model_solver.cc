@@ -79,6 +79,7 @@
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/presolve_context.h"
@@ -142,6 +143,11 @@ ABSL_FLAG(bool, cp_model_drat_check, false,
           "checked if the problem is UNSAT. This will only be used for "
           "pure-SAT problems. And, as of September 2025, only works with a "
           "single worker, no presolve, and symmetry level 0 or 1.");
+
+ABSL_FLAG(bool, cp_model_lrat_check, false,
+          "If true, inferred clauses are checker with an LRAT checker as they "
+          "are learned. As of October 2025, this is currently being "
+          "implemented and is not working yet.");
 
 ABSL_FLAG(double, cp_model_max_drat_time_in_seconds,
           std::numeric_limits<double>::infinity(),
@@ -1031,7 +1037,7 @@ class FullProblemSolver : public SubSolver {
   FullProblemSolver(absl::string_view name,
                     const SatParameters& local_parameters, bool split_in_chunks,
                     SharedClasses* shared, DratProofHandler* drat_proof_handler,
-                    bool stop_at_first_solution = false)
+                    bool use_lrat_checker, bool stop_at_first_solution = false)
       : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
@@ -1052,6 +1058,12 @@ class FullProblemSolver : public SubSolver {
     // by registering the SharedStatistics class with LNS local model.
     shared_->RegisterSharedClassesInLocalModel(&local_model_);
 
+    if (use_lrat_checker) {
+      lrat_proof_handler_ = std::make_unique<LratProofHandler>(
+          local_parameters.debug_crash_if_lrat_check_fails());
+      local_model_.GetOrCreate<SatSolver>()->SetLratProofHandler(
+          lrat_proof_handler_.get());
+    }
     if (drat_proof_handler != nullptr) {
       local_model_.GetOrCreate<SatSolver>()->SetDratProofHandler(
           drat_proof_handler);
@@ -1073,6 +1085,12 @@ class FullProblemSolver : public SubSolver {
     shared_->stat_tables->AddLpStat(name(), &local_model_);
     shared_->stat_tables->AddSearchStat(name(), &local_model_);
     shared_->stat_tables->AddClausesStat(name(), &local_model_);
+    if (response.status() == CpSolverStatus::INFEASIBLE &&
+        lrat_proof_handler_ != nullptr && !lrat_proof_handler_->Check()) {
+      auto* logger = local_model_.GetOrCreate<SolverLogger>();
+      SOLVER_LOG(logger,
+                 absl::StrFormat("ERROR: LRAT proof invalid for %s", name()));
+    }
   }
 
   bool IsDone() override {
@@ -1206,6 +1224,7 @@ class FullProblemSolver : public SubSolver {
   const bool split_in_chunks_;
   const bool stop_at_first_solution_;
   Model local_model_;
+  std::unique_ptr<LratProofHandler> lrat_proof_handler_;
 
   // The first chunk is special. It is the one in which we load the model and
   // try to follow the hint.
@@ -1817,7 +1836,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared,
-          /*drat_proof_handler=*/nullptr));
+          /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
     }
   }
 
@@ -1841,7 +1860,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
         /*split_in_chunks=*/params.interleave_search(), shared,
-        /*drat_proof_handler=*/nullptr));
+        /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2189,7 +2208,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FullProblemSolver>(
                 local_params.name(), local_params,
                 /*split_in_chunks=*/local_params.interleave_search(), shared,
-                /*drat_proof_handler=*/nullptr,
+                /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false,
                 /*stop_on_first_solution=*/true));
       }
     }
@@ -2746,7 +2765,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (!model_proto.assumptions().empty() &&
       (params.num_workers() > 1 || model_proto.has_objective() ||
        model_proto.has_floating_point_objective() ||
-       params.enumerate_all_solutions())) {
+       params.enumerate_all_solutions() || params.interleave_search())) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "
@@ -3081,7 +3100,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           "main", params, /*split_in_chunks=*/false, &shared,
-          drat_proof_handler.get()));
+          drat_proof_handler.get(), absl::GetFlag(FLAGS_cp_model_lrat_check)));
       LaunchSubsolvers(params, &shared, subsolvers, {});
     }
   }

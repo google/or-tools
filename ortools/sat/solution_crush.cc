@@ -347,11 +347,25 @@ void SolutionCrush::UpdateRefsWithDominance(
 }
 
 void SolutionCrush::SetVarToLinearConstraintSolution(
-    std::optional<int> var_index, absl::Span<const int> vars,
+    absl::Span<const int> enforcement_lits, std::optional<int> var_index,
+    absl::Span<const int> vars, absl::Span<const int64_t> default_values,
     absl::Span<const int64_t> coeffs, int64_t rhs) {
   DCHECK_EQ(vars.size(), coeffs.size());
   DCHECK(!var_index.has_value() || var_index.value() < vars.size());
   if (!solution_is_loaded_) return;
+  bool constraint_is_enforced = true;
+  for (const int lit : enforcement_lits) {
+    if (!HasValue(PositiveRef(lit))) return;
+    constraint_is_enforced = constraint_is_enforced && GetLiteralValue(lit);
+  }
+  if (!constraint_is_enforced) {
+    for (int i = 0; i < vars.size(); ++i) {
+      if (!HasValue(vars[i])) {
+        SetVarValue(vars[i], default_values[i]);
+      }
+    }
+    return;
+  }
   int64_t term_value = rhs;
   for (int i = 0; i < vars.size(); ++i) {
     if (HasValue(vars[i])) {
@@ -499,12 +513,12 @@ void SolutionCrush::SetIntModExpandedVars(const ConstraintProto& ct,
                                           int64_t default_div_value,
                                           int64_t default_prod_value) {
   if (!solution_is_loaded_) return;
-  bool enforced_value = true;
+  bool constraint_is_enforced = true;
   for (const int lit : ct.enforcement_literal()) {
     if (!HasValue(PositiveRef(lit))) return;
-    enforced_value = enforced_value && GetLiteralValue(lit);
+    constraint_is_enforced = constraint_is_enforced && GetLiteralValue(lit);
   }
-  if (!enforced_value) {
+  if (!constraint_is_enforced) {
     SetVarValue(div_var, default_div_value);
     SetVarValue(prod_var, default_prod_value);
     return;

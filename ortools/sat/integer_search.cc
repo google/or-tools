@@ -1842,7 +1842,7 @@ SatSolver::Status ContinuousProber::Probe() {
 
       // Probe combinations of Booleans variables.
       const int limit = parameters_.probing_num_combinations_limit();
-      const bool max_num_bool_vars_for_pairs_probing =
+      const int max_num_bool_vars_for_pairs_probing =
           static_cast<int>(std::sqrt(2 * limit));
       const int num_bool_vars = bool_vars_.size();
 
@@ -1891,7 +1891,7 @@ SatSolver::Status ContinuousProber::Probe() {
       }
 
       // Note that the product is always >= 0.
-      const bool max_num_bool_vars_for_triplet_probing =
+      const int max_num_bool_vars_for_triplet_probing =
           static_cast<int>(std::cbrt(2 * limit));
       // We use a limit to make sure we do not overflow.
       const int loop_limit =

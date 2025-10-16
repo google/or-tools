@@ -350,9 +350,6 @@ double ScalarProduct(const LinearConstraint& constraint1,
 // also tighten the constraint bounds assuming all the variables are integer.
 void DivideByGCD(LinearConstraint* constraint);
 
-// Removes the entries with a coefficient of zero.
-void RemoveZeroTerms(LinearConstraint* constraint);
-
 // Makes all coefficients positive by transforming a variable to its negation.
 void MakeAllCoefficientsPositive(LinearConstraint* constraint);
 

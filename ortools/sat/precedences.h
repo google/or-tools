@@ -655,6 +655,9 @@ class ReifiedLinear2Bounds {
   std::variant<ReifiedBoundType, Literal, IntegerLiteral> GetEncodedBound(
       LinearExpression2 expr, IntegerValue ub);
 
+  std::pair<AffineExpression, IntegerValue> GetLinear3Bound(
+      LinearExpression2Index lin2_index) const;
+
  private:
   RootLevelLinear2Bounds* best_root_level_bounds_;
   Linear2Indices* lin2_indices_;
@@ -687,7 +690,7 @@ class ReifiedLinear2Bounds {
 
 // Simple wrapper around the different repositories for bounds of linear2.
 // This should provide the best bounds.
-class Linear2Bounds {
+class Linear2Bounds : public LazyReasonInterface {
  public:
   explicit Linear2Bounds(Model* model)
       : integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -725,6 +728,10 @@ class Linear2Bounds {
                            absl::Span<const Literal> literal_reason,
                            absl::Span<const IntegerLiteral> integer_reason);
 
+  // For LazyReasonInterface.
+  std::string LazyReasonName() const final { return "Linear2Bounds"; }
+  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
+
  private:
   IntegerTrail* integer_trail_;
   RootLevelLinear2Bounds* root_level_bounds_;
@@ -734,6 +741,9 @@ class Linear2Bounds {
   ReifiedLinear2Bounds* reified_lin2_bounds_;
   Trail* trail_;
   SharedStatistics* shared_stats_;
+
+  // This is used for the lazy-reason implemented in Explain().
+  util_intops::StrongVector<ReasonIndex, LinearExpression2> saved_reasons_;
 
   int64_t enqueue_trivial_ = 0;
   int64_t enqueue_degenerate_ = 0;

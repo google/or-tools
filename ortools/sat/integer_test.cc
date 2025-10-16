@@ -308,10 +308,8 @@ struct LazyReasonForTest : public LazyReasonInterface {
 
   std::string LazyReasonName() const override { return "LazyReasonForTest"; }
 
-  void Explain(int /*id*/, IntegerValue /*propagation_slack*/,
-               IntegerVariable /*variable_to_explain*/, int /*trail_index*/,
-               std::vector<Literal>* /*literals_reason*/,
-               std::vector<int>* /*trail_indices_reason*/) final {
+  void Explain(int /*id*/, IntegerLiteral /*to_explain*/,
+               IntegerReason* /*reason*/) final {
     called = true;
   }
 };

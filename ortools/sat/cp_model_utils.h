@@ -140,7 +140,7 @@ bool DomainInProtoContains(const ProtoWithDomain& proto, int64_t value) {
 template <typename ProtoWithDomain>
 void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
   proto->clear_domain();
-  proto->mutable_domain()->Reserve(domain.NumIntervals());
+  proto->mutable_domain()->Reserve(2 * domain.NumIntervals());
   for (const ClosedInterval& interval : domain) {
     proto->add_domain(interval.start);
     proto->add_domain(interval.end);

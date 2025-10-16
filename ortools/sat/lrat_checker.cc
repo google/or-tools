@@ -55,9 +55,10 @@ void LratChecker::DeleteClauses(absl::Span<const ClauseId> clause_ids) {
 
 namespace {
 enum UnitPropagationStatus {
-  kError = 0,
   kUnit = 1,
   kConflict = 2,
+  kWarning = 3,
+  kError = 4,
 };
 
 UnitPropagationStatus Propagate(
@@ -73,7 +74,11 @@ UnitPropagationStatus Propagate(
   if (unique_unassigned_literal == kNoLiteralIndex) return kConflict;
   const Literal unassigned_literal = Literal(unique_unassigned_literal);
   DCHECK(!false_literals_set->contains(unassigned_literal));
-  if (false_literals_set->contains(unassigned_literal.Negated())) return kError;
+  if (false_literals_set->contains(unassigned_literal.Negated())) {
+    // `clause` propagates `unassigned_literal` which was already propagated by
+    // a previous clause.
+    return kWarning;
+  }
   false_literals_set->insert(unassigned_literal.Negated());
   return kUnit;
 }
@@ -105,11 +110,14 @@ bool LratChecker::AddClauseInternal(ClauseId id,
     UnitPropagationStatus last_propagation_status = kUnit;
     for (const ClauseId unit_id : unit_ids) {
       auto it = clauses_.find(unit_id);
-      if (it == clauses_.end())
+      if (it == clauses_.end()) {
         return Error(id, absl::StrCat("unit_id ", unit_id, " not found"));
+      }
       last_propagation_status = Propagate(it->second, &tmp_false_literals_set_);
       if (last_propagation_status == kError) {
         return Error(id, absl::StrCat("unit_id ", unit_id, " is not unit"));
+      } else if (last_propagation_status == kWarning) {
+        ++num_warnings_;
       }
     }
     if (last_propagation_status == kUnit) {

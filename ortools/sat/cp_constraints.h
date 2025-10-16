@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "absl/log/check.h"
@@ -93,10 +94,7 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface,
   void RegisterWith(GenericLiteralWatcher* watcher);
 
   // For LazyReasonInterface.
-  void Explain(int id, IntegerValue propagation_slack,
-               IntegerVariable var_to_explain, int trail_index,
-               std::vector<Literal>* literals_reason,
-               std::vector<int>* trail_indices_reason) final;
+  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
 
  private:
   const IntegerVariable target_var_;

@@ -645,9 +645,8 @@ bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level) {
     assigned_tree_literals_.clear();
     return false;
   }
-  integer_trail_->EnqueueLiteral(lit, DecisionReason(level), {});
   VLOG(2) << "Learned shared clause";
-  return true;
+  return integer_trail_->EnqueueLiteral(lit, DecisionReason(level), {});
 }
 
 bool SharedTreeWorker::AddImplications() {

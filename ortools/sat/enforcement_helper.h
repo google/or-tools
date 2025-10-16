@@ -67,9 +67,10 @@ class EnforcementHelper {
       absl::Span<const Literal> literal_reason,
       absl::Span<const IntegerLiteral> integer_reason);
 
-  void EnqueueLiteral(EnforcementId id, Literal literal,
-                      absl::Span<const Literal> literal_reason,
-                      absl::Span<const IntegerLiteral> integer_reason);
+  ABSL_MUST_USE_RESULT bool EnqueueLiteral(
+      EnforcementId id, Literal literal,
+      absl::Span<const Literal> literal_reason,
+      absl::Span<const IntegerLiteral> integer_reason);
 
   bool ReportConflict(EnforcementId id,
                       absl::Span<const IntegerLiteral> integer_reason) {

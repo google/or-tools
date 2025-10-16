@@ -25,6 +25,7 @@
 
 ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
 ABSL_DECLARE_FLAG(bool, cp_model_drat_check);
+ABSL_DECLARE_FLAG(bool, cp_model_lrat_check);
 
 namespace operations_research {
 namespace sat {

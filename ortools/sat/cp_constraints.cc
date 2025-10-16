@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/integer.h"
@@ -77,10 +78,9 @@ bool BooleanXorPropagator::Propagate() {
   if (status == EnforcementStatus::IS_ENFORCED && unassigned_index != -1) {
     fill_literal_reason();
     const Literal u = literals_[unassigned_index];
-    enforcement_helper_.EnqueueLiteral(
+    return enforcement_helper_.EnqueueLiteral(
         enforcement_id_, sum == value_ ? u.Negated() : u, literal_reason_,
         /*integer_reason=*/{});
-    return true;
   }
 
   // Ok.
@@ -120,19 +120,19 @@ GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
 
-void GreaterThanAtLeastOneOfPropagator::Explain(
-    int id, IntegerValue propagation_slack, IntegerVariable /*var_to_explain*/,
-    int /*trail_index*/, std::vector<Literal>* literals_reason,
-    std::vector<int>* trail_indices_reason) {
-  literals_reason->clear();
-  trail_indices_reason->clear();
-
+void GreaterThanAtLeastOneOfPropagator::Explain(int id,
+                                                IntegerLiteral to_explain,
+                                                IntegerReason* reason) {
   const int first_non_false = id;
-  const IntegerValue target_min = propagation_slack;
 
-  for (const Literal l : enforcements_) {
-    literals_reason->push_back(l.Negated());
-  }
+  // Note that even if we propagated more, we only need the reason for
+  // to_explain.bound, this is easy for that propagator.
+  CHECK_EQ(to_explain.var, target_var_);
+  const IntegerValue target_min = to_explain.bound;
+
+  reason->boolean_literals_at_true = enforcements_;
+
+  auto& literals_at_false = integer_trail_->ClearedMutableTmpLiterals();
   for (int i = 0; i < first_non_false; ++i) {
     // If the level zero bounds is good enough, no reason needed.
     //
@@ -142,11 +142,24 @@ void GreaterThanAtLeastOneOfPropagator::Explain(
       continue;
     }
 
-    literals_reason->push_back(selectors_[i]);
+    literals_at_false.push_back(selectors_[i]);
   }
-  integer_trail_->AddAllGreaterThanConstantReason(
-      absl::MakeSpan(exprs_).subspan(first_non_false), target_min,
-      trail_indices_reason);
+  reason->boolean_literals_at_false = literals_at_false;
+
+  // Add all greater than target_min reason.
+  auto& integer_literals = integer_trail_->ClearedMutableTmpIntegerLiterals();
+  for (const AffineExpression& expr :
+       absl::MakeSpan(exprs_).subspan(first_non_false)) {
+    if (expr.IsConstant()) {
+      DCHECK_GE(expr.constant, target_min);
+      continue;
+    }
+    DCHECK_NE(expr.var, kNoIntegerVariable);
+    const IntegerLiteral to_explain = expr.GreaterOrEqual(target_min);
+    if (integer_trail_->IsTrueAtLevelZero(to_explain)) continue;
+    integer_literals.push_back(to_explain);
+  }
+  reason->integer_literals = integer_literals;
 }
 
 bool GreaterThanAtLeastOneOfPropagator::Propagate() {

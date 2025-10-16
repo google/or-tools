@@ -535,6 +535,10 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
   }
 
   void AssertVariableIsBoolean(std::shared_ptr<Literal> literal) {
+    if (PositiveRef(literal->index()) >= model_proto_->variables_size()) {
+      ThrowError(PyExc_TypeError, absl::StrCat("Invalid boolean literal: ",
+                                               literal->ToString()));
+    }
     IntegerVariableProto* var =
         model_proto_->mutable_variables(PositiveRef(literal->index()));
     if (var->domain_size() != 2 || var->domain(0) < 0 || var->domain(1) > 1) {

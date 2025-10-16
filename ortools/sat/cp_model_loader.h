@@ -109,7 +109,7 @@ void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
 // one level. Both requires experimentations.
 void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
-                                         std::vector<int64_t>* coeffs,
+                                         std::vector<IntegerValue>* coeffs,
                                          Model* m);
 
 }  // namespace sat

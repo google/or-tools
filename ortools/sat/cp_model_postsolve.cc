@@ -135,30 +135,32 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
       free_coeffs.push_back(coeff);
     }
   }
+
+  // Tricky: We sometime push two constraints for postsolve:
+  // 1/ l      =>   A
+  // 2/ not(l) =>   B
+  // if B is true, it is better to fix `l` so that the constraint 2/ is
+  // enforced. This way we should have no problem when processing 1/
+  //
+  // TODO(user): This is a bit hacky, if we need to postsolve both
+  // constraints at once, it might be cleaner to do that in a single
+  // postsolve operation. However this allows us to reuse normal constraints
+  // for the postsolve specification, which is nice.
+  auto fix_unassigned_enforcement_to_true = [&](const ConstraintProto& ct) {
+    for (const int enf : ct.enforcement_literal()) {
+      Domain& d = (*domains)[PositiveRef(enf)];
+      if (!d.IsFixed()) {
+        d = Domain(RefIsPositive(enf) ? 1 : 0);
+      }
+    }
+  };
+
   if (free_vars.empty()) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
     if (!rhs.Contains(fixed_activity)) {
       SetEnforcementLiteralToFalse(ct, domains);
     } else {
-      // The constraint is satisfied, if there is any enforcement that are
-      // not fixed yet, we need to fix them.
-      //
-      // Tricky: We sometime push two constraints for postsolve:
-      // 1/ l      =>   A
-      // 2/ not(l) =>   B
-      // if B is true, it is better to fix `l` so that the constraint 2/ is
-      // enforced. This way we should have no problem when processing 1/
-      //
-      // TODO(user): This is a bit hacky, if we need to postsolve both
-      // constraints at once, it might be cleaner to do that in a single
-      // postsolve operation. However this allows us to reuse normal constraints
-      // for the postsolve specification, which is nice.
-      for (const int enf : ct.enforcement_literal()) {
-        Domain& d = (*domains)[PositiveRef(enf)];
-        if (!d.IsFixed()) {
-          d = Domain(RefIsPositive(enf) ? 1 : 0);
-        }
-      }
+      fix_unassigned_enforcement_to_true(ct);
     }
     return;
   }
@@ -174,6 +176,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
       SetEnforcementLiteralToFalse(ct, domains);
       return;
     }
+    fix_unassigned_enforcement_to_true(ct);
     (*domains)[var] = Domain(domain.SmallestValue());
     return;
   }
@@ -182,7 +185,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // variable, we have to postsolve them one by one.
   //
   // Here we recompute the same domains as during the presolve. Everything is
-  // like if we where substiting the variable one by one:
+  // like if we where substituting the variable one by one:
   //    terms[i] + fixed_activity \in rhs_domains[i]
   // In the reverse order.
   std::vector<Domain> rhs_domains;
@@ -234,6 +237,7 @@ void PostsolveLinear(const ConstraintProto& ct, std::vector<Domain>* domains) {
   }
 
   DCHECK(initial_rhs.Contains(fixed_activity));
+  fix_unassigned_enforcement_to_true(ct);
 }
 
 namespace {

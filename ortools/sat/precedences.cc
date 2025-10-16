@@ -1335,6 +1335,13 @@ void ReifiedLinear2Bounds::AddLinear3(absl::Span<const IntegerVariable> vars,
   }
 }
 
+std::pair<AffineExpression, IntegerValue> ReifiedLinear2Bounds::GetLinear3Bound(
+    LinearExpression2Index lin2_index) const {
+  DCHECK_LT(lin2_index, linear3_bounds_.size());
+  DCHECK_GT(linear3_bounds_[lin2_index].second, 0);
+  return linear3_bounds_[lin2_index];
+}
+
 Linear2BoundsFromLinear3::Linear2BoundsFromLinear3(Model* model)
     : integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
@@ -1594,32 +1601,39 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   if (std::holds_alternative<ReifiedBoundType>(reified_bound) &&
       std::get<ReifiedBoundType>(reified_bound) ==
           ReifiedBoundType::kNoLiteralStored) {
-    ++enqueue_individual_var_bounds_;
     // TODO(user): create a Linear2 trail and enqueue this bound there.
-    std::vector<IntegerLiteral> tmp_integer_reason(integer_reason.begin(),
-                                                   integer_reason.end());
-    const IntegerValue var_0_ub = FloorRatio(
-        ub - integer_trail_->LowerBound(expr.vars[1]) * expr.coeffs[1],
-        expr.coeffs[0]);
-    const IntegerValue var_1_ub = FloorRatio(
-        ub - integer_trail_->LowerBound(expr.vars[0]) * expr.coeffs[0],
-        expr.coeffs[1]);
+    ++enqueue_individual_var_bounds_;
 
-    tmp_integer_reason.push_back(IntegerLiteral::GreaterOrEqual(
-        expr.vars[1], integer_trail_->LowerBound(expr.vars[1])));
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(expr.vars[0], var_0_ub),
-            literal_reason, tmp_integer_reason)) {
-      return false;
+    const ReasonIndex reason_index =
+        integer_trail_->AppendReasonToInternalBuffers(literal_reason,
+                                                      integer_reason);
+    if (reason_index >= saved_reasons_.size()) {
+      saved_reasons_.resize(reason_index + 1);
     }
-    tmp_integer_reason.pop_back();
 
-    tmp_integer_reason.push_back(IntegerLiteral::GreaterOrEqual(
-        expr.vars[0], integer_trail_->LowerBound(expr.vars[0])));
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::LowerOrEqual(expr.vars[1], var_1_ub),
-            literal_reason, tmp_integer_reason)) {
-      return false;
+    // We require positive coefficients here.
+    CHECK_GT(expr.coeffs[0], 0);
+    CHECK_GT(expr.coeffs[1], 0);
+    saved_reasons_[reason_index] = expr;
+
+    // This is a simple linear2 propagation with lazy reason.
+    // It will be explained by Explain() below.
+    const IntegerValue min_activity =
+        integer_trail_->LowerBound(expr.vars[0]) * expr.coeffs[0] +
+        integer_trail_->LowerBound(expr.vars[1]) * expr.coeffs[1];
+    const IntegerValue linear_slack = ub - min_activity;
+    CHECK_GE(linear_slack, 0);  // Conflict should already be dealt with.
+    for (int i = 0; i < 2; ++i) {
+      const IntegerValue div = linear_slack / expr.coeffs[i];
+      const IntegerValue new_ub =
+          integer_trail_->LowerBound(expr.vars[i]) + div;
+      const IntegerValue propagation_slack =
+          (div + 1) * expr.coeffs[i] - linear_slack - 1;
+      if (!integer_trail_->EnqueueWithLazyReason(
+              IntegerLiteral::LowerOrEqual(expr.vars[i], new_ub),
+              reason_index.value(), propagation_slack, this)) {
+        return false;
+      }
     }
     return true;
   }
@@ -1640,15 +1654,32 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   // from a linear3). Push the IntegerLiteral.
   if (std::holds_alternative<IntegerLiteral>(reified_bound)) {
     ++enqueue_integer_linear3_encoding_;
-    // TODO(user): push this to Linear2BoundsFromLinear3 so the same
-    // propagator that enqueued this bound will get the new linear2 bound if
-    // request it to this class without needing to wait the propagation fix
-    // point.
+    // Immediately push the affine bound to Linear2BoundsFromLinear3 so that the
+    // new linear2 bound is visible without needing to wait for the propagation
+    // fix point.
+    const auto [affine, divisor] =
+        reified_lin2_bounds_->GetLinear3Bound(lin2_indices_->GetIndex(expr));
+    linear3_bounds_->AddAffineUpperBound(lin2_indices_->GetIndex(expr), divisor,
+                                         affine);
+
     const IntegerLiteral literal = std::get<IntegerLiteral>(reified_bound);
     return integer_trail_->Enqueue(literal, literal_reason, integer_reason);
   }
   LOG(FATAL) << "Unknown reified bound type";
   return false;
+}
+
+void Linear2Bounds::Explain(int id, IntegerLiteral /*to_explain*/,
+                            IntegerReason* reason) {
+  const ReasonIndex reason_index(id);
+  reason->boolean_literals_at_false =
+      integer_trail_->LiteralReasonAsSpan(reason_index);
+  reason->integer_literals = integer_trail_->IntegerReasonAsSpan(reason_index);
+
+  // Recover the linear reason from our LinearExpression2 expr.
+  // Slack should already be set.
+  reason->vars = saved_reasons_[reason_index].non_zero_vars();
+  reason->coeffs = saved_reasons_[reason_index].non_zero_coeffs();
 }
 
 }  // namespace sat

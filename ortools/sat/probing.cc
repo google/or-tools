@@ -525,7 +525,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       time_limit->GetElapsedDeterministicTime();
   const double limit = initial_deterministic_time + options.deterministic_limit;
 
-  const int num_variables = sat_solver->NumVariables();
+  int num_variables = sat_solver->NumVariables();
   SparseBitset<LiteralIndex> processed(LiteralIndex(2 * num_variables));
 
   int64_t num_probed = 0;
@@ -700,6 +700,19 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
     const int first_new_trail_index =
         sat_solver->EnqueueDecisionAndBackjumpOnConflict(
             Literal(next_decision));
+
+    // This is tricky, depending on the parameters, and for integer problem,
+    // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
+    if (sat_solver->NumVariables() > num_variables) {
+      num_variables = sat_solver->NumVariables();
+      processed.Resize(LiteralIndex(2 * num_variables));
+      if (!options.use_queue) {
+        starts.resize(2 * num_variables, 0);
+      } else {
+        position_in_order.resize(2 * num_variables, -1);
+      }
+    }
+
     const int new_level = sat_solver->CurrentDecisionLevel();
     sat_solver->AdvanceDeterministicTime(time_limit);
     if (sat_solver->ModelIsUnsat()) return false;

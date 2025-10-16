@@ -609,7 +609,6 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
           // f(k * divisor + rest) = k * f(divisor) + f(rest)
           const IntegerValue x_d = curr.original_coeff / divisor;
           const IntegerValue x_r = curr.original_coeff % divisor;
-          DCHECK_EQ(curr.original_coeff, divisor * x_d + x_r);
           IntegerValue y_d = rep.original_coeff / divisor;
           IntegerValue y_r = rep.original_coeff % divisor;
           // We never want to apply f() outside [-divisor, divisor].
@@ -620,7 +619,6 @@ void GUBHelper::ApplyWithPotentialBumpAndGUB(
             y_r += divisor;
             y_d -= 1;
           }
-          DCHECK_EQ(rep.original_coeff, divisor * y_d + y_r);
 
           const IntegerValue new_coeff =
               -f_rep + (x_d + y_d) * f_divisor + f(x_r + y_r);
@@ -929,10 +927,14 @@ double IntegerRoundingCutHelper::GetScaledViolation(
       const IntegerValue adjust = divisor - remainder;
       const IntegerValue prod = CapProdI(adjust, entry.bound_diff);
       if (prod <= adjust_threshold) {
-        rhs += absl::int128(prod.value());
-        const IntegerValue new_coeff = entry.coeff + adjust;
-        adjusted_coeffs_.push_back({i, new_coeff});
-        max_magnitude = std::max(max_magnitude, IntTypeAbs(new_coeff));
+        // TODO(user): This overflow seems pretty rare and might be avoidable
+        // more efficiently.
+        const IntegerValue new_coeff = CapAddI(entry.coeff, adjust);
+        if (!AtMinOrMaxInt64I(new_coeff)) {
+          rhs += absl::int128(prod.value());
+          adjusted_coeffs_.push_back({i, new_coeff});
+          max_magnitude = std::max(max_magnitude, IntTypeAbs(new_coeff));
+        }
       }
     }
   }

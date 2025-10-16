@@ -69,11 +69,6 @@ namespace sat {
 
 namespace {
 
-template <typename Values>
-std::vector<int64_t> ValuesFromProto(const Values& values) {
-  return std::vector<int64_t>(values.begin(), values.end());
-}
-
 // We check if the constraint is a sum(ax * xi) == value.
 bool ConstraintIsEq(const LinearConstraintProto& proto) {
   return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
@@ -1112,7 +1107,7 @@ bool IsPartOfProductEncoding(const ConstraintProto& ct) {
 
 void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
                                          std::vector<IntegerVariable>* vars,
-                                         std::vector<int64_t>* coeffs,
+                                         std::vector<IntegerValue>* coeffs,
                                          Model* m) {
   // If we enumerate all solutions, then we want intermediate variables to be
   // tight independently of what side is required.
@@ -1125,17 +1120,17 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
   // by variable order, usually variable with the same "meaning" are defined
   // together in a model.
   const int num_terms = vars->size();
-  std::vector<std::pair<IntegerVariable, int64_t>> terms;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
   {
     terms.reserve(num_terms);
     for (int i = 0; i < num_terms; ++i) {
       terms.push_back({(*vars)[i], (*coeffs)[i]});
     }
     std::sort(terms.begin(), terms.end(),
-              [](const std::pair<IntegerVariable, int64_t> a,
-                 const std::pair<IntegerVariable, int64_t> b) {
-                const int64_t abs_coeff_a = std::abs(a.second);
-                const int64_t abs_coeff_b = std::abs(b.second);
+              [](const std::pair<IntegerVariable, IntegerValue> a,
+                 const std::pair<IntegerVariable, IntegerValue> b) {
+                const int64_t abs_coeff_a = std::abs(a.second.value());
+                const int64_t abs_coeff_b = std::abs(b.second.value());
                 if (abs_coeff_a != abs_coeff_b) {
                   return abs_coeff_a < abs_coeff_b;
                 }
@@ -1148,15 +1143,15 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
   std::vector<int64_t> sorted_coeffs;
   sorted_coeffs.resize(num_terms);
   for (int i = 0; i < num_terms; ++i) {
-    sorted_coeffs[i] = terms[i].second;
+    sorted_coeffs[i] = terms[i].second.value();
   }
   const std::vector<std::pair<int, int>> buckets =
       HeuristicallySplitLongLinear(sorted_coeffs);
 
   std::vector<IntegerVariable> bucket_sum_vars;
-  std::vector<int64_t> bucket_sum_coeffs;
+  std::vector<IntegerValue> bucket_sum_coeffs;
   std::vector<IntegerVariable> local_vars;
-  std::vector<int64_t> local_coeffs;
+  std::vector<IntegerValue> local_coeffs;
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (const auto [start, size] : buckets) {
@@ -1176,11 +1171,11 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
 
     for (int i = 0; i < size; ++i) {
       const auto [var, coeff] = terms[start + i];
-      gcd = std::gcd(gcd, std::abs(coeff));
+      gcd = std::gcd(gcd, std::abs(coeff.value()));
       local_vars.push_back(var);
       local_coeffs.push_back(coeff);
-      const int64_t term1 = coeff * integer_trail->LowerBound(var).value();
-      const int64_t term2 = coeff * integer_trail->UpperBound(var).value();
+      const int64_t term1 = (coeff * integer_trail->LowerBound(var)).value();
+      const int64_t term2 = (coeff * integer_trail->UpperBound(var)).value();
       bucket_lb += std::min(term1, term2);
       bucket_ub += std::max(term1, term2);
     }
@@ -1188,7 +1183,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     if (gcd == 0) continue;
     if (gcd > 1) {
       // Everything should be exactly divisible!
-      for (int64_t& ref : local_coeffs) ref /= gcd;
+      for (IntegerValue& ref : local_coeffs) ref /= gcd;
       bucket_lb /= gcd;
       bucket_ub /= gcd;
     }
@@ -1196,7 +1191,7 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
     const IntegerVariable bucket_sum =
         integer_trail->AddIntegerVariable(bucket_lb, bucket_ub);
     bucket_sum_vars.push_back(bucket_sum);
-    bucket_sum_coeffs.push_back(gcd);
+    bucket_sum_coeffs.push_back(IntegerValue(gcd));
     local_vars.push_back(bucket_sum);
     local_coeffs.push_back(-1);
 
@@ -1253,7 +1248,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   std::vector<IntegerVariable> vars = mapping->Integers(ct.linear().vars());
-  std::vector<int64_t> coeffs = ValuesFromProto(ct.linear().coeffs());
+  std::vector<IntegerValue> coeffs(ct.linear().coeffs().begin(),
+                                   ct.linear().coeffs().end());
 
   // Compute the min/max to relax the bounds if needed.
   //
@@ -1300,12 +1296,12 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
           if (i == j) continue;
           const int other = 3 - i - j;  // i + j + other = 0 + 1 + 2.
 
-          const int64_t coeff = coeffs[other];
-          const int64_t other_lb =
+          const IntegerValue coeff = coeffs[other];
+          const IntegerValue other_lb =
               coeff > 0
                   ? coeff * integer_trail->LowerBound(vars[other]).value()
                   : coeff * integer_trail->UpperBound(vars[other]).value();
-          const int64_t other_ub =
+          const IntegerValue other_ub =
               coeff > 0
                   ? coeff * integer_trail->UpperBound(vars[other]).value()
                   : coeff * integer_trail->LowerBound(vars[other]).value();
@@ -1377,7 +1373,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       std::vector<LiteralWithCoeff> cst;
       for (int i = 0; i < vars.size(); ++i) {
         const int ref = ct.linear().vars(i);
-        cst.push_back({mapping->Literal(ref), coeffs[i]});
+        cst.push_back({mapping->Literal(ref), coeffs[i].value()});
       }
       m->GetOrCreate<SatSolver>()->AddLinearConstraint(
           /*use_lower_bound=*/(min_sum < lb), lb,

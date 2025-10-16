@@ -497,7 +497,7 @@ void AddLowerOrEqualWithOffset(AffineExpression a, IntegerVariable b,
                                int64_t offset, Model* model) {
   const int64_t rhs = -a.constant.value() - offset;
   std::vector<IntegerVariable> vars = {a.var, b};
-  std::vector<int64_t> coeffs = {a.coeff.value(), -1};
+  std::vector<IntegerValue> coeffs = {a.coeff.value(), -1};
   AddWeightedSumLowerOrEqual({}, vars, coeffs, rhs, model);
 
   // We also need to register them.

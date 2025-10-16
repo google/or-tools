@@ -30,6 +30,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
@@ -98,6 +99,7 @@ class Literal {
   Literal Negated() const { return Literal(NegatedIndex()); }
 
   std::string DebugString() const {
+    if (index_ == kNoLiteralIndex.value()) return "NA";
     return absl::StrFormat("%+d", SignedValue());
   }
 
@@ -238,6 +240,11 @@ class AssignmentView {
   Bitset64<LiteralIndex>::ConstView view_;
 };
 
+// The ID of a clause.
+DEFINE_STRONG_INT_TYPE(ClauseId, int64_t);
+
+constexpr ClauseId kNoClauseId(0);
+
 // Forward declaration.
 class SatClause;
 class SatPropagator;
@@ -328,18 +335,37 @@ class Trail {
   // only use in hot-loops.
   class EnqueueHelper {
    public:
-    EnqueueHelper(Literal* trail_ptr, AssignmentInfo* current_info,
-                  AssignmentInfo* info_ptr, VariablesAssignment* assignment)
+    EnqueueHelper(
+        Literal* trail_ptr, AssignmentInfo* current_info,
+        AssignmentInfo* info_ptr, VariablesAssignment* assignment,
+        util_intops::StrongVector<BooleanVariable, ClauseId>* unit_clause_id)
         : trail_ptr_(trail_ptr),
           current_info_(current_info),
           info_ptr_(info_ptr),
-          bitset_(assignment->GetBitsetView()) {}
+          bitset_(assignment->GetBitsetView()),
+          unit_clause_id_(unit_clause_id) {}
 
     void EnqueueAtLevel(Literal true_literal, int level) {
       bitset_.Set(true_literal);
       AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
       *info = *current_info_;
       info->level = level;
+      trail_ptr_[current_info_->trail_index++] = true_literal;
+    }
+
+    void EnqueueWithUnitReason(Literal true_literal, ClauseId clause_id) {
+      DCHECK_NE(clause_id, kNoClauseId);
+      const BooleanVariable var = true_literal.Variable();
+      if (var.value() >= unit_clause_id_->size()) {
+        unit_clause_id_->resize(var.value() + 1, kNoClauseId);
+      }
+      (*unit_clause_id_)[var] = clause_id;
+
+      bitset_.Set(true_literal);
+      AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
+      *info = *current_info_;
+      info->level = 0;
+      info->type = AssignmentType::kUnitReason;
       trail_ptr_[current_info_->trail_index++] = true_literal;
     }
 
@@ -355,11 +381,12 @@ class Trail {
     AssignmentInfo* current_info_;
     AssignmentInfo* info_ptr_;
     Bitset64<LiteralIndex>::View bitset_;
+    util_intops::StrongVector<BooleanVariable, ClauseId>* unit_clause_id_;
   };
   EnqueueHelper GetEnqueueHelper(int propagator_id) {
     current_info_.type = propagator_id;
     return EnqueueHelper(trail_.data(), &current_info_, info_.data(),
-                         &assignment_);
+                         &assignment_, &unit_clause_id_);
   }
 
   // Specific Enqueue() version for the search decision.
@@ -369,6 +396,18 @@ class Trail {
 
   // Specific Enqueue() version for a fixed variable.
   void EnqueueWithUnitReason(Literal true_literal) {
+    EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
+  }
+
+  // Specific Enqueue() version for unit clauses.
+  void EnqueueWithUnitReason(ClauseId clause_id, Literal true_literal) {
+    if (clause_id != kNoClauseId) {
+      const BooleanVariable var = true_literal.Variable();
+      if (var.value() >= unit_clause_id_.size()) {
+        unit_clause_id_.resize(var.value() + 1, kNoClauseId);
+      }
+      unit_clause_id_[var] = clause_id;
+    }
     EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
   }
 
@@ -437,6 +476,16 @@ class Trail {
   // from Info(var).type and the latter should not be used outside this class.
   int AssignmentType(BooleanVariable var) const;
 
+  // Returns the ID of the clause which is the reason for the unit clause
+  // containing the given variable, or kNoClauseId if there is none. The
+  // variable must have been enqueued at level zero with a kUnitReason.
+  ClauseId GetUnitClauseId(BooleanVariable var) const {
+    DCHECK(AssignmentType(var) == AssignmentType::kUnitReason);
+    DCHECK_EQ(Info(var).level, 0);
+    if (var.value() >= unit_clause_id_.size()) return kNoClauseId;
+    return unit_clause_id_[var];
+  }
+
   // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
   // reference variable. Otherwise return the given variable.
   BooleanVariable ReferenceVarWithSameReason(BooleanVariable var) const;
@@ -488,9 +537,13 @@ class Trail {
   // Returns the address of a vector where a client can store the current
   // conflict. This vector will be returned by the FailingClause() call.
   std::vector<Literal>* MutableConflict() {
+    ++conflict_timestamp_;
     failing_sat_clause_ = nullptr;
     return &conflict_;
   }
+
+  // This should increase on each call to MutableConflict().
+  int64_t conflict_timestamp() const { return conflict_timestamp_; }
 
   // Returns the last conflict.
   absl::Span<const Literal> FailingClause() const {
@@ -549,7 +602,22 @@ class Trail {
     use_chronological_backtracking_ = enable;
   }
 
+  using ConflictResolutionFunction = std::function<void(
+      std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict,
+      std::vector<SatClause*>* subsumed_clauses)>;
+
+  void SetConflictResolutionFunction(ConflictResolutionFunction resolution) {
+    resolution_ = std::move(resolution);
+  }
+
+  ConflictResolutionFunction GetConflictResolutionFunction() {
+    return resolution_;
+  }
+
  private:
+  ConflictResolutionFunction resolution_;
+
   // Finds all literals between the current trail index and the given one
   // assigned at the current level or lower, and re-enqueues them with the same
   // reason.
@@ -561,8 +629,11 @@ class Trail {
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
+  int64_t conflict_timestamp_ = 0;
   std::vector<Literal> conflict_;
   util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
+  // The ID of unit clauses (literals enqueued at level 0 with a kUnitReason).
+  util_intops::StrongVector<BooleanVariable, ClauseId> unit_clause_id_;
   SatClause* failing_sat_clause_;
 
   // Data used by EnqueueWithSameReasonAs().

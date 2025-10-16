@@ -74,6 +74,7 @@ void RemoveIf(Container c, Predicate p) {
 
 ClauseManager::ClauseManager(Model* model)
     : SatPropagator("ClauseManager"),
+      clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
@@ -209,7 +210,22 @@ bool ClauseManager::Propagate(Trail* trail) {
         }
 
         reasons_[trail->Index()] = it->clause;
-        helper.EnqueueAtLevel(other_watched_literal, propagation_level);
+        if (propagation_level == 0 && lrat_proof_handler_ != nullptr) {
+          const ClauseId clause_id = GetClauseId(it->clause);
+          const int size = it->clause->size();
+          std::vector<ClauseId>& unit_ids = clause_ids_scratchpad_;
+          unit_ids.clear();
+          for (int i = 1; i < size; ++i) {
+            unit_ids.push_back(trail_->GetUnitClauseId(literals[i].Variable()));
+          }
+          unit_ids.push_back(clause_id);
+          const ClauseId new_clause_id = clause_id_generator_->GetNextId();
+          lrat_proof_handler_->AddInferredClause(
+              new_clause_id, {other_watched_literal}, unit_ids, /*rat=*/{});
+          helper.EnqueueWithUnitReason(other_watched_literal, new_clause_id);
+        } else {
+          helper.EnqueueAtLevel(other_watched_literal, propagation_level);
+        }
         *new_it++ = *it;
       }
     }
@@ -242,21 +258,28 @@ SatClause* ClauseManager::ReasonClause(int trail_index) const {
 }
 
 bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
-  return AddClause(literals, trail_, -1);
+  return AddClause(kNoClauseId, literals, trail_, -1);
 }
 
-bool ClauseManager::AddClause(absl::Span<const Literal> literals, Trail* trail,
-                              int lbd) {
+bool ClauseManager::AddClause(ClauseId id, absl::Span<const Literal> literals,
+                              Trail* trail, int lbd) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
+  if (id != kNoClauseId) {
+    clause_id_[clause] = id;
+  }
   if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
   return AttachAndPropagate(clause, trail);
 }
 
-SatClause* ClauseManager::AddRemovableClause(absl::Span<const Literal> literals,
+SatClause* ClauseManager::AddRemovableClause(ClauseId id,
+                                             absl::Span<const Literal> literals,
                                              Trail* trail, int lbd) {
   SatClause* clause = SatClause::Create(literals);
   clauses_.push_back(clause);
+  if (id != kNoClauseId) {
+    clause_id_[clause] = id;
+  }
   if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
   CHECK(AttachAndPropagate(clause, trail));
   return clause;
@@ -336,6 +359,14 @@ void ClauseManager::InternalDetach(SatClause* clause) {
   if (drat_proof_handler_ != nullptr && size > 2) {
     drat_proof_handler_->DeleteClause({clause->begin(), size});
   }
+  if (lrat_proof_handler_ != nullptr) {
+    const auto it = clause_id_.find(clause);
+    // TODO(user): why is it necessary to keep binary clauses?
+    if (it != clause_id_.end() && size != 2) {
+      lrat_proof_handler_->DeleteClauses({it->second});
+      clause_id_.erase(it);
+    }
+  }
   clauses_info_.erase(clause);
   clause->Clear();
 }
@@ -408,6 +439,13 @@ void ClauseManager::InprocessingRemoveClause(SatClause* clause) {
   DCHECK(!all_clauses_are_attached_);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->DeleteClause(clause->AsSpan());
+  }
+  if (lrat_proof_handler_ != nullptr) {
+    const auto it = clause_id_.find(clause);
+    if (it != clause_id_.end()) {
+      lrat_proof_handler_->DeleteClauses({it->second});
+      clause_id_.erase(it);
+    }
   }
   clauses_info_.erase(clause);
   clause->Clear();
@@ -527,16 +565,20 @@ void ClauseManager::DeleteRemovedClauses() {
 }
 
 SatClause* ClauseManager::NextNewClauseToMinimize() {
+  // We want to return a clause that has never been minimized before, so we can
+  // safely skip anything that has been returned or skipped by the round-robin
+  // iterator.
+  to_first_minimize_index_ =
+      std::max(to_first_minimize_index_, to_minimize_index_);
   for (; to_first_minimize_index_ < clauses_.size();
        ++to_first_minimize_index_) {
+    // If the round-robin is in-sync with the new clauses, we may as well
+    // count this minimization as part of the round-robin and advance both
+    // indexes.
+    if (to_minimize_index_ == to_first_minimize_index_) ++to_minimize_index_;
+
     if (clauses_[to_first_minimize_index_]->IsRemoved()) continue;
     if (!IsRemovable(clauses_[to_first_minimize_index_])) {
-      // If the round-robin is in-sync with the new clauses, we may as well
-      // count this minimization as part of the round-robin and advance both
-      // indexes.
-      if (to_minimize_index_ == to_first_minimize_index_) {
-        ++to_minimize_index_;
-      }
       return clauses_[to_first_minimize_index_++];
     }
   }
@@ -573,6 +615,7 @@ void BinaryImplicationGraph::Resize(int num_variables) {
   is_redundant_.resize(num_literals);
   is_removed_.resize(num_literals, false);
   estimated_sizes_.resize(num_literals, 0);
+  implied_by_.resize(num_literals);
   in_direct_implications_.resize(num_literals, false);
   reasons_.resize(num_variables);
 }
@@ -595,7 +638,8 @@ void BinaryImplicationGraph::RemoveDuplicates() {
 // use them here to maintains invariant? Explore this when we start cleaning our
 // clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
-bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
+bool BinaryImplicationGraph::AddBinaryClause(ClauseId id, Literal a,
+                                             Literal b) {
   SCOPED_TIME_STAT(&stats_);
 
   // Tricky: If this is the first clause, the propagator will be added and
@@ -615,6 +659,14 @@ bool BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   if (is_redundant_[b.Index()]) b = Literal(representative_of_[b.Index()]);
   if (a == b.Negated()) return true;
   if (a == b) return FixLiteral(a);
+
+  if (id != kNoClauseId) {
+    if (a.Variable() > b.Variable()) {
+      clause_id_[{b, a}] = id;
+    } else {
+      clause_id_[{a, b}] = id;
+    }
+  }
 
   DCHECK(!is_removed_[a]);
   DCHECK(!is_removed_[b]);
@@ -879,7 +931,17 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
       } else {
         // Propagation.
         reasons_[trail->Index()] = true_literal.Negated();
-        helper.EnqueueAtLevel(literal, level);
+        if (level == 0 && lrat_proof_handler_ != nullptr) {
+          const ClauseId new_clause_id = clause_id_generator_->GetNextId();
+          lrat_proof_handler_->AddInferredClause(
+              new_clause_id, {literal},
+              {trail->GetUnitClauseId(true_literal.Variable()),
+               GetClauseId(true_literal.Negated(), literal)},
+              /*rat=*/{});
+          helper.EnqueueWithUnitReason(literal, new_clause_id);
+        } else {
+          helper.EnqueueAtLevel(literal, level);
+        }
       }
     }
 
@@ -928,98 +990,25 @@ void BinaryImplicationGraph::Reimply(Trail* trail, int old_trail_index) {
   trail->EnqueueAtLevel(literal, propagator_id_, level);
 }
 
-// Here, we remove all the literal whose negation are implied by the negation of
-// the 1-UIP literal (which always appear first in the given conflict). Note
+// Here, we remove all the literals whose negation are implied by the negation
+// of the 1-UIP literal (which always appear first in the given conflict). Note
 // that this algorithm is "optimal" in the sense that it leads to a minimized
 // conflict with a backjump level as low as possible. However, not all possible
-// literals are removed.
-//
-// TODO(user): Also consider at most one?
-void BinaryImplicationGraph::MinimizeConflictWithReachability(
-    std::vector<Literal>* conflict) {
-  SCOPED_TIME_STAT(&stats_);
-  dfs_stack_.clear();
-
-  // Compute the reachability from the literal "not(conflict->front())" using
-  // an iterative dfs.
-  const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
-  is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  is_marked_.Set(root_literal_index);
-
-  // TODO(user): This sounds like a good idea, but somehow it seems better not
-  // to do that even though it is almost for free. Investigate more.
-  //
-  // The idea here is that since we already compute the reachability from the
-  // root literal, we can use this computation to remove any implication
-  // root_literal => b if there is already root_literal => a and b is reachable
-  // from a.
-  const bool also_prune_direct_implication_list = false;
-
-  // We treat the direct implications differently so we can also remove the
-  // redundant implications from this list at the same time.
-  auto direct_implications =
-      implications_and_amos_[root_literal_index].literals();
-  for (const Literal l : direct_implications) {
-    if (is_marked_[l]) continue;
-    dfs_stack_.push_back(l);
-    while (!dfs_stack_.empty()) {
-      const LiteralIndex index = dfs_stack_.back().Index();
-      dfs_stack_.pop_back();
-      if (!is_marked_[index]) {
-        is_marked_.Set(index);
-        for (const Literal implied : implications_and_amos_[index].literals()) {
-          if (!is_marked_[implied]) dfs_stack_.push_back(implied);
-        }
-      }
-    }
-
-    // The "trick" is to unmark 'l'. This way, if we explore it twice, it means
-    // that this l is reachable from some other 'l' from the direct implication
-    // list. Remarks:
-    //  - We don't loose too much complexity when this happen since a literal
-    //    can be unmarked only once, so in the worst case we loop twice over its
-    //    children. Moreover, this literal will be pruned for later calls.
-    //  - This is correct, i.e. we can't prune too many literals because of a
-    //    strongly connected component. Proof by contradiction: If we take the
-    //    first (in direct_implications) literal from a removed SCC, it must
-    //    have marked all the others. But because they are marked, they will not
-    //    be explored again and so can't mark the first literal.
-    if (also_prune_direct_implication_list) {
-      is_marked_.Clear(l);
-    }
-  }
-
-  // Now we can prune the direct implications list and make sure are the
-  // literals there are marked.
-  if (also_prune_direct_implication_list) {
-    int new_size = 0;
-    for (const Literal l : direct_implications) {
-      if (!is_marked_[l]) {
-        is_marked_.Set(l);
-        direct_implications[new_size] = l;
-        ++new_size;
-      }
-    }
-    if (new_size < direct_implications.size()) {
-      num_redundant_implications_ += direct_implications.size() - new_size;
-      implications_and_amos_[root_literal_index].ResizeLiterals(new_size);
-    }
-  }
-
-  RemoveRedundantLiterals(conflict);
-}
-
-// Same as MinimizeConflictWithReachability() but also mark (in the given
-// SparseBitset) the reachable literal already assigned to false. These literals
-// will be implied if the 1-UIP literal is assigned to false, and the classic
-// minimization algorithm can take advantage of that.
+// literals are removed. We also mark (in the given SparseBitset) the reachable
+// literals already assigned to false. These literals will be implied if the
+// 1-UIP literal is assigned to false, and the classic minimization algorithm
+// can take advantage of that.
 void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked) {
+    SparseBitset<BooleanVariable>* marked, std::vector<ClauseId>* clause_ids) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!conflict->empty());
   is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  MarkDescendants(conflict->front().Negated());
+  if (lrat_proof_handler_ != nullptr) {
+    MarkDescendants</*fill_implied_by=*/true>(conflict->front().Negated());
+  } else {
+    MarkDescendants(conflict->front().Negated());
+  }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     // TODO(user): if this is false, then we actually have a conflict of size 2.
     // This can only happen if the binary clause was not propagated properly
@@ -1029,65 +1018,29 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
       marked->Set(Literal(i).Variable());
     }
   }
-  RemoveRedundantLiterals(conflict);
+  if (lrat_proof_handler_ != nullptr) {
+    RemoveRedundantLiterals</*fill_clause_ids=*/true>(conflict, clause_ids);
+  } else {
+    RemoveRedundantLiterals(conflict);
+  }
 }
 
-// Same as MinimizeConflictFirst() but take advantage of this reachability
-// computation to remove redundant implication in the implication list of the
-// first UIP conflict.
-void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
-    const Trail& /*trail*/, std::vector<Literal>* conflict,
-    absl::BitGenRef random) {
-  SCOPED_TIME_STAT(&stats_);
-  const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
-  is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  is_marked_.Set(root_literal_index);
-
-  int new_size = 0;
-  auto direct_implications =
-      implications_and_amos_[root_literal_index].literals();
-
-  // The randomization allow to find more redundant implication since to find
-  // a => b and remove b, a must be before b in direct_implications. Note that
-  // a std::reverse() could work too. But randomization seems to work better.
-  // Probably because it has other impact on the search tree.
-  std::shuffle(direct_implications.begin(), direct_implications.end(), random);
-  dfs_stack_.clear();
-  for (const Literal l : direct_implications) {
-    if (is_marked_[l]) {
-      // The literal is already marked! so it must be implied by one of the
-      // previous literal in the direct_implications list. We can safely remove
-      // it.
-      continue;
-    }
-    direct_implications[new_size++] = l;
-    dfs_stack_.push_back(l);
-    while (!dfs_stack_.empty()) {
-      const LiteralIndex index = dfs_stack_.back().Index();
-      dfs_stack_.pop_back();
-      if (!is_marked_[index]) {
-        is_marked_.Set(index);
-        for (const Literal implied : implications_and_amos_[index].literals()) {
-          if (!is_marked_[implied]) dfs_stack_.push_back(implied);
-        }
-      }
-    }
-  }
-  if (new_size < direct_implications.size()) {
-    num_redundant_implications_ += direct_implications.size() - new_size;
-    implications_and_amos_[root_literal_index].ResizeLiterals(new_size);
-  }
-  RemoveRedundantLiterals(conflict);
-}
-
+template <bool fill_clause_ids>
 void BinaryImplicationGraph::RemoveRedundantLiterals(
-    std::vector<Literal>* conflict) {
+    std::vector<Literal>* conflict, std::vector<ClauseId>* clause_ids) {
   SCOPED_TIME_STAT(&stats_);
   int new_index = 1;
+  if constexpr (fill_clause_ids) {
+    clause_ids->clear();
+  }
   for (int i = 1; i < conflict->size(); ++i) {
-    if (!is_marked_[(*conflict)[i].NegatedIndex()]) {
+    const Literal literal = (*conflict)[i];
+    LiteralIndex negated_index = literal.NegatedIndex();
+    if (!is_marked_[negated_index]) {
       (*conflict)[new_index] = (*conflict)[i];
       ++new_index;
+    } else if constexpr (fill_clause_ids) {
+      AppendImplicationChain(literal, clause_ids);
     }
   }
   if (new_index < conflict->size()) {
@@ -1097,56 +1050,40 @@ void BinaryImplicationGraph::RemoveRedundantLiterals(
   }
 }
 
-// TODO(user): Also consider at most one?
-void BinaryImplicationGraph::MinimizeConflictExperimental(
-    const Trail& trail, std::vector<Literal>* conflict) {
-  SCOPED_TIME_STAT(&stats_);
-  is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  is_simplified_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-  for (const Literal lit : *conflict) {
-    is_marked_.Set(lit);
-  }
-
-  // Identify and remove the redundant literals from the given conflict.
-  // 1/ If a -> b then a can be removed from the conflict clause.
-  //    This is because not b -> not a.
-  // 2/ a -> b can only happen if level(a) <= level(b).
-  // 3/ Because of 2/, cycles can appear only at the same level.
-  //    The vector is_simplified_ is used to avoid removing all elements of a
-  //    cycle. Note that this is not optimal in the sense that we may not remove
-  //    a literal that can be removed.
-  //
-  // Note that there is no need to explore the unique literal of the highest
-  // decision level since it can't be removed. Because this is a conflict, such
-  // literal is always at position 0, so we start directly at 1.
-  int index = 1;
-  for (int i = 1; i < conflict->size(); ++i) {
-    const Literal lit = (*conflict)[i];
-    const int lit_level = trail.AssignmentLevel(lit);
-    bool keep_literal = true;
-    for (const Literal implied : implications_and_amos_[lit].literals()) {
-      if (is_marked_[implied]) {
-        DCHECK_LE(lit_level, trail.Info(implied.Variable()).level);
-        if (lit_level == trail.AssignmentLevel(implied) &&
-            is_simplified_[implied]) {
-          continue;
-        }
-        keep_literal = false;
-        break;
+void BinaryImplicationGraph::AppendImplicationChains(
+    absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids) {
+  for (const Literal literal : literals) {
+    if (trail_->Info(literal.Variable()).level == 0) {
+      const ClauseId clause_id = trail_->GetUnitClauseId(literal.Variable());
+      DCHECK_NE(clause_id, kNoClauseId);
+      if (!processed_unit_clauses_[literal]) {
+        processed_unit_clauses_.Set(literal);
+        clause_ids->push_back(clause_id);
       }
-    }
-    if (keep_literal) {
-      (*conflict)[index] = lit;
-      ++index;
-    } else {
-      is_simplified_.Set(lit);
+      continue;
+    } else if (is_marked_[literal.NegatedIndex()]) {
+      AppendImplicationChain(literal, clause_ids);
     }
   }
-  if (index < conflict->size()) {
-    ++num_minimization_;
-    num_literals_removed_ += conflict->size() - index;
-    conflict->erase(conflict->begin() + index, conflict->end());
+}
+
+void BinaryImplicationGraph::AppendImplicationChain(
+    Literal literal, std::vector<ClauseId>* clause_ids) {
+  LiteralIndex negated_index = literal.NegatedIndex();
+  CHECK(is_marked_[negated_index]);
+  const int initial_size = clause_ids->size();
+  while (implied_by_[negated_index] != Literal(negated_index)) {
+    DCHECK_NE(trail_->AssignmentLevel(Literal(negated_index)), 0);
+    const ClauseId clause_id = GetClauseId(
+        Literal(negated_index), implied_by_[negated_index].Negated());
+    DCHECK_NE(clause_id, kNoClauseId);
+    clause_ids->push_back(clause_id);
+    const LiteralIndex next_negated_index = implied_by_[negated_index];
+    // Make sure we don't process the same literal twice.
+    implied_by_[negated_index] = Literal(negated_index);
+    negated_index = next_negated_index;
   }
+  std::reverse(clause_ids->begin() + initial_size, clause_ids->end());
 }
 
 void BinaryImplicationGraph::RemoveFixedVariables() {
@@ -2400,6 +2337,13 @@ absl::Span<const Literal> BinaryImplicationGraph::GetAllImpliedLiterals(
   return MarkDescendants(root);
 }
 
+void BinaryImplicationGraph::ClearImpliedLiterals() {
+  const LiteralIndex size(implications_and_amos_.size());
+  is_marked_.ClearAndResize(size);
+  processed_unit_clauses_.ClearAndResize(size);
+}
+
+template <bool update_implied_by>
 absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
     Literal root) {
   auto* const stack = bfs_stack_.data();
@@ -2410,6 +2354,9 @@ absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
   stack[0] = root;
   if (is_redundant[root]) return absl::MakeSpan(stack, 1);
   is_marked_.Set(root);
+  if constexpr (update_implied_by) {
+    implied_by_[root] = root;
+  }
   auto implies_something = implies_something_.const_view();
   for (int j = 0; j < stack_size; ++j) {
     const Literal current = stack[j];
@@ -2420,6 +2367,9 @@ absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
     for (const Literal l : implications_and_amos_[current].literals()) {
       if (!is_marked[l] && !is_redundant[l]) {
         is_marked_.SetUnsafe(is_marked, l);
+        if constexpr (update_implied_by) {
+          implied_by_[l] = current;
+        }
         stack[stack_size++] = l;
       }
     }
@@ -2430,6 +2380,9 @@ absl::Span<const Literal> BinaryImplicationGraph::MarkDescendants(
         if (l == current) continue;
         if (!is_marked[l.NegatedIndex()] && !is_redundant[l.NegatedIndex()]) {
           is_marked_.SetUnsafe(is_marked, l.NegatedIndex());
+          if constexpr (update_implied_by) {
+            implied_by_[l.Negated()] = current;
+          }
           stack[stack_size++] = l.Negated();
         }
       }

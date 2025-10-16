@@ -669,8 +669,7 @@ bool SchedulingConstraintHelper::DecreaseEndMax(int t, IntegerValue value) {
 }
 
 bool SchedulingConstraintHelper::PushLiteral(Literal l) {
-  integer_trail_->EnqueueLiteral(l, literal_reason_, integer_reason_);
-  return true;
+  return integer_trail_->EnqueueLiteral(l, literal_reason_, integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
@@ -684,9 +683,9 @@ bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
     return ReportConflict();
   }
   RunCallbackIfSet();
-  integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]).Negated(),
-                                 literal_reason_, integer_reason_);
-  return true;
+  return integer_trail_->EnqueueLiteral(
+      Literal(reason_for_presence_[t]).Negated(), literal_reason_,
+      integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushTaskPresence(int t) {
@@ -700,9 +699,8 @@ bool SchedulingConstraintHelper::PushTaskPresence(int t) {
     return ReportConflict();
   }
   RunCallbackIfSet();
-  integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
-                                 literal_reason_, integer_reason_);
-  return true;
+  return integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
+                                        literal_reason_, integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushTaskOrderWhenPresent(int t_before,

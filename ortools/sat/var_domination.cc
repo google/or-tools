@@ -31,6 +31,7 @@
 #include "absl/log/check.h"
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/base/hash.h"
@@ -955,8 +956,18 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
           context->UpdateRuleStats("dual: make encoding equiv");
           const int64_t value =
               rhs.IsFixed() ? rhs.FixedValue() : complement.FixedValue();
+
           int encoding_lit;
-          if (context->HasVarValueEncoding(var, value, &encoding_lit)) {
+          bool has_encoding = false;
+          if (!context->DomainContains(var, value)) {
+            encoding_lit = context->GetFalseLiteral();
+            has_encoding = true;
+          } else {
+            has_encoding =
+                context->HasVarValueEncoding(var, value, &encoding_lit);
+          }
+
+          if (has_encoding) {
             // If it is different, we have an equivalence now, and we can
             // remove the constraint.
             if (rhs.IsFixed()) {
@@ -1012,12 +1023,12 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
           if (rhs.IsFixed()) {
             context->StoreLiteralImpliesVarEqValue(NegatedRef(ref), var, value);
-            context->StoreLiteralImpliesVarNEqValue(ref, var, value);
+            context->StoreLiteralImpliesVarNeValue(ref, var, value);
           } else if (complement.IsFixed()) {
-            context->StoreLiteralImpliesVarNEqValue(NegatedRef(ref), var,
-                                                    value);
+            context->StoreLiteralImpliesVarNeValue(NegatedRef(ref), var, value);
             context->StoreLiteralImpliesVarEqValue(ref, var, value);
           }
+          context->UpdateNewConstraintsVariableUsage();
           continue;
         }
       }
@@ -1476,7 +1487,7 @@ void MaybeUpdateRefHintFromDominance(
 }
 
 bool ProcessAtMostOne(
-    absl::Span<const int> literals, const std::string& message,
+    absl::Span<const int> literals, absl::string_view message,
     const VarDomination& var_domination,
     util_intops::StrongVector<IntegerVariable, bool>* in_constraints,
     PresolveContext* context) {

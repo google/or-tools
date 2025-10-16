@@ -57,9 +57,10 @@ void AddWeightedSumLowerOrEqualReif(Literal is_le,
                                     absl::Span<const IntegerVariable> vars,
                                     absl::Span<const int64_t> coefficients,
                                     int64_t upper_bound, Model* model) {
-  AddWeightedSumLowerOrEqual({is_le}, vars, coefficients, upper_bound, model);
-  AddWeightedSumGreaterOrEqual({is_le.Negated()}, vars, coefficients,
-                               upper_bound + 1, model);
+  std::vector<IntegerValue> coeffs(coefficients.begin(), coefficients.end());
+  AddWeightedSumLowerOrEqual({is_le}, vars, coeffs, upper_bound, model);
+  AddWeightedSumGreaterOrEqual({is_le.Negated()}, vars, coeffs, upper_bound + 1,
+                               model);
 }
 
 // Weighted sum >= constant reified.
@@ -67,9 +68,10 @@ void AddWeightedSumGreaterOrEqualReif(Literal is_ge,
                                       absl::Span<const IntegerVariable> vars,
                                       absl::Span<const int64_t> coefficients,
                                       int64_t lower_bound, Model* model) {
-  AddWeightedSumGreaterOrEqual({is_ge}, vars, coefficients, lower_bound, model);
-  AddWeightedSumLowerOrEqual({is_ge.Negated()}, vars, coefficients,
-                             lower_bound - 1, model);
+  std::vector<IntegerValue> coeffs(coefficients.begin(), coefficients.end());
+  AddWeightedSumGreaterOrEqual({is_ge}, vars, coeffs, lower_bound, model);
+  AddWeightedSumLowerOrEqual({is_ge.Negated()}, vars, coeffs, lower_bound - 1,
+                             model);
 }
 
 // Weighted sum == constant reified.
@@ -373,6 +375,7 @@ TEST(MinMaxTest, LevelZeroPropagation) {
     max_expr.coeffs.push_back(-1);
     for (LinearExpression& ref : exprs) {
       ref.coeffs[0] = -ref.coeffs[0];
+      ref = CanonicalizeExpr(ref);
     }
     model.Add(IsEqualToMinOf(max_expr, exprs));
   }
@@ -1270,6 +1273,100 @@ TEST(ProductPropagationTest,
   EXPECT_BOUNDS_EQ(p, 0, 100);
 }
 
+bool TestProductPropagationWhenFalse(int min_x, int max_x, int min_y, int max_y,
+                                     int min_target, int max_target) {
+  bool is_always_false = true;
+  for (int x = min_x; x <= max_x; ++x) {
+    for (int y = min_y; y <= max_y; ++y) {
+      for (int target = min_target; target <= max_target; ++target) {
+        if (x * y == target) {
+          is_always_false = false;
+          break;
+        }
+      }
+    }
+  }
+  Model model;
+  const Literal b = Literal(model.Add(NewBooleanVariable()), true);
+  const IntegerVariable x = model.Add(NewIntegerVariable(min_x, max_x));
+  const IntegerVariable y = model.Add(NewIntegerVariable(min_y, max_y));
+  const IntegerVariable target =
+      model.Add(NewIntegerVariable(min_target, max_target));
+  model.Add(ProductConstraint({b}, x, y, target));
+  EXPECT_TRUE(model.GetOrCreate<SatSolver>()->Propagate());
+
+  EXPECT_FALSE(model.GetOrCreate<Trail>()->Assignment().LiteralIsTrue(b));
+  EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
+  EXPECT_BOUNDS_EQ(x, min_x, max_x);
+  EXPECT_BOUNDS_EQ(y, min_y, max_y);
+  EXPECT_BOUNDS_EQ(target, min_target, max_target);
+  if (model.GetOrCreate<Trail>()->Assignment().LiteralIsFalse(b)) {
+    EXPECT_TRUE(is_always_false)
+        << "min_x = " << min_x << " max_x = " << max_x << " min_y = " << min_y
+        << " max_y = " << max_y << " min_target = " << min_target
+        << " max_target = " << max_target;
+    return true;
+  }
+  return false;
+}
+
+TEST(ProductConstraintTest, CheckPropagationWhenFalse) {
+  bool propagated_when_false = false;
+  for (int min_x = -5; min_x <= 5; ++min_x) {
+    for (int max_x = min_x; max_x <= min_x + 5; ++max_x) {
+      for (int min_y = -5; min_y <= 5; ++min_y) {
+        for (int max_y = min_y; max_y <= min_y + 5; ++max_y) {
+          for (int min_target = 5; min_target <= 10; ++min_target) {
+            for (int max_target = min_target; max_target <= min_target + 5;
+                 ++max_target) {
+              propagated_when_false |= TestProductPropagationWhenFalse(
+                  min_x, max_x, min_y, max_y, min_target, max_target);
+            }
+          }
+        }
+      }
+    }
+  }
+  EXPECT_TRUE(propagated_when_false);
+}
+
+TEST(ProductConstraintTest,
+     CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'b' domain: 0 domain: 1 }
+    variables { name: 'x' domain: 0 domain: 15 }
+    variables { name: 'y' domain: 0 domain: 15 }
+    variables { name: 'z' domain: 10 domain: 15 }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { vars: 3 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 2 coeffs: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  CpModelProto reference_model = initial_model;
+  reference_model.mutable_constraints(0)->clear_enforcement_literal();
+  absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = 0; x <= 15; ++x) {
+    for (int y = 0; y <= 15; ++y) {
+      for (int z = 10; z <= 15; ++z) {
+        reference_solutions.insert({0, x, y, z});
+      }
+    }
+  }
+  const CpSolverResponse reference_response =
+      SolveAndCheck(reference_model, "", &reference_solutions);
+  EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(solutions, reference_solutions);
+}
+
 TEST(DivisionConstraintTest, CheckAllSolutions) {
   absl::BitGen random;
   const int kMaxValue = 100;
@@ -2023,6 +2120,40 @@ TEST(SquareConstraintTest, NotAlwaysFalseWithOneUnassignedEnforcementLiteral) {
   EXPECT_EQ(model.GetOrCreate<IntegerTrail>()->num_enqueues(), 0);
   EXPECT_BOUNDS_EQ(x, 0, 5);
   EXPECT_BOUNDS_EQ(s, 0, 100);
+}
+
+TEST(SquareConstraintTest,
+     CheckEnumerateAllSolutionsWithoutEnforcementLiteral) {
+  CpModelProto initial_model = ParseTestProto(R"pb(
+    variables { name: 'b' domain: 0 domain: 1 }
+    variables { name: 'x' domain: 0 domain: 15 }
+    variables { name: 'y' domain: 5 domain: 20 }
+    constraints {
+      enforcement_literal: 0
+      int_prod {
+        target { vars: 2 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+        exprs { vars: 1 coeffs: 1 }
+      }
+    }
+  )pb");
+  absl::btree_set<std::vector<int>> solutions;
+  const CpSolverResponse response =
+      SolveAndCheck(initial_model, "", &solutions);
+  EXPECT_EQ(response.status(), CpSolverStatus::OPTIMAL);
+
+  CpModelProto reference_model = initial_model;
+  reference_model.mutable_constraints(0)->clear_enforcement_literal();
+  absl::btree_set<std::vector<int>> reference_solutions;
+  for (int x = 0; x <= 15; ++x) {
+    for (int y = 5; y <= 20; ++y) {
+      reference_solutions.insert({0, x, y});
+    }
+  }
+  const CpSolverResponse reference_response =
+      SolveAndCheck(reference_model, "", &reference_solutions);
+  EXPECT_EQ(reference_response.status(), CpSolverStatus::OPTIMAL);
+  EXPECT_EQ(solutions, reference_solutions);
 }
 
 TEST(LevelZeroEqualityTest, BasicExample) {

@@ -174,13 +174,6 @@ TEST(DivideByGCDTest, BasicBehaviorWithLowerBound) {
   EXPECT_EQ(ct, expected);
 }
 
-TEST(RemoveZeroTermsTest, BasicBehavior) {
-  LinearConstraint ct = CreateUbConstraintForTest({2, 4, -8}, 11);
-  ct.coeffs[1] = IntegerValue(0);
-  RemoveZeroTerms(&ct);
-  EXPECT_EQ(ct, CreateUbConstraintForTest({2, 0, -8}, 11));
-}
-
 TEST(LinearConstraintCopyTest, BasicBehavior) {
   LinearConstraint ct = CreateUbConstraintForTest({2, 4, -8}, 11);
   LinearConstraint other;

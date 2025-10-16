@@ -300,6 +300,9 @@ class PresolveContext {
       const LinearExpressionProto& expr, const Domain& domain,
       bool* domain_modified = nullptr);
 
+  ABSL_MUST_USE_RESULT bool IntersectionOfAffineExprsIsNotEmpty(
+      const LinearExpressionProto& a, const LinearExpressionProto& b);
+
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
   ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
@@ -454,9 +457,18 @@ class PresolveContext {
   // Note that this might create a new Boolean variable.
   void CanonicalizeDomainOfSizeTwo(int var);
 
-  // Returns true if a literal attached to ref == var exists.
+  // Returns true if a literal attached to ref == value exists.
   // It assigns the corresponding to `literal` if non null.
+  // This function will check that the value is in the domain of ref.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
+
+  // Returns true if a literal attached to expr == value exists.
+  // It assigns the corresponding to `literal`. This methods checks that the
+  // expression as exactly one variable.
+  //
+  // This methods checks that the value is in the domain of the expression.
+  bool HasAffineValueEncoding(const LinearExpressionProto& expr, int64_t value,
+                              int* literal = nullptr);
 
   // Returns true if we have literal <=> var = value for all values of var.
   //
@@ -475,13 +487,16 @@ class PresolveContext {
   // of values not encoded.
   bool IsMostlyFullyEncoded(int ref) const;
 
+  // Returns the number of values encoded for the given reference.
+  int64_t GetValueEncodingSize(int ref) const;
+
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
   bool StoreLiteralImpliesVarEqValue(int literal, int var, int64_t value);
 
   // Stores the fact that literal implies var != value.
   // It returns true if that information is new.
-  bool StoreLiteralImpliesVarNEqValue(int literal, int var, int64_t value);
+  bool StoreLiteralImpliesVarNeValue(int literal, int var, int64_t value);
 
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
@@ -701,7 +716,7 @@ class PresolveContext {
   //
   // Returns false if ref cannot take the given value (it might not have been
   // propagated yet).
-  bool CanonicalizeEncoding(int* ref, int64_t* value);
+  bool CanonicalizeEncoding(int* ref, int64_t* value) const;
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.

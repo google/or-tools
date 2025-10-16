@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 337
+// NEXT TAG: 342
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -115,21 +115,19 @@ message SatParameters {
 
   // Do we try to minimize conflicts (greedily) when creating them.
   enum ConflictMinimizationAlgorithm {
+    reserved 3;
     NONE = 0;
     SIMPLE = 1;
     RECURSIVE = 2;
-    EXPERIMENTAL = 3;
   }
   optional ConflictMinimizationAlgorithm minimization_algorithm = 4
       [default = RECURSIVE];
 
   // Whether to expoit the binary clause to minimize learned clauses further.
   enum BinaryMinizationAlgorithm {
+    reserved 2, 3, 4;
     NO_BINARY_MINIMIZATION = 0;
     BINARY_MINIMIZATION_FIRST = 1;
-    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION = 4;
-    BINARY_MINIMIZATION_WITH_REACHABILITY = 2;
-    EXPERIMENTAL_BINARY_MINIMIZATION = 3;
   }
   optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
       [default = BINARY_MINIMIZATION_FIRST];
@@ -162,6 +160,9 @@ message SatParameters {
   // Trigger a cleanup when this number of "deletable" clauses is learned.
   optional int32 clause_cleanup_period = 11 [default = 10000];
 
+  // Increase clause_cleanup_period by this amount after each cleanup.
+  optional int32 clause_cleanup_period_increment = 337 [default = 0];
+
   // During a cleanup, we will always keep that number of "deletable" clauses.
   // Note that this doesn't include the "protected" clauses.
   optional int32 clause_cleanup_target = 13 [default = 0];
@@ -185,6 +186,9 @@ message SatParameters {
   // All the clauses with a LBD (literal blocks distance) lower or equal to this
   // parameters will always be kept.
   optional int32 clause_cleanup_lbd_bound = 59 [default = 5];
+
+  // Only protect clauses up to this maximum LBD.
+  optional int32 clause_protection_lbd_bound = 338 [default = 8];
 
   // The clauses that will be kept during a cleanup are the ones that come
   // first under this order. We always keep or exclude ties together.
@@ -515,7 +519,7 @@ message SatParameters {
   optional bool expand_reservoir_constraints = 182 [default = true];
 
   // Max domain size for expanding linear2 constraints (ax + by ==/!= c).
-  optional int32 max_domain_size_for_linear2_expansion = 336 [default = 8];
+  optional int32 max_domain_size_for_linear2_expansion = 340 [default = 8];
 
   // Mainly useful for testing.
   //
@@ -775,6 +779,9 @@ message SatParameters {
 
   // Crash if presolve breaks a feasible hint.
   optional bool debug_crash_if_presolve_breaks_hint = 306 [default = false];
+
+  // Crash if the LRAT UNSAT proof is invalid.
+  optional bool debug_crash_if_lrat_check_fails = 339 [default = false];
 
   // ==========================================================================
   // Max-sat parameters
@@ -1703,6 +1710,14 @@ message SatParameters {
   // linear constrainst in the problem. This can be used in some cuts, altough
   // for now we don't really exploit it.
   optional bool detect_linearized_product = 277 [default = false];
+
+  // This should be better on integer problems.
+  // But it is still work in progress.
+  optional bool use_new_integer_conflict_resolution = 336 [default = false];
+
+  // If true, and during integer conflict resolution (icr) the 1-UIP is an
+  // integer literal for which we do not have an associated Boolean. Create one.
+  optional bool create_1uip_boolean_during_icr = 341 [default = true];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
