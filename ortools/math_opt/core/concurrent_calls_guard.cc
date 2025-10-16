@@ -24,7 +24,7 @@ namespace operations_research::math_opt {
 absl::StatusOr<ConcurrentCallsGuard> ConcurrentCallsGuard::TryAcquire(
     Tracker& tracker) ABSL_NO_THREAD_SAFETY_ANALYSIS {
   {
-    const absl::MutexLock lock(&tracker.mutex_);
+    const absl::MutexLock lock(tracker.mutex_);
     if (tracker.in_a_call_) {
       return absl::InvalidArgumentError("concurrent calls are forbidden");
     }
@@ -38,7 +38,7 @@ ConcurrentCallsGuard::~ConcurrentCallsGuard() {
     return;
   }
 
-  const absl::MutexLock lock(&tracker_->mutex_);
+  const absl::MutexLock lock(tracker_->mutex_);
   DCHECK(tracker_->in_a_call_);
   tracker_->in_a_call_ = false;
 }
