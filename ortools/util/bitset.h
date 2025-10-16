@@ -882,6 +882,12 @@ class SparseBitset {
     }
   }
 
+  void CopyFrom(const SparseBitset& other) {
+    bitset_.ClearAndResize(other.size());
+    bitset_.SetContentFromBitsetOfSameSize(other.bitset_);
+    to_clear_.assign(other.to_clear_.begin(), other.to_clear_.end());
+  }
+
   // A bit hacky for really hot loop.
   typename Bitset64<IntegerType>::View BitsetView() { return bitset_.view(); }
   typename Bitset64<IntegerType>::ConstView BitsetConstView() {

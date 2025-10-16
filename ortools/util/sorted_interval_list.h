@@ -663,7 +663,7 @@ class SortedDisjointIntervalList {
   const ClosedInterval& last() const { return *intervals_.rbegin(); }
 
   void clear() { intervals_.clear(); }
-  void swap(SortedDisjointIntervalList& other) {
+  void swap(SortedDisjointIntervalList& other) noexcept {
     intervals_.swap(other.intervals_);
   }
 
