@@ -114,7 +114,7 @@ cc_library(
         ":base_types",
         ":set_cover_cc_proto",
         ":set_cover_model",
-        "//ortools/base",
+        "//ortools/base:logging",
         "//ortools/base:mathutil",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
