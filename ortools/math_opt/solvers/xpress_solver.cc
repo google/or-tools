@@ -588,8 +588,7 @@ class ScopedSolverContext {
           return util::InvalidArgumentErrorBuilder()
                  << "more solution hints than columns";
         RETURN_IF_ERROR(shared_ctx.xpress->AddMIPSol(
-            static_cast<int>(mipStart.size()), mipStart.data(), colind.data(),
-            absl::StrCat("SolutionHint", cnt).c_str()));
+            mipStart, colind, absl::StrCat("SolutionHint", cnt).c_str()));
         ++cnt;
       }
     }
@@ -614,8 +613,8 @@ class ScopedSolverContext {
         return util::InvalidArgumentErrorBuilder()
                << "more branching priorities than columns";
       RETURN_IF_ERROR(shared_ctx.xpress->LoadDirs(
-          static_cast<int>(colind.size()), colind.data(), priority.data(),
-          nullptr, nullptr, nullptr));
+          absl::MakeSpan(colind), absl::MakeSpan(priority), std::nullopt,
+          std::nullopt, std::nullopt));
     }
 
     // Objective parameters: primary/single objective
@@ -676,8 +675,7 @@ class ScopedSolverContext {
         return util::InvalidArgumentErrorBuilder()
                << "more lazy constraints than rows";
 
-      RETURN_IF_ERROR(shared_ctx.xpress->LoadDelayedRows(
-          static_cast<int>(delayedRows.size()), delayedRows.data()));
+      RETURN_IF_ERROR(shared_ctx.xpress->LoadDelayedRows(delayedRows));
     }
 
     return absl::OkStatus();
@@ -1051,8 +1049,8 @@ absl::Status XpressSolver::AddObjective(
       ASSIGN_OR_RETURN(
           int const newid,
           xpress_->AddObjective(
-              objective.offset(), static_cast<int>(index.size()), index.data(),
-              objective.linear_coefficients().values().data(),
+              objective.offset(), static_cast<int>(index.size()),
+              absl::MakeSpan(index), objective.linear_coefficients().values(),
               // checked above
               static_cast<int>(-objective.priority()), weight));
       gtl::InsertOrDie(&objectives_map_, objective_id.value(), newid);
@@ -1369,8 +1367,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // (for example, BARALG to decide whether we need to report barrier or
   // first order iterations).
   solveContext.ReraiseException();
-  RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
-  RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
+  RETURN_IF_ERROR(
+      xpress_->GetSolution(&primal_sol_avail_, std::nullopt, 0, -1));
+  RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, std::nullopt, 0, -1));
   ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
   ASSIGN_OR_RETURN(optimizetypeused_,
                    xpress_->GetIntAttr(XPRS_OPTIMIZETYPEUSED));
@@ -1452,7 +1451,8 @@ absl::Status XpressSolver::AppendSolution(
   if (is_mip_) {
     std::vector<double> x(nVars);
     int avail;
-    RETURN_IF_ERROR(xpress_->GetSolution(&avail, x.data(), 0, nVars - 1));
+    RETURN_IF_ERROR(
+        xpress_->GetSolution(&avail, absl::MakeSpan(x), 0, nVars - 1));
     if (avail != XPRS_SOLAVAILABLE_NOTFOUND) {
       SolutionProto solution{};
       solution.mutable_primal_solution()->set_feasibility_status(
@@ -1498,7 +1498,7 @@ absl::Status XpressSolver::AppendSolution(
       // The preferred methods for obtaining primal information are
       // XPRSgetsolution() and XPRSgetslacks() (not used here)
       RETURN_IF_ERROR(
-          xpress_->GetSolution(nullptr, primals.data(), 0, nVars - 1));
+          xpress_->GetSolution(nullptr, absl::MakeSpan(primals), 0, nVars - 1));
       solution.mutable_primal_solution()->set_feasibility_status(
           getPrimalSolutionStatus());
       ASSIGN_OR_RETURN(const double primalBound, GetBestPrimalBound());
@@ -1525,9 +1525,10 @@ absl::Status XpressSolver::AppendSolution(
     if (isDualFeasible()) {
       // The preferred methods for obtain dual information are XPRSgetduals()
       // and XPRSgetredcosts().
-      RETURN_IF_ERROR(xpress_->GetDuals(nullptr, duals.data(), 0, nCons - 1));
       RETURN_IF_ERROR(
-          xpress_->GetRedCosts(nullptr, reducedCosts.data(), 0, nVars - 1));
+          xpress_->GetDuals(nullptr, absl::MakeSpan(duals), 0, nCons - 1));
+      RETURN_IF_ERROR(xpress_->GetRedCosts(
+          nullptr, absl::MakeSpan(reducedCosts), 0, nVars - 1));
       solution.mutable_dual_solution()->set_feasibility_status(
           getDualSolutionStatus());
       ASSIGN_OR_RETURN(const double dualBound, GetBestDualBound());

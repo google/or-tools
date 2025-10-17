@@ -27,6 +27,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -136,20 +137,31 @@ class Xpress {
   absl::Status Interrupt(int reason);
 
   absl::StatusOr<bool> IsMIP() const;
-  absl::Status GetDuals(int* p_status, double* duals, int first, int last);
-  absl::Status GetSolution(int* p_status, double* x, int first, int last);
-  absl::Status GetRedCosts(int* p_status, double* dj, int first, int last);
+  absl::Status GetDuals(int* p_status,
+                        std::optional<absl::Span<double>> const& duals,
+                        int first, int last);
+  absl::Status GetSolution(int* p_status,
+                           std::optional<absl::Span<double>> const& x,
+                           int first, int last);
+  absl::Status GetRedCosts(int* p_status,
+                           std::optional<absl::Span<double>> const& dj,
+                           int first, int last);
 
-  absl::Status AddMIPSol(int len, double const* vals, int const* colind,
+  absl::Status AddMIPSol(absl::Span<double const> vals,
+                         std::optional<absl::Span<int const>> const& colind,
                          char const* name = nullptr);
-  absl::Status LoadDelayedRows(int len, int const* rows);
-  absl::Status LoadDirs(int len, int const* cols, int const* prio,
-                        char const* dir, double const* up, double const* down);
+  absl::Status LoadDelayedRows(absl::Span<int const> rows);
+  absl::Status LoadDirs(absl::Span<int const> cols,
+                        std::optional<absl::Span<int const>> const& prio,
+                        std::optional<absl::Span<char const>> const& dir,
+                        std::optional<absl::Span<double const>> const& up,
+                        std::optional<absl::Span<double const>> const& down);
 
   absl::Status SetObjectiveIntControl(int obj, int control, int value);
   absl::Status SetObjectiveDoubleControl(int obj, int control, double value);
   absl::StatusOr<int> AddObjective(double constant, int ncols,
-                                   int const* colind, double const* objcoef,
+                                   absl::Span<int const> colind,
+                                   absl::Span<double const> objcoef,
                                    int priority, double weight);
   absl::StatusOr<double> CalculateObjectiveN(int objidx,
                                              double const* solution);

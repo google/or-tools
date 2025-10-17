@@ -36,6 +36,11 @@ namespace operations_research::math_opt {
 
 namespace {
 bool checkInt32Overflow(const std::size_t value) { return value > INT32_MAX; }
+template <typename T>
+/** Forward an optional span to the C API. */
+T* forwardSpan(std::optional<absl::Span<T>> const& span) {
+  return span.has_value() ? span.value().data() : nullptr;
+}
 }  // namespace
 
 constexpr int kXpressOk = 0;
@@ -422,32 +427,58 @@ absl::StatusOr<bool> Xpress::IsMIP() const {
   return ents != 0; /** TODO: Check for preintsol callback? */
 }
 
-absl::Status Xpress::GetDuals(int* p_status, double* duals, int first,
-                              int last) {
-  return ToStatus(XPRSgetduals(xpress_model_, p_status, duals, first, last));
+absl::Status Xpress::GetDuals(int* p_status,
+                              std::optional<absl::Span<double>> const& duals,
+                              int first, int last) {
+  return ToStatus(
+      XPRSgetduals(xpress_model_, p_status, forwardSpan(duals), first, last));
 }
-absl::Status Xpress::GetSolution(int* p_status, double* x, int first,
-                                 int last) {
-  return ToStatus(XPRSgetsolution(xpress_model_, p_status, x, first, last));
+absl::Status Xpress::GetSolution(int* p_status,
+                                 std::optional<absl::Span<double>> const& x,
+                                 int first, int last) {
+  return ToStatus(
+      XPRSgetsolution(xpress_model_, p_status, forwardSpan(x), first, last));
 }
-absl::Status Xpress::GetRedCosts(int* p_status, double* dj, int first,
-                                 int last) {
-  return ToStatus(XPRSgetredcosts(xpress_model_, p_status, dj, first, last));
-}
-
-absl::Status Xpress::AddMIPSol(int len, double const* vals, int const* colind,
-                               char const* name) {
-  return ToStatus(XPRSaddmipsol(xpress_model_, len, vals, colind, name));
-}
-
-absl::Status Xpress::LoadDelayedRows(int len, int const* rows) {
-  return ToStatus(XPRSloaddelayedrows(xpress_model_, len, rows));
+absl::Status Xpress::GetRedCosts(int* p_status,
+                                 std::optional<absl::Span<double>> const& dj,
+                                 int first, int last) {
+  return ToStatus(
+      XPRSgetredcosts(xpress_model_, p_status, forwardSpan(dj), first, last));
 }
 
-absl::Status Xpress::LoadDirs(int len, int const* cols, int const* prio,
-                              char const* dir, double const* up,
-                              double const* down) {
-  return ToStatus(XPRSloaddirs(xpress_model_, len, cols, prio, dir, up, down));
+absl::Status Xpress::AddMIPSol(
+    absl::Span<double const> vals,
+    std::optional<absl::Span<int const>> const& colind, char const* name) {
+  int len;
+  if (colind.has_value()) {
+    if (checkInt32Overflow(colind.value().size()))
+      return absl::InvalidArgumentError("more start values than columns");
+    len = static_cast<int>(colind.has_value());
+  } else {
+    ASSIGN_OR_RETURN(len, GetIntAttr(XPRS_COLS));
+  }
+  return ToStatus(XPRSaddmipsol(xpress_model_, len, vals.data(),
+                                forwardSpan(colind), name));
+}
+
+absl::Status Xpress::LoadDelayedRows(absl::Span<int const> rows) {
+  if (checkInt32Overflow(rows.size()))
+    return absl::InvalidArgumentError("more delayed rows than rows");
+  return ToStatus(XPRSloaddelayedrows(
+      xpress_model_, static_cast<int>(rows.size()), rows.data()));
+}
+
+absl::Status Xpress::LoadDirs(
+    absl::Span<int const> cols,
+    std::optional<absl::Span<int const>> const& prio,
+    std::optional<absl::Span<char const>> const& dir,
+    std::optional<absl::Span<double const>> const& up,
+    std::optional<absl::Span<double const>> const& down) {
+  if (checkInt32Overflow(cols.size()))
+    return absl::InvalidArgumentError("more directions than columns");
+  return ToStatus(XPRSloaddirs(xpress_model_, static_cast<int>(cols.size()),
+                               cols.data(), forwardSpan(prio), forwardSpan(dir),
+                               forwardSpan(up), forwardSpan(down)));
 }
 
 absl::Status Xpress::SetObjectiveIntControl(int obj, int control, int value) {
@@ -458,15 +489,16 @@ absl::Status Xpress::SetObjectiveDoubleControl(int obj, int control,
   return ToStatus(XPRSsetobjdblcontrol(xpress_model_, obj, control, value));
 }
 absl::StatusOr<int> Xpress::AddObjective(double constant, int ncols,
-                                         int const* colind,
-                                         double const* objcoef, int priority,
-                                         double weight) {
+                                         absl::Span<int const> colind,
+                                         absl::Span<double const> objcoef,
+                                         int priority, double weight) {
   ASSIGN_OR_RETURN(int const objs, GetIntAttr(XPRS_OBJECTIVES));
   if (objs == INT_MAX) {
     return util::StatusBuilder(absl::StatusCode::kInvalidArgument)
            << "too many objectives";
   }
-  int ret = XPRSaddobj(xpress_model_, ncols, colind, objcoef, priority, weight);
+  int ret = XPRSaddobj(xpress_model_, ncols, colind.data(), objcoef.data(),
+                       priority, weight);
   if (ret) {
     return ToStatus(ret);
   }
