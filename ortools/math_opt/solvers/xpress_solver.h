@@ -223,9 +223,11 @@ class XpressSolver : public SolverInterface {
   // Results of the last solve
   int primal_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
   int dual_sol_avail_ = XPRS_SOLAVAILABLE_NOTFOUND;
+  // Information queried right after a solve and stored for solution reporting
   int solvestatus_ = XPRS_SOLVESTATUS_UNSTARTED;
   int solstatus_ = XPRS_SOLSTATUS_NOTFOUND;
   int algorithm_ = XPRS_ALG_DEFAULT;
+  int optimizetypeused_ = -1;
 };
 
 }  // namespace operations_research::math_opt

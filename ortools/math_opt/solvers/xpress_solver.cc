@@ -1371,6 +1371,8 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   RETURN_IF_ERROR(xpress_->GetSolution(&primal_sol_avail_, nullptr, 0, -1));
   RETURN_IF_ERROR(xpress_->GetDuals(&dual_sol_avail_, nullptr, 0, -1));
   ASSIGN_OR_RETURN(algorithm_, xpress_->GetIntAttr(XPRS_ALGORITHM));
+  ASSIGN_OR_RETURN(optimizetypeused_,
+                   xpress_->GetIntAttr(XPRS_OPTIMIZETYPEUSED));
   RETURN_IF_ERROR(xpress_->PostSolve()) << "XPRSpostsolve() failed";
 
   ASSIGN_OR_RETURN(
@@ -1471,7 +1473,17 @@ absl::Status XpressSolver::AppendSolution(
     std::vector<double> duals(nCons);
     std::vector<double> reducedCosts(nVars);
 
+    // This is for handling an edge case:
+    // If an LP solve is interrupted then XPRSgetsolution() and friends will
+    // return "not available". However, there may still be a current
+    // primal or dual feasible solution available - depending on the algorithm.
+    // Users and ortools tests may expect these to be returned in some cases,
+    // so we try to pick them up. This must be done via XPRSgetlpsol() which
+    // is designed for exactly this edge case.
+    // This only applies to LPs.
     auto hasSolution =
+        (optimizetypeused_ ==
+         0) &&  // 0 = LP, 1 = MIP, 2/3 = nonlin local/global
         xpress_
             ->GetLpSol(absl::MakeSpan(primals), absl::MakeSpan(duals),
                        absl::MakeSpan(reducedCosts))
