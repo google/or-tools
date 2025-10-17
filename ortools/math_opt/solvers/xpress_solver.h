@@ -126,14 +126,16 @@ class XpressSolver : public SolverInterface {
   bool isPrimalFeasible() const;
   bool isDualFeasible() const;
 
-  void ParseBounds(double lb, double ub, char& sense, double& rhs, double& rng);
-  void ParseLinear(SparseDoubleVectorProto const& expr,
-                   std::vector<int>& colind, std::vector<double>& coef);
-  void ParseQuadratic(QuadraticConstraintProto const& expr,
-                      std::vector<int>& lin_colind,
-                      std::vector<double>& lin_coef,
-                      std::vector<int>& quad_col1, std::vector<int>& quad_col2,
-                      std::vector<double>& quad_coef);
+  void ExtractBounds(double lb, double ub, char& sense, double& rhs,
+                     double& rng);
+  void ExtractLinear(SparseDoubleVectorProto const& expr,
+                     std::vector<int>& colind, std::vector<double>& coef);
+  void ExtractQuadratic(QuadraticConstraintProto const& expr,
+                        std::vector<int>& lin_colind,
+                        std::vector<double>& lin_coef,
+                        std::vector<int>& quad_col1,
+                        std::vector<int>& quad_col2,
+                        std::vector<double>& quad_coef);
 
   absl::StatusOr<std::optional<BasisProto>> GetBasisIfAvailable(
       const SolveParametersProto& parameters);

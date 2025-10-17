@@ -895,8 +895,8 @@ absl::Status XpressSolver::AddNewVariables(
 XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress)
     : xpress_(std::move(g_xpress)) {}
 
-void XpressSolver::ParseBounds(double lb, double ub, char& sense, double& rhs,
-                               double& rng) {
+void XpressSolver::ExtractBounds(double lb, double ub, char& sense, double& rhs,
+                                 double& rng) {
   sense = XPRS_EQUAL;
   rhs = 0.0;
   rng = 0.0;
@@ -950,8 +950,8 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     char sense = XPRS_EQUAL;
     double rhs = 0.0;
     double rng = 0.0;
-    ParseBounds(constraint_data.lower_bound, constraint_data.upper_bound, sense,
-                rhs, rng);
+    ExtractBounds(constraint_data.lower_bound, constraint_data.upper_bound,
+                  sense, rhs, rng);
     constraint_sense.emplace_back(sense);
     constraint_rhs.emplace_back(rhs);
     constraint_rng.emplace_back(rng);
@@ -1108,9 +1108,9 @@ absl::Status XpressSolver::AddSOS(
   return absl::OkStatus();
 }
 
-void XpressSolver::ParseLinear(SparseDoubleVectorProto const& expr,
-                               std::vector<int>& colind,
-                               std::vector<double>& coef) {
+void XpressSolver::ExtractLinear(SparseDoubleVectorProto const& expr,
+                                 std::vector<int>& colind,
+                                 std::vector<double>& coef) {
   auto terms = expr.ids_size();
   colind.reserve(colind.size() + terms);
   coef.reserve(coef.size() + terms);
@@ -1121,12 +1121,12 @@ void XpressSolver::ParseLinear(SparseDoubleVectorProto const& expr,
   /** TODO: How do we handle constant terms in expressions? */
 }
 
-void XpressSolver::ParseQuadratic(QuadraticConstraintProto const& expr,
-                                  std::vector<int>& lin_colind,
-                                  std::vector<double>& lin_coef,
-                                  std::vector<int>& quad_col1,
-                                  std::vector<int>& quad_col2,
-                                  std::vector<double>& quad_coef) {
+void XpressSolver::ExtractQuadratic(QuadraticConstraintProto const& expr,
+                                    std::vector<int>& lin_colind,
+                                    std::vector<double>& lin_coef,
+                                    std::vector<int>& quad_col1,
+                                    std::vector<int>& quad_col2,
+                                    std::vector<double>& quad_coef) {
   auto const& lin = expr.linear_terms();
   auto linTerms = lin.ids_size();
   lin_colind.reserve(lin_colind.size() + linTerms);
@@ -1172,8 +1172,8 @@ absl::Status XpressSolver::AddIndicators(
   int next = 0;
   for (auto const& [ortoolsId, indicator] : indicators) {
     start[next] = colind.size();
-    ParseBounds(indicator.lower_bound(), indicator.upper_bound(), sense[next],
-                rhs[next], rng[next]);
+    ExtractBounds(indicator.lower_bound(), indicator.upper_bound(), sense[next],
+                  rhs[next], rng[next]);
     // ortools tests require us to raise an error on ranged indicator
     // constraints
     if (sense[next] == XPRS_RANGE) {
@@ -1181,7 +1181,7 @@ absl::Status XpressSolver::AddIndicators(
              << "indicator constraint on ranged constraint";
     }
 
-    ParseLinear(indicator.expression(), colind, rowcoef);
+    ExtractLinear(indicator.expression(), colind, rowcoef);
 
     i_rowind[next] = oldRows + next;
     if (indicator.has_indicator_id()) {
@@ -1228,13 +1228,14 @@ absl::Status XpressSolver::AddQuadraticConstraints(
     char sense;
     double rhs;
     double rng;
-    ParseBounds(quad.lower_bound(), quad.upper_bound(), sense, rhs, rng);
+    ExtractBounds(quad.lower_bound(), quad.upper_bound(), sense, rhs, rng);
     lin_colind.clear();
     lin_coef.clear();
     quad_col1.clear();
     quad_col2.clear();
     quad_coef.clear();
-    ParseQuadratic(quad, lin_colind, lin_coef, quad_col1, quad_col2, quad_coef);
+    ExtractQuadratic(quad, lin_colind, lin_coef, quad_col1, quad_col2,
+                     quad_coef);
     RETURN_IF_ERROR(xpress_->AddQRow(sense, rhs, rng, lin_colind, lin_coef,
                                      quad_col1, quad_col2, quad_coef));
     LinearConstraintData& data =
