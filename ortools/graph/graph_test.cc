@@ -1157,7 +1157,7 @@ static void BM_RandomArcsBeforeBuild(benchmark::State& state) {
 // construction.
 class VectorVectorGraph {
  public:
-  VectorVectorGraph() {}
+  VectorVectorGraph() = default;
   void Reserve(int32_t num_nodes, int32_t num_arcs) {
     // We could only reserve the space, but AddArc() need to be smarter then.
     graph_.resize(num_nodes);

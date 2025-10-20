@@ -29,6 +29,7 @@
 #ifndef OR_TOOLS_GRAPH_EULERIAN_PATH_H_
 #define OR_TOOLS_GRAPH_EULERIAN_PATH_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -78,7 +79,8 @@ template <typename NodeIndex, typename Graph>
 std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
                                                  NodeIndex root) {
   typedef typename Graph::ArcIndex ArcIndex;
-  std::vector<bool> unvisited_edges(graph.num_arcs(), true);
+  // Using a vector of uint8_t instead of bool which is much faster here.
+  std::vector<uint8_t> unvisited_edges(graph.num_arcs(), true);
   std::vector<NodeIndex> tour;
   if (graph.IsNodeValid(root)) {
     std::vector<NodeIndex> tour_stack = {root};
