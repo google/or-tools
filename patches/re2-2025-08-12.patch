@@ -1,11 +1,11 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index bdac5af..cedaf6e 100644
+index 81b4af2..b1ffaac 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -131,6 +131,13 @@ set(RE2_HEADERS
+@@ -140,6 +140,13 @@ set(RE2_HEADERS
  
  add_library(re2 ${RE2_SOURCES})
- target_compile_features(re2 PUBLIC cxx_std_14)
+ target_compile_features(re2 PUBLIC ${RE2_CXX_VERSION})
 +if(APPLE)
 +  set_target_properties(re2 PROPERTIES
 +    INSTALL_RPATH "@loader_path")
