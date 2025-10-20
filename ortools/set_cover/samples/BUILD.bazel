@@ -12,24 +12,43 @@
 # limitations under the License.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("//bazel:run_binary_test.bzl", "run_binary_test")
 
 package(default_visibility = ["//visibility:public"])
 
 cc_binary(
-    name = "simple_glop_program_cc",
-    srcs = ["simple_glop_program.cc"],
+    name = "set_cover_cc",
+    srcs = ["set_cover.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/base:numbers",
-        "//ortools/glop:lp_solver",
-        "//ortools/lp_data",
-        "//ortools/lp_data:base",
+        "//ortools/set_cover:set_cover_heuristics",
+        "//ortools/set_cover:set_cover_invariant",
+        "//ortools/set_cover:set_cover_model",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:globals",
     ],
 )
 
 run_binary_test(
-    name = "simple_glop_program_cc_test",
+    name = "set_cover_cc_test",
     size = "small",
-    binary = ":simple_glop_program_cc",
+    binary = ":set_cover_cc",
+)
+
+py_binary(
+    name = "set_cover_py3",
+    srcs = ["set_cover.py"],
+    main = "set_cover.py",
+    deps = [
+        "//ortools/set_cover:set_cover_py_pb2",
+        "//ortools/set_cover/python:set_cover",
+    ],
+)
+
+run_binary_test(
+    name = "set_cover_py_test",
+    size = "small",
+    binary = ":set_cover_py3",
 )
