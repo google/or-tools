@@ -679,7 +679,7 @@ class ModelStorage {
     // returns the address of the appropriate `UpdateTrackerData` field.
     template <typename ConstraintData>
     static constexpr typename AtomicConstraintStorage<ConstraintData>::Diff
-        UpdateTrackerData::*
+        UpdateTrackerData::* absl_nonnull
         AtomicConstraintDirtyFieldPtr();
 
     // Update information
@@ -1205,7 +1205,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<QuadraticConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         QuadraticConstraintData>() {
   return &UpdateTrackerData::dirty_quadratic_constraints;
@@ -1227,7 +1227,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<SecondOrderConeConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         SecondOrderConeConstraintData>() {
   return &UpdateTrackerData::dirty_soc_constraints;
@@ -1249,7 +1249,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<Sos1ConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         Sos1ConstraintData>() {
   return &UpdateTrackerData::dirty_sos1_constraints;
@@ -1271,7 +1271,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<Sos2ConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         Sos2ConstraintData>() {
   return &UpdateTrackerData::dirty_sos2_constraints;
@@ -1293,7 +1293,7 @@ ModelStorage::constraint_storage() const {
 
 template <>
 constexpr typename AtomicConstraintStorage<IndicatorConstraintData>::Diff
-    ModelStorage::UpdateTrackerData::*
+    ModelStorage::UpdateTrackerData::* absl_nonnull
     ModelStorage::UpdateTrackerData::AtomicConstraintDirtyFieldPtr<
         IndicatorConstraintData>() {
   return &UpdateTrackerData::dirty_indicator_constraints;
