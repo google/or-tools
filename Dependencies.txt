@@ -12,7 +12,7 @@ GLPK=5.0
 HiGHS=v1.12.0
 Scip=v923
 # Python
-pybind11=v2.13.6
+pybind11=v3.0.0
 pybind11_abseil=v202402.0
 pybind11_protobuf=84653a591aea5df482dc2bde42c19efafbd53a57
 # Testing
