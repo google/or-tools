@@ -327,12 +327,12 @@ template <typename T, bool stable_sort = false,
               typename absl::flat_hash_map<T, int, Hash>::key_equal>
 class TopologicalSorter {
  public:
-  TopologicalSorter() {}
+  TopologicalSorter() = default;
 
   // This type is neither copyable nor movable.
   TopologicalSorter(const TopologicalSorter&) = delete;
   TopologicalSorter& operator=(const TopologicalSorter&) = delete;
-  ~TopologicalSorter() {}
+  ~TopologicalSorter() = default;
 
   // Adds a node to the graph, if it has not already been added via
   // previous calls to AddNode()/AddEdge(). If no edges are later

@@ -653,7 +653,7 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 
  public:
   using Base::IsArcValid;
-  ListGraph() {}
+  ListGraph() = default;
 
   // Reserve space for the graph at construction and do not allow it to grow
   // beyond that, see FreezeCapacities(). This constructor also makes any nodes
@@ -852,7 +852,7 @@ class ReverseArcListGraph
 
  public:
   using Base::IsArcValid;
-  ReverseArcListGraph() {}
+  ReverseArcListGraph() = default;
   ReverseArcListGraph(NodeIndexType num_nodes, ArcIndexType arc_capacity) {
     this->Reserve(num_nodes, arc_capacity);
     this->FreezeCapacities();

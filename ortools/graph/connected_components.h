@@ -74,7 +74,7 @@ std::vector<int> GetConnectedComponents(int num_nodes,
 // A connected components finder that only works on dense ints.
 class DenseConnectedComponentsFinder {
  public:
-  DenseConnectedComponentsFinder() {}
+  DenseConnectedComponentsFinder() = default;
 
   // We support copy and move construction.
   DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder&) =
@@ -220,7 +220,7 @@ class ConnectedComponentsFinder {
                                                        Eq>::Set;
 
   // Constructs a connected components finder.
-  ConnectedComponentsFinder() {}
+  ConnectedComponentsFinder() = default;
 
   ConnectedComponentsFinder(const ConnectedComponentsFinder&) = delete;
   ConnectedComponentsFinder& operator=(const ConnectedComponentsFinder&) =
