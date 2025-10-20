@@ -128,9 +128,6 @@ class Xpress {
   absl::Status RemoveCbChecktime(int(XPRS_CC* cb)(XPRSprob, void*),
                                  void* cbdata = nullptr);
 
-  int GetNumberOfConstraints() const;
-  int GetNumberOfVariables() const;
-
   absl::StatusOr<std::vector<double>> GetVarLb() const;
   absl::StatusOr<std::vector<double>> GetVarUb() const;
 
@@ -148,7 +145,7 @@ class Xpress {
                            int first, int last);
 
   absl::Status AddMIPSol(absl::Span<double const> vals,
-                         std::optional<absl::Span<int const>> const& colind,
+                         absl::Span<int const> colind,
                          char const* name = nullptr);
   absl::Status LoadDelayedRows(absl::Span<int const> rows);
   absl::Status LoadDirs(absl::Span<int const> cols,

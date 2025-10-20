@@ -115,7 +115,7 @@ void Xpress::initIntControlDefaults() {
   }
 }
 
-// All arguments can be empty to indicate "use default values".
+// All span arguments can be missing to indicate "use default values".
 // Default objective value: 0
 // Default lower bound: 0
 // Default upper bound: infinity
@@ -125,7 +125,7 @@ absl::Status Xpress::AddVars(std::size_t count,
                              const absl::Span<const double> lb,
                              const absl::Span<const double> ub,
                              const absl::Span<const char> vtype) {
-  ASSIGN_OR_RETURN(int const oldCols, GetIntAttr(XPRS_COLS));
+  ASSIGN_OR_RETURN(int const oldCols, GetIntAttr(XPRS_ORIGINALCOLS));
   if (checkInt32Overflow(count) ||
       checkInt32Overflow(std::size_t(oldCols) + std::size_t(count))) {
     return absl::InvalidArgumentError(
@@ -359,18 +359,6 @@ absl::StatusOr<double> Xpress::GetObjectiveDoubleAttr(int objidx,
   return result;
 }
 
-int Xpress::GetNumberOfConstraints() const {
-  int n;
-  XPRSgetintattrib(xpress_model_, XPRS_ROWS, &n);
-  return n;
-}
-
-int Xpress::GetNumberOfVariables() const {
-  int n;
-  XPRSgetintattrib(xpress_model_, XPRS_COLS, &n);
-  return n;
-}
-
 absl::StatusOr<int> Xpress::GetDualStatus() const {
   int status = 0;
   double values[1];
@@ -383,8 +371,10 @@ absl::StatusOr<int> Xpress::GetDualStatus() const {
 
 absl::Status Xpress::GetBasis(std::vector<int>& rowBasis,
                               std::vector<int>& colBasis) const {
-  rowBasis.resize(GetNumberOfConstraints());
-  colBasis.resize(GetNumberOfVariables());
+  ASSIGN_OR_RETURN(int const rows, GetIntAttr(XPRS_ORIGINALROWS));
+  ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
+  rowBasis.resize(rows);
+  colBasis.resize(cols);
   return ToStatus(
       XPRSgetbasis(xpress_model_, rowBasis.data(), colBasis.data()));
 }
@@ -400,20 +390,20 @@ absl::Status Xpress::SetStartingBasis(std::vector<int>& rowBasis,
 }
 
 absl::StatusOr<std::vector<double>> Xpress::GetVarLb() const {
-  int nVars = GetNumberOfVariables();
+  ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
   std::vector<double> bounds;
-  bounds.reserve(nVars);
+  bounds.reserve(cols);
   RETURN_IF_ERROR(
-      ToStatus(XPRSgetlb(xpress_model_, bounds.data(), 0, nVars - 1)))
+      ToStatus(XPRSgetlb(xpress_model_, bounds.data(), 0, cols - 1)))
       << "Failed to retrieve variable LB from XPRESS";
   return bounds;
 }
 absl::StatusOr<std::vector<double>> Xpress::GetVarUb() const {
-  int nVars = GetNumberOfVariables();
+  ASSIGN_OR_RETURN(int const cols, GetIntAttr(XPRS_ORIGINALCOLS));
   std::vector<double> bounds;
-  bounds.reserve(nVars);
+  bounds.reserve(cols);
   RETURN_IF_ERROR(
-      ToStatus(XPRSgetub(xpress_model_, bounds.data(), 0, nVars - 1)))
+      ToStatus(XPRSgetub(xpress_model_, bounds.data(), 0, cols - 1)))
       << "Failed to retrieve variable UB from XPRESS";
   return bounds;
 }
@@ -446,19 +436,19 @@ absl::Status Xpress::GetRedCosts(int* p_status,
       XPRSgetredcosts(xpress_model_, p_status, forwardSpan(dj), first, last));
 }
 
-absl::Status Xpress::AddMIPSol(
-    absl::Span<double const> vals,
-    std::optional<absl::Span<int const>> const& colind, char const* name) {
-  int len;
-  if (colind.has_value()) {
-    if (checkInt32Overflow(colind.value().size()))
-      return absl::InvalidArgumentError("more start values than columns");
-    len = static_cast<int>(colind.has_value());
-  } else {
-    ASSIGN_OR_RETURN(len, GetIntAttr(XPRS_COLS));
-  }
-  return ToStatus(XPRSaddmipsol(xpress_model_, len, vals.data(),
-                                forwardSpan(colind), name));
+/** Add a mip start that is specified in the original space, i.e., in terms of
+ * ortools variables.
+ */
+absl::Status Xpress::AddMIPSol(absl::Span<double const> vals,
+                               absl::Span<int const> colind, char const* name) {
+  if (checkInt32Overflow(colind.size()))
+    return absl::InvalidArgumentError("more start values than columns");
+  if (colind.size() != vals.size())
+    return absl::InvalidArgumentError("inconsitent data to AddMIPSol()");
+  // XPRSaddmipsol() supports colind=nullptr, but we do not support that here
+  // since we don't need it.
+  return ToStatus(XPRSaddmipsol(xpress_model_, static_cast<int>(colind.size()),
+                                vals.data(), colind.data(), name));
 }
 
 absl::Status Xpress::LoadDelayedRows(absl::Span<int const> rows) {

@@ -117,6 +117,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 #define XPRS_MINUSINFINITY -1.0e+20
 #define XPRS_MAXBANNERLENGTH 512
 #define XPVERSION 45  // >= 45 for XPRS_SOLAVAILABLE flags, XPRSgetduals(), etc.
+#define XPRS_PRESOLVESTATE 1026
 #define XPRS_MIPENTS 1032
 #define XPRS_ALGORITHM 1049
 #define XPRS_STOPSTATUS 1179
