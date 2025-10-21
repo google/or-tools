@@ -293,7 +293,7 @@ class ScopedSolverContext {
   absl::Status Set(int id, int32_t value) {
     return Set(id, int64_t(value));
   }
-  absl::Status Set(int id, int64_t const& value) {
+  absl::Status Set(int id, int64_t value) {
     ASSIGN_OR_RETURN(int64_t old, shared_ctx.xpress->GetIntControl64(id));
     modifiedControls.push_back({OneControl::INT_CONTROL, id, old});
     RETURN_IF_ERROR(shared_ctx.xpress->SetIntControl64(id, value));
