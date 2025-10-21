@@ -575,7 +575,7 @@ absl::StatusOr<bool> Xpress::IsBinary(int colidx) {
     return true;
   else if (ctype != XPRS_INTEGER)
     return false;
-  double bnd;
+  double bnd = 0.0;
   RETURN_IF_ERROR(ToStatus(XPRSgetlb(xpress_model_, &bnd, colidx, colidx)));
   if (bnd < 0.0 || bnd > 1.0) return false;
   RETURN_IF_ERROR(ToStatus(XPRSgetub(xpress_model_, &bnd, colidx, colidx)));
