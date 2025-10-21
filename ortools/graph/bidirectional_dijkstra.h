@@ -206,7 +206,6 @@ BidirectionalDijkstra<GraphType, DistanceType>::BidirectionalDijkstra(
     distances_[dir].assign(num_nodes, infinity());
     parent_arc_[dir].assign(num_nodes, -1);
   }
-  search_threads_.StartWorkers();
 }
 
 template <typename GraphType, typename DistanceType>

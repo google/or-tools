@@ -761,7 +761,6 @@ void ComputeManyToManyShortestPathsWithMultipleThreads(
                           graph.num_nodes());
     {
       std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
-      pool->StartWorkers();
       for (int i = 0; i < unique_sources.size(); ++i) {
         pool->Schedule(absl::bind_front(
             &internal::ComputeOneToManyOnGraph<GraphType>, &graph, &arc_lengths,

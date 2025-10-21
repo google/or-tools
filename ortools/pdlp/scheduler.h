@@ -51,9 +51,7 @@ class GoogleThreadPoolScheduler : public Scheduler {
  public:
   GoogleThreadPoolScheduler(int num_threads)
       : num_threads_(num_threads),
-        threadpool_(std::make_unique<ThreadPool>("pdlp", num_threads)) {
-    threadpool_->StartWorkers();
-  }
+        threadpool_(std::make_unique<ThreadPool>("pdlp", num_threads)) {}
   int num_threads() const override { return num_threads_; };
   std::string info_string() const override { return "google_threadpool"; };
 
@@ -79,7 +77,7 @@ class EigenThreadPoolScheduler : public Scheduler {
  public:
   EigenThreadPoolScheduler(int num_threads)
       : num_threads_(num_threads),
-        eigen_threadpool_(std::make_unique<Eigen::ThreadPool>(num_threads)) {}
+        g3_threadpool_(std::make_unique<Eigen::ThreadPool>(num_threads)) {}
   int num_threads() const override { return num_threads_; };
   std::string info_string() const override { return "eigen_threadpool"; };
 
@@ -87,7 +85,7 @@ class EigenThreadPoolScheduler : public Scheduler {
                    absl::AnyInvocable<void(int)> do_func) override {
     Eigen::Barrier eigen_barrier(end - start);
     for (int i = start; i < end; ++i) {
-      eigen_threadpool_->Schedule([&, i]() {
+      g3_threadpool_->Schedule([&, i]() {
         do_func(i);
         eigen_barrier.Notify();
       });
@@ -97,7 +95,7 @@ class EigenThreadPoolScheduler : public Scheduler {
 
  private:
   const int num_threads_;
-  std::unique_ptr<Eigen::ThreadPool> eigen_threadpool_ = nullptr;
+  std::unique_ptr<Eigen::ThreadPool> g3_threadpool_ = nullptr;
 };
 
 // Makes a scheduler of a given type.

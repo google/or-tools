@@ -557,7 +557,6 @@ GraphPathWithLength<GraphType> ConstrainedShortestPathsOnDagWrapper<
 
   {
     ThreadPool search_threads(2);
-    search_threads.StartWorkers();
     for (const Direction dir : {FORWARD, BACKWARD}) {
       search_threads.Schedule([this, dir, &sub_arc_lengths]() {
         RunHalfConstrainedShortestPathOnDag(
