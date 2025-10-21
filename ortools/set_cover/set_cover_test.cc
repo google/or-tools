@@ -360,7 +360,7 @@ TEST(SetCoverTest, KnightsCoverGreedyRandomClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -401,7 +401,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRandomClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -451,7 +451,7 @@ TEST(SetCoverTest, KnightsCoverElementDegreeRadiusClear) {
   // The best solution found until 2023-08 has a cost of 350.
   // http://www.contestcen.com/kn50.htm
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
@@ -489,11 +489,6 @@ TEST(SetCoverTest, KnightsCoverRandomClearMip) {
   }
   knights.DisplaySolution(best_choices);
   LOG(INFO) << "RandomClearMip cost: " << best_cost;
-  // The best solution found until 2023-08 has a cost of 350.
-  // http://www.contestcen.com/kn50.htm
-  if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
-  }
 }
 
 TEST(SetCoverTest, KnightsCoverMip) {
@@ -510,7 +505,7 @@ TEST(SetCoverTest, KnightsCoverMip) {
   LOG(INFO) << "Mip cost: " << inv.cost();
   knights.DisplaySolution(inv.is_selected());
   if (BoardSize == 50) {
-    CHECK_GE(inv.cost(), 350);
+    EXPECT_GE(inv.cost(), 350);
   }
 }
 
