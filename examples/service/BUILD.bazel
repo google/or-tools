@@ -14,11 +14,6 @@
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
 
-package(default_visibility = [
-    "//ortools/math_opt:__subpackages__",
-    "//ortools/service:__subpackages__",
-])
-
 py_binary(
     name = "solve_math_opt_model_via_http",
     srcs = ["solve_math_opt_model_via_http.py"],
