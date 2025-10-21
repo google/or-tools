@@ -352,7 +352,7 @@ absl::StatusOr<double> Xpress::GetDoubleAttr(int attribute) const {
 
 absl::StatusOr<double> Xpress::GetObjectiveDoubleAttr(int objidx,
                                                       int attribute) const {
-  double result;
+  double result = 0.0;
   RETURN_IF_ERROR(
       ToStatus(XPRSgetobjdblattrib(xpress_model_, objidx, attribute, &result)))
       << "Error getting Xpress objective double attribute: " << attribute;
