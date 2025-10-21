@@ -505,7 +505,7 @@ absl::StatusOr<int> Xpress::AddObjective(double constant, int ncols,
 
 absl::StatusOr<double> Xpress::CalculateObjectiveN(int objidx,
                                                    double const* solution) {
-  double objval;
+  double objval = 0.0;
   int ret = XPRScalcobjn(xpress_model_, objidx, solution, &objval);
   if (ret) {
     return ToStatus(ret);
