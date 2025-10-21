@@ -47,7 +47,10 @@ cc_binary(
 run_binary_test(
     name = "binpacking_2d_sat_class01_instance2_test",
     size = "medium",
-    args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    args = [
+        "--input $(rootpath //ortools/packing/testdata:Class_01.2bp)",
+        "--instance 2",
+    ],
     binary = ":binpacking_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
 )
@@ -91,21 +94,33 @@ cc_binary(
 run_binary_test(
     name = "costas_array_sat_model1_test",
     size = "medium",
-    args = ["--minsize=6 --maxsize=6 --model=1"],
+    args = [
+        "--minsize=6",
+        "--maxsize=6",
+        "--model=1",
+    ],
     binary = ":costas_array_sat",
 )
 
 run_binary_test(
     name = "costas_array_sat_model2_test",
     size = "medium",
-    args = ["--minsize=6 --maxsize=6 --model=2"],
+    args = [
+        "--minsize=6",
+        "--maxsize=6",
+        "--model=2",
+    ],
     binary = ":costas_array_sat",
 )
 
 run_binary_test(
     name = "costas_array_sat_model3_test",
     size = "medium",
-    args = ["--minsize=6 --maxsize=6 --model=3"],
+    args = [
+        "--minsize=6",
+        "--maxsize=6",
+        "--model=3",
+    ],
     binary = ":costas_array_sat",
 )
 
@@ -191,7 +206,10 @@ cc_binary(
 run_binary_test(
     name = "knapsack_2d_sat_class01_instance2_test",
     size = "medium",
-    args = ["--input $(rootpath //ortools/packing/testdata:Class_01.2bp) --instance 2"],
+    args = [
+        "--input $(rootpath //ortools/packing/testdata:Class_01.2bp)",
+        "--instance 2",
+    ],
     binary = ":knapsack_2d_sat",
     data = ["//ortools/packing/testdata:Class_01.2bp"],
 )
