@@ -351,7 +351,8 @@ struct SolveParameters {
   // Solvers will typically not return more solutions than the solution limit,
   // but this is not enforced by MathOpt, see also b/214041169.
   //
-  // Currently supported for Gurobi and SCIP, and for CP-SAT only with value 1.
+  // Currently supported for Gurobi, Xpress and SCIP, and for CP-SAT only with
+  // value 1.
   std::optional<int32_t> solution_limit;
 
   // If unset, use the solver default. If set, it must be >= 1.

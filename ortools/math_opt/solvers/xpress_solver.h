@@ -42,7 +42,6 @@
 namespace operations_research::math_opt {
 
 // Interface to FICO XPRESS solver
-// Largely inspired by the Gurobi interface
 class XpressSolver : public SolverInterface {
  public:
   // Creates the XPRESS solver and loads the model into it
