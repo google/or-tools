@@ -321,7 +321,7 @@ absl::Status Xpress::SetDblControl(int control, double value) {
 }
 
 absl::StatusOr<std::string> Xpress::GetStrControl(int control) const {
-  int nbytes;
+  int nbytes = 0;
   RETURN_IF_ERROR(
       ToStatus(XPRSgetstringcontrol(xpress_model_, control, NULL, 0, &nbytes)));
   std::vector<char> result(nbytes,
