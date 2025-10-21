@@ -44,6 +44,7 @@ void SetCoverInvariant::Clear() {
 
   lower_bound_ = 0.0;
   is_cost_consistent_ = true;
+  local_timestamp_ = model_->timestamp();
 
   const BaseInt num_subsets = model_->num_subsets();
   const BaseInt num_elements = model_->num_elements();
@@ -109,6 +110,7 @@ bool SetCoverInvariant::CheckConsistency(ConsistencyLevel consistency) const {
 void SetCoverInvariant::LoadSolution(const SubsetBoolVector& solution) {
   ClearTrace();
   ClearRemovabilityInformation();
+  local_timestamp_ = model_->timestamp();
   SubsetIndex subset(0);
   const SparseColumnView& columns = model_->columns();
   for (const bool b : solution) {
@@ -153,17 +155,23 @@ void SetCoverInvariant::LoadTraceAndCoverage(
   DCHECK(CheckConsistency(CL::kCostAndCoverage));
 }
 
-bool SetCoverInvariant::NeedToRecompute(ConsistencyLevel cheched_consistency,
-                                        ConsistencyLevel target_consistency) {
-  return consistency_level_ < cheched_consistency &&
-         cheched_consistency <= target_consistency;
+bool SetCoverInvariant::NeedToRecompute(
+    ConsistencyLevel checked_consistency,
+    ConsistencyLevel target_consistency) const {
+  return consistency_level_ < checked_consistency &&
+         checked_consistency <= target_consistency;
 }
 
 void SetCoverInvariant::Recompute(ConsistencyLevel target_consistency) {
   CHECK(target_consistency >= CL::kCostAndCoverage);
   CHECK(target_consistency <= CL::kRedundancy);
   DCHECK(CheckConsistency(consistency_level_));
-  if (NeedToRecompute(CL::kCostAndCoverage, target_consistency)) {
+  const bool cost_changed = (local_timestamp_ != model_->timestamp());
+  if (cost_changed) {
+    local_timestamp_ = model_->timestamp();
+  }
+  if (cost_changed ||
+      NeedToRecompute(CL::kCostAndCoverage, target_consistency)) {
     std::tie(cost_, coverage_) = ComputeCostAndCoverage(is_selected_);
   }
   if (NeedToRecompute(CL::kFreeAndUncovered, target_consistency)) {
@@ -389,15 +397,14 @@ bool SetCoverInvariant::Select(SubsetIndex subset,
         }
       }
     }
-    // Update coverage. Notice the asymmetry with Deselect where
-    // coverage is
-    // **decremented** before being tested. This allows to have more
-    // symmetrical code for conditions.
+    // Update coverage. Notice the asymmetry with Deselect where coverage is
+    // **decremented** before being tested. This allows to have more symmetrical
+    // code for conditions.
     ++coverage_[element];
   }
   if (update_redundancy_info) {
     if (is_redundant_[subset]) {
-      newly_removable_subsets_.push_back(subset);
+      // Nothing to do. subset was added to newly_removable_subsets_ above.
     } else {
       newly_non_removable_subsets_.push_back(subset);
     }

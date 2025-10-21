@@ -18,6 +18,7 @@
 #include <random>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "absl/types/span.h"
 #include "benchmark/benchmark.h"
 #include "gtest/gtest.h"
@@ -143,7 +144,7 @@ TEST_F(CompressedRowTest, CompressedStrongVectorSubsetIndex) {
 TEST_F(CompressedColumnTest, CompressedStrongVectorElementIndex) {
   SparseColumn original_vector{ElementIndex(100), ElementIndex(105),
                                ElementIndex(111)};
-  CompressedStrongVector<ColumnEntryIndex, ElementIndex> compressed_vector(
+  CompressedStrongList<ColumnEntryIndex, ElementIndex> compressed_vector(
       original_vector);
   std::vector<ElementIndex> expected_data = {
       ElementIndex(100), ElementIndex(105), ElementIndex(111)};
@@ -153,7 +154,7 @@ TEST_F(CompressedColumnTest, CompressedStrongVectorElementIndex) {
 SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
   SparseRow sparse_row;
   sparse_row.reserve(size);
-  std::mt19937_64 gen(std::random_device{}());  // Seed the generator
+  absl::BitGen gen;
   std::uniform_int_distribution<int64_t> dist(0, max_value);
   SubsetIndex current_value(0);
   for (size_t i = 0; i < size; ++i) {
@@ -162,7 +163,6 @@ SparseRow GenerateRandomSparseRow(size_t size, int64_t max_value) {
   }
   return sparse_row;
 }
-
 static void BM_StrongVectorIteration(benchmark::State& state) {
   const size_t size = state.range(0);
   const int64_t delta_range = state.range(1);

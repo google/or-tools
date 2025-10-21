@@ -14,8 +14,13 @@
 #ifndef OR_TOOLS_SET_COVER_BASE_TYPES_H_
 #define OR_TOOLS_SET_COVER_BASE_TYPES_H_
 
+#include <sys/types.h>
+
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -25,6 +30,7 @@
 #include "ortools/base/strong_int.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/set_cover/fast_varint.h"
 
 namespace operations_research {
 
@@ -54,6 +60,7 @@ DEFINE_STRONG_INT_TYPE(RowEntryIndex, BaseInt);
 using SubsetRange = util_intops::StrongIntRange<SubsetIndex>;
 using ElementRange = util_intops::StrongIntRange<ElementIndex>;
 using ColumnEntryRange = util_intops::StrongIntRange<ColumnEntryIndex>;
+using RowEntryRange = util_intops::StrongIntRange<RowEntryIndex>;
 
 using SubsetCostVector = util_intops::StrongVector<SubsetIndex, Cost>;
 using ElementCostVector = util_intops::StrongVector<ElementIndex, Cost>;
@@ -71,75 +78,151 @@ using SparseRowView = util_intops::StrongVector<ElementIndex, SparseRow>;
 using SubsetBoolVector = util_intops::StrongVector<SubsetIndex, bool>;
 using ElementBoolVector = util_intops::StrongVector<ElementIndex, bool>;
 
+using SubsetWeightVector = util_intops::StrongVector<SubsetIndex, double>;
+using ElementWeightVector = util_intops::StrongVector<ElementIndex, double>;
+
 // Maps from element to subset. Useful to compress the sparse row view.
 using ElementToSubsetVector =
     util_intops::StrongVector<ElementIndex, SubsetIndex>;
 
-template <typename EntryIndex, typename Index>
-class CompressedStrongVectorIterator;
+using SparseColumnIterator = SparseColumn::iterator;
+using SparseRowIterator = SparseRow::iterator;
+using SparseColumnConstIterator = SparseColumn::const_iterator;
+using SparseRowConstIterator = SparseRow::const_iterator;
 
-// A compressed vector of strong indices (e.g. SubsetIndex, ElementIndex), with
+// A compressed list of strong indices (e.g. SubsetIndex, ElementIndex), with
 // EntryIndex indicating the position in the vector (e.g. RowEntryIndex or
-// ColumnEntryIndex).
-// The vector is compressed in a variable-length encoding, where each element
+// ColumnEntryIndex). Since this is a list, the EntryIndex type is not used.
+// The list is compressed using a variable-length encoding, where each element
 // is encoded as a delta from the previous element.
-// The vector is stored in a byte stream, which is addressed byte-by-byte, which
+// The data are stored in a byte stream, which is addressed byte-by-byte, which
 // is necessary to store variable-length integers.
-// The variable-length encoding is little-endian base128 (LEB128) as used by
-// protobufs. Since we only use non-negative integers, there is no need to
-// encode the sign bit (so non-zigzag encoding or similar techniques).
-//
-// TODO(user):
-// There is a lot of room for optimization in this class.
-// - Use a bit-twiddling approach to encode and decode integers.
-// - Use another simpler variable encoding (base on vu128) using a single 64-bit
-// word and limited to storing 8 bytes with 7 bits per byte. A 64-bit word would
-// contain 8*7 = 56 bits. This is enough for an index in an array with
-// 2^56 = 7.2e16 elements, and more that the address space of current (2025)
-// machines.
-// - Access memory by 64-bit words instead of bytes.
-// - Make Codecs a template parameter of CompressedStrongVector (?)
+// But before this, we need to forward-declare CompressedStrongListIterator.
 template <typename EntryIndex, typename Index>
-class CompressedStrongVector {
+class CompressedStrongListIterator;
+
+template <typename EntryIndex, typename Index, bool dry_run = false>
+class CompressedStrongList {
  public:
-  using iterator = CompressedStrongVectorIterator<EntryIndex, Index>;
-  using const_iterator = CompressedStrongVectorIterator<EntryIndex, Index>;
+  using iterator = CompressedStrongListIterator<EntryIndex, Index>;
+  using const_iterator = CompressedStrongListIterator<EntryIndex, Index>;
   using value_type = Index;
 
-  explicit CompressedStrongVector() : memorized_value_(0), byte_stream_() {}
+  static constexpr uint64_t kMinDelta = 1;
 
-  // Initializes the compressed vector from a strong vector.
-  // TODO(user): try to guess the size of the compressed vector and pre-allocate
-  // it. Experience shows it consumes between 1 and 2 bytes per Index on
-  // average.
-  explicit CompressedStrongVector(
+  explicit CompressedStrongList()
+      : memorized_value_(0),
+        pos_(0),
+        num_items_(0),
+        size_in_bytes_(0),
+        byte_stream_ptr_(nullptr),
+        byte_stream_() {}
+
+  // Initializes the compressed list from a strong vector.
+  // The strong vector is expected to be sorted in ascending order. This
+  // guarantees that the deltas will be strictly increasing, which is necessary
+  // for the compressed encoding of EncodeSmallInteger. The vector is traversed
+  // once to compute the size of the compressed list, and allocate the memory
+  // only once to avoid thrashing. Note that we allocate an extra 7 bytes to
+  // read or write a 1-byte value as an 8-byte uint64_t without overflowing the
+  // buffer.
+  explicit CompressedStrongList(
       const util_intops::StrongVector<EntryIndex, Index>& strong_vector)
-      : memorized_value_(0), byte_stream_() {
-    for (const Index x : strong_vector) {
-      push_back(x);
+      : CompressedStrongList() {
+    Load(strong_vector);
+  }
+
+  // Same as above, but the vector is provided as a span.
+  explicit CompressedStrongList(absl::Span<const Index> span)
+      : CompressedStrongList() {
+    Load(span);
+  }
+
+  void Load(const util_intops::StrongVector<EntryIndex, Index>& strong_vector) {
+    Load(strong_vector.get());
+  }
+
+  void Load(absl::Span<const Index> span) {
+    const uint64_t size_to_reserve = ComputeCompressedSize(span);
+    byte_stream_.clear();
+    byte_stream_.resize(size_to_reserve + sizeof(memorized_value_));
+    for (const Index x : span) {
+      UnsafeAppendCompressedInteger(x.value());
     }
   }
 
-  explicit CompressedStrongVector(absl::Span<const Index> vec)
-      : memorized_value_(0), byte_stream_() {
-    for (const Index x : vec) {
-      push_back(x);
-    }
+  uint64_t ComputeCompressedSize(
+      const util_intops::StrongVector<EntryIndex, Index>& strong_vector) const {
+    return ComputeCompressedSize(strong_vector.get());
   }
 
-  // Appends an x to the vector in a compressed form.
-  void push_back(Index x) { EncodeInteger(x.value()); }
+  uint64_t ComputeCompressedSize(absl::Span<const Index> span) const {
+    // We use a dry run on another CompressedStrongList to compute the size.
+    // This is a bit inefficient, but it avoids having to reallocate memory
+    // all the time when doing the load.
+    // TODO(user): it would be even more efficient to use a pre-allocated
+    // dry-run list that would be reused for all loads.
+    CompressedStrongList<EntryIndex, Index, true> dry_run_list;
+    for (const Index x : span) {
+      dry_run_list.push_back(x);
+    }
+    return dry_run_list.size_in_bytes();
+  }
+
+  // Appends an x to the list in a compressed form.
+  void push_back(Index x) { SafeAppendCompressedInteger(x.value()); }
 
   // Returns a reference to the underlying byte stream.
   const std::vector<uint8_t>& byte_stream() const { return byte_stream_; }
 
-  // Returns the number of bytes needed to store the vector.
-  size_t size_in_bytes() const { return byte_stream_.size(); }
+  // Returns the number of bytes needed to store the list.
+  size_t size_in_bytes() const { return pos_; }
+
+  // Returns the number of items in the list.
+  uint64_t num_items() const { return num_items_; }
 
   bool empty() const { return byte_stream_.empty(); }
 
+  // Returns true if the lists are equal.
+  bool IsEqual(const CompressedStrongList& other) const {
+    return byte_stream_ == other.byte_stream_;
+  }
+
+  // Returns true if the compressed list contains the same elements as the other
+  // list.
+  bool IsEqual(absl::Span<const Index> other) const {
+    if (num_items() != other.size()) {
+      return false;
+    }
+    uint64_t i = 0;
+    for (const Index x : *this) {
+      if (x != other[i]) {
+        return false;
+      }
+      ++i;
+    }
+    return true;
+  }
+
+  // Same as above, but for a strong vector.
+  bool IsEqual(
+      const util_intops::StrongVector<EntryIndex, Index>& other) const {
+    return IsEqual(other.get());
+  }
+
   // Reserves space for n bytes.
-  void Reserve(size_t n) { byte_stream_.reserve(n); }
+  void Reserve(size_t n) {
+    byte_stream_.reserve(n + 7);  // Add space for the last value.
+  }
+
+  util_intops::StrongVector<EntryIndex, Index> ToStrongVector() const {
+    util_intops::StrongVector<EntryIndex, Index> result;
+    result.reserve(num_items());
+    for (const Index x : *this) {
+      result.push_back(x);
+    }
+    return result;
+  }
 
   // For range-for loops.
   iterator begin() { return iterator(*this); }
@@ -150,114 +233,227 @@ class CompressedStrongVector {
   const_iterator end() const { return const_iterator(*this, true); }
 
  private:
-  void EncodeInteger(BaseInt x) {
-    BaseInt delta = x - memorized_value_;  // Delta from previous value.
-    DCHECK_GE(delta, 0);
-
-    // Push the delta as a variable-length integer.
-    while (delta >= 128) {
-      // Keep the lower 7 bits of the delta and set the higher bit to 1 to mark
-      // the continuation of the variable-length encoding.
-      byte_stream_.push_back(static_cast<uint8_t>(delta | 0x80));
-      // Shift the delta by 7 bits to get the next value.
-      delta >>= 7;
+  // Writes size bytes to the byte stream at the current position pos_. pos_ is
+  // incremented by size.
+  // This is done by a single 64-bit memory write.
+  // It is the responsibility (contract) of the caller to ensure that the there
+  // is enough space in the byte stream to write an uint64_t, even though a
+  // DCHECK is there to help debug potential issues in the caller code.
+  // There is no need for a safe version of this function.
+  void UnsafeWriteRawUint64WithSize(uint64_t x, uint32_t size) {
+    // Use memcpy to make unaligned writes. On x86 there has not been any
+    // penalty for a while, apart maybe when crossing cache line boundaries.
+    if constexpr (!dry_run) {
+      DCHECK_LE(pos_ + sizeof(x), byte_stream_.size());
+      std::memcpy(byte_stream_.data() + pos_, &x, sizeof(x));
     }
-    // The final byte is less than 128, so its higher bit is zero, which marks
-    // the end of the variable-length encoding.
-    byte_stream_.push_back(static_cast<uint8_t>(delta));
+    pos_ += size;
+    ++num_items_;
+  }
 
+  // Writes VonNeumannVarint::kLargeEncodingPrefix followed by a uint64_t to the
+  // byte stream.
+  void UnsafeWritePrefixAndRawUint64(uint64_t x) {
+    DCHECK_LE(pos_ + sizeof(x) + 1, byte_stream_.size());
+    byte_stream_[pos_] = VonNeumannVarint::kLargeEncodingPrefix;
+    ++pos_;
+    UnsafeWriteRawUint64WithSize(x, sizeof(x));
+  }
+
+  std::tuple<uint64_t, uint32_t> EncodeSmallInteger(uint64_t x) const {
+    DCHECK_GE(x, memorized_value_);
+    const uint64_t delta = x - memorized_value_;  // Delta from previous value.
+    DCHECK(!VonNeumannVarint::NeedsLargeEncoding(delta))
+        << "Delta is too large: " << delta;
+    const uint64_t encoded_value = VonNeumannVarint::EncodeSmallVarint(delta);
+    const uint32_t size = VonNeumannVarint::EncodingLength(encoded_value);
+    return {encoded_value, size};
+  }
+
+  void UnsafeAppendCompressedInteger(uint64_t x) {
+    const auto [encoded_value, size] = EncodeSmallInteger(x);
+    UnsafeWriteRawUint64WithSize(encoded_value, size);
+    memorized_value_ = x + kMinDelta;
+  }
+
+  void SafeAppendCompressedInteger(uint64_t x) {
+    if constexpr (!dry_run) {
+      byte_stream_.resize(pos_ + sizeof(x));
+    }
+    UnsafeAppendCompressedInteger(x);
+  }
+
+  // Encodes any integer and writes it to the byte stream in a compressed form.
+  // If the delta is larger than kLargeEncodingValue, it is encoded using the
+  // WritePrefixAndRawUint64 function. Otherwise, it is encoded using the
+  // EncodeSmallInteger function.
+  // Note that x MUST be larger than the last value appended to the list.
+  void UnsafeAppendAnyCompressedInteger(uint64_t x) {
+    // Make sure that there is enough space in the byte stream to write the
+    // large encoding.
+    DCHECK_LT(pos_ + sizeof(x) + 1, byte_stream_.size());
+    // This should almost be a CHECK_GT because it is very important that the
+    // encoded value is strictly larger than the previous value.
+    // TODO(user): Check the performance hit of using a ZigZag encoding or
+    // similar, to enable negative deltas.
+    DCHECK_GT(x, memorized_value_);
+    const uint64_t delta = x - memorized_value_;  // Delta from previous value.
+    if (VonNeumannVarint::NeedsLargeEncoding(delta)) {
+      UnsafeWritePrefixAndRawUint64(delta);
+    } else {
+      const auto [encoded_value, size] = EncodeSmallInteger(x);
+      UnsafeWriteRawUint64WithSize(encoded_value, size);
+    }
     // Do not forget to remember the last value.
     memorized_value_ = x + kMinDelta;
   }
-  // The last value memorized in the vector. It is defined as the last value
-  // appended to the vector plus a kMinDelta. It starts at zero.
-  BaseInt memorized_value_;
 
-  // The minimum difference between two consecutive elements in the vector.
-  static constexpr int64_t kMinDelta = 1;
+  // Safe version of UnsafeAppendAnyCompressedInteger, that ensures that there
+  // is enough space in the byte stream to write the encoded value.
+  void SafeAppendAnyCompressedInteger(uint64_t x) {
+    if constexpr (!dry_run) {
+      byte_stream_.resize(pos_ + sizeof(x) + 1);
+    }
+    UnsafeAppendAnyCompressedInteger(x);
+  }
+
+  // The last value memorized in the list. It is defined as the last value
+  // appended to the list plus a kMinDelta. It starts at zero.
+  uint64_t memorized_value_;
+
+  // The current position in the byte stream.
+  uint64_t pos_;
+
+  // The number of items in the list. Not named size_ to avoid confusion
+  // with size_in_bytes_.
+  uint64_t num_items_;
+
+  // The size of the byte stream.
+  uint64_t size_in_bytes_;
+
+  // The pointer to the current position in the byte stream.
+  // This property must always hold:
+  //     byte_stream_ptr_== byte_stream_.data() + pos_.
+  // When dereferencing byte_stream_ptr_:
+  //     byte_stream_ptr_ < byte_stream_.data() + size_in_bytes.
+  uint8_t* byte_stream_ptr_;
 
   // The byte stream.
   std::vector<uint8_t> byte_stream_;
 };
 
-// Iterator for a compressed strong vector. There is no tool for decompressing
-// a compressed strong vector, so this iterator is the only way to access the
-// elements, always in order.
-// The iterator is not thread-safe.
 template <typename EntryIndex, typename Index>
-class CompressedStrongVectorIterator {
+class CompressedStrongListIterator {
  public:
-  explicit CompressedStrongVectorIterator(
-      const CompressedStrongVector<EntryIndex, Index>& compressed_vector)
+  // Make sure that the minimum delta of the iterator (decoder) is the same as
+  // the minimum delta of the compressed list (encoder).
+  static constexpr uint64_t kMinDelta =
+      CompressedStrongList<EntryIndex, Index>::kMinDelta;
+
+  explicit CompressedStrongListIterator(
+      const CompressedStrongList<EntryIndex, Index, false>& compressed_vector)
       : compressed_vector_(compressed_vector),
         memorized_value_(0),
         pos_(0),
         last_pos_(0) {}
-
-  explicit CompressedStrongVectorIterator(
-      const CompressedStrongVector<EntryIndex, Index>& compressed_vector,
+  explicit CompressedStrongListIterator(
+      const CompressedStrongList<EntryIndex, Index, false>& compressed_vector,
       bool at_end)
       : compressed_vector_(compressed_vector),
         memorized_value_(0),
         pos_(0),
         last_pos_(at_end ? compressed_vector.size_in_bytes() : 0) {}
 
-  bool at_end() const {
-    DCHECK_LE(last_pos_, compressed_vector_.size_in_bytes());
-    return last_pos_ == compressed_vector_.size_in_bytes();
-  }
-
   Index operator*() { return DecodeInteger(); }
 
-  bool operator==(const CompressedStrongVectorIterator& other) const {
+  bool operator==(const CompressedStrongListIterator& other) const {
     DCHECK_EQ(&compressed_vector_, &(other.compressed_vector_));
     return last_pos_ == other.last_pos_;
   }
 
-  bool operator!=(const CompressedStrongVectorIterator& other) const {
+  bool operator!=(const CompressedStrongListIterator& other) const {
     return !(*this == other);
   }
 
-  CompressedStrongVectorIterator& operator++() {
+  CompressedStrongListIterator& operator++() {
     last_pos_ = pos_;
     return *this;
   }
 
  private:
-  Index DecodeInteger() {
-    // This can be made much faster by using a bit-twiddling approach.
-    const std::vector<uint8_t>& encoded = compressed_vector_.byte_stream();
-    BaseInt delta = 0;
-    int shift = 0;
-    for (pos_ = last_pos_, shift = 0;
-         encoded[pos_] >= 128 && pos_ < compressed_vector_.size_in_bytes();
-         shift += 7, ++pos_) {
-      delta |= static_cast<BaseInt>(encoded[pos_] & 0x7F) << shift;
-    }
-    delta |= static_cast<BaseInt>(encoded[pos_]) << shift;
-    ++pos_;
-    memorized_value_ += Index(delta + kMinDelta);
-    return memorized_value_ - Index(kMinDelta);
+  // Returns the uint64_t at the given byte position.
+  // It is the responsibility (contract) of the caller to ensure that the
+  // position is valid.
+  uint64_t ReadUint64AtByte(uint64_t pos) const {
+    uint64_t result;
+    // For debugging: Make sure we do not read past the end of the list.
+    DCHECK_LE(pos + sizeof(result), compressed_vector_.byte_stream().size());
+    std::memcpy(&result, compressed_vector_.byte_stream().data() + pos,
+                sizeof(result));
+    // Issuing a prefetch instruction can yield a performance gain of 5 to 10%.
+    // But this depends on the instance. This needs a lot of tuning and
+    // evaluation which is left for a future CL.
+    // TODO(user): Add a prefetch instruction such as the following:
+    // __builtin_prefetch(compressed_vector_.byte_stream().data() + pos + 64);
+    return result;
   }
 
-  // The compressed vector.
-  const CompressedStrongVector<EntryIndex, Index>& compressed_vector_;
+  // Decodes an integer from the byte stream at the current position.
+  // The integer is guaranteed to be in the range [0, 1 << 56).
+  Index DecodeInteger() {
+    const uint64_t encoded_value = ReadUint64AtByte(pos_);
+    const uint64_t first_byte = encoded_value & 0xFF;
+    // If the least significant bit is clear, we use the fast path for a single
+    // byte. This brings a performance gain of 5-10%.
+    if (VonNeumannVarint::UsesOneByte(first_byte)) {
+      ++pos_;
+      memorized_value_ += (first_byte >> 1) + kMinDelta;
+      return Index(memorized_value_ - kMinDelta);
+    }
+    const uint32_t size = VonNeumannVarint::EncodingLength(encoded_value);
+    // Check that the encoding size is smaller than the size of a uint64_t.
+    DCHECK_LT(size, sizeof(encoded_value));
+    const uint64_t delta = VonNeumannVarint::DecodeSmallVarint(encoded_value);
+    pos_ += size;
+    memorized_value_ += delta + kMinDelta;
+    return Index(memorized_value_ - kMinDelta);
+  }
+
+  // Decode an integer from the byte stream at the current position in the
+  // general case. The integer can have up to 64 bits.
+  Index DecodeAnyInteger() {
+    const uint64_t encoded_value = ReadUint64AtByte(pos_);
+    // If the encoded value uses the large encoding, we read the uint64_t
+    // directly starting at the next byte. Otherwise, we use the small encoding.
+    const bool uses_large_encoding =
+        VonNeumannVarint::UsesLargeEncoding(encoded_value);
+    const uint64_t delta =
+        uses_large_encoding
+            ? ReadUint64AtByte(pos_ + 1)
+            : VonNeumannVarint::DecodeSmallVarint(encoded_value);
+    pos_ += uses_large_encoding
+                ? sizeof(encoded_value) + 1
+                : VonNeumannVarint::EncodingLength(encoded_value);
+    memorized_value_ += delta + kMinDelta;
+    return Index(memorized_value_ - kMinDelta);
+  }
+
+  // The compressed list.
+  const CompressedStrongList<EntryIndex, Index>& compressed_vector_;
 
   // The last value memorized in the decoder. It is defined as the last value
-  // appended to the vector plus a kMinDelta. It starts at zero.
-  Index memorized_value_;
+  // appended to the list plus a kMinDelta. It starts at zero.
+  uint64_t memorized_value_;
 
   // The current position in the byte stream.
-  int64_t pos_;
+  uint64_t pos_;
 
   // The last position in the byte stream.
-  int64_t last_pos_;
-
-  static constexpr int64_t kMinDelta = 1;
+  uint64_t last_pos_;
 };
 
-using CompressedColumn = CompressedStrongVector<ColumnEntryIndex, ElementIndex>;
-using CompressedRow = CompressedStrongVector<RowEntryIndex, SubsetIndex>;
+using CompressedColumn = CompressedStrongList<ColumnEntryIndex, ElementIndex>;
+using CompressedRow = CompressedStrongList<RowEntryIndex, SubsetIndex>;
 
 using CompressedColumnView =
     util_intops::StrongVector<SubsetIndex, CompressedColumn>;
@@ -265,15 +461,19 @@ using CompressedRowView =
     util_intops::StrongVector<ElementIndex, CompressedRow>;
 
 using CompressedColumnIterator =
-    CompressedStrongVectorIterator<ColumnEntryIndex, ElementIndex>;
+    CompressedStrongListIterator<ColumnEntryIndex, ElementIndex>;
 using CompressedRowIterator =
-    CompressedStrongVectorIterator<RowEntryIndex, SubsetIndex>;
+    CompressedStrongListIterator<RowEntryIndex, SubsetIndex>;
+using CompressedColumnConstIterator =
+    CompressedStrongListIterator<ColumnEntryIndex, ElementIndex>;
+using CompressedRowConstIterator =
+    CompressedStrongListIterator<RowEntryIndex, SubsetIndex>;
 
 template <typename Index>
 class IndexRangeIterator;
 
-// A range of indices, that can be iterated over. Useful if used in a range-for
-// loop or as an IterableContainer.
+// A range of indices, that can be iterated over. Useful if used in a
+// range-for loop or as an IterableContainer.
 template <typename Index>
 class IndexRange {
  public:
@@ -342,7 +542,7 @@ class IndexRangeIterator {
 // A container that can be iterated over, but does not own the data.
 // The container can be either const or non-const.
 // The container can be either a std::vector, a absl::Span, an IndexRange, a
-// StrongVector or a CompressedStrongVector.
+// StrongVector or a CompressedStrongList.
 // We use the Curiously-Recurring Template Pattern (CRTP) to avoid having to
 // specify the type of the container in the derived class, and to not lose
 // runtime performance because of virtual functions.
@@ -390,10 +590,11 @@ class StopWatch {
     timer_.Stop();
     *duration_ = timer_.GetDuration();
   }
-  // Returns the elapsed time in seconds at a given moment. To be use to
+  // Returns the elapsed time in seconds at a given moment. To be used to
   // implement time limits in the derived classes.
   double elapsed_time_in_seconds() const { return timer_.Get(); }
 
+  // Returns the elapsed time as an absl::Duration.
   absl::Duration GetElapsedDuration() const { return timer_.GetDuration(); }
 
  private:

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
 #define OR_TOOLS_SET_COVER_SET_COVER_INVARIANT_H_
 
+#include <cstdint>
 #include <tuple>
 #include <vector>
 
@@ -109,19 +110,37 @@ class SetCoverInvariant {
   }
 
   // Returns the cost of current solution.
-  Cost cost() const { return cost_; }
+  Cost cost() {
+    if (local_timestamp_ != model_->timestamp()) {
+      local_timestamp_ = model_->timestamp();
+      const SubsetCostVector& subset_costs = model_->subset_costs();
+      cost_ = 0.0;
+      SubsetIndex subset(0);
+      for (const bool b : is_selected_) {
+        if (b) {
+          cost_ += subset_costs[subset];
+        }
+        ++subset;
+      }
+    }
+    return cost_;
+  }
 
   // Returns the cost of the current solution, or the lower bound if the
   // solution is a relaxation.
-  Cost CostOrLowerBound() const {
+  Cost CostOrLowerBound() {
     // For the time being we assume that we either have a feasible solution or
     // a relaxation.
-    return is_cost_consistent_ ? cost_ : lower_bound_;
+    return is_cost_consistent_ ? cost() : lower_bound_;
   }
 
   // Returns true if the cost of the current solution is consistent with the
   // solution.
   bool is_cost_consistent() const { return is_cost_consistent_; }
+
+  // Returns the timestamp corresponding to the change of the model
+  // on which the invariant is synchronized.
+  int64_t timestamp() const { return local_timestamp_; }
 
   // Returns the lower bound of the problem.
   Cost LowerBound() const { return lower_bound_; }
@@ -151,11 +170,12 @@ class SetCoverInvariant {
   ElementToIntVector ComputeCoverageInFocus(
       absl::Span<const SubsetIndex> focus) const;
 
-  // Returns vector of Booleans telling whether each subset can be removed from
-  // the solution.
+  // Returns vector of Booleans telling whether each subset can be removed
+  // from the solution.
   const SubsetBoolVector& is_redundant() const { return is_redundant_; }
 
-  // Returns the vector of the decisions which have led to the current solution.
+  // Returns the vector of the decisions which have led to the current
+  // solution.
   const std::vector<SetCoverDecision>& trace() const { return trace_; }
 
   // Clears the trace.
@@ -201,12 +221,12 @@ class SetCoverInvariant {
   // Loads the solution and recomputes the data in the invariant.
   void LoadSolution(const SubsetBoolVector& solution);
 
-  // Loads the trace and the coverage. When both the trace and the coverage are
-  // loaded, the invariant is consistent at level kCostAndCoverage.
-  // It's also faster than to load a solution and recompute the cost and
-  // coverage. The trace and the coverage are expected to be consistent,
-  // otherwise the behavior is undefined (i.e. the invariant is not consistent,
-  // unless the code is run in DEBUG mode).
+  // Loads the trace and the coverage. When both the trace and the coverage
+  // are loaded, the invariant is consistent at level kCostAndCoverage. It's
+  // also faster than to load a solution and recompute the cost and coverage.
+  // The trace and the coverage are expected to be consistent, otherwise the
+  // behavior is undefined (i.e. the invariant is not consistent, unless the
+  // code is run in DEBUG mode).
   void LoadTraceAndCoverage(const std::vector<SetCoverDecision>& trace,
                             const ElementToIntVector& coverage);
 
@@ -229,15 +249,15 @@ class SetCoverInvariant {
   // and incrementally updating the invariant to the given consistency level.
   // Returns false if the subset is already selected.
   // This allows a programming style where Select is embedded in a DCHECK, or
-  // to write `if (Select(subset, consistency)) { ... }`, which is more readable
-  // than `if (!is_selected_[subset]) { Select(subset, consistency); ... }`
-  // The above is a good programming style for example to count how many
-  // elements were actually set.
+  // to write `if (Select(subset, consistency)) { ... }`, which is more
+  // readable than `if (!is_selected_[subset]) { Select(subset, consistency);
+  // ... }` The above is a good programming style for example to count how
+  // many elements were actually set.
   bool Select(SubsetIndex subset, ConsistencyLevel consistency);
 
-  // Excludes subset from the solution by setting is_selected_[subset] to false
-  // and incrementally updating the invariant to the given consistency level.
-  // Returns false if the subset is already deselected.
+  // Excludes subset from the solution by setting is_selected_[subset] to
+  // false and incrementally updating the invariant to the given consistency
+  // level. Returns false if the subset is already deselected.
   bool Deselect(SubsetIndex subset, ConsistencyLevel consistency);
 
   // Returns the current solution as a proto.
@@ -249,6 +269,7 @@ class SetCoverInvariant {
  private:
   // Computes the cost and the coverage vector for the given choices.
   // Temporarily uses |E| BaseInts.
+  // Does not update the timestamp, because it is const and private.
   std::tuple<Cost, ElementToIntVector> ComputeCostAndCoverage(
       const SubsetBoolVector& choices) const;
 
@@ -261,9 +282,8 @@ class SetCoverInvariant {
   ComputeNumUncoveredAndFreeElements(const ElementToIntVector& cvrg) const;
 
   // Computes the vector containing the number of non-overcovered elements per
-  // subset and the Boolean vector telling whether a subset is redundant w.r.t.
-  // the current solution.
-  // Temporarily uses |S| BaseInts.
+  // subset and the Boolean vector telling whether a subset is redundant
+  // w.r.t. the current solution. Temporarily uses |S| BaseInts.
   std::tuple<SubsetToIntVector,  // Number of non-overcovered elements,
              SubsetBoolVector>   // Redundancy for each of the subsets.
   ComputeRedundancyInfo(const ElementToIntVector& cvrg) const;
@@ -271,8 +291,8 @@ class SetCoverInvariant {
   // Returns true if the current consistency level consistency_ is lower than
   // cheched_consistency and the desired consistency is higher than
   // cheched_consistency.
-  bool NeedToRecompute(ConsistencyLevel cheched_consistency,
-                       ConsistencyLevel target_consistency);
+  bool NeedToRecompute(ConsistencyLevel checked_consistency,
+                       ConsistencyLevel target_consistency) const;
 
   // The weighted set covering model on which the solver is run.
   SetCoverModel* model_;
@@ -280,11 +300,14 @@ class SetCoverInvariant {
   // Current cost.
   Cost cost_;
 
-  // True it the cost is consistent with the solution. Used to decide whether to
-  // report the cost or the lower bound.
-  // This is initialized to true, and set to false when a lower bound is
-  // reported without a feasible solution.
+  // True it the cost is consistent with the solution. Used to decide whether
+  // to report the cost or the lower bound. This is initialized to true,
+  // and set to false when a lower bound is reported without a feasible
+  // solution.
   bool is_cost_consistent_;
+
+  // Timestamp of the model on which the invariant is based.
+  int64_t local_timestamp_;
 
   // The lower bound of the problem, when has_relaxation_ is true.
   // By default it is 0.0.
@@ -313,9 +336,9 @@ class SetCoverInvariant {
   // Takes |S| BaseInts.
   SubsetToIntVector num_free_elements_;
 
-  // Counts the number of free or exactly covered elements, i.e. whose coverage
-  // is 0 or 1.
-  // Takes at most |S| BaseInts. (More likely a few percent of that).
+  // Counts the number of free or exactly covered elements, i.e. whose
+  // coverage is 0 or 1. Takes at most |S| BaseInts. (More likely a few
+  // percent of that).
   SubsetToIntVector num_non_overcovered_elements_;
 
   // True if the subset is redundant, i.e. can be removed from the solution
@@ -332,8 +355,8 @@ class SetCoverInvariant {
   std::vector<SubsetIndex> newly_non_removable_subsets_;
 
   // Denotes the consistency level of the invariant.
-  // Some algorithms may need to recompute the invariant to a higher consistency
-  // level.
+  // Some algorithms may need to recompute the invariant to a higher
+  // consistency level.
   // TODO(user): think of making the enforcement of the consistency level
   // automatic at the constructor level of the heuristic algorithms.
   ConsistencyLevel consistency_level_;

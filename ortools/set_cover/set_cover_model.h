@@ -29,28 +29,29 @@
 
 // Representation class for the weighted set-covering problem.
 //
-// Let E be a "universe" set, let (S_j) be a family (j in J) of subsets of E,
-// and c_j costs associated to each S_j. Note that J = {j in 1..|S|}.
+// Let U = {1, ..., m} be a "universe" set, let (S_j) be a family (j in J)
+// of subsets of U, and c_j costs associated to each S_j. Note that J = {j
+// in 1..|S|}.
 //
 // The minimum-cost set-covering problem consists in finding K (for covering),
-// a subset of J such that the union of all the S_j for k in K is equal to E
-// (the subsets indexed by K "cover" E), while minimizing total cost sum c_k (k
+// a subset of J such that the union of all the S_j for k in K is equal to U
+// (the subsets indexed by K "cover" U), while minimizing total cost sum c_k (k
 // in K).
 //
 // In Mixed-Integer Programming and matrix terms, the goal is to find values
 // of binary variables x_j, where x_j is 1 when subset S_j is in K, 0
 // otherwise, that minimize the sum of c_j * x_j subject to M.x >= 1. Each row
-// corresponds to an element in E.
+// corresponds to an element in U.
 //
 // The matrix M for linear constraints is defined as follows:
-// - it has as many rows as there are elements in E.
-// - its columns are such that M(i, j) = 1 iff the i-th element of E is present
-//   in S_j.
+// - it has as many rows as there are elements in U.
+// - its columns are such that M(i, j) = 1 iff i in S_j.
 //
-// We also use m to denote |E|, the number of elements, and n to denote |S|, the
+// We also use m to denote |U|, the number of elements, and n to denote |S|, the
 // number of subsets.
-// Finally, NNZ denotes the numbers of non-zeros, i.e. the sum of the
+// Finally, nnz denotes the numbers of non-zeros, i.e. the sum of the
 // cardinalities of all the subsets.
+// We use nnz(S) = sum_{j in J} |S_j| and nnz(K) = sum_{k in K} |S_k|).
 
 namespace operations_research {
 
@@ -60,19 +61,23 @@ class SetCoverModel {
   // Constructs an empty weighted set-covering problem.
   explicit SetCoverModel(const absl::string_view name = "SetCoverModel")
       : name_(name),
+        timestamp_(0),
         num_elements_(0),
         num_subsets_(0),
         num_nonzeros_(0),
         row_view_is_valid_(false),
-        elements_in_subsets_are_sorted_(false),
+        elements_in_columns_are_sorted_(false),
         subset_costs_(),
         is_unicost_(true),
         is_unicost_valid_(false),
+        compressed_views_are_valid_(false),
         columns_(),
         rows_(),
         all_subsets_() {}
 
   std::string name() const { return name_; }
+
+  int64_t timestamp() const { return timestamp_; }
 
   void SetName(const absl::string_view name) { name_ = name; }
 
@@ -102,7 +107,7 @@ class SetCoverModel {
 
   // Returns true if the model is empty, i.e. has no elements, no subsets, and
   // no nonzeros.
-  bool IsEmpty() const { return rows_.empty() || columns_.empty(); }
+  bool IsEmpty() const { return columns_.empty(); }
 
   // Current number of elements to be covered in the model, i.e. the number of
   // elements in S. In matrix terms, this is the number of rows.
@@ -150,6 +155,12 @@ class SetCoverModel {
   // Vector of costs for each subset.
   const SubsetCostVector& subset_costs() const { return subset_costs_; }
 
+  void set_subset_costs(const SubsetCostVector& subset_costs) {
+    subset_costs_ = subset_costs;
+    is_unicost_valid_ = false;
+    ++timestamp_;
+  }
+
   // Returns true if all subset costs are equal to 1.0. This is a fast check
   // that is only valid if the subset costs are not modified.
   bool is_unicost() {
@@ -174,6 +185,20 @@ class SetCoverModel {
   const SparseRowView& rows() const {
     DCHECK(row_view_is_valid_);
     return rows_;
+  }
+
+  // Compressed column view of the set covering problem.
+  const CompressedColumnView& compressed_columns() const {
+    DCHECK(!compressed_columns_.empty())
+        << "Compressed columns have not been created.";
+    return compressed_columns_;
+  }
+
+  // Compressed row view of the set covering problem.
+  const CompressedRowView& compressed_rows() const {
+    DCHECK(!compressed_rows_.empty())
+        << "Compressed rows have not been created.";
+    return compressed_rows_;
   }
 
   // Returns true if rows_ and columns_ represent the same problem.
@@ -226,9 +251,44 @@ class SetCoverModel {
   // model to a proto.
   void SortElementsInSubsets();
 
+  // Compresses the column and adds it compressed to the model.
+  // column must be sorted.
+  void CompressAndAddColumn(SubsetIndex subset, const SparseColumn& column);
+
+  // Compresses the row and adds it compressed to the model. row must be
+  // sorted.
+  void CompressAndAddRow(ElementIndex element, const SparseRow& row);
+
   // Creates the sparse ("dual") representation of the problem. This also sorts
   // the elements in each subset.
   void CreateSparseRowView();
+
+  void CreateSparseColumnView();
+
+  // Creates the compressed ("primal" and "dual") representations of the
+  // problem. This also sorts the elements in each subset.
+  void CreateCompressedViews();
+
+  // Creates the compressed row view of the problem from the compressed columns.
+  void CreateCompressedRowView();
+
+  // Creates the compressed column view of the problem from the compressed rows.
+  void CreateCompressedColumnView();
+
+  // Converts the compressed views to the sparse views.
+  // TODO(user): Be more careful with the memory allocation.
+  void ConvertCompressedToSparseColumnView();
+  void ConvertCompressedToSparseRowView();
+
+  // Converts the sparse views to the compressed views.
+  void ConvertSparseToCompressedColumnView();
+  void ConvertSparseToCompressedRowView();
+
+  // Returns true if the sparse and compressed column views are equal.
+  bool CheckCompressedColumnView() const;
+
+  // Returns true if the sparse and compressed row views are equal.
+  bool CheckCompressedRowView() const;
 
   // Same as CreateSparseRowView, but uses a slicing algorithm, more prone to
   // parallelism.
@@ -270,7 +330,16 @@ class SetCoverModel {
   // This function will never remove a column, i.e. if num_subsets is smaller
   // than the current instance size the function does nothing.
   void ResizeNumSubsets(BaseInt num_subsets);
-  void ResizeNumSubsets(SubsetIndex num_subsets);
+  void ResizeNumSubsets(SubsetIndex num_subsets) {
+    ResizeNumSubsets(num_subsets.value());
+  }
+
+  // Resizes the model to have at least num_elements in rows_ and
+  // compressed_rows_.
+  void ResizeNumElements(BaseInt num_elements);
+  void ResizeNumElements(ElementIndex num_elements) {
+    ResizeNumElements(num_elements.value());
+  }
 
   // Reserves num_elements rows in the column indexed by subset.
   void ReserveNumElementsInSubset(BaseInt num_elements, BaseInt subset);
@@ -329,13 +398,15 @@ class SetCoverModel {
   // Computes deciles on columns and returns a vector of deciles.
   std::vector<int64_t> ComputeColumnDeciles() const;
 
-  // Computes basic statistics on the deltas of the row and column elements and
-  // returns a Stats structure. The deltas are computed as the difference
-  // between two consecutive indices in rows or columns. The number of bytes
-  // computed is meant using a variable-length base-128 encoding.
-  // TODO(user): actually use this to compress the rows and columns.
-  Stats ComputeRowDeltaSizeStats() const;
-  Stats ComputeColumnDeltaSizeStats() const;
+  // Computes the compression ratio of the rows defined as the ratio between the
+  // number of bytes needed to store the indices of the non-zeros and the number
+  // of bytes needed to store them in the compressed rows. As for engines, it is
+  // greater than 1 because the compressed rows take less space than the
+  // original rows.
+  double ComputeRowCompressionRatio() const;
+
+  // Same as above, but for columns.
+  double ComputeColumnCompressionRatio() const;
 
  private:
   // Updates the all_subsets_ vector so that it always contains 0 to
@@ -344,6 +415,10 @@ class SetCoverModel {
 
   // The name of the model, "SetCoverModel" as default.
   std::string name_;
+
+  // Time stamp (i.e. "version number") of the model. Used to check if the model
+  // has been modified since the last time it was used.
+  int64_t timestamp_;
 
   // Number of elements.
   BaseInt num_elements_;
@@ -358,8 +433,14 @@ class SetCoverModel {
   // True when the SparseRowView is up-to-date.
   bool row_view_is_valid_;
 
-  // True when the elements in each subset are sorted.
-  bool elements_in_subsets_are_sorted_;
+  // True when the SparseColumnView is up-to-date.
+  bool column_view_is_valid_;
+
+  // True when the elements in each column are sorted.
+  bool elements_in_columns_are_sorted_;
+
+  // True when the subsets in each row are sorted.
+  bool subsets_in_rows_are_sorted_;
 
   // Costs for each subset.
   SubsetCostVector subset_costs_;
@@ -370,9 +451,15 @@ class SetCoverModel {
   // True when is_unicost_ is up-to-date.
   bool is_unicost_valid_;
 
+  // True when the compressed views have been created.
+  bool compressed_views_are_valid_;
+
   // Stores the run time for CreateSparseRowView. Interesting to compare with
   // the time spent to actually generate a solution to the model.
   absl::Duration create_sparse_row_view_duration_;
+
+  // Stores the run time for CreateSparseColumnView.
+  absl::Duration create_sparse_column_view_duration_;
 
   // Stores the run time for ComputeSparseRowViewUsingSlices.
   absl::Duration compute_sparse_row_view_using_slices_duration_;
@@ -386,25 +473,24 @@ class SetCoverModel {
 
   // Vector of columns. Each column corresponds to a subset and contains the
   // elements of the given subset.
-  // This takes NNZ (number of non-zeros) BaseInts, or |E| * |S| * fill_rate.
+  // This takes nnz(S) (number of non-zeros) BaseInts, or |U| * |S| * fill_rate.
   // On classical benchmarks, the fill rate is in the 2 to 5% range.
   // Some synthetic benchmarks have fill rates of 20%, while benchmarks for
   // rail rotations have a fill rate of 0.2 to 0.4%.
-  // TODO(user): try using a compressed representation like VarInt or LEB128,
-  // since the data is only iterated upon.
   SparseColumnView columns_;
+  CompressedColumnView compressed_columns_;
 
   // Vector of rows. Each row corresponds to an element and contains the
   // subsets containing the element.
   // The size is exactly the same as for columns_ (or there would be a bug.)
   SparseRowView rows_;
+  CompressedRowView compressed_rows_;
 
   // Vector of indices from 0 to columns.size() - 1. (Like std::iota, but built
   // incrementally.) Used to (un)focus optimization algorithms on the complete
   // problem.
   // This takes |S| BaseInts.
-  // TODO(user): use this to enable deletion and recycling of columns/subsets.
-  // TODO(user): replace this with an iterator?
+  // TODO(user): use an IndexRange(0, columns_.size()) instead.
   std::vector<SubsetIndex> all_subsets_;
 };
 
@@ -421,69 +507,74 @@ class IntersectingSubsetsIterator {
                               SubsetIndex seed_subset, bool at_end = false)
       : model_(model),
         seed_subset_(seed_subset),
-        seed_column_(model_.columns()[seed_subset]),
-        seed_column_size_(ColumnEntryIndex(seed_column_.size())),
         intersecting_subset_(0),  // meaningless, will be overwritten.
-        element_entry_(0),
+        new_row_(true),
+        seed_column_(model_.columns()[seed_subset]),
+        seed_column_it_(),
         rows_(model_.rows()),
+        row_it_(),
         subset_seen_() {
-    // For iterator to be as light as possible when created, we do not reserve
-    // space for the subset_seen_ vector, and we do not initialize it. This
-    // is done to avoid the overhead of creating the vector and initializing it
-    // when the iterator is created. The vector is created on the first call to
-    // the ++ operator.
+    // For the iterator to be as light as possible when created, we do not
+    // reserve space for the subset_seen_ vector, and we do not initialize it.
+    // This is done to avoid the overhead of creating the vector and
+    // initializing it when the iterator is created. The vector is created on
+    // the first call to the ++ operator.
     DCHECK(model_.row_view_is_valid());
     if (at_end) {
-      element_entry_ = seed_column_size_;
+      seed_column_it_ = seed_column_.end();  // set iterator to end
       return;
     }
-    for (; element_entry_ < seed_column_size_; ++element_entry_) {
-      const ElementIndex current_element = seed_column_[element_entry_];
+    for (seed_column_it_ = seed_column_.begin();
+         seed_column_it_ != seed_column_.end(); ++seed_column_it_) {
+      const ElementIndex current_element = *seed_column_it_;
       const SparseRow& current_row = rows_[current_element];
-      const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
-      for (; subset_entry_ < current_row_size; ++subset_entry_) {
-        if (intersecting_subset_ == seed_subset_) continue;
-        intersecting_subset_ = current_row[subset_entry_];
+      if (new_row_) {
+        row_it_ = current_row.begin();
+        new_row_ = false;
+      }
+      for (; row_it_ != current_row.end(); ++row_it_) {
+        if (*row_it_ == seed_subset_) continue;
+        intersecting_subset_ = *row_it_;
         return;
       }
-      subset_entry_ = RowEntryIndex(0);  // 'carriage-return'
+      new_row_ = true;  // 'carriage-return'
     }
   }
 
   // Returns (true) whether the iterator is at the end.
-  bool at_end() const { return element_entry_ == seed_column_size_; }
+  bool at_end() const { return seed_column_it_ == seed_column_.end(); }
 
   // Returns the intersecting subset.
   SubsetIndex operator*() const { return intersecting_subset_; }
 
   // Disequality operator.
   bool operator!=(const IntersectingSubsetsIterator& other) const {
-    return element_entry_ != other.element_entry_ ||
-           subset_entry_ != other.subset_entry_ ||
-           seed_subset_ != other.seed_subset_;
+    return seed_subset_ != other.seed_subset_ ||
+           seed_column_it_ != other.seed_column_it_;
   }
 
   // Advances the iterator to the next intersecting subset.
   IntersectingSubsetsIterator& operator++() {
-    DCHECK(!at_end()) << "element_entry_ = " << element_entry_
-                      << " subset_entry_ = " << subset_entry_
-                      << " seed_column_size_ = " << seed_column_size_;
+    DCHECK(!at_end());
     if (subset_seen_.empty()) {
       subset_seen_.resize(model_.num_subsets(), false);
       subset_seen_[seed_subset_] = true;
     }
     subset_seen_[intersecting_subset_] = true;
-    for (; element_entry_ < seed_column_size_; ++element_entry_) {
-      const ElementIndex current_element = seed_column_[element_entry_];
+    for (; seed_column_it_ != seed_column_.end(); ++seed_column_it_) {
+      const ElementIndex current_element = *seed_column_it_;
       const SparseRow& current_row = rows_[current_element];
-      const RowEntryIndex current_row_size = RowEntryIndex(current_row.size());
-      for (; subset_entry_ < current_row_size; ++subset_entry_) {
-        intersecting_subset_ = current_row[subset_entry_];
+      if (new_row_) {
+        row_it_ = current_row.begin();
+        new_row_ = false;
+      }
+      for (; row_it_ < current_row.end(); ++row_it_) {
+        intersecting_subset_ = *row_it_;
         if (!subset_seen_[intersecting_subset_]) {
           return *this;
         }
       }
-      subset_entry_ = RowEntryIndex(0);  // 'carriage-return'
+      new_row_ = true;  // 'carriage-return'
     }
     return *this;
   }
@@ -495,23 +586,25 @@ class IntersectingSubsetsIterator {
   // The seed subset.
   SubsetIndex seed_subset_;
 
-  // A reference to the column of the seed subset, kept here for ease of access.
-  const SparseColumn& seed_column_;
-
-  // The size of the column of the seed subset.
-  ColumnEntryIndex seed_column_size_;
-
   // The intersecting subset.
   SubsetIndex intersecting_subset_;
 
-  // The position of the entry in the column corresponding to `seed_subset_`.
-  ColumnEntryIndex element_entry_;
+  // True if the iterator is at the beginning of a new lrow. This is used to
+  // recover the exact position of the iterator in the row when calling
+  // operator++().
+  bool new_row_;
 
-  // The position of the entry in the row corresponding to `element_entry`.
-  RowEntryIndex subset_entry_;
+  // A reference to the column of the seed subset, kept here for ease of access.
+  const SparseColumn& seed_column_;
+
+  // Iterator on the column of the seed subset.
+  SparseColumnConstIterator seed_column_it_;
 
   // A reference to the rows of the model, kept here for ease of access.
   const SparseRowView& rows_;
+
+  // Iterator on the current row.
+  SparseRowConstIterator row_it_;
 
   // A vector of Booleans indicating whether the current subset has been
   // already seen by the iterator.

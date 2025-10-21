@@ -11,9 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <iostream>
 #include <string>
 #include <tuple>
@@ -23,17 +21,18 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/timer.h"
 #include "ortools/set_cover/base_types.h"
+#include "ortools/set_cover/formatting_helper.h"
 #include "ortools/set_cover/set_cover_heuristics.h"
 #include "ortools/set_cover/set_cover_invariant.h"
+#include "ortools/set_cover/set_cover_lagrangian.h"
+#include "ortools/set_cover/set_cover_mip.h"
 #include "ortools/set_cover/set_cover_model.h"
 #include "ortools/set_cover/set_cover_reader.h"
 
@@ -43,19 +42,19 @@
 // Run the classic algorithms on problem with up to 100,000 elements. Display
 // summaries (with geomean ratios) for each group of problems.
 /* Copy-paste to a terminal:
-    set_cover_solve --benchmarks --benchmarks_dir ~/benchmarks \
+    set_cover_solve --benchmarks --benchmarks_dir ~/set_covering_benchmarks \
     --max_elements_for_classic 100000 --solve --latex --summarize
 */
 // Generate a new model from the rail4284 problem, with 100,000 elements and
 // 1,000,000,000 subsets, with row_scale = 1.1, column_scale = 1.1, and
 // cost_scale = 10.0:
 /* Copy-paste to a terminal:
-    set_cover_solve --input ~/scp-orlib/rail4284.txt --input_fmt rail \
-    --output ~/rail4284_1B.txt  --output_fmt orlibrail \
+    set_cover_solve --input ~/set_covering_benchmarks/orlib/rail4284.txt
+    --input_fmt rail  --output ~/rail4284_1B.txt  --output_fmt orlibrail \
     --num_elements_wanted 100000 --num_subsets_wanted 100000000 \
     --cost_scale 10.0 --row_scale 1.1  --column_scale 1.1 --generate
 */
-// Display statistics about trail4284_1B.txt:
+// Display statistics about rail4284_1B.txt:
 /* Copy-paste to a terminal:
     set_cover_solve --input ~/rail4284_1B.txt --input_fmt orlib --stats
 */
@@ -96,6 +95,11 @@ ABSL_FLAG(int, max_elements_for_classic, 5000,
 ABSL_FLAG(bool, benchmarks, false, "Run benchmarks.");
 ABSL_FLAG(std::string, benchmarks_dir, "", "Benchmarks directory.");
 ABSL_FLAG(bool, collate_scp, false, "Collate the SCP benchmarks.");
+ABSL_FLAG(bool, full_run, false, "Run all the solvers sequentially.");
+ABSL_FLAG(double, lp_time_limit_seconds, 3.0, "Time limit for LP solvers.");
+ABSL_FLAG(double, mip_time_limit_seconds, 3.0, "Time limit for MIP solvers.");
+ABSL_FLAG(int, num_lagrangian_threads, 8,
+          "Number of threads to use for lagrangian computations.");
 
 // TODO(user): Add flags to:
 // - Choose problems by name or by size: filter_name, max_elements, max_subsets.
@@ -106,311 +110,105 @@ ABSL_FLAG(bool, collate_scp, false, "Collate the SCP benchmarks.");
 namespace operations_research {
 using CL = SetCoverInvariant::ConsistencyLevel;
 
-int64_t RunTimeInMicroseconds(const SetCoverSolutionGenerator& gen) {
-  return absl::ToInt64Microseconds(gen.run_time());
-}
-
-int64_t RunTimeInNanoseconds(const SetCoverSolutionGenerator& gen) {
-  return absl::ToInt64Nanoseconds(gen.run_time());
-}
-
-void LogStats(const SetCoverModel& model) {
-  const std::string sep = absl::GetFlag(FLAGS_latex) ? " & " : ", ";
-  std::string header = absl::StrCat(model.name(), sep);
-  // Lines start with a comma to make it easy to copy-paste the output to a
-  // spreadsheet as CSV.
-  if (!absl::GetFlag(FLAGS_latex)) {
-    header = absl::StrCat(sep, header);
+// In the case of a MIP, do not assume that gen.NextSolution() returns true,
+// because it can time out.
+SetCoverInvariant& Run(SetCoverMip& gen) {
+  if (!gen.NextSolution()) {
+    LOG(INFO) << "Failed to generate a solution. Status: "
+              << gen.solve_status();
   }
-  LOG(INFO) << header << model.ToVerboseString(sep);
-  LOG(INFO) << header << "cost" << sep
-            << model.ComputeCostStats().ToVerboseString(sep);
-  LOG(INFO) << header << "row size stats" << sep
-            << model.ComputeRowStats().ToVerboseString(sep);
-  LOG(INFO) << header << "row size deciles" << sep
-            << absl::StrJoin(model.ComputeRowDeciles(), sep);
-  LOG(INFO) << header << "column size stats" << sep
-            << model.ComputeColumnStats().ToVerboseString(sep);
-  LOG(INFO) << header << "column size deciles" << sep
-            << absl::StrJoin(model.ComputeColumnDeciles(), sep);
-  LOG(INFO) << header << "num_singleton_rows" << sep
-            << model.ComputeNumSingletonRows() << sep << "num_singleton_columns"
-            << sep << model.ComputeNumSingletonColumns();
+  LogCostAndTiming(gen);
+  return *gen.inv();
 }
 
-void LogCostAndTiming(const absl::string_view problem_name,
-                      absl::string_view alg_name, const SetCoverInvariant& inv,
-                      int64_t run_time) {
-  LOG(INFO) << ", " << problem_name << ", " << alg_name << ", cost, "
-            << inv.CostOrLowerBound() << ", solution_cardinality, "
-            << inv.ComputeCardinality() << ", " << run_time << "e-6, s";
+SetCoverInvariant& Run(SetCoverSolutionGenerator& gen) {
+  CHECK(gen.NextSolution());
+  LogCostAndTiming(gen);
+  return *gen.inv();
 }
 
-void LogCostAndTiming(const SetCoverSolutionGenerator& generator) {
-  const SetCoverInvariant& inv = *generator.inv();
-  const SetCoverModel& model = *inv.model();
-  LogCostAndTiming(model.name(), generator.name(), inv,
-                   RunTimeInMicroseconds(generator));
-}
-
-// TODO(user): Move this set_cover_reader
-enum class FileFormat {
-  EMPTY,
-  ORLIB,
-  RAIL,
-  FIMI,
-  PROTO,
-  PROTO_BIN,
-  TXT,
-};
-
-// TODO(user): Move this set_cover_reader
-FileFormat ParseFileFormat(const std::string& format_name) {
-  if (format_name.empty()) {
-    return FileFormat::EMPTY;
-  } else if (absl::EqualsIgnoreCase(format_name, "orlib")) {
-    return FileFormat::ORLIB;
-  } else if (absl::EqualsIgnoreCase(format_name, "rail")) {
-    return FileFormat::RAIL;
-  } else if (absl::EqualsIgnoreCase(format_name, "fimi")) {
-    return FileFormat::FIMI;
-  } else if (absl::EqualsIgnoreCase(format_name, "proto")) {
-    return FileFormat::PROTO;
-  } else if (absl::EqualsIgnoreCase(format_name, "proto_bin")) {
-    return FileFormat::PROTO_BIN;
-  } else if (absl::EqualsIgnoreCase(format_name, "txt")) {
-    return FileFormat::TXT;
-  } else {
-    LOG(FATAL) << "Unsupported input format: " << format_name;
-  }
-}
-
-// TODO(user): Move this set_cover_reader
-SetCoverModel ReadModel(absl::string_view filename, FileFormat format) {
-  switch (format) {
-    case FileFormat::ORLIB:
-      return ReadOrlibScp(filename);
-    case FileFormat::RAIL:
-      return ReadOrlibRail(filename);
-    case FileFormat::FIMI:
-      return ReadFimiDat(filename);
-    case FileFormat::PROTO:
-      return ReadSetCoverProto(filename, /*binary=*/false);
-    case FileFormat::PROTO_BIN:
-      return ReadSetCoverProto(filename, /*binary=*/true);
-    default:
-      LOG(FATAL) << "Unsupported input format: " << static_cast<int>(format);
-  }
-}
-
-// TODO(user): Move this set_cover_reader
-SubsetBoolVector ReadSolution(absl::string_view filename, FileFormat format) {
-  switch (format) {
-    case FileFormat::TXT:
-      return ReadSetCoverSolutionText(filename);
-    case FileFormat::PROTO:
-      return ReadSetCoverSolutionProto(filename, /*binary=*/false);
-    case FileFormat::PROTO_BIN:
-      return ReadSetCoverSolutionProto(filename, /*binary=*/true);
-    default:
-      LOG(FATAL) << "Unsupported input format: " << static_cast<int>(format);
-  }
-}
-
-// TODO(user): Move this set_cover_reader
-void WriteModel(const SetCoverModel& model, const std::string& filename,
-                FileFormat format) {
-  LOG(INFO) << "Writing model to " << filename;
-  switch (format) {
-    case FileFormat::ORLIB:
-      WriteOrlibScp(model, filename);
-      break;
-    case FileFormat::RAIL:
-      WriteOrlibRail(model, filename);
-      break;
-    case FileFormat::PROTO:
-      WriteSetCoverProto(model, filename, /*binary=*/false);
-      break;
-    case FileFormat::PROTO_BIN:
-      WriteSetCoverProto(model, filename, /*binary=*/true);
-      break;
-    default:
-      LOG(FATAL) << "Unsupported output format: " << static_cast<int>(format);
-  }
-}
-
-// TODO(user): Move this set_cover_reader
-void WriteSolution(const SetCoverModel& model, const SubsetBoolVector& solution,
-                   absl::string_view filename, FileFormat format) {
-  switch (format) {
-    case FileFormat::TXT:
-      WriteSetCoverSolutionText(model, solution, filename);
-      break;
-    case FileFormat::PROTO:
-      WriteSetCoverSolutionProto(model, solution, filename,
-                                 /*binary=*/false);
-      break;
-    case FileFormat::PROTO_BIN:
-      WriteSetCoverSolutionProto(model, solution, filename,
-                                 /*binary=*/true);
-      break;
-    default:
-      LOG(FATAL) << "Unsupported output format: " << static_cast<int>(format);
-  }
-}
-
-SetCoverInvariant RunLazyElementDegree(SetCoverModel* model) {
-  SetCoverInvariant inv(model);
-  LazyElementDegreeSolutionGenerator element_degree(&inv);
-  CHECK(element_degree.NextSolution());
-  DCHECK(inv.CheckConsistency(CL::kCostAndCoverage));
-  LogCostAndTiming(element_degree);
+// Runs two solution generators in parallel, and returns the invariant of the
+// first one.
+// Do not use this function if one of the solution generators is an LP/MIP
+// solver.
+// TODO(user): Look at whether it is interesting to combine MIP and other
+// heuristics.
+SetCoverInvariant& RunPair(SetCoverSolutionGenerator& gen1,
+                           SetCoverSolutionGenerator& gen2) {
+  CHECK_EQ(gen1.inv(), gen2.inv());
+  CHECK_NE(gen1.class_name(), "Mip");
+  CHECK_NE(gen2.class_name(), "Mip");
+  SetCoverInvariant& inv = *gen1.inv();
+  inv.Clear();
+  CHECK(gen1.NextSolution());
+  // CHECK the invariant consistency for the gen1 consistency level.
+  DCHECK(gen1.CheckInvariantConsistency());
+  LogCostAndTiming(gen1);
+  CHECK(gen2.NextSolution());
+  LogCostAndTiming(gen2);
+  // CHECK the invariant consistency for the gen2 consistency level, which may
+  // be different from the gen1 consistency level.
+  DCHECK(gen2.CheckInvariantConsistency());
   return inv;
 }
 
-SetCoverInvariant RunGreedy(SetCoverModel* model) {
-  SetCoverInvariant inv(model);
-  GreedySolutionGenerator classic(&inv);
-  CHECK(classic.NextSolution());
-  DCHECK(inv.CheckConsistency(CL::kCostAndCoverage));
-  LogCostAndTiming(classic);
-  return inv;
+void ComputeLagrangianLowerBound(SetCoverInvariant* inv) {
+  const SetCoverModel& model = *inv->model();
+  SetCoverLagrangian lagrangian(inv, "LagrangianLowerBound");
+  lagrangian.UseNumThreads(absl::GetFlag(FLAGS_num_lagrangian_threads));
+  const auto [lower_bound, reduced_costs, multipliers] =
+      lagrangian.ComputeLowerBound(model.subset_costs(), inv->cost());
+  LogCostAndTiming(lagrangian);
 }
 
-// Formatting and reporting functions with LaTeX and CSV support.
+double RunSolvers() {
+  const auto& input = absl::GetFlag(FLAGS_input);
+  const auto& input_format = ParseFileFormat(absl::GetFlag(FLAGS_input_fmt));
+  QCHECK(!input.empty()) << "No input file specified.";
+  QCHECK(input.empty() || input_format != SetCoverFormat::EMPTY)
+      << "Input format cannot be empty.";
+
+  SetCoverModel model = ReadModel(input, absl::GetFlag(FLAGS_input_fmt));
+  LogStats(model);
+  SetCoverInvariant inv(&model);
+
+  GreedySolutionGenerator greedy(&inv);
+  ElementDegreeSolutionGenerator element_degree(&inv);
+  LazyElementDegreeSolutionGenerator lazy_element_degree(&inv);
+
+  SteepestSearch steepest(&inv);
+  LazySteepestSearch lazy_steepest(&inv);
+
+  GuidedLocalSearch gls(&inv);
+
+  SetCoverMip lower_bound_lp(&inv, "LPLowerBound");
+  lower_bound_lp.UseMipSolver(SetCoverMipSolver::SCIP).UseIntegers(false);
+  lower_bound_lp.SetTimeLimitInSeconds(
+      absl::GetFlag(FLAGS_lp_time_limit_seconds));
+
+  SetCoverMip mip(&inv);
+  // Use SCIP by default, prefer Gurobi for large pbs.
+  mip.UseMipSolver(SetCoverMipSolver::SCIP).UseIntegers(true);
+  mip.SetTimeLimitInSeconds(absl::GetFlag(
+      FLAGS_mip_time_limit_seconds));  // Use >300s large problems.
+
+  RunPair(greedy, steepest);
+  RunPair(greedy, lazy_steepest);
+  RunPair(element_degree, steepest);
+  RunPair(element_degree, lazy_steepest);
+  RunPair(lazy_element_degree, steepest);
+  RunPair(lazy_element_degree, lazy_steepest);
+
+  ComputeLagrangianLowerBound(&inv);
+  Run(lower_bound_lp);
+  Run(mip);
+
+  // IterateClearAndMip(name, inv);
+  // ElementDegreeGeneratorRandomClearSteepestIterate(name, &inv);
+  return inv.cost();
+}
+
 namespace {
-std::string Separator() { return absl::GetFlag(FLAGS_latex) ? " & " : ", "; }
-
-std::string Eol() { return absl::GetFlag(FLAGS_latex) ? " \\\\\n" : "\n"; }
-
-// Computes the ratio of the cost of the new solution generator to the cost of
-// the reference solution generator.
-double CostRatio(SetCoverSolutionGenerator& ref_gen,
-                 SetCoverSolutionGenerator& new_gen) {
-  return new_gen.cost() / ref_gen.cost();
-}
-
-// Computes the speedup of the new solution generator compared to the reference
-// solution generator, where the speedup is defined as the ratio of the
-// cumulated time of the reference solution generator to the cumulated time of
-// the new solution generator.
-double Speedup(SetCoverSolutionGenerator& ref_gen,
-               SetCoverSolutionGenerator& new_gen) {
-  // Avoid division by zero by considering the case where the new generator took
-  // less than 1 nanosecond (!) to run.
-  return 1.0 * RunTimeInNanoseconds(ref_gen) /
-         std::max<int64_t>(1, RunTimeInNanoseconds(new_gen));
-}
-
-// Same as above, but the cumulated time is the sum of the initialization and
-// search times for two pairs of solution generators.
-double SpeedupOnCumulatedTimes(SetCoverSolutionGenerator& ref_init,
-                               SetCoverSolutionGenerator& ref_search,
-                               SetCoverSolutionGenerator& new_init,
-                               SetCoverSolutionGenerator& new_search) {
-  return 1.0 *
-         (RunTimeInNanoseconds(ref_init) + RunTimeInNanoseconds(ref_search)) /
-         std::max<int64_t>(1, RunTimeInNanoseconds(new_init) +
-                                  RunTimeInNanoseconds(new_search));
-}
-
-// In the case of LaTeX, the stats are printed in the format:
-//   & 123.456 (123) +/- 12.34 (12) & [123, 456]  corresponding to
-//   & mean (median) +/- stddev (iqr) & [min, max]
-// In the case of CSV, the stats are printed as a VerboseString.
-std::string FormatStats(const SetCoverModel::Stats& stats) {
-  return absl::GetFlag(FLAGS_latex)
-             ? absl::StrFormat(
-                   " & $%#.2f (%.0f) \\pm %#.2f (%.0f)$ & $[%.0f, %.0f]$",
-                   stats.mean, stats.median, stats.stddev, stats.iqr, stats.min,
-                   stats.max)
-             : stats.ToVerboseString(", ");
-}
-
-// Returns the string str in LaTeX bold if condition is true and --latex is
-// true.
-std::string BoldIf(bool condition, absl::string_view str) {
-  return condition && absl::GetFlag(FLAGS_latex)
-             ? absl::StrCat("\\textbf{", str, "}")
-             : std::string(str);
-}
-
-// Formats time in microseconds for LaTeX. For CSV, it is formatted as
-// seconds by adding the suffix "e-6, s".
-std::string FormatTime(int64_t time_us) {
-  return absl::GetFlag(FLAGS_latex) ? absl::StrFormat("%d", time_us)
-                                    : absl::StrFormat("%de-6, s", time_us);
-}
-
-// Formats the cost and time, with cost in bold if the condition is true.
-std::string FormatCostAndTimeIf(bool condition, double cost, int64_t time_us) {
-  const std::string cost_display =
-      BoldIf(condition, absl::StrFormat("%.9g", cost));
-  return absl::StrCat(cost_display, Separator(), FormatTime(time_us));
-}
-
-// Formats the speedup with one decimal place.
-// TODO(user): Bolden the speedup if it is better than 1.0.
-std::string FormattedSpeedup(SetCoverSolutionGenerator& ref_gen,
-                             SetCoverSolutionGenerator& new_gen) {
-  return absl::StrFormat("%.1f", Speedup(ref_gen, new_gen));
-}
-
-// Reports the second of the comparison of two solution generators, with only
-// the cost and time of the new solution generator.
-std::string ReportSecondPart(SetCoverSolutionGenerator& ref_gen,
-                             SetCoverSolutionGenerator& new_gen) {
-  const double ref_cost = ref_gen.cost();
-  const double new_cost = new_gen.cost();
-  return absl::StrCat(Separator(),
-                      FormatCostAndTimeIf(new_cost <= ref_cost, new_cost,
-                                          RunTimeInMicroseconds(new_gen)),
-                      Separator(), FormattedSpeedup(ref_gen, new_gen));
-}
-
-// Reports the cost and time of both solution generators.
-std::string ReportBothParts(SetCoverSolutionGenerator& ref_gen,
-                            SetCoverSolutionGenerator& new_gen) {
-  const double ref_cost = ref_gen.cost();
-  const double new_cost = new_gen.cost();
-  return absl::StrCat(Separator(),
-                      FormatCostAndTimeIf(ref_cost <= new_cost, ref_cost,
-                                          RunTimeInMicroseconds(ref_gen)),
-                      ReportSecondPart(ref_gen, new_gen));
-}
-
-// Formats the model and stats in LaTeX or CSV format.
-std::string FormatModelAndStats(const SetCoverModel& model) {
-  if (absl::GetFlag(FLAGS_latex)) {
-    return absl::StrCat(model.name(), Separator(), model.ToString(Separator()),
-                        FormatStats(model.ComputeColumnStats()),
-                        FormatStats(model.ComputeRowStats()));
-  } else {  // CSV
-    const std::string header =
-        absl::StrCat(Separator(), model.name(), Separator());
-    return absl::StrCat(header, model.ToString(Separator()), Eol(), header,
-                        "column size stats", Separator(),
-                        FormatStats(model.ComputeColumnStats()), Eol(), header,
-                        "row size stats", Separator(),
-                        FormatStats(model.ComputeRowStats()), Eol());
-  }
-}
-
-// Sets the name of the model to the filename, with a * suffix if the model is
-// unicost. Removes the .txt suffix from the filename if any.
-void SetModelName(absl::string_view filename, SetCoverModel* model) {
-  std::string problem_name = std::string(filename);
-  constexpr absl::string_view kTxtSuffix = ".txt";
-  // Remove the .txt suffix from the problem name if any.
-  if (absl::EndsWith(problem_name, kTxtSuffix)) {
-    problem_name.resize(problem_name.size() - kTxtSuffix.size());
-  }
-  if (absl::GetFlag(FLAGS_unicost) || model->is_unicost()) {
-    absl::StrAppend(&problem_name, "*");
-  }
-  model->SetName(problem_name);
-}
-
 // Accumulates data to compute the geometric mean of a sequence of values.
 class GeometricMean {
  public:
@@ -490,47 +288,46 @@ static const char* const kFimiFiles[] = {
 };
 
 using BenchmarksTableRow =
-    std::tuple<std::string, std::vector<std::string>, FileFormat>;
+    std::tuple<std::string, std::vector<std::string>, SetCoverFormat>;
 
 std::vector<BenchmarksTableRow> BenchmarksTable() {
 // This creates a vector of tuples, where each tuple contains the directory
 // name, the vector of files and the file format.
-// It is assumed that the scp* files are in BENCHMARKS_DIR/scp-orlib, the rail
-// files are in BENCHMARKS_DIR/scp-rail, etc., with BENCHMARKS_DIR being the
+// It is assumed that the scp* files are in BENCHMARKS_DIR/orlib, the rail
+// files are in BENCHMARKS_DIR/rail, etc., with BENCHMARKS_DIR being the
 // directory specified by the --benchmarks_dir flag.
 // Use a macro to be able to compute the size of the array at compile time.
 #define BUILD_VECTOR(files) BuildVector(files, ABSL_ARRAYSIZE(files))
+#define APPEND(v, array) v.insert(v.end(), array, array + ABSL_ARRAYSIZE(array))
   std::vector<BenchmarksTableRow> result;
   std::vector<std::string> all_scp_files;
   if (absl::GetFlag(FLAGS_collate_scp)) {
     all_scp_files = BUILD_VECTOR(kScp4To6Files);
-    all_scp_files.insert(all_scp_files.end(), kScpAToEFiles,
-                         kScpAToEFiles + ABSL_ARRAYSIZE(kScpAToEFiles));
-    all_scp_files.insert(all_scp_files.end(), kScpNrFiles,
-                         kScpNrFiles + ABSL_ARRAYSIZE(kScpNrFiles));
-    all_scp_files.insert(all_scp_files.end(), kScpCycFiles,
-                         kScpCycFiles + ABSL_ARRAYSIZE(kScpCycFiles));
-    result = {{"scp-orlib", all_scp_files, FileFormat::ORLIB}};
+    APPEND(all_scp_files, kScpAToEFiles);
+    APPEND(all_scp_files, kScpNrFiles);
+    APPEND(all_scp_files, kScpClrFiles);
+    result = {{"orlib", all_scp_files, SetCoverFormat::ORLIB}};
   } else {
     result = {
-        {"scp-orlib", BUILD_VECTOR(kScp4To6Files), FileFormat::ORLIB},
-        {"scp-orlib", BUILD_VECTOR(kScpAToEFiles), FileFormat::ORLIB},
-        {"scp-orlib", BUILD_VECTOR(kScpNrFiles), FileFormat::ORLIB},
-        {"scp-orlib", BUILD_VECTOR(kScpClrFiles), FileFormat::ORLIB},
-        {"scp-orlib", BUILD_VECTOR(kScpCycFiles), FileFormat::ORLIB},
+        {"orlib", BUILD_VECTOR(kScp4To6Files), SetCoverFormat::ORLIB},
+        {"orlib", BUILD_VECTOR(kScpAToEFiles), SetCoverFormat::ORLIB},
+        {"orlib", BUILD_VECTOR(kScpNrFiles), SetCoverFormat::ORLIB},
+        {"orlib", BUILD_VECTOR(kScpClrFiles), SetCoverFormat::ORLIB},
+        {"orlib", BUILD_VECTOR(kScpCycFiles), SetCoverFormat::ORLIB},
     };
   }
   result.insert(
       result.end(),
       {
-          {"scp-rail", BUILD_VECTOR(kRailFiles), FileFormat::RAIL},
-          {"scp-wedelin", BUILD_VECTOR(kWedelinFiles), FileFormat::ORLIB},
-          {"scp-balas", BUILD_VECTOR(kBalasFiles), FileFormat::ORLIB},
-          {"scp-fimi", BUILD_VECTOR(kFimiFiles), FileFormat::FIMI},
+          {"rail", BUILD_VECTOR(kRailFiles), SetCoverFormat::RAIL},
+          {"wedelin", BUILD_VECTOR(kWedelinFiles), SetCoverFormat::ORLIB},
+          {"balas", BUILD_VECTOR(kBalasFiles), SetCoverFormat::ORLIB},
+          {"fimi", BUILD_VECTOR(kFimiFiles), SetCoverFormat::FIMI},
       });
   return result;
 
 #undef BUILD_VECTOR
+#undef APPEND
 }
 
 void Benchmarks() {
@@ -540,8 +337,8 @@ void Benchmarks() {
   const std::string kSep = Separator();
   const std::string kEol = Eol();
   if (absl::GetFlag(FLAGS_stats)) {
-    std::cout << absl::StrJoin(std::make_tuple("Problem", "|S|", "|U|", "nnz",
-                                               "Fill", "Col size", "Row size"),
+    std::cout << absl::StrJoin({"Problem", "|S|", "|U|", "nnz", "Fill",
+                                "Col size", "Row size"},
                                kSep)
               << kEol;
   }
@@ -577,6 +374,7 @@ void Benchmarks() {
                                         model.num_elements()),
                         kSep);
       model.CreateSparseRowView();
+      model.CreateCompressedViews();
 
       SetCoverInvariant classic_inv(&model);
       GreedySolutionGenerator classic(&classic_inv);
@@ -678,16 +476,18 @@ void Benchmarks() {
 }
 
 void Run() {
-  const auto& input = absl::GetFlag(FLAGS_input);
-  const auto& input_format = ParseFileFormat(absl::GetFlag(FLAGS_input_fmt));
-  const auto& output = absl::GetFlag(FLAGS_output);
-  const auto& output_format = ParseFileFormat(absl::GetFlag(FLAGS_output_fmt));
+  const std::string input = absl::GetFlag(FLAGS_input);
+  const SetCoverFormat input_format =
+      ParseFileFormat(absl::GetFlag(FLAGS_input_fmt));
+  const std::string output = absl::GetFlag(FLAGS_output);
+  const SetCoverFormat output_format =
+      ParseFileFormat(absl::GetFlag(FLAGS_output_fmt));
   QCHECK(!input.empty()) << "No input file specified.";
-  QCHECK(input.empty() || input_format != FileFormat::EMPTY)
+  QCHECK(input.empty() || input_format != SetCoverFormat::EMPTY)
       << "Input format cannot be empty.";
-  QCHECK(output.empty() || output_format != FileFormat::EMPTY)
+  QCHECK(output.empty() || output_format != SetCoverFormat::EMPTY)
       << "Output format cannot be empty.";
-  SetCoverModel model = ReadModel(input, input_format);
+  SetCoverModel model = ReadModel(input, absl::GetFlag(FLAGS_input_fmt));
   if (absl::GetFlag(FLAGS_generate)) {
     model.CreateSparseRowView();
     model = SetCoverModel::GenerateRandomModelFrom(
@@ -696,7 +496,7 @@ void Run() {
         absl::GetFlag(FLAGS_column_scale), absl::GetFlag(FLAGS_cost_scale));
   }
   if (!output.empty()) {
-    if (output_format == FileFormat::ORLIB) {
+    if (output_format == SetCoverFormat::ORLIB) {
       model.CreateSparseRowView();
     }
     WriteModel(model, output, output_format);
@@ -708,8 +508,13 @@ void Run() {
   if (absl::GetFlag(FLAGS_solve)) {
     LOG(INFO) << "Solving " << problem;
     model.CreateSparseRowView();
-    SetCoverInvariant inv = RunLazyElementDegree(&model);
+    SetCoverInvariant inv(&model);
+    LazyElementDegreeSolutionGenerator lazy_element_degree(&inv);
+    Run(lazy_element_degree);
   }
+  // TODO(user): Add flags to select which solvers to run.
+  // TODO(user): Add flag to output the solution, either as csv or as text
+  // proto.
 }
 }  // namespace operations_research
 
@@ -717,6 +522,8 @@ int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
   if (absl::GetFlag(FLAGS_benchmarks)) {
     operations_research::Benchmarks();
+  } else if (absl::GetFlag(FLAGS_full_run)) {
+    operations_research::RunSolvers();
   } else {
     operations_research::Run();
   }

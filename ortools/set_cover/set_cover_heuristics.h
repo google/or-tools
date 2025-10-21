@@ -100,10 +100,14 @@ class SetCoverSolutionGenerator {
     return absl::ToDoubleSeconds(run_time_);
   }
 
+  // Returns the total elapsed runtime in milliseconds.
+  int64_t run_time_ms() const { return absl::ToInt64Milliseconds(run_time_); }
+
   // Returns the total elapsed runtime in microseconds.
-  double run_time_in_microseconds() const {
-    return absl::ToInt64Microseconds(run_time_);
-  }
+  int64_t run_time_us() const { return absl::ToInt64Microseconds(run_time_); }
+
+  // Returns the total elapsed runtime in nanoseconds.
+  int64_t run_time_ns() const { return absl::ToInt64Nanoseconds(run_time_); }
 
   // Returns the name of the heuristic.
   std::string name() const { return name_; }
@@ -188,7 +192,7 @@ class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
   // Converts a vector of Booleans to a vector of subset indices.
   // TODO(user): this should not be, but a better iterator system should be
   // implemented.
-  absl::Span<const SubsetIndex> MakeSubsetIndexSpan(
+  std::vector<SubsetIndex> MakeSubsetIndexSpan(
       const SubsetBoolVector& in_focus) {
     std::vector<SubsetIndex> result;
     result.reserve(in_focus.size());
@@ -198,7 +202,7 @@ class SubsetListBasedSolutionGenerator : public SetCoverSolutionGenerator {
         result.push_back(i);
       }
     }
-    return absl::MakeConstSpan(result);
+    return result;
   }
 };
 
