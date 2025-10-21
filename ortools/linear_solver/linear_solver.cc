@@ -1155,7 +1155,6 @@ void MPSolver::SolveLazyMutableRequest(LazyMutableCopy<MPModelRequest> request,
       // the user. They shouldn't matter for polling, but for solving we might
       // e.g. use a larger stack.
       ThreadPool thread_pool(/*num_threads=*/1);
-      thread_pool.StartWorkers();
       thread_pool.Schedule(polling_func);
 
       // Make sure the interruption notification didn't arrive while waiting to
