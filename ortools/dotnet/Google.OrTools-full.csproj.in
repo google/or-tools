@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <LangVersion>@DOTNET_LANG@</LangVersion>
     @DOTNET_TFM@
-    <RuntimeIdentifiers>linux-x64;osx-x64;win-x64;linux-arm64;osx-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64;osx-x64;win-x64;win-arm64;linux-arm64;osx-arm64</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
@@ -112,6 +112,7 @@
       <RuntimeLinuxX64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.linux-x64.*.nupkg"/>
       <RuntimeOsxX64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.osx-x64.*.nupkg"/>
       <RuntimeWinX64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.win-x64.*.nupkg"/>
+      <RuntimeWinArm64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.win-arm64.*.nupkg"/>
       <RuntimeLinuxArm64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.linux-arm64.*.nupkg"/>
       <RuntimeOsxArm64 Include="@DOTNET_PACKAGES_DIR@/@DOTNET_PROJECT@.runtime.osx-arm64.*.nupkg"/>
     </ItemGroup>
@@ -122,11 +123,13 @@
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.osx-x64: not found" Condition="!Exists('@(RuntimeOsxX64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-x64: found" Condition="Exists('@(RuntimeWinX64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-x64: not found" Condition="!Exists('@(RuntimeWinX64)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-arm64: found" Condition="Exists('@(RuntimeWinArm64)')"/>
+    <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.win-arm64: not found" Condition="!Exists('@(RuntimeWinArm64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.linux-arm64: found" Condition="Exists('@(RuntimeLinuxArm64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.linux-arm64: not found" Condition="!Exists('@(RuntimeLinuxArm64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.osx-arm64: found" Condition="Exists('@(RuntimeOsxArm64)')"/>
     <Message Importance="high" Text="Package @DOTNET_PROJECT@.runtime.osx-arm64: not found" Condition="!Exists('@(RuntimeOsxArm64)')"/>
-    <Error Text="You must have locally all runtime packages." Condition="!Exists('@(RuntimeLinuxX64)') OR !Exists('@(RuntimeOsxX64)') OR !Exists('@(RuntimeWinX64)') OR !Exists('@(RuntimeLinuxArm64)') OR !Exists('@(RuntimeOsxArm64)')"/>
+    <Error Text="You must have locally all runtime packages." Condition="!Exists('@(RuntimeLinuxX64)') OR !Exists('@(RuntimeOsxX64)') OR !Exists('@(RuntimeWinX64)') OR !Exists('@(RuntimeWinArm64)') OR!Exists('@(RuntimeLinuxArm64)') OR !Exists('@(RuntimeOsxArm64)')"/>
   </Target>
 
   <!-- Copy all .proto file(s) -->
@@ -196,6 +199,7 @@
     <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-x64" Version="@PROJECT_VERSION@"/>
     <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-x64"   Version="@PROJECT_VERSION@"/>
     <PackageReference Include="@DOTNET_PROJECT@.runtime.win-x64"   Version="@PROJECT_VERSION@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.win-arm64"   Version="@PROJECT_VERSION@"/>
     <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-arm64" Version="@PROJECT_VERSION@"/>
     <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-arm64"   Version="@PROJECT_VERSION@"/>
   </ItemGroup>
