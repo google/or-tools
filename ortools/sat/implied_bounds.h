@@ -132,6 +132,29 @@ class ImpliedBounds {
                                                 : empty_var_to_value_;
   }
 
+  // Returns [lb, ub] for a given variable implied by a literal.
+  // Returns [kMinIntegerValue, kMaxIntegerValue] if no such bounds exist.
+  std::pair<IntegerValue, IntegerValue> GetImpliedBounds(
+      Literal literal, IntegerVariable var) const {
+    std::pair<IntegerValue, IntegerValue> result = {kMinIntegerValue,
+                                                    kMaxIntegerValue};
+    const auto it = bounds_.find({literal.Index(), var});
+    if (it != bounds_.end()) {
+      result.first = it->second;
+    }
+    const auto it2 = bounds_.find({literal.Index(), NegationOf(var)});
+    if (it2 != bounds_.end()) {
+      result.second = -it2->second;
+    }
+    return result;
+  }
+
+  const absl::flat_hash_map<std::pair<LiteralIndex, IntegerVariable>,
+                            IntegerValue>&
+  GetModelImpliedBounds() const {
+    return bounds_;
+  }
+
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.

@@ -247,6 +247,9 @@ class Generator {
                   *self->Add() = value;
             }
     })
+    .def("clear", [](google::protobuf::RepeatedPtrField<$0>* self) {
+            self->Clear();
+          })
     .def("__len__", &google::protobuf::RepeatedPtrField<$0>::size)
     .def("__getitem__",
          [](google::protobuf::RepeatedPtrField<$0>* self, int index) {
@@ -274,6 +277,9 @@ class Generator {
          [](google::protobuf::RepeatedPtrField<std::string>* self,
             const std::vector<std::string>& values) {
             self->Add(values.begin(), values.end());
+          })
+    .def("clear", [](google::protobuf::RepeatedPtrField<std::string>* self) {
+            self->Clear();
           })
     .def("__len__", [](const google::protobuf::RepeatedPtrField<std::string>& self) {
             return self.size();
@@ -307,6 +313,9 @@ class Generator {
                       const std::vector<$0>& values) {
           self->Add(values.begin(), values.end());
         })
+    .def("clear", [](google::protobuf::RepeatedField<$0>* self) {
+            self->Clear();
+         })
     .def("__len__", [](const google::protobuf::RepeatedField<$0>& self) {
              return self.size();
          })

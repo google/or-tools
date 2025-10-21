@@ -542,6 +542,7 @@ class MinOutgoingFlowHelper {
   const std::vector<int>& heads_;
   const std::vector<Literal>& literals_;
   const BinaryRelationRepository& binary_relation_repository_;
+  const ImpliedBounds& implied_bounds_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
   const IntegerEncoder& integer_encoder_;

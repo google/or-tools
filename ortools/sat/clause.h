@@ -29,7 +29,6 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
-#include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/cliques.h"
@@ -471,6 +470,9 @@ class BinaryClauseManager {
   std::vector<BinaryClause> newly_added_;
 };
 
+// Internal BinaryImplicationGraph helper for LRAT in DetectEquivalences().
+class LratEquivalenceHelper;
+
 // Special class to store and propagate clauses of size 2 (i.e. implication).
 // Such clauses are never deleted. Together, they represent the 2-SAT part of
 // the problem. Note that 2-SAT satisfiability is a polynomial problem, but
@@ -534,12 +536,7 @@ class BinaryImplicationGraph : public SatPropagator {
   BinaryImplicationGraph(const BinaryImplicationGraph&) = delete;
   BinaryImplicationGraph& operator=(const BinaryImplicationGraph&) = delete;
 
-  ~BinaryImplicationGraph() override {
-    IF_STATS_ENABLED({
-      LOG(INFO) << stats_.StatString();
-      LOG(INFO) << "num_redundant_implications " << num_redundant_implications_;
-    });
-  }
+  ~BinaryImplicationGraph() override;
 
   // SatPropagator interface.
   bool Propagate(Trail* trail) final;
@@ -808,9 +805,7 @@ class BinaryImplicationGraph : public SatPropagator {
     drat_proof_handler_ = drat_proof_handler;
   }
 
-  void SetLratProofHandler(LratProofHandler* lrat_proof_handler) {
-    lrat_proof_handler_ = lrat_proof_handler;
-  }
+  void SetLratProofHandler(LratProofHandler* lrat_proof_handler);
 
   // Changes the reason of the variable at trail index to a binary reason.
   // Note that the implication "new_reason => trail_[trail_index]" should be
@@ -898,12 +893,21 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
  private:
+  friend class LratEquivalenceHelper;
+
   // Mark implications_[a] for cleanup in RemoveDuplicates().
   void NotifyPossibleDuplicate(Literal a);
 
+  void AddClauseId(ClauseId id, Literal a, Literal b) {
+    if (a.Variable() > b.Variable()) std::swap(a, b);
+    clause_id_[{a, b}] = id;
+  }
+
   // Simple wrapper to not forget to output newly fixed variable to the DRAT
-  // proof if needed. This will propagate right away the implications.
-  bool FixLiteral(Literal true_literal);
+  // or LRAT proof (with clause_ids as proof) if needed. This will propagate
+  // right away the implications.
+  bool FixLiteral(Literal true_literal,
+                  absl::Span<const ClauseId> clause_ids = {});
 
   // Removes any literal whose negation is marked (except the first one). If
   // `fill_clause_ids` is true, fills the LRAT proof for this change in
@@ -958,6 +962,7 @@ class BinaryImplicationGraph : public SatPropagator {
   ClauseIdGenerator* clause_id_generator_;
   DratProofHandler* drat_proof_handler_ = nullptr;
   LratProofHandler* lrat_proof_handler_ = nullptr;
+  LratEquivalenceHelper* lrat_helper_ = nullptr;
 
   // When problems do not have any implications or at_most_ones this allows to
   // reduce the number of work we do here. This will be set to true the first

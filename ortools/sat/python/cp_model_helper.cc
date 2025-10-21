@@ -977,6 +977,19 @@ class IntervalVar {
                                             model_proto_);
   }
 
+  std::vector<std::shared_ptr<Literal>> PresenceLiterals() const {
+    std::vector<std::shared_ptr<Literal>> literals;
+    for (const int lit : proto()->enforcement_literal()) {
+      if (RefIsPositive(lit)) {
+        literals.push_back(std::make_shared<IntVar>(model_proto_, lit));
+      } else {
+        literals.push_back(std::make_shared<NotBooleanVariable>(
+            model_proto_, NegatedRef(lit)));
+      }
+    }
+    return literals;
+  }
+
  private:
   std::shared_ptr<CpModelProto> model_proto_;
   int index_;
@@ -2100,6 +2113,8 @@ Raises:
             }
           },
           "Returns the end expression of the interval variable.")
+      .def("presence_literals", &IntervalVar::PresenceLiterals,
+           "Returns the list of enforcement literals of the interval variable.")
       .def("__str__", &IntervalVar::ToString)
       .def("__repr__", &IntervalVar::DebugString)
       .def(py::pickle(

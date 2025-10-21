@@ -1644,7 +1644,7 @@ class CpModel(cmh.CpBaseModel):
 
     def clear_assumptions(self) -> None:
         """Removes all assumptions from the model."""
-        self.model_proto.clear_assumptions()
+        self.model_proto.assumptions.clear()
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name

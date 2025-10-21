@@ -25,6 +25,7 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -846,8 +847,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -871,8 +873,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -98),
@@ -898,8 +901,9 @@ TEST(BinaryRelationRepositoryTest,
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, IsEmpty());
@@ -921,8 +925,9 @@ TEST(BinaryRelationRepositoryTest,
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output = {{y, 8}};
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -944,8 +949,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_FALSE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -2),

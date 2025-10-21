@@ -23,6 +23,7 @@
 #include <variant>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -37,6 +38,7 @@
 #include "ortools/graph/topologicalsorter.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -875,11 +877,13 @@ void BinaryRelationRepository::Build() {
   }
 }
 
-bool BinaryRelationRepository::PropagateLocalBounds(
+bool PropagateLocalBounds(
     const IntegerTrail& integer_trail,
-    const RootLevelLinear2Bounds& root_level_bounds, Literal lit,
+    const RootLevelLinear2Bounds& root_level_bounds,
+    const BinaryRelationRepository& repository,
+    const ImpliedBounds& implied_bounds, Literal lit,
     const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
-    absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const {
+    absl::flat_hash_map<IntegerVariable, IntegerValue>* output) {
   DCHECK_NE(lit.Index(), kNoLiteralIndex);
 
   auto get_lower_bound = [&](IntegerVariable var) {
@@ -923,17 +927,19 @@ bool BinaryRelationRepository::PropagateLocalBounds(
     std::swap(r.expr.coeffs[0], r.expr.coeffs[1]);
     update_var_bounds(r.expr, r.lhs, r.rhs);
   };
-  if (lit.Index() < lit_to_relations_.size()) {
-    for (const int relation_index : lit_to_relations_[lit]) {
-      update_var_bounds_from_relation(relations_[relation_index]);
-    }
+  for (const int relation_index :
+       repository.IndicesOfRelationsEnforcedBy(lit)) {
+    update_var_bounds_from_relation(repository.relation(relation_index));
   }
-  for (const auto& [var, _] : input) {
+  for (const auto& [var, unused] : input) {
     for (const auto& [expr, lb, ub] :
          root_level_bounds.GetAllBoundsContainingVariable(var)) {
       update_var_bounds_from_relation(
           Relation{Literal(kNoLiteralIndex), expr, lb, ub});
     }
+    const auto [lb, ub] = implied_bounds.GetImpliedBounds(lit, var);
+    update_var_bounds_from_relation(Relation{
+        lit, LinearExpression2(kNoIntegerVariable, var, 0, 1), lb, ub});
   }
 
   // Check feasibility.
@@ -944,44 +950,55 @@ bool BinaryRelationRepository::PropagateLocalBounds(
   return true;
 }
 
-bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
+void GreaterThanAtLeastOneOfDetector::AddRelationIfNonTrivial(
+    const Relation& r,
+    std::vector<VariableConditionalAffineBound>* clause_bounds) const {
+  if (r.expr.vars[0] == kNoIntegerVariable ||
+      r.expr.vars[1] == kNoIntegerVariable) {
+    return;
+  }
+  LinearExpression2 expr(r.expr);
+  expr.SimpleCanonicalization();
+  const Literal l = r.enforcement;
+
+  auto add_if_non_trivial = [&](Literal cond, IntegerVariable var,
+                                AffineExpression expr) {
+    if (integer_trail_.LevelZeroLowerBound(var) <
+        integer_trail_.LevelZeroUpperBound(expr)) {
+      clause_bounds->push_back({cond, var, expr});
+    }
+  };
+
+  if (r.lhs != kMinIntegerValue) {
+    for (int i = 0; i < 2; ++i) {
+      if (expr.coeffs[i] != 1) continue;
+      const AffineExpression affine_lb = expr.GetAffineLowerBound(i, r.lhs);
+      add_if_non_trivial(l, expr.vars[i], affine_lb);
+    }
+  }
+  if (r.rhs != kMaxIntegerValue) {
+    expr.Negate();
+    for (int i = 0; i < 2; ++i) {
+      if (expr.coeffs[i] != 1) continue;
+      const AffineExpression affine_lb = expr.GetAffineLowerBound(i, -r.rhs);
+      add_if_non_trivial(l, expr.vars[i], affine_lb);
+    }
+  }
+}
+
+bool GreaterThanAtLeastOneOfDetector::AddRelationFromBounds(
     IntegerVariable var, absl::Span<const Literal> clause,
-    absl::Span<const int> indices, Model* model) {
+    absl::Span<const VariableConditionalAffineBound> bounds, Model* model) {
   std::vector<AffineExpression> exprs;
   std::vector<Literal> selectors;
   absl::flat_hash_set<LiteralIndex> used;
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-  const IntegerValue var_lb = integer_trail->LevelZeroLowerBound(var);
-  for (const int index : indices) {
-    Relation r = repository_.relation(index);
-    if (r.expr.vars[0] != PositiveVariable(var)) {
-      std::swap(r.expr.vars[0], r.expr.vars[1]);
-      std::swap(r.expr.coeffs[0], r.expr.coeffs[1]);
-    }
-    CHECK_EQ(r.expr.vars[0], PositiveVariable(var));
-
-    if ((r.expr.coeffs[0] == 1) == VariableIsPositive(var)) {
-      //  a + b >= lhs
-      if (r.lhs <= kMinIntegerValue) continue;
-      exprs.push_back(
-          AffineExpression(r.expr.vars[1], -r.expr.coeffs[1], r.lhs));
-    } else {
-      // -a + b <= rhs.
-      if (r.rhs >= kMaxIntegerValue) continue;
-      exprs.push_back(
-          AffineExpression(r.expr.vars[1], r.expr.coeffs[1], -r.rhs));
-    }
-
-    // Ignore this entry if it is always true.
-    if (var_lb >= integer_trail->LevelZeroUpperBound(exprs.back())) {
-      exprs.pop_back();
-      continue;
-    }
-
+  for (const VariableConditionalAffineBound& bound : bounds) {
+    DCHECK_EQ(bound.var, var);
     // Note that duplicate selector are supported.
-    selectors.push_back(r.enforcement);
-    used.insert(r.enforcement);
+    selectors.push_back(bound.enforcement_literal);
+    used.insert(bound.enforcement_literal);
+    exprs.push_back(bound.bound);
   }
 
   // The enforcement of the new constraint are simply the literal not used
@@ -997,7 +1014,12 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
   // literals in selectors.
   if (used.size() <= 1) return false;
 
+  total_num_expressions_ += exprs.size();
+  ++num_detected_constraints_;
+  maximum_num_expressions_ =
+      std::max(maximum_num_expressions_, static_cast<int64_t>(exprs.size()));
   // Add the constraint.
+
   GreaterThanAtLeastOneOfPropagator* constraint =
       new GreaterThanAtLeastOneOfPropagator(var, exprs, selectors, enforcements,
                                             model);
@@ -1008,56 +1030,58 @@ bool GreaterThanAtLeastOneOfDetector::AddRelationFromIndices(
 
 int GreaterThanAtLeastOneOfDetector::
     AddGreaterThanAtLeastOneOfConstraintsFromClause(
-        const absl::Span<const Literal> clause, Model* model) {
+        const absl::Span<const Literal> clause, Model* model,
+        const CompactVectorVector<LiteralIndex, IntegerLiteral>&
+            implied_bounds_by_literal) {
   CHECK_EQ(model->GetOrCreate<Trail>()->CurrentDecisionLevel(), 0);
   if (clause.size() < 2) return 0;
 
-  // Collect all relations impacted by this clause.
-  std::vector<std::pair<IntegerVariable, int>> infos;
+  std::vector<VariableConditionalAffineBound> clause_bounds;
+
+  // Collect all relations impacted by this clause from conditional linear2.
   for (const Literal l : clause) {
     for (const int index :
          repository_.IndicesOfRelationsEnforcedBy(l.Index())) {
       const Relation& r = repository_.relation(index);
-      if (r.expr.vars[0] != kNoIntegerVariable &&
-          IntTypeAbs(r.expr.coeffs[0]) == 1) {
-        infos.push_back({r.expr.vars[0], index});
-      }
-      if (r.expr.vars[1] != kNoIntegerVariable &&
-          IntTypeAbs(r.expr.coeffs[1]) == 1) {
-        infos.push_back({r.expr.vars[1], index});
+      AddRelationIfNonTrivial(r, &clause_bounds);
+    }
+    for (const IntegerLiteral& i_lit : implied_bounds_by_literal[l.Index()]) {
+      if (integer_trail_.LevelZeroLowerBound(i_lit.var) < i_lit.bound) {
+        clause_bounds.push_back({l, i_lit.var, AffineExpression(i_lit.bound)});
       }
     }
   }
-  if (infos.size() <= 1) return 0;
+  if (clause_bounds.size() <= 1) return 0;
 
   // Stable sort to regroup by var.
-  std::stable_sort(infos.begin(), infos.end());
+  absl::c_stable_sort(
+      clause_bounds,
+      [](const VariableConditionalAffineBound& a,
+         const VariableConditionalAffineBound& b) { return a.var < b.var; });
 
   // We process the info with same variable together.
   int num_added_constraints = 0;
-  std::vector<int> indices;
-  for (int i = 0; i < infos.size();) {
+  for (int i = 0; i < clause_bounds.size();) {
     const int start = i;
-    const IntegerVariable var = infos[start].first;
+    const IntegerVariable var = clause_bounds[start].var;
 
-    indices.clear();
-    for (; i < infos.size() && infos[i].first == var; ++i) {
-      indices.push_back(infos[i].second);
+    for (; i < clause_bounds.size() && clause_bounds[i].var == var; ++i) {
     }
 
+    const int end = i;
+    absl::Span<const VariableConditionalAffineBound> bounds =
+        absl::MakeSpan(clause_bounds).subspan(start, end - start);
+
     // Skip single relations, we are not interested in these.
-    if (indices.size() < 2) continue;
+    if (bounds.size() < 2) continue;
 
     // Heuristic. Look for full or almost full clauses.
     //
     // TODO(user): We could add GreaterThanAtLeastOneOf() with more enforcement
     // literals. Experiment.
-    if (indices.size() + 1 < clause.size()) continue;
+    if (bounds.size() + 1 < clause.size()) continue;
 
-    if (AddRelationFromIndices(var, clause, indices, model)) {
-      ++num_added_constraints;
-    }
-    if (AddRelationFromIndices(NegationOf(var), clause, indices, model)) {
+    if (AddRelationFromBounds(var, clause, bounds, model)) {
       ++num_added_constraints;
     }
   }
@@ -1070,29 +1094,44 @@ int GreaterThanAtLeastOneOfDetector::
   auto* solver = model->GetOrCreate<SatSolver>();
 
   // Fill the set of interesting relations for each variables.
-  util_intops::StrongVector<IntegerVariable, std::vector<int>> var_to_relations;
+  std::vector<VariableConditionalAffineBound> clause_bounds;
   for (int index = 0; index < repository_.size(); ++index) {
     const Relation& r = repository_.relation(index);
     if (r.enforcement.Index() == kNoLiteralIndex) continue;
-    if (r.expr.vars[0] != kNoIntegerVariable &&
-        IntTypeAbs(r.expr.coeffs[0]) == 1) {
-      if (r.expr.vars[0] >= var_to_relations.size()) {
-        var_to_relations.resize(r.expr.vars[0] + 1);
-      }
-      var_to_relations[r.expr.vars[0]].push_back(index);
-    }
-    if (r.expr.vars[1] != kNoIntegerVariable &&
-        IntTypeAbs(r.expr.coeffs[1]) == 1) {
-      if (r.expr.vars[1] >= var_to_relations.size()) {
-        var_to_relations.resize(r.expr.vars[1] + 1);
-      }
-      var_to_relations[r.expr.vars[1]].push_back(index);
+    AddRelationIfNonTrivial(r, &clause_bounds);
+  }
+  for (const auto& [literal_var_pair, bound] :
+       implied_bounds_.GetModelImpliedBounds()) {
+    if (integer_trail_.LevelZeroLowerBound(literal_var_pair.second) < bound) {
+      clause_bounds.push_back(VariableConditionalAffineBound{
+          .enforcement_literal = Literal(literal_var_pair.first),
+          .var = literal_var_pair.second,
+          .bound = AffineExpression(bound)});
     }
   }
 
+  // Stable sort to regroup by var.
+  // TODO(user): We should probably also sort by enforcement literal,
+  // and regroup entry with same variable/enforcement if that happen often to
+  // have more than one such entry.
+  absl::c_stable_sort(
+      clause_bounds,
+      [](const VariableConditionalAffineBound& a,
+         const VariableConditionalAffineBound& b) { return a.var < b.var; });
+
   int num_added_constraints = 0;
-  for (IntegerVariable target(0); target < var_to_relations.size(); ++target) {
-    if (var_to_relations[target].size() <= 1) continue;
+  for (int i = 0; i < clause_bounds.size();) {
+    const int start = i;
+    const IntegerVariable var = clause_bounds[start].var;
+
+    for (; i < clause_bounds.size() && clause_bounds[i].var == var; ++i) {
+    }
+
+    const int end = i;
+    absl::Span<const VariableConditionalAffineBound> bounds =
+        absl::MakeSpan(clause_bounds).subspan(start, end - start);
+
+    if (bounds.size() <= 1) continue;
     if (time_limit->LimitReached()) return num_added_constraints;
 
     // Detect set of incoming arcs for which at least one must be present.
@@ -1101,8 +1140,8 @@ int GreaterThanAtLeastOneOfDetector::
     solver->Backtrack(0);
     if (solver->ModelIsUnsat()) return num_added_constraints;
     std::vector<Literal> clause;
-    for (const int index : var_to_relations[target]) {
-      const Literal literal = repository_.relation(index).enforcement;
+    for (const VariableConditionalAffineBound& bound : bounds) {
+      const Literal literal = bound.enforcement_literal;
       if (solver->Assignment().LiteralIsFalse(literal)) continue;
       const SatSolver::Status status =
           solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
@@ -1120,19 +1159,15 @@ int GreaterThanAtLeastOneOfDetector::
     // Recover the indices corresponding to this clause.
     const absl::btree_set<Literal> clause_set(clause.begin(), clause.end());
 
-    std::vector<int> indices;
-    for (const int index : var_to_relations[target]) {
-      const Literal literal = repository_.relation(index).enforcement;
+    std::vector<VariableConditionalAffineBound> for_cur_clause;
+    for (const VariableConditionalAffineBound& bound : bounds) {
+      const Literal literal = bound.enforcement_literal;
       if (clause_set.contains(literal)) {
-        indices.push_back(index);
+        for_cur_clause.push_back(bound);
       }
     }
 
-    // Try both direction.
-    if (AddRelationFromIndices(target, clause, indices, model)) {
-      ++num_added_constraints;
-    }
-    if (AddRelationFromIndices(NegationOf(target), clause, indices, model)) {
+    if (AddRelationFromBounds(bounds[0].var, clause, for_cur_clause, model)) {
       ++num_added_constraints;
     }
   }
@@ -1151,6 +1186,23 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   int num_added_constraints = 0;
   SOLVER_LOG(logger, "[Precedences] num_relations=", repository_.size(),
              " num_clauses=", clauses->AllClausesInCreationOrder().size());
+
+  CompactVectorVector<LiteralIndex, IntegerLiteral> implied_bounds_by_literal;
+  {
+    const auto& all_implied_bounds = implied_bounds_.GetModelImpliedBounds();
+    std::vector<LiteralIndex> implied_bounds_conditions;
+    std::vector<IntegerLiteral> implied_bounds_integer_lit;
+    implied_bounds_conditions.reserve(all_implied_bounds.size());
+    implied_bounds_integer_lit.reserve(all_implied_bounds.size());
+    for (const auto& [literal_var_pair, bound] : all_implied_bounds) {
+      implied_bounds_conditions.push_back(literal_var_pair.first);
+      implied_bounds_integer_lit.push_back(
+          IntegerLiteral::GreaterOrEqual(literal_var_pair.second, bound));
+    }
+    implied_bounds_by_literal.ResetFromFlatMapping(
+        std::move(implied_bounds_conditions),
+        std::move(implied_bounds_integer_lit), 2 * solver->NumVariables());
+  }
 
   // We have two possible approaches. For now, we prefer the first one except if
   // there is too many clauses in the problem.
@@ -1171,7 +1223,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
       if (time_limit->LimitReached()) return num_added_constraints;
       if (solver->ModelIsUnsat()) return num_added_constraints;
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(
-          clause->AsSpan(), model);
+          clause->AsSpan(), model, implied_bounds_by_literal);
     }
 
     // It is common that there is only two alternatives to push a variable.
@@ -1187,7 +1239,7 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
             AddGreaterThanAtLeastOneOfConstraintsFromClause(
                 {Literal(BooleanVariable(i), true),
                  Literal(BooleanVariable(i), false)},
-                model);
+                model, implied_bounds_by_literal);
       }
     }
 
@@ -1202,6 +1254,18 @@ int GreaterThanAtLeastOneOfDetector::AddGreaterThanAtLeastOneOfConstraints(
   }
 
   return num_added_constraints;
+}
+
+GreaterThanAtLeastOneOfDetector::~GreaterThanAtLeastOneOfDetector() {
+  if (!VLOG_IS_ON(1)) return;
+  std::vector<std::pair<std::string, int64_t>> stats;
+  stats.push_back({"GreaterThanAtLeastOneOfDetector/total_num_expressions",
+                   total_num_expressions_});
+  stats.push_back({"GreaterThanAtLeastOneOfDetector/maximum_num_expressions",
+                   maximum_num_expressions_});
+  stats.push_back({"GreaterThanAtLeastOneOfDetector/num_detected_constraints",
+                   num_detected_constraints_});
+  shared_stats_->AddStats(stats);
 }
 
 ReifiedLinear2Bounds::ReifiedLinear2Bounds(Model* model)

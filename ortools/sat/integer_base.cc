@@ -30,7 +30,8 @@ void LinearExpression2::SimpleCanonicalization() {
   if (coeffs[1] == 0) vars[1] = kNoIntegerVariable;
 
   // Corner case when the underlying variable is the same.
-  if (PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
+  if (vars[0] != kNoIntegerVariable && vars[1] != kNoIntegerVariable &&
+      PositiveVariable(vars[0]) == PositiveVariable(vars[1])) {
     // Make sure variable are positive before merging.
     for (int i = 0; i < 2; ++i) {
       if (!VariableIsPositive(vars[i])) {
@@ -129,6 +130,26 @@ bool LinearExpression2::IsCanonicalized() const {
   if (vars[0] == kNoIntegerVariable) return true;
 
   return coeffs[0] > 0 && coeffs[1] > 0;
+}
+
+AffineExpression LinearExpression2::GetAffineLowerBound(int var_index,
+                                                        IntegerValue lb) const {
+  DCHECK_GE(var_index, 0);
+  DCHECK_LT(var_index, 2);
+
+  // Note that it is tempting to support the case of a non-unit coefficient, but
+  // we would need to bound (c1/c0)*other_var and getting a good bound would
+  // depend on the sign of the other variable.
+  DCHECK_EQ(coeffs[var_index], 1);
+  const IntegerVariable var = vars[var_index];
+  DCHECK_NE(var, kNoIntegerVariable);
+  const IntegerVariable other_var = vars[1 - var_index];
+  const IntegerValue other_coeff = coeffs[1 - var_index];
+  if (other_var == kNoIntegerVariable) {
+    return AffineExpression(lb);
+  }
+  DCHECK_GT(other_coeff, 0);
+  return AffineExpression(other_var, -other_coeff, lb);
 }
 
 void LinearExpression2::MakeVariablesPositive() {

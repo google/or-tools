@@ -1158,9 +1158,10 @@ int RegisterClausesLevelZeroImport(int id,
       // overhead of sharing.
       // We only share up to 1024 literals worth of new clauses per second, so
       // at most 1024 decisions to vivify all new clauses, so this should be
-      // relatively cheap.
+      // relatively cheap, *if* regular vivification is keeping up with new
+      // clauses. Use a tight dtime limit in case it isn't.
       return sat_solver->MinimizeByPropagation(
-          /*dtime=*/0.5, /*minimize_new_clauses_only=*/true);
+          /*dtime=*/0.01, /*minimize_new_clauses_only=*/true);
     }
     return true;
   };

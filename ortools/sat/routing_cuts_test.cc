@@ -35,6 +35,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -42,6 +43,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -400,11 +402,12 @@ TEST(MinOutgoingFlowHelperTest, ConstantNodeExpression) {
   const IntegerValue load2 = capacity - demand2;
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* implied_bounds = model.GetOrCreate<ImpliedBounds>();
   // Capacity constraint: load2 - load1 >= demand1
-  repository->Add(literals[0],
-                  LinearExpression2(kNoIntegerVariable, load1, 0, -1),
-                  demand1 - load2, 1000);
-  repository->Build();
+  implied_bounds->Add(literals[0], IntegerLiteral::GreaterOrEqual(
+                                       NegationOf(load1), demand1 - load2));
+  implied_bounds->Add(literals[0],
+                      IntegerLiteral::LowerOrEqual(NegationOf(load1), 1000));
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
                                    {AffineExpression(), AffineExpression(load1),

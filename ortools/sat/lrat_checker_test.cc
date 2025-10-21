@@ -21,6 +21,20 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+TEST(LratCheckerTest, LiteralEquivalentToItsNegationIsUnsat) {
+  LratChecker checker;
+  checker.AddProblemClause(ClauseId(1), Literals({-1, +2}));  // +1 => +2
+  checker.AddProblemClause(ClauseId(2), Literals({-2, -1}));  // +2 => -1
+  checker.AddProblemClause(ClauseId(3), Literals({+1, +2}));  // -1 => +2
+  checker.AddProblemClause(ClauseId(4), Literals({-2, +1}));  // +2 => +1
+
+  EXPECT_TRUE(checker.AddInferredClause(ClauseId(5), {Literals({-1})},
+                                        {ClauseId(1), ClauseId(2)}, {}));
+  EXPECT_TRUE(checker.AddInferredClause(
+      ClauseId(6), {}, {ClauseId(5), ClauseId(3), ClauseId(4)}, {}));
+  EXPECT_TRUE(checker.Check());
+}
+
 TEST(LratCheckerTest, CheckSuccessWithoutRatClauses) {
   // Example from Fig. 1 of 'Efficient Certified RAT Verification'.
   LratChecker checker;

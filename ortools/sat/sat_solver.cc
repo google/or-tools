@@ -822,20 +822,18 @@ void SatSolver::ProcessCurrentConflict() {
   DCHECK(IsConflictValid(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
-  ClauseId learned_conflict_clause_id = kNoClauseId;
   std::vector<ClauseId>* clause_ids_for_1iup = &tmp_clause_ids_for_1uip_;
   if (lrat_proof_handler_ != nullptr) {
-    learned_conflict_clause_id = clause_id_generator_->GetNextId();
     ComputeLratProofForLearnedConflict(clause_ids_for_1iup);
   }
 
   // An empty conflict means that the problem is UNSAT.
   if (learned_conflict_.empty()) {
     if (lrat_proof_handler_ != nullptr) {
-      if (!lrat_proof_handler_->AddInferredClause(learned_conflict_clause_id,
-                                                  learned_conflict_,
-                                                  *clause_ids_for_1iup,
-                                                  /*rat=*/{})) {
+      if (!lrat_proof_handler_->AddInferredClause(
+              clause_id_generator_->GetNextId(), learned_conflict_,
+              *clause_ids_for_1iup,
+              /*rat=*/{})) {
         VLOG(1) << "WARNING: invalid LRAT inferred clause!";
       }
     }
@@ -1036,6 +1034,7 @@ void SatSolver::ProcessCurrentConflict() {
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause(learned_conflict_);
   }
+  ClauseId learned_conflict_clause_id = kNoClauseId;
   if (lrat_proof_handler_ != nullptr) {
     if (!clause_ids_for_minimization->empty()) {
       // Concatenate the minimized conflict proof with the learned conflict
@@ -1054,6 +1053,7 @@ void SatSolver::ProcessCurrentConflict() {
       }
       clause_ids_for_1iup = clause_ids_for_minimization;
     }
+    learned_conflict_clause_id = clause_id_generator_->GetNextId();
     if (!lrat_proof_handler_->AddInferredClause(
             learned_conflict_clause_id, learned_conflict_, *clause_ids_for_1iup,
             /*rat=*/{})) {
