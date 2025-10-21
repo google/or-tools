@@ -15,5 +15,5 @@
 set -e # Fail on error
 
 declare -r LOGFILE="${TEST_TMPDIR}/log.txt"
-{{binary_path}} "$@" > "${LOGFILE}"
+{{binary_path}} "$@" > "${LOGFILE}" 2>&1
 {{post_script}}
