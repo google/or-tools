@@ -568,7 +568,7 @@ absl::Status Xpress::AddRows(absl::Span<char const> rowtype,
 }
 
 absl::StatusOr<bool> Xpress::IsBinary(int colidx) {
-  char ctype;
+  char ctype = '\0';
   RETURN_IF_ERROR(
       ToStatus(XPRSgetcoltype(xpress_model_, &ctype, colidx, colidx)));
   if (ctype == XPRS_BINARY)
