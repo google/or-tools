@@ -18,6 +18,8 @@ load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
 load("//bazel:run_binary_test.bzl", "run_binary_test")
 
+package(default_visibility = ["//visibility:public"])
+
 cc_test(
     name = "assignment_linear_sum_assignment_test",
     srcs = ["assignment_linear_sum_assignment.cc"],
@@ -62,6 +64,7 @@ cc_test(
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
         "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -95,6 +98,7 @@ cc_test(
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
         "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -128,6 +132,7 @@ cc_test(
         "//ortools/base",
         "//ortools/graph:max_flow",
         "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -164,6 +169,7 @@ cc_test(
         "//ortools/base",
         "//ortools/graph:min_cost_flow",
         "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:globals",
     ],
 )
@@ -203,6 +209,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dijkstra_directed_test",
+    binary = ":dijkstra_directed",
+    grep_lines = ["Shortest path length: 8"],
+)
+
 cc_binary(
     name = "dijkstra_undirected",
     srcs = ["dijkstra_undirected.cc"],
@@ -211,6 +223,12 @@ cc_binary(
         "//ortools/graph:bounded_dijkstra",
         "@abseil-cpp//absl/strings",
     ],
+)
+
+run_binary_test(
+    name = "dijkstra_undirected_test",
+    binary = ":dijkstra_undirected",
+    grep_lines = ["Shortest path length: 4"],
 )
 
 cc_binary(
@@ -224,6 +242,16 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dijkstra_one_to_all_test",
+    binary = ":dijkstra_one_to_all",
+    grep_lines = [
+        "Distance to 1: 2",
+        "Distance to 2: 6",
+        "Distance to 3: 2",
+    ],
+)
+
 cc_binary(
     name = "dijkstra_sequential",
     srcs = ["dijkstra_sequential.cc"],
@@ -233,6 +261,17 @@ cc_binary(
         "//ortools/graph:bounded_dijkstra",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+run_binary_test(
+    name = "dijkstra_sequential_test",
+    binary = ":dijkstra_sequential",
+    grep_lines = [
+        "Initial distance: 200",
+        "Distance_2_4: 2",
+        "Distance_8_1: 3",
+        "Distance_3_7: 4",
     ],
 )
 
@@ -251,6 +290,11 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dijkstra_all_pairs_shortest_paths_test",
+    binary = ":dijkstra_all_pairs_shortest_paths",
+)
+
 cc_binary(
     name = "dag_simple_shortest_path",
     srcs = ["dag_simple_shortest_path.cc"],
@@ -259,6 +303,12 @@ cc_binary(
         "//ortools/graph:dag_shortest_path",
         "@abseil-cpp//absl/strings",
     ],
+)
+
+run_binary_test(
+    name = "dag_simple_shortest_path_test",
+    binary = ":dag_simple_shortest_path",
+    grep_lines = ["Shortest path length: 2"],
 )
 
 cc_binary(
@@ -276,6 +326,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dag_shortest_path_one_to_all_test",
+    binary = ":dag_shortest_path_one_to_all",
+    grep_lines = ["Length of shortest path to node 4: 2"],
+)
+
 cc_binary(
     name = "dag_shortest_path_sequential",
     srcs = ["dag_shortest_path_sequential.cc"],
@@ -284,6 +340,17 @@ cc_binary(
         "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+run_binary_test(
+    name = "dag_shortest_path_sequential_test",
+    binary = ":dag_shortest_path_sequential",
+    grep_lines = [
+        "Initial distance: 200",
+        "Distance_2_4: 2",
+        "Distance_8_1: 100",
+        "Distance_3_7: 4",
     ],
 )
 
@@ -300,6 +367,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "bfs_directed_test",
+    binary = ":bfs_directed",
+    grep_lines = ["Shortest path length (in arcs): 2"],
+)
+
 cc_binary(
     name = "bfs_undirected",
     srcs = ["bfs_undirected.cc"],
@@ -313,6 +386,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "bfs_undirected_test",
+    binary = ":bfs_undirected",
+    grep_lines = ["Shortest path length (in arcs): 2"],
+)
+
 cc_binary(
     name = "bfs_one_to_all",
     srcs = ["bfs_one_to_all.cc"],
@@ -324,6 +403,12 @@ cc_binary(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
     ],
+)
+
+run_binary_test(
+    name = "bfs_one_to_all_test",
+    binary = ":bfs_one_to_all",
+    grep_lines = ["Shortest path from 0 to 2 has length: 2"],
 )
 
 cc_binary(
@@ -340,6 +425,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "root_a_tree_test",
+    binary = ":root_a_tree",
+    grep_lines = ["Depths:\n  0 -> 2"],
+)
+
 cc_binary(
     name = "rooted_tree_paths",
     srcs = ["rooted_tree_paths.cc"],
@@ -353,6 +444,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "rooted_tree_paths_test",
+    binary = ":rooted_tree_paths",
+    grep_lines = ["0 -> 4 [0, 1, 4]"],
+)
+
 cc_binary(
     name = "dag_simple_multiple_shortest_paths",
     srcs = ["dag_simple_multiple_shortest_paths.cc"],
@@ -360,6 +457,15 @@ cc_binary(
         "//ortools/base",
         "//ortools/graph:dag_shortest_path",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+run_binary_test(
+    name = "dag_simple_multiple_shortest_paths_test",
+    binary = ":dag_simple_multiple_shortest_paths",
+    grep_lines = [
+        "#1 shortest path has length: 2",
+        "#2 shortest path has length: 3",
     ],
 )
 
@@ -378,6 +484,15 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dag_multiple_shortest_paths_one_to_all_test",
+    binary = ":dag_multiple_shortest_paths_one_to_all",
+    grep_lines = [
+        "\t#1 shortest path to node 4 has length: 2",
+        "\t#2 shortest path to node 4 has length: 3",
+    ],
+)
+
 cc_binary(
     name = "dag_multiple_shortest_paths_sequential",
     srcs = ["dag_multiple_shortest_paths_sequential.cc"],
@@ -386,6 +501,23 @@ cc_binary(
         "//ortools/graph",
         "//ortools/graph:dag_shortest_path",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+run_binary_test(
+    name = "dag_multiple_shortest_paths_sequential_test",
+    binary = ":dag_multiple_shortest_paths_sequential",
+    grep_lines = [
+        "\t#1 shortest path has length: 200",
+        "\t#2 shortest path has length: 202",
+        "\t#1 shortest path (2, 4) has length: 20",
+        "\t#2 shortest path (2, 4) has length: 102",
+        "\t#1 shortest path (8, 1) has length: 101",
+        "\t#2 shortest path (8, 1) has length: 108",
+        "\t#1 shortest path (3, 3) has length: 0",
+        "\t#2 shortest path (3, 3) has length: 112",
+        "\t#1 shortest path (0, 0) has length: 0",
+        "\t#2 shortest path (0, 0) has length: 111",
     ],
 )
 
@@ -400,6 +532,12 @@ cc_binary(
     ],
 )
 
+run_binary_test(
+    name = "dag_simple_constrained_shortest_path_test",
+    binary = ":dag_simple_constrained_shortest_path",
+    grep_lines = ["Constrained shortest path length: 4"],
+)
+
 cc_binary(
     name = "dag_constrained_shortest_path_sequential",
     srcs = ["dag_constrained_shortest_path_sequential.cc"],
@@ -408,5 +546,16 @@ cc_binary(
         "//ortools/graph",
         "//ortools/graph:dag_constrained_shortest_path",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+run_binary_test(
+    name = "dag_constrained_shortest_path_sequential_test",
+    binary = ":dag_constrained_shortest_path_sequential",
+    grep_lines = [
+        "Initial distance: 200",
+        "Distance_2_3: 1",
+        "Distance_8_1: 100",
+        "Distance_3_7: 100",
     ],
 )
