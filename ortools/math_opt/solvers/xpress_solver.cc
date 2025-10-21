@@ -281,7 +281,11 @@ class ScopedSolverContext {
   struct OneControl {
     int id;
     std::variant<int64_t, double, std::string> value;
-    enum { INT_CONTROL, DBL_CONTROL, STR_CONTROL }; // Matches std::variant<>::index;
+    enum {
+      INT_CONTROL,
+      DBL_CONTROL,
+      STR_CONTROL
+    };  // Matches std::variant<>::index;
   };
   /** Controls to be reset in the destructor. */
   std::vector<OneControl> modifiedControls;
@@ -290,9 +294,7 @@ class ScopedSolverContext {
   ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
     shared_ctx.xpress = xpress;
   }
-  absl::Status Set(int id, int32_t value) {
-    return Set(id, int64_t(value));
-  }
+  absl::Status Set(int id, int32_t value) { return Set(id, int64_t(value)); }
   absl::Status Set(int id, int64_t value) {
     ASSIGN_OR_RETURN(int64_t old, shared_ctx.xpress->GetIntControl64(id));
     modifiedControls.push_back({id, old});
@@ -741,11 +743,11 @@ class ScopedSolverContext {
 };
 
 /** Different modes for ExtractSingleton(). */
-typedef enum {
-  SingletonForSOS,      /**< SOS constraint. */
-  SingletonForSOCBound, /**< Second order cone constraint bound. */
-  SingletonForSOCNorm   /**< Second order cone constraint norm. */
-} SingletonType;
+enum class SingletonType {
+  SOS,      /**< SOS constraint. */
+  SOCBound, /**< Second order cone constraint bound. */
+  SOCNorm   /**< Second order cone constraint norm. */
+};
 
 // ortools supports SOS constraints and second order cone constraints on
 // expressions. Xpress only supports these constructs on singleton variables.
@@ -762,7 +764,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
     // We have a single variable in the expression and no constant.
     double const coef = expr.coefficients(0);
     switch (type) {
-      case SingletonForSOS:
+      case SingletonType::SOS:
         // A non-zero coefficient does not change anything, so is allowed.
         if (coef == 0.0) {
           return util::InvalidArgumentErrorBuilder()
@@ -770,15 +772,15 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
                  << " in SOS (consider using auxiliary variables?)";
         }
         break;
-      case SingletonForSOCBound:  // fallthrough
-      case SingletonForSOCNorm:
+      case SingletonType::SOCBound:  // fallthrough
+      case SingletonType::SOCNorm:
         // We are going to square the coefficient, so anything non-negative
         // is allowed.
         if (coef < 0) {
           return util::InvalidArgumentErrorBuilder()
                  << "Xpress does not support coefficient " << coef
                  << " in a second order cone constraint "
-                 << (type == SingletonForSOCBound ? "bound" : "norm")
+                 << (type == SingletonType::SOCBound ? "bound" : "norm")
                  << " (consider using auxiliary variables?)";
         }
         break;
@@ -788,14 +790,14 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
   } else if (expr.ids_size() == 0) {
     // The expression is constant.
     switch (type) {
-      case SingletonForSOS:
+      case SingletonType::SOS:
         // Any non-zero constant would force all other variables to 0.
         // Any zero constant would be redundant.
         // Both are edge cases that we do not support at the moment.
         return util::InvalidArgumentErrorBuilder()
                << "Xpress does not support constant expressions in SOS "
                   "(consider using auxiliary variables?)";
-      case SingletonForSOCBound:
+      case SingletonType::SOCBound:
         // We are going to square the bound, so it should not be negative.
         if (constant < 0.0) {
           return util::InvalidArgumentErrorBuilder()
@@ -804,7 +806,7 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
                     "auxiliary variables?)";
         }
         break;
-      case SingletonForSOCNorm:
+      case SingletonType::SOCNorm:
         // Constant entries in the norm are not supported (we would have to
         // move them to the right-hand side).
         return util::InvalidArgumentErrorBuilder()
@@ -820,7 +822,8 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
                                        "second order cone constraint norm"};
     return util::InvalidArgumentErrorBuilder()
            << "Xpress does not support general linear expressions in "
-           << name[type] << " (consider using auxiliary variables?)";
+           << name[static_cast<int>(type)]
+           << " (consider using auxiliary variables?)";
   }
 }
 
@@ -1128,7 +1131,7 @@ absl::Status XpressSolver::AddSOS(
       // Note: A constant value in an SOS forces all others to zero. At the
       //       moment we do not support this. We consider this an edge case.
       ASSIGN_OR_RETURN(std::optional<VarId> x,
-                       ExtractSingleton(expr, SingletonForSOS, nullptr));
+                       ExtractSingleton(expr, SingletonType::SOS, nullptr));
       colind.push_back(variables_map_.at(x.value()));
       refval.push_back(weight);
     }
@@ -1301,7 +1304,7 @@ absl::Status XpressSolver::AddSecondOrderConeConstraints(
     auto const& ub = soc.upper_bound();
     double coef;
     ASSIGN_OR_RETURN(std::optional<VarId> const x0,
-                     ExtractSingleton(ub, SingletonForSOCBound, &coef));
+                     ExtractSingleton(ub, SingletonType::SOCBound, &coef));
     if (x0.has_value()) {
       cols.push_back(variables_map_.at(x0.value()));
       coefs.push_back(-coef * coef);
@@ -1311,7 +1314,7 @@ absl::Status XpressSolver::AddSecondOrderConeConstraints(
 
     for (auto const& arg : soc.arguments_to_norm()) {
       ASSIGN_OR_RETURN(std::optional<VarId> const x,
-                       ExtractSingleton(arg, SingletonForSOCNorm, &coef));
+                       ExtractSingleton(arg, SingletonType::SOCNorm, &coef));
       cols.push_back(variables_map_.at(x.value()));
       coefs.push_back(coef * coef);
     }
