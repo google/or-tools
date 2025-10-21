@@ -85,7 +85,7 @@ void SimpleRoutingProgram() {
   LOG(INFO) << "Distance of the route: " << route_distance << "m";
 }
 
-}  // namespace operations_research::routing
+}  // namespace operations_research::routing::routing
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, true);

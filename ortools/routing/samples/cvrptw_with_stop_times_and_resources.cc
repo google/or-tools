@@ -54,7 +54,6 @@ using operations_research::routing::RoutingIndexManager;
 using operations_research::routing::RoutingModel;
 using operations_research::routing::RoutingNodeIndex;
 using operations_research::routing::RoutingSearchParameters;
-using operations_research::routing::StopServiceTimePlusTransition;
 
 ABSL_FLAG(int, vrp_stops, 25, "Stop locations in the problem.");
 ABSL_FLAG(int, vrp_orders_per_stop, 5, "Nodes for each stop.");
@@ -124,7 +123,7 @@ int main(int argc, char** argv) {
   // Adding time dimension constraints.
   const int64_t kStopTime = 300;
   const int64_t kHorizon = 24 * 3600;
-  StopServiceTimePlusTransition time(
+  operations_research::routing::StopServiceTimePlusTransition time(
       kStopTime, locations,
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
         return locations.ManhattanTime(i, j);
@@ -213,9 +212,9 @@ int main(int argc, char** argv) {
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
-                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                {kCapacity, kTime});
+    operations_research::routing::DisplayPlan(
+        manager, routing, *solution, /*use_same_vehicle_costs=*/false,
+        /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0, {kCapacity, kTime});
     LOG(INFO) << "Stop intervals:";
     for (IntervalVar* const interval : intervals) {
       if (solution->PerformedValue(interval)) {

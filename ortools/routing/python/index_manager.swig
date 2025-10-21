@@ -47,7 +47,7 @@ namespace operations_research::routing {
 %rename (GetNumberOfIndices) RoutingIndexManager::num_indices;
 %unignore RoutingIndexManager::~RoutingIndexManager;
 
-}  // namespace operations_research::routing
+}  // namespace operations_research::routing::routing
 
 %include "ortools/routing/index_manager.h"
 

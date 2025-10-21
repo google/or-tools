@@ -239,9 +239,10 @@ int main(int argc, char** argv) {
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
-                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
-                {kCapacity, kTime, kTimeDependentCost});
+    operations_research::routing::DisplayPlan(
+        manager, routing, *solution, /*use_same_vehicle_costs=*/false,
+        /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
+        {kCapacity, kTime, kTimeDependentCost});
   } else {
     LOG(INFO) << "No solution found.";
   }

@@ -24,6 +24,9 @@
 %include "ortools/util/python/pair.swig"
 %include "ortools/util/python/vector.swig"
 
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+
 // While the module name will be overridden by the one specified on the cmd line,
 // without this, derived classes (e.g. TypeRequirementChecker) will import base
 // class from the module specified in the following %import.
@@ -36,10 +39,13 @@
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
 namespace operations_research::routing {
+class LocalSearchOperator;
+}  // namespace operations_research::routing
+namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 class RoutingSearchStatus;
-}  // namespace operations_research::routing
+}  // namespace operations_research::routing::routing
 
 // Include the files we want to wrap a first time.
 %{
@@ -67,22 +73,6 @@ DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::routing::RoutingResourceClassIndex,
     operations_research::routing::RoutingModel::ResourceClassIndex);
 
-// ============= Type conversions ==============
-
-// See ./constraint_solver_helpers.swig.
-PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
-PY_CONVERT_HELPER_PTR(IntervalVar);
-PY_CONVERT_HELPER_PTR(LocalSearchFilter);
-PY_CONVERT_HELPER_PTR(LocalSearchOperator);
-PY_CONVERT_HELPER_PTR(SearchMonitor);
-
-%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore operations_research::routing::RoutingModel::AddResourceGroup;
-%ignore operations_research::routing::RoutingModel::GetResourceGroups;
-
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingModelParameters,
                  operations_research::routing::RoutingModelParameters)
@@ -105,17 +95,17 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
 %include "ortools/routing/parameters.h"
 %unignoreall
 
-%unignore operations_research;
-namespace operations_research {
+%unignore operations_research::routing;
+namespace operations_research::routing {
 
-// %including a .pb.h is frowned upon (for good general reasons), so we
+// %including a .proto.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
 enum OptionalBoolean {
   BOOL_UNSPECIFIED = 0,
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
-}  // namespace operations_research
+}  // namespace operations_research::routing
 
 %unignore operations_research::routing;
 namespace operations_research::routing {
@@ -139,7 +129,7 @@ struct RoutingSearchStatus {
 %unignore SimpleBoundCosts::bound_cost;
 %rename("size") SimpleBoundCosts::Size;
 
-}  // namespace operations_research::routing
+}  // namespace operations_research::routing::routing
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals
