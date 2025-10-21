@@ -221,7 +221,7 @@ DEFINE_SCOPED_CB(Checktime, SolveInterrupter const*, int,
 
 /** An ortools message callback that prints everything to stdout. */
 static void stdoutMessageCallback(std::vector<std::string> const& lines) {
-  for (auto& l : lines) std::cout << l << std::endl;
+  for (auto& l : lines) std::cout << l << '\n';
 }
 
 inline BasisStatusProto XpressToMathOptBasisStatus(const int status,
