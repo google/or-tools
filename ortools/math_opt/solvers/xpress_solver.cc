@@ -290,7 +290,7 @@ class ScopedSolverContext {
   ScopedSolverContext(Xpress* xpress) : removeInterrupterCallback(nullptr) {
     shared_ctx.xpress = xpress;
   }
-  absl::Status Set(int id, int32_t const& value) {
+  absl::Status Set(int id, int32_t value) {
     return Set(id, int64_t(value));
   }
   absl::Status Set(int id, int64_t const& value) {
