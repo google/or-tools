@@ -299,7 +299,7 @@ class ScopedSolverContext {
     RETURN_IF_ERROR(shared_ctx.xpress->SetIntControl64(id, value));
     return absl::OkStatus();
   }
-  absl::Status Set(int id, double const& value) {
+  absl::Status Set(int id, double value) {
     ASSIGN_OR_RETURN(double old, shared_ctx.xpress->GetDblControl(id));
     modifiedControls.push_back({OneControl::DBL_CONTROL, id, old});
     RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(id, value));
