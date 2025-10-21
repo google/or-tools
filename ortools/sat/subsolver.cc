@@ -142,7 +142,6 @@ void DeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   std::vector<double> timing;
   to_run.reserve(batch_size);
   ThreadPool pool(num_threads);
-  pool.StartWorkers();
   for (int batch_index = 0;; ++batch_index) {
     VLOG(2) << "Starting deterministic batch of size " << batch_size;
     SynchronizeAll(subsolvers);
@@ -214,7 +213,6 @@ void NonDeterministicLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers,
   };
 
   ThreadPool pool(num_threads);
-  pool.StartWorkers();
 
   // The lambda below are using little space, but there is no reason
   // to create millions of them, so we use the blocking nature of
