@@ -279,9 +279,9 @@ class ScopedSolverContext {
   std::function<void()> removeInterrupterCallback;
   /** A single control that must be reset in the destructor. */
   struct OneControl {
-    enum { INT_CONTROL, DBL_CONTROL, STR_CONTROL } type;
     int id;
     std::variant<int64_t, double, std::string> value;
+    enum { INT_CONTROL, DBL_CONTROL, STR_CONTROL }; // Matches std::variant<>::index;
   };
   /** Controls to be reset in the destructor. */
   std::vector<OneControl> modifiedControls;
@@ -295,19 +295,19 @@ class ScopedSolverContext {
   }
   absl::Status Set(int id, int64_t value) {
     ASSIGN_OR_RETURN(int64_t old, shared_ctx.xpress->GetIntControl64(id));
-    modifiedControls.push_back({OneControl::INT_CONTROL, id, old});
+    modifiedControls.push_back({id, old});
     RETURN_IF_ERROR(shared_ctx.xpress->SetIntControl64(id, value));
     return absl::OkStatus();
   }
   absl::Status Set(int id, double value) {
     ASSIGN_OR_RETURN(double old, shared_ctx.xpress->GetDblControl(id));
-    modifiedControls.push_back({OneControl::DBL_CONTROL, id, old});
+    modifiedControls.push_back({id, old});
     RETURN_IF_ERROR(shared_ctx.xpress->SetDblControl(id, value));
     return absl::OkStatus();
   }
   absl::Status Set(int id, std::string const& value) {
     ASSIGN_OR_RETURN(std::string old, shared_ctx.xpress->GetStrControl(id));
-    modifiedControls.push_back({OneControl::STR_CONTROL, id, old});
+    modifiedControls.push_back({id, old});
     RETURN_IF_ERROR(shared_ctx.xpress->SetStrControl(id, value));
     return absl::OkStatus();
   }
@@ -718,7 +718,7 @@ class ScopedSolverContext {
   ~ScopedSolverContext() {
     for (auto it = modifiedControls.rbegin(); it != modifiedControls.rend();
          ++it) {
-      switch (it->type) {
+      switch (it->value.index()) {
         case OneControl::INT_CONTROL:
           CHECK_OK(shared_ctx.xpress->SetIntControl64(
               it->id, std::get<int64_t>(it->value)));
