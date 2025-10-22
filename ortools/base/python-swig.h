@@ -28,6 +28,7 @@
 // Use Py3 unicode str() type for C++ strings.
 #ifdef PyString_FromStringAndSize
 #undef PyString_FromStringAndSize
+#endif
 #define PyString_FromStringAndSize PyUnicode_FromStringAndSize
 
 #ifdef PyString_AsString
@@ -49,7 +50,6 @@ static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
   PyErr_SetString(PyExc_TypeError, "Expecting str or bytes");
   return -1;
 }
-#endif  // Py3.3+
 
 template <class T>
 inline bool PyObjAs(PyObject* pystr, T* cstr) {
