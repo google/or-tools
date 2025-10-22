@@ -20,6 +20,9 @@
 %include "ortools/base/base.i"
 %import "ortools/util/python/vector.swig"
 
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+
 %{
 #include "ortools/routing/types.h"
 

@@ -20,8 +20,9 @@
 #include "ortools/routing/index_manager.h"
 %}
 
-DEFINE_INDEX_TYPE_TYPEDEF(operations_research::routing::RoutingNodeIndex,
-                          operations_research::routing::RoutingIndexManager::NodeIndex);
+DEFINE_INDEX_TYPE_TYPEDEF(
+    operations_research::routing::RoutingNodeIndex,
+    operations_research::routing::RoutingIndexManager::NodeIndex);
 
 %ignoreall
 

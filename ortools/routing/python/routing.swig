@@ -24,6 +24,9 @@
 %include "ortools/util/python/pair.swig"
 %include "ortools/util/python/vector.swig"
 
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+
 // While the module name will be overridden by the one specified on the cmd line,
 // without this, derived classes (e.g. TypeRequirementChecker) will import base
 // class from the module specified in the following %import.
@@ -35,6 +38,9 @@
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class LocalSearchOperator;
+}  // namespace operations_research
 namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
@@ -108,7 +114,7 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
 %unignore operations_research;
 namespace operations_research {
 
-// %including a .pb.h is frowned upon (for good general reasons), so we
+// %including a .proto.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
 enum OptionalBoolean {
   BOOL_UNSPECIFIED = 0,

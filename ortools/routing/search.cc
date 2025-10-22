@@ -949,18 +949,19 @@ GlobalCheapestInsertionFilteredHeuristic::
         std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
         std::function<int64_t(int64_t)> penalty_evaluator,
         LocalSearchFilterManager* filter_manager,
-        GlobalCheapestInsertionParameters parameters)
+        GlobalCheapestInsertionParameters parameters, bool is_sequential)
     : CheapestInsertionFilteredHeuristic(
           model, std::move(stop_search), std::move(evaluator),
           std::move(penalty_evaluator), filter_manager),
-      gci_params_(parameters),
+      gci_params_(std::move(parameters)),
+      is_sequential_(is_sequential),
       node_index_to_vehicle_(model->Size(), -1),
       node_index_to_neighbors_by_cost_class_(nullptr),
       empty_vehicle_type_curator_(nullptr),
       temp_inserted_nodes_(model->Size()) {
-  CHECK_GT(gci_params_.neighbors_ratio, 0);
-  CHECK_LE(gci_params_.neighbors_ratio, 1);
-  CHECK_GE(gci_params_.min_neighbors, 1);
+  CHECK_GT(gci_params_.neighbors_ratio(), 0);
+  CHECK_LE(gci_params_.neighbors_ratio(), 1);
+  CHECK_GE(gci_params_.min_neighbors(), 1);
 }
 
 bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
@@ -988,11 +989,11 @@ bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   // Get neighbors.
   double neighbors_ratio_used = 1;
   node_index_to_neighbors_by_cost_class_ =
-      model()->GetOrCreateNodeNeighborsByCostClass(gci_params_.neighbors_ratio,
-                                                   gci_params_.min_neighbors,
-                                                   neighbors_ratio_used);
+      model()->GetOrCreateNodeNeighborsByCostClass(
+          gci_params_.neighbors_ratio(), gci_params_.min_neighbors(),
+          neighbors_ratio_used);
   if (neighbors_ratio_used == 1) {
-    gci_params_.use_neighbors_ratio_for_initialization = false;
+    gci_params_.set_use_neighbors_ratio_for_initialization(false);
   }
 
   if (empty_vehicle_type_curator_ == nullptr) {
@@ -1074,7 +1075,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
     }
   }
   InsertFarthestNodesAsSeeds();
-  if (gci_params_.is_sequential) {
+  if (is_sequential_) {
     if (!SequentialInsertNodes(nodes_by_bucket)) {
       return unperform_unassigned_and_check();
     }
@@ -1748,10 +1749,10 @@ bool GlobalCheapestInsertionFilteredHeuristic::IsCheapestClassRepresentative(
 
 void GlobalCheapestInsertionFilteredHeuristic::InsertFarthestNodesAsSeeds() {
   // TODO(user): consider checking search limits.
-  if (gci_params_.farthest_seeds_ratio <= 0) return;
+  if (gci_params_.farthest_seeds_ratio() <= 0) return;
   // Insert at least 1 farthest Seed if the parameter is positive.
   const int num_seeds = static_cast<int>(
-      std::ceil(gci_params_.farthest_seeds_ratio * model()->vehicles()));
+      std::ceil(gci_params_.farthest_seeds_ratio() * model()->vehicles()));
 
   std::vector<bool> is_vehicle_used;
   absl::flat_hash_set<int> used_vehicles;
@@ -1851,7 +1852,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::InitializePairPositions(
         // of a disjunction we do not try to make any of its pairs unperformed
         // as it requires having an entry with all pairs being unperformed.
         // TODO(user): Adapt the code to make pair disjunctions unperformed.
-        if (gci_params_.add_unperformed_entries && pickups.size() == 1 &&
+        if (gci_params_.add_unperformed_entries() && pickups.size() == 1 &&
             deliveries.size() == 1 &&
             GetUnperformedValue(pickup) !=
                 std::numeric_limits<int64_t>::max() &&
@@ -1880,7 +1881,7 @@ void GlobalCheapestInsertionFilteredHeuristic::
             pickup_to_entries,
         std::vector<GlobalCheapestInsertionFilteredHeuristic::PairEntries>*
             delivery_to_entries) {
-  if (!gci_params_.use_neighbors_ratio_for_initialization) {
+  if (!gci_params_.use_neighbors_ratio_for_initialization()) {
     std::unique_ptr<IntVarIterator> vehicle_it(
         model()->VehicleVar(pickup)->MakeDomainIterator(false));
     for (const int vehicle : InitAndGetValues(vehicle_it.get())) {
@@ -2280,7 +2281,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::InitializePositions(
 
     if (StopSearch()) return false;
     // Add insertion entry making node unperformed.
-    if (gci_params_.add_unperformed_entries &&
+    if (gci_params_.add_unperformed_entries() &&
         GetUnperformedValue(node) != std::numeric_limits<int64_t>::max()) {
       AddNodeEntry(node, node, -1, all_vehicles, queue);
     }
@@ -2298,7 +2299,7 @@ void GlobalCheapestInsertionFilteredHeuristic::
       vehicles.empty() ? model()->vehicles() : vehicles.size();
   const bool all_vehicles = (num_vehicles == model()->vehicles());
 
-  if (!gci_params_.use_neighbors_ratio_for_initialization) {
+  if (!gci_params_.use_neighbors_ratio_for_initialization()) {
     auto vehicles_it = vehicles.begin();
     // TODO(user): Ideally we'd want to iterate on vehicle var values:
     // std::unique_ptr<IntVarIterator>

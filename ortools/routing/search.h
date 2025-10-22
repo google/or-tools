@@ -503,37 +503,13 @@ class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
 class GlobalCheapestInsertionFilteredHeuristic
     : public CheapestInsertionFilteredHeuristic {
  public:
-  struct GlobalCheapestInsertionParameters {
-    /// Whether the routes are constructed sequentially or in parallel.
-    bool is_sequential;
-    /// The ratio of routes on which to insert farthest nodes as seeds before
-    /// starting the cheapest insertion.
-    double farthest_seeds_ratio;
-    /// If neighbors_ratio < 1 then for each node only this ratio of its
-    /// neighbors leading to the smallest arc costs are considered for
-    /// insertions, with a minimum of 'min_neighbors':
-    /// num_closest_neighbors = max(min_neighbors, neighbors_ratio*N),
-    /// where N is the number of non-start/end nodes in the model.
-    double neighbors_ratio;
-    int64_t min_neighbors;
-    /// If true, only closest neighbors (see neighbors_ratio and min_neighbors)
-    /// are considered as insertion positions during initialization. Otherwise,
-    /// all possible insertion positions are considered.
-    bool use_neighbors_ratio_for_initialization;
-    /// If true, entries are created for making the nodes/pairs unperformed, and
-    /// when the cost of making a node unperformed is lower than all insertions,
-    /// the node/pair will be made unperformed. If false, only entries making
-    /// a node/pair performed are considered.
-    bool add_unperformed_entries;
-  };
-
   /// Takes ownership of evaluators.
   GlobalCheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<bool()> stop_search,
       std::function<int64_t(int64_t, int64_t, int64_t)> evaluator,
       std::function<int64_t(int64_t)> penalty_evaluator,
       LocalSearchFilterManager* filter_manager,
-      GlobalCheapestInsertionParameters parameters);
+      GlobalCheapestInsertionParameters parameters, bool is_sequential);
   ~GlobalCheapestInsertionFilteredHeuristic() override = default;
   bool BuildSolutionInternal() override;
   std::string DebugString() const override {
@@ -910,6 +886,8 @@ class GlobalCheapestInsertionFilteredHeuristic
   }
 
   GlobalCheapestInsertionParameters gci_params_;
+  /// Whether the routes are constructed sequentially or in parallel.
+  bool is_sequential_;
   /// Stores the vehicle index of each node in the current assignment.
   std::vector<int> node_index_to_vehicle_;
 

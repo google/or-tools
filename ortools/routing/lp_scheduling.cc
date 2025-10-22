@@ -833,7 +833,7 @@ bool TightenStartEndVariableBoundsWithResource(
     const ClosedInterval& end_bounds, int end_index, int64_t offset,
     RoutingLinearSolverWrapper* solver) {
   const ResourceGroup::Attributes& attributes =
-      resource.GetDimensionAttributes(&dimension);
+      resource.GetDimensionAttributes(dimension.index());
   ClosedInterval new_start_bounds;
   ClosedInterval new_end_bounds;
   return GetIntervalIntersectionWithOffsetDomain(start_bounds,
@@ -1285,7 +1285,7 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
   for (int pos = 0; pos < variable_transits.size(); ++pos) {
     int variable_transit = variable_transits[pos];
     if (variable_transit < 0) {
-      DCHECK_LE(transit_targets[pos],
+      DCHECK_EQ(transit_targets[pos],
                 transit_evaluator(current_route_nodes_[pos],
                                   current_route_nodes_[pos + 1]));
       continue;
@@ -1329,6 +1329,8 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
 
     const int64_t transit_target = transit_targets[pos];
     const int64_t fixed_transit = CapSub(transit_target, variable_transit_ub);
+    DCHECK_EQ(fixed_transit, transit_evaluator(current_route_nodes_[pos],
+                                               current_route_nodes_[pos + 1]));
     DCHECK_GT(transit_target, fixed_transit);
     DCHECK_GE(fixed_transit, 0);
     const int64_t threshold = std::max<int64_t>(
@@ -1396,10 +1398,9 @@ DimensionCumulOptimizerCore::OptimizeSingleRouteWithTransitTargets(
     DCHECK_EQ(optimal_transits->size(), current_route_nodes_.size() - 1);
     // Add the fixed transit on each arc to optimal_transits.
     for (int pos = 0; pos < optimal_transits->size(); ++pos) {
-      const int64_t fixed_transit =
-          std::min(transit_targets[pos],
-                   transit_evaluator(current_route_nodes_[pos],
-                                     current_route_nodes_[pos + 1]));
+      const int64_t fixed_transit = transit_evaluator(
+          current_route_nodes_[pos], current_route_nodes_[pos + 1]);
+      DCHECK_GE(transit_targets[pos], fixed_transit);
       CapAddTo(fixed_transit, &(*optimal_transits)[pos]);
     }
   }
@@ -1906,7 +1907,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       int64_t& transit = fixed_transit[pos - 1];
       transit = transit_accessor(path[pos - 1], path[pos]);
       if (!transit_targets.empty()) {
-        transit = std::min(transit, transit_targets[pos - 1]);
+        // NOTE(user): if the transit_target is lower than the transit from
+        // the transit_accessor, the final transit chosen by the scheduler might
+        // be lower than that of the accessor, causing the RoutingModel to
+        // find the scheduling infeasible and reject it.
+        DCHECK_GE(transit_targets[pos - 1], transit);
       }
       total_fixed_transit = CapAdd(total_fixed_transit, transit);
     }
@@ -2790,7 +2795,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
     int num_available_resources = 0;
     for (RCIndex rc_index(0); rc_index < num_resource_classes; rc_index++) {
       const ResourceGroup::Attributes& attributes =
-          resource_group.GetDimensionAttributesForClass(dimension_, rc_index);
+          resource_group.GetDimensionAttributesForClass(dimension_->index(),
+                                                        rc_index);
       if (attributes.start_domain().Max() < cumul_offset ||
           attributes.end_domain().Max() < cumul_offset) {
         // This resource's domain has a cumul max lower than the offset, so
@@ -2883,7 +2889,8 @@ bool DimensionCumulOptimizerCore::SetGlobalConstraintsForResourceAssignment(
               solver->SetEnforcementLiteral(cumul_constraint, assign_rc_to_v);
             };
         const ResourceGroup::Attributes& attributes =
-            resource_group.GetDimensionAttributesForClass(dimension_, rc_index);
+            resource_group.GetDimensionAttributesForClass(dimension_->index(),
+                                                          rc_index);
         add_domain_constraint(attributes.start_domain(),
                               index_to_cumul_variable_[model.Start(v)]);
         add_domain_constraint(attributes.end_domain(),
@@ -3561,7 +3568,7 @@ std::string RoutingCPSatWrapper::PrintModel() const {
       }
       variable_children[parent].emplace(lemma);
       variables[name] = std::make_pair(variable, i);
-      if (variable.domain(0) == 0 & variable.domain(1) == 1) {
+      if (variable.domain(0) == 0 && variable.domain(1) == 1) {
         ++num_binary_variables;
       }
     }

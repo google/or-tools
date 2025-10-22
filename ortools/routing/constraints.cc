@@ -254,7 +254,7 @@ class ResourceAssignmentConstraint : public Constraint {
          resource_group_.GetAffectedDimensionIndices()) {
       const RoutingDimension* const dim = model_.GetDimensions()[d.value()];
       const RoutingModel::ResourceGroup::Attributes& attributes =
-          resource_group_.GetResources()[resource].GetDimensionAttributes(dim);
+          resource_group_.GetResources()[resource].GetDimensionAttributes(d);
       // resource_start_lb <= cumul[start(vehicle)] <= resource_start_ub
       // resource_end_lb <= cumul[end(vehicle)] <= resource_end_ub
       dim->CumulVar(model_.Start(vehicle))

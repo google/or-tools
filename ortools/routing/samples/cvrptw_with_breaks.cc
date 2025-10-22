@@ -232,7 +232,8 @@ int main(int argc, char** argv) {
         LOG(INFO) << break_interval.Var()->name() << " unperformed";
       }
     }
-    DisplayPlan(manager, routing, *solution, false, 0, 0, {kCapacity, kTime});
+    operations_research::routing::DisplayPlan(manager, routing, *solution,
+                                              false, 0, 0, {kCapacity, kTime});
   } else {
     LOG(INFO) << "No solution found.";
   }

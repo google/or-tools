@@ -41,27 +41,16 @@
 namespace operations_research::routing {
 namespace {
 
-// Returns global cheapest insertion parameters based on the given search
-// parameters.
-// TODO(user): consider having an ILS specific set of parameters.
-GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
-MakeGlobalCheapestInsertionParameters(
-    const RoutingSearchParameters& search_parameters, bool is_sequential) {
-  GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
-      gci_parameters;
-  gci_parameters.is_sequential = is_sequential;
-  gci_parameters.farthest_seeds_ratio =
-      search_parameters.cheapest_insertion_farthest_seeds_ratio();
-  gci_parameters.neighbors_ratio =
-      search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
-  gci_parameters.min_neighbors =
-      search_parameters.cheapest_insertion_first_solution_min_neighbors();
-  gci_parameters.use_neighbors_ratio_for_initialization =
-      search_parameters
-          .cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization();  // NOLINT
-  gci_parameters.add_unperformed_entries =
-      search_parameters.cheapest_insertion_add_unperformed_entries();
-  return gci_parameters;
+// Returns global cheapest insertion parameters based on the given recreate
+// strategy if available. Returns default parameters otherwise.
+GlobalCheapestInsertionParameters
+GetGlobalCheapestInsertionParametersForRecreateStrategy(
+    const RecreateStrategy& recreate_strategy,
+    const GlobalCheapestInsertionParameters& default_parameters) {
+  return recreate_strategy.has_parameters() &&
+                 recreate_strategy.parameters().has_global_cheapest_insertion()
+             ? recreate_strategy.parameters().global_cheapest_insertion()
+             : default_parameters;
 }
 
 // Returns local cheapest insertion parameters based on the given recreate
@@ -235,7 +224,7 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
           .ruin_recreate_parameters()
           .recreate_strategy();
   switch (recreate_strategy.heuristic()) {
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION: {
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
@@ -243,8 +232,7 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
               recreate_strategy,
               parameters.local_cheapest_insertion_parameters()),
           filter_manager, model->GetBinCapacities());
-    }
-    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION: {
+    case FirstSolutionStrategy::LOCAL_CHEAPEST_COST_INSERTION:
       return std::make_unique<LocalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           /*evaluator=*/nullptr,
@@ -252,43 +240,38 @@ std::unique_ptr<RoutingFilteredHeuristic> MakeRecreateProcedure(
               recreate_strategy,
               parameters.local_cheapest_cost_insertion_parameters()),
           filter_manager, model->GetBinCapacities());
-    }
-    case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION: {
-      GlobalCheapestInsertionFilteredHeuristic::
-          GlobalCheapestInsertionParameters gci_parameters =
-              MakeGlobalCheapestInsertionParameters(parameters,
-                                                    /*is_sequential=*/true);
+    case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION:
       return std::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
           [model](int64_t i) { return model->UnperformedPenaltyOrValue(0, i); },
-          filter_manager, gci_parameters);
-    }
-    case FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION: {
-      GlobalCheapestInsertionFilteredHeuristic::
-          GlobalCheapestInsertionParameters gci_parameters =
-              MakeGlobalCheapestInsertionParameters(parameters,
-                                                    /*is_sequential=*/false);
+          filter_manager,
+          GetGlobalCheapestInsertionParametersForRecreateStrategy(
+              recreate_strategy,
+              parameters.global_cheapest_insertion_first_solution_parameters()),
+          /*is_sequential=*/true);
+    case FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION:
       return std::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
           model, std::move(stop_search),
           absl::bind_front(&RoutingModel::GetArcCostForVehicle, model),
           [model](int64_t i) { return model->UnperformedPenaltyOrValue(0, i); },
-          filter_manager, gci_parameters);
-    }
-    case FirstSolutionStrategy::SAVINGS: {
+          filter_manager,
+          GetGlobalCheapestInsertionParametersForRecreateStrategy(
+              recreate_strategy,
+              parameters.global_cheapest_insertion_first_solution_parameters()),
+          /*is_sequential=*/false);
+    case FirstSolutionStrategy::SAVINGS:
       return std::make_unique<SequentialSavingsFilteredHeuristic>(
           model, std::move(stop_search),
           GetSavingsParametersForRecreateStrategy(
               recreate_strategy, parameters.savings_parameters()),
           filter_manager);
-    }
-    case FirstSolutionStrategy::PARALLEL_SAVINGS: {
+    case FirstSolutionStrategy::PARALLEL_SAVINGS:
       return std::make_unique<ParallelSavingsFilteredHeuristic>(
           model, std::move(stop_search),
           GetSavingsParametersForRecreateStrategy(
               recreate_strategy, parameters.savings_parameters()),
           filter_manager);
-    }
     default:
       LOG(DFATAL) << "Unsupported recreate procedure.";
       return nullptr;
