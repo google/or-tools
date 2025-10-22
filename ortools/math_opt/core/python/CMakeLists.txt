@@ -37,7 +37,6 @@ add_library(${PROJECT_NAMESPACE}::math_opt_core_pybind11 ALIAS math_opt_core_pyb
 
 if(BUILD_TESTING)
   file(GLOB PYTHON_SRCS "*_test.py")
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/solver_gurobi_test.py") # need gurobi
 
   if(NOT USE_SCIP)
     list(FILTER PYTHON_SRCS EXCLUDE REGEX "solver_test.py$")
