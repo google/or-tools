@@ -35,13 +35,6 @@
 %include "ortools/routing/python/types.swig"
 %include "ortools/routing/python/index_manager.swig"
 
-%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
-%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore operations_research::routing::RoutingModel::AddResourceGroup;
-%ignore operations_research::routing::RoutingModel::GetResourceGroups;
-
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
@@ -79,6 +72,22 @@ DEFINE_INDEX_TYPE_TYPEDEF(
 DEFINE_INDEX_TYPE_TYPEDEF(
     operations_research::routing::RoutingResourceClassIndex,
     operations_research::routing::RoutingModel::ResourceClassIndex);
+
+// ============= Type conversions ==============
+
+// See ./constraint_solver_helpers.swig.
+PY_CONVERT_HELPER_INTEXPR_AND_INTVAR();
+PY_CONVERT_HELPER_PTR(IntervalVar);
+PY_CONVERT_HELPER_PTR(LocalSearchFilter);
+PY_CONVERT_HELPER_PTR(LocalSearchOperator);
+PY_CONVERT_HELPER_PTR(SearchMonitor);
+
+%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore operations_research::routing::RoutingModel::AddResourceGroup;
+%ignore operations_research::routing::RoutingModel::GetResourceGroups;
 
 PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
                  RoutingModelParameters,
