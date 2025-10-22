@@ -16,6 +16,7 @@ add_subdirectory(c_api)
 file(GLOB _SRCS "*.h" "*.cc")
 #list(APPEND _SRCS "${CMAKE_CURRENT_SOURCE_DIR}/c_api/solver.cc")
 list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
+list(FILTER _SRCS EXCLUDE REGEX "/[^/]solver_interface_mock\\.cc$")
 
 set(NAME ${PROJECT_NAME}_math_opt_core)
 add_library(${NAME} OBJECT ${_SRCS})
