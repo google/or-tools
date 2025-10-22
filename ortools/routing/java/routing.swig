@@ -35,7 +35,7 @@ class RoutingSearchParameters;
 
 class RoutingSearchStatus;
 
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 // Include the files we want to wrap a first time.
 %{
@@ -340,7 +340,7 @@ import com.google.ortools.constraintsolver.Constraint;
 %rename (getBoundCost) SimpleBoundCosts::bound_cost;
 %rename (getSize) SimpleBoundCosts::Size;
 
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 // Generic rename rules.
 %rename (buildSolution) *::BuildSolution;
@@ -443,7 +443,7 @@ namespace operations_research::routing {
 %rename (defaultRoutingModelParameters) DefaultRoutingModelParameters;
 %rename (findErrorInRoutingSearchParameters) FindErrorInRoutingSearchParameters;
 %rename (makeSetValuesFromTargets) MakeSetValuesFromTargets;
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 %include "ortools/routing/types.h"
 %include "ortools/routing/parameters.h"

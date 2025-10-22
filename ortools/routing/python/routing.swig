@@ -38,14 +38,14 @@
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
-namespace operations_research::routing {
+namespace operations_research {
 class LocalSearchOperator;
-}  // namespace operations_research::routing
+}  // namespace operations_research
 namespace operations_research::routing {
 class RoutingModelParameters;
 class RoutingSearchParameters;
 class RoutingSearchStatus;
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 // Include the files we want to wrap a first time.
 %{
@@ -95,8 +95,8 @@ PY_PROTO_TYPEMAP(ortools.routing.parameters_pb2,
 %include "ortools/routing/parameters.h"
 %unignoreall
 
-%unignore operations_research::routing;
-namespace operations_research::routing {
+%unignore operations_research;
+namespace operations_research {
 
 // %including a .proto.h is frowned upon (for good general reasons), so we
 // have to duplicate the OptionalBoolean enum here to give it to python users.
@@ -105,7 +105,7 @@ enum OptionalBoolean {
   BOOL_FALSE = 2,
   BOOL_TRUE = 3,
 };
-}  // namespace operations_research::routing
+}  // namespace operations_research
 
 %unignore operations_research::routing;
 namespace operations_research::routing {
@@ -129,7 +129,7 @@ struct RoutingSearchStatus {
 %unignore SimpleBoundCosts::bound_cost;
 %rename("size") SimpleBoundCosts::Size;
 
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 // TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 //swiglint: disable include-h-allglobals

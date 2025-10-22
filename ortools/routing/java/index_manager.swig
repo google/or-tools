@@ -47,7 +47,7 @@ namespace operations_research::routing {
 %rename (nodeToIndex) RoutingIndexManager::NodeToIndex;
 %rename (nodesToIndices) RoutingIndexManager::NodesToIndices;
 
-}  // namespace operations_research::routing::routing
+}  // namespace operations_research::routing
 
 %include "ortools/routing/index_manager.h"
 
