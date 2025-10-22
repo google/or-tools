@@ -30,5 +30,6 @@ target_include_directories(${NAME} PUBLIC
 target_link_libraries(${NAME} PRIVATE
   absl::strings
   GTest::gmock
+  protobuf-matchers
   ${PROJECT_NAMESPACE}::math_opt_proto
 )
