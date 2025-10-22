@@ -14,7 +14,6 @@
 // A minimal use of MathOptSolve() from C to ensure the code compiles in C.
 // NOTE: this file is .c, not .cc, so the blaze will test this compiles as C.
 
-#include <malloc.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,10 +29,12 @@ void TestSolveEmptyModel() {
   void* solve_result = NULL;
   size_t solve_result_size = 0;
   char* status_msg = NULL;
-  const int error = MathOptSolve(model, model_size, solver_type, /*interrupter=*/NULL, &solve_result,
-                           &solve_result_size, &status_msg);
+  const int error =
+      MathOptSolve(model, model_size, solver_type, /*interrupter=*/NULL,
+                   &solve_result, &solve_result_size, &status_msg);
   if (error) {
-    printf("error on MathOptSolve, status code: %d, status message: %s", error, status_msg);
+    printf("error on MathOptSolve, status code: %d, status message: %s", error,
+           status_msg);
     // If you handle the error instead of crashing, be sure to free status_msg.
     abort();
   }
@@ -52,14 +53,16 @@ void TestInterruptSolveEmptyModel() {
   char* status_msg = NULL;
   struct MathOptInterrupter* interrupter = MathOptNewInterrupter();
   MathOptInterrupt(interrupter);
-  const int error = MathOptSolve(model, model_size, solver_type, /*interrupter=*/NULL, &solve_result,
-                           &solve_result_size, &status_msg);
+  const int error =
+      MathOptSolve(model, model_size, solver_type, /*interrupter=*/NULL,
+                   &solve_result, &solve_result_size, &status_msg);
   if (error) {
-    printf("error on MathOptSolve, status code: %d, status message: %s", error, status_msg);
+    printf("error on MathOptSolve, status code: %d, status message: %s", error,
+           status_msg);
     // If you handle the error instead of crashing, be sure to free status_msg.
     abort();
   }
-  if(MathOptIsInterrupted(interrupter) == 0) {
+  if (MathOptIsInterrupted(interrupter) == 0) {
     printf("interrupter should be interrupted");
     abort();
   }
