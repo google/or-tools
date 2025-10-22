@@ -35,6 +35,13 @@
 %include "ortools/routing/python/types.swig"
 %include "ortools/routing/python/index_manager.swig"
 
+%ignore operations_research::routing::RoutingModel::RegisterStateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::StateDependentTransitCallback;
+%ignore operations_research::routing::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::routing::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+%ignore operations_research::routing::RoutingModel::AddResourceGroup;
+%ignore operations_research::routing::RoutingModel::GetResourceGroups;
+
 // We need to forward-declare the proto here, so that PROTO_INPUT involving it
 // works correctly. The order matters very much: this declaration needs to be
 // before the %{ #include ".../routing.h" %}.
