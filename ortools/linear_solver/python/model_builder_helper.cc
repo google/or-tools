@@ -513,7 +513,6 @@ PYBIND11_MODULE(model_builder_helper, m) {
           "__isub__",
           [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            expr->AddInPlace(other->Neg());
             return expr->AddInPlace(other->Neg());
           },
           py::arg("other").none(false), "Returns `self` - `other`.")
