@@ -13,6 +13,7 @@
 
 #include "ortools/algorithms/space_saving_most_frequent.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -473,7 +474,7 @@ struct Element {
   Element() = default;
   explicit Element(int value) : value(value) {}
   int value;
-  int zeros[kElementSize] = {};
+  std::array<int, kElementSize> zeros;
   template <typename H>
   friend H AbslHashValue(H h, const Element& e) {
     return H::combine(std::move(h), e.value);
