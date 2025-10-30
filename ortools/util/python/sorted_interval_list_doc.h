@@ -279,7 +279,8 @@ list of non-adjacent intervals. Note that we don't expose size() which
 might be confused with the number of values in the domain.)doc";
 
 static const char* __doc_operations_research_Domain_OverlapsWith =
-    R"doc(Returns true iff D overlaps with the given domain.)doc";
+    R"doc(   * Returns true iff D overlaps with the given domain, that is, the
+intersection of the two domains is not empty.)doc";
 
 static const char* __doc_operations_research_Domain_PositiveDivisionBySuperset =
     R"doc(Returns a superset of {x ∈ Int64, ∃ e ∈ D, ∃ d ∈ divisor, x = e / d }.

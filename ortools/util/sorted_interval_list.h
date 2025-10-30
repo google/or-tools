@@ -358,7 +358,8 @@ class Domain {
   bool IsIncludedIn(const Domain& domain) const;
 
   /**
-   * Returns true iff D overlaps with the given domain.
+   * Returns true iff D overlaps with the given domain, that is, the
+   * intersection of the two domains is not empty.
    */
   bool OverlapsWith(const Domain& domain) const;
 
