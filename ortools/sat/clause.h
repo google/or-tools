@@ -871,8 +871,15 @@ class BinaryImplicationGraph : public SatPropagator {
   // Returns the next at_most_one, or a span of size 0 when finished.
   absl::Span<const Literal> NextAtMostOne();
 
-  // Clean up implications list that might have duplicates.
-  void RemoveDuplicates();
+  // Cleans up implications lists that might have duplicates.
+  // This only touches lists that changed, so it is okay to call proactively.
+  //
+  // If we have l => x and not(x), this will also set l to false which might
+  // casacade to an INFEASIBLE status in which case we will return false.
+  bool RemoveDuplicatesAndFixedVariables();
+
+  // For DCHECK() to debug inefficiency.
+  bool HasNoDuplicates();
 
   // Returns an at most one "index" for all the at_most_ones containing this
   // literal. Warning: the indices are not necessarily super dense. This can be
@@ -885,8 +892,13 @@ class BinaryImplicationGraph : public SatPropagator {
  private:
   friend class LratEquivalenceHelper;
 
-  // Mark implications_[a] for cleanup in RemoveDuplicates().
+  // Marks implications_[a] for cleanup in RemoveDuplicatesAndFixedVariables().
   void NotifyPossibleDuplicate(Literal a);
+
+  // Sorts, removes duplicates and detects l => x and not(x).
+  // This only looks at the "direct" implications.
+  // Returns false on UNSAT.
+  ABSL_MUST_USE_RESULT bool CleanUpImplicationList(Literal a);
 
   void AddClauseId(ClauseId id, Literal a, Literal b) {
     if (a.Variable() > b.Variable()) std::swap(a, b);
@@ -975,7 +987,7 @@ class BinaryImplicationGraph : public SatPropagator {
   util_intops::StrongVector<LiteralIndex, LiteralsOrOffsets>
       implications_and_amos_;
 
-  // Used by RemoveDuplicates() and NotifyPossibleDuplicate().
+  // Used by RemoveDuplicatesAndFixedVariables() and NotifyPossibleDuplicate().
   util_intops::StrongVector<LiteralIndex, bool> might_have_dups_;
   std::vector<Literal> to_clean_;
 

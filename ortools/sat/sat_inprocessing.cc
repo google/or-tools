@@ -92,9 +92,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
     if (!LevelZeroPropagate()) return false;
 
-    // This one is fast since only newly fixed variables are considered.
-    implication_graph_->RemoveFixedVariables();
-    implication_graph_->RemoveDuplicates();
+    // This one is fast since only new implications or new fixed variables are
+    // considered.
+    RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
 
     // This also prepare the stamping below so that we do that on a DAG and do
     // not consider potential new implications added by
@@ -139,6 +139,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // TODO(user): Think about the right order in this function.
     if (params_.inprocessing_use_congruence_closure()) {
       RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+      RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
       RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
     }
 
@@ -241,7 +242,7 @@ bool Inprocessing::InprocessingRound() {
   // updates.
   decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
 
-  implication_graph_->RemoveDuplicates();
+  RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());
@@ -285,6 +286,7 @@ bool Inprocessing::InprocessingRound() {
   // TODO(user): Think about the right order in this function.
   if (params_.inprocessing_use_congruence_closure()) {
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+    RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
     RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
   }
 
@@ -484,7 +486,10 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   LOG_IF(INFO, log_info) << "Cleanup. num_removed_literals: "
                          << num_removed_literals << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get();
-  return true;
+
+  // If clause became binary, make sure to clean up the relevant implication
+  // lists. This should be fast in all cases since it is incremental.
+  return implication_graph_->RemoveDuplicatesAndFixedVariables();
 }
 
 // TODO(user): Use better work limits, see SAT09.CRAFTED.ramseycube.Q3inK12
@@ -1861,8 +1866,6 @@ GateCongruenceClosure::~GateCongruenceClosure() {
       {"GateCongruenceClosure/gates", total_gates_},
       {"GateCongruenceClosure/units", total_num_units_},
       {"GateCongruenceClosure/equivalences", total_equivalences_},
-      {"GateCongruenceClosure/issue_duplicate",
-       num_duplicates_in_implications_list_},
   });
 }
 
@@ -1949,12 +1952,7 @@ void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
           implication_graph_->Implications(target);
       timer.TrackFastLoop(implications.size());
       for (const Literal implied : implications) {
-        if (implied.Variable() == target.Variable()) {
-          // This shouldn't really happen except in corner case.
-          // We piggy back on that counter that track "issue".
-          ++num_duplicates_in_implications_list_;
-          continue;
-        }
+        CHECK_NE(implied.Variable(), target.Variable());
 
         if (is_clause_literal[implied.Negated()]) {
           // Set next_is_potential_target to the intersection of
@@ -1980,12 +1978,7 @@ void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
           marked_.Clear(implied.Negated());
         }
       }
-
-      // TODO(user): this shouldn't really happen but it does (rarely). Debug.
-      if (count != second_count) {
-        ++num_duplicates_in_implications_list_;
-        break;
-      }
+      CHECK_EQ(count, second_count);
 
       // Add the detected gate (its inputs are the negation of each clause
       // literal other than the target).

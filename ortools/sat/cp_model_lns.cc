@@ -843,6 +843,8 @@ void InsertCumulativePrecedences(
   }
   std::sort(demands.begin(), demands.end());
 
+  if (demands.empty()) return;
+
   const int64_t capacity_value =
       GetLinearExpressionValue(cumulative.capacity(), initial_solution);
   DCHECK_GT(capacity_value, 0);

@@ -279,6 +279,23 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "cp_model_solver_logging",
+    srcs = ["cp_model_solver_logging.cc"],
+    hdrs = ["cp_model_solver_logging.h"],
+    deps = [
+        ":model",
+        ":synchronization",
+        ":util",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -663,6 +680,7 @@ cc_library(
         ":cp_model_postsolve",
         ":cp_model_presolve",
         ":cp_model_search",
+        ":cp_model_solver_logging",
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cuts",
@@ -792,6 +810,7 @@ cc_library(
         ":cp_model_presolve",
         ":cp_model_search",
         ":cp_model_solver_helpers",
+        ":cp_model_solver_logging",
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cuts",
@@ -1516,7 +1535,6 @@ cc_library(
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:btree",
-        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",

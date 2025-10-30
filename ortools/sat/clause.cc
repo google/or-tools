@@ -486,7 +486,12 @@ bool ClauseManager::InprocessingRewriteClause(
 
   if (new_clause.empty()) return false;  // UNSAT.
 
-  if (DEBUG_MODE) {
+  // TODO(user): Ideally it would be better to not call this with a clause with
+  // fixed literals at level zero, but it can happen if for instance an earlier
+  // call to InprocessingRewriteClause() has a unit clause and causes fixing.
+  // Also, for the LRAT proof, we might not want to deal with fixed literals in
+  // many different places.
+  if (/*DISABLES_CODE*/ (false) && DEBUG_MODE) {
     for (const Literal l : new_clause) {
       DCHECK(!trail_->Assignment().LiteralIsAssigned(l));
     }
@@ -661,12 +666,88 @@ void BinaryImplicationGraph::NotifyPossibleDuplicate(Literal a) {
   to_clean_.push_back(a);
 }
 
-void BinaryImplicationGraph::RemoveDuplicates() {
-  for (const Literal l : to_clean_) {
-    might_have_dups_[l.Index()] = false;
-    implications_and_amos_[l.Index()].SortLiteralsAndRemoveDuplicates();
+bool BinaryImplicationGraph::CleanUpImplicationList(Literal a) {
+  const absl::Span<Literal> range = implications_and_amos_[a].literals();
+  if (range.empty()) return true;
+
+  std::sort(range.begin(), range.end());
+
+  // We detect and delete duplicate literals by hand to also detect l and not(l)
+  // which should appear consecutively because of our LiteralIndex encoding.
+  int new_size = 1;
+  for (int i = 1; i < range.size(); ++i) {
+    if (range[i] == range[i - 1]) continue;
+
+    // We have a => x and not(x) so a must be false. Lets fix it if not already
+    // done.
+    //
+    // Note that we leave both in the list to satisfy some invariant checks that
+    // we always have both a => b and not(b) => not(a). This will be cleaned by
+    // RemoveFixedVariables().
+    if (range[i] == range[i - 1].Negated() &&
+        !trail_->Assignment().LiteralIsFalse(a)) {
+      if (lrat_proof_handler_ != nullptr) {
+        if (!FixLiteral(a.Negated(),
+                        {GetClauseId(a.Negated(), range[i]),
+                         GetClauseId(a.Negated(), range[i - 1])})) {
+          return false;
+        }
+      } else {
+        if (!FixLiteral(a.Negated())) return false;
+      }
+    }
+    range[new_size++] = range[i];
   }
-  to_clean_.clear();
+  implications_and_amos_[a].TruncateLiterals(new_size);
+  return true;
+}
+
+bool BinaryImplicationGraph::RemoveDuplicatesAndFixedVariables() {
+  if (!Propagate(trail_)) return false;
+
+  if (to_clean_.empty()) {
+    RemoveFixedVariables();
+  }
+
+  // This is a bit tricky: if we fix a variable, we can rewrite an at most one
+  // that might become implications and require more cleanup...
+  while (!to_clean_.empty()) {
+    for (const Literal l : to_clean_) {
+      might_have_dups_[l.Index()] = false;
+      if (!CleanUpImplicationList(l)) return false;
+    }
+    to_clean_.clear();
+
+    // This should be fast if nothing is fixed.
+    RemoveFixedVariables();
+  }
+
+  DCHECK(HasNoDuplicates());
+  return true;
+}
+
+// To be used in DCHECK().
+//
+// The only potential source of duplicates should be AddBinaryClause() which
+// does not check because of speed. This could happen if a clause gets
+// simplified to a binary that actually already exists.
+//
+// TODO(user): Even that could probably be avoided.
+bool BinaryImplicationGraph::HasNoDuplicates() {
+  tmp_bitset_.ClearAndResize(implications_and_amos_.end_index());
+  for (const LiteralIndex l : implications_and_amos_.index_range()) {
+    for (const Literal b : implications_and_amos_[l].literals()) {
+      if (b.Variable() == Literal(l).Variable()) {
+        return false;
+      }
+      if (tmp_bitset_[Literal(b.Variable(), true)]) {
+        return false;
+      }
+      tmp_bitset_.Set(Literal(b.Variable(), true));
+    }
+    tmp_bitset_.ResetAllToFalse();
+  }
+  return true;
 }
 
 // TODO(user): Not all of the solver knows about representative literal, do
@@ -736,14 +817,16 @@ bool BinaryImplicationGraph::AddBinaryClause(ClauseId id, Literal a,
   implications_and_amos_[b.NegatedIndex()].PushBackLiteral(a);
   implies_something_.Set(a.NegatedIndex());
   implies_something_.Set(b.NegatedIndex());
-  NotifyPossibleDuplicate(a);
-  NotifyPossibleDuplicate(b);
+  NotifyPossibleDuplicate(a.Negated());
+  NotifyPossibleDuplicate(b.Negated());
   is_dag_ = false;
 
   if (enable_sharing_ && add_binary_callback_ != nullptr) {
     add_binary_callback_(a, b);
   }
 
+  // TODO(user): with chronological backtracking, we should deal with literal
+  // fixed at level zero even if we call this at a positive level.
   const auto& assignment = trail_->Assignment();
   if (trail_->CurrentDecisionLevel() == 0) {
     DCHECK(!assignment.LiteralIsAssigned(a));
@@ -862,6 +945,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // Deal with duplicates.
     // Any duplicate in an "at most one" must be false.
     bool some_duplicates = false;
+    BooleanVariable trivializer = kNoBooleanVariable;
     if (!set_all_left_to_false) {
       // Sort the copied amo.
       // We only want to expose a const AtMostOne() so we sort directly here.
@@ -880,6 +964,13 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
           remove_previous = true;
           some_duplicates = true;
           continue;
+        }
+
+        if (trivializer == kNoBooleanVariable && l.NegatedIndex() == previous) {
+          // We have (x, not(x), ...) in an at most one.
+          // We will deal with that below because we want to deal with the
+          // corner case of having many x and/or not(x).
+          trivializer = l.Variable();
         }
 
         // We need to pay attention to triplet or more of equal elements, so
@@ -919,8 +1010,9 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     }
 
     // Deal with all false.
-    if (set_all_left_to_false) {
+    if (set_all_left_to_false || trivializer != kNoBooleanVariable) {
       for (const Literal l : AtMostOne(local_start)) {
+        if (l.Variable() == trivializer) continue;
         if (assignment.LiteralIsFalse(l)) continue;
         if (assignment.LiteralIsTrue(l)) return false;
         if (!FixLiteral(l.Negated())) return false;
@@ -937,12 +1029,14 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(int base_index) {
     // We expand small sizes into implications.
     // TODO(user): Investigate what the best threshold is.
     if (at_most_one.size() <= std::max(2, at_most_one_max_expansion_size_)) {
-      for (const Literal a : at_most_one) {
-        for (const Literal b : at_most_one) {
-          if (a == b) continue;
-          implications_and_amos_[a].PushBackLiteral(b.Negated());
+      if (at_most_one.size() > 1) {
+        for (const Literal a : at_most_one) {
           implies_something_.Set(a);
           NotifyPossibleDuplicate(a);
+          for (const Literal b : at_most_one) {
+            if (a == b) continue;
+            implications_and_amos_[a].PushBackLiteral(b.Negated());
+          }
         }
       }
 
@@ -1618,9 +1712,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
 
-  // Lets remove all fixed variables first.
-  if (!Propagate(trail_)) return false;
-  RemoveFixedVariables();
+  // Lets remove all fixed/duplicate variables first.
+  if (!RemoveDuplicatesAndFixedVariables()) return false;
   const VariablesAssignment& assignment = trail_->Assignment();
   DCHECK(InvariantsAreOk());
 
@@ -1681,7 +1774,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           if (rep == kNoLiteralIndex) continue;
           ref = Literal(rep);
         }
-        representative_list.SortLiteralsAndRemoveDuplicates();
+
+        // We should already have detected fixing because of l => x and not(x).
+        CHECK(CleanUpImplicationList(Literal(representative)));
       }
       continue;
     }
@@ -1724,8 +1819,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       auto& ref = implications_and_amos_[literal];
       for (const Literal l : ref.literals()) {
         const Literal rep = RepresentativeOf(l);
-        if (rep.Index() != representative)
+        if (rep.Index() != representative) {
           representative_list.PushBackLiteral(rep);
+        }
       }
       dtime += 1e-8 * static_cast<double>(ref.num_literals());
 
@@ -1738,7 +1834,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       ref.ClearLiterals();
       ref.PushBackLiteral(Literal(representative));
     }
-    representative_list.SortLiteralsAndRemoveDuplicates();
+
+    // We should already have detected fixing because of l => x and not(x).
+    CHECK(CleanUpImplicationList(Literal(representative)));
     num_equivalences += component.size() - 1;
   }
 
@@ -1824,7 +1922,11 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   time_limit_->AdvanceDeterministicTime(dtime);
   const int num_fixed_during_scc =
       trail_->Index() - num_processed_fixed_variables_;
-  RemoveFixedVariables();
+
+  // If we fixed things, they can always be at_most_one that become simple
+  // implications, so we need to redo a round of cleaning.
+  if (!RemoveDuplicatesAndFixedVariables()) return false;
+
   DCHECK(InvariantsAreOk());
   LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
                          << " redundant equivalent literals. "

@@ -150,11 +150,6 @@ class LiteralsOrOffsets {
   template <typename Predicate>
   void RemoveLiteralsIf(Predicate predicate);
 
-  // Sorts the list of literals, removes duplicate literals, and truncates the
-  // list of literals to the number of remaining literals (memory is not
-  // released).
-  void SortLiteralsAndRemoveDuplicates();
-
   // Returns the backing capacity for literals and offsets.
   uint32_t capacity() const { return capacity_; }
 
@@ -256,13 +251,6 @@ template <typename Predicate>
 void LiteralsOrOffsets::RemoveLiteralsIf(Predicate predicate) {
   const auto new_end = std::remove_if(literals().begin(), literals().end(),
                                       std::move(predicate));
-  num_literals_ = new_end - literals().begin();
-}
-
-inline void LiteralsOrOffsets::SortLiteralsAndRemoveDuplicates() {
-  const auto range = literals();
-  std::sort(range.begin(), range.end());
-  const auto new_end = std::unique(range.begin(), range.end());
   num_literals_ = new_end - literals().begin();
 }
 

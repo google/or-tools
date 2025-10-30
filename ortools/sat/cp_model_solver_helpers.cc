@@ -54,6 +54,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
 #include "ortools/sat/cp_model_search.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/feasibility_pump.h"
@@ -2220,7 +2221,8 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
       shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
-      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()),
+      progress_logger(global_model->GetOrCreate<SolverProgressLogger>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -2303,7 +2305,7 @@ void SharedClasses::LogFinalStatistics() {
   SOLVER_LOG(logger, "");
 
   stat_tables->Display(logger);
-  response->DisplayImprovementStatistics();
+  progress_logger->DisplayImprovementStatistics(logger);
 
   std::vector<std::vector<std::string>> table;
   table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});

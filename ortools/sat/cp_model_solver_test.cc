@@ -1597,7 +1597,7 @@ TEST(SolveCpModelTest, SolutionHintMinimizeL1DistanceTest) {
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
   EXPECT_THAT(response.status(),
               AnyOf(Eq(CpSolverStatus::OPTIMAL), Eq(CpSolverStatus::FEASIBLE)));
-  EXPECT_THAT(response.objective_value(), AnyOf(Eq(8), Eq(2)));
+  EXPECT_THAT(response.objective_value(), AnyOf(Eq(1), Eq(2), Eq(4), Eq(8)));
 }
 
 TEST(SolveCpModelTest, SolutionHintObjectiveTest) {

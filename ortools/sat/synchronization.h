@@ -53,6 +53,27 @@
 namespace operations_research {
 namespace sat {
 
+struct SolverStatusChangeInfo {
+  double best_objective_value;
+  double cur_objective_value_lb;
+  double cur_objective_value_ub;
+
+  std::string change_info;
+
+  // Set to true if the solver found a new solution with a improved objective
+  // value.
+  bool new_best_solution = false;
+
+  // Set to true if the solver found a new lower or upper bound for the
+  // objective.
+  bool new_lower_bound = false;
+  bool new_upper_bound = false;
+
+  // Whether the solver finished the search. The callback will not be called
+  // again after this is true.
+  bool solved = false;
+};
+
 // Thread-safe. Keeps a set of n unique best solution found so far.
 //
 // TODO(user): Maybe add some criteria to only keep solution with an objective
@@ -399,6 +420,13 @@ class SharedResponseManager {
       std::function<void(const CpSolverResponse&)> callback);
   void UnregisterCallback(int callback_id);
 
+  // Adds a callback that will be called on each update to the objective (either
+  // when a new improving solution is found, or when the bounds are updated).
+  // This callback does not provide the postsolved solution, so it is relatively
+  // cheap.
+  void AddStatusChangeCallback(
+      std::function<void(const SolverStatusChangeInfo&)> callback);
+
   // Adds an inline callback that will be called on each new solution (for
   // satisfiability problem) or each improving new solution (for an optimization
   // problem). Returns its id so it can be unregistered if needed.
@@ -515,9 +543,6 @@ class SharedResponseManager {
     dump_prefix_ = dump_prefix;
   }
 
-  // Display improvement stats.
-  void DisplayImprovementStatistics();
-
   // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(absl::string_view prefix, absl::string_view message);
   void LogMessageWithThrottling(absl::string_view prefix,
@@ -543,11 +568,9 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  void RegisterSolutionFound(const std::string& improvement_info,
-                             int solution_rank)
+  SolverStatusChangeInfo GetSolverStatusChangeInfo()
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   void UpdateBestStatus(const CpSolverStatus& status)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -614,20 +637,11 @@ class SharedResponseManager {
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(Model*, CpSolverResponse*)>>
       statistics_postprocessors_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::function<void(const SolverStatusChangeInfo&)>>
+      status_change_callbacks_ ABSL_GUARDED_BY(mutex_);
 
   // Dump prefix.
   std::string dump_prefix_;
-
-  // Used for statistics of the improvements found by workers.
-  absl::btree_map<std::string, int> primal_improvements_count_
-      ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> primal_improvements_min_rank_
-      ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> primal_improvements_max_rank_
-      ABSL_GUARDED_BY(mutex_);
-
-  absl::btree_map<std::string, int> dual_improvements_count_
-      ABSL_GUARDED_BY(mutex_);
 
   SolverLogger* logger_ ABSL_GUARDED_BY(mutex_);
   absl::flat_hash_map<std::string, int> throttling_ids_ ABSL_GUARDED_BY(mutex_);

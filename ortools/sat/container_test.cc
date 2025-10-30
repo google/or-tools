@@ -94,7 +94,6 @@ TEST(LiteralsOrOffsetsTest, Holes) {
 TEST(LiteralsOrOffsetsTest, Capacity) {
   LiteralsOrOffsets container;
   for (int i = 0; i < 10; ++i) container.PushBackLiteral(Literal());
-  //  container.TruncateLiterals(10);
   container.InsertOffset(2);
   EXPECT_THAT(container.literals(), SizeIs(10));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
@@ -106,7 +105,6 @@ TEST(LiteralsOrOffsetsTest, Capacity) {
   EXPECT_GE(container.capacity(), 11);
 
   for (int i = 0; i < 9; ++i) container.PushBackLiteral(Literal());
-  //  container.TruncateLiterals(9);
   EXPECT_THAT(container.literals(), SizeIs(9));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_GE(container.capacity(), 10);
@@ -116,25 +114,6 @@ TEST(LiteralsOrOffsetsTest, Capacity) {
   EXPECT_THAT(container.literals(), SizeIs(0));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_THAT(container.capacity(), LiteralsOrOffsets::kInlineElements);
-}
-
-TEST(LiteralsOrOffsetsTest, SortLiteralsAndRemoveDuplicates) {
-  LiteralsOrOffsets container;
-  container.PushBackLiteral(Literal(1));
-  container.PushBackLiteral(Literal(2));
-  container.PushBackLiteral(Literal(3));
-  container.PushBackLiteral(Literal(1));
-  container.PushBackLiteral(Literal(2));
-  container.PushBackLiteral(Literal(3));
-  container.PushBackLiteral(Literal(4));
-  container.PushBackLiteral(Literal(2));
-  container.InsertOffset(15);
-  container.InsertOffset(16);
-  container.InsertOffset(17);
-  container.SortLiteralsAndRemoveDuplicates();
-  EXPECT_THAT(container.literals(),
-              ElementsAre(Literal(1), Literal(2), Literal(3), Literal(4)));
-  EXPECT_THAT(container.offsets(), UnorderedElementsAre(15, 16, 17));
 }
 
 }  // namespace

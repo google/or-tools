@@ -67,6 +67,7 @@
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
@@ -2460,6 +2461,24 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
   }
 }
 
+void ClearInternalFields(CpModelProto* model_proto, SolverLogger* logger) {
+  if (model_proto->has_symmetry()) {
+    SOLVER_LOG(logger, "Ignoring internal symmetry field");
+    model_proto->clear_symmetry();
+  }
+  if (model_proto->has_objective()) {
+    CpObjectiveProto* objective = model_proto->mutable_objective();
+    if (objective->integer_scaling_factor() != 0 ||
+        objective->integer_before_offset() != 0 ||
+        objective->integer_after_offset() != 0) {
+      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
+      objective->clear_integer_scaling_factor();
+      objective->clear_integer_before_offset();
+      objective->clear_integer_after_offset();
+    }
+  }
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2499,6 +2518,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   shared_response_manager->set_dump_prefix(
       absl::GetFlag(FLAGS_cp_model_dump_prefix));
+
+  if (logger->LoggingIsEnabled()) {
+    SolverProgressLogger* progress_logger =
+        model->GetOrCreate<SolverProgressLogger>();
+    progress_logger->SetIsOptimization(
+        model_proto.has_objective() ||
+        model_proto.has_floating_point_objective());
+    shared_response_manager->AddStatusChangeCallback(
+        [progress_logger](const SolverStatusChangeInfo& info) {
+          progress_logger->UpdateProgress(info);
+        });
+  }
   RegisterSearchStatisticCallback(model);
 
   if constexpr (std::is_base_of_v<google::protobuf::Message,
@@ -2649,21 +2680,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                " routes constraint(s).");
   }
 
-  if (context->working_model->has_symmetry()) {
-    SOLVER_LOG(logger, "Ignoring internal symmetry field");
-    context->working_model->clear_symmetry();
-  }
-  if (context->working_model->has_objective()) {
-    CpObjectiveProto* objective = context->working_model->mutable_objective();
-    if (objective->integer_scaling_factor() != 0 ||
-        objective->integer_before_offset() != 0 ||
-        objective->integer_after_offset() != 0) {
-      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
-      objective->clear_integer_scaling_factor();
-      objective->clear_integer_before_offset();
-      objective->clear_integer_after_offset();
-    }
-  }
+  ClearInternalFields(context->working_model, logger);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
       (context->working_model->has_objective() ||

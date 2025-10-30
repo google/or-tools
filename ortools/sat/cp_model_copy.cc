@@ -114,7 +114,7 @@ bool ModelCopy::ImportAndSimplifyConstraints(
       case ConstraintProto::kBoolAnd:
         if (temp_enforcement_literals_.empty()) {
           for (const int lit : ct.bool_and().literals()) {
-            context_->UpdateRuleStats("bool_and: non-reified.");
+            context_->UpdateRuleStats("bool_and: non-reified");
             if (!context_->SetLiteralToTrue(lit)) {
               return CreateUnsatModel(c, ct);
             }
@@ -1216,7 +1216,7 @@ void CopyEverythingExceptVariablesAndConstraintsFieldsIntoContext(
       if (domain.IsEmpty()) continue;  // UNSAT.
       const int64_t closest_domain_value = domain.ClosestValue(value);
       if (closest_domain_value != value) {
-        context->UpdateRuleStats("hint: moved var hint within its domain.");
+        context->UpdateRuleStats("hint: moved var hint within its domain");
         context->working_model->mutable_solution_hint()->set_values(
             i, closest_domain_value);
       }

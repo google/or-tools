@@ -466,7 +466,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return false;
 
   if (!HasEnforcementLiteral(*ct)) {
-    context_->UpdateRuleStats("bool_and: non-reified.");
+    context_->UpdateRuleStats("bool_and: non-reified");
     for (const int literal : ct->bool_and().literals()) {
       if (!context_->SetLiteralToTrue(literal)) return true;
     }
@@ -543,7 +543,7 @@ bool CpModelPresolver::PresolveBoolAnd(ConstraintProto* ct) {
 
       // The other case where the constraint is redundant is treated elsewhere.
       if (obj_coeff < 0) {
-        context_->UpdateRuleStats("bool_and: dual equality.");
+        context_->UpdateRuleStats("bool_and: dual equality");
         // Extending `ct` = "enforcement => implied_literal" to an equality can
         // break the hint only if hint(implied_literal) = 1 and
         // hint(enforcement) = 0. But in this case the `enforcement` hint can be
@@ -1247,11 +1247,11 @@ bool CpModelPresolver::PresolveLinMax(int c, ConstraintProto* ct) {
         return true;
       }
       if (modified) {
-        context_->UpdateRuleStats("lin_max: reduced expression domain.");
+        context_->UpdateRuleStats("lin_max: reduced expression domain");
       }
       const int64_t value_max = context_->MaxOf(expr);
       if (value_max > target_max) {
-        context_->UpdateRuleStats("TODO lin_max: linear expression above max.");
+        context_->UpdateRuleStats("TODO lin_max: linear expression above max");
         abort = true;
       }
     }
@@ -1446,7 +1446,7 @@ bool CpModelPresolver::PresolveLinMaxWhenAllBoolean(ConstraintProto* ct) {
     }
   }
 
-  context_->UpdateRuleStats("lin_max: all Booleans.");
+  context_->UpdateRuleStats("lin_max: all booleans");
 
   // target_ref => at_least_one(max_literals);
   ConstraintProto* clause = context_->working_model->add_constraints();
@@ -1656,7 +1656,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
     if (context_->IsFixed(expr)) {
       const int64_t expr_value = context_->FixedValue(expr);
       constant_factor = CapProd(constant_factor, expr_value);
-      context_->UpdateRuleStats("int_prod: removed constant expressions.");
+      context_->UpdateRuleStats("int_prod: removed constant expressions");
       changed = true;
     } else {
       const int64_t expr_divisor = LinearExpressionGcd(expr);
@@ -1730,7 +1730,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       lin->add_domain(target_value / constant_factor);
       AddLinearExpressionToLinearConstraint(ct->int_prod().exprs(0), 1, lin);
       context_->UpdateNewConstraintsVariableUsage();
-      context_->UpdateRuleStats("int_prod: expression is constant.");
+      context_->UpdateRuleStats("int_prod: expression is constant");
       return RemoveConstraint(ct);
     }
 
@@ -1762,7 +1762,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       // relation below.
     } else {  // Replace with a linear equation.
       context_->UpdateNewConstraintsVariableUsage();
-      context_->UpdateRuleStats("int_prod: linearize product by constant.");
+      context_->UpdateRuleStats("int_prod: linearize product by constant");
       return RemoveConstraint(ct);
     }
   }
@@ -1790,7 +1790,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         *ct->mutable_int_prod() = old_proto;
         context_->UpdateRuleStats(
             "int_prod: enforcement or overflow prevented creating a affine "
-            "relation.");
+            "relation");
         return true;
       }
       const int ref = old_target.vars(0);
@@ -1843,7 +1843,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
           new_offset > absl::int128(std::numeric_limits<int64_t>::max()) ||
           new_offset < absl::int128(std::numeric_limits<int64_t>::min())) {
         return MarkConstraintAsFalse(
-            ct, "int_prod: overflow during simplification.");
+            ct, "int_prod: overflow during simplification");
       }
 
       // Rewrite the target.
@@ -1867,7 +1867,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
   if (domain_modified) {
     context_->UpdateRuleStats(absl::StrCat(
-        is_square ? "int_square" : "int_prod", ": reduced target domain."));
+        is_square ? "int_square" : "int_prod", ": reduced target domain"));
   }
 
   // y = x * x, we can reduce the domain of x from the domain of y.
@@ -1882,7 +1882,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       return false;
     }
     if (expr_reduced) {
-      context_->UpdateRuleStats("int_square: reduced expr domain.");
+      context_->UpdateRuleStats("int_square: reduced expr domain");
     }
   }
 
@@ -1897,11 +1897,11 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         if (!context_->IntersectDomainWith(product, Domain(0, 1))) {
           return false;
         }
-        context_->UpdateRuleStats("int_square: fix variable to zero or one.");
+        context_->UpdateRuleStats("int_square: fix variable to zero or one");
         return RemoveConstraint(ct);
       } else {
         context_->UpdateRuleStats(
-            "TODO enforced int_square: fix variable to zero or one.");
+            "TODO enforced int_square: fix variable to zero or one");
         // Replace ct with an enforced linear "product in [0, 1]".
       }
     }
@@ -1993,7 +1993,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
   }
 
   // This is a Boolean constraint!
-  context_->UpdateRuleStats("int_prod: all Boolean.");
+  context_->UpdateRuleStats("int_prod: all boolean");
   {
     ConstraintProto* new_ct = context_->working_model->add_constraints();
     *new_ct->mutable_enforcement_literal() = ct->enforcement_literal();
@@ -2332,7 +2332,7 @@ bool CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
     const Domain rhs = ReadDomainFromProto(ct->linear());
     FillDomainInProto(rhs.InverseMultiplicationBy(gcd), ct->mutable_linear());
     if (ct->linear().domain_size() == 0) {
-      return MarkConstraintAsFalse(ct, "linear: not satisfied after GCD.");
+      return MarkConstraintAsFalse(ct, "linear: not satisfied after GCD");
     }
   }
   return false;
@@ -2591,7 +2591,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
           continue;
         }
 
-        context_->UpdateRuleStats("linear: singleton column define objective.");
+        context_->UpdateRuleStats("linear: singleton column define objective");
         context_->MarkVariableAsRemoved(var);
         context_->NewMappingConstraint(*ct, __FILE__, __LINE__);
         return RemoveConstraint(ct);
@@ -2610,7 +2610,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       }
 
       context_->UpdateRuleStats(
-          "linear: singleton column in equality and in objective.");
+          "linear: singleton column in equality and in objective");
       rhs = new_rhs;
       index_to_erase.insert(i);
       break;
@@ -3024,9 +3024,9 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
   const bool implied_true =
       context_->DomainOf(var).IntersectionWith(rhs_if_false).IsEmpty();
   if (implied_true && implied_false) {
-    return MarkConstraintAsFalse(ct, "linear2: infeasible.");
+    return MarkConstraintAsFalse(ct, "linear2: infeasible");
   } else if (implied_true) {
-    context_->UpdateRuleStats("linear2: Boolean with one feasible value.");
+    context_->UpdateRuleStats("linear2: boolean with one feasible value");
 
     // => true.
     ConstraintProto* new_ct = context_->working_model->add_constraints();
@@ -3041,7 +3041,7 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
     FillDomainInProto(rhs_if_true, ct->mutable_linear());
     return PresolveSmallLinear(ct) || true;
   } else if (implied_false) {
-    context_->UpdateRuleStats("linear2: Boolean with one feasible value.");
+    context_->UpdateRuleStats("linear2: boolean with one feasible value");
 
     // => false.
     ConstraintProto* new_ct = context_->working_model->add_constraints();
@@ -3061,7 +3061,7 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
     // two Booleans as this can be presolved differently. We expand it into
     // two linear1 constraint that have a chance to be merged with other
     // "encoding" constraints.
-    context_->UpdateRuleStats("linear2: contains a Boolean.");
+    context_->UpdateRuleStats("linear2: contains a boolean");
 
     // lit => var \in rhs_if_true
     const Domain var_domain = context_->DomainOf(var);
@@ -3089,7 +3089,7 @@ bool CpModelPresolver::PresolveLinear2WithBooleans(ConstraintProto* ct) {
   }
 
   // Code below require equality.
-  context_->UpdateRuleStats("TODO linear2: contains a Boolean.");
+  context_->UpdateRuleStats("TODO linear2: contains a boolean");
   return false;
 }
 
@@ -4709,7 +4709,7 @@ void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
         // for which this fail. Ideally we should always replace/merge
         // representative right away, but this is a bit difficult to enforce
         // currently.
-        context_->UpdateRuleStats("linear: fix variable to its bound.");
+        context_->UpdateRuleStats("linear: fix variable to its bound");
         if (!context_->IntersectDomainWith(
                 ref, Domain(from_lower_bound ? context_->MinOf(ref)
                                              : context_->MaxOf(ref)))) {
@@ -4722,7 +4722,7 @@ void CpModelPresolver::LowerThanCoeffStrengthening(bool from_lower_bound,
     }
     if (coeff > second_threshold && coeff < rhs) {
       context_->UpdateRuleStats(
-          "linear: coefficient strengthening by increasing it.");
+          "linear: coefficient strengthening by increasing it");
       if (from_lower_bound) {
         // coeff * (X - LB + LB) -> rhs * (X - LB) + coeff * LB
         rhs_offset -= (coeff - rhs) * context_->MinOf(ref);
@@ -4920,13 +4920,12 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
         // We keep this term but reduces its coeff.
         // This is only for the case where only_extract_booleans == true.
         new_magnitude = threshold;
-        context_->UpdateRuleStats("linear: coefficient strenghtening.");
+        context_->UpdateRuleStats("linear: coefficient strenghtening");
       } else if (coeff > second_threshold && coeff < threshold) {
         // This cover the special case where one big + on small is enough
         // to satisfy the constraint, we can reduce the big.
         new_magnitude = second_threshold;
-        context_->UpdateRuleStats(
-            "linear: advanced coefficient strenghtening.");
+        context_->UpdateRuleStats("linear: advanced coefficient strenghtening");
       }
       if (coeff != new_magnitude) {
         if (lower_bounded) {
@@ -5013,9 +5012,9 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
     }
     if (at_most_one.size() > 1) {
       if (type == 0) {
-        context_->UpdateRuleStats("linear: extracted at most one (max).");
+        context_->UpdateRuleStats("linear: extracted at most one (max)");
       } else {
-        context_->UpdateRuleStats("linear: extracted at most one (min).");
+        context_->UpdateRuleStats("linear: extracted at most one (min)");
       }
       ConstraintProto* new_ct = context_->working_model->add_constraints();
       new_ct->set_name(ct->name());
@@ -6367,8 +6366,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
         if (new_size < initial_num_intervals) {
           proto->mutable_intervals()->Truncate(new_size);
           changed = true;
-          context_->UpdateRuleStats(
-              "no_overlap: removed size 0 from all diff.");
+          context_->UpdateRuleStats("no_overlap: removed size 0 from all diff");
         }
       } else {
         // All size one intervals are present, we can convert to an
@@ -6382,8 +6380,7 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
           *all_diff->add_exprs() = interval.start();
         }
         if (all_diff->exprs_size() < initial_num_intervals) {
-          context_->UpdateRuleStats(
-              "no_overlap: removed size 0 from all diff.");
+          context_->UpdateRuleStats("no_overlap: removed size 0 from all diff");
         }
         context_->UpdateNewConstraintsVariableUsage();
         context_->UpdateRuleStats("no_overlap: converted to all diff");
@@ -6722,7 +6719,7 @@ bool CpModelPresolver::PresolveNoOverlap2D(int /*c*/, ConstraintProto* ct) {
             }
           } else {
             return context_->NotifyThatModelIsUnsat(
-                "no_overlap_2d: impossible interval.");
+                "no_overlap_2d: impossible interval");
           }
         }
 
@@ -7136,7 +7133,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
           continue;
         } else {
           return context_->NotifyThatModelIsUnsat(
-              "cumulative: inconsistent intervals cannot be performed.");
+              "cumulative: inconsistent intervals cannot be performed");
         }
       }
 
@@ -7327,7 +7324,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
           proto->mutable_demands()->begin() + new_size,
           proto->mutable_demands()->end());
       context_->UpdateRuleStats(
-          "cumulative: remove never conflicting intervals.");
+          "cumulative: remove never conflicting intervals");
     }
   }
 
@@ -7356,7 +7353,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
 
     const LinearExpressionProto& capacity_expr = proto->capacity();
     if (max_of_performed_demand_mins > context_->MinOf(capacity_expr)) {
-      context_->UpdateRuleStats("cumulative: propagate min capacity.");
+      context_->UpdateRuleStats("cumulative: propagate min capacity");
       if (!context_->IntersectDomainWith(
               capacity_expr, Domain(max_of_performed_demand_mins,
                                     std::numeric_limits<int64_t>::max()))) {
@@ -7448,7 +7445,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     } else if (demand_max > capacity_max) {
       if (ct.enforcement_literal().empty()) {
         context_->UpdateRuleStats(
-            "cumulative: demand_max exceeds capacity max.");
+            "cumulative: demand_max exceeds capacity max");
         if (!context_->IntersectDomainWith(
                 demand_expr,
                 Domain(std::numeric_limits<int64_t>::min(), capacity_max))) {
@@ -7458,7 +7455,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
         // TODO(user): we abort because we cannot convert this to a no_overlap
         // for instance.
         context_->UpdateRuleStats(
-            "cumulative: demand_max of optional interval exceeds capacity.");
+            "cumulative: demand_max of optional interval exceeds capacity");
         return changed;
       }
     }
@@ -7656,7 +7653,7 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
           for (const int ref : refs) {
             if (ref != true_ref) {
               if (!context_->IsFixed(ref)) {
-                context_->UpdateRuleStats("circuit: set literal to false.");
+                context_->UpdateRuleStats("circuit: set literal to false");
                 loop_again = true;
               }
               if (!context_->SetLiteralToFalse(ref)) return true;
@@ -7667,7 +7664,7 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     }
   }
   if (num_fixed_at_true > 0) {
-    context_->UpdateRuleStats("circuit: fixed singleton arcs.");
+    context_->UpdateRuleStats("circuit: fixed singleton arcs");
   }
 
   // Remove false arcs.
@@ -7738,13 +7735,13 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
               ct, "circuit: non-covering fixed subcircuit");
         }
       }
-      context_->UpdateRuleStats("circuit: fully specified.");
+      context_->UpdateRuleStats("circuit: fully specified");
       return RemoveConstraint(ct);
     }
   } else {
     // All self loop?
     if (num_true == new_size) {
-      context_->UpdateRuleStats("circuit: empty circuit.");
+      context_->UpdateRuleStats("circuit: empty circuit");
       return RemoveConstraint(ct);
     }
   }
@@ -7778,7 +7775,7 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     proto.mutable_tails()->Truncate(new_size);
     proto.mutable_heads()->Truncate(new_size);
     proto.mutable_literals()->Truncate(new_size);
-    context_->UpdateRuleStats("circuit: removed false arcs.");
+    context_->UpdateRuleStats("circuit: removed false arcs");
     return true;
   }
   RunPropagatorsForConstraint(*ct);
@@ -7885,7 +7882,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     proto.mutable_active_literals()->Truncate(new_size);
 
     context_->UpdateRuleStats(
-        "reservoir: remove zero level_changes or inactive events.");
+        "reservoir: remove zero level_changes or inactive events");
   }
 
   // The rest of the presolve only applies if all demands are fixed.
@@ -7984,12 +7981,12 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
     proto.set_min_level(reduced_domain.Min());
     proto.set_max_level(reduced_domain.Max());
     context_->UpdateRuleStats(
-        "reservoir: simplify level_changes and levels by gcd.");
+        "reservoir: simplify level_changes and levels by gcd");
   }
 
   if (num_positives == 1 && num_negatives > 0) {
     context_->UpdateRuleStats(
-        "TODO reservoir: one producer, multiple consumers.");
+        "TODO reservoir: one producer, multiple consumers");
   }
 
   absl::flat_hash_set<std::tuple<int, int64_t, int64_t, int>> time_active_set;
@@ -8003,7 +8000,7 @@ bool CpModelPresolver::PresolveReservoir(ConstraintProto* ct) {
         context_->IsFixed(time) ? context_->FixedValue(time) : time.offset(),
         proto.active_literals(i));
     if (time_active_set.contains(key)) {
-      context_->UpdateRuleStats("TODO reservoir: merge synchronized events.");
+      context_->UpdateRuleStats("TODO reservoir: merge synchronized events");
       break;
     } else {
       time_active_set.insert(key);
@@ -8225,7 +8222,7 @@ void CpModelPresolver::Probe() {
           mutable_ct->add_enforcement_literal(decision_ref);
           mutable_ct->mutable_bool_and()->add_literals(NegatedRef(false_ref));
           context_->UpdateRuleStats(
-              "probing: reduced enforced constraint to implication.");
+              "probing: reduced enforced constraint to implication");
           to_update.push_back(c);
           continue;
         }
@@ -8243,7 +8240,7 @@ void CpModelPresolver::Probe() {
             mutable_enforcements->Set(new_size++, ref);
           }
           mutable_enforcements->Truncate(new_size);
-          context_->UpdateRuleStats("probing: simplified enforcement list.");
+          context_->UpdateRuleStats("probing: simplified enforcement list");
           to_update.push_back(c);
         }
         continue;
@@ -8301,7 +8298,7 @@ void CpModelPresolver::Probe() {
           mutable_bool_or->set_literals(new_size++, ref);
         }
         mutable_bool_or->mutable_literals()->Truncate(new_size);
-        context_->UpdateRuleStats("probing: simplified clauses.");
+        context_->UpdateRuleStats("probing: simplified clauses");
         to_update.push_back(c);
       }
     }
@@ -8482,7 +8479,7 @@ void CpModelPresolver::Probe() {
     }
     context_->UpdateNewConstraintsVariableUsage();
     if (num_new_cliques != num_old_cliques) {
-      context_->UpdateRuleStats("at_most_one: transformed into max clique.");
+      context_->UpdateRuleStats("at_most_one: transformed into max clique");
     }
 
     if (num_old_cliques != num_new_cliques ||
@@ -9569,7 +9566,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   }
   context_->UpdateNewConstraintsVariableUsage();
   if (num_new_cliques != num_old_cliques) {
-    context_->UpdateRuleStats("at_most_one: transformed into max clique.");
+    context_->UpdateRuleStats("at_most_one: transformed into max clique");
   }
 
   if (num_old_cliques != num_new_cliques ||
@@ -9898,7 +9895,7 @@ bool CpModelPresolver::ProcessSetPPCSubset(int subset_c, int superset_c,
        subset_ct->constraint_case() == ConstraintProto::kExactlyOne) &&
       (superset_ct->constraint_case() == ConstraintProto::kAtMostOne ||
        superset_ct->constraint_case() == ConstraintProto::kExactlyOne)) {
-    context_->UpdateRuleStats("setppc: bool_or in at_most_one.");
+    context_->UpdateRuleStats("setppc: bool_or in at_most_one");
 
     tmp_set->clear();
     if (subset_ct->constraint_case() == ConstraintProto::kBoolOr) {
@@ -10372,7 +10369,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
     // We didn't find the unique integer variable. This might have happenned
     // because by processing other encoding we might end up with a fully boolean
     // constraint. Just abort, it will be presolved later.
-    context_->UpdateRuleStats("encoding: candidate linear is all Boolean now.");
+    context_->UpdateRuleStats("encoding: candidate linear is all boolean now");
     return true;
   }
 
@@ -10408,7 +10405,7 @@ bool CpModelPresolver::ProcessEncodingFromLinear(
 
   if (context_->CanBeUsedAsLiteral(target_ref)) {
     // If target is now a literal, lets not process it here.
-    context_->UpdateRuleStats("encoding: candidate linear is all Boolean now.");
+    context_->UpdateRuleStats("encoding: candidate linear is all boolean now");
     return true;
   }
 
@@ -10857,7 +10854,7 @@ void CpModelPresolver::DetectDuplicateConstraints() {
         if (new_domain.IsEmpty()) {
           return (void)context_->NotifyThatModelIsUnsat(
               "Constraint parallel to the objective makes the objective domain "
-              "empty.");
+              "empty");
         }
         FillDomainInProto(new_domain,
                           context_->working_model->mutable_objective());
@@ -10986,12 +10983,12 @@ void CpModelPresolver::DetectDuplicateConstraintsWithDifferentEnforcements(
       // 'continue' uses this, in particular to update the hint.
       bool skip = false;
       if (RefIsPositive(a) == context_->ObjectiveCoeff(PositiveRef(a)) > 0) {
-        context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
+        context_->UpdateRuleStats("duplicate: dual fixing enforcement");
         if (!context_->SetLiteralToFalse(a)) return;
         skip = true;
       }
       if (RefIsPositive(b) == context_->ObjectiveCoeff(PositiveRef(b)) > 0) {
-        context_->UpdateRuleStats("duplicate: dual fixing enforcement.");
+        context_->UpdateRuleStats("duplicate: dual fixing enforcement");
         if (!context_->SetLiteralToFalse(b)) return;
         skip = true;
       }
@@ -12660,7 +12657,7 @@ void CpModelPresolver::FindAlmostIdenticalLinearConstraints() {
 
             ++num_affine_relations;
             context_->UpdateRuleStats(
-                "linear: advanced affine relation from 2 constraints.");
+                "linear: advanced affine relation from 2 constraints");
 
             // We should stop processing c1 since it should be empty afterward.
             DivideLinearByGcd(to_modify);
@@ -13296,7 +13293,7 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
   }
 
   if (abort) {
-    context_->UpdateRuleStats("TODO variables: only used in complex linear1.");
+    context_->UpdateRuleStats("TODO variables: only used in complex linear1");
     return;
   }
 
@@ -14799,7 +14796,10 @@ void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
                           std::vector<int>* reverse_mapping) {
   // Remap all the variable/literal references in the constraints and the
   // enforcement literals in the variables.
-  auto mapping_function = [mapping, reverse_mapping](int* ref) mutable {
+  //
+  // Using a absl::FunctionRef doesn't work when open-sourced.
+  std::function<void(int*)> mapping_function = [&mapping,
+                                                &reverse_mapping](int* ref) {
     const int var = PositiveRef(*ref);
     int image = mapping[var];
     if (image < 0) {

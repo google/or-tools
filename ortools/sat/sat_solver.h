@@ -408,7 +408,8 @@ class SatSolver {
   };
 
   // Note that the Decisions() vector is always of size NumVariables(), and that
-  // only the first CurrentDecisionLevel() entries have a meaning.
+  // only the first CurrentDecisionLevel() entries have a meaning. The decision
+  // made at level l is Decisions()[l - 1] (there are no decisions at level 0).
   const std::vector<Decision>& Decisions() const { return decisions_; }
   int CurrentDecisionLevel() const { return current_decision_level_; }
   const Trail& LiteralTrail() const { return *trail_; }

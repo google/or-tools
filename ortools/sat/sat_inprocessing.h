@@ -523,7 +523,6 @@ class GateCongruenceClosure {
   int64_t total_num_units_ = 0;
   int64_t total_gates_ = 0;
   int64_t total_equivalences_ = 0;
-  int64_t num_duplicates_in_implications_list_ = 0;
 };
 
 }  // namespace sat

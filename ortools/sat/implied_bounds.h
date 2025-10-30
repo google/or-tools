@@ -200,6 +200,8 @@ class ImpliedBounds {
   // Stats.
   int64_t num_deductions_ = 0;
   int64_t num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_promoted_to_equivalence_ = 0;
+  int max_changed_domain_complexity_ = 0;
 };
 
 class ElementEncodings {
