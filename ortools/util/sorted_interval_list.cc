@@ -154,6 +154,12 @@ Domain::Domain(int64_t left, int64_t right)
 
 Domain Domain::AllValues() { return Domain(kint64min, kint64max); }
 
+Domain Domain::LowerOrEqual(int64_t value) { return Domain(kint64min, value); }
+
+Domain Domain::GreaterOrEqual(int64_t value) {
+  return Domain(value, kint64max);
+}
+
 Domain Domain::FromValues(std::vector<int64_t> values) {
   std::sort(values.begin(), values.end());
   Domain result;
@@ -347,6 +353,29 @@ bool Domain::IsIncludedIn(const Domain& domain) const {
     if (interval.start < others[i].start) return false;
   }
   return true;
+}
+
+bool Domain::OverlapsWith(const Domain& domain) const {
+  const auto& a = intervals_;
+  const auto& b = domain.intervals_;
+  for (int i = 0, j = 0; i < a.size() && j < b.size();) {
+    if (a[i].start <= b[j].start) {
+      if (a[i].end < b[j].start) {
+        // Empty intersection. We advance past the first interval.
+        ++i;
+      } else {  // a[i].end >= b[j].start
+        return true;
+      }
+    } else {  // a[i].start > b[i].start.
+      // We do the exact same thing as above, but swapping a and b.
+      if (b[j].end < a[i].start) {
+        ++j;
+      } else {  // b[j].end >= a[i].start
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 Domain Domain::Complement() const {

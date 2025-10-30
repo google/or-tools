@@ -149,6 +149,12 @@ class Domain {
    */
   static Domain AllValues();
 
+  /** Returns the domain [int_min, value]. */
+  static Domain LowerOrEqual(int64_t value);
+
+  /** Returns the domain [value., int_max]. */
+  static Domain GreaterOrEqual(int64_t value);
+
   /**
    * Creates a domain from the union of an unsorted list of integer values.
    * Input values may be repeated, with no consequence on the output
@@ -350,6 +356,11 @@ class Domain {
    * Returns true iff D is included in the given domain.
    */
   bool IsIncludedIn(const Domain& domain) const;
+
+  /**
+   * Returns true iff D overlaps with the given domain.
+   */
+  bool OverlapsWith(const Domain& domain) const;
 
   /**
    * Returns the set Int64 ∖ D.
