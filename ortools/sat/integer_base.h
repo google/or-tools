@@ -400,9 +400,10 @@ struct LinearExpression2 {
 
   // Deduce an affine expression for the lower bound for the i-th (i=0 or 1)
   // variable from a lower bound on the LinearExpression2. Returns `affine` so
-  // that (expr >= lb) => (expr.vars[var_index] >= affine).
-  // Note that the coefficient of the i-th variable must be 1.
-  AffineExpression GetAffineLowerBound(int var_index, IntegerValue lb) const;
+  // that (expr >= lb) => (expr.vars[var_index] >= affine) with the condition
+  // that expr.vars[1-var_index] >= other_var_lb.
+  AffineExpression GetAffineLowerBound(int var_index, IntegerValue expr_lb,
+                                       IntegerValue other_var_lb) const;
 
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are

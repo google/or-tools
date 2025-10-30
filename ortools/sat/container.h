@@ -17,7 +17,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <type_traits>
 #include <utility>
 
@@ -41,20 +43,48 @@ class LiteralsOrOffsets {
  public:
   LiteralsOrOffsets() = default;
 
+  ~LiteralsOrOffsets() {
+    if (capacity_ > kInlineElements) free(data_.ptr);
+  }
+
   LiteralsOrOffsets(const LiteralsOrOffsets&) = delete;
   LiteralsOrOffsets& operator=(const LiteralsOrOffsets&) = delete;
-  LiteralsOrOffsets(LiteralsOrOffsets&&) = default;
-  LiteralsOrOffsets& operator=(LiteralsOrOffsets&&) = default;
+
+  LiteralsOrOffsets(LiteralsOrOffsets&& o) {
+    num_literals_ = o.num_literals_;
+    num_offsets_ = o.num_offsets_;
+    capacity_ = o.capacity_;
+    data_ = o.data_;
+    o.capacity_ = kInlineElements;  // So we don't double-free.
+  }
+
+  LiteralsOrOffsets& operator=(LiteralsOrOffsets&& o) {
+    num_literals_ = o.num_literals_;
+    num_offsets_ = o.num_offsets_;
+    capacity_ = o.capacity_;
+    data_ = o.data_;
+    o.capacity_ = kInlineElements;  // So we don't double-free.
+    return *this;
+  }
 
   using Offset = int;
 
   // Adds a literal to the end of the list of literals.
-  void PushBackLiteral(Literal literal);
+  void PushBackLiteral(Literal literal) {
+    if (num_literals_ + num_offsets_ >= capacity_) {
+      GrowCapacity();
+    }
+    DCHECK_LT(num_literals_ + num_offsets_, capacity_);
+    InternalAddress()[num_literals_++].literal = literal;
+  }
 
   // Adds an offset to the set of offsets.
   void InsertOffset(Offset offset) {
-    values_.push_back({.offset = offset});
-    ++num_offsets_;
+    if (num_literals_ + num_offsets_ >= capacity_) {
+      GrowCapacity();
+    }
+    DCHECK_LT(num_literals_ + num_offsets_, capacity_);
+    InternalAddress()[capacity_ - (++num_offsets_)].offset = offset;
   }
 
   int num_literals() const { return num_literals_; }
@@ -67,22 +97,52 @@ class LiteralsOrOffsets {
   absl::Span<const Offset> offsets() const;
   absl::Span<Offset> offsets();
 
-  // Clears the literals and offsets. If `shrink_to_fit` is true, releases the
-  // backing memory.
-  void Clear(bool shrink_to_fit);
-
-  // Clears the literals. If `shrink_to_fit` is true, compacts the backing
-  // memory (i.e., also removes the potential hole in between literals and
-  // offsets).
-  void ClearLiterals(bool shrink_to_fit);
-
-  // Clears offsets.
+  // Clearing functions.
+  // Call ShrinkToFit() if you want to save memory.
+  void ClearLiterals() { num_literals_ = 0; }
   void ClearOffsets() { num_offsets_ = 0; }
+  void Clear() {
+    num_literals_ = 0;
+    num_offsets_ = 0;
+  }
 
-  // Resizes the list of literals. If `new_size` is smaller than the current
-  // size, the literals are truncated (memory is not released). Otherwise,
-  // the list is extended with default-constructed literals.
-  void ResizeLiterals(int new_size);
+  // A bit faster than Clear() + ShrinkToFit().
+  void ClearAndReleaseMemory() {
+    num_literals_ = 0;
+    num_offsets_ = 0;
+    if (capacity_ > kInlineElements) free(data_.ptr);
+    capacity_ = kInlineElements;
+  }
+
+  // Use as little memory as possible.
+  void ShrinkToFit() {
+    if (capacity_ == kInlineElements) return;  // Smallest possible size.
+
+    const uint32_t needed = num_literals_ + num_offsets_;
+    if (needed == capacity_) return;
+
+    DCHECK_GT(capacity_, kInlineElements);
+    LiteralOrOffset* old_ptr = data_.ptr;  // This is valid memory.
+    if (needed > kInlineElements) {
+      LiteralOrOffset* new_ptr = static_cast<LiteralOrOffset*>(
+          malloc(static_cast<ptrdiff_t>(needed) * sizeof(LiteralOrOffset)));
+      CopyFromOldToNew(old_ptr, capacity_, new_ptr, needed);
+      capacity_ = needed;
+      data_.ptr = new_ptr;
+    } else {
+      CopyFromOldToNew(old_ptr, capacity_, data_.inlined, kInlineElements);
+      capacity_ = kInlineElements;
+    }
+
+    free(old_ptr);
+  }
+
+  // Resizes the list of literals to or shorter length.
+  void TruncateLiterals(int new_size) {
+    CHECK_GE(new_size, 0);
+    CHECK_LE(new_size, num_literals_);
+    num_literals_ = new_size;
+  }
 
   // Removes all literals for which `predicate` returns true, and truncates the
   // list of literals to the number of remaining literals (memory is not
@@ -96,9 +156,9 @@ class LiteralsOrOffsets {
   void SortLiteralsAndRemoveDuplicates();
 
   // Returns the backing capacity for literals and offsets.
-  size_t capacity() const { return values_.capacity(); }
+  uint32_t capacity() const { return capacity_; }
 
-  static constexpr size_t kInlineElements = 4;
+  static constexpr uint32_t kInlineElements = 4;
 
  private:
   // Elements are either literals or offsets.
@@ -106,96 +166,90 @@ class LiteralsOrOffsets {
     Literal literal;
     Offset offset;
   };
-  static_assert(std::is_trivially_destructible_v<Literal>);
+  static_assert(std::is_trivially_destructible_v<LiteralOrOffset>);
+  static_assert(std::is_trivially_copyable_v<LiteralOrOffset>);
 
+  LiteralOrOffset* InternalAddress() {
+    return capacity_ == kInlineElements ? data_.inlined : data_.ptr;
+  }
+  const LiteralOrOffset* InternalAddress() const {
+    return capacity_ == kInlineElements ? data_.inlined : data_.ptr;
+  }
+
+  void CopyFromOldToNew(LiteralOrOffset* old_ptr, uint32_t old_capacity,
+                        LiteralOrOffset* new_ptr, uint32_t new_capacity) {
+    memcpy(new_ptr, old_ptr, num_literals_ * sizeof(LiteralOrOffset));
+    memcpy(new_ptr + (new_capacity - num_offsets_),
+           old_ptr + (old_capacity - num_offsets_),
+           num_offsets_ * sizeof(LiteralOrOffset));
+  }
+
+  void GrowCapacity() {
+    // TODO(user): crash later.
+    // For now, we do if we use more than 2 GB per LiteralOrOffsets.
+    CHECK_LE(capacity_, std::numeric_limits<uint32_t>::max() / 2);
+    const uint32_t new_capacity =
+        static_cast<uint32_t>(1.3 * static_cast<double>(capacity_));
+    CHECK_GT(new_capacity, kInlineElements);
+
+    LiteralOrOffset* new_ptr = static_cast<LiteralOrOffset*>(
+        malloc(static_cast<ptrdiff_t>(new_capacity) * sizeof(LiteralOrOffset)));
+    CopyFromOldToNew(InternalAddress(), capacity_, new_ptr, new_capacity);
+
+    if (capacity_ > kInlineElements) {
+      free(data_.ptr);
+    }
+    capacity_ = new_capacity;
+    data_.ptr = new_ptr;
+  }
+
+  // Invariants:
+  // num_literals_ + num_offsets_ <= capacity_
+  // capacity_ >= kInlineElements.
   uint32_t num_literals_ = 0;
   uint32_t num_offsets_ = 0;
-  // This array contains `num_literals_` literals, then `values_.size() -
-  // num_literals_ - num_offsets_` holes, then `num_offsets_` offsets.
-  // TODO(user): Try a custom implementation of a inlined vector with just a
-  // "capacity" we can always put the literal in [0, num_literals) and the
-  // offsets in [capa-num_offset, capa). This should have the same number of
-  // inlined element while taking 64bit less per LiteralsOrOffsets.
-  absl::InlinedVector<LiteralOrOffset, kInlineElements> values_;
+  uint32_t capacity_ = kInlineElements;
+
+  // Inlined memory or a pointer to the content.
+  //
+  // TODO(user): If we want to be more compact, we can set kInlineElements == 2.
+  // We can probably fit a third one, if we don't care about the aligment since
+  // we only use 3 * int32_t above. Experiments.
+  union {
+    LiteralOrOffset inlined[kInlineElements];
+    LiteralOrOffset* ptr;
+  } data_;
 };
 
 inline absl::Span<const Literal> LiteralsOrOffsets::literals() const {
-  DCHECK_LE(num_literals_, values_.size());
+  DCHECK_LE(num_literals_, capacity_);
   // Casting is OK because "pointer to LiteralOrOffset" is
   // pointer-interconvertible with "pointer to Literal": `LiteralOrOffset` is
   // an union object and the other is a non-static data member of that object.
-  return absl::MakeConstSpan(reinterpret_cast<const Literal*>(values_.data()),
-                             num_literals_);
+  return absl::MakeConstSpan(
+      reinterpret_cast<const Literal*>(InternalAddress()), num_literals_);
 }
 
 inline absl::Span<Literal> LiteralsOrOffsets::literals() {
-  DCHECK_LE(num_literals_, values_.size());
-  return absl::MakeSpan(reinterpret_cast<Literal*>(values_.data()),
+  DCHECK_LE(num_literals_, capacity_);
+  return absl::MakeSpan(reinterpret_cast<Literal*>(InternalAddress()),
                         num_literals_);
 }
 
 inline absl::Span<const LiteralsOrOffsets::Offset> LiteralsOrOffsets::offsets()
     const {
-  DCHECK_LE(num_offsets_, values_.size());
+  DCHECK_LE(num_offsets_, capacity_);
   return absl::MakeConstSpan(
-      reinterpret_cast<const Offset*>(values_.data() +
-                                      (values_.size() - num_offsets_)),
+      reinterpret_cast<const Offset*>(InternalAddress() +
+                                      (capacity_ - num_offsets_)),
       num_offsets_);
 }
 
 inline absl::Span<LiteralsOrOffsets::Offset> LiteralsOrOffsets::offsets() {
-  DCHECK_LE(num_offsets_, values_.size());
-  return absl::MakeSpan(reinterpret_cast<Offset*>(
-                            values_.data() + (values_.size() - num_offsets_)),
-                        num_offsets_);
-}
-
-inline void LiteralsOrOffsets::PushBackLiteral(Literal literal) {
-  // When adding a new literal N, there are three cases:
-  //   -  There is a hole, we can put the literal here:
-  //      `LLLL..OOO` -> `LLLLN.OOO`, or
-  //      `LLLL..` -> `LLLLN.`
-  //   -  There are only literals. We can just append the literal:
-  //      `LLLL` -> `LLLLN`
-  //   -  There is no space before the offsets. The last offset must be moved
-  //      to the back to make room:
-  //      `LLLLOOO` -> `LLLL.OOO` -> `LLLLNOOO`
-  if (values_.size() > (num_literals_ + num_offsets_)) {
-    // There is a hole, use it.
-    values_[num_literals_].literal = literal;
-  } else if (num_offsets_ == 0) {
-    values_.push_back({.literal = literal});
-  } else {
-    // Move the first offset to the back to make room for the new literal.
-    values_.push_back(values_[num_literals_]);
-    values_[num_literals_].literal = literal;
-  }
-  ++num_literals_;
-}
-
-inline void LiteralsOrOffsets::ResizeLiterals(int new_size) {
-  if (new_size <= num_literals_) {
-    num_literals_ = new_size;
-    return;
-  }
-  const int grow_by = new_size - num_literals_;
-  // We have to create a hole of size at least `grow_by` by moving offsets to
-  // the end.
-  const int hole_size = values_.size() - (num_literals_ + num_offsets_);
-  DCHECK_GE(hole_size, 0);
-  if (hole_size < grow_by) {
-    const int hole_growth = grow_by - hole_size;
-    values_.resize(values_.size() + hole_growth);
-    memcpy(values_.data() + num_literals_ + hole_size + num_offsets_,
-           values_.data() + num_literals_ + hole_size,
-           hole_growth * sizeof(LiteralOrOffset));
-  }
-  // Initialize with default-constructed literals.
-  LiteralOrOffset* const hole_data = values_.data() + num_literals_;
-  for (int i = 0; i < grow_by; ++i) {
-    hole_data[i].literal = {};
-  }
-  num_literals_ = new_size;
+  DCHECK_LE(num_offsets_, capacity_);
+  return absl::MakeSpan(
+      reinterpret_cast<Offset*>(InternalAddress() + (capacity_ - num_offsets_)),
+      num_offsets_);
 }
 
 template <typename Predicate>
@@ -210,26 +264,6 @@ inline void LiteralsOrOffsets::SortLiteralsAndRemoveDuplicates() {
   std::sort(range.begin(), range.end());
   const auto new_end = std::unique(range.begin(), range.end());
   num_literals_ = new_end - literals().begin();
-}
-
-inline void LiteralsOrOffsets::Clear(bool shrink_to_fit) {
-  num_literals_ = 0;
-  num_offsets_ = 0;
-  if (shrink_to_fit) {
-    gtl::STLClearObject(&values_);
-  }
-}
-
-inline void LiteralsOrOffsets::ClearLiterals(bool shrink_to_fit) {
-  num_literals_ = 0;
-  if (shrink_to_fit) {
-    absl::InlinedVector<LiteralOrOffset, kInlineElements> tmp;
-    if (num_offsets_ > 0) {
-      tmp.insert(tmp.end(), values_.data() + (values_.size() - num_offsets_),
-                 values_.data() + values_.size());
-    }
-    values_ = std::move(tmp);
-  }
 }
 
 }  // namespace sat

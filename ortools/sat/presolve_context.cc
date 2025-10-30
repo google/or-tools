@@ -504,26 +504,19 @@ bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
   return var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size();
 }
 
-Domain PresolveContext::DomainOf(int ref) const {
-  Domain result;
-  if (RefIsPositive(ref)) {
-    result = domains_[ref];
-  } else {
-    result = domains_[PositiveRef(ref)].Negation();
-  }
-  return result;
+const Domain& PresolveContext::DomainOf(int var) const {
+  DCHECK(RefIsPositive(var));
+  return domains_[var];
 }
 
 int64_t PresolveContext::DomainSize(int ref) const {
   return domains_[PositiveRef(ref)].Size();
 }
 
-bool PresolveContext::DomainContains(int ref, int64_t value) const {
-  if (!CanonicalizeEncoding(&ref, &value)) return false;
-  if (!RefIsPositive(ref)) {
-    return domains_[PositiveRef(ref)].Contains(-value);
-  }
-  return domains_[ref].Contains(value);
+bool PresolveContext::VarCanTakeValue(int var, int64_t value) const {
+  DCHECK(RefIsPositive(var));
+  if (!CanonicalizeEncoding(&var, &value)) return false;
+  return domains_[var].Contains(value);
 }
 
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
@@ -538,7 +531,8 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   // We assume expression is validated for overflow initially, and the code
   // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
-  return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
+  return DomainOf(expr.vars(0))
+      .Contains((value - expr.offset()) / expr.coeffs(0));
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
@@ -1301,8 +1295,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
-  CHECK(!DomainOf(ref_a).IsEmpty());
-  CHECK(!DomainOf(ref_b).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_a)).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_b)).IsEmpty());
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
@@ -1349,6 +1343,10 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
   } else {
     return positive_possible ? NegatedRef(r.representative) : r.representative;
   }
+}
+
+bool PresolveContext::VariableIsAffineRepresentative(int var) const {
+  return GetAffineRelation(var).representative == var;
 }
 
 // This makes sure that the affine relation only uses one of the
@@ -1732,9 +1730,10 @@ bool PresolveContext::StoreLiteralImpliesVarNeValue(int literal, int var,
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
+  // TODO(user): do instead a DCHECK(VariableIsAffineRepresentative(ref))
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   DCHECK(RefIsPositive(ref));
-  DCHECK(DomainContains(ref, value));
+  DCHECK(DomainOf(ref).Contains(value));
 
   if (CanBeUsedAsLiteral(ref)) {
     if (literal != nullptr) {
@@ -2716,8 +2715,10 @@ bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
 }
 }  // namespace
 
-bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
+bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                                   bool* is_impossible) {
   int64_t offset = 0;
+  if (is_impossible) *is_impossible = false;
   const bool result = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
@@ -2727,6 +2728,7 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
       ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset));
   const Domain tight_domain = implied.IntersectionWith(original_domain);
   if (tight_domain.IsEmpty()) {
+    if (is_impossible) *is_impossible = true;
     // Canonicalization is not the right place to handle unsat constraints.
     // Let's just replace the domain by one that is overflow-safe.
     const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);

@@ -270,8 +270,10 @@ class IntegerSearchHelper {
   explicit IntegerSearchHelper(Model* model);
 
   // Executes some code before a new decision.
-  // Returns false if model is UNSAT.
-  bool BeforeTakingDecision();
+  //
+  // Tricky: return false if the model is UNSAT or if the assumptions are UNSAT.
+  // One can distinguish with sat_solver->UnsatStatus().
+  ABSL_MUST_USE_RESULT bool BeforeTakingDecision();
 
   // Calls the decision heuristics and extract a non-fixed literal.
   // Note that we do not want to copy the function here.

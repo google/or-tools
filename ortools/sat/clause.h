@@ -252,12 +252,9 @@ class ClauseManager : public SatPropagator {
   // Number of clauses currently watched.
   int64_t num_watched_clauses() const { return num_watched_clauses_; }
 
+  DratProofHandler* GetDratProofHandler() const { return drat_proof_handler_; }
   void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
-  }
-
-  void SetLratProofHandler(LratProofHandler* lrat_proof_handler) {
-    lrat_proof_handler_ = lrat_proof_handler;
   }
 
   ClauseId GetClauseId(const SatClause* clause) const {
@@ -310,9 +307,17 @@ class ClauseManager : public SatPropagator {
 
   // These must only be called between [Detach/Attach]AllClauses() calls.
   void InprocessingRemoveClause(SatClause* clause);
-  ABSL_MUST_USE_RESULT bool InprocessingFixLiteral(Literal true_literal);
   ABSL_MUST_USE_RESULT bool InprocessingRewriteClause(
-      SatClause* clause, absl::Span<const Literal> new_clause);
+      SatClause* clause, absl::Span<const Literal> new_clause,
+      absl::Span<const ClauseId> clause_ids = {});
+
+  // Fix a literal either with an existing LRAT `unit_clause_id`, or with a new
+  // inferred unit clause, using `clause_ids` as proof.
+  // This do NOT need to be between [Detach/Attach]AllClauses() calls.
+  ABSL_MUST_USE_RESULT bool InprocessingAddUnitClause(ClauseId unit_clause_id,
+                                                      Literal true_literal);
+  ABSL_MUST_USE_RESULT bool InprocessingFixLiteral(
+      Literal true_literal, absl::Span<const ClauseId> clause_ids = {});
 
   // This can return nullptr if new_clause was of size one or two as these are
   // treated differently. Note that none of the variable should be fixed in the
@@ -519,18 +524,7 @@ class LratEquivalenceHelper;
 //   http://www.cs.helsinki.fi/u/mjarvisa/papers/heule-jarvisalo-biere.sat11.pdf
 class BinaryImplicationGraph : public SatPropagator {
  public:
-  explicit BinaryImplicationGraph(Model* model)
-      : SatPropagator("BinaryImplicationGraph"),
-        stats_("BinaryImplicationGraph"),
-        time_limit_(model->GetOrCreate<TimeLimit>()),
-        random_(model->GetOrCreate<ModelRandomGenerator>()),
-        trail_(model->GetOrCreate<Trail>()),
-        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
-        at_most_one_max_expansion_size_(
-            model->GetOrCreate<SatParameters>()
-                ->at_most_one_max_expansion_size()) {
-    trail_->RegisterPropagator(this);
-  }
+  explicit BinaryImplicationGraph(Model* model);
 
   // This type is neither copyable nor movable.
   BinaryImplicationGraph(const BinaryImplicationGraph&) = delete;
@@ -572,7 +566,7 @@ class BinaryImplicationGraph : public SatPropagator {
     return AddBinaryClause(a.Negated(), b);
   }
 
-  ClauseId GetClauseId(Literal a, Literal b) {
+  ClauseId GetClauseId(Literal a, Literal b) const {
     if (a.Variable() > b.Variable()) std::swap(a, b);
     const auto it = clause_id_.find(std::make_pair(a, b));
     return it != clause_id_.end() ? it->second : kNoClauseId;
@@ -801,11 +795,7 @@ class BinaryImplicationGraph : public SatPropagator {
     }
   }
 
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
-    drat_proof_handler_ = drat_proof_handler;
-  }
-
-  void SetLratProofHandler(LratProofHandler* lrat_proof_handler);
+  void SetDratProofHandler(DratProofHandler* drat_proof_handler);
 
   // Changes the reason of the variable at trail index to a binary reason.
   // Note that the implication "new_reason => trail_[trail_index]" should be

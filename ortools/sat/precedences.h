@@ -506,7 +506,7 @@ struct Relation {
 
 class ReifiedLinear2Bounds;
 
-// A repository of all the enforced linear constraints of size 1 or 2.
+// A repository of all root-level relations of the type l => (a*x + b*y <= ub).
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
@@ -519,7 +519,9 @@ class BinaryRelationRepository {
 
   int size() const { return relations_.size(); }
 
-  // The returned relation is guaranteed to only have positive variables.
+  // The linear2 expression in the returned relation is guaranteed to be
+  // normalized (ie., SimpleCanonicalization() has been called on it and it's
+  // GCD-reduced).
   const Relation& relation(int index) const { return relations_[index]; }
 
   // Returns the indices of the relations that are enforced by the given

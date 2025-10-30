@@ -557,21 +557,17 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(
       get_rel(all),
       UnorderedElementsAre(
-          Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
           Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1},
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
           Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
-  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
-              UnorderedElementsAre(
-                  Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
-                  Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
   EXPECT_THAT(
-      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
       UnorderedElementsAre(
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
-          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
+  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+              UnorderedElementsAre(
+                  Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
   EXPECT_THAT(root_level_bounds->GetAllBoundsContainingVariable(x),
               UnorderedElementsAre(
                   FieldsAre(LinearExpression2(x, NegationOf(y), 1, 1), 0, 5),
@@ -668,16 +664,12 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
   LoadCpModel(model_proto, &model);
 
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(Relation{mapping.Literal(0),
-                                    LinearExpression2::Difference(
-                                        mapping.Integer(2), mapping.Integer(3)),
-                                    0, 10},
-                           Relation{mapping.Literal(1),
-                                    LinearExpression2(kNoIntegerVariable,
-                                                      mapping.Integer(2), 0, 1),
-                                    5, 10}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(Relation{
+                  mapping.Literal(0),
+                  LinearExpression2(mapping.Integer(2),
+                                    NegationOf(mapping.Integer(3)), 1, 1),
+                  0, 10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -710,12 +702,13 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [10, 90]
   // - b => x - 10.a in [10, 90]
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(
-                  Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1),
-                           -90, -10},
-                  Relation{mapping.Literal(1), LinearExpression2(a, x, 10, -1),
-                           -90, -10}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0),
+                   LinearExpression2(b, NegationOf(x), 10, 1), -90, -10},
+          Relation{mapping.Literal(1),
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -791,7 +784,7 @@ TEST(BinaryRelationRepositoryTest,
       UnorderedElementsAre(
           Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 20, 100},
           Relation{mapping.Literal(1).Negated(),
-                   LinearExpression2(a, x, 10, -1), -90, -10}));
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -824,12 +817,12 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [0, 80]  (<=> a => x + (10-10.b) in [10, 90])
   // - b => x + 10.a in [10, 90]
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(
-          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1), -80, 0},
-          Relation{mapping.Literal(1).Negated(), LinearExpression2(a, x, 10, 1),
-                   10, 90}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0),
+                           LinearExpression2(b, NegationOf(x), 10, 1), -80, 0},
+                  Relation{mapping.Literal(1).Negated(),
+                           LinearExpression2(a, x, 10, 1), 10, 90}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {

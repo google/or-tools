@@ -45,23 +45,6 @@
 namespace operations_research {
 namespace sat {
 
-PresolveTimer::~PresolveTimer() {
-  time_limit_->AdvanceDeterministicTime(work_);
-
-  std::string counter_string;
-  for (const auto& [counter_name, count] : counters_) {
-    absl::StrAppend(&counter_string, " #", counter_name, "=",
-                    FormatCounter(count));
-  }
-
-  // We use absl::Seconds() to get a nicer display.
-  SOLVER_LOG(logger_, absl::StrFormat("  %.2es", timer_.Get()),
-             absl::StrFormat("  %.2ed", work_),
-             (WorkLimitIsReached() ? " *" : "  "),
-             absl::StrCat("[", name_, "]"), counter_string, " ",
-             absl::StrJoin(extra_infos_, " "));
-}
-
 void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
   CHECK_GE(var, 0);
   const Index index = IndexFromLiteral(literal_ref);

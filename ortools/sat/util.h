@@ -150,6 +150,9 @@ class CompactVectorVector {
   // This will crash if there are more values than before.
   void ReplaceValuesBySmallerSet(K key, absl::Span<const V> values);
 
+  // Shrinks the inner vector size of the given key.
+  void Shrink(K key, int new_size);
+
   // Interface so this can be used as an output of
   // FindStronglyConnectedComponents().
   void emplace_back(V const* begin, V const* end) {
@@ -163,6 +166,101 @@ class CompactVectorVector {
   std::vector<int> starts_;
   std::vector<int> sizes_;
   std::vector<V> buffer_;
+};
+
+// Similar to a CompactVectorVector<K, V> but allow to merge rows.
+// This however lead to a slower [] operator.
+template <typename K = int, typename V = int>
+class MergeableOccurrenceList {
+ public:
+  MergeableOccurrenceList() = default;
+
+  void ResetFromTranspose(const CompactVectorVector<V, K>& input,
+                          int min_transpose_size = 0) {
+    rows_.ResetFromTranspose(input, min_transpose_size);
+    next_.assign(rows_.size(), K(-1));
+    marked_.ClearAndResize(input.size());
+  }
+
+  int size() const { return rows_.size(); }
+
+  // Any value here will never appear in the result of operator[] anymore.
+  void RemoveFromFutureOutput(V value) { marked_.Set(value); }
+
+  // Returns a "set" of values V for the given key.
+  // There will never be duplicates.
+  //
+  // Warning: the span is only valid until the next call to [].
+  // This is not const because it lazily merges lists.
+  absl::Span<const V> operator[](K key) {
+    if (key >= rows_.size()) return {};
+
+    tmp_result_.clear();
+    K previous(-1);
+    while (key >= 0) {
+      int new_size = 0;
+      absl::Span<V> data = rows_[key];
+      for (const V v : data) {
+        if (marked_[v]) continue;
+        marked_.Set(v);
+        tmp_result_.push_back(v);
+        data[new_size++] = v;
+      }
+      rows_.Shrink(key, new_size);
+
+      if (new_size == 0 && previous >= 0) {
+        // Bypass on next scan and keep previous.
+        next_[InternalKey(previous)] = next_[InternalKey(key)];
+      } else {
+        previous = key;
+      }
+
+      // Follow the linked list.
+      key = next_[InternalKey(key)];
+    }
+
+    // Sparse clear marked.
+    for (const V v : tmp_result_) marked_.Clear(v);
+    return tmp_result_;
+  }
+
+  // Merge this[key] into this[representative].
+  // If key == representative, this does nothing.
+  //
+  // And otherwise key should never be accessed anymore.
+  void MergeInto(K to_merge, K representative) {
+    DCHECK_LT(to_merge, rows_.size());
+    DCHECK_LT(representative, rows_.size());
+    if (to_merge == representative) return;
+
+    // Find the end of the representative list to happen to_merge there.
+    //
+    // TODO(user): this might be slow ? It can be made O(1) if we keep the index
+    // of the end of each linked list. But in practice we currently loop over
+    // the list right after, so the complexity is dominated anyway.
+    K last_list = representative;
+    while (next_[InternalKey(last_list)] >= 0) {
+      last_list = next_[InternalKey(last_list)];
+    }
+    next_[InternalKey(last_list)] = to_merge;
+  }
+
+ private:
+  // Convert int and StrongInt to normal int.
+  int InternalKey(K key) const;
+
+  // Used by operator[] who return a Span<> into tmp_result_.
+  // The bitset is used to remove duplicates when merging lists.
+  std::vector<V> tmp_result_;
+  Bitset64<V> marked_;
+
+  // Each "row" contains a set of values (we lazily remove duplicate).
+  CompactVectorVector<K, V> rows_;
+
+  // Disjoint linked lists of rows.
+  // Basically we starts at rows_[key] and continue at rows_[next_[key]].
+  // -1 means no next.
+  std::vector<K> next_;
 };
 
 // We often have a vector with fixed capacity reserved outside the hot loops.
@@ -206,9 +304,6 @@ class FixedCapacityVector {
   int size_ = 0;
   std::unique_ptr<T[]> data_ = nullptr;
 };
-
-// Prints a positive number with separators for easier reading (ex: 1'348'065).
-std::string FormatCounter(int64_t num);
 
 // This is used to format our table first row entry.
 inline std::string FormatName(absl::string_view name) {
@@ -836,6 +931,13 @@ inline int CompactVectorVector<K, V>::InternalKey(K key) {
 }
 
 template <typename K, typename V>
+inline void CompactVectorVector<K, V>::Shrink(K key, int new_size) {
+  const int k = InternalKey(key);
+  DCHECK_LE(new_size, sizes_[k]);
+  sizes_[k] = new_size;
+}
+
+template <typename K, typename V>
 inline absl::Span<const V> CompactVectorVector<K, V>::operator[](K key) const {
   DCHECK_GE(key, 0);
   DCHECK_LT(key, starts_.size());
@@ -1006,7 +1108,7 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
   }
 
   // Copy data and uses starts as temporary indices.
-  buffer_.resize(other.buffer_.size());
+  buffer_.resize(other.num_entries());
   for (V v = 0; v < other.size(); ++v) {
     for (const K k : other[v]) {
       buffer_[starts_[InternalKey(k)]++] = v;
@@ -1303,6 +1405,17 @@ inline void DagTopologicalSortIterator::Iterator::Set(int pos, int k) {
   std::swap(permutation_[k], permutation_[pos]);
   // Invariant(pos - 1).4 -> Invariant(pos).4.
   element_original_position_[pos] = k;
+}
+
+template <typename K, typename V>
+inline int MergeableOccurrenceList<K, V>::InternalKey(K key) const {
+  DCHECK_GE(key, 0);
+  DCHECK_LT(key, rows_.size());
+  if constexpr (std::is_same_v<K, int>) {
+    return key;
+  } else {
+    return key.value();
+  }
 }
 
 }  // namespace sat

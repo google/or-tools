@@ -248,6 +248,12 @@ class SatSolver {
   // `literals` are fixed to their current value.
   std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
 
+  // Sets `clause_ids` to the IDs of the clauses which, by unit propagation from
+  // some decisions, are sufficient to ensure that all literals in `literals`
+  // are fixed to their current value.
+  void GetClausesFixing(absl::Span<const Literal> literals,
+                        std::vector<ClauseId>* clause_ids);
+
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
 
@@ -303,18 +309,22 @@ class SatSolver {
   // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
 
-  // Advanced usage. This is meant to restore the solver to a "proper" state
-  // after a solve was interrupted due to a limit reached.
+  // Same as Backtrack() but if there was some "re-implications" (see the option
+  // use_chronological_backtracking), propagate them. Note that we avoid calling
+  // FinishPropagation() if there is nothing re-implied because that function
+  // might have side-effects, like redoing a LP solve at level zero for
+  // instance.
   //
-  // Without assumption (i.e. if AssumptionLevel() is 0), this will revert all
-  // decisions and make sure that all the fixed literals are propagated. In
-  // presence of assumptions, this will either backtrack to the assumption level
-  // or re-enqueue any assumptions that may have been backtracked over due to
-  // conflits resolution. In both cases, the propagation is finished.
-  //
-  // Note that this may prove the model to be UNSAT or ASSUMPTION_UNSAT in which
-  // case it will return false.
-  bool RestoreSolverToAssumptionLevel();
+  // TODO(user): Try to clean the situation up, maybe FinishPropagation() should
+  // do nothing, but Propagate() can call the LP or any other propagator that
+  // might propagate more when called again even if nothing else changed.
+  bool BacktrackAndPropagateReimplications(int target_level) {
+    Backtrack(target_level);
+    if (trail_->NumReimplicationsOnLastUntrail() > 0) {
+      return FinishPropagation();
+    }
+    return true;
+  }
 
   // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
@@ -347,6 +357,9 @@ class SatSolver {
   // Helper functions to get the correct status when one of the functions above
   // returns false.
   Status UnsatStatus() const {
+    // Some consistency check, we shouldn't return ASSUMPTION_UNSAT if there
+    // are no assumption currently in the solver.
+    DCHECK(ModelIsUnsat() || assumption_level_ > 0);
     return ModelIsUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
   }
 
@@ -462,12 +475,6 @@ class SatSolver {
     binary_implication_graph_->SetDratProofHandler(drat_proof_handler_);
   }
 
-  void SetLratProofHandler(LratProofHandler* lrat_proof_handler) {
-    lrat_proof_handler_ = lrat_proof_handler;
-    clauses_propagator_->SetLratProofHandler(lrat_proof_handler_);
-    binary_implication_graph_->SetLratProofHandler(lrat_proof_handler_);
-  }
-
   // This function is here to deal with the case where a SAT/CP model is found
   // to be trivially UNSAT while the user is constructing the model. Instead of
   // having to test the status of all the lines adding a constraint, one can
@@ -531,6 +538,13 @@ class SatSolver {
   void EnableChronologicalBacktracking(bool value) {
     trail_->EnableChronologicalBacktracking(value);
   }
+
+  // Returns true if everything has been propagated.
+  // This is only used for debugging.
+  //
+  // TODO(user): This test is fast but not exhaustive, especially regarding the
+  // integer propagators. Fix.
+  bool PropagationIsDone() const;
 
  private:
   // All Solve() functions end up calling this one.
@@ -651,12 +665,6 @@ class SatSolver {
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
 
-  // Returns true if everything has been propagated.
-  //
-  // TODO(user): This test is fast but not exhaustive, especially regarding the
-  // integer propagators. Fix.
-  bool PropagationIsDone() const;
-
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
 
@@ -770,7 +778,7 @@ class SatSolver {
   // to MinimizeCoreWithPropagation(). Note that because this does a small tree
   // search, it will impact the variable/clause activities and may add new
   // conflicts.
-  void TryToMinimizeClause(SatClause* clause);
+  ABSL_MUST_USE_RESULT bool TryToMinimizeClause(SatClause* clause);
 
   // This is used by the old non-model constructor.
   Model* model_;

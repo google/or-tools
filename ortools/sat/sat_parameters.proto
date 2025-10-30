@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 342
+// NEXT TAG: 343
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -646,6 +646,12 @@ message SatParameters {
       [default = true];
   optional bool inprocessing_minimization_use_all_orderings = 298
       [default = false];
+
+  // Whether we use the algorithm described in "Clausal Congruence closure",
+  // Armin Biere, Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
+  //
+  // Note that we only have a basic version currently.
+  optional bool inprocessing_use_congruence_closure = 342 [default = true];
 
   // ==========================================================================
   // Multithread

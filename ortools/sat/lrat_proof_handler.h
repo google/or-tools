@@ -18,6 +18,7 @@
 
 #include "absl/types/span.h"
 #include "ortools/sat/lrat_checker.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
@@ -29,8 +30,7 @@ class LratProofHandler {
  public:
   // TODO(user): Add a constructor to save the proof to a file in addition
   // to or instead of using the LratChecker.
-  explicit LratProofHandler(bool debug_crash_on_error);
-  ~LratProofHandler();
+  explicit LratProofHandler(Model* model);
 
   // Adds a clause of the problem. See LratChecker for more details.
   bool AddProblemClause(ClauseId id, absl::Span<const Literal> clause);
@@ -39,7 +39,7 @@ class LratProofHandler {
   // previously inferred clauses. See LratChecker for more details.
   bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
                          absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const LratChecker::RatIds> rat);
+                         absl::Span<const LratChecker::RatIds> rat = {});
 
   // Adds a clause which is assumed to be true, without proof.
   bool AddAssumedClause(ClauseId id, absl::Span<const Literal> clause);

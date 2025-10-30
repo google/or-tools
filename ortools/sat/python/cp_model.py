@@ -1845,9 +1845,9 @@ class CpSolver:
         return self._checked_response.num_branches
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
-        return self._checked_response.num_boolean_propagations
+        return self._checked_response.num_binary_propagations
 
     @property
     def num_integer_propagations(self) -> int:
@@ -2131,11 +2131,11 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.NumIntegerPropagations()
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
-        return self.NumBooleanPropagations()
+        return self.NumBinaryPropagations()
 
     @property
     def deterministic_time(self) -> float:

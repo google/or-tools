@@ -1647,7 +1647,7 @@ class CpModelTest(absltest.TestCase):
         self.assertRaises(RuntimeError, solver.boolean_value, b)
         self.assertRaises(RuntimeError, lambda: solver.best_objective_bound)
         self.assertRaises(RuntimeError, lambda: solver.deterministic_time)
-        self.assertRaises(RuntimeError, lambda: solver.num_boolean_propagations)
+        self.assertRaises(RuntimeError, lambda: solver.num_binary_propagations)
         self.assertRaises(RuntimeError, lambda: solver.num_booleans)
         self.assertRaises(RuntimeError, lambda: solver.num_branches)
         self.assertRaises(RuntimeError, lambda: solver.num_conflicts)
@@ -2604,12 +2604,42 @@ TRFM"""
             s += model.new_bool_var("")
         model.add(s == 10)
 
+    def test_complex_iadd(self):
+        model = cp_model.CpModel()
+        delta_down_0 = model.new_bool_var(name="Delta_down_0")
+        ac_flow_0_10 = model.new_bool_var(name="ac_flow_0_10")
+        ac_flow_0_11 = model.new_bool_var(name="ac_flow_0_11")
+        expr1 = -3 * delta_down_0
+        expr1 += ac_flow_0_10
+        expr1 += ac_flow_0_11
+
+        expr2 = -3 * delta_down_0
+        expr2 = expr2 + ac_flow_0_10
+        expr2 = expr2 + ac_flow_0_11
+
+        self.assertEqual(str(cmh.FlatIntExpr(expr1)), str(cmh.FlatIntExpr(expr2)))
+
     def test_large_isub(self):
         model = cp_model.CpModel()
         s = 0
         for _ in range(300000):
             s -= model.new_bool_var("")
         model.add(s == 10)
+
+    def test_complex_isub(self):
+        model = cp_model.CpModel()
+        delta_down_0 = model.new_bool_var(name="Delta_down_0")
+        ac_flow_0_10 = model.new_bool_var(name="ac_flow_0_10")
+        ac_flow_0_11 = model.new_bool_var(name="ac_flow_0_11")
+        expr1 = -3 * delta_down_0
+        expr1 -= ac_flow_0_10
+        expr1 -= ac_flow_0_11
+
+        expr2 = -3 * delta_down_0
+        expr2 = expr2 - ac_flow_0_10
+        expr2 = expr2 - ac_flow_0_11
+
+        self.assertEqual(str(cmh.FlatIntExpr(expr1)), str(cmh.FlatIntExpr(expr2)))
 
     def test_radd(self):
         model = cp_model.CpModel()

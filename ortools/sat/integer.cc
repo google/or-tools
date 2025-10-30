@@ -1916,6 +1916,9 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
   }
 
   // Special case for level zero.
+  //
+  // TODO(user): Refactor to just do everything in RootLevelEnqueue() and
+  // avoid bad recursion if one call RootLevelEnqueue() at level zero from here.
   if (integer_search_levels_.empty()) {
     var_lbs_[i_lit.var] = i_lit.bound;
     integer_trail_[i_lit.var.value()].bound = i_lit.bound;
@@ -1926,6 +1929,9 @@ bool IntegerTrail::EnqueueAssociatedIntegerLiteral(IntegerLiteral i_lit,
     return UpdateInitialDomain(
         i_lit.var,
         Domain(LowerBound(i_lit.var).value(), UpperBound(i_lit.var).value()));
+  }
+  if (trail_->AssignmentLevel(literal_reason) == 0) {
+    return RootLevelEnqueue(i_lit);
   }
   DCHECK_GT(trail_->CurrentDecisionLevel(), 0);
 

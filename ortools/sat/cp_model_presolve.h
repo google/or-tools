@@ -168,7 +168,7 @@ class CpModelPresolver {
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* proto);
+                                    LinearExpressionProto* exp);
   bool CanonicalizeLinearArgument(const ConstraintProto& ct,
                                   LinearArgumentProto* proto);
 
@@ -178,6 +178,7 @@ class CpModelPresolver {
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);

@@ -13,7 +13,6 @@
 
 #include "ortools/sat/lrat_proof_handler.h"
 
-#include <cstdint>
 #include <memory>
 
 #include "absl/log/check.h"
@@ -21,21 +20,16 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/sat/lrat_checker.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
 
-LratProofHandler::LratProofHandler(bool debug_crash_on_error)
-    : lrat_checker_(std::make_unique<LratChecker>()),
-      debug_crash_on_error_(debug_crash_on_error) {}
-
-LratProofHandler::~LratProofHandler() {
-  const int64_t num_warnings = lrat_checker_->num_warnings();
-  if (num_warnings > 0) {
-    LOG(INFO) << "LRAT warnings: " << num_warnings;
-  }
-}
+LratProofHandler::LratProofHandler(Model* model)
+    : lrat_checker_(std::make_unique<LratChecker>(model)),
+      debug_crash_on_error_(model->GetOrCreate<SatParameters>()
+                                ->debug_crash_if_lrat_check_fails()) {}
 
 bool LratProofHandler::AddProblemClause(ClauseId id,
                                         absl::Span<const Literal> clause) {
@@ -61,7 +55,7 @@ bool LratProofHandler::AddAssumedClause(ClauseId id,
   VLOG(1) << "AddAssumedClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (debug_crash_on_error_) {
-    QCHECK(false) << "LRAT error: assumed clauses are not supposed to happen";
+    LOG(FATAL) << "LRAT error: assumed clauses are not supposed to happen";
   }
   return CheckResult(lrat_checker_->AddProblemClause(id, clause));
 }
@@ -77,7 +71,7 @@ bool LratProofHandler::Check() const {
 
 bool LratProofHandler::CheckResult(bool result) const {
   if (debug_crash_on_error_ && !result) {
-    QCHECK(false) << "LRAT error: " << lrat_checker_->error_message();
+    LOG(FATAL) << "LRAT error: " << lrat_checker_->error_message();
   }
   return result;
 }

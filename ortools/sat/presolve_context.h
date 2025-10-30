@@ -158,8 +158,13 @@ class PresolveContext {
   int64_t MinOf(int ref) const;
   int64_t MaxOf(int ref) const;
   int64_t FixedValue(int ref) const;
-  bool DomainContains(int ref, int64_t value) const;
-  Domain DomainOf(int ref) const;
+
+  // Check if the domain contains the given value. Note that this is stronger
+  // than DomainOf(ref).Contains(value) since here we will use the affine
+  // representative if any.
+  bool VarCanTakeValue(int var, int64_t value) const;
+
+  const Domain& DomainOf(int var) const;
   int64_t DomainSize(int ref) const;
   absl::Span<const Domain> AllDomains() const { return domains_; }
 
@@ -225,7 +230,8 @@ class PresolveContext {
   // Returns true if the set of variables in the expression changed.
   //
   // This uses affine relation and regroup duplicate/fixed terms.
-  bool CanonicalizeLinearConstraint(ConstraintProto* ct);
+  bool CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                    bool* is_impossible = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
 
@@ -386,6 +392,9 @@ class PresolveContext {
 
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
+
+  // Check if an integer variable is an affine representative.
+  bool VariableIsAffineRepresentative(int var) const;
 
   // Used for statistics.
   int NumAffineRelations() const { return affine_relations_.NumRelations(); }
@@ -622,7 +631,7 @@ class PresolveContext {
 
   // The "expansion" phase should be done once and allow to transform complex
   // constraints into basic ones (see cp_model_expand.h). Some presolve rules
-  // need to know if the expansion was ran before beeing applied.
+  // need to know if the expansion was ran before being applied.
   bool ModelIsExpanded() const { return model_is_expanded_; }
   void NotifyThatModelIsExpanded() { model_is_expanded_ = true; }
 

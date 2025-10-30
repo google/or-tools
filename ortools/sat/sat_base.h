@@ -615,6 +615,8 @@ class Trail {
     return resolution_;
   }
 
+  int NumReimplicationsOnLastUntrail() const { return last_num_reimplication_; }
+
  private:
   ConflictResolutionFunction resolution_;
 
@@ -673,6 +675,8 @@ class Trail {
 
   std::function<bool(absl::Span<const Literal> clause)> debug_checker_ =
       nullptr;
+
+  int last_num_reimplication_ = 0;
 };
 
 // Base class for all the SAT constraints.
@@ -876,6 +880,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var,
 }
 
 inline void Trail::ReimplyAll(int old_trail_index) {
+  const int64_t initial_num_reimplied = num_reimplied_literals_;
   for (int i = Index(); i < old_trail_index; ++i) {
     const Literal literal = trail_[i];
     const AssignmentInfo& info = Info(literal.Variable());
@@ -906,6 +911,7 @@ inline void Trail::ReimplyAll(int old_trail_index) {
     }
     num_reimplied_literals_ += assignment_.LiteralIsTrue(literal);
   }
+  last_num_reimplication_ = num_reimplied_literals_ - initial_num_reimplied;
 }
 
 }  // namespace sat

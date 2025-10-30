@@ -755,16 +755,11 @@ BinaryRelationRepository::~BinaryRelationRepository() {
 void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
                                    IntegerValue lhs, IntegerValue rhs) {
   expr.SimpleCanonicalization();
+  if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return;
   expr.CanonicalizeAndUpdateBounds(lhs, rhs);
-
-  // BinaryRelationRepository uses a different canonicalization than the rest of
-  // the code.
-  expr.MakeVariablesPositive();
 
   CHECK_NE(lit.Index(), kNoLiteralIndex);
   num_enforced_relations_++;
-  DCHECK(expr.coeffs[0] == 0 || expr.vars[0] != kNoIntegerVariable);
-  DCHECK(expr.coeffs[1] == 0 || expr.vars[1] != kNoIntegerVariable);
 
   relations_.push_back(
       {.enforcement = lit, .expr = expr, .lhs = lhs, .rhs = rhs});
@@ -822,11 +817,8 @@ void BinaryRelationRepository::Build() {
     if (relations.empty() || relations_negation.empty()) continue;
     for (const int relation_index : relations) {
       const Relation& r = relations_[relation_index];
+      DCHECK(r.expr.IsCanonicalized());
       LinearExpression2 expr = r.expr;
-      if (expr.coeffs[0] == 0) continue;
-      expr.SimpleCanonicalization();  // Since relations_ uses a different
-                                      // canonicalization convention.
-      DCHECK_EQ(expr.DivideByGcd(), 1);
       {
         const auto [it, inserted] = lin2_to_upper_bound.insert({expr, r.rhs});
         if (!inserted) {
@@ -843,14 +835,11 @@ void BinaryRelationRepository::Build() {
     }
     for (const int relation_index : relations_negation) {
       const Relation& r = relations_[relation_index];
-      LinearExpression2 canonical_expr = r.expr;
-      canonical_expr.SimpleCanonicalization();
-      if (canonical_expr.coeffs[0] == 0) continue;
-      DCHECK_EQ(canonical_expr.DivideByGcd(), 1);
+      DCHECK(r.expr.IsCanonicalized());
 
       // Let's work with lower bounds only.
       const IntegerValue lower_bounds[2] = {r.lhs, -r.rhs};
-      LinearExpression2 exprs[2] = {canonical_expr, canonical_expr};
+      LinearExpression2 exprs[2] = {r.expr, r.expr};
       exprs[1].Negate();
       for (int i = 0; i < 2; ++i) {
         // We have here "~l => (exprs[i] >= lower_bounds[i])".
@@ -920,8 +909,7 @@ bool PropagateLocalBounds(
                               MathUtil::FloorOfRatio(rhs, expr.coeffs[0]));
   };
   auto update_var_bounds_from_relation = [&](Relation r) {
-    r.expr.SimpleCanonicalization();
-
+    DCHECK(r.expr.IsCanonicalized());
     update_var_bounds(r.expr, r.lhs, r.rhs);
     std::swap(r.expr.vars[0], r.expr.vars[1]);
     std::swap(r.expr.coeffs[0], r.expr.coeffs[1]);
@@ -929,13 +917,18 @@ bool PropagateLocalBounds(
   };
   for (const int relation_index :
        repository.IndicesOfRelationsEnforcedBy(lit)) {
-    update_var_bounds_from_relation(repository.relation(relation_index));
+    const Relation& r = repository.relation(relation_index);
+    if (r.expr.coeffs[0] == 0) continue;
+    update_var_bounds_from_relation(r);
   }
   for (const auto& [var, unused] : input) {
     for (const auto& [expr, lb, ub] :
          root_level_bounds.GetAllBoundsContainingVariable(var)) {
-      update_var_bounds_from_relation(
-          Relation{Literal(kNoLiteralIndex), expr, lb, ub});
+      // Note: GetAllBoundsContainingVariable() does not return canonicalized
+      // expr on purpose.
+      Relation r{Literal(kNoLiteralIndex), expr, lb, ub};
+      r.expr.SimpleCanonicalization();
+      update_var_bounds_from_relation(r);
     }
     const auto [lb, ub] = implied_bounds.GetImpliedBounds(lit, var);
     update_var_bounds_from_relation(Relation{
@@ -953,12 +946,6 @@ bool PropagateLocalBounds(
 void GreaterThanAtLeastOneOfDetector::AddRelationIfNonTrivial(
     const Relation& r,
     std::vector<VariableConditionalAffineBound>* clause_bounds) const {
-  if (r.expr.vars[0] == kNoIntegerVariable ||
-      r.expr.vars[1] == kNoIntegerVariable) {
-    return;
-  }
-  LinearExpression2 expr(r.expr);
-  expr.SimpleCanonicalization();
   const Literal l = r.enforcement;
 
   auto add_if_non_trivial = [&](Literal cond, IntegerVariable var,
@@ -969,19 +956,23 @@ void GreaterThanAtLeastOneOfDetector::AddRelationIfNonTrivial(
     }
   };
 
+  DCHECK_NE(r.expr.vars[0], kNoIntegerVariable);
+  DCHECK_NE(r.expr.vars[1], kNoIntegerVariable);
   if (r.lhs != kMinIntegerValue) {
     for (int i = 0; i < 2; ++i) {
-      if (expr.coeffs[i] != 1) continue;
-      const AffineExpression affine_lb = expr.GetAffineLowerBound(i, r.lhs);
-      add_if_non_trivial(l, expr.vars[i], affine_lb);
+      const AffineExpression affine_lb = r.expr.GetAffineLowerBound(
+          i, r.lhs, integer_trail_.LevelZeroLowerBound(r.expr.vars[1 - i]));
+      add_if_non_trivial(l, r.expr.vars[i], affine_lb);
     }
   }
   if (r.rhs != kMaxIntegerValue) {
-    expr.Negate();
+    LinearExpression2 negated_expr(r.expr);
+    negated_expr.Negate();
     for (int i = 0; i < 2; ++i) {
-      if (expr.coeffs[i] != 1) continue;
-      const AffineExpression affine_lb = expr.GetAffineLowerBound(i, -r.rhs);
-      add_if_non_trivial(l, expr.vars[i], affine_lb);
+      const AffineExpression affine_lb = negated_expr.GetAffineLowerBound(
+          i, -r.rhs,
+          integer_trail_.LevelZeroLowerBound(negated_expr.vars[1 - i]));
+      add_if_non_trivial(l, negated_expr.vars[i], affine_lb);
     }
   }
 }

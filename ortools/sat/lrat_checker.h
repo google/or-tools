@@ -24,7 +24,9 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -33,6 +35,10 @@ namespace sat {
 // An incremental checker for LRAT proofs (https://arxiv.org/abs/1612.02353).
 class LratChecker {
  public:
+  explicit LratChecker(Model* model)
+      : stats_(model->GetOrCreate<SharedStatistics>()) {}
+  ~LratChecker();
+
   // The clause IDs used in a proof that a clause has a Resolution Asymmetric
   // Tautology (RAT) property. See AddInferredClause() for more details.
   struct RatIds {
@@ -61,12 +67,12 @@ class LratChecker {
   //
   // 1) The clause ID is not already used by another clause (it is OK to reuse
   //    the ID of a deleted clause).
-  // 2) The `unit_ids` clauses exist and are or become unit (or, for the last
-  //    one, possibly empty) if all the literals of `clause` are assumed to be
-  //    false. This list must be in unit propagation order: if a clause c
-  //    becomes unit (or empty) because clauses c_1, ..., c_k are unit, then c
-  //    must appear after c_1, ..., c_k in the list. Let RUP be all the
-  //    literals which are found to be false by unit propagation.
+  // 2) The `unit_ids` clauses exist and are or become unit and eventually empty
+  //    if all the literals of `clause` are assumed to be false (verification
+  //    stops at the first empty clause). This list must be in unit propagation
+  //    order: if a clause c becomes unit (or empty) because clauses c_1, ...,
+  //    c_k are unit, then c must appear after c_1, ..., c_k in the list. Let
+  //    RUP be all the literals which are found to be false by unit propagation.
   // 3) If `rat` is empty, the last `unit_ids` clause must become empty after
   //    unit propagation.
   // 4) Otherwise `clause` must not be empty, and `rat_clauses` must contain
@@ -75,14 +81,14 @@ class LratChecker {
   //    Moreover, for each r in `rat`:
   //    * Either `clause` and the `r.resolvant_id` clause have two pairs of
   //      complementary literals.
-  //    * Or all the `r.unit_ids` clauses must become unit (except the last one,
-  //      which must become empty) if all the literals of `clause` and of the
-  //      `r.resolvant_id` clause (minus ~p), as well as those in RUP (from
-  //      condition 2), are assumed to be false (this list must be in unit
-  //      propagation order, as explained above).
+  //    * Or all the `r.unit_ids` clauses must become unit and eventually empty
+  //      if all the literals of `clause` and of the `r.resolvant_id` clause
+  //      (minus ~p), as well as those in RUP (from condition 2), are assumed to
+  //      be false (this list must be in unit propagation order, as explained
+  //      above; verification stops at the first empty clause).
   bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
                          absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const RatIds> rat);
+                         absl::Span<const RatIds> rat = {});
 
   // Deletes problem or inferred clauses. It is OK to delete a clause which has
   // already been deleted or has never been added.
@@ -100,10 +106,6 @@ class LratChecker {
   // Returns the reason of the first failed operation, or an empty string if all
   // operations were successful.
   std::string_view error_message() const { return error_message_; }
-
-  // Returns the number of times a unit propagation resulted in an already
-  // propagated literal.
-  int64_t num_warnings() const { return num_warnings_; }
 
  private:
   bool AddClauseInternal(ClauseId id, absl::Span<const Literal> clause,
@@ -125,7 +127,19 @@ class LratChecker {
   // Whether all the operations made so far were valid.
   bool valid_ = true;
   std::string error_message_;
-  int64_t num_warnings_ = 0;
+
+  // Statistics.
+  int64_t num_problem_clauses_ = 0;
+  int64_t num_inferred_clauses_ = 0;
+  int64_t num_processed_rup_literals_ = 0;
+  int64_t num_processed_rup_clauses_ = 0;
+  int64_t num_unneeded_rup_literals_ = 0;
+  int64_t num_unneeded_rup_clauses_ = 0;
+  int64_t num_processed_rat_literals_ = 0;
+  int64_t num_processed_rat_clauses_ = 0;
+  int64_t num_unneeded_rat_literals_ = 0;
+  int64_t num_unneeded_rat_clauses_ = 0;
+  int64_t num_deleted_clauses_not_found_ = 0;
 
   // Whether the proof is complete, i.e., whether the empty clause has been
   // successfully inferred.
@@ -137,6 +151,8 @@ class LratChecker {
 
   // Temporary set used to check the RAT property of an inferred clause.
   absl::flat_hash_set<ClauseId> tmp_clause_ids_;
+
+  SharedStatistics* stats_;
 };
 
 template <typename Sink, typename... T>

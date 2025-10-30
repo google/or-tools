@@ -83,7 +83,10 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     ++num_decisions_;
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
     const int saved_index = trail_.Index();
-    sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision);
+    if (sat_solver_->EnqueueDecisionAndBackjumpOnConflict(decision) ==
+        kUnsatTrailIndex) {
+      return false;
+    }
     sat_solver_->AdvanceDeterministicTime(time_limit_);
 
     if (sat_solver_->ModelIsUnsat()) return false;
@@ -503,6 +506,8 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   return sat_solver->FinishPropagation();
 }
 
+// TODO(user): This might be broken if backtrack() propagates and go further
+// back. Invesitigate and fix any issue.
 bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
@@ -587,7 +592,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   while (!time_limit->LimitReached() &&
          time_limit->GetElapsedDeterministicTime() <= limit) {
     // We only enqueue literal at level zero if we don't use "tree look".
-    if (!options.use_tree_look) sat_solver->Backtrack(0);
+    if (!options.use_tree_look) {
+      if (!sat_solver->BacktrackAndPropagateReimplications(0)) return false;
+    }
 
     LiteralIndex next_decision = kNoLiteralIndex;
     if (options.use_queue && sat_solver->CurrentDecisionLevel() > 0) {
@@ -621,7 +628,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
         if (index == kNoLiteralIndex) {
           // This is a backtrack marker, go back one level.
           CHECK_GT(sat_solver->CurrentDecisionLevel(), 0);
-          sat_solver->Backtrack(sat_solver->CurrentDecisionLevel() - 1);
+          if (!sat_solver->BacktrackAndPropagateReimplications(
+                  sat_solver->CurrentDecisionLevel() - 1))
+            return false;
           continue;
         }
         const Literal candidate(index);
@@ -687,7 +696,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
       }
       starts[prev_decision.NegatedIndex()] = j;
       if (next_decision == kNoLiteralIndex) {
-        sat_solver->Backtrack(level - 1);
+        if (!sat_solver->BacktrackAndPropagateReimplications(level - 1)) {
+          return false;
+        }
         continue;
       }
     }

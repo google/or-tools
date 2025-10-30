@@ -21,21 +21,26 @@
 #ifndef OR_TOOLS_SAT_SAT_INPROCESSING_H_
 #define OR_TOOLS_SAT_SAT_INPROCESSING_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
@@ -60,6 +65,7 @@ struct PostsolveClauses {
 class BlockedClauseSimplifier;
 class BoundedVariableElimination;
 class StampingSimplifier;
+class GateCongruenceClosure;
 
 struct SatPresolveOptions {
   // The time budget to spend.
@@ -101,6 +107,7 @@ class Inprocessing {
         params_(*model->GetOrCreate<SatParameters>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         trail_(model->GetOrCreate<Trail>()),
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -112,6 +119,7 @@ class Inprocessing {
             model->GetOrCreate<BlockedClauseSimplifier>()),
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
+        congruence_closure_(model->GetOrCreate<GateCongruenceClosure>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         logger_(model->GetOrCreate<SolverLogger>()),
         model_(model) {}
@@ -154,6 +162,7 @@ class Inprocessing {
   const SatParameters& params_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
+  LratProofHandler* lrat_proof_handler_;
   Trail* trail_;
   SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
@@ -162,6 +171,7 @@ class Inprocessing {
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
+  GateCongruenceClosure* congruence_closure_;
   PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
@@ -179,6 +189,9 @@ class Inprocessing {
   // Last since clause database was cleaned up.
   int64_t last_num_redundant_literals_ = 0;
   int64_t last_num_fixed_variables_ = 0;
+
+  // Temporary data for LRAT proofs.
+  std::vector<ClauseId> clause_ids_;
 };
 
 // Implements "stamping" as described in "Efficient CNF Simplification based on
@@ -196,8 +209,10 @@ class StampingSimplifier {
  public:
   explicit StampingSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        trail_(model->GetOrCreate<Trail>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -228,9 +243,19 @@ class StampingSimplifier {
   bool ProcessClauses();
 
  private:
+  // Appends the chain of implications from `a` to `b` to `chain`, in order
+  // (a => x => y => ... z => b) if `reversed` is false, or in reverse order
+  // (not(b) => not(z) => ... not(y) => not(x) => not(a)) otherwise. b must be a
+  // descendant of a.
+  void AppendImplicationChain(Literal a, Literal b,
+                              std::vector<ClauseId>& chain,
+                              bool reversed = false);
+
   const VariablesAssignment& assignment_;
+  Trail* trail_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
+  LratProofHandler* lrat_proof_handler_;
   ModelRandomGenerator* random_;
   TimeLimit* time_limit_;
 
@@ -254,6 +279,8 @@ class StampingSimplifier {
   // Temporary data for the DFS.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
   std::vector<LiteralIndex> dfs_stack_;
+  // Temporary data for LRAT proofs.
+  std::vector<ClauseId> clause_ids_;
 
   // First/Last visited index in a DFS of the tree above.
   util_intops::StrongVector<LiteralIndex, int> first_stamps_;
@@ -396,6 +423,107 @@ class BoundedVariableElimination {
   util_intops::StrongVector<LiteralIndex, std::vector<ClauseIndex>>
       literal_to_clauses_;
   util_intops::StrongVector<LiteralIndex, int> literal_to_num_clauses_;
+};
+
+// If we have a = f(literals) and b = f(same_literals), then a and b are
+// equivalent.
+//
+// This class first detects such relationships, then reaches the "equivalence"
+// fixed point (i.e. closure) by detecting equivalences, then updating the RHS
+// of the relations which might lead to more equivalences and so on.
+//
+// This mostly follows the paper "Clausal Congruence closure", Armin Biere,
+// Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
+//
+// TODO(user): For now we only deal with f() being an and_gate with an arbitrary
+// number of inputs, or equivalently target = product/and(literals). The next
+// most important one is xor().
+//
+// TODO(user): What is the relation with symmetry ? It feel like all the
+// equivalences found here should be in the same symmetry orbit ?
+class GateCongruenceClosure {
+ public:
+  explicit GateCongruenceClosure(Model* model)
+      : sat_solver_(model->GetOrCreate<SatSolver>()),
+        implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
+        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        logger_(model->GetOrCreate<SolverLogger>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+
+  ~GateCongruenceClosure();
+
+  bool DoOneRound(bool log_info);
+
+ private:
+  struct GateHash {
+    explicit GateHash(CompactVectorVector<int, LiteralIndex>* g)
+        : gates_inputs(g) {}
+    std::size_t operator()(int gate_id) const {
+      return absl::HashOf((*gates_inputs)[gate_id]);
+    }
+    CompactVectorVector<int, LiteralIndex>* gates_inputs;
+  };
+
+  struct GateEq {
+    explicit GateEq(CompactVectorVector<int, LiteralIndex>* g)
+        : gates_inputs(g) {}
+    bool operator()(int gate_a, int gate_b) const {
+      if (gate_a == gate_b) return true;
+      // We use absl::span<> comparison.
+      return (*gates_inputs)[gate_a] == (*gates_inputs)[gate_b];
+    }
+    CompactVectorVector<int, LiteralIndex>* gates_inputs;
+  };
+
+  // Recovers "target_literal = and(literals)" from the model.
+  //
+  // The current algo is pretty basic: For all clauses, look for literals that
+  // imply all the others to false. We only look at direct implications to be
+  // fast.
+  //
+  // This is because such an and_gate is encoded as:
+  // - for all i, target_literal => literal_i  (direct binary implication)
+  // - all literal at true => target_literal, this is a clause:
+  //   (not(literal[i]) for all i, target_literal).
+  void ExtractAndGates(PresolveTimer& timer);
+
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implication_graph_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  SharedStatistics* shared_stats_;
+  SolverLogger* logger_;
+  TimeLimit* time_limit_;
+
+  SparseBitset<LiteralIndex> marked_;
+  SparseBitset<LiteralIndex> seen_;
+  SparseBitset<LiteralIndex> next_seen_;
+
+  // A Boolean gates correspond to target = f(inputs).
+  //
+  // Note that the inputs are canonicalized. For and_gates, they are sorted,
+  // since the gate function does not depend on the order.
+  //
+  // TODO(user): for now we have a single gate type. We can easily support more
+  // by creating an extra std::vector<GateType> and adding that to our
+  // GateHash/GateEq hash_set.
+  std::vector<LiteralIndex> gates_target_;
+  CompactVectorVector<int, LiteralIndex> gates_inputs_;
+  // For each gate, "the" corresponding clause. For a gate a = and(x,y,...) this
+  // is the clause "x and y and ... => a". Only used for LRAT.
+  std::vector<const SatClause*> gates_clause_;
+
+  // For stats.
+  double total_dtime_ = 0.0;
+  double total_wtime_ = 0.0;
+  int64_t total_num_units_ = 0;
+  int64_t total_gates_ = 0;
+  int64_t total_equivalences_ = 0;
+  int64_t num_duplicates_in_implications_list_ = 0;
 };
 
 }  // namespace sat

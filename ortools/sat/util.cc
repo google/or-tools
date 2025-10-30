@@ -43,19 +43,6 @@
 namespace operations_research {
 namespace sat {
 
-std::string FormatCounter(int64_t num) {
-  std::string s = absl::StrCat(num);
-  std::string out;
-  const int size = s.size();
-  for (int i = 0; i < size; ++i) {
-    if (i > 0 && (size - i) % 3 == 0) {
-      out.push_back('\'');
-    }
-    out.push_back(s[i]);
-  }
-  return out;
-}
-
 namespace {
 
 inline std::string LeftAlign(std::string s, int size = 16) {

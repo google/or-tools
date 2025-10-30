@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -635,8 +636,8 @@ void SolutionCrush::SetTableExpandedVars(
     for (int var_index = 0; var_index < num_vars; ++var_index) {
       const auto& values = var_values[var_index];
       if (!values.empty() &&
-          std::find(values.begin(), values.end(),
-                    GetVarValue(column_vars[var_index])) == values.end()) {
+          absl::c_find(values, GetVarValue(column_vars[var_index])) ==
+              values.end()) {
         row_lit_value = false;
         break;
       }

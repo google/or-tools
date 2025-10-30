@@ -1255,12 +1255,8 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
         reified_lin2_bounds->AddLinear3(vars, coeffs, rhs_min);
       }
     } else {
-      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-      if (vars.size() == 1) {
-        repository->Add(
-            lit, LinearExpression2(vars[0], kNoIntegerVariable, coeffs[0], 0),
-            rhs_min, rhs_max);
-      } else if (vars.size() == 2) {
+      if (vars.size() == 2) {
+        const Literal lit = mapping->Literal(ct.enforcement_literal(0));
         repository->Add(
             lit, LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
             rhs_min, rhs_max);

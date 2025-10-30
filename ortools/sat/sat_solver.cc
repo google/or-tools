@@ -22,8 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/algorithm/container.h"
-#include "absl/base/attributes.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -40,6 +38,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/enforcement.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -79,6 +78,7 @@ SatSolver::SatSolver(Model* model)
       clause_activity_increment_(1.0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
+      lrat_proof_handler_(model->Mutable<LratProofHandler>()),
       stats_("SatSolver") {
   trail_->EnableChronologicalBacktracking(
       parameters_->use_chronological_backtracking());
@@ -644,17 +644,8 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
 
   EnqueueNewDecision(true_literal);
   if (!FinishPropagation()) return kUnsatTrailIndex;
+  DCHECK(PropagationIsDone());
   return last_decision_or_backtrack_trail_index_;
-}
-
-bool SatSolver::RestoreSolverToAssumptionLevel() {
-  if (model_is_unsat_) return false;
-  if (CurrentDecisionLevel() > assumption_level_) {
-    Backtrack(assumption_level_);
-    return true;
-  }
-  if (!FinishPropagation()) return false;
-  return ReapplyAssumptionsIfNeeded();
 }
 
 bool SatSolver::FinishPropagation() {
@@ -699,7 +690,7 @@ bool SatSolver::ResetWithGivenAssumptions(
   if (assumptions.empty()) return true;
 
   // For assumptions and core-based search, it is really important to add as
-  // many binary clauses as possible. This is because we do not wan to miss any
+  // many binary clauses as possible. This is because we do not want to miss any
   // early core of size 2.
   ProcessNewlyFixedVariables();
 
@@ -714,6 +705,7 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   if (model_is_unsat_) return false;
   if (CurrentDecisionLevel() >= assumption_level_) return true;
 
+  DCHECK(PropagationIsDone());
   while (CurrentDecisionLevel() == 0 && !assumptions_.empty()) {
     // When assumptions_ is not empty, the first "decision" actually contains
     // multiple ones, and we should never use its literal.
@@ -755,6 +747,7 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
     if (CurrentDecisionLevel() > 0) return true;
   }
 
+  DCHECK(PropagationIsDone());
   DCHECK(assumptions_.empty());
   const int64_t old_num_branches = counters_.num_branches;
   const SatSolver::Status status = ReapplyDecisionsUpTo(assumption_level_ - 1);
@@ -832,8 +825,7 @@ void SatSolver::ProcessCurrentConflict() {
     if (lrat_proof_handler_ != nullptr) {
       if (!lrat_proof_handler_->AddInferredClause(
               clause_id_generator_->GetNextId(), learned_conflict_,
-              *clause_ids_for_1iup,
-              /*rat=*/{})) {
+              *clause_ids_for_1iup)) {
         VLOG(1) << "WARNING: invalid LRAT inferred clause!";
       }
     }
@@ -1054,9 +1046,9 @@ void SatSolver::ProcessCurrentConflict() {
       clause_ids_for_1iup = clause_ids_for_minimization;
     }
     learned_conflict_clause_id = clause_id_generator_->GetNextId();
-    if (!lrat_proof_handler_->AddInferredClause(
-            learned_conflict_clause_id, learned_conflict_, *clause_ids_for_1iup,
-            /*rat=*/{})) {
+    if (!lrat_proof_handler_->AddInferredClause(learned_conflict_clause_id,
+                                                learned_conflict_,
+                                                *clause_ids_for_1iup)) {
       VLOG(1) << "WARNING: invalid LRAT inferred clause!";
     }
   }
@@ -1285,6 +1277,7 @@ SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions, int64_t max_number_of_conflicts) {
   SCOPED_TIME_STAT(&stats_);
   if (!ResetWithGivenAssumptions(assumptions)) return UnsatStatus();
+  DCHECK(PropagationIsDone());
   return SolveInternal(time_limit_,
                        max_number_of_conflicts >= 0
                            ? max_number_of_conflicts
@@ -1399,12 +1392,18 @@ bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable,
 // https://doi.org/10.1016/j.artint.2019.103197, with one significant tweak:
 // we sort each clause by current trail index before trying to minimize it so
 // that we can reuse the trail from previous calls in case there are overlaps.
-void SatSolver::TryToMinimizeClause(SatClause* clause) {
+bool SatSolver::TryToMinimizeClause(SatClause* clause) {
   CHECK(clause != nullptr);
   ++counters_.minimization_num_clauses;
 
   std::vector<Literal> candidate;
   candidate.reserve(clause->size());
+
+  // Some literals of the clause which are fixed to false or true when
+  // propagating some other literals of the clause. Only used if
+  // lrat_proof_handler_ is not null.
+  std::vector<Literal> fixed_false_literals;
+  LiteralIndex fixed_true_literal = kNoLiteralIndex;
 
   // Note that CP-SAT presolve detects clauses that share n-1 literals and
   // transforms them into (n-1 enforcement) => (1 literal per clause). We
@@ -1449,7 +1448,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
   CHECK_EQ(candidate.size(), clause->size());
 
-  Backtrack(longest_valid_prefix);
+  if (!BacktrackAndPropagateReimplications(longest_valid_prefix)) return false;
   absl::btree_set<LiteralIndex> moved_last;
   while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
@@ -1459,14 +1458,19 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
-    Backtrack(target_level);
+    if (!BacktrackAndPropagateReimplications(target_level)) return false;
+    fixed_false_literals.clear();
+    fixed_true_literal = kNoLiteralIndex;
 
     while (CurrentDecisionLevel() < candidate.size()) {
-      if (time_limit_->LimitReached()) return;
+      if (time_limit_->LimitReached()) return true;
       const int level = CurrentDecisionLevel();
       const Literal literal = candidate[level];
       // Remove false literals
       if (Assignment().LiteralIsFalse(literal)) {
+        if (lrat_proof_handler_ != nullptr) {
+          fixed_false_literals.push_back(literal);
+        }
         candidate[level] = candidate.back();
         candidate.pop_back();
         continue;
@@ -1475,11 +1479,13 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
             LiteralTrail().Info(literal.Variable()).level;
         if (variable_level == 0) {
           ProcessNewlyFixedVariablesForDratProof();
+          DCHECK(lrat_proof_handler_ == nullptr ||
+                 trail_->GetUnitClauseId(literal.Variable()) != kNoClauseId);
           counters_.minimization_num_true++;
           counters_.minimization_num_removed_literals += clause->size();
-          Backtrack(0);
+          if (!BacktrackAndPropagateReimplications(0)) return false;
           clauses_propagator_->Detach(clause);
-          return;
+          return true;
         }
 
         if (parameters_->inprocessing_minimization_use_conflict_analysis()) {
@@ -1493,6 +1499,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         } else {
           candidate.resize(variable_level);
         }
+        fixed_true_literal = literal.Index();
         candidate.push_back(literal);
 
         // If a (true) literal wasn't propagated by this clause, then we know
@@ -1506,9 +1513,9 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
           counters_.minimization_num_subsumed++;
           counters_.minimization_num_removed_literals += clause->size();
           KeepAllClausesUsedToInfer(literal.Variable());
-          Backtrack(0);
+          if (!BacktrackAndPropagateReimplications(0)) return false;
           clauses_propagator_->Detach(clause);
-          return;
+          return true;
         }
 
         break;
@@ -1516,10 +1523,9 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         ++counters_.minimization_num_decisions;
         EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
         if (clause->IsRemoved()) {
-          Backtrack(0);
-          return;
+          return BacktrackAndPropagateReimplications(0);
         }
-        if (model_is_unsat_) return;
+        if (model_is_unsat_) return false;
         if (CurrentDecisionLevel() < level) {
           // There was a conflict, consider the conflicting literal next so we
           // should be able to exploit the conflict in the next iteration.
@@ -1533,20 +1539,72 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     }
     if (candidate.empty()) {
       model_is_unsat_ = true;
-      return;
+      return false;
     }
     if (!parameters_->inprocessing_minimization_use_all_orderings()) break;
     moved_last.insert(candidate.back().Index());
   }
 
-  if (candidate.empty()) {
-    model_is_unsat_ = true;
-    return;
+  // Returns if we don't have any minimization.
+  if (candidate.size() == clause->size()) return true;
+
+  std::vector<ClauseId> clause_ids;
+  if (lrat_proof_handler_ != nullptr) {
+    DCHECK(fixed_true_literal != kNoLiteralIndex ||
+           !fixed_false_literals.empty());
+    if (fixed_true_literal != kNoLiteralIndex) {
+      // If some literals of the minimized clause fix another to true, we just
+      // need the propagating clauses to prove this (assuming that all the
+      // minimized clause literals are false will lead to a conflict on this
+      // 'fixed to true' literal).
+      GetClausesFixing({Literal(fixed_true_literal)}, &clause_ids);
+    } else {
+      // If some literals of the minimized clause fix those that have been
+      // removed to false, the propagating clauses and the original one prove
+      // this (assuming that all the minimized clause literals are false will
+      // lead to all the literals of the original clause fixed to false, which
+      // is a conflict with the original clause).
+      GetClausesFixing(fixed_false_literals, &clause_ids);
+      clause_ids.push_back(clauses_propagator_->GetClauseId(clause));
+    }
   }
 
-  // Returns if we don't have any minimization.
-  if (candidate.size() == clause->size()) return;
-  Backtrack(0);
+  // TODO(user): Avoid backtracking even when we minimize clause, this should
+  // be doable.
+  if (!BacktrackAndPropagateReimplications(0)) return false;
+
+  // In the presence of re-implication, the propagation might fix more
+  // literals, and InprocessingRewriteClause() do not like it.
+  {
+    int new_size = 0;
+    for (const Literal l : candidate) {
+      if (Assignment().LiteralIsFalse(l)) continue;
+      if (Assignment().LiteralIsTrue(l)) {
+        // Clause is always satisfied.
+        counters_.minimization_num_true++;
+        counters_.minimization_num_removed_literals += clause->size();
+        clauses_propagator_->Detach(clause);
+        return true;
+      }
+      candidate[new_size++] = l;
+    }
+    candidate.resize(new_size);
+  }
+
+  // TODO(user): can we simplify the special cases for empty, unit and
+  // binary clauses below, and always call InprocessingRewriteClause() instead
+  // (which already has special cases for such clauses)?
+  ClauseId new_clause_id = kNoClauseId;
+  if (candidate.size() < 3 && lrat_proof_handler_ != nullptr) {
+    new_clause_id = clause_id_generator_->GetNextId();
+    lrat_proof_handler_->AddInferredClause(new_clause_id, candidate,
+                                           clause_ids);
+  }
+
+  if (candidate.empty()) {
+    model_is_unsat_ = true;
+    return false;
+  }
 
   if (candidate.size() == 1) {
     if (drat_proof_handler_ != nullptr) {
@@ -1554,24 +1612,23 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
     }
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->size();
-      trail_->EnqueueWithUnitReason(candidate[0]);
-      return (void)FinishPropagation();
+      trail_->EnqueueWithUnitReason(new_clause_id, candidate[0]);
+      return FinishPropagation();
     }
-    return;
+    return true;
   }
 
   if (candidate.size() == 2) {
     counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
-    // TODO(user): add support for LRAT here.
-    AddBinaryClauseInternal(kNoClauseId, candidate[0], candidate[1]);
+    AddBinaryClauseInternal(new_clause_id, candidate[0], candidate[1]);
     clauses_propagator_->Detach(clause);
 
     // This is needed in the corner case where this was the first binary clause
     // of the problem so that PropagationIsDone() returns true on the newly
     // created BinaryImplicationGraph.
-    return (void)FinishPropagation();
+    return FinishPropagation();
   }
 
   counters_.minimization_num_removed_literals +=
@@ -1579,9 +1636,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // TODO(user): If the watched literal didn't change, we could just rewrite
   // the clause while keeping the two watched literals at the beginning.
-  if (!clauses_propagator_->InprocessingRewriteClause(clause, candidate)) {
+  if (!clauses_propagator_->InprocessingRewriteClause(clause, candidate,
+                                                      clause_ids)) {
     model_is_unsat_ = true;
   }
+  return true;
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
@@ -1682,7 +1741,9 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
       }
 
       if (restart_->ShouldRestart()) {
-        Backtrack(assumption_level_);
+        if (!BacktrackAndPropagateReimplications(assumption_level_)) {
+          return StatusWithLog(INFEASIBLE);
+        }
       }
 
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
@@ -1697,6 +1758,10 @@ bool SatSolver::MinimizeByPropagation(double dtime,
   AdvanceDeterministicTime(time_limit_);
   const double threshold = time_limit_->GetElapsedDeterministicTime() + dtime;
 
+  // TODO(user): Fix that. For now the solver cannot be used properly to
+  // minimize clauses if assumption_level_ is not zero.
+  if (assumption_level_ > 0) return true;
+
   // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
   // while we are processing it.
   block_clause_deletion_ = true;
@@ -1710,8 +1775,7 @@ bool SatSolver::MinimizeByPropagation(double dtime,
     }
 
     if (to_minimize != nullptr) {
-      TryToMinimizeClause(to_minimize);
-      if (model_is_unsat_) return false;
+      if (!TryToMinimizeClause(to_minimize)) return false;
     } else if (minimize_new_clauses_only) {
       break;
     } else {
@@ -1803,6 +1867,63 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   return unsat_assumptions;
 }
 
+void SatSolver::GetClausesFixing(absl::Span<const Literal> literals,
+                                 std::vector<ClauseId>* clause_ids) {
+  SCOPED_TIME_STAT(&stats_);
+
+  // Unit clauses must come first. We put them in clause_ids directly. We put
+  // the others in non_unit_clause_ids and append them to clause_ids at the end.
+  std::vector<ClauseId> non_unit_clause_ids;
+  clause_ids->clear();
+
+  is_marked_.ClearAndResize(num_variables_);
+
+  int trail_index = 0;
+  for (const Literal lit : literals) {
+    CHECK(Assignment().LiteralIsAssigned(lit));
+    trail_index =
+        std::max(trail_index, trail_->Info(lit.Variable()).trail_index);
+    is_marked_.Set(lit.Variable());
+  }
+
+  // We just expand the conflict until we only have decisions. This is the same
+  // algorithm as in GetDecisionsFixing().
+  const int limit =
+      CurrentDecisionLevel() > 0 ? decisions_[0].trail_index : trail_->Index();
+  CHECK_LT(trail_index, trail_->Index());
+  while (true) {
+    // Find next marked literal to expand from the trail.
+    while (trail_index >= limit &&
+           !is_marked_[(*trail_)[trail_index].Variable()]) {
+      --trail_index;
+    }
+    if (trail_index < limit) break;
+    const Literal marked_literal = (*trail_)[trail_index];
+    --trail_index;
+
+    if (trail_->AssignmentType(marked_literal.Variable()) ==
+        AssignmentType::kSearchDecision) {
+      continue;
+    }
+
+    // Mark all the literals of its reason.
+    for (const Literal literal : trail_->Reason(marked_literal.Variable())) {
+      const BooleanVariable var = literal.Variable();
+      const int level = AssignmentLevel(var);
+      if (!is_marked_[var]) {
+        if (level > 0) {
+          is_marked_.Set(var);
+        } else {
+          clause_ids->push_back(trail_->GetUnitClauseId(var));
+        }
+      }
+    }
+    non_unit_clause_ids.push_back(ReasonClauseId(marked_literal));
+  }
+  clause_ids->insert(clause_ids->end(), non_unit_clause_ids.rbegin(),
+                     non_unit_clause_ids.rend());
+}
+
 void SatSolver::BumpReasonActivities(absl::Span<const Literal> literals) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : literals) {
@@ -1891,7 +2012,8 @@ bool SatSolver::IsConflictValid(absl::Span<const Literal> literals) {
     }
     const int level = AssignmentLevel(literals[i].Variable());
     if (level <= 0 || level >= highest_level) {
-      VLOG(2) << "Another at highest level or at level zero. level:" << level;
+      VLOG(2) << "Another at highest level or at level zero. level:" << level
+              << " highest: " << highest_level;
       return false;
     }
   }
@@ -2098,7 +2220,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
       clause_ids.push_back(old_clause_id);
       new_clause_id = clause_id_generator_->GetNextId();
       lrat_proof_handler_->AddInferredClause(
-          new_clause_id, {clause->begin(), new_size}, clause_ids, /*rat=*/{});
+          new_clause_id, {clause->begin(), new_size}, clause_ids);
       lrat_proof_handler_->DeleteClauses({old_clause_id});
       clauses_propagator_->SetClauseId(clause, new_clause_id);
     }
@@ -2143,6 +2265,8 @@ void SatSolver::ProcessNewlyFixedVariables() {
 }
 
 bool SatSolver::PropagationIsDone() const {
+  // If the time limit is reached, then this invariant do not hold.
+  if (time_limit_->LimitReached()) return true;
   for (SatPropagator* propagator : propagators_) {
     if (propagator->IsEmpty()) continue;
     if (!propagator->PropagationIsDone(*trail_)) return false;

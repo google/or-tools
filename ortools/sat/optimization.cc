@@ -61,9 +61,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
   absl::btree_set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(core->begin(), core->end());
 
-  solver->Backtrack(0);
-  solver->SetAssumptionLevel(0);
-  if (!solver->FinishPropagation()) return;
+  if (!solver->ResetToLevelZero()) return;
   while (!limit->LimitReached()) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
@@ -72,7 +70,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, solver->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
-    solver->Backtrack(target_level);
+    if (!solver->BacktrackAndPropagateReimplications(target_level)) return;
     while (!solver->ModelIsUnsat() && !limit->LimitReached() &&
            solver->CurrentDecisionLevel() < candidate.size()) {
       const Literal decision = candidate[solver->CurrentDecisionLevel()];
@@ -93,8 +91,7 @@ void MinimizeCoreWithPropagation(TimeLimit* limit, SatSolver* solver,
     moved_last.insert(candidate.back().Index());
   }
 
-  solver->Backtrack(0);
-  solver->SetAssumptionLevel(0);
+  if (!solver->ResetToLevelZero()) return;
   if (candidate.size() < core->size()) {
     VLOG(1) << "minimization with propag " << core->size() << " -> "
             << candidate.size();

@@ -23,7 +23,10 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -32,9 +35,11 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -73,7 +78,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
   // Mainly useful for development.
   double probing_time = 0.0;
-  const bool log_round_info = VLOG_IS_ON(1);
+  const bool log_round_info = VLOG_IS_ON(2);
 
   // We currently do the transformations in a given order and restart each time
   // we did something to make sure that the earlier step cannot strengthen more.
@@ -131,6 +136,12 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
       blocked_clause_simplifier_->DoOneRound(log_round_info);
     }
 
+    // TODO(user): Think about the right order in this function.
+    if (params_.inprocessing_use_congruence_closure()) {
+      RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+      RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
+    }
+
     // TODO(user): this break some binary graph invariant. Fix!
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
     RETURN_IF_FALSE(bounded_variable_elimination_->DoOneRound(log_round_info));
@@ -183,8 +194,8 @@ bool Inprocessing::InprocessingRound() {
   WallTimer wall_timer;
   wall_timer.Start();
 
-  const bool log_info = VLOG_IS_ON(1);
-  const bool log_round_info = VLOG_IS_ON(2);
+  const bool log_info = VLOG_IS_ON(2);
+  const bool log_round_info = VLOG_IS_ON(3);
   const double start_dtime = time_limit_->GetElapsedDeterministicTime();
 
   // Mainly useful for development.
@@ -236,7 +247,11 @@ bool Inprocessing::InprocessingRound() {
   RETURN_IF_FALSE(LevelZeroPropagate());
 
   // Probing.
-  if (params_.inprocessing_probing_dtime() > 0.0) {
+  //
+  // TODO(user): right now we can't run probing if the solver is configured
+  // with assumption. Fix.
+  if (params_.inprocessing_probing_dtime() > 0.0 &&
+      sat_solver_->AssumptionLevel() == 0) {
     const double saved_wtime = wall_timer.Get();
     ProbingOptions probing_options;
     probing_options.log_info = log_round_info;
@@ -266,6 +281,12 @@ bool Inprocessing::InprocessingRound() {
   const int64_t mini_num_removed =
       sat_solver_->counters().minimization_num_removed_literals -
       old_counter.minimization_num_removed_literals;
+
+  // TODO(user): Think about the right order in this function.
+  if (params_.inprocessing_use_congruence_closure()) {
+    RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+    RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
+  }
 
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(SubsumeAndStrenghtenRound(log_round_info));
@@ -315,7 +336,12 @@ bool Inprocessing::MoreRedundantVariableToClean() const {
 bool Inprocessing::LevelZeroPropagate() {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   clause_manager_->AttachAllClauses();
-  return sat_solver_->Propagate();
+  if (!sat_solver_->Propagate()) {
+    // This adds the UNSAT proof to the LRAT handler, if any.
+    sat_solver_->ProcessCurrentConflict();
+    return false;
+  }
+  return true;
 }
 
 // It make sense to do the pre-stamping right after the equivalence detection
@@ -391,10 +417,11 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     // We first do a loop to see if there is anything to do.
     for (const Literal l : clause->AsSpan()) {
       if (assignment_.LiteralIsTrue(l)) {
-        // TODO(user): we should output literal to the proof right away,
-        // currently if we remove clauses before fixing literal the proof is
-        // wrong.
-        if (!clause_manager_->InprocessingFixLiteral(l)) return false;
+        DCHECK(lrat_proof_handler_ == nullptr ||
+               trail_->GetUnitClauseId(l.Variable()) != kNoClauseId);
+        if (clause_manager_->GetDratProofHandler() != nullptr) {
+          clause_manager_->GetDratProofHandler()->AddClause({l});
+        }
         clause_manager_->InprocessingRemoveClause(clause);
         num_removed_literals += clause->size();
         removed = true;
@@ -412,8 +439,18 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
     // Rewrite the clause.
     new_clause.clear();
+    clause_ids_.clear();
     for (const Literal l : clause->AsSpan()) {
       const Literal r = implication_graph_->RepresentativeOf(l);
+      if (lrat_proof_handler_ != nullptr) {
+        if (!marked[r] && assignment_.LiteralIsFalse(r)) {
+          clause_ids_.push_back(trail_->GetUnitClauseId(r.Variable()));
+        }
+        if (r != l) {
+          clause_ids_.push_back(
+              implication_graph_->GetClauseId(l.Negated(), r));
+        }
+      }
       if (marked[r] || assignment_.LiteralIsFalse(r)) {
         continue;
       }
@@ -431,8 +468,12 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     for (const Literal l : new_clause) marked[l] = false;
     if (removed) continue;
 
+    if (lrat_proof_handler_ != nullptr) {
+      clause_ids_.push_back(clause_manager_->GetClauseId(clause));
+    }
     num_removed_literals += clause->size() - new_clause.size();
-    if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+    if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
+                                                    clause_ids_)) {
       return false;
     }
   }
@@ -476,9 +517,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // TODO(user): probably faster without the size indirection.
   std::vector<SatClause*> clauses =
       clause_manager_->AllClausesInCreationOrder();
-  std::stable_sort(
-      clauses.begin(), clauses.end(),
-      [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
+  absl::c_stable_sort(clauses, [](SatClause* a, SatClause* b) {
+    return a->size() < b->size();
+  });
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -492,7 +533,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   // Clause signatures in the same order as clauses.
   std::vector<uint64_t> signatures(clauses.size());
 
-  std::vector<Literal> candidates_for_removal;
+  // Literals which can be removed, and the reason why.
+  std::vector<std::pair<Literal, SatClause*>> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
     SatClause* clause = clauses[clause_index];
 
@@ -557,7 +599,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         }
         if (stengthen) {
           CHECK_NE(kNoLiteralIndex, to_remove);
-          candidates_for_removal.push_back(Literal(to_remove));
+          candidates_for_removal.emplace_back(Literal(to_remove), clauses[i]);
         }
       }
       if (removed) break;
@@ -580,7 +622,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
           }
         }
         if (stengthen) {
-          candidates_for_removal.push_back(l);
+          candidates_for_removal.emplace_back(l, clauses[i]);
         }
       }
     }
@@ -594,13 +636,21 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     if (!candidates_for_removal.empty()) {
       new_clause.clear();
       for (const Literal l : clause->AsSpan()) {
-        if (l == candidates_for_removal[0]) continue;
+        if (l == candidates_for_removal[0].first) continue;
         new_clause.push_back(l);
       }
       CHECK_EQ(new_clause.size() + 1, clause->size());
 
       num_removed_literals += clause->size() - new_clause.size();
-      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+      if (lrat_proof_handler_ != nullptr) {
+        if (!clause_manager_->InprocessingRewriteClause(
+                clause, new_clause,
+                {clause_manager_->GetClauseId(candidates_for_removal[0].second),
+                 clause_manager_->GetClauseId(clause)})) {
+          return false;
+        }
+      } else if (!clause_manager_->InprocessingRewriteClause(clause,
+                                                             new_clause)) {
         return false;
       }
       if (clause->size() == 0) continue;
@@ -820,7 +870,14 @@ bool StampingSimplifier::ComputeStamps() {
           lca = parents_[lca];
         }
         ++num_fixed_;
-        if (!clause_manager_->InprocessingFixLiteral(Literal(lca).Negated())) {
+        if (lrat_proof_handler_ != nullptr) {
+          clause_ids_.clear();
+          AppendImplicationChain(Literal(lca), Literal(top), clause_ids_);
+          AppendImplicationChain(Literal(lca), Literal(top).Negated(),
+                                 clause_ids_);
+        }
+        if (!clause_manager_->InprocessingFixLiteral(Literal(lca).Negated(),
+                                                     clause_ids_)) {
           return false;
         }
       }
@@ -837,6 +894,91 @@ bool StampingSimplifier::ComputeStamps() {
   return true;
 }
 
+namespace {
+class LratStampingHelper {
+ public:
+  void NewClause(absl::Span<const Literal> clause) {
+    clause_ = clause;
+    has_literals_to_remove_ = false;
+  }
+
+  void AddToRemove(int index, int reason, bool negated) {
+    if (!has_literals_to_remove_) {
+      has_literals_to_remove_ = true;
+      status_.assign(clause_.size(), {0, 0, false, false});
+    }
+    status_[index].reason = reason;
+    status_[index].negated = negated;
+    status_[index].to_remove = true;
+  }
+
+  void AppendImplicationChains(
+      absl::FunctionRef<void(Literal, Literal, bool)> append_chain) {
+    if (!has_literals_to_remove_) return;
+    // The proof for removing a literal 'a' can depend on another removed
+    // literal 'b'. In this case the proof that 'b' can be removed must appear
+    // before the one for 'a'. To ensure this we process them in topological
+    // order.
+    for (const Status& status : status_) {
+      if (status.to_remove && status_[status.reason].to_remove) {
+        status_[status.reason].num_children++;
+      }
+    }
+    reverse_removal_order_.clear();
+    for (int i = 0; i < status_.size(); ++i) {
+      if (status_[i].to_remove && status_[i].num_children == 0) {
+        reverse_removal_order_.push_back(i);
+      }
+    }
+    int num_visited = 0;
+    while (num_visited < reverse_removal_order_.size()) {
+      int parent = status_[reverse_removal_order_[num_visited++]].reason;
+      if (--status_[parent].num_children == 0) {
+        reverse_removal_order_.push_back(parent);
+      }
+    }
+    for (int i = reverse_removal_order_.size() - 1; i >= 0; --i) {
+      const int index = reverse_removal_order_[i];
+      const Status& status = status_[index];
+      DCHECK(status.to_remove);
+      if (status.negated) {
+        append_chain(clause_[status.reason].Negated(), clause_[index].Negated(),
+                     /*reversed=*/false);
+      } else {
+        append_chain(clause_[index], clause_[status.reason], /*reversed=*/true);
+      }
+    }
+  }
+
+ private:
+  // The status of each literal in the current clause. The fields other than
+  // `to_remove` are only used when `to_remove` is true.
+  struct Status {
+    // The index in the clause of the other literal explaining why this literal
+    // can be removed.
+    int reason;
+    // The number of literals which must be removed after this one.
+    int num_children;
+    // If false, the proof for removing the literal is "literal => ... =>
+    // clause[reason]" (reversed). If true, it is "not(clause[reason]) =>
+    // not(literal)" (not reversed). These are not equivalent in practice
+    // because the StampingSimplifier's parents_ tree (used to find the
+    // intermediate literals in the chain) may contain an implication but not
+    // its contrapositive.
+    bool negated;
+    // Whether the literal can be removed.
+    bool to_remove;
+  };
+
+  absl::Span<const Literal> clause_;
+  bool has_literals_to_remove_;
+  // Same size as `clause_`, initialized lazily.
+  std::vector<Status> status_;
+  // The index of the literals to remove in `clause_`, in reverse removal order.
+  std::vector<int> reverse_removal_order_;
+};
+}  // namespace
+
 bool StampingSimplifier::ProcessClauses() {
   struct Entry {
     int i;            // Index in the clause.
@@ -848,8 +990,11 @@ bool StampingSimplifier::ProcessClauses() {
   std::vector<int> to_remove;
   std::vector<Literal> new_clause;
   std::vector<Entry> entries;
+  LratStampingHelper lrat_helper;
+
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
+  clause_ids_.clear();
   for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
     const auto span = clause->AsSpan();
     if (span.empty()) continue;
@@ -884,6 +1029,9 @@ bool StampingSimplifier::ProcessClauses() {
     Entry top_entry;
     top_entry.end = -1;  // Sentinel.
     to_remove.clear();
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_helper.NewClause(span);
+    }
     for (const Entry& e : entries) {
       if (e.end < top_entry.end) {
         // We found an implication: top_entry => this entry.
@@ -898,14 +1046,23 @@ bool StampingSimplifier::ProcessClauses() {
             ++num_fixed_;
             if (top_entry.is_negated) {
               // not(span[i]) => span[i] so span[i] true.
-              // And the clause is satisfied (so we count as as subsumed).
-              if (!clause_manager_->InprocessingFixLiteral(span[top_entry.i])) {
+              // And the clause is satisfied (so we count it as subsumed).
+              if (lrat_proof_handler_ != nullptr) {
+                clause_ids_.clear();
+                AppendImplicationChain(lhs, rhs, clause_ids_);
+              }
+              if (!clause_manager_->InprocessingFixLiteral(span[top_entry.i],
+                                                           clause_ids_)) {
                 return false;
               }
             } else {
               // span[i] => not(span[i]) so span[i] false.
+              if (lrat_proof_handler_ != nullptr) {
+                clause_ids_.clear();
+                AppendImplicationChain(lhs, rhs, clause_ids_);
+              }
               if (!clause_manager_->InprocessingFixLiteral(
-                      span[top_entry.i].Negated())) {
+                      span[top_entry.i].Negated(), clause_ids_)) {
                 return false;
               }
               to_remove.push_back(top_entry.i);
@@ -927,6 +1084,9 @@ bool StampingSimplifier::ProcessClauses() {
           if (top_entry.is_negated) {
             // not(a) => not(b), we can remove b.
             to_remove.push_back(e.i);
+            if (lrat_proof_handler_ != nullptr) {
+              lrat_helper.AddToRemove(e.i, top_entry.i, /*negated=*/true);
+            }
           } else {
             // a => b, we can remove a.
             //
@@ -936,6 +1096,9 @@ bool StampingSimplifier::ProcessClauses() {
             // opportunites by not changing top_entry. Same in the other
             // branches.
             to_remove.push_back(top_entry.i);
+            if (lrat_proof_handler_ != nullptr) {
+              lrat_helper.AddToRemove(top_entry.i, e.i, /*negated=*/false);
+            }
           }
         }
       } else {
@@ -949,6 +1112,7 @@ bool StampingSimplifier::ProcessClauses() {
     if (!to_remove.empty() || entries.size() < span.size()) {
       new_clause.clear();
       gtl::STLSortAndRemoveDuplicates(&to_remove);
+      clause_ids_.clear();
       int to_remove_index = 0;
       for (int i = 0; i < span.size(); ++i) {
         if (to_remove_index < to_remove.size() &&
@@ -960,16 +1124,44 @@ bool StampingSimplifier::ProcessClauses() {
           clause_manager_->InprocessingRemoveClause(clause);
           continue;
         }
-        if (assignment_.LiteralIsFalse(span[i])) continue;
+        if (assignment_.LiteralIsFalse(span[i])) {
+          if (lrat_proof_handler_ != nullptr) {
+            clause_ids_.push_back(trail_->GetUnitClauseId(span[i].Variable()));
+          }
+          continue;
+        }
         new_clause.push_back(span[i]);
       }
+      if (lrat_proof_handler_ != nullptr) {
+        lrat_helper.AppendImplicationChains(
+            [&](Literal a, Literal b, bool reversed) {
+              AppendImplicationChain(a, b, clause_ids_, reversed);
+            });
+        clause_ids_.push_back(clause_manager_->GetClauseId(clause));
+      }
       num_removed_literals_ += span.size() - new_clause.size();
-      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
+                                                      clause_ids_)) {
         return false;
       }
     }
   }
   return true;
+}
+
+void StampingSimplifier::AppendImplicationChain(Literal a, Literal b,
+                                                std::vector<ClauseId>& chain,
+                                                bool reversed) {
+  const int initial_size = chain.size();
+  Literal l = b;
+  while (l != a) {
+    chain.push_back(implication_graph_->GetClauseId(
+        Literal(parents_[l]).Negated(), Literal(l)));
+    l = Literal(parents_[l]);
+  }
+  if (!reversed) {
+    std::reverse(clause_ids_.begin() + initial_size, clause_ids_.end());
+  }
 }
 
 void BlockedClauseSimplifier::DoOneRound(bool log_info) {
@@ -997,7 +1189,7 @@ void BlockedClauseSimplifier::DoOneRound(bool log_info) {
 
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
-  log_info |= VLOG_IS_ON(1);
+  log_info |= VLOG_IS_ON(2);
   LOG_IF(INFO, log_info) << "Blocked clause. num_blocked_clauses: "
                          << num_blocked_clauses_ << " dtime: " << dtime_
                          << " wtime: " << wall_timer.Get();
@@ -1266,7 +1458,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
-  log_info |= VLOG_IS_ON(1);
+  log_info |= VLOG_IS_ON(2);
   LOG_IF(INFO, log_info) << "BVE."
                          << " num_fixed: "
                          << trail_->Index() - saved_trail_index
@@ -1657,6 +1849,591 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   implication_graph_->RemoveBooleanVariable(var, &postsolve_->clauses);
   DeleteAllClausesContaining(lit);
   DeleteAllClausesContaining(not_lit);
+  return true;
+}
+
+GateCongruenceClosure::~GateCongruenceClosure() {
+  if (!VLOG_IS_ON(1)) return;
+  shared_stats_->AddStats({
+      {"GateCongruenceClosure/dtime(int)", static_cast<int64_t>(total_dtime_)},
+      {"GateCongruenceClosure/walltime(int)",
+       static_cast<int64_t>(total_wtime_)},
+      {"GateCongruenceClosure/gates", total_gates_},
+      {"GateCongruenceClosure/units", total_num_units_},
+      {"GateCongruenceClosure/equivalences", total_equivalences_},
+      {"GateCongruenceClosure/issue_duplicate",
+       num_duplicates_in_implications_list_},
+  });
+}
+
+// Note that this is the "hot" part of the algo, once we have the and gates,
+// the congruence closure should be quite fast.
+void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
+  std::vector<Literal> candidates;
+  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+    if (timer.WorkLimitIsReached()) break;
+    if (clause->size() == 0) continue;
+
+    // Used for an optimization below.
+    int min_num_implications = std::numeric_limits<int>::max();
+    Literal lit_with_less_implications;
+
+    const int clause_size = clause->size();
+    timer.TrackSimpleLoop(clause_size);
+    candidates.clear();
+    for (const Literal l : clause->AsSpan()) {
+      // TODO(user): using Implications() only considers pure binary
+      // clauses and not at_most_one. Also, if we do transitive reduction, we
+      // might skip important literals here. Maybe a better alternative is
+      // to detect clauses that "propagate" l back when we probe l...
+      const int num_implications = implication_graph_->Implications(l).size();
+      if (num_implications < min_num_implications) {
+        min_num_implications = num_implications;
+        lit_with_less_implications = l;
+      }
+
+      if (num_implications >= clause_size - 1) {
+        candidates.push_back(l);
+      }
+    }
+    if (candidates.empty()) continue;
+    if (min_num_implications == 0) continue;
+
+    marked_.ResetAllToFalse();
+    for (const Literal l : clause->AsSpan()) marked_.Set(l);
+    const auto is_clause_literal = marked_.const_view();
+
+    // There should be no duplicate in a clause.
+    // And also not lit and lit.Negated(), but we don't check that here.
+    CHECK_EQ(marked_.PositionsSetAtLeastOnce().size(), clause_size);
+
+    // These bitsets will contain the intersection of all the negated literals
+    // implied by one of the clause literal. It is used for an "optimization" as
+    // a literal can only be a "target" of a bool_and if it implies all other
+    // literals of the clause to false. So by contraposition, any literal should
+    // directly imply such a target to false.
+    //
+    // This relies on the fact that for any a => b directly stored in
+    // BinaryImplicationGraph, we should always have not(b) => not(a). This
+    // only applies to the result of Implications() though, not the one we
+    // can infer by transitivity.
+    //
+    // We start with the variables implied by "lit_with_less_implications" and
+    // at each iteration, we take the intersection with the variables implied by
+    // our current "target".
+    //
+    // TODO(user): SparseBitset<> does not support swap.
+    auto* is_potential_target = &seen_;
+    auto* next_is_potential_target = &next_seen_;
+
+    // If we don't have lit_with_less_implications => not(target) then we
+    // shouldn't have target => not(lit_with_less_implications).
+    {
+      is_potential_target->ResetAllToFalse();
+      is_potential_target->Set(lit_with_less_implications);
+      const absl::Span<const Literal> implications =
+          implication_graph_->Implications(lit_with_less_implications);
+      timer.TrackFastLoop(implications.size());
+      for (const Literal implied : implications) {
+        is_potential_target->Set(implied.Negated());
+      }
+    }
+
+    // This relies on having no duplicates.
+    for (const Literal target : candidates) {
+      if (!(*is_potential_target)[target]) continue;
+
+      int count = 0;
+      next_is_potential_target->ResetAllToFalse();
+      const absl::Span<const Literal> implications =
+          implication_graph_->Implications(target);
+      timer.TrackFastLoop(implications.size());
+      for (const Literal implied : implications) {
+        if (implied.Variable() == target.Variable()) {
+          // This shouldn't really happen except in corner case.
+          // We piggy back on that counter that track "issue".
+          ++num_duplicates_in_implications_list_;
+          continue;
+        }
+
+        if (is_clause_literal[implied.Negated()]) {
+          // Set next_is_potential_target to the intersection of
+          // is_potential_target and the one we see here.
+          if ((*is_potential_target)[implied.Negated()]) {
+            next_is_potential_target->Set(implied.Negated());
+          }
+          ++count;
+        }
+      }
+      std::swap(is_potential_target, next_is_potential_target);
+
+      // Target should imply all other literal in the base clause to false.
+      if (count != clause_size - 1) continue;
+
+      // We have an and_gate !
+      // Double-check no duplicate.
+      int second_count = 0;
+      for (const Literal implied : implications) {
+        if (implied.Variable() == target.Variable()) continue;
+        if (is_clause_literal[implied.Negated()]) {
+          ++second_count;
+          marked_.Clear(implied.Negated());
+        }
+      }
+
+      // TODO(user): this shouldn't really happen but it does (rarely). Debug.
+      if (count != second_count) {
+        ++num_duplicates_in_implications_list_;
+        break;
+      }
+
+      // Add the detected gate (its inputs are the negation of each clause
+      // literal other than the target).
+      gates_target_.push_back(target.Index());
+      const int index = gates_inputs_.Add({});
+      for (const Literal l : clause->AsSpan()) {
+        if (l == target) continue;
+        gates_inputs_.AppendToLastVector(l.NegatedIndex());
+      }
+      if (lrat_proof_handler_ != nullptr) {
+        gates_clause_.push_back(clause);
+      }
+
+      // Canonicalize.
+      absl::Span<LiteralIndex> gate = gates_inputs_[index];
+      std::sort(gate.begin(), gate.end());
+
+      // Even if we detected an and_gate from a base clause, we keep going
+      // as their could me more than one. In the extreme of an "exactly_one",
+      // a single base clause of size n will correspond to n and_gates !
+    }
+  }
+}
+
+namespace {
+// The IDs of the two implications of an equivalence between two gate targets.
+struct GateEquivalenceClauses {
+  ClauseId parent_implies_child;
+  ClauseId child_implies_parent;
+};
+
+// Helper class to add LRAT proofs for equivalent gate target literals.
+class LratGateCongruenceHelper {
+ public:
+  LratGateCongruenceHelper(const BinaryImplicationGraph* implication_graph,
+                           const ClauseManager* clause_manager,
+                           ClauseIdGenerator* clause_id_generator,
+                           LratProofHandler* lrat_proof_handler,
+                           absl::Span<const LiteralIndex> gates_target,
+                           absl::Span<const SatClause* const> gates_clause,
+                           DenseConnectedComponentsFinder& union_find)
+      : implication_graph_(implication_graph),
+        clause_manager_(clause_manager),
+        clause_id_generator_(clause_id_generator),
+        lrat_proof_handler_(lrat_proof_handler),
+        gates_target_(gates_target),
+        gates_clause_(gates_clause),
+        union_find_(union_find) {}
+
+  ~LratGateCongruenceHelper() {
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->DeleteClauses(to_delete_);
+    }
+  }
+
+  // Adds direct LRAT equivalence clauses between l and its representative r, as
+  // well as between each of its ancestor and r. Does nothing if r is equal to l
+  // or its parent. This must be called before union_find_.FindRoot(l).
+  void ShortenEquivalencesWithRepresentative(Literal l) {
+    std::vector<Literal> literals;
+    Literal representative;
+    // Append l and its ancestors, excluding the representative, to `literals`.
+    while (true) {
+      if (IsRepresentative(l)) {
+        representative = l;
+        break;
+      }
+      literals.push_back(l);
+      l = GetParent(l);
+    }
+
+    // Add a direct equivalence between each literal in `literals` and
+    // `representative` (except the last one, which already has a direct
+    // equivalence). This is done in reverse order so that the proof for each
+    // equivalence can use the one for the parent.
+    for (int i = literals.size() - 2; i >= 0; --i) {
+      const Literal parent = literals[i + 1];
+      const Literal child = literals[i];
+      DCHECK(parent_equivalence_.contains(parent));
+      DCHECK(parent_equivalence_.contains(child));
+      GateEquivalenceClauses& parent_clauses = parent_equivalence_[parent];
+      GateEquivalenceClauses& child_clauses = parent_equivalence_[child];
+
+      const ClauseId rep_implies_child = clause_id_generator_->GetNextId();
+      lrat_proof_handler_->AddInferredClause(
+          rep_implies_child, {representative.Negated(), child},
+          {parent_clauses.parent_implies_child,
+           child_clauses.parent_implies_child});
+      const ClauseId child_implies_rep = clause_id_generator_->GetNextId();
+      lrat_proof_handler_->AddInferredClause(
+          child_implies_rep, {child.Negated(), representative},
+          {child_clauses.child_implies_parent,
+           parent_clauses.child_implies_parent});
+
+      child_clauses.parent_implies_child = rep_implies_child;
+      child_clauses.child_implies_parent = child_implies_rep;
+      to_delete_.push_back(rep_implies_child);
+      to_delete_.push_back(child_implies_rep);
+    }
+    if (!literals.empty()) {
+      // Make sure the parent links in union_find_ are shorten too, to keep the
+      // consistency between the two data structures.
+      union_find_.FindRoot(literals[0].Index().value());
+    }
+  }
+
+  // Returns an LRAT clause rep(gates_target[gate_a_id]) =>
+  // rep(gates_target[gate_b_id]). ShortenEquivalencesWithRepresentative() must
+  // be called first on the two gate target literals.
+  ClauseId AddGateTargetImplication(int gate_a_id, int gate_b_id) {
+    const Literal a = Literal(gates_target_[gate_a_id]);
+    const Literal b = Literal(gates_target_[gate_b_id]);
+    const Literal rep_a = GetParent(a);
+    const Literal rep_b = GetParent(b);
+    DCHECK(IsRepresentative(rep_a));
+    DCHECK(IsRepresentative(rep_b));
+    // Compute a sequence of clause IDs proving that rep(a) => rep(b).
+    // The following only works for and gates.
+    std::vector<ClauseId> clause_ids;
+    // rep(a) => a:
+    Append(clause_ids, GetRepresentativeImpliesLiteralClause(a));
+    // For each original input l of gate_a_id, a => l => rep(l). The original
+    // inputs are the negation of each clause literal other than the target.
+    // TODO(user): this can add redundant clauses if two original inputs
+    // have the same representative.
+    for (const Literal lit : gates_clause_[gate_a_id]->AsSpan()) {
+      if (lit == a) continue;
+      const Literal l = lit.Negated();
+      clause_ids.push_back(implication_graph_->GetClauseId(a.Negated(), l));
+      ShortenEquivalencesWithRepresentative(l);
+      Append(clause_ids, GetLiteralImpliesRepresentativeClause(l));
+    }
+    // For each original input l of b, rep(l) => l. The original inputs are
+    // the negation of each gate clause literal other than its target b.
+    for (const Literal lit : gates_clause_[gate_b_id]->AsSpan()) {
+      if (lit == b) continue;
+      const Literal l = lit.Negated();
+      ShortenEquivalencesWithRepresentative(l);
+      Append(clause_ids, GetRepresentativeImpliesLiteralClause(l));
+    }
+    // The original inputs of gate_b_id imply its target b:
+    clause_ids.push_back(
+        clause_manager_->GetClauseId(gates_clause_[gate_b_id]));
+    // b => rep(b):
+    Append(clause_ids, GetLiteralImpliesRepresentativeClause(b));
+
+    const ClauseId clause_id = clause_id_generator_->GetNextId();
+    lrat_proof_handler_->AddInferredClause(clause_id, {rep_a.Negated(), rep_b},
+                                           clause_ids);
+    return clause_id;
+  }
+
+  void AddGateEquivalenceClauses(Literal child, ClauseId child_implies_parent,
+                                 ClauseId parent_implies_child) {
+    DCHECK(!parent_equivalence_.contains(child));
+    parent_equivalence_[child] = {
+        .parent_implies_child = parent_implies_child,
+        .child_implies_parent = child_implies_parent,
+    };
+  }
+
+  // Appends to `clause_ids` the clauses "gates_target[gate_id] => l => rep" and
+  // "gates_target[gate_id] => m => not(rep)", proving that the gate target
+  // literal can be fixed to false (assuming this is an and gate). A
+  // precondition is that two original inputs l and m with rep(l) = rep and
+  // rep(m) = not(rep) must exist.
+  void AppendFixAndGateTargetClauses(
+      int gate_id, Literal rep, absl::InlinedVector<ClauseId, 4>& clause_ids) {
+    const Literal target = Literal(gates_target_[gate_id]);
+    LiteralIndex l_index = kNoLiteralIndex;
+    LiteralIndex m_index = kNoLiteralIndex;
+    // Find l and m in the original inputs (the negation of each gate clause
+    // literal other than its target).
+    for (const Literal lit : gates_clause_[gate_id]->AsSpan()) {
+      if (l_index != kNoLiteralIndex && m_index != kNoLiteralIndex) break;
+      const Literal l = lit.Negated();
+      ShortenEquivalencesWithRepresentative(l);
+      const Literal rep_l = GetParent(l);
+      if (rep_l == rep) l_index = l.Index();
+      if (rep_l == rep.Negated()) m_index = l.Index();
+    }
+    clause_ids.push_back(
+        implication_graph_->GetClauseId(target.Negated(), Literal(l_index)));
+    Append(clause_ids, GetLiteralImpliesRepresentativeClause(Literal(l_index)));
+    clause_ids.push_back(
+        implication_graph_->GetClauseId(target.Negated(), Literal(m_index)));
+    Append(clause_ids, GetLiteralImpliesRepresentativeClause(Literal(m_index)));
+  }
+
+ private:
+  bool IsRepresentative(Literal l) const { return GetParent(l) == l; }
+
+  Literal GetParent(Literal l) const {
+    return Literal(LiteralIndex(union_find_.GetParent(l.Index().value())));
+  }
+
+  // ShortenEquivalencesWithRepresentative(l) must be called first.
+  ClauseId GetLiteralImpliesRepresentativeClause(Literal l) const {
+    const auto it = parent_equivalence_.find(l);
+    if (it == parent_equivalence_.end()) return kNoClauseId;
+    return it->second.child_implies_parent;
+  }
+
+  // ShortenEquivalencesWithRepresentative(l) must be called first.
+  ClauseId GetRepresentativeImpliesLiteralClause(Literal l) const {
+    const auto it = parent_equivalence_.find(l);
+    if (it == parent_equivalence_.end()) return kNoClauseId;
+    return it->second.parent_implies_child;
+  }
+
+  template <typename Vector>
+  static void Append(Vector& clauses, ClauseId new_clause) {
+    if (new_clause != kNoClauseId) {
+      clauses.push_back(new_clause);
+    }
+  }
+
+  const BinaryImplicationGraph* implication_graph_;
+  const ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  absl::Span<const LiteralIndex> gates_target_;
+  absl::Span<const SatClause* const> gates_clause_;
+  DenseConnectedComponentsFinder& union_find_;
+
+  // For each gate target with a parent in `union_find_` different from itself,
+  // the equivalence clauses with this parent literal.
+  absl::flat_hash_map<Literal, GateEquivalenceClauses> parent_equivalence_;
+  // Equivalence clauses which are not needed after the current round.
+  std::vector<ClauseId> to_delete_;
+};
+}  // namespace
+
+bool GateCongruenceClosure::DoOneRound(bool log_info) {
+  if (implication_graph_->IsEmpty()) return true;
+  PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
+  timer.OverrideLogging(log_info);
+
+  const int num_literals(sat_solver_->NumVariables() * 2);
+  marked_.ClearAndResize(Literal(num_literals));
+  seen_.ClearAndResize(Literal(num_literals));
+  next_seen_.ClearAndResize(Literal(num_literals));
+
+  gates_target_.clear();
+  gates_inputs_.clear();
+  gates_clause_.clear();
+
+  // TODO(user): Extract more gates, and encode store their type.
+  ExtractAndGates(timer);
+  timer.AddCounter("and_gates", gates_inputs_.size());
+
+  // If two gates have the same type and the same inputs, their targets are
+  // equivalent. We use an hash set to detect that the inputs are the same.
+  absl::flat_hash_set<int, GateHash, GateEq> gate_set(
+      /*capacity=*/gates_inputs_.size(), GateHash(&gates_inputs_),
+      GateEq(&gates_inputs_));
+
+  // Used to find representatives as we detect equivalent literal.
+  DenseConnectedComponentsFinder union_find;
+  union_find.SetNumberOfNodes(num_literals);
+
+  // This will also be updated as we detect equivalences and allows to find
+  // all the gates with a given input literal, taking into account all its
+  // equivalences.
+  //
+  // Tricky: we need to resize this to num_literals because the union_find that
+  // merges target can choose for a representative a literal that is not in the
+  // set of gate inputs.
+  MergeableOccurrenceList<LiteralIndex, int> input_literals_to_gate;
+  input_literals_to_gate.ResetFromTranspose(gates_inputs_, num_literals);
+
+  LratGateCongruenceHelper lrat_helper(
+      implication_graph_, clause_manager_, clause_id_generator_,
+      lrat_proof_handler_, gates_target_, gates_clause_, union_find);
+
+  // Starts with all gates in the queue.
+  const int num_gates = gates_inputs_.size();
+  std::vector<bool> in_queue(num_gates, true);
+  std::vector<int> queue(num_gates);
+  for (int id = 0; id < num_gates; ++id) queue[id] = id;
+
+  // Main loop.
+  int num_units = 0;
+  int num_processed = 0;
+  int num_equivalences = 0;
+  while (!queue.empty()) {
+    ++num_processed;
+    const int id = queue.back();
+    queue.pop_back();
+    in_queue[id] = false;
+
+    // Tricky: the hash-map might contain id not yet canonicalized. And in
+    // particular might already contain the id we are processing.
+    //
+    // The first pass will check equivalence with the "non-canonical
+    // version" and remove id if it was already there. The second will do it on
+    // the canonicalized version.
+    for (int pass = 0; pass < 2; ++pass) {
+      int other_id = -1;
+      bool is_equivalent = false;
+      if (pass == 0) {
+        const auto it = gate_set.find(id);
+        if (it != gate_set.end()) {
+          other_id = *it;
+          if (id == other_id) {
+            // This gate was already in the set, remove it before we
+            // insert its potentially different canonicalized version.
+            gate_set.erase(it);
+          } else {
+            is_equivalent = true;
+          }
+        }
+      } else {
+        const auto [it, inserted] = gate_set.insert(id);
+        if (!inserted) {
+          other_id = *it;
+          is_equivalent = true;
+        }
+      }
+
+      if (is_equivalent) {
+        CHECK_NE(id, other_id);
+        CHECK_GE(other_id, 0);
+        CHECK_EQ(absl::Span<const LiteralIndex>(gates_inputs_[id]),
+                 absl::Span<const LiteralIndex>(gates_inputs_[other_id]));
+
+        // We detected a <=> b (or, equivalently, rep(a) <=> rep(b)).
+        const LiteralIndex a = gates_target_[id];
+        const LiteralIndex b = gates_target_[other_id];
+
+        input_literals_to_gate.RemoveFromFutureOutput(id);
+        if (lrat_proof_handler_ != nullptr) {
+          lrat_helper.ShortenEquivalencesWithRepresentative(Literal(a));
+          lrat_helper.ShortenEquivalencesWithRepresentative(Literal(b));
+        }
+        const LiteralIndex rep_a(union_find.FindRoot(a.value()));
+        const LiteralIndex rep_b(union_find.FindRoot(b.value()));
+        if (rep_a != rep_b) {
+          ++num_equivalences;
+          const Literal rep_lit_a(rep_a);
+          const Literal rep_lit_b(rep_b);
+          ClauseId rep_a_implies_rep_b = kNoClauseId;
+          ClauseId rep_b_implies_rep_a = kNoClauseId;
+          if (lrat_proof_handler_ != nullptr) {
+            rep_a_implies_rep_b =
+                lrat_helper.AddGateTargetImplication(id, other_id);
+            rep_b_implies_rep_a =
+                lrat_helper.AddGateTargetImplication(other_id, id);
+          }
+          if (!implication_graph_->AddBinaryClause(
+                  rep_a_implies_rep_b, rep_lit_a.Negated(), rep_lit_b) ||
+              !implication_graph_->AddBinaryClause(
+                  rep_b_implies_rep_a, rep_lit_b.Negated(), rep_lit_a)) {
+            return false;
+          }
+
+          union_find.AddEdge(rep_a.value(), rep_b.value());
+          const LiteralIndex rep(union_find.FindRoot(rep_b.value()));
+          const LiteralIndex to_merge = rep == rep_a ? rep_b : rep_a;
+          input_literals_to_gate.MergeInto(to_merge, rep);
+          if (lrat_proof_handler_ != nullptr) {
+            if (rep == rep_a) {
+              lrat_helper.AddGateEquivalenceClauses(
+                  rep_lit_b, rep_b_implies_rep_a, rep_a_implies_rep_b);
+            } else {
+              lrat_helper.AddGateEquivalenceClauses(
+                  rep_lit_a, rep_a_implies_rep_b, rep_b_implies_rep_a);
+            }
+          }
+
+          // Re-add to the queue all gates with touched inputs.
+          //
+          // TODO(user): I think we could only add the gates of "to_merge"
+          // before we merge. This part of the code is quite quick in any case.
+          for (const int gate_id : input_literals_to_gate[rep]) {
+            if (in_queue[gate_id]) continue;
+            queue.push_back(gate_id);
+            in_queue[gate_id] = true;
+          }
+        }
+        break;
+      }
+
+      // Canonicalize.
+      //
+      // Note that sorting works for and_gate and any gate that does not depend
+      // on the order of its inputs. But if we add more fancy functions, we will
+      // need to be careful.
+      //
+      // TODO(user): Because we fix literal, we should also deal with fixed
+      // literals here. Right now we defer this to a later step, but it might
+      // reduce the cascading effect of finding more equivalences.
+      if (pass == 0) {
+        marked_.ResetAllToFalse();
+        absl::Span<LiteralIndex> inputs = gates_inputs_[id];
+        int new_size = 0;
+        bool is_unit = false;
+        for (const LiteralIndex l : inputs) {
+          if (lrat_proof_handler_ != nullptr) {
+            lrat_helper.ShortenEquivalencesWithRepresentative(Literal(l));
+          }
+          const LiteralIndex rep(union_find.FindRoot(l.value()));
+          if (marked_[rep]) continue;
+
+          // This only works for and-gate, if both lit and not(lit) are input,
+          // then target must be false.
+          if (marked_[Literal(rep).Negated()]) {
+            is_unit = true;
+            const Literal to_fix = Literal(gates_target_[id]).Negated();
+            absl::InlinedVector<ClauseId, 4> clause_ids;
+            if (lrat_proof_handler_ != nullptr) {
+              lrat_helper.AppendFixAndGateTargetClauses(id, Literal(rep),
+                                                        clause_ids);
+            }
+            if (!clause_manager_->InprocessingFixLiteral(to_fix, clause_ids)) {
+              return false;
+            }
+            break;
+          }
+
+          marked_.Set(rep);
+          inputs[new_size++] = rep;
+        }
+
+        if (is_unit) {
+          ++num_units;
+          input_literals_to_gate.RemoveFromFutureOutput(id);
+          break;  // Abort the passes loop.
+        }
+
+        // We need to re-sort, even if the new_size is the same, since
+        // representatives might be different.
+        CHECK_GT(new_size, 0);
+        std::sort(inputs.begin(), inputs.begin() + new_size);
+        gates_inputs_.Shrink(id, new_size);
+      }
+    }
+  }
+
+  total_wtime_ += timer.wtime();
+  total_dtime_ += timer.deterministic_time();
+  total_gates_ += num_gates;
+  total_equivalences_ += num_equivalences;
+  total_num_units_ += num_units;
+
+  timer.AddCounter("units", num_units);
+  timer.AddCounter("processed", num_processed);
+  timer.AddCounter("equivalences", num_equivalences);
   return true;
 }
 

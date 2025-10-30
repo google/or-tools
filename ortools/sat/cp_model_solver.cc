@@ -1058,15 +1058,13 @@ class FullProblemSolver : public SubSolver {
     // by registering the SharedStatistics class with LNS local model.
     shared_->RegisterSharedClassesInLocalModel(&local_model_);
 
-    if (use_lrat_checker) {
-      lrat_proof_handler_ = std::make_unique<LratProofHandler>(
-          local_parameters.debug_crash_if_lrat_check_fails());
-      local_model_.GetOrCreate<SatSolver>()->SetLratProofHandler(
-          lrat_proof_handler_.get());
-    }
     if (drat_proof_handler != nullptr) {
       local_model_.GetOrCreate<SatSolver>()->SetDratProofHandler(
           drat_proof_handler);
+    }
+    if (use_lrat_checker) {
+      lrat_proof_handler_ = std::make_unique<LratProofHandler>(&local_model_);
+      local_model_.Register<LratProofHandler>(lrat_proof_handler_.get());
     }
 
     // Setup the local logger, in multi-thread log_search_progress should be
@@ -2926,7 +2924,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
       // Crash.
       LOG(FATAL) << "Infeasible solution!"
-                 << " source': " << response.solution_info() << "'"
+                 << " source: '" << response.solution_info() << "'"
                  << " dumped CpSolverResponse to '" << file << "'.";
     }
   };

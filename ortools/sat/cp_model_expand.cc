@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <limits>
 #include <optional>
 #include <utility>
@@ -89,7 +90,7 @@ class EnforcedDomains {
       return RefIsPositive(ref) ? it->second.Contains(value)
                                 : it->second.Contains(-value);
     }
-    return context_->DomainContains(ref, value);
+    return context_->DomainOf(ref).Contains(value);
   }
 
   bool DomainContains(const LinearExpressionProto& expr, int64_t value) const {
@@ -958,6 +959,121 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
   const int index_var = index.vars(0);
   const LinearExpressionProto& target = element.linear_target();
 
+  // Uniqueness is only valid if presolve is on.
+  const bool presolve_is_on = context->params().cp_model_presolve();
+
+  if (presolve_is_on && context->VariableIsUniqueAndRemovable(index_var)) {
+    // Check index_var does not appear in the array of expressions.
+    bool is_unique = true;
+    for (int i = 0; i < element.exprs_size(); ++i) {
+      if (AffineExpressionContainsVar(element.exprs(i), index_var)) {
+        is_unique = false;
+        break;
+      }
+    }
+    if (is_unique) {
+      const int64_t min_index = context->DomainOf(index_var).Min();
+      ConstraintProto* mapping_ct =
+          context->NewMappingConstraint(__FILE__, __LINE__);
+      mapping_ct->mutable_linear()->add_vars(index_var);
+      mapping_ct->mutable_linear()->add_coeffs(1);
+      int64_t mapping_offset = min_index;
+
+      BoolArgumentProto* exactly_one =
+          context->AddEnforcedConstraint(ct)->mutable_exactly_one();
+
+      const Domain index_domain = context->DomainOf(index_var);
+      for (const int64_t v : index_domain.Values()) {
+        const int64_t literal =
+            context->NewBoolVar("element with unused index expansion");
+        context->solution_crush().MaybeSetLiteralToValueEncoding(literal,
+                                                                 index_var, v);
+
+        // Mapping constraint.
+        const int64_t mapping_coeff = (v - min_index);
+        if (mapping_coeff != 0) {
+          if (RefIsPositive(literal)) {
+            mapping_ct->mutable_linear()->add_vars(literal);
+            mapping_ct->mutable_linear()->add_coeffs(-mapping_coeff);
+          } else {
+            mapping_offset += mapping_coeff;
+            mapping_ct->mutable_linear()->add_vars(PositiveRef(literal));
+            mapping_ct->mutable_linear()->add_coeffs(mapping_coeff);
+          }
+        }
+
+        // Encoding substitute.
+        exactly_one->add_literals(literal);
+
+        // Element expansion.
+        const int64_t index_value = AffineExpressionValueAt(index, v);
+        const LinearExpressionProto& expr = ct->element().exprs(index_value);
+        ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
+        imply->add_enforcement_literal(literal);
+        FillDomainInProto(0, imply->mutable_linear());
+        AddLinearExpressionToLinearConstraint(target, -1,
+                                              imply->mutable_linear());
+        AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+        context->CanonicalizeLinearConstraint(imply);
+      }
+
+      mapping_ct->mutable_linear()->add_domain(mapping_offset);
+      mapping_ct->mutable_linear()->add_domain(mapping_offset);
+
+      context->UpdateNewConstraintsVariableUsage();
+      context->MarkVariableAsRemoved(index_var);
+      context->UpdateRuleStats(
+          "element: expanded variable element with unused index");
+      ct->Clear();
+      return;
+    }
+  }
+
+  if (presolve_is_on && !context->IsFixed(target) &&
+      context->VariableIsUniqueAndRemovable(target.vars(0))) {
+    DCHECK_EQ(target.vars_size(), 1);
+    const int target_var = target.vars(0);
+    bool domain_is_exact = true;
+    const Domain target_domain =
+        context->DomainOf(target_var)
+            .MultiplicationBy(target.coeffs(0), &domain_is_exact)
+            .AdditionWith(Domain(target.offset()));
+    // Check target_var does not appear in the array of expressions.
+    bool is_unique = true;
+    for (int i = 0; i < element.exprs_size(); ++i) {
+      if (AffineExpressionContainsVar(element.exprs(i), target_var)) {
+        is_unique = false;
+        break;
+      }
+    }
+
+    if (domain_is_exact && is_unique) {
+      for (const int64_t v : context->DomainOf(index_var).Values()) {
+        const int64_t index_lit =
+            context->GetOrCreateVarValueEncoding(index_var, v);
+        const int64_t index_value = AffineExpressionValueAt(index, v);
+        DCHECK_GE(index_value, 0);
+        DCHECK_LT(index_value, ct->element().exprs_size());
+        const LinearExpressionProto& expr = ct->element().exprs(index_value);
+
+        ConstraintProto* const imply = context->AddEnforcedConstraint(ct);
+        imply->add_enforcement_literal(index_lit);
+        FillDomainInProto(target_domain, imply->mutable_linear());
+        AddLinearExpressionToLinearConstraint(expr, 1, imply->mutable_linear());
+        context->CanonicalizeLinearConstraint(imply);
+      }
+      context->UpdateNewConstraintsVariableUsage();
+      context->UpdateRuleStats(
+          "element: expanded variable element with unused target");
+      context->MarkVariableAsRemoved(target_var);
+      context->NewMappingConstraint(*ct, __FILE__, __LINE__);
+      ct->Clear();
+      return;
+    } else {
+      context->UpdateRuleStats("TODO element: target not used elsewhere");
+    }
+  }
+
   const auto add_imply_eq_value_ct = [ct, context](
                                          const LinearExpressionProto& expr,
                                          int64_t value, int literal) {
@@ -1659,7 +1775,7 @@ void ProcessOneCompressedColumn(
     // tuple literal => not(last_value) instead?
     auto* literals = ct->mutable_bool_or();
     for (const int64_t v : values[i]) {
-      DCHECK(context->DomainContains(variable, v));
+      DCHECK(context->DomainOf(variable).Contains(v));
       literals->add_literals(context->GetOrCreateVarValueEncoding(variable, v));
     }
   }
@@ -1719,8 +1835,8 @@ void AddSizeTwoTable(
   for (const auto& tuple : tuples) {
     const int64_t left_value(tuple[0]);
     const int64_t right_value(tuple[1]);
-    DCHECK(context->DomainContains(left_var, left_value));
-    DCHECK(context->DomainContains(right_var, right_value));
+    DCHECK(context->DomainOf(left_var).Contains(left_value));
+    DCHECK(context->DomainOf(right_var).Contains(right_value));
 
     const int left_literal =
         context->GetOrCreateVarValueEncoding(left_var, left_value);
@@ -2065,7 +2181,7 @@ void CompressAndExpandPositiveTable(ConstraintProto* ct,
       }
       for (const int64_t v : compressed_table[i][var_index]) {
         DCHECK_NE(v, kTableAnyValue);
-        DCHECK(context->DomainContains(vars[var_index], v));
+        DCHECK(context->DomainOf(vars[var_index]).Contains(v));
         var_index_to_value_count[var_index][v]++;
       }
     }
@@ -2203,7 +2319,7 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
     bool keep = true;
     for (int var_index = 0; var_index < num_exprs; ++var_index) {
       const int64_t value = tuples[tuple_index][var_index];
-      if (!context->DomainContains(vars[var_index], value)) {
+      if (!context->VarCanTakeValue(vars[var_index], value)) {
         keep = false;
         break;
       }

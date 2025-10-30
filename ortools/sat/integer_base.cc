@@ -132,24 +132,43 @@ bool LinearExpression2::IsCanonicalized() const {
   return coeffs[0] > 0 && coeffs[1] > 0;
 }
 
-AffineExpression LinearExpression2::GetAffineLowerBound(int var_index,
-                                                        IntegerValue lb) const {
+AffineExpression LinearExpression2::GetAffineLowerBound(
+    int var_index, IntegerValue expr_lb, IntegerValue other_var_lb) const {
   DCHECK_GE(var_index, 0);
   DCHECK_LT(var_index, 2);
-
-  // Note that it is tempting to support the case of a non-unit coefficient, but
-  // we would need to bound (c1/c0)*other_var and getting a good bound would
-  // depend on the sign of the other variable.
-  DCHECK_EQ(coeffs[var_index], 1);
+  const IntegerValue coeff = coeffs[var_index];
   const IntegerVariable var = vars[var_index];
   DCHECK_NE(var, kNoIntegerVariable);
   const IntegerVariable other_var = vars[1 - var_index];
   const IntegerValue other_coeff = coeffs[1 - var_index];
   if (other_var == kNoIntegerVariable) {
-    return AffineExpression(lb);
+    return AffineExpression(expr_lb);
   }
   DCHECK_GT(other_coeff, 0);
-  return AffineExpression(other_var, -other_coeff, lb);
+
+  if (coeff == 1) {
+    return AffineExpression(other_var, -other_coeff, expr_lb);
+  }
+  DCHECK_GT(coeff, 1);
+  DCHECK_EQ(std::gcd(other_coeff.value(), coeff.value()), 1);
+
+  // We need to handle the case where the coefficient is not unit. We have
+  // a * x + b * y >= expr_lb  (with a > 1 and b >= 1).
+  // x >= expr_lb / a - (b / a) * y
+  //
+  // We write b = ceil(b / a) * a - residual, with residual > 0 (since
+  // GCD(a, b)==1). Then we have:
+  // x >= expr_lb / a - ceil(b / a) * y + residual * y / a
+  // x >= expr_lb / a - ceil(b / a) * y + residual * y_lb / a
+  // x >= -ceil(b / a) * y + (expr_lb + residual * y_lb) / a
+  // But now we have
+  // x + ceil(b / a) * y >= (expr_lb + residual * y_lb) / a
+  // And since the lhs is an integer value, this is equivalent to
+  // x + ceil(b / a) * y >= ceil((expr_lb + residual * y_lb) / a)
+  const IntegerValue ceil_coeff_ratio = CeilRatio(other_coeff, coeff);
+  const IntegerValue residual = coeff * ceil_coeff_ratio - other_coeff;
+  return AffineExpression(other_var, -ceil_coeff_ratio,
+                          CeilRatio(expr_lb + residual * other_var_lb, coeff));
 }
 
 void LinearExpression2::MakeVariablesPositive() {

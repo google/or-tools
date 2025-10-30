@@ -27,6 +27,7 @@
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/flags/declare.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -89,11 +90,11 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
 // Applies the given function to all variables/literals/intervals indices of the
 // constraint. This function is used in a few places to have a "generic" code
 // dealing with constraints.
-void ApplyToAllVariableIndices(const std::function<void(int*)>& function,
+void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
-void ApplyToAllLiteralIndices(const std::function<void(int*)>& function,
+void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
                               ConstraintProto* ct);
-void ApplyToAllIntervalIndices(const std::function<void(int*)>& function,
+void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
