@@ -32,6 +32,7 @@
 #include "ortools/math_opt/solvers/glpk.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
 #include "ortools/math_opt/solvers/highs.pb.h"
+#include "ortools/math_opt/solvers/xpress.pb.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/status_macros.h"
 
@@ -213,6 +214,25 @@ GlpkParameters GlpkParameters::FromProto(const GlpkParametersProto& proto) {
   return result;
 }
 
+XpressParametersProto XpressParameters::Proto() const {
+  XpressParametersProto result;
+  for (const auto& [key, val] : param_values) {
+    XpressParametersProto::Parameter& p = *result.add_parameters();
+    p.set_name(key);
+    p.set_value(val);
+  }
+  return result;
+}
+
+XpressParameters XpressParameters::FromProto(
+    const XpressParametersProto& proto) {
+  XpressParameters result;
+  for (const XpressParametersProto::Parameter& p : proto.parameters()) {
+    result.param_values[p.name()] = p.value();
+  }
+  return result;
+}
+
 SolveParametersProto SolveParameters::Proto() const {
   SolveParametersProto result;
   result.set_enable_output(enable_output);
@@ -265,6 +285,7 @@ SolveParametersProto SolveParameters::Proto() const {
   *result.mutable_pdlp() = pdlp;
   *result.mutable_glpk() = glpk.Proto();
   *result.mutable_highs() = highs;
+  *result.mutable_xpress() = xpress.Proto();
   return result;
 }
 
@@ -324,6 +345,7 @@ absl::StatusOr<SolveParameters> SolveParameters::FromProto(
   result.pdlp = proto.pdlp();
   result.glpk = GlpkParameters::FromProto(proto.glpk());
   result.highs = proto.highs();
+  result.xpress = XpressParameters::FromProto(proto.xpress());
   return result;
 }
 
