@@ -35,16 +35,17 @@
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+OR_DLL ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
 
 namespace operations_research {
 namespace sat {
