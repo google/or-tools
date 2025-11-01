@@ -29,6 +29,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -44,7 +45,7 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
 
 namespace operations_research {
 namespace sat {
