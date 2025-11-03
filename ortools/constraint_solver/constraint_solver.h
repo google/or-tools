@@ -104,10 +104,10 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
 
-#if !defined(SWIG)
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(int64_t, cp_random_seed);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_disable_solve);
-#endif  // !defined(SWIG)
+#endif  // SWIG
 
 class File;
 
@@ -3609,7 +3609,11 @@ class Demon : public BaseObject {
 };
 
 /// Model visitor.
-class OR_DLL ModelVisitor : public BaseObject {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    ModelVisitor : public BaseObject {
  public:
   /// Constraint and Expression types.
   static const char kAbs[];
@@ -4825,7 +4829,11 @@ class ImprovementSearchLimit : public SearchLimit {
 /// cannot be accessed any more. An interval var is automatically marked
 /// as unperformed when it is not consistent anymore (start greater
 /// than end, duration < 0...)
-class OR_DLL IntervalVar : public PropagationBaseObject {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    IntervalVar : public PropagationBaseObject {
  public:
   /// The smallest acceptable value to be returned by StartMin()
   static const int64_t kMinValidValue;

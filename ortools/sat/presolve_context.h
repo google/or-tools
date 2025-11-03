@@ -45,7 +45,9 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
+#endif
 
 namespace operations_research {
 namespace sat {

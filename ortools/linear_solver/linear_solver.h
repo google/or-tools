@@ -166,9 +166,11 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
 OR_DLL ABSL_DECLARE_FLAG(bool, log_verification_errors);
 OR_DLL ABSL_DECLARE_FLAG(bool, verify_solution);
+#endif
 
 namespace operations_research {
 
@@ -1470,7 +1472,11 @@ class MPConstraint {
  * instead. We need to figure out how to deal with the subtleties of
  * the default values.
  */
-class OR_DLL MPSolverParameters {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    MPSolverParameters {
  public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
