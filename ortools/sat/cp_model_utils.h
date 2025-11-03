@@ -42,10 +42,12 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
 OR_DLL ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
+#endif
 
 namespace operations_research {
 namespace sat {

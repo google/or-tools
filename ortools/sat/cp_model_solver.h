@@ -24,9 +24,11 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_drat_check);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_lrat_check);
+#endif
 
 namespace operations_research {
 namespace sat {

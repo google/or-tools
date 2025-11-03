@@ -623,6 +623,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/graph:iterators",
         "//ortools/util:permutation",
         "//ortools/util:zvector",

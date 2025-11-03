@@ -183,6 +183,7 @@ cc_library(
     hdrs = ["time_limit.h"],
     deps = [
         ":running_stat",
+        "//ortools/base:base_export",
         "//ortools/base:timer",
         "//ortools/base:types",
         "@abseil-cpp//absl/base:core_headers",
