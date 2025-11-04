@@ -12,7 +12,7 @@ RUN pacman -Syu --noconfirm \
  coin-or-cbc coin-or-clp \
  glpk \
  scip \
- gtest benchmark
+ benchmark
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD [ "/bin/bash" ]
