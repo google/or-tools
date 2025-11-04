@@ -11,7 +11,8 @@ RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_COINOR=ON \
  -DUSE_GLPK=ON \
  -DUSE_HIGHS=OFF \
- -DUSE_SCIP=ON
+ -DUSE_SCIP=ON \
+ -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 
