@@ -1173,16 +1173,17 @@ int RegisterClausesLevelZeroImport(int id,
 
 namespace {
 
-// Fills the BinaryRelationRepository with the enforced linear constraints of
-// size 1 or 2 in the model, and with the non-enforced linear constraints of
-// size 2. Also expands linear constraints of size 1 enforced by two literals
+// Fills several repositories of bounds of linear2 (RootLevelLinear2Bounds,
+// ConditionalLinear2Bounds and ReifiedLinear2Bounds) using the linear
+// constraints of size 2 and the linear constraints of size 3 with domain of
+// size 1. Also expands linear constraints of size 1 enforced by two literals
 // into (up to) 4 binary relations enforced by only one literal.
-void FillBinaryRelationRepository(const CpModelProto& model_proto,
+void FillConditionalLinear2Bounds(const CpModelProto& model_proto,
                                   Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  auto* repository = model->GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model->GetOrCreate<ConditionalLinear2Bounds>();
   auto* root_level_lin2_bounds = model->GetOrCreate<RootLevelLinear2Bounds>();
   auto* reified_lin2_bounds = model->GetOrCreate<ReifiedLinear2Bounds>();
 
@@ -1323,7 +1324,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   AddFullEncodingFromSearchBranching(model_proto, model);
   if (sat_solver->ModelIsUnsat()) return unsat();
 
-  FillBinaryRelationRepository(model_proto, model);
+  FillConditionalLinear2Bounds(model_proto, model);
 
   if (time_limit->LimitReached()) return;
 

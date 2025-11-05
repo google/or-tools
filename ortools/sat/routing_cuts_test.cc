@@ -183,7 +183,7 @@ TEST(MinOutgoingFlowHelperTest, CapacityConstraints) {
     loads.push_back(model.Add(NewIntegerVariable(0, max_capacity)));
   }
   // Capacity constraints.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (const auto& [arc, literal] : literal_by_arc) {
     const auto& [tail, head] = arc;
     // We consider that, at each node n other than the depot, n+10 items must be
@@ -252,7 +252,7 @@ TEST_P(DimensionBasedMinOutgoingFlowHelperTest, BasicCapacities) {
     }
   }
   // Capacity constraints.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (const auto& [arc, literal] : literal_by_arc) {
     const auto& [tail, head] = arc;
     if (tail == 0 || head == 0) continue;
@@ -327,7 +327,7 @@ TEST_P(DimensionBasedMinOutgoingFlowHelperTest,
     }
   }
   // Capacity constraints.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (int i = 0; i < 4; ++i) {
     const int head = heads[i];
     const int tail = tails[i];
@@ -391,7 +391,7 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
   const IntegerVariable offset_load2 =
       model.Add(NewIntegerVariable(-offset, capacity - demand2 - offset));
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // Capacity constraint: (offset_load2 + offset) - load1 >= demand1
   repository->Add(literals[0], LinearExpression2(offset_load2, load1, 1, -1),
                   demand1 - offset, 1000);
@@ -434,7 +434,7 @@ TEST(MinOutgoingFlowHelperTest, ConstantNodeExpression) {
   // The load of the vehicle arriving at node 2, a constant value.
   const IntegerValue load2 = capacity - demand2;
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   auto* implied_bounds = model.GetOrCreate<ImpliedBounds>();
   // Capacity constraint: load2 - load1 >= demand1
   implied_bounds->Add(literals[0], IntegerLiteral::GreaterOrEqual(
@@ -489,7 +489,7 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionUsingArcLiteralAsVariable) {
   // The load of the vehicle arriving at node 3, a constant value.
   const IntegerValue load3 = capacity - demand3;
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // Capacity constraint: load2 - load1 >= demand1. This expands to
   // (capacity - demand2 - demand3 * l) - load1 >= demand1, i.e.,
   // -demand3 * l - load1 >= demand1 + demand2 - capacity
@@ -549,7 +549,7 @@ TEST(MinOutgoingFlowHelperTest,
   // The load of the vehicle arriving at node 3, a constant value.
   const IntegerValue load3 = capacity - demand3;
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // Capacity constraint: load2 - load1 >= demand1. This expands to
   // (capacity - demand2 - demand3 + demand3 * l) - load1 >= demand1, i.e.,
   // demand3 * l - load1 >= demand1 + demand2 + demand3 - capacity
@@ -610,7 +610,7 @@ TEST(MinOutgoingFlowHelperTest, ArcNodeExpressionsWithSharedVariable) {
   const AffineExpression load3 =
       AffineExpression(x, -coeff, capacity - demand3);
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // Capacity constraint: load2 - load1 >= demand1. This expands to
   // (capacity - demand2 - demand3) - coeff * x - load1 >= demand1, i.e.,
   //  -coeff * x - load1 >= demand1 + demand2 + demand3 - capacity.
@@ -673,7 +673,7 @@ TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
   model.GetOrCreate<BinaryImplicationGraph>()->AddImplication(
       b, literals[0].Negated());
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // Capacity constraint: load2 - load1 >= demand1. This expands to
   // (capacity - demand2) - demand1 * x - load1 >= demand1. Since this
   // constraint is enforced by arc_1_2_lit we can assume it is true, which
@@ -738,7 +738,7 @@ TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
     }
 
     // Capacity constraints.
-    auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+    auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
     for (int i = 0; i < num_arcs; ++i) {
       // loads[head] - loads[tail] >= demand[arc]
       repository->Add(
@@ -800,7 +800,7 @@ TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
     }
 
     // Capacity constraints.
-    auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+    auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
     for (int i = 0; i < num_arcs; ++i) {
       // loads[head] - loads[tail] >= demand[arc]
       repository->Add(
@@ -836,7 +836,7 @@ TEST(MinOutgoingFlowHelperTest, DimensionBasedMinOutgoingFlow_IsolatedNodes) {
   std::vector<int> heads;
   std::vector<Literal> literals;
   std::vector<IntegerVariable> variables;
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   // The depot variable.
   variables.push_back(model.Add(NewIntegerVariable(0, 100)));
   for (int head = 1; head < num_nodes; ++head) {
@@ -894,7 +894,7 @@ TEST(MinOutgoingFlowHelperTest, TimeWindows) {
   times.push_back(model.Add(NewIntegerVariable(18, 22)));  // Node 3.
   times.push_back(model.Add(NewIntegerVariable(28, 32)));  // Node 4.
   // Travel time constraints.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (const auto& [arc, literal] : literal_by_arc) {
     const auto& [tail, head] = arc;
     const int travel_time = 10 - tail;
@@ -1023,7 +1023,7 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutes) {
   }
 
   // Capacity constraints on two dimensions.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (const auto& [arc, literal] : literal_by_arc) {
     const auto& [tail, head] = arc;
 
@@ -1095,7 +1095,7 @@ TEST(MinOutgoingFlowHelperTest, SubsetMightBeServedWithKRoutesRandom) {
   }
 
   // Capacity constraints on two dimensions.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (const auto& [arc, literal] : literal_by_arc) {
     const auto& [tail, head] = arc;
 
@@ -1226,7 +1226,7 @@ TEST(MinOutgoingFlowHelperTest,
   }
 
   // Travel time constraint.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (int arc = 0; arc < tails.size(); ++arc) {
     const int tail = tails[arc];
     const int head = heads[arc];
@@ -1461,7 +1461,7 @@ TEST(RouteRelationsHelperTest, Basic) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(a, b), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(a, c), 70, 1000);
   repository.Add(literals[2], LinearExpression2::Difference(c, b), 40, 1000);
@@ -1556,7 +1556,7 @@ TEST(RouteRelationsHelperTest, UnenforcedRelations) {
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   RootLevelLinear2Bounds* bounds = model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 1, 1);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 2, 2);
@@ -1606,7 +1606,7 @@ TEST(RouteRelationsHelperTest, SeveralVariablesPerNode) {
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable z = model.Add(NewIntegerVariable(0, 10));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 70, 1000);
   repository.Add(literals[0], LinearExpression2::Difference(z, y), 5, 100);
@@ -1637,7 +1637,7 @@ TEST(RouteRelationsHelperTest, ComplexVariableRelations) {
   // and 1, respectively.
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 150));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 1));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   // "complex" relation with non +1/-1 coefficients.
   repository.Add(literals[0], LinearExpression2(b, a, 10, 1), 0, 150);
   repository.Build();
@@ -1672,7 +1672,7 @@ TEST(RouteRelationsHelperTest, TwoUnaryRelationsPerArc) {
   IntegerEncoder& encoder = *model.GetOrCreate<IntegerEncoder>();
   encoder.AssociateToIntegerEqualValue(literals[0], a, 20);
   encoder.AssociateToIntegerLiteral(literals[0], {b, 50});
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Build();
 
   const RoutingCumulExpressions cumuls = {
@@ -1702,7 +1702,7 @@ TEST(RouteRelationsHelperTest, SeveralRelationsPerArc) {
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 70, 1000);
   // Add a second relation for some arc.
@@ -1738,7 +1738,7 @@ TEST(RouteRelationsHelperTest, SeveralArcsPerLiteral) {
   const IntegerVariable a = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable b = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 50, 1000);
   repository.Add(literals[0], LinearExpression2::Difference(c, b), 40, 1000);
   repository.Build();
@@ -1780,7 +1780,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationIsSkipped) {
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable f = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 0, 0);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 1, 1);
   repository.Add(literals[2], LinearExpression2::Difference(d, c), 2, 2);
@@ -1840,7 +1840,7 @@ TEST(RouteRelationsHelperTest, InconsistentRelationWithMultipleArcsPerLiteral) {
   const IntegerVariable c = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable d = model.Add(NewIntegerVariable(0, 100));
   const IntegerVariable e = model.Add(NewIntegerVariable(0, 100));
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(literals[0], LinearExpression2::Difference(b, a), 0, 0);
   repository.Add(literals[1], LinearExpression2::Difference(c, b), 1, 1);
   repository.Add(literals[2], LinearExpression2::Difference(d, c), 2, 2);
@@ -2478,7 +2478,7 @@ TEST(CreateCVRPCutGeneratorTest, InfeasiblePathCuts) {
     flat_node_dim_expressions.push_back(AffineExpression(load));
   }
   // Capacity constraints.
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   for (int i = 0; i < tails.size(); ++i) {
     const int tail = tails[i];
     const int head = heads[i];

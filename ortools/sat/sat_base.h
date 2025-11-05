@@ -506,14 +506,6 @@ class Trail {
     return GetEmptyVectorToStoreReason(Index());
   }
 
-  // Explicitly overwrite the reason so that the given propagator will be
-  // asked for it. This is currently only used by the BinaryImplicationGraph.
-  void ChangeReason(int trail_index, int propagator_id) {
-    const BooleanVariable var = trail_[trail_index].Variable();
-    info_[var].type = propagator_id;
-    old_type_[var] = propagator_id;
-  }
-
   // Reverts the trail and underlying assignment to the given target trail
   // index. Note that we do not touch the assignment info.
   void Untrail(int target_trail_index) {

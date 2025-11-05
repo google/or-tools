@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_SAT_PROBING_H_
 #define ORTOOLS_SAT_PROBING_H_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <utility>
@@ -24,10 +25,12 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -256,6 +259,117 @@ struct ProbingOptions {
 //
 // It will add any detected binary clause (via hyper binary resolution) to
 // the implication graph. See the option comments for more details.
+class FailedLiteralProbing {
+ public:
+  explicit FailedLiteralProbing(Model* model);
+
+  bool DoOneRound(ProbingOptions options);
+
+ private:
+  struct SavedNextLiteral {
+    LiteralIndex literal_index;  // kNoLiteralIndex if we need to backtrack.
+    int rank;  // Cached position_in_order, we prefer lower positions.
+
+    bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
+  };
+
+  // Sets `next_decision` to the unassigned literal which implies the last
+  // decision and which comes first in the probing order (which itself can be
+  // the topological order of the implication graph, or the reverse).
+  bool ComputeNextDecisionInOrder(LiteralIndex& next_decision);
+
+  // Sets `next_decision` to the first unassigned literal we find which implies
+  // the last decision, in no particular order.
+  bool GetNextDecisionInRandomOrder(LiteralIndex& next_decision);
+
+  // Sets `next_decision` to the first unassigned literal in probing_order (if
+  // there is no last decision we can use any literal as first decision).
+  bool GetFirstDecision(LiteralIndex& next_decision);
+
+  // Enqueues `next_decision`. Backjumps and sets `next_decision` to false in
+  // case of conflict. Returns false if the problem was proved UNSAT.
+  bool EnqueueDecisionAndBackjumpOnConflict(LiteralIndex next_decision,
+                                            bool use_queue,
+                                            int& first_new_trail_index);
+
+  // If we can extract a binary clause that subsume the reason clause, we do add
+  // the binary and remove the subsumed clause.
+  //
+  // TODO(user): We could be slightly more generic and subsume some clauses that
+  // do not contain last_decision.Negated().
+  bool MaybeSubsumeWithBinaryClause(Literal last_decision, Literal l);
+
+  void MaybeExtractBinaryClause(Literal last_decision, Literal l);
+
+  // Inspect the watcher list for last_decision, If we have a blocking
+  // literal at true (implied by last decision), then we have subsumptions.
+  //
+  // The intuition behind this is that if a binary clause (a,b) subsume a
+  // clause, and we watch a.Negated() for this clause with a blocking
+  // literal b, then this watch entry will never change because we always
+  // propagate binary clauses first and the blocking literal will always be
+  // true. So after many propagations, we hope to have such configuration
+  // which is quite cheap to test here.
+  void SubsumeWithBinaryClauseUsingBlockingLiteral(Literal last_decision);
+
+  // Sets `clause_ids` to the IDs of the implications from `l` to the decisions
+  // from `start_level` to `end_level` (included, going backwards).
+  void ComputeDecisionImplicationIds(Literal l, int start_level, int end_level,
+                                     std::vector<ClauseId>& clause_ids);
+
+  // Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies
+  // the current decision, which itself implies all the previous decisions, with
+  // some of them propagating 'not(literal)'.
+  void AddFailedLiteralToFix(Literal literal);
+
+  // Fixes all the literals in to_fix_, and finish propagation.
+  bool ProcessLiteralsToFix();
+
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implication_graph_;
+  TimeLimit* time_limit_;
+  const Trail& trail_;
+  const VariablesAssignment& assignment_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  int id_;
+  int clause_propagator_id_;
+
+  int num_variables_;
+  std::vector<LiteralIndex> probing_order_;
+  int order_index_ = 0;
+  SparseBitset<LiteralIndex> processed_;
+
+  // This is only needed when options.use_queue is true.
+  std::vector<SavedNextLiteral> queue_;
+  util_intops::StrongVector<LiteralIndex, int> position_in_order_;
+
+  // This is only needed when options use_queue is false;
+  util_intops::StrongVector<LiteralIndex, int> starts_;
+
+  // We delay fixing of already assigned literals once we go back to level 0.
+  std::vector<Literal> to_fix_;
+  // For each literal in to_fix_, the ID of the corresponding LRAT unit clause.
+  std::vector<ClauseId> to_fix_unit_id_;
+
+  // For each literal 'l' in the trail, whether a binary clause "d => l" has
+  // been extracted, with 'd' the decision at the same level as 'l'.
+  std::vector<bool> binary_clause_extracted_;
+  std::vector<SatClause*> subsumed_clauses_;
+
+  // Temporary vector used for LRAT proofs.
+  std::vector<ClauseId> tmp_clause_ids_;
+
+  // Stats.
+  int64_t num_probed_ = 0;
+  int64_t num_explicit_fix_ = 0;
+  int64_t num_conflicts_ = 0;
+  int64_t num_new_binary_ = 0;
+  int64_t num_subsumed_ = 0;
+};
+
+// TODO(user): remove this and use the class directly.
 bool FailedLiteralProbingRound(ProbingOptions options, Model* model);
 
 }  // namespace sat

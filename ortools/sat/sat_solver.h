@@ -23,6 +23,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -30,6 +31,7 @@
 
 #include "absl/base/attributes.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -61,6 +63,11 @@ const int kUnsatTrailIndex = -1;
 //    http://en.wikipedia.org/wiki/Conflict_Driven_Clause_Learning
 class SatSolver {
  public:
+  // Callback called when a new conflict clause is learned. The arguments are
+  // the ID and the literals of the learned clause.
+  typedef absl::FunctionRef<void(ClauseId, absl::Span<const Literal>)>
+      ConflictCallback;
+
   SatSolver();
   explicit SatSolver(Model* model);
 
@@ -248,11 +255,11 @@ class SatSolver {
   // `literals` are fixed to their current value.
   std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
 
-  // Sets `clause_ids` to the IDs of the clauses which, by unit propagation from
-  // some decisions, are sufficient to ensure that all literals in `literals`
-  // are fixed to their current value.
-  void GetClausesFixing(absl::Span<const Literal> literals,
-                        std::vector<ClauseId>* clause_ids);
+  // Appends to `clause_ids` the IDs of the clauses which, by unit propagation
+  // from some decisions, are sufficient to ensure that all literals in
+  // `literals` are fixed to their current value.
+  void AppendClausesFixing(absl::Span<const Literal> literals,
+                           std::vector<ClauseId>* clause_ids);
 
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
@@ -270,13 +277,16 @@ class SatSolver {
   // CurrentDecisionLevel() was increased by 1 or not.
   //
   // If there is a conflict, the given decision is not applied and:
-  // - The conflict is learned.
+  // - The conflict is learned. If `conflict_callback` is provided, it is called
+  //   with for each learned conflict, if any, before backtracking.
   // - The decisions are potentially backtracked to the first decision that
   //   propagates more variables because of the newly learned conflict.
   // - The returned value is equal to trail_->Index() after this backtracking
   //   and just before the new propagation (due to the conflict) which is also
   //   performed by this function.
-  int EnqueueDecisionAndBackjumpOnConflict(Literal true_literal);
+  int EnqueueDecisionAndBackjumpOnConflict(
+      Literal true_literal,
+      std::optional<ConflictCallback> callback = std::nullopt);
 
   // This function starts by calling EnqueueDecisionAndBackjumpOnConflict(). If
   // there is no conflict, it stops there. Otherwise, it tries to reapply all
@@ -326,10 +336,13 @@ class SatSolver {
     return true;
   }
 
-  // Advanced usage. Finish the progation if it was interrupted. Note that this
-  // might run into conflict and will propagate again until a fixed point is
-  // reached or the model was proven UNSAT. Returns IsModelUnsat().
-  ABSL_MUST_USE_RESULT bool FinishPropagation();
+  // Advanced usage. Finish the propagation if it was interrupted. Note that
+  // this might run into conflict and will propagate again until a fixed point
+  // is reached or the model was proven UNSAT. If `callback` is provided it is
+  // called for each learned conflict (if any), before backtracking. Returns
+  // IsModelUnsat().
+  ABSL_MUST_USE_RESULT bool FinishPropagation(
+      std::optional<ConflictCallback> callback = std::nullopt);
 
   // Like Backtrack(0) but make sure the propagation is finished and return
   // false if unsat was detected. This also removes any assumptions level.
@@ -524,13 +537,15 @@ class SatSolver {
   // Processes the current conflict from trail->FailingClause().
   //
   // This learns the conflict, backtracks, enqueues the consequence of the
-  // learned conflict and return. When handling assumptions, this might return
-  // false without backtracking in case of ASSUMPTIONS_UNSAT. This is only
-  // exposed to allow processing a conflict detected outside normal propagation.
-  void ProcessCurrentConflict();
-
-  // Fills `clause_ids` with the LRAT proof for the learned conflict.
-  void ComputeLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);
+  // learned conflict and return. If `callback` is provided it is called with
+  // the learned conflict, if any, before backtracking (there might not be any
+  // learned conflict if there are assumptions or if the conflict is not a
+  // clause -- pseudo Boolean case). When handling assumptions, this might
+  // return false without backtracking in case of ASSUMPTIONS_UNSAT. This is
+  // only exposed to allow processing a conflict detected outside normal
+  // propagation.
+  void ProcessCurrentConflict(
+      std::optional<ConflictCallback> callback = std::nullopt);
 
   void EnsureNewClauseIndexInitialized() {
     clauses_propagator_->EnsureNewClauseIndexInitialized();
@@ -692,6 +707,9 @@ class SatSolver {
       int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict,
       std::vector<SatClause*>* subsumed_clauses);
+
+  // Fills `clause_ids` with the LRAT proof for the learned conflict.
+  void FillLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);
 
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain

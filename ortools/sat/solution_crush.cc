@@ -71,6 +71,16 @@ void SolutionCrush::MaybeSetLiteralToValueEncoding(int literal, int var,
   }
 }
 
+void SolutionCrush::MaybeSetLiteralToOrderEncoding(int literal, int var,
+                                                   int64_t value, bool is_le) {
+  DCHECK(RefIsPositive(var));
+  if (!solution_is_loaded_) return;
+  if (!HasValue(PositiveRef(literal)) && HasValue(var)) {
+    SetLiteralValue(
+        literal, is_le ? GetVarValue(var) <= value : GetVarValue(var) >= value);
+  }
+}
+
 void SolutionCrush::SetVarToLinearExpression(
     int new_var, absl::Span<const std::pair<int, int64_t>> linear,
     int64_t offset) {
