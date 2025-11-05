@@ -47,14 +47,15 @@ def parse_label(label):
 
 def get_check_contains_code(line):
     return """
-if ! grep -qF "{line}" "${{LOGFILE}}"; then
+if ! grep --quiet --fixed-strings "{line}" "${{LOGFILE}}"; then
+  echo "---------------------------------------------------------------"
   cat "${{LOGFILE}}"
   echo "---------------------------------------------------------------"
   echo "FAILURE: string '{line}' was not found in the output."
   echo "---------------------------------------------------------------"
   exit 1
 fi
-    """.format(line = line)
+""".format(line = line)
 
 def run_binary_test(
         name,
