@@ -30,8 +30,8 @@
 //   - functions ReadModel() and WriteModel() that take the FileFormat and
 //     read/write ModelProto.
 //
-#ifndef OR_TOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_
-#define OR_TOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_
+#ifndef ORTOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_
+#define ORTOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_
 
 #include <optional>
 #include <ostream>
@@ -161,4 +161,4 @@ absl::Status WriteModel(absl::string_view file_path,
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_
+#endif  // ORTOOLS_MATH_OPT_TOOLS_FILE_FORMAT_FLAGS_H_

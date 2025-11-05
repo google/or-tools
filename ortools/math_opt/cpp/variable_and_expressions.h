@@ -89,8 +89,8 @@
 // While there is some complexity in the source, users typically should not need
 // to look at types other than Variable and LinearExpression too closely. Their
 // code usually will only refer to those types.
-#ifndef OR_TOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_
-#define OR_TOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_
+#define ORTOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_
 
 #include <stdint.h>
 
@@ -3068,4 +3068,4 @@ BoundedQuadraticExpression operator==(const double lhs,
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_VARIABLE_AND_EXPRESSIONS_H_

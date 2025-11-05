@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // This file contains primal solution improvement heuristics.
-#ifndef OR_TOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_
-#define OR_TOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_
+#ifndef ORTOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_
+#define ORTOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_
 
 #include <algorithm>
 #include <cmath>
@@ -116,4 +116,4 @@ inline double RoundedUpperBound(const Variable v, const double tolerance) {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_
+#endif  // ORTOOLS_MATH_OPT_LABS_SOLUTION_IMPROVEMENT_H_

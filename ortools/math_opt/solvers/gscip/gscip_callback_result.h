@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_
 
 #include "scip/type_result.h"
 #include "scip/type_retcode.h"
@@ -50,4 +50,4 @@ SCIP_RESULT ConvertGScipCallbackResult(GScipCallbackResult result);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CALLBACK_RESULT_H_

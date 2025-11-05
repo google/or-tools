@@ -13,8 +13,8 @@
 
 // This header groups parameteric tests to validates behaviors common to MIP and
 // LP solvers.
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_
+#define ORTOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_
 
 #include <optional>
 #include <ostream>
@@ -109,4 +109,4 @@ class TimeLimitTest : public ::testing::TestWithParam<TimeLimitTestParameters> {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_GENERIC_TESTS_H_

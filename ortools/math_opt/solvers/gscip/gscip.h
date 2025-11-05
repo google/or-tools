@@ -54,8 +54,8 @@
 // NOTE(user): much of the API uses const std::string& instead of
 // absl::string_view because the underlying SCIP API needs a null terminated
 // char*.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
 
 #include <atomic>
 #include <cstdint>
@@ -690,4 +690,4 @@ absl::StatusOr<SCIP_CONS*> GScip::AddConstraintForHandler(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_H_

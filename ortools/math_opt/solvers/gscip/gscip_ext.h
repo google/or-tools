@@ -23,8 +23,8 @@
 //
 // TODO(user): either implement with SCIP constraint handlers or use a solver
 // independent implementation.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
 
 #include <string>
 #include <vector>
@@ -107,4 +107,4 @@ absl::Status GScipAddQuadraticObjectiveTerm(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_EXT_H_

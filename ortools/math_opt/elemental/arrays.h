@@ -13,8 +13,8 @@
 
 // Utilities to apply template functors on index ranges.
 // See tests for examples.
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_
 
 #include <tuple>
 #include <utility>
@@ -71,4 +71,4 @@ constexpr decltype(auto) ForEach(Fn&& fn, Tuple&& tuple) {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_ARRAYS_H_

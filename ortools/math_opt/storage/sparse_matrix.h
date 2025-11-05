@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Classes for modeling sparse matrices.
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
+#define ORTOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -616,4 +616,4 @@ void SparseMatrix<RowId, ColumnId>::CompactIfNeeded() {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_SPARSE_MATRIX_H_

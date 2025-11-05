@@ -64,8 +64,8 @@
 //               Call(EquivToProto(basic_lp.model->ExportModel()), _))
 //       .WillOnce(Return(ByMove(absl::InternalError("oops"))));
 //
-#ifndef OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
-#define OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
+#ifndef ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
+#define ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
 
 #include <functional>
 #include <memory>
@@ -218,4 +218,4 @@ class SolverFactoryRegistration {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
+#endif  // ORTOOLS_MATH_OPT_CORE_SOLVER_INTERFACE_MOCK_H_
