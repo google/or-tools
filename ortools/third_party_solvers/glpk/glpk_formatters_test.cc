@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/glpk/glpk_formatters.h"
+#include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 
 #include <sstream>
 #include <string>

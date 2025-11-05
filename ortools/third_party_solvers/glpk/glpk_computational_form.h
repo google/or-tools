@@ -64,8 +64,8 @@
 //
 // This logic is usually necessary when using advanced APIs that deal with
 // indices in the computational form.
-#ifndef ORTOOLS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
-#define ORTOOLS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
+#ifndef ORTOOLS_THIRD_PARTY_SOLVERS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
+#define ORTOOLS_THIRD_PARTY_SOLVERS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
 
 extern "C" {
 #include <glpk.h>
@@ -133,4 +133,4 @@ inline double ComputeFormVarUpperBound(glp_prob* const problem,
 
 }  // namespace operations_research
 
-#endif  // ORTOOLS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
+#endif  // ORTOOLS_THIRD_PARTY_SOLVERS_GLPK_GLPK_COMPUTATIONAL_FORM_H_
