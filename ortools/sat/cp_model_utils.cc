@@ -25,6 +25,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
@@ -250,7 +251,7 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
     for (int& r : *ct->mutable_##ct_name()->mutable_##field_name()) f(&r); \
   }
 
-void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
+void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> f,
                               ConstraintProto* ct) {
   for (int& r : *ct->mutable_enforcement_literal()) f(&r);
   switch (ct->constraint_case()) {
@@ -313,7 +314,7 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
   }
 }
 
-void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
+void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> f,
                                ConstraintProto* ct) {
   switch (ct->constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
@@ -434,7 +435,7 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
   }
 }
 
-void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
+void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> f,
                                ConstraintProto* ct) {
   switch (ct->constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:

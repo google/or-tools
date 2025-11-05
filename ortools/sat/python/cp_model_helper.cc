@@ -535,6 +535,10 @@ class CpBaseModel : public std::enable_shared_from_this<CpBaseModel> {
   }
 
   void AssertVariableIsBoolean(std::shared_ptr<Literal> literal) {
+    if (PositiveRef(literal->index()) >= model_proto_->variables_size()) {
+      ThrowError(PyExc_TypeError, absl::StrCat("Invalid boolean literal: ",
+                                               literal->ToString()));
+    }
     IntegerVariableProto* var =
         model_proto_->mutable_variables(PositiveRef(literal->index()));
     if (var->domain_size() != 2 || var->domain(0) < 0 || var->domain(1) > 1) {
@@ -971,6 +975,19 @@ class IntervalVar {
   std::shared_ptr<LinearExpr> EndExpr() const {
     return RebuildFromLinearExpressionProto(proto()->interval().end(),
                                             model_proto_);
+  }
+
+  std::vector<std::shared_ptr<Literal>> PresenceLiterals() const {
+    std::vector<std::shared_ptr<Literal>> literals;
+    for (const int lit : proto()->enforcement_literal()) {
+      if (RefIsPositive(lit)) {
+        literals.push_back(std::make_shared<IntVar>(model_proto_, lit));
+      } else {
+        literals.push_back(std::make_shared<NotBooleanVariable>(
+            model_proto_, NegatedRef(lit)));
+      }
+    }
+    return literals;
   }
 
  private:
@@ -2096,6 +2113,8 @@ Raises:
             }
           },
           "Returns the end expression of the interval variable.")
+      .def("presence_literals", &IntervalVar::PresenceLiterals,
+           "Returns the list of enforcement literals of the interval variable.")
       .def("__str__", &IntervalVar::ToString)
       .def("__repr__", &IntervalVar::DebugString)
       .def(py::pickle(

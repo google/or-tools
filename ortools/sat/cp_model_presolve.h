@@ -44,13 +44,19 @@ namespace operations_research {
 namespace sat {
 
 // Replaces all the instance of a variable i (and the literals referring to it)
-// by mapping[i] in the working model. The definition of variables i is also
-// moved to its new index. If mapping[i] < 0 the variable can be ignored if
-// possible. If it is not possible, then we will use a new index for it (at the
-// end) and the mapping will be updated to reflect that.
+// by mapping[i] in the given cp_model. The definition of variables i is also
+// moved to its new index.
 //
+// If mapping[i] < 0 the variable can be ignored if there are no reference to it
+// at all. If it is not possible (i.e. some field uses it), then we will use a
+// new index for it (at the end) and reverse_mapping will be updated to reflect
+// that. This is the only time we touch reverse_mapping.
 // The image of the mapping should be dense in [0, reverse_mapping->size()).
-void ApplyVariableMapping(PresolveContext* context, absl::Span<int> mapping,
+//
+// If mapping[i] == mapping[j], the variables will be merged, but it will be the
+// IntegerVariableProto definition of max(i, j) that will be kept in the output.
+// TODO(user): This behavior is not well unit-tested.
+void ApplyVariableMapping(absl::Span<int> mapping, CpModelProto* cp_model,
                           std::vector<int>* reverse_mapping);
 
 // Presolves the initial content of presolved_model.
@@ -162,7 +168,7 @@ class CpModelPresolver {
   // Regroups terms and substitute affine relations.
   // Returns true if the set of variables in the expression changed.
   bool CanonicalizeLinearExpression(const ConstraintProto& ct,
-                                    LinearExpressionProto* proto);
+                                    LinearExpressionProto* exp);
   bool CanonicalizeLinearArgument(const ConstraintProto& ct,
                                   LinearArgumentProto* proto);
 
@@ -172,6 +178,7 @@ class CpModelPresolver {
   bool PropagateDomainsInLinear(int ct_index, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveEmptyLinearConstraint(ConstraintProto* ct);
   bool PresolveLinearOfSizeOne(ConstraintProto* ct);
   bool PresolveLinearOfSizeTwo(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);
@@ -179,6 +186,10 @@ class CpModelPresolver {
   bool AddVarAffineRepresentativeFromLinearEquality(int target_index,
                                                     ConstraintProto* ct);
   bool PresolveLinearEqualityWithModulo(ConstraintProto* ct);
+  bool PresolveLinear2NeCst(ConstraintProto* ct, int64_t rhs);
+  bool PresolveUnenforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
+  bool PresolveEnforcedLinear2EqCst(ConstraintProto* ct, int64_t rhs);
+  bool PresolveLinear2WithBooleans(ConstraintProto* ct);
 
   // If a constraint is of the form "a * expr_X + expr_Y" and expr_Y can only
   // take small values compared to a, depending on the bounds, the constraint
@@ -358,6 +369,7 @@ class CpModelPresolver {
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
   ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
                                                   std::string_view reason);
+  ABSL_MUST_USE_RESULT bool MarkOptionalIntervalAsFalse(ConstraintProto* ct);
 
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;

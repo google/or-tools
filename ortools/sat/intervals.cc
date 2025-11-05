@@ -122,23 +122,26 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     enforcement_literals.push_back(b.is_present.value());
   }
 
-  auto remove_fixed = [assignment =
-                           &assignment_](std::vector<Literal>& literals) {
-    int new_size = 0;
-    for (const Literal l : literals) {
-      // We can ignore always absent interval, and skip the literal of the
-      // interval that are now always present.
-      if (assignment->LiteralIsTrue(l)) continue;
-      if (assignment->LiteralIsFalse(l)) return false;
-      literals[new_size++] = l;
-    }
-    literals.resize(new_size);
-    return true;
-  };
+  auto remove_fixed_at_root_level =
+      [assignment = &assignment_,
+       sat_solver_ = sat_solver_](std::vector<Literal>& literals) {
+        int new_size = 0;
+        for (const Literal l : literals) {
+          if (assignment->LiteralIsAssigned(l)) {
+            const bool is_fixed =
+                sat_solver_->LiteralTrail().Info(l.Variable()).level == 0;
+            // We can ignore always absent interval, and skip the literal of the
+            // interval that are now always present.
+            if (is_fixed && assignment->LiteralIsTrue(l)) continue;
+            if (is_fixed && assignment->LiteralIsFalse(l)) return false;
+          }
+          literals[new_size++] = l;
+        }
+        literals.resize(new_size);
+        return true;
+      };
 
-  if (sat_solver_->CurrentDecisionLevel() == 0) {
-    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
-  }
+  if (!remove_fixed_at_root_level(enforcement_literals)) return kNoLiteralIndex;
 
   // task_a is currently before task_b ?
   // Lets not create a literal that will be propagated right away.
@@ -147,9 +150,29 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
   const RelationStatus b_before_a_root_status =
       root_level_bounds_->GetLevelZeroStatus(expr_b_before_a, kMinIntegerValue,
                                              ub_b_before_a);
+
+  // task_b is before task_a ?
+  const auto [expr_a_before_b, ub_a_before_b] =
+      EncodeDifferenceLowerThan(a.end, b.start, 0);
+  const RelationStatus a_before_b_root_status =
+      root_level_bounds_->GetLevelZeroStatus(expr_a_before_b, kMinIntegerValue,
+                                             ub_a_before_b);
+
+  if (enforcement_literals.empty() &&
+      b_before_a_root_status != RelationStatus::IS_UNKNOWN &&
+      a_before_b_root_status == b_before_a_root_status) {
+    // We have "a before b" and "b before a" at root level (or similarly with
+    // "after"). This is UNSAT.
+    sat_solver_->NotifyThatModelIsUnsat();
+    return kNoLiteralIndex;
+  }
+
   if (b_before_a_root_status == RelationStatus::IS_FALSE) {
-    AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
-                                   model_);
+    if (!enforcement_literals.empty() ||
+        a_before_b_root_status == RelationStatus::IS_UNKNOWN) {
+      AddConditionalAffinePrecedence(enforcement_literals, a.end, b.start,
+                                     model_);
+    }
     return kNoLiteralIndex;
   }
   const RelationStatus b_before_a_status = linear2_bounds_->GetStatus(
@@ -159,15 +182,12 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
     return kNoLiteralIndex;
   }
 
-  // task_b is before task_a ?
-  const auto [expr_a_before_b, ub_a_before_b] =
-      EncodeDifferenceLowerThan(a.end, b.start, 0);
-  const RelationStatus a_before_b_root_status =
-      root_level_bounds_->GetLevelZeroStatus(expr_a_before_b, kMinIntegerValue,
-                                             ub_a_before_b);
   if (a_before_b_root_status == RelationStatus::IS_FALSE) {
-    AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
-                                   model_);
+    if (!enforcement_literals.empty() ||
+        b_before_a_root_status == RelationStatus::IS_UNKNOWN) {
+      AddConditionalAffinePrecedence(enforcement_literals, b.end, a.start,
+                                     model_);
+    }
     return kNoLiteralIndex;
   }
   const RelationStatus a_before_b_status = linear2_bounds_->GetStatus(
@@ -236,9 +256,7 @@ IntervalsRepository::GetOrCreateDisjunctivePrecedenceLiteralIfNonTrivial(
 
   // The calls to AddConditionalAffinePrecedence() might have fixed some of the
   // enforcement literals. Remove them if we are at level zero.
-  if (sat_solver_->CurrentDecisionLevel() == 0) {
-    if (!remove_fixed(enforcement_literals)) return kNoLiteralIndex;
-  }
+  if (!remove_fixed_at_root_level(enforcement_literals)) return kNoLiteralIndex;
 
   // Force the value of boolean_var in case the precedence is not active. This
   // avoids duplicate solutions when enumerating all possible solutions.

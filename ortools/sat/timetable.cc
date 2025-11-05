@@ -273,8 +273,10 @@ bool ReservoirTimeTabling::TryToDecreaseMax(int event) {
   // TODO(user): We actually need to look after 'end' to potentially push the
   // presence in more situation.
   if (!assignment_.LiteralIsTrue(presences_[event])) {
-    enforcement_helper_.EnqueueLiteral(enforcement_id_, presences_[event],
-                                       literal_reason_, integer_reason_);
+    if (!enforcement_helper_.EnqueueLiteral(enforcement_id_, presences_[event],
+                                            literal_reason_, integer_reason_)) {
+      return false;
+    }
   }
 
   // Push new_end too. Note that we don't need the presence reason.

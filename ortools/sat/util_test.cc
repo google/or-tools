@@ -164,10 +164,33 @@ TEST(CompactVectorVectorTest, ResetFromTranspose) {
   EXPECT_THAT(second_transpose[2], ElementsAre(2, 2, 3, 4));
 }
 
-TEST(FormatCounterTest, BasicCases) {
-  EXPECT_EQ("12", FormatCounter(12));
-  EXPECT_EQ("12'345", FormatCounter(12345));
-  EXPECT_EQ("123'456'789", FormatCounter(123456789));
+TEST(MergeableOccurrenceList, BasicTest) {
+  CompactVectorVector<int, int> storage;
+  const std::vector<int> keys = {2, 3, 1, 1, 1, 0, 0, 2, 2};
+  const std::vector<int> vals = {3, 4, 0, 0, 1, 5, 1, 2, 2};
+  storage.ResetFromFlatMapping(keys, vals);
+
+  MergeableOccurrenceList<int, int> occ;
+  occ.ResetFromTranspose(storage);
+
+  // The first access should be ordered.
+  EXPECT_THAT(occ.size(), 6);
+  EXPECT_THAT(occ[0], ElementsAre(1));
+  EXPECT_THAT(occ[1], ElementsAre(0, 1));
+  EXPECT_THAT(occ[2], ElementsAre(2));
+  EXPECT_THAT(occ[3], ElementsAre(2));
+  EXPECT_THAT(occ[4], ElementsAre(3));
+  EXPECT_THAT(occ[5], ElementsAre(0));
+
+  // But not after we merge.
+  occ.MergeInto(1, 2);
+  EXPECT_THAT(occ[2], UnorderedElementsAre(0, 1, 2));
+
+  occ.MergeInto(3, 4);
+  EXPECT_THAT(occ[4], UnorderedElementsAre(2, 3));
+
+  occ.MergeInto(2, 4);
+  EXPECT_THAT(occ[4], UnorderedElementsAre(0, 1, 2, 3));
 }
 
 TEST(FormatTable, BasicAlign) {

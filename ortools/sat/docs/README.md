@@ -225,8 +225,8 @@ described in the package **cpmodel** in
 in the cp_model protobuf.
 
 Also within the **cpmodel** package is
-*ortools/sat/go/cp_model.go* which provides functions to solve
-the model along with helpers to access the solution found by the solver.
+*ortools/sat/go/cp_model.go* which provides functions to
+solve the model along with helpers to access the solution found by the solver.
 
 ```go
 // Snippet from ortools/sat/samples/simple_sat_program.go

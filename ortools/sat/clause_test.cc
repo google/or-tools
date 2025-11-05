@@ -34,7 +34,6 @@ namespace sat {
 namespace {
 
 using ::testing::ElementsAre;
-using ::testing::UnorderedElementsAre;
 
 template <typename... Args>
 auto LiteralsAre(Args... literals) {

@@ -67,6 +67,7 @@
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
@@ -79,6 +80,7 @@
 #include "ortools/sat/linear_model.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lp_utils.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/parameters_validation.h"
 #include "ortools/sat/presolve_context.h"
@@ -142,6 +144,11 @@ ABSL_FLAG(bool, cp_model_drat_check, false,
           "checked if the problem is UNSAT. This will only be used for "
           "pure-SAT problems. And, as of September 2025, only works with a "
           "single worker, no presolve, and symmetry level 0 or 1.");
+
+ABSL_FLAG(bool, cp_model_lrat_check, false,
+          "If true, inferred clauses are checker with an LRAT checker as they "
+          "are learned. As of October 2025, this is currently being "
+          "implemented and is not working yet.");
 
 ABSL_FLAG(double, cp_model_max_drat_time_in_seconds,
           std::numeric_limits<double>::infinity(),
@@ -1031,7 +1038,7 @@ class FullProblemSolver : public SubSolver {
   FullProblemSolver(absl::string_view name,
                     const SatParameters& local_parameters, bool split_in_chunks,
                     SharedClasses* shared, DratProofHandler* drat_proof_handler,
-                    bool stop_at_first_solution = false)
+                    bool use_lrat_checker, bool stop_at_first_solution = false)
       : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
@@ -1056,6 +1063,10 @@ class FullProblemSolver : public SubSolver {
       local_model_.GetOrCreate<SatSolver>()->SetDratProofHandler(
           drat_proof_handler);
     }
+    if (use_lrat_checker) {
+      lrat_proof_handler_ = std::make_unique<LratProofHandler>(&local_model_);
+      local_model_.Register<LratProofHandler>(lrat_proof_handler_.get());
+    }
 
     // Setup the local logger, in multi-thread log_search_progress should be
     // false by default, but we might turn it on for debugging. It is on by
@@ -1073,6 +1084,12 @@ class FullProblemSolver : public SubSolver {
     shared_->stat_tables->AddLpStat(name(), &local_model_);
     shared_->stat_tables->AddSearchStat(name(), &local_model_);
     shared_->stat_tables->AddClausesStat(name(), &local_model_);
+    if (response.status() == CpSolverStatus::INFEASIBLE &&
+        lrat_proof_handler_ != nullptr && !lrat_proof_handler_->Check()) {
+      auto* logger = local_model_.GetOrCreate<SolverLogger>();
+      SOLVER_LOG(logger,
+                 absl::StrFormat("ERROR: LRAT proof invalid for %s", name()));
+    }
   }
 
   bool IsDone() override {
@@ -1206,6 +1223,7 @@ class FullProblemSolver : public SubSolver {
   const bool split_in_chunks_;
   const bool stop_at_first_solution_;
   Model local_model_;
+  std::unique_ptr<LratProofHandler> lrat_proof_handler_;
 
   // The first chunk is special. It is the one in which we load the model and
   // try to follow the hint.
@@ -1817,7 +1835,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
           /*split_in_chunks=*/params.interleave_search(), shared,
-          /*drat_proof_handler=*/nullptr));
+          /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
     }
   }
 
@@ -1841,7 +1859,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
         /*split_in_chunks=*/params.interleave_search(), shared,
-        /*drat_proof_handler=*/nullptr));
+        /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2189,7 +2207,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FullProblemSolver>(
                 local_params.name(), local_params,
                 /*split_in_chunks=*/local_params.interleave_search(), shared,
-                /*drat_proof_handler=*/nullptr,
+                /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false,
                 /*stop_on_first_solution=*/true));
       }
     }
@@ -2443,6 +2461,24 @@ void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
   }
 }
 
+void ClearInternalFields(CpModelProto* model_proto, SolverLogger* logger) {
+  if (model_proto->has_symmetry()) {
+    SOLVER_LOG(logger, "Ignoring internal symmetry field");
+    model_proto->clear_symmetry();
+  }
+  if (model_proto->has_objective()) {
+    CpObjectiveProto* objective = model_proto->mutable_objective();
+    if (objective->integer_scaling_factor() != 0 ||
+        objective->integer_before_offset() != 0 ||
+        objective->integer_after_offset() != 0) {
+      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
+      objective->clear_integer_scaling_factor();
+      objective->clear_integer_before_offset();
+      objective->clear_integer_after_offset();
+    }
+  }
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2482,6 +2518,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto* shared_response_manager = model->GetOrCreate<SharedResponseManager>();
   shared_response_manager->set_dump_prefix(
       absl::GetFlag(FLAGS_cp_model_dump_prefix));
+
+  if (logger->LoggingIsEnabled()) {
+    SolverProgressLogger* progress_logger =
+        model->GetOrCreate<SolverProgressLogger>();
+    progress_logger->SetIsOptimization(
+        model_proto.has_objective() ||
+        model_proto.has_floating_point_objective());
+    shared_response_manager->AddStatusChangeCallback(
+        [progress_logger](const SolverStatusChangeInfo& info) {
+          progress_logger->UpdateProgress(info);
+        });
+  }
   RegisterSearchStatisticCallback(model);
 
   if constexpr (std::is_base_of_v<google::protobuf::Message,
@@ -2632,21 +2680,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                " routes constraint(s).");
   }
 
-  if (context->working_model->has_symmetry()) {
-    SOLVER_LOG(logger, "Ignoring internal symmetry field");
-    context->working_model->clear_symmetry();
-  }
-  if (context->working_model->has_objective()) {
-    CpObjectiveProto* objective = context->working_model->mutable_objective();
-    if (objective->integer_scaling_factor() != 0 ||
-        objective->integer_before_offset() != 0 ||
-        objective->integer_after_offset() != 0) {
-      SOLVER_LOG(logger, "Ignoring internal objective.integer_* fields.");
-      objective->clear_integer_scaling_factor();
-      objective->clear_integer_before_offset();
-      objective->clear_integer_after_offset();
-    }
-  }
+  ClearInternalFields(context->working_model, logger);
 
   if (absl::GetFlag(FLAGS_cp_model_ignore_objective) &&
       (context->working_model->has_objective() ||
@@ -2746,7 +2780,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (!model_proto.assumptions().empty() &&
       (params.num_workers() > 1 || model_proto.has_objective() ||
        model_proto.has_floating_point_objective() ||
-       params.enumerate_all_solutions())) {
+       params.enumerate_all_solutions() || params.interleave_search())) {
     SOLVER_LOG(
         logger,
         "Warning: solving with assumptions was requested in a non-fully "
@@ -2907,7 +2941,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
       // Crash.
       LOG(FATAL) << "Infeasible solution!"
-                 << " source': " << response.solution_info() << "'"
+                 << " source: '" << response.solution_info() << "'"
                  << " dumped CpSolverResponse to '" << file << "'.";
     }
   };
@@ -3081,7 +3115,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           "main", params, /*split_in_chunks=*/false, &shared,
-          drat_proof_handler.get()));
+          drat_proof_handler.get(), absl::GetFlag(FLAGS_cp_model_lrat_check)));
       LaunchSubsolvers(params, &shared, subsolvers, {});
     }
   }

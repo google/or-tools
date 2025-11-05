@@ -20,6 +20,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/span.h"
 #include "ortools/sat/sat_base.h"
@@ -28,8 +29,26 @@
 namespace operations_research {
 namespace sat {
 
+LratChecker::~LratChecker() {
+  if (!VLOG_IS_ON(1)) return;
+  stats_->AddStats(
+      {{"LratChecker/num_problem_clauses", num_problem_clauses_},
+       {"LratChecker/num_inferred_clauses", num_inferred_clauses_},
+       {"LratChecker/num_processed_rup_literals", num_processed_rup_literals_},
+       {"LratChecker/num_processed_rup_clauses", num_processed_rup_clauses_},
+       {"LratChecker/num_unneeded_rup_literals", num_unneeded_rup_literals_},
+       {"LratChecker/num_unneeded_rup_clauses", num_unneeded_rup_clauses_},
+       {"LratChecker/num_processed_rat_literals", num_processed_rat_literals_},
+       {"LratChecker/num_processed_rat_clauses", num_processed_rat_clauses_},
+       {"LratChecker/num_unneeded_rat_literals", num_unneeded_rat_literals_},
+       {"LratChecker/num_unneeded_rat_clauses", num_unneeded_rat_clauses_},
+       {"LratChecker/num_deleted_clauses_not_found",
+        num_deleted_clauses_not_found_}});
+}
+
 bool LratChecker::AddProblemClause(ClauseId id,
                                    absl::Span<const Literal> clause) {
+  ++num_problem_clauses_;
   return AddClauseInternal(id, clause, /*is_problem_clause=*/true,
                            /*unit_ids=*/{}, /*rat=*/{});
 }
@@ -38,6 +57,7 @@ bool LratChecker::AddInferredClause(ClauseId id,
                                     absl::Span<const Literal> clause,
                                     absl::Span<const ClauseId> unit_ids,
                                     absl::Span<const RatIds> rat) {
+  ++num_inferred_clauses_;
   return AddClauseInternal(id, clause, /*is_problem_clause=*/false, unit_ids,
                            rat);
 }
@@ -45,7 +65,10 @@ bool LratChecker::AddInferredClause(ClauseId id,
 void LratChecker::DeleteClauses(absl::Span<const ClauseId> clause_ids) {
   for (const ClauseId clause_id : clause_ids) {
     const auto it = clauses_.find(clause_id);
-    if (it == clauses_.end()) continue;
+    if (it == clauses_.end()) {
+      ++num_deleted_clauses_not_found_;
+      continue;
+    }
     for (const Literal literal : it->second) {
       occurrences_[literal]--;
     }
@@ -55,9 +78,10 @@ void LratChecker::DeleteClauses(absl::Span<const ClauseId> clause_ids) {
 
 namespace {
 enum UnitPropagationStatus {
-  kError = 0,
   kUnit = 1,
   kConflict = 2,
+  kWarning = 3,
+  kError = 4,
 };
 
 UnitPropagationStatus Propagate(
@@ -73,7 +97,11 @@ UnitPropagationStatus Propagate(
   if (unique_unassigned_literal == kNoLiteralIndex) return kConflict;
   const Literal unassigned_literal = Literal(unique_unassigned_literal);
   DCHECK(!false_literals_set->contains(unassigned_literal));
-  if (false_literals_set->contains(unassigned_literal.Negated())) return kError;
+  if (false_literals_set->contains(unassigned_literal.Negated())) {
+    // `clause` propagates `unassigned_literal` which was already propagated by
+    // a previous clause.
+    return kWarning;
+  }
   false_literals_set->insert(unassigned_literal.Negated());
   return kUnit;
 }
@@ -103,13 +131,23 @@ bool LratChecker::AddClauseInternal(ClauseId id,
     tmp_false_literals_set_.clear();
     tmp_false_literals_set_.insert(sorted_clause.begin(), sorted_clause.end());
     UnitPropagationStatus last_propagation_status = kUnit;
-    for (const ClauseId unit_id : unit_ids) {
+    for (int i = 0; i < unit_ids.size(); ++i) {
+      const ClauseId unit_id = unit_ids[i];
       auto it = clauses_.find(unit_id);
-      if (it == clauses_.end())
+      if (it == clauses_.end()) {
         return Error(id, absl::StrCat("unit_id ", unit_id, " not found"));
+      }
+      ++num_processed_rup_clauses_;
+      num_processed_rup_literals_ += it->second.size();
       last_propagation_status = Propagate(it->second, &tmp_false_literals_set_);
       if (last_propagation_status == kError) {
         return Error(id, absl::StrCat("unit_id ", unit_id, " is not unit"));
+      } else if (last_propagation_status == kWarning) {
+        last_propagation_status = kUnit;
+        ++num_unneeded_rup_literals_;
+      } else if (last_propagation_status == kConflict) {
+        num_unneeded_rup_clauses_ += unit_ids.size() - i - 1;
+        break;
       }
     }
     if (last_propagation_status == kUnit) {
@@ -157,17 +195,26 @@ bool LratChecker::AddClauseInternal(ClauseId id,
         }
         if (has_two_complementary_literals) continue;
         last_propagation_status = kUnit;
-        for (const ClauseId unit_id : rat_ids.unit_ids) {
+        for (int j = 0; j < rat_ids.unit_ids.size(); ++j) {
+          const ClauseId unit_id = rat_ids.unit_ids[j];
           const auto it = clauses_.find(unit_id);
           if (it == clauses_.end()) {
             return Error(id,
                          absl::StrCat("rat.unit_id ", unit_id, " not found"));
           }
+          ++num_processed_rat_clauses_;
+          num_processed_rat_literals_ += it->second.size();
           last_propagation_status =
               Propagate(it->second, &tmp_rat_false_literals_set_);
           if (last_propagation_status == kError) {
             return Error(id,
                          absl::StrCat("rat.unit_id ", unit_id, " is not unit"));
+          } else if (last_propagation_status == kWarning) {
+            last_propagation_status = kUnit;
+            ++num_unneeded_rat_literals_;
+          } else if (last_propagation_status == kConflict) {
+            num_unneeded_rat_clauses_ += rat_ids.unit_ids.size() - j - 1;
+            break;
           }
         }
         if (last_propagation_status != kConflict) {

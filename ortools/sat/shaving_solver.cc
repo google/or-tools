@@ -13,6 +13,7 @@
 
 #include "ortools/sat/shaving_solver.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -28,6 +29,7 @@
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
+#include "google/protobuf/arena.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/cp_model_copy.h"
 #include "ortools/sat/cp_model_lns.h"
@@ -52,8 +54,9 @@ ObjectiveShavingSolver::ObjectiveShavingSolver(
     : SubSolver(local_parameters.name(), FULL_PROBLEM),
       local_params_(local_parameters),
       helper_(helper),
-      shared_(shared),
-      local_proto_(shared->model_proto) {}
+      shared_(shared) {
+  ResetModel();
+}
 
 ObjectiveShavingSolver::~ObjectiveShavingSolver() {
   shared_->stat_tables->AddTimingStat(*this);
@@ -147,8 +150,21 @@ void ObjectiveShavingSolver::Synchronize() {
 }
 
 std::string ObjectiveShavingSolver::Info() {
-  return absl::StrCat(name(), " (vars=", local_proto_.variables().size(),
-                      " csts=", local_proto_.constraints().size(), ")");
+  return absl::StrCat(name(), " (vars=", local_proto_->variables().size(),
+                      " csts=", local_proto_->constraints().size(), ")");
+}
+
+void ObjectiveShavingSolver::ResetModel() {
+  if (shared_->model_proto.GetArena() != nullptr) {
+    arena_ = std::make_unique<google::protobuf::Arena>(
+        google::protobuf::ArenaOptions(
+            {.start_block_size = static_cast<size_t>(
+                 shared_->model_proto.GetArena()->SpaceUsed())}));
+  } else {
+    arena_ = std::make_unique<google::protobuf::Arena>();
+  }
+  local_proto_ = google::protobuf::Arena::Create<CpModelProto>(arena_.get());
+  *local_proto_ = shared_->model_proto;
 }
 
 bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
@@ -164,8 +180,8 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   auto* random = local_sat_model_->GetOrCreate<ModelRandomGenerator>();
 
   // We copy the model.
-  local_proto_ = shared_->model_proto;
-  *local_proto_.mutable_variables() =
+  ResetModel();
+  *local_proto_->mutable_variables() =
       helper_->FullNeighborhood().delta.variables();
 
   // Store the current lb in local variable.
@@ -191,16 +207,16 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // We modify local_proto_ to a pure feasibility problem.
   // Not having the objective open up more presolve reduction.
   Domain obj_domain = Domain(objective_lb.value(), chosen_objective_ub.value());
-  if (local_proto_.objective().domain_size() > 1) {
+  if (local_proto_->objective().domain_size() > 1) {
     // Intersect with the first interval of the objective domain.
-    obj_domain =
-        obj_domain.IntersectionWith(Domain(local_proto_.objective().domain(0),
-                                           local_proto_.objective().domain(1)));
+    obj_domain = obj_domain.IntersectionWith(
+        Domain(local_proto_->objective().domain(0),
+               local_proto_->objective().domain(1)));
   }
-  if (local_proto_.objective().vars().size() == 1 &&
-      local_proto_.objective().coeffs(0) == 1) {
+  if (local_proto_->objective().vars().size() == 1 &&
+      local_proto_->objective().coeffs(0) == 1) {
     auto* obj_var =
-        local_proto_.mutable_variables(local_proto_.objective().vars(0));
+        local_proto_->mutable_variables(local_proto_->objective().vars(0));
     const Domain reduced_var_domain = obj_domain.IntersectionWith(
         Domain(obj_var->domain(0), obj_var->domain(1)));
     if (reduced_var_domain.IsEmpty()) {
@@ -208,9 +224,9 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     }
     FillDomainInProto(reduced_var_domain, obj_var);
   } else {
-    auto* obj = local_proto_.add_constraints()->mutable_linear();
-    *obj->mutable_vars() = local_proto_.objective().vars();
-    *obj->mutable_coeffs() = local_proto_.objective().coeffs();
+    auto* obj = local_proto_->add_constraints()->mutable_linear();
+    *obj->mutable_vars() = local_proto_->objective().vars();
+    *obj->mutable_coeffs() = local_proto_->objective().coeffs();
     if (obj_domain.IsEmpty()) {
       return false;
     }
@@ -218,9 +234,9 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   }
 
   // Clear the objective.
-  local_proto_.clear_objective();
-  local_proto_.set_name(
-      absl::StrCat(local_proto_.name(), "_obj_shaving_", objective_lb.value()));
+  local_proto_->clear_objective();
+  local_proto_->set_name(absl::StrCat(local_proto_->name(), "_obj_shaving_",
+                                      objective_lb.value()));
 
   // Dump?
   if (absl::GetFlag(FLAGS_cp_model_dump_submodels)) {
@@ -228,7 +244,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
         absl::StrCat(absl::GetFlag(FLAGS_cp_model_dump_prefix),
                      "objective_shaving_", objective_lb.value(), ".pb.txt");
     LOG(INFO) << "Dumping objective shaving model to '" << name << "'.";
-    CHECK(WriteModelProtoToFile(local_proto_, name));
+    CHECK(WriteModelProtoToFile(*local_proto_, name));
   }
 
   // Presolve if asked.
@@ -236,7 +252,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
     mapping_proto_.Clear();
     postsolve_mapping_.clear();
     auto context = std::make_unique<PresolveContext>(
-        local_sat_model_.get(), &local_proto_, &mapping_proto_);
+        local_sat_model_.get(), local_proto_, &mapping_proto_);
     const CpSolverStatus presolve_status =
         PresolveCpModel(context.get(), &postsolve_mapping_);
     if (presolve_status == CpSolverStatus::INFEASIBLE) {
@@ -256,7 +272,7 @@ bool ObjectiveShavingSolver::ResetAndSolveModel(int64_t task_id) {
   // such non fully-presolved model.
   if (time_limit->LimitReached()) return false;
 
-  LoadCpModel(local_proto_, local_sat_model_.get());
+  LoadCpModel(*local_proto_, local_sat_model_.get());
   return true;
 }
 

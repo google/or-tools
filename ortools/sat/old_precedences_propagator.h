@@ -154,8 +154,9 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   IntegerValue ArcOffset(const ArcInfo& arc) const;
 
   // Inspect all the optional arcs that needs inspection (to stay sparse) and
-  // check if their presence literal can be propagated to false.
-  void PropagateOptionalArcs(Trail* trail);
+  // check if their presence literal can be propagated to false. Return false
+  // on conflict.
+  bool PropagateOptionalArcs(Trail* trail);
 
   // The core algorithm implementation is split in these functions. One must
   // first call InitializeBFQueueWithModifiedNodes() that will push all the

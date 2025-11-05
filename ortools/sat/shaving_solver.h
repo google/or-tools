@@ -23,6 +23,7 @@
 
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
+#include "google/protobuf/arena.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
@@ -51,6 +52,7 @@ class ObjectiveShavingSolver : public SubSolver {
  private:
   std::string Info();
 
+  void ResetModel();
   bool ResetAndSolveModel(int64_t task_id);
 
   // This is fixed at construction.
@@ -64,7 +66,8 @@ class ObjectiveShavingSolver : public SubSolver {
 
   // Local singleton repository and presolved local model.
   std::unique_ptr<Model> local_sat_model_;
-  CpModelProto local_proto_;
+  std::unique_ptr<google::protobuf::Arena> arena_;
+  CpModelProto* local_proto_;
 
   // For postsolving a feasible solution or improving objective lb.
   std::vector<int> postsolve_mapping_;

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
@@ -36,6 +37,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/enforcement.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/restart.h"
@@ -115,7 +117,7 @@ class SatSolver {
   //
   // We call this a "problem" clause just because we will never delete such
   // clause unless it is proven to always be satisfied. So this can be called
-  // with the initial clause of a problem, but also infered clause that we
+  // with the initial clause of a problem, but also an inferred clause that we
   // don't want to delete.
   //
   // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
@@ -246,6 +248,12 @@ class SatSolver {
   // `literals` are fixed to their current value.
   std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
 
+  // Sets `clause_ids` to the IDs of the clauses which, by unit propagation from
+  // some decisions, are sufficient to ensure that all literals in `literals`
+  // are fixed to their current value.
+  void GetClausesFixing(absl::Span<const Literal> literals,
+                        std::vector<ClauseId>* clause_ids);
+
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
 
@@ -301,18 +309,22 @@ class SatSolver {
   // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
 
-  // Advanced usage. This is meant to restore the solver to a "proper" state
-  // after a solve was interrupted due to a limit reached.
+  // Same as Backtrack() but if there was some "re-implications" (see the option
+  // use_chronological_backtracking), propagate them. Note that we avoid calling
+  // FinishPropagation() if there is nothing re-implied because that function
+  // might have side-effects, like redoing a LP solve at level zero for
+  // instance.
   //
-  // Without assumption (i.e. if AssumptionLevel() is 0), this will revert all
-  // decisions and make sure that all the fixed literals are propagated. In
-  // presence of assumptions, this will either backtrack to the assumption level
-  // or re-enqueue any assumptions that may have been backtracked over due to
-  // conflits resolution. In both cases, the propagation is finished.
-  //
-  // Note that this may prove the model to be UNSAT or ASSUMPTION_UNSAT in which
-  // case it will return false.
-  bool RestoreSolverToAssumptionLevel();
+  // TODO(user): Try to clean the situation up, maybe FinishPropagation() should
+  // do nothing, but Propagate() can call the LP or any other propagator that
+  // might propagate more when called again even if nothing else changed.
+  bool BacktrackAndPropagateReimplications(int target_level) {
+    Backtrack(target_level);
+    if (trail_->NumReimplicationsOnLastUntrail() > 0) {
+      return FinishPropagation();
+    }
+    return true;
+  }
 
   // Advanced usage. Finish the progation if it was interrupted. Note that this
   // might run into conflict and will propagate again until a fixed point is
@@ -345,6 +357,9 @@ class SatSolver {
   // Helper functions to get the correct status when one of the functions above
   // returns false.
   Status UnsatStatus() const {
+    // Some consistency check, we shouldn't return ASSUMPTION_UNSAT if there
+    // are no assumption currently in the solver.
+    DCHECK(ModelIsUnsat() || assumption_level_ > 0);
     return ModelIsUnsat() ? INFEASIBLE : ASSUMPTIONS_UNSAT;
   }
 
@@ -393,7 +408,8 @@ class SatSolver {
   };
 
   // Note that the Decisions() vector is always of size NumVariables(), and that
-  // only the first CurrentDecisionLevel() entries have a meaning.
+  // only the first CurrentDecisionLevel() entries have a meaning. The decision
+  // made at level l is Decisions()[l - 1] (there are no decisions at level 0).
   const std::vector<Decision>& Decisions() const { return decisions_; }
   int CurrentDecisionLevel() const { return current_decision_level_; }
   const Trail& LiteralTrail() const { return *trail_; }
@@ -429,6 +445,7 @@ class SatSolver {
     int64_t num_literals_learned = 0;
     int64_t num_literals_forgotten = 0;
     int64_t num_subsumed_clauses = 0;
+    int64_t num_cleanup_rounds = 0;
 
     // TryToMinimizeClause() stats.
     int64_t minimization_num_clauses = 0;
@@ -512,6 +529,9 @@ class SatSolver {
   // exposed to allow processing a conflict detected outside normal propagation.
   void ProcessCurrentConflict();
 
+  // Fills `clause_ids` with the LRAT proof for the learned conflict.
+  void ComputeLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);
+
   void EnsureNewClauseIndexInitialized() {
     clauses_propagator_->EnsureNewClauseIndexInitialized();
   }
@@ -520,13 +540,20 @@ class SatSolver {
     trail_->EnableChronologicalBacktracking(value);
   }
 
+  // Returns true if everything has been propagated.
+  // This is only used for debugging.
+  //
+  // TODO(user): This test is fast but not exhaustive, especially regarding the
+  // integer propagators. Fix.
+  bool PropagationIsDone() const;
+
  private:
   // All Solve() functions end up calling this one.
   Status SolveInternal(TimeLimit* time_limit, int64_t max_number_of_conflicts);
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
-  void AddBinaryClauseInternal(Literal a, Literal b);
+  void AddBinaryClauseInternal(ClauseId id, Literal a, Literal b);
 
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
@@ -579,6 +606,9 @@ class SatSolver {
   SatClause* ReasonClauseOrNull(BooleanVariable var) const;
   UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
       BooleanVariable var) const;
+  // Returns the ID of the unit, binary, or general clause that is the reason
+  // for the given literal, or kNoClauseId if there is none.
+  ClauseId ReasonClauseId(Literal literal) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -629,17 +659,12 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      const std::vector<Literal>& literals, bool is_redundant);
+      ClauseId clause_id, absl::Span<const Literal> literals,
+      bool is_redundant);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
-
-  // Returns true if everything has been propagated.
-  //
-  // TODO(user): This test is fast but not exhaustive, especially regarding the
-  // integer propagators. Fix.
-  bool PropagationIsDone() const;
 
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
@@ -685,18 +710,23 @@ class SatSolver {
   // Applies some heuristics to a conflict in order to minimize its size and/or
   // replace literals by other literals from lower decision levels. The first
   // function choose which one of the other functions to call depending on the
-  // parameters.
+  // parameters. If an LRAT proof handler is set, fills the LRAT proof for the
+  // minimization in `clause_ids`.
   //
   // Precondition: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void MinimizeConflict(std::vector<Literal>* conflict);
-  void MinimizeConflictExperimental(std::vector<Literal>* conflict);
-  void MinimizeConflictSimple(std::vector<Literal>* conflict);
-  void MinimizeConflictRecursively(std::vector<Literal>* conflict);
+  void MinimizeConflict(std::vector<Literal>* conflict,
+                        std::vector<ClauseId>* clause_ids);
+  void MinimizeConflictSimple(std::vector<Literal>* conflict,
+                              std::vector<ClauseId>* clause_ids);
+  void MinimizeConflictRecursively(std::vector<Literal>* conflict,
+                                   std::vector<ClauseId>* clause_ids);
 
-  // Utility function used by MinimizeConflictRecursively().
-  bool CanBeInferedFromConflictVariables(BooleanVariable variable);
+  // Utility methods used by MinimizeConflictRecursively().
+  bool CanBeInferredFromConflictVariables(BooleanVariable variable);
+  void AppendInferenceChain(BooleanVariable variable,
+                            std::vector<ClauseId>* clause_ids);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
   // - There is an unique literal with the highest decision level.
@@ -722,8 +752,7 @@ class SatSolver {
   // IMPORTANT: All the literals of the clause must be assigned, and the first
   // literal must be of the highest decision level. This will be the case for
   // all the reason clauses.
-  template <typename LiteralList>
-  int ComputeLbd(const LiteralList& literals);
+  int ComputeLbd(absl::Span<const Literal> literals);
 
   // Checks if we need to reduce the number of learned clauses and do
   // it if needed. Also updates the learned clause limit for the next cleanup.
@@ -750,13 +779,14 @@ class SatSolver {
   // to MinimizeCoreWithPropagation(). Note that because this does a small tree
   // search, it will impact the variable/clause activities and may add new
   // conflicts.
-  void TryToMinimizeClause(SatClause* clause);
+  ABSL_MUST_USE_RESULT bool TryToMinimizeClause(SatClause* clause);
 
   // This is used by the old non-model constructor.
   Model* model_;
   std::unique_ptr<Model> owned_model_;
 
   BooleanVariable num_variables_ = BooleanVariable(0);
+  ClauseIdGenerator* clause_id_generator_;
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
@@ -835,16 +865,21 @@ class SatSolver {
 
   // Temporary members used during conflict analysis.
   SparseBitset<BooleanVariable> is_marked_;
+  SparseBitset<BooleanVariable> is_marked_for_lrat_;
   SparseBitset<BooleanVariable> is_independent_;
   SparseBitset<BooleanVariable> tmp_mark_;
   std::vector<int> min_trail_index_per_level_;
 
-  // Temporary members used by CanBeInferedFromConflictVariables().
+  // Temporary members used by CanBeInferredFromConflictVariables().
   std::vector<BooleanVariable> dfs_stack_;
   std::vector<BooleanVariable> variable_to_process_;
 
   // Temporary member used when adding clauses.
-  std::vector<Literal> literals_scratchpad_;
+  std::vector<Literal> tmp_literals_;
+  // Temporary members used when adding LRAT inferred clauses.
+  std::vector<ClauseId> tmp_clause_ids_for_1uip_;
+  std::vector<ClauseId> tmp_clause_ids_for_minimization_;
+  absl::flat_hash_set<ClauseId> tmp_clause_id_set_;
 
   // A boolean vector used to temporarily mark decision levels.
   DEFINE_STRONG_INDEX_TYPE(SatDecisionLevel);
@@ -878,7 +913,8 @@ class SatSolver {
   // it is necessary to keep track of the last time the time was advanced.
   double deterministic_time_at_last_advanced_time_limit_ = 0;
 
-  DratProofHandler* drat_proof_handler_;
+  DratProofHandler* drat_proof_handler_ = nullptr;
+  LratProofHandler* lrat_proof_handler_ = nullptr;
 
   mutable StatsGroup stats_;
 };

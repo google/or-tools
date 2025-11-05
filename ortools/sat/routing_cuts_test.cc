@@ -35,6 +35,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/linear_constraint.h"
@@ -42,6 +43,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -73,6 +75,33 @@ std::pair<IntegerValue, IntegerValue> ExactDifferenceBounds(
     }
   }
   return {lb, ub};
+}
+
+void FilterFalseArcsAtLevelZero(RouteRelationsHelper& route_relations_helper,
+                                std::vector<int>& tails,
+                                std::vector<int>& heads,
+                                std::vector<Literal>& literals, Model& model) {
+  const Trail& trail = *model.GetOrCreate<Trail>();
+  if (trail.CurrentDecisionLevel() != 0) return;
+  const VariablesAssignment& assignment = trail.Assignment();
+
+  int new_size = 0;
+  const int size = static_cast<int>(tails.size());
+  std::vector<int> removed_arcs;
+  for (int i = 0; i < size; ++i) {
+    if (assignment.LiteralIsFalse(literals[i])) {
+      removed_arcs.push_back(i);
+      continue;
+    }
+    tails[new_size] = tails[i];
+    heads[new_size] = heads[i];
+    literals[new_size] = literals[i];
+    ++new_size;
+  }
+  tails.resize(new_size);
+  heads.resize(new_size);
+  literals.resize(new_size);
+  route_relations_helper.RemoveArcs(removed_arcs);
 }
 
 TEST(GetDifferenceBounds, RandomTest) {
@@ -247,6 +276,8 @@ TEST_P(DimensionBasedMinOutgoingFlowHelperTest, BasicCapacities) {
                                    cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
@@ -278,8 +309,8 @@ TEST_P(DimensionBasedMinOutgoingFlowHelperTest,
   // We use "outside" arcs from/to node 4 otherwise the problem will be
   // infeasible.
   const int num_nodes = 5;
-  const std::vector<int> tails = {0, 0, 1, 2, 4, 4, 2, 3};
-  const std::vector<int> heads = {1, 3, 2, 3, 0, 1, 4, 4};
+  std::vector<int> tails = {0, 0, 1, 2, 4, 4, 2, 3};
+  std::vector<int> heads = {1, 3, 2, 3, 0, 1, 4, 4};
   std::vector<Literal> literals(tails.size());
   for (int i = 0; i < literals.size(); ++i) {
     literals[i] = Literal(model.Add(NewBooleanVariable()), true);
@@ -320,6 +351,8 @@ TEST_P(DimensionBasedMinOutgoingFlowHelperTest,
                                    cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 
@@ -369,6 +402,8 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionWithConstant) {
                                     AffineExpression(offset_load2, 1, offset)},
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -400,17 +435,20 @@ TEST(MinOutgoingFlowHelperTest, ConstantNodeExpression) {
   const IntegerValue load2 = capacity - demand2;
 
   auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* implied_bounds = model.GetOrCreate<ImpliedBounds>();
   // Capacity constraint: load2 - load1 >= demand1
-  repository->Add(literals[0],
-                  LinearExpression2(kNoIntegerVariable, load1, 0, -1),
-                  demand1 - load2, 1000);
-  repository->Build();
+  implied_bounds->Add(literals[0], IntegerLiteral::GreaterOrEqual(
+                                       NegationOf(load1), demand1 - load2));
+  implied_bounds->Add(literals[0],
+                      IntegerLiteral::LowerOrEqual(NegationOf(load1), 1000));
   std::unique_ptr<RouteRelationsHelper> route_relations_helper =
       RouteRelationsHelper::Create(num_nodes, tails, heads, literals,
                                    {AffineExpression(), AffineExpression(load1),
                                     AffineExpression(load2)},
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -468,6 +506,8 @@ TEST(MinOutgoingFlowHelperTest, NodeExpressionUsingArcLiteralAsVariable) {
                                     load2, AffineExpression(load3)},
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -527,6 +567,8 @@ TEST(MinOutgoingFlowHelperTest,
                                     load2, AffineExpression(load3)},
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -584,6 +626,8 @@ TEST(MinOutgoingFlowHelperTest, ArcNodeExpressionsWithSharedVariable) {
           {AffineExpression(), AffineExpression(load1), load2, load3},
           *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -650,6 +694,8 @@ TEST(MinOutgoingFlowHelperTest, UnaryRelationForTwoNodeExpressions) {
                                     load2, AffineExpression(load3)},
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
 
   BestBoundHelper best_bound;
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -709,6 +755,8 @@ TEST(MinOutgoingFlowHelperTest, NodeMustBeInnerNode) {
                                      cumuls.flat_node_dim_expressions,
                                      *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
+    FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                               model);
 
     BestBoundHelper best_bound;
     MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
@@ -768,6 +816,8 @@ TEST(MinOutgoingFlowHelperTest, BetterUseOfUpperBound) {
                                      cumuls.flat_node_dim_expressions,
                                      *repository, &model);
     ASSERT_NE(route_relations_helper, nullptr);
+    FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                               model);
 
     BestBoundHelper best_bound;
     MinOutgoingFlowHelper helper(loads.size(), tails, heads, literals, &model);
@@ -807,6 +857,8 @@ TEST(MinOutgoingFlowHelperTest, DimensionBasedMinOutgoingFlow_IsolatedNodes) {
                                    cumuls.flat_node_dim_expressions,
                                    *repository, &model);
   ASSERT_NE(route_relations_helper, nullptr);
+  FilterFalseArcsAtLevelZero(*route_relations_helper, tails, heads, literals,
+                             model);
   // Subject under test.
   MinOutgoingFlowHelper helper(num_nodes, tails, heads, literals, &model);
 

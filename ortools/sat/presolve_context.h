@@ -29,6 +29,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -44,7 +45,9 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
-ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
+#ifndef SWIG
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_debug_postsolve);
+#endif
 
 namespace operations_research {
 namespace sat {
@@ -158,8 +161,13 @@ class PresolveContext {
   int64_t MinOf(int ref) const;
   int64_t MaxOf(int ref) const;
   int64_t FixedValue(int ref) const;
-  bool DomainContains(int ref, int64_t value) const;
-  Domain DomainOf(int ref) const;
+
+  // Check if the domain contains the given value. Note that this is stronger
+  // than DomainOf(ref).Contains(value) since here we will use the affine
+  // representative if any.
+  bool VarCanTakeValue(int var, int64_t value) const;
+
+  const Domain& DomainOf(int var) const;
   int64_t DomainSize(int ref) const;
   absl::Span<const Domain> AllDomains() const { return domains_; }
 
@@ -225,7 +233,8 @@ class PresolveContext {
   // Returns true if the set of variables in the expression changed.
   //
   // This uses affine relation and regroup duplicate/fixed terms.
-  bool CanonicalizeLinearConstraint(ConstraintProto* ct);
+  bool CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                    bool* is_impossible = nullptr);
   bool CanonicalizeLinearExpression(absl::Span<const int> enforcements,
                                     LinearExpressionProto* expr);
 
@@ -299,6 +308,9 @@ class PresolveContext {
   ABSL_MUST_USE_RESULT bool IntersectDomainWith(
       const LinearExpressionProto& expr, const Domain& domain,
       bool* domain_modified = nullptr);
+
+  ABSL_MUST_USE_RESULT bool IntersectionOfAffineExprsIsNotEmpty(
+      const LinearExpressionProto& a, const LinearExpressionProto& b);
 
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
@@ -384,6 +396,9 @@ class PresolveContext {
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
 
+  // Check if an integer variable is an affine representative.
+  bool VariableIsAffineRepresentative(int var) const;
+
   // Used for statistics.
   int NumAffineRelations() const { return affine_relations_.NumRelations(); }
 
@@ -454,9 +469,18 @@ class PresolveContext {
   // Note that this might create a new Boolean variable.
   void CanonicalizeDomainOfSizeTwo(int var);
 
-  // Returns true if a literal attached to ref == var exists.
+  // Returns true if a literal attached to ref == value exists.
   // It assigns the corresponding to `literal` if non null.
+  // This function will check that the value is in the domain of ref.
   bool HasVarValueEncoding(int ref, int64_t value, int* literal = nullptr);
+
+  // Returns true if a literal attached to expr == value exists.
+  // It assigns the corresponding to `literal`. This methods checks that the
+  // expression as exactly one variable.
+  //
+  // This methods checks that the value is in the domain of the expression.
+  bool HasAffineValueEncoding(const LinearExpressionProto& expr, int64_t value,
+                              int* literal = nullptr);
 
   // Returns true if we have literal <=> var = value for all values of var.
   //
@@ -475,13 +499,16 @@ class PresolveContext {
   // of values not encoded.
   bool IsMostlyFullyEncoded(int ref) const;
 
+  // Returns the number of values encoded for the given reference.
+  int64_t GetValueEncodingSize(int ref) const;
+
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
   bool StoreLiteralImpliesVarEqValue(int literal, int var, int64_t value);
 
   // Stores the fact that literal implies var != value.
   // It returns true if that information is new.
-  bool StoreLiteralImpliesVarNEqValue(int literal, int var, int64_t value);
+  bool StoreLiteralImpliesVarNeValue(int literal, int var, int64_t value);
 
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
@@ -607,7 +634,7 @@ class PresolveContext {
 
   // The "expansion" phase should be done once and allow to transform complex
   // constraints into basic ones (see cp_model_expand.h). Some presolve rules
-  // need to know if the expansion was ran before beeing applied.
+  // need to know if the expansion was ran before being applied.
   bool ModelIsExpanded() const { return model_is_expanded_; }
   void NotifyThatModelIsExpanded() { model_is_expanded_ = true; }
 
@@ -701,7 +728,7 @@ class PresolveContext {
   //
   // Returns false if ref cannot take the given value (it might not have been
   // propagated yet).
-  bool CanonicalizeEncoding(int* ref, int64_t* value);
+  bool CanonicalizeEncoding(int* ref, int64_t* value) const;
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.

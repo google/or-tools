@@ -1556,7 +1556,7 @@ class CpModel(cmh.CpBaseModel):
 
     def add_decision_strategy(
         self,
-        variables: Sequence[IntVar],
+        variables: Iterable[IntVar],
         var_strategy: cmh.DecisionStrategyProto.VariableSelectionStrategy,
         domain_strategy: cmh.DecisionStrategyProto.DomainReductionStrategy,
     ) -> None:
@@ -1644,7 +1644,7 @@ class CpModel(cmh.CpBaseModel):
 
     def clear_assumptions(self) -> None:
         """Removes all assumptions from the model."""
-        self.model_proto.clear_assumptions()
+        self.model_proto.assumptions.clear()
 
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
@@ -1845,9 +1845,9 @@ class CpSolver:
         return self._checked_response.num_branches
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
-        return self._checked_response.num_boolean_propagations
+        return self._checked_response.num_binary_propagations
 
     @property
     def num_integer_propagations(self) -> int:
@@ -2131,11 +2131,11 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.NumIntegerPropagations()
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
-        return self.NumBooleanPropagations()
+        return self.NumBinaryPropagations()
 
     @property
     def deterministic_time(self) -> float:

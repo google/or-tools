@@ -163,19 +163,18 @@ class CtExhaustiveHelper {
   std::vector<IntegerValue> assigned_ends_;
   std::vector<int> task_to_index_;
   DagTopologicalSortIterator valid_permutation_iterator_;
-  std::vector<CompletionTimeEvent> residual_events_;
+  std::vector<CompletionTimeEvent*> residual_events_;
 
   // Collect precedences, set max_task_index.
   // TODO(user): Do some transitive closure.
-  void Init(absl::Span<const CompletionTimeEvent> events, Model* model);
+  void Init(absl::Span<CompletionTimeEvent*> events, Model* model);
 
   bool PermutationIsCompatibleWithPrecedences(
-      absl::Span<const CompletionTimeEvent> events,
+      absl::Span<CompletionTimeEvent*> events,
       absl::Span<const int> permutation);
 
  private:
-  void BuildPredecessors(absl::Span<const CompletionTimeEvent> events,
-                         Model* model);
+  void BuildPredecessors(absl::Span<CompletionTimeEvent*> events, Model* model);
 
   CompactVectorVector<int> predecessors_;
   int max_task_index_ = 0;
@@ -212,7 +211,7 @@ void AbslStringify(Sink& sink, const CompletionTimeExplorationStatus& status) {
 //
 // Optim: If both sums are proven <= to the corresponding threshold, we abort.
 CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
-    absl::Span<const CompletionTimeEvent> events, IntegerValue capacity_max,
+    absl::Span<CompletionTimeEvent*> events, IntegerValue capacity_max,
     double unweighted_threshold, double weighted_threshold,
     CtExhaustiveHelper& helper, double& min_sum_of_ends,
     double& min_sum_of_weighted_ends, bool& cut_use_precedences,
@@ -223,25 +222,27 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
 // fields. Note that events are semi-open intervals [start_min, end_max). This
 // will filter out components of size one.
 template <class E>
-std::vector<absl::Span<E>> SplitEventsInIndendentSets(absl::Span<E> events) {
+std::vector<absl::Span<E*>> SplitEventsInIndendentSets(
+    std::vector<E*>& events) {
   if (events.empty()) return {};
 
-  std::sort(events.begin(), events.end(), [](const E& a, const E& b) {
-    return std::tie(a.start_min, a.end_max) < std::tie(b.start_min, b.end_max);
+  std::sort(events.begin(), events.end(), [](const E* a, const E* b) {
+    return std::tie(a->start_min, a->end_max) <
+           std::tie(b->start_min, b->end_max);
   });
   const int size = events.size();
-  std::vector<absl::Span<E>> result;
-  IntegerValue max_end_max = events[0].end_max;
+  std::vector<absl::Span<E*>> result;
+  IntegerValue max_end_max = events[0]->end_max;
   int start = 0;
   for (int i = 1; i < size; ++i) {
-    const E& event = events[i];
-    if (event.start_min >= max_end_max) {
+    const E* event = events[i];
+    if (event->start_min >= max_end_max) {
       if (i - start > 1) {
         result.push_back(absl::MakeSpan(events.data() + start, i - start));
       }
       start = i;
     }
-    max_end_max = std::max(max_end_max, event.end_max);
+    max_end_max = std::max(max_end_max, event->end_max);
   }
   if (size - start > 1) {
     result.push_back(absl::MakeSpan(events.data() + start, size - start));

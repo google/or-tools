@@ -646,36 +646,13 @@ bool LinearPropagator::PropagateInfeasibleConstraint(int id,
                                                  integer_reason_);
 }
 
-void LinearPropagator::Explain(int id, IntegerValue propagation_slack,
-                               IntegerVariable var_to_explain, int trail_index,
-                               std::vector<Literal>* literals_reason,
-                               std::vector<int>* trail_indices_reason) {
-  literals_reason->clear();
-  trail_indices_reason->clear();
+void LinearPropagator::Explain(int id, IntegerLiteral /*to_explain*/,
+                               IntegerReason* reason) {
   const ConstraintInfo& info = infos_[id];
-  enforcement_propagator_->AddEnforcementReason(info.enf_id, literals_reason);
-  reason_coeffs_.clear();
-
-  const auto coeffs = GetCoeffs(info);
-  const auto vars = GetVariables(info);
-  for (int i = 0; i < info.initial_size; ++i) {
-    const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
-      continue;
-    }
-    const int index =
-        integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
-    if (index >= 0) {
-      trail_indices_reason->push_back(index);
-      if (propagation_slack > 0) {
-        reason_coeffs_.push_back(coeffs[i]);
-      }
-    }
-  }
-  if (propagation_slack > 0) {
-    integer_trail_->RelaxLinearReason(propagation_slack, reason_coeffs_,
-                                      trail_indices_reason);
-  }
+  reason->boolean_literals_at_true =
+      enforcement_propagator_->GetEnforcementLiterals(info.enf_id);
+  reason->vars = GetVariables(info);
+  reason->coeffs = GetCoeffs(info);
 }
 
 bool LinearPropagator::PropagateOneConstraint(int id) {

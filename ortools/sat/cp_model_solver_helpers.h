@@ -16,12 +16,13 @@
 
 #include <cstdint>
 #include <memory>
-#include <utility>
+#include <tuple>
 #include <vector>
 
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -54,6 +55,7 @@ struct SharedClasses {
   SharedResponseManager* const response;
   SharedTreeManager* const shared_tree_manager;
   SharedLsSolutionRepository* const ls_hints;
+  SolverProgressLogger* const progress_logger;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;

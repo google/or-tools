@@ -701,7 +701,9 @@ void FindCpModelSymmetries(
 
   // TODO(user): Change the API to not return an error when the time limit is
   // reached.
-  if (!status.ok()) {
+  if (absl::IsDeadlineExceeded(status)) {
+    SOLVER_LOG(logger, "[Symmetry] Time limit reached: ", status.message());
+  } else if (!status.ok()) {
     SOLVER_LOG(logger,
                "[Symmetry] GraphSymmetryFinder error: ", status.message());
   }

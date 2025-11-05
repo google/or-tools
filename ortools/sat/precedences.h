@@ -30,6 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model_mapping.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
@@ -505,7 +506,7 @@ struct Relation {
 
 class ReifiedLinear2Bounds;
 
-// A repository of all the enforced linear constraints of size 1 or 2.
+// A repository of all root-level relations of the type l => (a*x + b*y <= ub).
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
@@ -518,7 +519,9 @@ class BinaryRelationRepository {
 
   int size() const { return relations_.size(); }
 
-  // The returned relation is guaranteed to only have positive variables.
+  // The linear2 expression in the returned relation is guaranteed to be
+  // normalized (ie., SimpleCanonicalization() has been called on it and it's
+  // GCD-reduced).
   const Relation& relation(int index) const { return relations_[index]; }
 
   // Returns the indices of the relations that are enforced by the given
@@ -540,21 +543,6 @@ class BinaryRelationRepository {
   // Builds the literal to relations mapping. This should be called once all the
   // relations have been added.
   void Build();
-
-  // Assuming level-zero bounds + any (var >= value) in the input map,
-  // fills "output" with a "propagated" set of bounds assuming lit is true (by
-  // using the relations enforced by lit, as well as the non-enforced ones).
-  // Note that we will only fill bounds > level-zero ones in output.
-  //
-  // Returns false if the new bounds are infeasible at level zero.
-  //
-  // Important: by default this does not call output->clear() so we can take
-  // the max with already inferred bounds.
-  bool PropagateLocalBounds(
-      const IntegerTrail& integer_trail,
-      const RootLevelLinear2Bounds& root_level_bounds, Literal lit,
-      const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
-      absl::flat_hash_map<IntegerVariable, IntegerValue>* output) const;
 
  private:
   ReifiedLinear2Bounds* reified_linear2_bounds_;
@@ -655,6 +643,9 @@ class ReifiedLinear2Bounds {
   std::variant<ReifiedBoundType, Literal, IntegerLiteral> GetEncodedBound(
       LinearExpression2 expr, IntegerValue ub);
 
+  std::pair<AffineExpression, IntegerValue> GetLinear3Bound(
+      LinearExpression2Index lin2_index) const;
+
  private:
   RootLevelLinear2Bounds* best_root_level_bounds_;
   Linear2Indices* lin2_indices_;
@@ -687,7 +678,7 @@ class ReifiedLinear2Bounds {
 
 // Simple wrapper around the different repositories for bounds of linear2.
 // This should provide the best bounds.
-class Linear2Bounds {
+class Linear2Bounds : public LazyReasonInterface {
  public:
   explicit Linear2Bounds(Model* model)
       : integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -725,6 +716,10 @@ class Linear2Bounds {
                            absl::Span<const Literal> literal_reason,
                            absl::Span<const IntegerLiteral> integer_reason);
 
+  // For LazyReasonInterface.
+  std::string LazyReasonName() const final { return "Linear2Bounds"; }
+  void Explain(int id, IntegerLiteral to_explain, IntegerReason* reason) final;
+
  private:
   IntegerTrail* integer_trail_;
   RootLevelLinear2Bounds* root_level_bounds_;
@@ -735,6 +730,9 @@ class Linear2Bounds {
   Trail* trail_;
   SharedStatistics* shared_stats_;
 
+  // This is used for the lazy-reason implemented in Explain().
+  util_intops::StrongVector<ReasonIndex, LinearExpression2> saved_reasons_;
+
   int64_t enqueue_trivial_ = 0;
   int64_t enqueue_degenerate_ = 0;
   int64_t enqueue_true_at_root_level_ = 0;
@@ -743,6 +741,23 @@ class Linear2Bounds {
   int64_t enqueue_literal_encoding_ = 0;
   int64_t enqueue_integer_linear3_encoding_ = 0;
 };
+
+// Assuming level-zero bounds + any (var >= value) in the input map,
+// fills "output" with a "propagated" set of bounds assuming lit is true (by
+// using the relations enforced by lit, as well as the non-enforced ones).
+// Note that we will only fill bounds > level-zero ones in output.
+//
+// Returns false if the new bounds are infeasible at level zero.
+//
+// Important: by default this does not call output->clear() so we can take
+// the max with already inferred bounds.
+bool PropagateLocalBounds(
+    const IntegerTrail& integer_trail,
+    const RootLevelLinear2Bounds& root_level_bounds,
+    const BinaryRelationRepository& repository,
+    const ImpliedBounds& implied_bounds, Literal lit,
+    const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
+    absl::flat_hash_map<IntegerVariable, IntegerValue>* output);
 
 // Detects if at least one of a subset of linear of size 2 or 1, touching the
 // same variable, must be true. When this is the case we add a new propagator to
@@ -753,7 +768,12 @@ class Linear2Bounds {
 class GreaterThanAtLeastOneOfDetector {
  public:
   explicit GreaterThanAtLeastOneOfDetector(Model* model)
-      : repository_(*model->GetOrCreate<BinaryRelationRepository>()) {}
+      : repository_(*model->GetOrCreate<BinaryRelationRepository>()),
+        implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
+
+  ~GreaterThanAtLeastOneOfDetector();
 
   // Advanced usage. To be called once all the constraints have been added to
   // the model. This will detect GreaterThanAtLeastOneOfConstraint().
@@ -765,11 +785,23 @@ class GreaterThanAtLeastOneOfDetector {
                                             bool auto_detect_clauses = false);
 
  private:
+  struct VariableConditionalAffineBound {
+    Literal enforcement_literal;
+    IntegerVariable var;
+    AffineExpression bound;
+  };
+
+  void AddRelationIfNonTrivial(
+      const Relation& r,
+      std::vector<VariableConditionalAffineBound>* clause_bounds) const;
+
   // Given an existing clause, sees if it can be used to add "greater than at
   // least one of" type of constraints. Returns the number of such constraint
   // added.
   int AddGreaterThanAtLeastOneOfConstraintsFromClause(
-      absl::Span<const Literal> clause, Model* model);
+      absl::Span<const Literal> clause, Model* model,
+      const CompactVectorVector<LiteralIndex, IntegerLiteral>&
+          implied_bounds_by_literal);
 
   // Another approach for AddGreaterThanAtLeastOneOfConstraints(), this one
   // might be a bit slow as it relies on the propagation engine to detect
@@ -780,11 +812,17 @@ class GreaterThanAtLeastOneOfDetector {
 
   // Once we identified a clause and relevant indices, this build the
   // constraint. Returns true if we actually add it.
-  bool AddRelationFromIndices(IntegerVariable var,
-                              absl::Span<const Literal> clause,
-                              absl::Span<const int> indices, Model* model);
+  bool AddRelationFromBounds(
+      IntegerVariable var, absl::Span<const Literal> clause,
+      absl::Span<const VariableConditionalAffineBound> bounds, Model* model);
 
   BinaryRelationRepository& repository_;
+  const ImpliedBounds& implied_bounds_;
+  IntegerTrail& integer_trail_;
+  SharedStatistics* shared_stats_;
+  int64_t num_detected_constraints_ = 0;
+  int64_t total_num_expressions_ = 0;
+  int64_t maximum_num_expressions_ = 0;
 };
 
 // This can be in a hot-loop, so we want to inline it if possible.

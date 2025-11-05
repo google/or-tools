@@ -377,8 +377,12 @@ struct LinearExpression2 {
 
   // Take the negation of this expression.
   void Negate() {
-    vars[0] = NegationOf(vars[0]);
-    vars[1] = NegationOf(vars[1]);
+    if (vars[0] != kNoIntegerVariable) {
+      vars[0] = NegationOf(vars[0]);
+    }
+    if (vars[1] != kNoIntegerVariable) {
+      vars[1] = NegationOf(vars[1]);
+    }
   }
 
   // This will not change any bounds on the LinearExpression2.
@@ -393,6 +397,13 @@ struct LinearExpression2 {
   // and the NegateForCanonicalization() with a proper updates of the bounds.
   // Returns whether the expression was negated.
   bool CanonicalizeAndUpdateBounds(IntegerValue& lb, IntegerValue& ub);
+
+  // Deduce an affine expression for the lower bound for the i-th (i=0 or 1)
+  // variable from a lower bound on the LinearExpression2. Returns `affine` so
+  // that (expr >= lb) => (expr.vars[var_index] >= affine) with the condition
+  // that expr.vars[1-var_index] >= other_var_lb.
+  AffineExpression GetAffineLowerBound(int var_index, IntegerValue expr_lb,
+                                       IntegerValue other_var_lb) const;
 
   // Divides the expression by the gcd of both coefficients, and returns it.
   // Note that we always return something >= 1 even if both coefficients are

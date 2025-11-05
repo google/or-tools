@@ -55,7 +55,7 @@ TEST(LiteralsOrOffsetsTest, Holes) {
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(21, 22));
 
   // LLLLOO
-  container.ResizeLiterals(4);
+  container.PushBackLiteral(Literal());
   EXPECT_THAT(container.literals(),
               ElementsAre(Literal(11), Literal(12), Literal(13), Literal()));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(21, 22));
@@ -67,7 +67,7 @@ TEST(LiteralsOrOffsetsTest, Holes) {
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(21, 22));
 
   // LLL.OO
-  container.ResizeLiterals(3);
+  container.PushBackLiteral(Literal());
   EXPECT_THAT(container.literals(),
               ElementsAre(Literal(12), Literal(), Literal()));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(21, 22));
@@ -93,45 +93,27 @@ TEST(LiteralsOrOffsetsTest, Holes) {
 
 TEST(LiteralsOrOffsetsTest, Capacity) {
   LiteralsOrOffsets container;
-  container.ResizeLiterals(10);
+  for (int i = 0; i < 10; ++i) container.PushBackLiteral(Literal());
   container.InsertOffset(2);
   EXPECT_THAT(container.literals(), SizeIs(10));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_GE(container.capacity(), 11);
 
-  container.ClearLiterals(/*shrink_to_fit=*/false);
+  container.ClearLiterals();
   EXPECT_THAT(container.literals(), SizeIs(0));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_GE(container.capacity(), 11);
 
-  container.ResizeLiterals(9);
+  for (int i = 0; i < 9; ++i) container.PushBackLiteral(Literal());
   EXPECT_THAT(container.literals(), SizeIs(9));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_GE(container.capacity(), 10);
 
-  container.ClearLiterals(/*shrink_to_fit=*/true);
+  container.ClearLiterals();
+  container.ShrinkToFit();
   EXPECT_THAT(container.literals(), SizeIs(0));
   EXPECT_THAT(container.offsets(), UnorderedElementsAre(2));
   EXPECT_THAT(container.capacity(), LiteralsOrOffsets::kInlineElements);
-}
-
-TEST(LiteralsOrOffsetsTest, SortLiteralsAndRemoveDuplicates) {
-  LiteralsOrOffsets container;
-  container.PushBackLiteral(Literal(1));
-  container.PushBackLiteral(Literal(2));
-  container.PushBackLiteral(Literal(3));
-  container.PushBackLiteral(Literal(1));
-  container.PushBackLiteral(Literal(2));
-  container.PushBackLiteral(Literal(3));
-  container.PushBackLiteral(Literal(4));
-  container.PushBackLiteral(Literal(2));
-  container.InsertOffset(15);
-  container.InsertOffset(16);
-  container.InsertOffset(17);
-  container.SortLiteralsAndRemoveDuplicates();
-  EXPECT_THAT(container.literals(),
-              ElementsAre(Literal(1), Literal(2), Literal(3), Literal(4)));
-  EXPECT_THAT(container.offsets(), UnorderedElementsAre(15, 16, 17));
 }
 
 }  // namespace

@@ -38,48 +38,6 @@
 namespace operations_research {
 namespace sat {
 
-// Simple helper class to:
-// - log in an uniform way a "time-consuming" presolve operation.
-// - track a deterministic work limit.
-// - update the deterministic time on finish.
-class PresolveTimer {
- public:
-  PresolveTimer(std::string name, SolverLogger* logger, TimeLimit* time_limit)
-      : name_(std::move(name)), logger_(logger), time_limit_(time_limit) {
-    timer_.Start();
-  }
-
-  // Track the work done (which is also the deterministic time).
-  // By default we want a limit of around 1 deterministic seconds.
-  void AddToWork(double dtime) { work_ += dtime; }
-  void TrackSimpleLoop(int size) { work_ += 5e-9 * size; }
-  bool WorkLimitIsReached() const { return work_ >= 1.0; }
-
-  // Extra stats=value to display at the end.
-  // We filter value of zero to have less clutter.
-  void AddCounter(std::string name, int64_t count) {
-    if (count == 0) return;
-    counters_.emplace_back(std::move(name), count);
-  }
-
-  // Extra info at the end of the log line.
-  void AddMessage(std::string name) { extra_infos_.push_back(std::move(name)); }
-
-  // Update dtime and log operation summary.
-  ~PresolveTimer();
-
- private:
-  const std::string name_;
-
-  WallTimer timer_;
-  SolverLogger* logger_;
-  TimeLimit* time_limit_;
-
-  double work_ = 0;
-  std::vector<std::pair<std::string, int64_t>> counters_;
-  std::vector<std::string> extra_infos_;
-};
-
 // If for each literal of a clause, we can infer a domain on an integer
 // variable, then we know that this variable domain is included in the union of
 // such inferred domains.

@@ -144,6 +144,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   LinearProgrammingConstraint(Model* model,
                               absl::Span<const IntegerVariable> vars);
 
+  ~LinearProgrammingConstraint() override;
+
   // Add a new linear constraint to this LP.
   // Return false if we prove infeasibility of the global model.
   bool AddLinearConstraint(LinearConstraint ct);
@@ -530,6 +532,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
+  SatSolver* sat_solver_;
   GenericLiteralWatcher* watcher_;
   ProductDetector* product_detector_;
   ObjectiveDefinition* objective_definition_;
@@ -644,6 +647,12 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // We might temporarily disable the LP propagation.
   bool enabled_ = true;
+
+  // Logic to throttle level zero calls.
+  int64_t num_root_level_skips_ = 0;
+  int64_t num_root_level_solves_ = 0;
+  double last_root_level_deterministic_duration_ = 0.0;
+  double last_root_level_deterministic_time_ = 0.0;
 };
 
 // A class that stores which LP propagator is associated to each variable.

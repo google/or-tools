@@ -25,6 +25,7 @@
 #include "ortools/base/parse_test_proto.h"
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_solver_helpers.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_search.h"
@@ -556,21 +557,17 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(
       get_rel(all),
       UnorderedElementsAre(
-          Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
           Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1},
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
           Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
-  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
-              UnorderedElementsAre(
-                  Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
-                  Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
   EXPECT_THAT(
-      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
       UnorderedElementsAre(
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
-          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
+  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+              UnorderedElementsAre(
+                  Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
   EXPECT_THAT(root_level_bounds->GetAllBoundsContainingVariable(x),
               UnorderedElementsAre(
                   FieldsAre(LinearExpression2(x, NegationOf(y), 1, 1), 0, 5),
@@ -667,16 +664,12 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
   LoadCpModel(model_proto, &model);
 
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(Relation{mapping.Literal(0),
-                                    LinearExpression2::Difference(
-                                        mapping.Integer(2), mapping.Integer(3)),
-                                    0, 10},
-                           Relation{mapping.Literal(1),
-                                    LinearExpression2(kNoIntegerVariable,
-                                                      mapping.Integer(2), 0, 1),
-                                    5, 10}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(Relation{
+                  mapping.Literal(0),
+                  LinearExpression2(mapping.Integer(2),
+                                    NegationOf(mapping.Integer(3)), 1, 1),
+                  0, 10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -709,12 +702,13 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [10, 90]
   // - b => x - 10.a in [10, 90]
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(
-                  Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1),
-                           -90, -10},
-                  Relation{mapping.Literal(1), LinearExpression2(a, x, 10, -1),
-                           -90, -10}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0),
+                   LinearExpression2(b, NegationOf(x), 10, 1), -90, -10},
+          Relation{mapping.Literal(1),
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -790,7 +784,7 @@ TEST(BinaryRelationRepositoryTest,
       UnorderedElementsAre(
           Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 20, 100},
           Relation{mapping.Literal(1).Negated(),
-                   LinearExpression2(a, x, 10, -1), -90, -10}));
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
 TEST(BinaryRelationRepositoryTest,
@@ -823,12 +817,12 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [0, 80]  (<=> a => x + (10-10.b) in [10, 90])
   // - b => x + 10.a in [10, 90]
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(
-          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1), -80, 0},
-          Relation{mapping.Literal(1).Negated(), LinearExpression2(a, x, 10, 1),
-                   10, 90}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0),
+                           LinearExpression2(b, NegationOf(x), 10, 1), -80, 0},
+                  Relation{mapping.Literal(1).Negated(),
+                           LinearExpression2(a, x, 10, 1), 10, 90}));
 }
 
 TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
@@ -846,8 +840,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -871,8 +866,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -98),
@@ -898,8 +894,9 @@ TEST(BinaryRelationRepositoryTest,
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, IsEmpty());
@@ -921,8 +918,9 @@ TEST(BinaryRelationRepositoryTest,
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output = {{y, 8}};
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_TRUE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -8),
@@ -944,8 +942,9 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
   absl::flat_hash_map<IntegerVariable, IntegerValue> input = {{x, 3}};
   absl::flat_hash_map<IntegerVariable, IntegerValue> output;
 
-  const bool result = repository.PropagateLocalBounds(
-      *integer_trail, *root_level_bounds, lit_a, input, &output);
+  const bool result = PropagateLocalBounds(
+      *integer_trail, *root_level_bounds, repository,
+      *model.GetOrCreate<ImpliedBounds>(), lit_a, input, &output);
 
   EXPECT_FALSE(result);
   EXPECT_THAT(output, UnorderedElementsAre(std::make_pair(NegationOf(x), -2),

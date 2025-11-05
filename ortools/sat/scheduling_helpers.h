@@ -36,6 +36,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/strong_integers.h"
 
@@ -403,6 +404,28 @@ class SchedulingConstraintHelper : public PropagatorInterface {
     return integer_trail_->timestamp() + trail_->NumberOfEnqueues();
   }
 
+  struct TaskInfo {
+    int task;
+    IntegerValue start_min;
+    IntegerValue size_min;
+
+    bool operator<(TaskInfo other) const { return start_min < other.start_min; }
+  };
+  // Provide scratch vector that are cleared and available for use for
+  // propagators inside the call to Propagate().
+  FixedCapacityVector<TaskTime>& GetScratchTaskTimeVector1() {
+    scratch_task_time_vector1_.ClearAndReserve(NumTasks());
+    return scratch_task_time_vector1_;
+  }
+  FixedCapacityVector<TaskTime>& GetScratchTaskTimeVector2() {
+    scratch_task_time_vector2_.ClearAndReserve(NumTasks());
+    return scratch_task_time_vector2_;
+  }
+  FixedCapacityVector<TaskInfo>& GetScratchTaskSet() {
+    scratch_task_set_.ClearAndReserve(NumTasks());
+    return scratch_task_set_;
+  }
+
  private:
   // Tricky: when a task is optional, it is possible it size min is negative,
   // but we know that if a task is present, its size should be >= 0. So in the
@@ -442,6 +465,10 @@ class SchedulingConstraintHelper : public PropagatorInterface {
   RootLevelLinear2Bounds* root_level_lin2_bounds_;
   EnforcementHelper& enforcement_helper_;
   EnforcementId enforcement_id_;
+
+  FixedCapacityVector<TaskTime> scratch_task_time_vector1_;
+  FixedCapacityVector<TaskTime> scratch_task_time_vector2_;
+  FixedCapacityVector<TaskInfo> scratch_task_set_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;

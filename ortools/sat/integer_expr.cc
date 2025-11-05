@@ -226,30 +226,10 @@ LinearConstraintPropagator<use_int128>::ConditionalLb(
 
 template <bool use_int128>
 void LinearConstraintPropagator<use_int128>::Explain(
-    int /*id*/, IntegerValue propagation_slack, IntegerVariable var_to_explain,
-    int trail_index, std::vector<Literal>* literals_reason,
-    std::vector<int>* trail_indices_reason) {
-  *literals_reason = literal_reason_;
-  trail_indices_reason->clear();
-  shared_->reason_coeffs.clear();
-  for (int i = 0; i < size_; ++i) {
-    const IntegerVariable var = vars_[i];
-    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
-      continue;
-    }
-    const int index =
-        shared_->integer_trail->FindTrailIndexOfVarBefore(var, trail_index);
-    if (index >= 0) {
-      trail_indices_reason->push_back(index);
-      if (propagation_slack > 0) {
-        shared_->reason_coeffs.push_back(coeffs_[i]);
-      }
-    }
-  }
-  if (propagation_slack > 0) {
-    shared_->integer_trail->RelaxLinearReason(
-        propagation_slack, shared_->reason_coeffs, trail_indices_reason);
-  }
+    int /*id*/, IntegerLiteral /*to_explain*/, IntegerReason* reason) {
+  reason->boolean_literals_at_false = literal_reason_;
+  reason->vars = absl::MakeSpan(vars_.get(), size_);
+  reason->coeffs = absl::MakeSpan(coeffs_.get(), size_);
 }
 
 template <bool use_int128>
@@ -339,9 +319,8 @@ bool LinearConstraintPropagator<use_int128>::Propagate() {
       const Literal to_propagate = Literal(unique_unnasigned_literal).Negated();
       std::vector<Literal> tmp = literal_reason_;
       tmp.erase(std::find(tmp.begin(), tmp.end(), to_propagate));
-      shared_->integer_trail->EnqueueLiteral(to_propagate, tmp,
-                                             shared_->integer_reason);
-      return true;
+      return shared_->integer_trail->EnqueueLiteral(to_propagate, tmp,
+                                                    shared_->integer_reason);
     }
     return shared_->integer_trail->ReportConflict(literal_reason_,
                                                   shared_->integer_reason);
@@ -655,45 +634,36 @@ GreaterThanMinOfExprsPropagator::GreaterThanMinOfExprsPropagator(
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   enforcement_id_ = enforcement_helper_.Register(enforcement_literals, watcher,
                                                  RegisterWith(watcher));
+
+  // Precondition.
+  for (const LinearExpression& expr : exprs_) {
+    for (const IntegerValue coeff : expr.coeffs) CHECK_GT(coeff, 0);
+  }
 }
 
-void GreaterThanMinOfExprsPropagator::Explain(
-    int id, IntegerValue propagation_slack, IntegerVariable var_to_explain,
-    int trail_index, std::vector<Literal>* literals_reason,
-    std::vector<int>* trail_indices_reason) {
-  const auto& vars = exprs_[id].vars;
-  const auto& coeffs = exprs_[id].coeffs;
-  literals_reason->clear();
-  enforcement_helper_.AddEnforcementReason(enforcement_id_, literals_reason);
-  trail_indices_reason->clear();
-  std::vector<IntegerValue> reason_coeffs;
-  const int size = vars.size();
-  for (int i = 0; i < size; ++i) {
-    const IntegerVariable var = vars[i];
-    if (PositiveVariable(var) == PositiveVariable(var_to_explain)) {
-      continue;
-    }
-    const int index =
-        integer_trail_.FindTrailIndexOfVarBefore(var, trail_index);
-    if (index >= 0) {
-      trail_indices_reason->push_back(index);
-      if (propagation_slack > 0) {
-        reason_coeffs.push_back(coeffs[i]);
-      }
-    }
-  }
-  if (propagation_slack > 0) {
-    integer_trail_.RelaxLinearReason(propagation_slack, reason_coeffs,
-                                     trail_indices_reason);
-  }
+void GreaterThanMinOfExprsPropagator::Explain(int id,
+                                              IntegerLiteral /*to_explain*/,
+                                              IntegerReason* reason) {
+  reason->boolean_literals_at_true =
+      enforcement_helper_.GetEnforcementLiterals(enforcement_id_);
+
+  // Fill the linear reason.
+  // Note that index_at_propagation and slack are already filled.
+  tmp_vars_.assign(exprs_[id].vars.begin(), exprs_[id].vars.end());
+  tmp_coeffs_.assign(exprs_[id].coeffs.begin(), exprs_[id].coeffs.end());
+
+  // Tricky: we propagated using exprs_[id] <= min_var_, so we do need the
+  // min_var_ ub at the time of propagation. Note that we already have an
+  // "older" min_var_ ub in integer_reason_for_unique_candidate_. But since this
+  // one could be relaxed, I think it is easier to just include it twice.
+  tmp_vars_.push_back(NegationOf(min_var_));
+  tmp_coeffs_.push_back(1);
+
+  reason->vars = tmp_vars_;
+  reason->coeffs = tmp_coeffs_;
+
   // Now add the old integer_reason that triggered this propagation.
-  for (IntegerLiteral reason_lit : integer_reason_for_unique_candidate_) {
-    const int index =
-        integer_trail_.FindTrailIndexOfVarBefore(reason_lit.var, trail_index);
-    if (index >= 0) {
-      trail_indices_reason->push_back(index);
-    }
-  }
+  reason->integer_literals = integer_reason_for_unique_candidate_;
 }
 
 bool GreaterThanMinOfExprsPropagator::PropagateLinearUpperBound(
@@ -835,8 +805,8 @@ bool GreaterThanMinOfExprsPropagator::Propagate() {
       if (rev_unique_candidate_ == 0) {
         integer_reason_for_unique_candidate_.clear();
 
-        // The reason is that all the other interval start after current_min_ub.
-        // And that min_ub has its current value.
+        // The reason is that all the other expressions start after
+        // current_min_ub. And that min_ub has its current value.
         integer_reason_for_unique_candidate_.push_back(
             integer_trail_.UpperBoundAsLiteral(min_var_));
         for (int i = 0; i < exprs_.size(); ++i) {
@@ -1278,13 +1248,13 @@ bool SquarePropagator::Propagate() {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {x_.GreaterOrEqual(min_x), s_.LowerOrEqual(min_x - 1)});
+          {x_.GreaterOrEqual(min_x), s_.LowerOrEqual(min_x_square - 1)});
     }
     if (min_s > max_x_square) {
       return enforcement_helper_.PropagateWhenFalse(
           enforcement_id_,
           /*literal_reason=*/{},
-          {s_.GreaterOrEqual(min_s), x_.LowerOrEqual(min_s - 1)});
+          {x_.LowerOrEqual(max_x), s_.GreaterOrEqual(max_x_square + 1)});
     }
     // Otherwise we cannot propagate anything since the enforcement is unknown.
     return true;

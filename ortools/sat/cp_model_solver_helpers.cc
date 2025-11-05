@@ -54,6 +54,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
 #include "ortools/sat/cp_model_search.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/feasibility_pump.h"
@@ -61,6 +62,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/integer_expr.h"
+#include "ortools/sat/integer_resolution.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/lb_tree_search.h"
@@ -215,8 +217,6 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
     if (!debug_sol || debug_sol->proto_values.empty()) return true;
 
     bool is_satisfied = false;
-    int num_bools = 0;
-    int num_ints = 0;
     std::vector<std::tuple<Literal, IntegerLiteral, IntegerValue>> to_print;
     for (const Literal l : clause) {
       // First case, this Boolean is mapped.
@@ -231,7 +231,6 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
             is_satisfied = true;
             break;
           }
-          ++num_bools;
           continue;
         }
       }
@@ -248,7 +247,6 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
         to_print.push_back({l, associated, value});
 
         if (value < associated.bound) {
-          ++num_ints;
           all_true = false;
           break;
         }
@@ -270,6 +268,9 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
       const IntegerValue value = debug_sol->ivar_values[i_lit.var];
       to_print.push_back({Literal(kNoLiteralIndex), i_lit, value});
 
+      // This is a bit confusing, but since the i_lit in the reason are
+      // not "negated", we need at least one to be FALSE, for the reason to
+      // be valid.
       if (value < i_lit.bound) {
         is_satisfied = true;
         break;
@@ -285,12 +286,12 @@ void InitializeDebugSolution(const CpModelProto& model_proto, Model* model) {
         if (i_lit.IsAlwaysTrue()) {
           const int proto_var =
               mapping->GetProtoVariableFromBooleanVariable(l.Variable());
-          LOG(INFO) << l << " (bool in model) var=" << proto_var
+          LOG(INFO) << l << " (bool in model) proto_var=" << proto_var
                     << " value_in_sol=" << solution_value;
         } else {
           const int proto_var = mapping->GetProtoVariableFromIntegerVariable(
               PositiveVariable(i_lit.var));
-          LOG(INFO) << l << " " << i_lit << " var="
+          LOG(INFO) << l << " " << i_lit << " proto_var="
                     << (proto_var == -1 ? "none" : absl::StrCat(proto_var))
                     << (VariableIsPositive(i_lit.var) ? "" : " (negated)")
                     << " value_in_sol=" << solution_value;
@@ -377,13 +378,13 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
 
   // TODO(user): use the same format, i.e. LinearExpression in both code!
   std::vector<IntegerVariable> vars;
-  std::vector<int64_t> coeffs;
+  std::vector<IntegerValue> coeffs;
   for (const auto [var, coeff] : terms) {
     vars.push_back(var);
-    coeffs.push_back(coeff);
+    coeffs.push_back(IntegerValue(coeff));
   }
   vars.push_back(new_var);
-  coeffs.push_back(-1);
+  coeffs.push_back(IntegerValue(-1));
 
   // Split if linear is large.
   if (vars.size() > model->GetOrCreate<SatParameters>()->linear_split_size()) {
@@ -393,10 +394,10 @@ IntegerVariable GetOrCreateVariableLinkedToSumOf(
 
   // Load the top-level constraint with the required sides.
   if (lb_required) {
-    model->Add(WeightedSumGreaterOrEqual(vars, coeffs, 0));
+    AddWeightedSumGreaterOrEqual({}, vars, coeffs, 0, model);
   }
   if (ub_required) {
-    model->Add(WeightedSumLowerOrEqual(vars, coeffs, 0));
+    AddWeightedSumLowerOrEqual({}, vars, coeffs, 0, model);
   }
 
   return new_var;
@@ -924,11 +925,8 @@ void RegisterLinear2BoundsImport(SharedLinear2Bounds* shared_linear2_bounds,
       // propagation when we have chains of precedences. The root_linear2 should
       // be up-to-date with transitive closure to avoid adding such relations
       // (recompute it at level zero before this?).
-      //
-      // TODO(user): use IntegerValure directly in
-      // AddWeightedSumGreaterOrEqual() or use a lower-level API.
-      const std::vector<int64_t> coeffs = {expr.coeffs[0].value(),
-                                           expr.coeffs[1].value()};
+      const std::vector<IntegerValue> coeffs = {expr.coeffs[0].value(),
+                                                expr.coeffs[1].value()};
       if (lb_added) {
         AddWeightedSumGreaterOrEqual({}, absl::MakeSpan(expr.vars, 2), coeffs,
                                      lb.value(), model);
@@ -984,8 +982,10 @@ void RegisterObjectiveBoundsImport(
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* objective = model->GetOrCreate<ObjectiveDefinition>();
   const std::string name = model->Name();
+  DebugSolution* debug_sol = model->GetOrCreate<DebugSolution>();
   const auto import_objective_bounds = [name = name, solver, integer_trail,
-                                        objective, shared_response_manager]() {
+                                        objective, shared_response_manager,
+                                        debug_sol]() {
     if (solver->AssumptionLevel() != 0) return true;
     bool tighter_bounds = false;
 
@@ -1007,6 +1007,14 @@ void RegisterObjectiveBoundsImport(
     const IntegerValue current_ub =
         integer_trail->UpperBound(objective->objective_var);
     if (external_ub < current_ub) {
+      if (DEBUG_MODE) {
+        // If the current solution is as good or better than the debug one,
+        // the debug solution is not a solution anymore for the improving
+        // problem.
+        if (debug_sol && external_ub <= debug_sol->inner_objective_value) {
+          debug_sol->Clear();
+        }
+      }
       if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
                                       objective->objective_var, external_ub),
                                   {}, {})) {
@@ -1151,9 +1159,10 @@ int RegisterClausesLevelZeroImport(int id,
       // overhead of sharing.
       // We only share up to 1024 literals worth of new clauses per second, so
       // at most 1024 decisions to vivify all new clauses, so this should be
-      // relatively cheap.
+      // relatively cheap, *if* regular vivification is keeping up with new
+      // clauses. Use a tight dtime limit in case it isn't.
       return sat_solver->MinimizeByPropagation(
-          /*dtime=*/0.5, /*minimize_new_clauses_only=*/true);
+          /*dtime=*/0.01, /*minimize_new_clauses_only=*/true);
     }
     return true;
   };
@@ -1247,12 +1256,8 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
         reified_lin2_bounds->AddLinear3(vars, coeffs, rhs_min);
       }
     } else {
-      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-      if (vars.size() == 1) {
-        repository->Add(
-            lit, LinearExpression2(vars[0], kNoIntegerVariable, coeffs[0], 0),
-            rhs_min, rhs_max);
-      } else if (vars.size() == 2) {
+      if (vars.size() == 2) {
+        const Literal lit = mapping->Literal(ct.enforcement_literal(0));
         repository->Add(
             lit, LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
             rhs_min, rhs_max);
@@ -1446,13 +1451,11 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
         absl::StrCat(model->Name(), " [loading]"));
   };
 
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-
   // Auto detect "at least one of" constraints in the PrecedencesPropagator.
   // Note that we do that before we finish loading the problem (objective and
   // LP relaxation), because propagation will be faster at this point and it
   // should be enough for the purpose of this auto-detection.
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   if (parameters.auto_detect_greater_than_at_least_one_of()) {
     model->GetOrCreate<GreaterThanAtLeastOneOfDetector>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);
@@ -1495,6 +1498,7 @@ void LoadCpModel(const CpModelProto& model_proto, Model* model) {
   // We need to know beforehand if the objective var can just be >= terms or
   // needs to be == terms.
   bool objective_need_to_be_tight = false;
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
   if (model_proto.has_objective() &&
       !model_proto.objective().domain().empty()) {
     int64_t min_value = 0;
@@ -1701,6 +1705,15 @@ void SolveLoadedCpModel(const CpModelProto& model_proto, Model* model) {
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
   if (parameters.stop_after_root_propagation()) return;
 
+  // This will activate an integer based conflict resolution.
+  //
+  // TODO(user): right now this is not used for probing since we register
+  // it afterwards... find a better way. Note that we need to handle creation
+  // of variable in the conflict resolution.
+  if (parameters.use_new_integer_conflict_resolution()) {
+    model->GetOrCreate<IntegerConflictResolution>();
+  }
+
   auto solution_observer = [&model_proto, model, shared_response_manager,
                             best_obj_ub = kMaxIntegerValue]() mutable {
     const std::vector<int64_t> solution =
@@ -1876,8 +1889,19 @@ void QuickSolveWithHint(const CpModelProto& model_proto, Model* model) {
       // Restrict the objective.
       const IntegerVariable objective_var =
           model->GetOrCreate<ObjectiveDefinition>()->objective_var;
-      model->GetOrCreate<SatSolver>()->Backtrack(0);
       IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+      if (DEBUG_MODE) {
+        // If we try to improve the hint but the hint is already as good as the
+        // debug solution, we are trying to solve a problem for which the debug
+        // solution is not a solution anymore.
+        const DebugSolution* debug_sol = model->Get<DebugSolution>();
+        if (debug_sol &&
+            shared_response_manager->GetInnerObjectiveUpperBound() <=
+                debug_sol->inner_objective_value) {
+          model->GetOrCreate<DebugSolution>()->Clear();
+        }
+      }
+      model->GetOrCreate<SatSolver>()->Backtrack(0);
       if (!integer_trail->Enqueue(
               IntegerLiteral::LowerOrEqual(
                   objective_var,
@@ -1998,6 +2022,12 @@ void MinimizeL1DistanceWithHint(const CpModelProto& model_proto, Model* model) {
 
   // Solve optimization problem.
   LoadCpModel(updated_model_proto, &local_model);
+
+  if (local_model.GetOrCreate<SatSolver>()->ModelIsUnsat()) {
+    // TODO(user): This should mean the full model is also unsat.
+    // Exploit that ?
+    return;
+  }
 
   ConfigureSearchHeuristics(&local_model);
   const auto& mapping = *local_model.GetOrCreate<CpModelMapping>();
@@ -2191,7 +2221,8 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
       shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
-      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()),
+      progress_logger(global_model->GetOrCreate<SolverProgressLogger>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -2274,7 +2305,7 @@ void SharedClasses::LogFinalStatistics() {
   SOLVER_LOG(logger, "");
 
   stat_tables->Display(logger);
-  response->DisplayImprovementStatistics();
+  progress_logger->DisplayImprovementStatistics(logger);
 
   std::vector<std::vector<std::string>> table;
   table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});

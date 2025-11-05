@@ -283,7 +283,7 @@ bool LbTreeSearch::FullRestart() {
   num_nodes_in_tree_ = 0;
   nodes_.clear();
   current_branch_.clear();
-  return sat_solver_->RestoreSolverToAssumptionLevel();
+  return sat_solver_->ResetToLevelZero();
 }
 
 void LbTreeSearch::MarkAsDeletedNodeAndUnreachableSubtree(Node& node) {
@@ -412,7 +412,7 @@ bool LbTreeSearch::LevelZeroLogic() {
 
 SatSolver::Status LbTreeSearch::Search(
     const std::function<void()>& feasible_solution_observer) {
-  if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+  if (!sat_solver_->ResetToLevelZero()) {
     return sat_solver_->UnsatStatus();
   }
 
@@ -603,7 +603,9 @@ SatSolver::Status LbTreeSearch::Search(
       if (!sat_solver_->FinishPropagation()) {
         return sat_solver_->UnsatStatus();
       }
-      if (sat_solver_->CurrentDecisionLevel() < backtrack_level) continue;
+      if (sat_solver_->CurrentDecisionLevel() < backtrack_level) {
+        continue;
+      }
     }
 
     if (sat_solver_->CurrentDecisionLevel() == 0) {
@@ -937,7 +939,9 @@ SatSolver::Status LbTreeSearch::Search(
       }
     }
 
-    if (sat_solver_->CurrentDecisionLevel() <= base_level) continue;
+    if (sat_solver_->CurrentDecisionLevel() <= base_level) {
+      continue;
+    }
 
     // Analyse the reason for objective increase. Deduce a set of new nodes to
     // append to the tree.
@@ -987,7 +991,7 @@ SatSolver::Status LbTreeSearch::Search(
                nodes_[current_branch_[backtrack_level]].literal_index) {
       ++backtrack_level;
     }
-    sat_solver_->Backtrack(backtrack_level);
+    sat_solver_->BacktrackAndPropagateReimplications(backtrack_level);
 
     // Update bounds with reduced costs info.
     //
@@ -1157,7 +1161,10 @@ void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
   Node& node = nodes_[n];
   DCHECK(!node.is_deleted);
   const Literal node_literal = node.Decision();
-  DCHECK(!assignment_.LiteralIsAssigned(node_literal));
+
+  // This can happen if we have re-implication and propagation...
+  if (assignment_.LiteralIsAssigned(node_literal)) return;
+
   for (const IntegerLiteral integer_literal :
        integer_encoder_->GetIntegerLiterals(node_literal)) {
     // To avoid bad corner case. Not sure it ever triggers.

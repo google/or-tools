@@ -504,25 +504,19 @@ bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
   return var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size();
 }
 
-Domain PresolveContext::DomainOf(int ref) const {
-  Domain result;
-  if (RefIsPositive(ref)) {
-    result = domains_[ref];
-  } else {
-    result = domains_[PositiveRef(ref)].Negation();
-  }
-  return result;
+const Domain& PresolveContext::DomainOf(int var) const {
+  DCHECK(RefIsPositive(var));
+  return domains_[var];
 }
 
 int64_t PresolveContext::DomainSize(int ref) const {
-  return DomainOf(ref).Size();
+  return domains_[PositiveRef(ref)].Size();
 }
 
-bool PresolveContext::DomainContains(int ref, int64_t value) const {
-  if (!RefIsPositive(ref)) {
-    return domains_[PositiveRef(ref)].Contains(-value);
-  }
-  return domains_[ref].Contains(value);
+bool PresolveContext::VarCanTakeValue(int var, int64_t value) const {
+  DCHECK(RefIsPositive(var));
+  if (!CanonicalizeEncoding(&var, &value)) return false;
+  return domains_[var].Contains(value);
 }
 
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
@@ -537,7 +531,8 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   // We assume expression is validated for overflow initially, and the code
   // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
-  return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
+  return DomainOf(expr.vars(0))
+      .Contains((value - expr.offset()) / expr.coeffs(0));
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
@@ -602,6 +597,18 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
 
   // We don't do anything for longer expression for now.
   return true;
+}
+
+ABSL_MUST_USE_RESULT bool PresolveContext::IntersectionOfAffineExprsIsNotEmpty(
+    const LinearExpressionProto& a, const LinearExpressionProto& b) {
+  const Domain a_var_domain =
+      a.vars_size() == 1 ? DomainOf(a.vars(0)) : Domain(0);
+  const Domain b_var_domain =
+      b.vars_size() == 1 ? DomainOf(b.vars(0)) : Domain(0);
+  const int64_t a_coeff = a.vars_size() == 1 ? a.coeffs(0) : 0;
+  const int64_t b_coeff = b.vars_size() == 1 ? b.coeffs(0) : 0;
+  return DiophantineEquationOfSizeTwoHasSolutionInDomain(
+      a_var_domain, a_coeff, b_var_domain, -b_coeff, -a.offset() + b.offset());
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToFalse(int lit) {
@@ -1113,8 +1120,9 @@ bool PresolveContext::StoreAffineRelation(int var_x, int var_y, int64_t coeff,
 
   // Sets var_y's value to the solution of
   //   "var_x's value - coeff * var_y's value = offset".
-  solution_crush_.SetVarToLinearConstraintSolution(1, {var_x, var_y},
-                                                   {1, -coeff}, offset);
+  solution_crush_.SetVarToLinearConstraintSolution(
+      /*enforcement_lits=*/{}, 1, {var_x, var_y}, /*default_values=*/{},
+      {1, -coeff}, offset);
 
   // TODO(user): I am not 100% sure why, but sometimes the representative is
   // fixed but that is not propagated to var_x or var_y and this causes issues.
@@ -1287,8 +1295,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
-  CHECK(!DomainOf(ref_a).IsEmpty());
-  CHECK(!DomainOf(ref_b).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_a)).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_b)).IsEmpty());
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
@@ -1335,6 +1343,10 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
   } else {
     return positive_possible ? NegatedRef(r.representative) : r.representative;
   }
+}
+
+bool PresolveContext::VariableIsAffineRepresentative(int var) const {
+  return GetAffineRelation(var).representative == var;
 }
 
 // This makes sure that the affine relation only uses one of the
@@ -1614,6 +1626,18 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
     }
     return false;  // Already there.
   }
+
+  int fully_encoded_lit = 0;
+  if (HasVarValueEncoding(var, value, &fully_encoded_lit)) {
+    if (!imply_eq) {
+      fully_encoded_lit = NegatedRef(fully_encoded_lit);
+    }
+    UpdateRuleStats(
+        "variables: half reified value encoding implies fully reified");
+    AddImplication(literal, fully_encoded_lit);
+    return true;
+  }
+
   if (imply_eq) {
     // We are adding b => x=v. Check if we already have ~b => x=u.
     auto negated_encoding = direct_set.find({NegatedRef(literal), var});
@@ -1660,7 +1684,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   return true;
 }
 
-bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) {
+bool PresolveContext::CanonicalizeEncoding(int* ref, int64_t* value) const {
   const AffineRelation::Relation r = GetAffineRelation(*ref);
   if ((*value - r.offset) % r.coeff != 0) return false;
   *ref = r.representative;
@@ -1679,9 +1703,6 @@ bool PresolveContext::InsertVarValueEncoding(int literal, int var,
     return false;
   }
 
-  eq_half_encoding_.insert({{literal, var}, value});
-  neq_half_encoding_.insert({{NegatedRef(literal), var}, value});
-
   solution_crush_.MaybeSetLiteralToValueEncoding(literal, var, value);
   return true;
 }
@@ -1696,8 +1717,8 @@ bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
 }
 
-bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
-                                                     int64_t value) {
+bool PresolveContext::StoreLiteralImpliesVarNeValue(int literal, int var,
+                                                    int64_t value) {
   if (!CanonicalizeEncoding(&var, &value) || !DomainOf(var).Contains(value)) {
     // The constraint is trivial.
     return false;
@@ -1709,13 +1730,10 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
+  // TODO(user): do instead a DCHECK(VariableIsAffineRepresentative(ref))
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   DCHECK(RefIsPositive(ref));
-
-  if (!DomainOf(ref).Contains(value)) {
-    if (literal != nullptr) *literal = GetFalseLiteral();
-    return true;
-  }
+  DCHECK(DomainOf(ref).Contains(value));
 
   if (CanBeUsedAsLiteral(ref)) {
     if (literal != nullptr) {
@@ -1736,8 +1754,16 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
   return true;
 }
 
+bool PresolveContext::HasAffineValueEncoding(const LinearExpressionProto& expr,
+                                             int64_t value, int* literal) {
+  DCHECK_EQ(expr.vars_size(), 1);
+  CHECK(DomainContains(expr, value));
+  const int64_t var_value = (value - expr.offset()) / expr.coeffs(0);
+  return HasVarValueEncoding(expr.vars(0), var_value, literal);
+}
+
 bool PresolveContext::IsFullyEncoded(int ref) const {
-  const int var = PositiveRef(ref);
+  const int var = GetAffineRelation(PositiveRef(ref)).representative;
   const int64_t size = domains_[var].Size();
   if (size <= 2) return true;
   const auto& it = encoding_.find(var);
@@ -1751,11 +1777,17 @@ bool PresolveContext::IsFullyEncoded(const LinearExpressionProto& expr) const {
 }
 
 bool PresolveContext::IsMostlyFullyEncoded(int ref) const {
-  const int var = PositiveRef(ref);
+  const int var = GetAffineRelation(PositiveRef(ref)).representative;
   const int64_t size = domains_[var].Size();
   if (size <= 2) return true;
   const auto& it = encoding_.find(var);
-  return it == encoding_.end() ? false : size < 2 * it->second.size();
+  return it == encoding_.end() ? false : size <= 2 * it->second.size();
+}
+
+int64_t PresolveContext::GetValueEncodingSize(int ref) const {
+  const int var = GetAffineRelation(PositiveRef(ref)).representative;
+  const auto& it = encoding_.find(var);
+  return it == encoding_.end() ? 0 : it->second.size();
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64_t value) {
@@ -2683,8 +2715,10 @@ bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
 }
 }  // namespace
 
-bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
+bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                                   bool* is_impossible) {
   int64_t offset = 0;
+  if (is_impossible) *is_impossible = false;
   const bool result = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
@@ -2694,6 +2728,7 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
       ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset));
   const Domain tight_domain = implied.IntersectionWith(original_domain);
   if (tight_domain.IsEmpty()) {
+    if (is_impossible) *is_impossible = true;
     // Canonicalization is not the right place to handle unsat constraints.
     // Let's just replace the domain by one that is overflow-safe.
     const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);

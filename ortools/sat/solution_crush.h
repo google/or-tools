@@ -183,13 +183,14 @@ class SolutionCrush {
 
   // Sets the value of the i-th variable in `vars` so that the given constraint
   // "dotproduct(coeffs, vars values) = rhs" is satisfied, if all the other
-  // variables have a value. i is equal to `var_index` if set. Otherwise it is
-  // the index of the variable without a value (if there is not exactly one,
-  // this method does nothing).
-  void SetVarToLinearConstraintSolution(std::optional<int> var_index,
-                                        absl::Span<const int> vars,
-                                        absl::Span<const int64_t> coeffs,
-                                        int64_t rhs);
+  // variables have a value, and if the constraint is enforced (otherwise it
+  // sets the unset variables to their `default_values`). i is equal to
+  // `var_index` if set. Otherwise it is the index of the variable without a
+  // value (if there is not exactly one, this method does nothing).
+  void SetVarToLinearConstraintSolution(
+      absl::Span<const int> enforcement_lits, std::optional<int> var_index,
+      absl::Span<const int> vars, absl::Span<const int64_t> default_values,
+      absl::Span<const int64_t> coeffs, int64_t rhs);
 
   // Sets the value of the variables in `level_vars` and in `circuit` if all the
   // variables in `reservoir` have a value. This assumes that there is one level

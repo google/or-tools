@@ -1363,12 +1363,18 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       inprocessing_(model->GetOrCreate<Inprocessing>()) {}
 
 bool IntegerSearchHelper::BeforeTakingDecision() {
-  // If we pushed root level deductions, we restart to incorporate them.
-  // Note that in the present of assumptions, it is important to return to
-  // the level zero first ! otherwise, the new deductions will not be
-  // incorporated and the solver will loop forever.
+  DCHECK(sat_solver_->PropagationIsDone());
+
+  // If we pushed root level deductions, we go back to level zero and call
+  // Propagate() to incorporate them. Note that the propagation is not strcily
+  // needed, but it is nicer to be at fixed point when we call the level zero
+  // callabacks.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
     sat_solver_->Backtrack(0);
+    if (!sat_solver_->Propagate()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
 
   // The rest only trigger at level zero.
@@ -1391,16 +1397,27 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   if (sat_solver_->LiteralTrail().Index() > saved_bool_index ||
       integer_trail_->num_enqueues() > saved_integer_index ||
       integer_trail_->HasPendingRootLevelDeduction()) {
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    if (!sat_solver_->Propagate()) {
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
+  DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0)
+      << "Level zero callback left decisions on the trail ?";
 
+  // We apply inprocessing if we have budget.
   if (parameters_.use_sat_inprocessing() &&
       !inprocessing_->InprocessingRound()) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }
+  DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0)
+      << "Inprocessing left decisions on the trail ?";
 
-  return true;
+  // Finally, once all the root-level work has been done, if we have
+  // assumptions, we re-add them on the first decision level and continue
+  // from there.
+  return sat_solver_->ReapplyAssumptionsIfNeeded();
 }
 
 LiteralIndex IntegerSearchHelper::GetDecisionLiteral(
@@ -1519,9 +1536,15 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
          (sat_solver_->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (heuristics.restart_policies[heuristics.policy_index]()) {
-      if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+      // Note that in the presence of assumptions, BeforeTakingDecision()
+      // will make sure to restore them. On restart, we always call Propagate()
+      // as we might want to spent more effort on the root level LP relaxation
+      // for instance.
+      sat_solver_->Backtrack(0);
+      if (!sat_solver_->FinishPropagation()) {
         return sat_solver_->UnsatStatus();
       }
+
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
@@ -1611,17 +1634,23 @@ SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model) {
   // Backtrack to level zero.
   auto* sat_solver = model->GetOrCreate<SatSolver>();
-  if (!sat_solver->ResetToLevelZero()) return sat_solver->UnsatStatus();
+  if (!sat_solver->ResetToLevelZero()) {
+    return sat_solver->UnsatStatus();
+  }
 
   // Sync bounds and maybe do some inprocessing.
   // We reuse the BeforeTakingDecision() code
   auto* helper = model->GetOrCreate<IntegerSearchHelper>();
-  if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
+  DCHECK(sat_solver->PropagationIsDone());
+  if (!helper->BeforeTakingDecision()) {
+    return sat_solver->UnsatStatus();
+  }
 
   // Add the assumptions if any and solve.
   if (!sat_solver->ResetWithGivenAssumptions(assumptions)) {
     return sat_solver->UnsatStatus();
   }
+
   return helper->SolveIntegerProblem();
 }
 
@@ -1842,7 +1871,7 @@ SatSolver::Status ContinuousProber::Probe() {
 
       // Probe combinations of Booleans variables.
       const int limit = parameters_.probing_num_combinations_limit();
-      const bool max_num_bool_vars_for_pairs_probing =
+      const int max_num_bool_vars_for_pairs_probing =
           static_cast<int>(std::sqrt(2 * limit));
       const int num_bool_vars = bool_vars_.size();
 
@@ -1891,7 +1920,7 @@ SatSolver::Status ContinuousProber::Probe() {
       }
 
       // Note that the product is always >= 0.
-      const bool max_num_bool_vars_for_triplet_probing =
+      const int max_num_bool_vars_for_triplet_probing =
           static_cast<int>(std::cbrt(2 * limit));
       // We use a limit to make sure we do not overflow.
       const int loop_limit =

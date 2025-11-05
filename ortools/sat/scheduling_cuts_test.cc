@@ -24,6 +24,7 @@
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
 #include "ortools/base/gmock.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -411,18 +412,18 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3) {
   CompletionTimeEvent e1(0, helper, demands_helper);
   CompletionTimeEvent e2(1, helper, demands_helper);
   CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<CompletionTimeEvent*> events = {&e1, &e2, &e3};
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
   EXPECT_EQ(min_sum_of_end_mins, 17);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
@@ -464,19 +465,19 @@ TEST(ComputeMinSumOfEndMinsTest, CombinationOf3ConstraintStart) {
   CompletionTimeEvent e1(0, helper, demands_helper);
   CompletionTimeEvent e2(1, helper, demands_helper);
   CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<CompletionTimeEvent*> events = {&e1, &e2, &e3};
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
 
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
   EXPECT_EQ(min_sum_of_end_mins, 18);
   EXPECT_EQ(min_sum_of_weighted_end_mins, 86);
@@ -517,19 +518,19 @@ TEST(ComputeMinSumOfEndMinsTest, Abort) {
   CompletionTimeEvent e1(0, helper, demands_helper);
   CompletionTimeEvent e2(1, helper, demands_helper);
   CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<CompletionTimeEvent*> events = {&e1, &e2, &e3};
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 2;
 
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::ABORTED);
 }
 
@@ -568,18 +569,18 @@ TEST(ComputeMinSumOfEndMinsTest, Infeasible) {
   CompletionTimeEvent e1(0, helper, demands_helper);
   CompletionTimeEvent e2(1, helper, demands_helper);
   CompletionTimeEvent e3(2, helper, demands_helper);
-  const std::vector<CompletionTimeEvent> events = {e1, e2, e3};
+  std::vector<CompletionTimeEvent*> events = {&e1, &e2, &e3};
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 1000;
   ASSERT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, two, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events), two, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::NO_VALID_PERMUTATION);
 }
 
@@ -630,23 +631,24 @@ double ExactMakespanBruteForce(absl::Span<const int> sizes,
       new SchedulingDemandHelper(demands_expr, helper, &model);
   model.TakeOwnership(demands_helper);
 
-  std::vector<CompletionTimeEvent> events;
+  std::vector<CompletionTimeEvent*> events;
   for (int i = 0; i < demands.size(); ++i) {
-    CompletionTimeEvent e(i, helper, demands_helper);
+    CompletionTimeEvent* e = new CompletionTimeEvent(i, helper, demands_helper);
     events.push_back(e);
   }
 
   double min_sum_of_end_mins = 0;
   double min_sum_of_weighted_end_mins = 0;
   CtExhaustiveHelper ct_helper;
-  ct_helper.Init(events, &model);
+  ct_helper.Init(absl::MakeSpan(events), &model);
   bool cut_use_precedences = false;
   int exploration_credit = 10000;
   EXPECT_EQ(ComputeMinSumOfWeightedEndMins(
-                events, capacity, 0.01, 0.01, ct_helper, min_sum_of_end_mins,
-                min_sum_of_weighted_end_mins, cut_use_precedences,
-                exploration_credit),
+                absl::MakeSpan(events), capacity, 0.01, 0.01, ct_helper,
+                min_sum_of_end_mins, min_sum_of_weighted_end_mins,
+                cut_use_precedences, exploration_credit),
             CompletionTimeExplorationStatus::FINISHED);
+  gtl::STLDeleteElements(&events);
   return min_sum_of_end_mins;
 }
 
@@ -676,20 +678,23 @@ struct SimpleEvent {
   }
 };
 
-SimpleEvent ConvexHull(absl::Span<const SimpleEvent> events) {
-  SimpleEvent result = events[0];
+SimpleEvent ConvexHull(absl::Span<SimpleEvent*> events) {
+  SimpleEvent result = *events[0];
   for (int i = 1; i < events.size(); ++i) {
-    result.start_min = std::min(result.start_min, events[i].start_min);
-    result.end_max = std::max(result.end_max, events[i].end_max);
+    result.start_min = std::min(result.start_min, events[i]->start_min);
+    result.end_max = std::max(result.end_max, events[i]->end_max);
   }
   return result;
 }
 
 TEST(SplitEventsInIndendentSetsTest, BasicTest) {
-  std::vector<SimpleEvent> events = {{0, 10},  {2, 12},  {3, 5},
-                                     {15, 20}, {12, 21}, {30, 35}};
-  const std::vector<absl::Span<SimpleEvent>> sets =
-      SplitEventsInIndendentSets(absl::MakeSpan(events));
+  std::vector<SimpleEvent> events_arena = {{0, 10},  {2, 12},  {3, 5},
+                                           {15, 20}, {12, 21}, {30, 35}};
+  std::vector<SimpleEvent*> events;
+  events.reserve(events_arena.size());
+  for (SimpleEvent& event : events_arena) events.push_back(&event);
+  const std::vector<absl::Span<SimpleEvent*>> sets =
+      SplitEventsInIndendentSets(events);
   EXPECT_EQ(sets.size(), 2);
   EXPECT_EQ(sets[0].size(), 3);
   EXPECT_EQ(ConvexHull(sets[0]), SimpleEvent({0, 12}));
