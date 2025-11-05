@@ -2,14 +2,14 @@ ZLIB=1.3.1
 abseil-cpp=20250814.1
 Protobuf=v32.0
 Eigen=3.4.0
-Re2=2024-07-02
+Re2=2025-08-12
 CoinUtils=2.11.12
 Osi=0.108.11
 Clp=1.17.10
 Cgl=0.60.9
 Cbc=2.10.12
 GLPK=5.0
-HiGHS=v1.11.0
+HiGHS=v1.12.0
 Scip=v923
 # Python
 pybind11=v2.13.6
