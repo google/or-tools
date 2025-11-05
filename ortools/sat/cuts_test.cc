@@ -43,6 +43,7 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+using ::testing::DoubleNear;
 using ::testing::EndsWith;
 using ::testing::StartsWith;
 
@@ -863,6 +864,14 @@ TEST(LinMaxCutsTest, AffineCutsFixedVar) {
   EXPECT_EQ(0, manager->num_cuts());
 }
 
+MATCHER_P3(CutDataIs, coeff_matcher, lp_matcher, range_matcher, "") {
+  return ExplainMatchResult(coeff_matcher, arg.coeff.value(),
+                            result_listener) &&
+         ExplainMatchResult(range_matcher, arg.bound_diff.value(),
+                            result_listener) &&
+         ExplainMatchResult(lp_matcher, arg.lp_value, result_listener);
+}
+
 TEST(ImpliedBoundsProcessorTest, PositiveBasicTest) {
   Model model;
   model.GetOrCreate<SatParameters>()->set_use_implied_bounds(true);
@@ -911,10 +920,8 @@ TEST(ImpliedBoundsProcessorTest, PositiveBasicTest) {
                    absl::MakeSpan(new_terms), t, &data));
 
   EXPECT_EQ(data.terms.size(), 2);
-  EXPECT_THAT(data.terms[0].DebugString(),
-              ::testing::StartsWith("coeff=1 lp=0 range=7"));
-  EXPECT_THAT(data.terms[1].DebugString(),
-              ::testing::StartsWith("coeff=3 lp=0.666667 range=1"));
+  EXPECT_THAT(data.terms[0], CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
+  EXPECT_THAT(data.terms[1], CutDataIs(3, DoubleNear(0.666667, 1.0e-6), 1));
   EXPECT_EQ(data.terms[1].expr_offset, 0);
 }
 
@@ -967,10 +974,8 @@ TEST(ImpliedBoundsProcessorTest, NegativeBasicTest) {
                    absl::MakeSpan(new_terms), t, &data));
 
   EXPECT_EQ(data.terms.size(), 2);
-  EXPECT_THAT(data.terms[0].DebugString(),
-              ::testing::StartsWith("coeff=1 lp=0 range=7"));
-  EXPECT_THAT(data.terms[1].DebugString(),
-              ::testing::StartsWith("coeff=3 lp=0.666667 range=1"));
+  EXPECT_THAT(data.terms[0], CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
+  EXPECT_THAT(data.terms[1], CutDataIs(3, DoubleNear(0.666667, 1.0e-6), 1));
 
   // This is the only change, we have 1 - bool there actually.
   EXPECT_EQ(data.terms[1].expr_offset, 1);
@@ -1032,10 +1037,8 @@ TEST(ImpliedBoundsProcessorTest, DecompositionTest) {
   CutTerm slack_term;
   EXPECT_TRUE(processor.DecomposeWithImpliedLowerBound(X, IntegerValue(1),
                                                        bool_term, slack_term));
-  EXPECT_THAT(bool_term.DebugString(),
-              ::testing::StartsWith("coeff=3 lp=0.666667 range=1"));
-  EXPECT_THAT(slack_term.DebugString(),
-              ::testing::StartsWith("coeff=1 lp=0 range=7"));
+  EXPECT_THAT(bool_term, CutDataIs(3, DoubleNear(0.666667, 1.0e-6), 1));
+  EXPECT_THAT(slack_term, CutDataIs(1, DoubleNear(0.0, 1.0e-6), 7));
 
   // (9 - X) = 7 * C + slack;
   CutTerm Y = X;
@@ -1044,18 +1047,14 @@ TEST(ImpliedBoundsProcessorTest, DecompositionTest) {
   Y.coeff = -Y.coeff;
   EXPECT_TRUE(processor.DecomposeWithImpliedLowerBound(Y, IntegerValue(1),
                                                        bool_term, slack_term));
-  EXPECT_THAT(bool_term.DebugString(),
-              ::testing::StartsWith("coeff=7 lp=0.5 range=1"));
-  EXPECT_THAT(slack_term.DebugString(),
-              ::testing::StartsWith("coeff=1 lp=1.5 range=7"));
+  EXPECT_THAT(bool_term, CutDataIs(7, DoubleNear(0.5, 1.0e-6), 1));
+  EXPECT_THAT(slack_term, CutDataIs(1, DoubleNear(1.5, 1.0e-6), 7));
 
   // X - 2 = 7 * (1 - C) - slack;
   EXPECT_TRUE(processor.DecomposeWithImpliedUpperBound(X, IntegerValue(1),
                                                        bool_term, slack_term));
-  EXPECT_THAT(bool_term.DebugString(),
-              ::testing::StartsWith("coeff=7 lp=0.5 range=1"));
-  EXPECT_THAT(slack_term.DebugString(),
-              ::testing::StartsWith("coeff=-1 lp=1.5 range=7"));
+  EXPECT_THAT(bool_term, CutDataIs(7, DoubleNear(0.5, 1.0e-6), 1));
+  EXPECT_THAT(slack_term, CutDataIs(-1, DoubleNear(1.5, 1.0e-6), 7));
 }
 
 TEST(CutDataTest, SimpleExample) {
