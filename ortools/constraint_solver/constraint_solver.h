@@ -65,8 +65,8 @@
 ///
 ///
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -5921,4 +5921,4 @@ class SolutionPool : public BaseObject {
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
