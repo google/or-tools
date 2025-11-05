@@ -14,8 +14,8 @@
 // Reading and parsing the data of Frequency Assignment Problem
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
 
-#ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
-#define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
+#ifndef ORTOOLS_EXAMPLES_FAP_PARSER_H_
+#define ORTOOLS_EXAMPLES_FAP_PARSER_H_
 
 #include <string>
 #include <vector>
@@ -230,4 +230,4 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::string* objective, std::vector<int>* frequencies,
                    absl::flat_hash_map<int, FapComponent>* components);
 }  // namespace operations_research
-#endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_
+#endif  // ORTOOLS_EXAMPLES_FAP_PARSER_H_
