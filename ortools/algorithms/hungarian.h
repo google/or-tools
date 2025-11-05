@@ -19,8 +19,8 @@
 // The code also enables computing a maximum assignment by changing the
 // input matrix.
 
-#ifndef OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
-#define OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
+#ifndef ORTOOLS_ALGORITHMS_HUNGARIAN_H_
+#define ORTOOLS_ALGORITHMS_HUNGARIAN_H_
 
 #include <vector>
 
@@ -43,4 +43,4 @@ void MaximizeLinearAssignment(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
+#endif  // ORTOOLS_ALGORITHMS_HUNGARIAN_H_
