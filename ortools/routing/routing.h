@@ -153,8 +153,8 @@
 /// Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW,
 /// PDP.
 
-#ifndef OR_TOOLS_ROUTING_ROUTING_H_
-#define OR_TOOLS_ROUTING_ROUTING_H_
+#ifndef ORTOOLS_ROUTING_ROUTING_H_
+#define ORTOOLS_ROUTING_ROUTING_H_
 
 #include <algorithm>
 #include <atomic>
@@ -3751,4 +3751,4 @@ bool SolveModelWithSat(RoutingModel* model, RoutingSearchStats* search_stats,
                        operations_research::Assignment* solution);
 
 }  // namespace operations_research::routing
-#endif  // OR_TOOLS_ROUTING_ROUTING_H_
+#endif  // ORTOOLS_ROUTING_ROUTING_H_

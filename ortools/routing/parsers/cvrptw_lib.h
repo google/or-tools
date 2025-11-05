@@ -13,8 +13,8 @@
 
 // This header provides functions to help create random instances of the
 // vehicle routing problem; random capacities and random time windows.
-#ifndef OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
-#define OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#define ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
 
 #include <cstdint>
 #include <functional>
@@ -135,4 +135,4 @@ void DisplayPlan(const RoutingIndexManager& manager,
 
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_CVRPTW_LIB_H_

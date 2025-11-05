@@ -14,8 +14,8 @@
 // Utilities to serialize VRP-like solutions in standardised formats: either
 // TSPLIB or CVRPLIB.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
-#define OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#define ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
 
 #include <optional>
 #include <string>
@@ -293,4 +293,4 @@ void PrintStatistic(absl::string_view name, T value,
 }
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_SOLUTION_SERIALIZER_H_

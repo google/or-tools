@@ -21,8 +21,8 @@
 // follow the TSPLIB95 format (described at
 // http://www.iwr.uni-heidelberg.de/groups/comopt/software/TSPLIB95/DOC.PS).
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
-#define OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
+#define ORTOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
 
 #include <cstdint>
 #include <set>
@@ -252,4 +252,4 @@ class CVRPToursParser final {
 };
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_TSPLIB_PARSER_H_
