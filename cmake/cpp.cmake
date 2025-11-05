@@ -79,7 +79,6 @@ if(USE_GLOP)
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
-  set(GLPK_DIR glpk)
 endif()
 if(USE_GUROBI)
   set(GUROBI_DIR gurobi)
@@ -517,7 +516,6 @@ foreach(SUBPROJECT IN ITEMS
  linear_solver
  bop
  glop
- ${GLPK_DIR}
  ${GUROBI_DIR}
  ${PDLP_DIR}
  sat
@@ -533,6 +531,13 @@ foreach(SUBPROJECT IN ITEMS
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
   add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
+
+if(USE_GLPK)
+  add_subdirectory(ortools/third_party_solvers/glpk)
+  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_glpk)
+  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_glpk>)
+  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_glpk)
+endif()
 
 if(BUILD_MATH_OPT)
   add_subdirectory(ortools/${MATH_OPT_DIR})
