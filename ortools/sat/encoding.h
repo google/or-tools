@@ -17,8 +17,8 @@
 //
 // This is also known as the incremental totalizer encoding in the literature.
 
-#ifndef OR_TOOLS_SAT_ENCODING_H_
-#define OR_TOOLS_SAT_ENCODING_H_
+#ifndef ORTOOLS_SAT_ENCODING_H_
+#define ORTOOLS_SAT_ENCODING_H_
 
 #include <deque>
 #include <functional>
@@ -279,4 +279,4 @@ class ObjectiveEncoder {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_ENCODING_H_
+#endif  // ORTOOLS_SAT_ENCODING_H_

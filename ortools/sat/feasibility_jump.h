@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
-#define OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
+#ifndef ORTOOLS_SAT_FEASIBILITY_JUMP_H_
+#define ORTOOLS_SAT_FEASIBILITY_JUMP_H_
 
 #include <algorithm>
 #include <atomic>
@@ -695,4 +695,4 @@ class CompoundMoveBuilder {
 
 }  // namespace operations_research::sat
 
-#endif  // OR_TOOLS_SAT_FEASIBILITY_JUMP_H_
+#endif  // ORTOOLS_SAT_FEASIBILITY_JUMP_H_

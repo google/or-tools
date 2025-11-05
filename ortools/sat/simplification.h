@@ -16,8 +16,8 @@
 // "Effective Preprocessing in SAT through Variable and Clause Elimination",
 // Niklas Een and Armin Biere, published in the SAT 2005 proceedings.
 
-#ifndef OR_TOOLS_SAT_SIMPLIFICATION_H_
-#define OR_TOOLS_SAT_SIMPLIFICATION_H_
+#ifndef ORTOOLS_SAT_SIMPLIFICATION_H_
+#define ORTOOLS_SAT_SIMPLIFICATION_H_
 
 #include <cstdint>
 #include <deque>
@@ -446,4 +446,4 @@ void ProbeAndFindEquivalentLiteral(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SIMPLIFICATION_H_
+#endif  // ORTOOLS_SAT_SIMPLIFICATION_H_

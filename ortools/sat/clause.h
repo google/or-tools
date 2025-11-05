@@ -14,8 +14,8 @@
 // This file contains the solver internal representation of the clauses and the
 // classes used for their propagation.
 
-#ifndef OR_TOOLS_SAT_CLAUSE_H_
-#define OR_TOOLS_SAT_CLAUSE_H_
+#ifndef ORTOOLS_SAT_CLAUSE_H_
+#define ORTOOLS_SAT_CLAUSE_H_
 
 #include <cstdint>
 #include <deque>
@@ -1083,4 +1083,4 @@ BinaryImplicationGraph::ExpandAtMostOneWithWeight<false>(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CLAUSE_H_
+#endif  // ORTOOLS_SAT_CLAUSE_H_

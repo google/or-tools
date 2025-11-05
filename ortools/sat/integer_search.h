@@ -20,8 +20,8 @@
 // still use the objective if there is one in order to orient the search towards
 // good feasible solution though.
 
-#ifndef OR_TOOLS_SAT_INTEGER_SEARCH_H_
-#define OR_TOOLS_SAT_INTEGER_SEARCH_H_
+#ifndef ORTOOLS_SAT_INTEGER_SEARCH_H_
+#define ORTOOLS_SAT_INTEGER_SEARCH_H_
 
 #include <stdint.h>
 
@@ -407,4 +407,4 @@ class ContinuousProber {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_INTEGER_SEARCH_H_
+#endif  // ORTOOLS_SAT_INTEGER_SEARCH_H_

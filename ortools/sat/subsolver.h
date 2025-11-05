@@ -14,8 +14,8 @@
 // Simple framework for choosing and distributing a solver "sub-tasks" on a set
 // of threads.
 
-#ifndef OR_TOOLS_SAT_SUBSOLVER_H_
-#define OR_TOOLS_SAT_SUBSOLVER_H_
+#ifndef ORTOOLS_SAT_SUBSOLVER_H_
+#define ORTOOLS_SAT_SUBSOLVER_H_
 
 #include <algorithm>
 #include <cmath>
@@ -226,4 +226,4 @@ void SequentialLoop(std::vector<std::unique_ptr<SubSolver>>& subsolvers);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SUBSOLVER_H_
+#endif  // ORTOOLS_SAT_SUBSOLVER_H_

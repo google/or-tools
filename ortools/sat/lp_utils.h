@@ -13,8 +13,8 @@
 
 // Utility functions to interact with an lp solver from the SAT context.
 
-#ifndef OR_TOOLS_SAT_LP_UTILS_H_
-#define OR_TOOLS_SAT_LP_UTILS_H_
+#ifndef ORTOOLS_SAT_LP_UTILS_H_
+#define ORTOOLS_SAT_LP_UTILS_H_
 
 #include <stdint.h>
 
@@ -246,4 +246,4 @@ void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LP_UTILS_H_
+#endif  // ORTOOLS_SAT_LP_UTILS_H_

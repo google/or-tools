@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_LB_TREE_SEARCH_H_
-#define OR_TOOLS_SAT_LB_TREE_SEARCH_H_
+#ifndef ORTOOLS_SAT_LB_TREE_SEARCH_H_
+#define ORTOOLS_SAT_LB_TREE_SEARCH_H_
 
 #include <stdint.h>
 
@@ -242,4 +242,4 @@ class LbTreeSearch {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LB_TREE_SEARCH_H_
+#endif  // ORTOOLS_SAT_LB_TREE_SEARCH_H_

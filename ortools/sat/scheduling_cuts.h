@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SCHEDULING_CUTS_H_
-#define OR_TOOLS_SAT_SCHEDULING_CUTS_H_
+#ifndef ORTOOLS_SAT_SCHEDULING_CUTS_H_
+#define ORTOOLS_SAT_SCHEDULING_CUTS_H_
 
 #include <optional>
 #include <string>
@@ -253,4 +253,4 @@ std::vector<absl::Span<E*>> SplitEventsInIndendentSets(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SCHEDULING_CUTS_H_
+#endif  // ORTOOLS_SAT_SCHEDULING_CUTS_H_

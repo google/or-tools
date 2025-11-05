@@ -18,8 +18,8 @@
 // is avoid doing work that is not useful because nothing changed or exploring
 // parts that were not done during the last round.
 
-#ifndef OR_TOOLS_SAT_SAT_INPROCESSING_H_
-#define OR_TOOLS_SAT_SAT_INPROCESSING_H_
+#ifndef ORTOOLS_SAT_SAT_INPROCESSING_H_
+#define ORTOOLS_SAT_SAT_INPROCESSING_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -528,4 +528,4 @@ class GateCongruenceClosure {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_INPROCESSING_H_
+#endif  // ORTOOLS_SAT_SAT_INPROCESSING_H_

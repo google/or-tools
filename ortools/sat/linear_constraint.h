@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
-#define OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
+#ifndef ORTOOLS_SAT_LINEAR_CONSTRAINT_H_
+#define ORTOOLS_SAT_LINEAR_CONSTRAINT_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -463,4 +463,4 @@ inline bool MergePositiveVariableTermsAndCheckForOverflow(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
+#endif  // ORTOOLS_SAT_LINEAR_CONSTRAINT_H_

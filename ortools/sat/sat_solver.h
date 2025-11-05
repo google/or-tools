@@ -16,8 +16,8 @@
 // for more detail.
 // TODO(user): Expand.
 
-#ifndef OR_TOOLS_SAT_SAT_SOLVER_H_
-#define OR_TOOLS_SAT_SAT_SOLVER_H_
+#ifndef ORTOOLS_SAT_SAT_SOLVER_H_
+#define ORTOOLS_SAT_SAT_SOLVER_H_
 
 #include <cstdint>
 #include <functional>
@@ -1126,4 +1126,4 @@ inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_SOLVER_H_
+#endif  // ORTOOLS_SAT_SAT_SOLVER_H_
