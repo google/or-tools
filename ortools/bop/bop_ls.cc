@@ -649,6 +649,7 @@ void SatWrapper::BacktrackAll() { sat_solver_->Backtrack(0); }
 std::vector<sat::Literal> SatWrapper::FullSatTrail() const {
   std::vector<sat::Literal> propagated_literals;
   const sat::Trail& trail = sat_solver_->LiteralTrail();
+  propagated_literals.reserve(trail.Index());
   for (int trail_index = 0; trail_index < trail.Index(); ++trail_index) {
     propagated_literals.push_back(trail[trail_index]);
   }
