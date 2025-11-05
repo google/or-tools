@@ -372,12 +372,54 @@ ENDATA
             s += model.new_bool_var("")
         model.add(s == 10)
 
+    def test_complex_iadd(self):
+        model = mb.Model()
+        delta_down_0 = model.new_var(
+            name="delta_down_0", lb=0, ub=float("inf"), is_integer=False
+        )
+        ac_flow_0_10 = model.new_var(
+            name="ac_flow_0_10", lb=0, ub=float("inf"), is_integer=False
+        )
+        ac_flow_0_11 = model.new_var(
+            name="ac_flow_0_11", lb=0, ub=float("inf"), is_integer=False
+        )
+        expr1 = -0.333333 * delta_down_0
+        expr1 += ac_flow_0_10
+        expr1 += ac_flow_0_11
+
+        expr2 = -0.333333 * delta_down_0
+        expr2 = expr2 + ac_flow_0_10
+        expr2 = expr2 + ac_flow_0_11
+
+        self.assertEqual(str(mbh.FlatExpr(expr1)), str(mbh.FlatExpr(expr2)))
+
     def test_large_isub(self):
         model = mb.Model()
         s = 0
         for _ in range(300000):
             s -= model.new_bool_var("")
         model.add(s == 10)
+
+    def test_complex_sub(self):
+        model = mb.Model()
+        delta_down_0 = model.new_var(
+            name="delta_down_0", lb=0, ub=float("inf"), is_integer=False
+        )
+        ac_flow_0_10 = model.new_var(
+            name="ac_flow_0_10", lb=0, ub=float("inf"), is_integer=False
+        )
+        ac_flow_0_11 = model.new_var(
+            name="ac_flow_0_11", lb=0, ub=float("inf"), is_integer=False
+        )
+        expr1 = -0.333333 * delta_down_0
+        expr1 -= ac_flow_0_10
+        expr1 -= ac_flow_0_11
+
+        expr2 = -0.333333 * delta_down_0
+        expr2 = expr2 - ac_flow_0_10
+        expr2 = expr2 - ac_flow_0_11
+
+        self.assertEqual(str(mbh.FlatExpr(expr1)), str(mbh.FlatExpr(expr2)))
 
     def test_variables(self):
         model = mb.Model()
