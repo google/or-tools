@@ -15,8 +15,8 @@
 // described at https://www.scipopt.org/doc/html/CONS.php. For instructions to
 // write a constraint handler, see the documentation of GScipConstraintHandler.
 // Examples can be found in gscip_constraint_handler_test.cc.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
 
 #include <cstdint>
 #include <memory>
@@ -719,4 +719,4 @@ GScipConstraintHandler<ConstraintData>::CallSeparateSolution(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_CONSTRAINT_HANDLER_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GLPK_GLPK_ENV_DELETER_H_
-#define OR_TOOLS_GLPK_GLPK_ENV_DELETER_H_
+#ifndef ORTOOLS_GLPK_GLPK_ENV_DELETER_H_
+#define ORTOOLS_GLPK_GLPK_ENV_DELETER_H_
 
 namespace operations_research {
 
@@ -27,4 +27,4 @@ void SetupGlpkEnvAutomaticDeletion();
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLPK_GLPK_ENV_DELETER_H_
+#endif  // ORTOOLS_GLPK_GLPK_ENV_DELETER_H_

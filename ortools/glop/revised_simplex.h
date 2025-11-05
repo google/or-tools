@@ -88,8 +88,8 @@
 // implementation", PhD, Paderborn, Univ., 2005.
 // http://digital.ub.uni-paderborn.de/hs/download/pdf/3885?originalFilename=true
 
-#ifndef OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
-#define OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
+#ifndef ORTOOLS_GLOP_REVISED_SIMPLEX_H_
+#define ORTOOLS_GLOP_REVISED_SIMPLEX_H_
 
 #include <cstdint>
 #include <string>
@@ -907,4 +907,4 @@ class RevisedSimplexDictionary {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
+#endif  // ORTOOLS_GLOP_REVISED_SIMPLEX_H_

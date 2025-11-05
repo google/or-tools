@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SYMMETRY_UTIL_H_
-#define OR_TOOLS_SAT_SYMMETRY_UTIL_H_
+#ifndef ORTOOLS_SAT_SYMMETRY_UTIL_H_
+#define ORTOOLS_SAT_SYMMETRY_UTIL_H_
 
 #include <memory>
 #include <vector>
@@ -101,4 +101,4 @@ inline void TransformToGeneratorOfStabilizer(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SYMMETRY_UTIL_H_
+#endif  // ORTOOLS_SAT_SYMMETRY_UTIL_H_

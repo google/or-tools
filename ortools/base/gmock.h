@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_GMOCK_H_
-#define OR_TOOLS_BASE_GMOCK_H_
+#ifndef ORTOOLS_BASE_GMOCK_H_
+#define ORTOOLS_BASE_GMOCK_H_
 
 #include "absl/status/status_matchers.h"
 #include "ortools/base/gmock.h"
@@ -59,4 +59,4 @@ using ::absl_testing::StatusIs;
   ASSERT_TRUE(statusor.ok()) << statusor.status();       \
   lhs = std::move(statusor.value())
 
-#endif  // OR_TOOLS_BASE_GMOCK_H_
+#endif  // ORTOOLS_BASE_GMOCK_H_

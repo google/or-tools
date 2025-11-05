@@ -25,8 +25,8 @@
 //
 // Both books also contain a wealth of references.
 
-#ifndef OR_TOOLS_LP_DATA_SPARSE_H_
-#define OR_TOOLS_LP_DATA_SPARSE_H_
+#ifndef ORTOOLS_LP_DATA_SPARSE_H_
+#define ORTOOLS_LP_DATA_SPARSE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -939,4 +939,4 @@ class TriangularMatrix : private CompactSparseMatrix {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SPARSE_H_
+#endif  // ORTOOLS_LP_DATA_SPARSE_H_

@@ -14,8 +14,8 @@
 // This header defines primal/dual unboundness ray computation functions for
 // GLPK solver. They use the index space of the computation form of the model as
 // defined in cs/ortools/glpk/glpk_computational_form.h.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
 
 #include <optional>
 #include <utility>
@@ -82,4 +82,4 @@ absl::StatusOr<std::optional<GlpkRay>> GlpkComputeUnboundRay(glp_prob* problem);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GLPK_RAYS_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SET_COVER_SET_COVER_SUBMODEL_H
-#define OR_TOOLS_SET_COVER_SET_COVER_SUBMODEL_H
+#ifndef ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H
+#define ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H
 
 #include "ortools/set_cover/set_cover_views.h"
 
@@ -311,4 +311,4 @@ bool ValidateSubModel(const SubModelT& model) {
 }
 
 }  // namespace operations_research::scp
-#endif /* OR_TOOLS_SET_COVER_SET_COVER_SUBMODEL_H */
+#endif /* ORTOOLS_SET_COVER_SET_COVER_SUBMODEL_H */

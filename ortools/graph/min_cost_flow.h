@@ -165,8 +165,8 @@
 // Keywords: Push-relabel, min-cost flow, network, graph, Goldberg, Tarjan,
 //           Dinic, Dinitz.
 
-#ifndef OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
-#define OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
+#ifndef ORTOOLS_GRAPH_MIN_COST_FLOW_H_
+#define ORTOOLS_GRAPH_MIN_COST_FLOW_H_
 
 #include <cstdint>
 #include <stack>
@@ -697,4 +697,4 @@ struct MinCostFlow : public MinCostFlowBase {
 #endif  // SWIG
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
+#endif  // ORTOOLS_GRAPH_MIN_COST_FLOW_H_

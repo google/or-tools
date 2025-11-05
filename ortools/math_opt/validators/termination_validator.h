@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_
-#define OR_TOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_
+#ifndef ORTOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_
+#define ORTOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_
 
 #include "absl/status/status.h"
 #include "ortools/math_opt/result.pb.h"
@@ -27,4 +27,4 @@ absl::Status ValidateTermination(const TerminationProto& termination,
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_
+#endif  // ORTOOLS_MATH_OPT_VALIDATORS_TERMINATION_VALIDATOR_H_

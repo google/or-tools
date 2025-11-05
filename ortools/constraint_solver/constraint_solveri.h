@@ -46,8 +46,8 @@
 ///   - SearchLog, the root class of all periodic outputs during search.
 ///   - ModelCache, A caching layer to avoid creating twice the same object.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
 #include <stdint.h>
 #include <string.h>
@@ -4362,4 +4362,4 @@ std::vector<int64_t> ToInt64Vector(const std::vector<int>& input);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

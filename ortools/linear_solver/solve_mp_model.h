@@ -15,8 +15,8 @@
 //
 // See linear_solver.proto for further documentation.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
-#define OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#define ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
 
 #include <string>
 
@@ -52,4 +52,4 @@ std::string MPModelRequestLoggingInfo(const MPModelRequest& request);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_SOLVE_MP_MODEL_H_

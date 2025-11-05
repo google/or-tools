@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Library to unit test PySolveInterrupter wrapper.
-#ifndef OR_TOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_
-#define OR_TOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_
+#ifndef ORTOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_
+#define ORTOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_
 
 #include <memory>
 #include <optional>
@@ -59,4 +59,4 @@ class PySolveInterrupterReference {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_
+#endif  // ORTOOLS_UTIL_PYTHON_PY_SOLVE_INTERRUPTER_TESTING_H_

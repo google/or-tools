@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_HASH_H_
-#define OR_TOOLS_BASE_HASH_H_
+#ifndef ORTOOLS_BASE_HASH_H_
+#define ORTOOLS_BASE_HASH_H_
 
 #include <array>
 #include <cstdint>
@@ -83,4 +83,4 @@ inline uint64_t Hash(uint64_t a, uint64_t b, uint64_t c) {
 
 }  // namespace util_hash
 
-#endif  // OR_TOOLS_BASE_HASH_H_
+#endif  // ORTOOLS_BASE_HASH_H_

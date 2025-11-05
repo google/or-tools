@@ -70,8 +70,8 @@
 // (i, j), first find the maximum k such that i + 2^k < j, then use
 // min(A, i, j) = std::min(min(A, i, i+2^k), min(A, j-2^k, j)).
 
-#ifndef OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
-#define OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
+#ifndef ORTOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
+#define ORTOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
 
 #include <algorithm>
 #include <functional>
@@ -262,4 +262,4 @@ inline const std::vector<T>& RangeMinimumIndexQuery<T, Compare>::array() const {
   return cmp_.array;
 }
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
+#endif  // ORTOOLS_UTIL_RANGE_MINIMUM_QUERY_H_

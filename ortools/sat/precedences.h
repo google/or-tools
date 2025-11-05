@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_PRECEDENCES_H_
-#define OR_TOOLS_SAT_PRECEDENCES_H_
+#ifndef ORTOOLS_SAT_PRECEDENCES_H_
+#define ORTOOLS_SAT_PRECEDENCES_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -854,4 +854,4 @@ Linear2Indices::GetAllLinear2ContainingVariables(IntegerVariable var1,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PRECEDENCES_H_
+#endif  // ORTOOLS_SAT_PRECEDENCES_H_

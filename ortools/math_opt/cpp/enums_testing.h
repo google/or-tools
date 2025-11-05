@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Typed tests for enums that use enums.h.
-#ifndef OR_TOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_
-#define OR_TOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_
+#define ORTOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_
 
 #include <limits>
 #include <optional>
@@ -105,4 +105,4 @@ REGISTER_TYPED_TEST_SUITE_P(EnumTest, UnderlyingTypeFits, AllProtoValues,
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_ENUMS_TESTING_H_

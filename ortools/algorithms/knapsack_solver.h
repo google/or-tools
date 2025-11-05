@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
-#define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
+#ifndef ORTOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
+#define ORTOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
 #include <cstdint>
 #include <memory>
@@ -718,4 +718,4 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
 #endif  // SWIG
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
+#endif  // ORTOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_

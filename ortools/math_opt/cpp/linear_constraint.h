@@ -15,8 +15,8 @@
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
 // An object oriented wrapper for linear constraints in ModelStorage.
-#ifndef OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
-#define OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
+#define ORTOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
 
 #include <sstream>
 #include <string>
@@ -129,4 +129,4 @@ std::string LinearConstraint::ToString() const {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_LINEAR_CONSTRAINT_H_

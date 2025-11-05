@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_RUNNING_STAT_H_
-#define OR_TOOLS_UTIL_RUNNING_STAT_H_
+#ifndef ORTOOLS_UTIL_RUNNING_STAT_H_
+#define ORTOOLS_UTIL_RUNNING_STAT_H_
 
 #include <cstddef>
 #include <deque>
@@ -204,4 +204,4 @@ Number RunningMax<Number>::GetCurrentMax() {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_RUNNING_STAT_H_
+#endif  // ORTOOLS_UTIL_RUNNING_STAT_H_

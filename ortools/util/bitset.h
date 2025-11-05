@@ -13,8 +13,8 @@
 
 // Various utility functions on bitsets.
 
-#ifndef OR_TOOLS_UTIL_BITSET_H_
-#define OR_TOOLS_UTIL_BITSET_H_
+#ifndef ORTOOLS_UTIL_BITSET_H_
+#define ORTOOLS_UTIL_BITSET_H_
 
 #include <string.h>
 
@@ -924,4 +924,4 @@ class SparseBitset {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_BITSET_H_
+#endif  // ORTOOLS_UTIL_BITSET_H_

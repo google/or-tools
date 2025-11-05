@@ -20,8 +20,8 @@
 //
 // Keywords: undirected graph, clique, clique cover, Bron, Kerbosch.
 
-#ifndef OR_TOOLS_GRAPH_CLIQUES_H_
-#define OR_TOOLS_GRAPH_CLIQUES_H_
+#ifndef ORTOOLS_GRAPH_CLIQUES_H_
+#define ORTOOLS_GRAPH_CLIQUES_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -646,4 +646,4 @@ const double BronKerboschAlgorithm<
     NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_CLIQUES_H_
+#endif  // ORTOOLS_GRAPH_CLIQUES_H_

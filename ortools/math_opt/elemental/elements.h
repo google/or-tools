@@ -15,8 +15,8 @@
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 // IWYU pragma: friend "ortools/math_opt/elemental/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
 
 #include <ostream>
 #include <type_traits>
@@ -85,4 +85,4 @@ using IndicatorConstraintId = ElementId<ElementType::kIndicatorConstraint>;
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_ELEMENTS_H_

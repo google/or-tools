@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_
-#define OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_
+#ifndef ORTOOLS_UTIL_MONOID_OPERATION_TREE_H_
+#define ORTOOLS_UTIL_MONOID_OPERATION_TREE_H_
 
 #include <algorithm>
 #include <string>
@@ -250,4 +250,4 @@ void MonoidOperationTree<T>::DiveInTree(int position, Diver* diver) const {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_
+#endif  // ORTOOLS_UTIL_MONOID_OPERATION_TREE_H_

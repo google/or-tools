@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CP_MODEL_LOADER_H_
-#define OR_TOOLS_SAT_CP_MODEL_LOADER_H_
+#ifndef ORTOOLS_SAT_CP_MODEL_LOADER_H_
+#define ORTOOLS_SAT_CP_MODEL_LOADER_H_
 
 #include <cstdint>
 #include <vector>
@@ -115,4 +115,4 @@ void SplitAndLoadIntermediateConstraints(bool lb_required, bool ub_required,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_LOADER_H_
+#endif  // ORTOOLS_SAT_CP_MODEL_LOADER_H_

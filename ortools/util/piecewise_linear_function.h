@@ -17,8 +17,8 @@
 // This class maintains a minimal internal representation and checks for
 // overflow.
 
-#ifndef OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
-#define OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#ifndef ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#define ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 
 #include <cstdint>
 #include <functional>
@@ -356,4 +356,4 @@ class FloatSlopePiecewiseLinearFunction {
 };
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+#endif  // ORTOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_

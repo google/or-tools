@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
-#define OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
+#define ORTOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
 
 #include <algorithm>
 #include <atomic>
@@ -500,4 +500,4 @@ class ModelSolverHelper {
 }  // namespace mb
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_WRAPPERS_MODEL_BUILDER_HELPER_H_

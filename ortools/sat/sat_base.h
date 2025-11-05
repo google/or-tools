@@ -13,8 +13,8 @@
 
 // Basic types and classes used by the sat solver.
 
-#ifndef OR_TOOLS_SAT_SAT_BASE_H_
-#define OR_TOOLS_SAT_SAT_BASE_H_
+#ifndef ORTOOLS_SAT_SAT_BASE_H_
+#define ORTOOLS_SAT_SAT_BASE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -840,4 +840,4 @@ inline void Trail::ReimplyAll(int old_trail_index) {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_BASE_H_
+#endif  // ORTOOLS_SAT_SAT_BASE_H_

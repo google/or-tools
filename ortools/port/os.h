@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Defines macros about target OS and whether it supports threads.
-#ifndef OR_TOOLS_PORT_OS_H_
-#define OR_TOOLS_PORT_OS_H_
+#ifndef ORTOOLS_PORT_OS_H_
+#define ORTOOLS_PORT_OS_H_
 
 #if defined(__ANDROID__)
 #define ORTOOLS_TARGET_OS_IS_ANDROID
@@ -39,4 +39,4 @@
 #define ORTOOLS_TARGET_OS_SUPPORTS_THREADS 1
 #endif
 
-#endif  // OR_TOOLS_PORT_OS_H_
+#endif  // ORTOOLS_PORT_OS_H_

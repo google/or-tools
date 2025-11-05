@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_
-#define OR_TOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_
+#ifndef ORTOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_
+#define ORTOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -256,4 +256,4 @@ bool VariableStorage::diff_is_empty(const Diff& diff) const {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_
+#endif  // ORTOOLS_MATH_OPT_STORAGE_VARIABLE_STORAGE_H_

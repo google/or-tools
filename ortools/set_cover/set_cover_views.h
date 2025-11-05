@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SET_COVER_SET_COVER_VIEWS_H
-#define OR_TOOLS_SET_COVER_SET_COVER_VIEWS_H
+#ifndef ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
+#define ORTOOLS_SET_COVER_SET_COVER_VIEWS_H
 
 #include <absl/meta/type_traits.h>
 
@@ -254,4 +254,4 @@ class FilterModelView {
 
 }  // namespace operations_research
 
-#endif /* OR_TOOLS_SET_COVER_SET_COVER_VIEWS_H */
+#endif /* ORTOOLS_SET_COVER_SET_COVER_VIEWS_H */

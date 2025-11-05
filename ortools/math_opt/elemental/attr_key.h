@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_
 
 #include <array>
 #include <cstddef>
@@ -359,4 +359,4 @@ using AttrKeyHashMap =
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_ATTR_KEY_H_

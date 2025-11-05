@@ -19,8 +19,8 @@
 //  https://lpsolve.sourceforge.net/5.5/lp-format.htm
 //  https://lpsolve.sourceforge.net/5.5/CPLEX-format.htm
 // for a comparison.
-#ifndef OR_TOOLS_MATH_OPT_IO_LP_PARSER_H_
-#define OR_TOOLS_MATH_OPT_IO_LP_PARSER_H_
+#ifndef ORTOOLS_MATH_OPT_IO_LP_PARSER_H_
+#define ORTOOLS_MATH_OPT_IO_LP_PARSER_H_
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -60,4 +60,4 @@ absl::StatusOr<ModelProto> ModelProtoFromLp(absl::string_view lp_data);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_IO_LP_PARSER_H_
+#endif  // ORTOOLS_MATH_OPT_IO_LP_PARSER_H_

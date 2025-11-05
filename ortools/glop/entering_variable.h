@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
-#define OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
+#ifndef ORTOOLS_GLOP_ENTERING_VARIABLE_H_
+#define ORTOOLS_GLOP_ENTERING_VARIABLE_H_
 
 #include <cstdint>
 #include <string>
@@ -145,4 +145,4 @@ class EnteringVariable {
 }  // namespace operations_research
 
 #endif  // SWIG
-#endif  // OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
+#endif  // ORTOOLS_GLOP_ENTERING_VARIABLE_H_

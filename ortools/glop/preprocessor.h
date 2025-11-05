@@ -17,8 +17,8 @@
 // E. D. Andersen, K. D. Andersen, "Presolving in linear programming.",
 // Mathematical Programming 71 (1995) 221-245.
 
-#ifndef OR_TOOLS_GLOP_PREPROCESSOR_H_
-#define OR_TOOLS_GLOP_PREPROCESSOR_H_
+#ifndef ORTOOLS_GLOP_PREPROCESSOR_H_
+#define ORTOOLS_GLOP_PREPROCESSOR_H_
 
 #include <deque>
 #include <memory>
@@ -1063,4 +1063,4 @@ class AddSlackVariablesPreprocessor final : public Preprocessor {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_PREPROCESSOR_H_
+#endif  // ORTOOLS_GLOP_PREPROCESSOR_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
-#define OR_TOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
+#ifndef ORTOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
+#define ORTOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
 
 #include <vector>
 
@@ -94,4 +94,4 @@ DenseDoublyLinkedList::DenseDoublyLinkedList(const T& elements)
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
+#endif  // ORTOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_

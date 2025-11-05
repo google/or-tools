@@ -17,8 +17,8 @@
 // Typically, prefer using scip_proto_solve.h. This class is useful if you need
 // to set a callback or otherwise customize your model in a way not supported by
 // the proto.
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_
 
 #include <cstdint>
 #include <memory>
@@ -82,4 +82,4 @@ struct GScipAndVariables {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GSCIP_GSCIP_FROM_MP_MODEL_PROTO_H_

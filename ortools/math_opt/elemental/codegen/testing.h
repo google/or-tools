@@ -13,8 +13,8 @@
 
 // Test descriptors. This avoids depending on attributes from `attributes.h`
 // in the tests to decouple the codegen tests from `attributes.h`.
-#ifndef OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_
-#define OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_
+#ifndef ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_
+#define ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_
 
 #include "ortools/math_opt/elemental/codegen/gen.h"
 
@@ -37,4 +37,4 @@ inline AttrOpFunctionInfo GetTestFunctionInfo(bool with_key_parameter) {
 
 }  // namespace operations_research::math_opt::codegen
 
-#endif  // OR_TOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_
+#endif  // ORTOOLS_MATH_OPT_ELEMENTAL_CODEGEN_TESTING_H_

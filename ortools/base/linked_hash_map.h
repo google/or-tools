@@ -24,8 +24,8 @@
 //
 // This class supports heterogeneous lookups.
 //
-#ifndef OR_TOOLS_BASE_LINKED_HASH_MAP_H_
-#define OR_TOOLS_BASE_LINKED_HASH_MAP_H_
+#ifndef ORTOOLS_BASE_LINKED_HASH_MAP_H_
+#define ORTOOLS_BASE_LINKED_HASH_MAP_H_
 
 #include <list>
 #include <tuple>
@@ -633,4 +633,4 @@ class linked_hash_map {
 
 }  // namespace gtl
 
-#endif  // OR_TOOLS_BASE_LINKED_HASH_MAP_H_
+#endif  // ORTOOLS_BASE_LINKED_HASH_MAP_H_

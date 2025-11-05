@@ -18,8 +18,8 @@
 // http://lopez-ibanez.eu/tsptw-instances and
 // https://homepages.dcc.ufmg.br/~rfsilva/tsptw.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_
-#define OR_TOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_
+#define ORTOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_
 
 #include <functional>
 #include <string>
@@ -86,4 +86,4 @@ class TspTWParser final {
 
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_TSPTW_PARSER_H_

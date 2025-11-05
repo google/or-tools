@@ -131,8 +131,8 @@
  *   depends on the modification applied and on the underlying solver.
  */
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#define ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 #include <atomic>
 #include <cstdint>
@@ -1924,4 +1924,4 @@ class MPSolverInterface {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_

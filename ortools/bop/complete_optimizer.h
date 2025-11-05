@@ -24,8 +24,8 @@
 // complete SAT solver provided that we keep running it after it has found a
 // first solution. This is the default behavior of the kNotGuided policy.
 
-#ifndef OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
-#define OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
+#ifndef ORTOOLS_BOP_COMPLETE_OPTIMIZER_H_
+#define ORTOOLS_BOP_COMPLETE_OPTIMIZER_H_
 
 #include <cstdint>
 #include <deque>
@@ -80,4 +80,4 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
 }  // namespace bop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
+#endif  // ORTOOLS_BOP_COMPLETE_OPTIMIZER_H_

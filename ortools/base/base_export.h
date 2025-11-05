@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_BASE_EXPORT_H_
-#define OR_TOOLS_BASE_BASE_EXPORT_H_
+#ifndef ORTOOLS_BASE_BASE_EXPORT_H_
+#define ORTOOLS_BASE_BASE_EXPORT_H_
 
 #if defined(_MSC_VER) && defined(OR_BUILD_DLL)
 // Annoying stuff for windows -- makes sure clients can import these functions
@@ -27,4 +27,4 @@
 #define OR_DLL
 #endif
 
-#endif  // OR_TOOLS_BASE_BASE_EXPORT_H_
+#endif  // ORTOOLS_BASE_BASE_EXPORT_H_

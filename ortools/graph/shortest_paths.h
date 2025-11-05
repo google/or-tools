@@ -61,8 +61,8 @@
 //                                                       /*num_threads=*/4,
 //                                                       &container);
 
-#ifndef OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
-#define OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
+#ifndef ORTOOLS_GRAPH_SHORTEST_PATHS_H_
+#define ORTOOLS_GRAPH_SHORTEST_PATHS_H_
 
 #include <cstdint>
 #include <limits>
@@ -774,4 +774,4 @@ void ComputeManyToManyShortestPathsWithMultipleThreads(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_SHORTEST_PATHS_H_
+#endif  // ORTOOLS_GRAPH_SHORTEST_PATHS_H_

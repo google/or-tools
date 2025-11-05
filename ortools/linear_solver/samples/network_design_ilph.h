@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
-#define OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#define ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
 
 #include <memory>
 #include <vector>
@@ -136,4 +136,4 @@ class CapacityPlanningILPH {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_

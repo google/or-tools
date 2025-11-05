@@ -190,8 +190,8 @@
 //
 // Keywords: linear sum assignment problem, Hungarian method, Goldberg, Kennedy.
 
-#ifndef OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
-#define OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
+#ifndef ORTOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
+#define ORTOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -1439,4 +1439,4 @@ CostValue LinearSumAssignment<GraphType, CostValue>::GetCost() const {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
+#endif  // ORTOOLS_GRAPH_LINEAR_ASSIGNMENT_H_

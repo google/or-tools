@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_
-#define OR_TOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_
+#ifndef ORTOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_
+#define ORTOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -505,4 +505,4 @@ class DoubleLinkedList {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_
+#endif  // ORTOOLS_ALGORITHMS_SPACE_SAVING_MOST_FREQUENT_H_

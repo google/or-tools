@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
 
 #include <algorithm>
 #include <cstddef>
@@ -642,4 +642,4 @@ class PrePostVisitValues {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_ROUTING_FILTER_COMMITTABLES_H_

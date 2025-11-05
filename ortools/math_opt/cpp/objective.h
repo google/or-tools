@@ -15,8 +15,8 @@
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 //
 // An object oriented wrapper for objectives in ModelStorage.
-#ifndef OR_TOOLS_MATH_OPT_CPP_OBJECTIVE_H_
-#define OR_TOOLS_MATH_OPT_CPP_OBJECTIVE_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_OBJECTIVE_H_
+#define ORTOOLS_MATH_OPT_CPP_OBJECTIVE_H_
 
 #include <cstdint>
 #include <optional>
@@ -221,4 +221,4 @@ Objective Objective::Auxiliary(const ModelStorageCPtr storage,
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_OBJECTIVE_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_OBJECTIVE_H_

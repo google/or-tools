@@ -14,8 +14,8 @@
 // Function for outputting an assignment problem in DIMACS format:
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
 //
-#ifndef OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
-#define OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
+#ifndef ORTOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
+#define ORTOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
 
 #include <cstdio>
 #include <string>
@@ -60,4 +60,4 @@ void PrintDimacsAssignmentProblem(
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
+#endif  // ORTOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_

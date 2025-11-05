@@ -88,8 +88,8 @@
 //   blaze test experimental/users/rander/math_opt:matchers_error_messages
 // which is a fork of matchers_test.cc where the assertions are all negated
 // (note that every test should fail).
-#ifndef OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
-#define OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MATCHERS_H_
+#define ORTOOLS_MATH_OPT_CPP_MATCHERS_H_
 
 #include <optional>
 #include <ostream>
@@ -550,4 +550,4 @@ void PrintTo(const absl::flat_hash_map<K, V>& id_map, std::ostream* const os) {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MATCHERS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MATCHERS_H_

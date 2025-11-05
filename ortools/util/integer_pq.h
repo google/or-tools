@@ -20,8 +20,8 @@
 //    that uniquely identify this particular element. Ideally this index must
 //    be dense in [0, max_num_elements).
 //
-#ifndef OR_TOOLS_UTIL_INTEGER_PQ_H_
-#define OR_TOOLS_UTIL_INTEGER_PQ_H_
+#ifndef ORTOOLS_UTIL_INTEGER_PQ_H_
+#define ORTOOLS_UTIL_INTEGER_PQ_H_
 
 #include <functional>
 #include <vector>
@@ -189,4 +189,4 @@ class IntegerPriorityQueue {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_INTEGER_PQ_H_
+#endif  // ORTOOLS_UTIL_INTEGER_PQ_H_

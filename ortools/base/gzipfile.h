@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_GZIPFILE_H_
-#define OR_TOOLS_BASE_GZIPFILE_H_
+#ifndef ORTOOLS_BASE_GZIPFILE_H_
+#define ORTOOLS_BASE_GZIPFILE_H_
 
 #include <zlib.h>  // for Z_DEFAULT_COMPRESSION
 
@@ -70,4 +70,4 @@ inline File* GZipFileReader(absl::string_view name, File* compressed_file,
                         AppendedStreams::kConcatenateStreams);
 }
 
-#endif  // OR_TOOLS_BASE_GZIPFILE_H_
+#endif  // ORTOOLS_BASE_GZIPFILE_H_

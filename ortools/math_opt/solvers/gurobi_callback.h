@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_
-#define OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_
+#define ORTOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_
 
 #include <cstdint>
 #include <vector>
@@ -70,4 +70,4 @@ void GurobiCallbackImplFlush(const GurobiCallbackInput& callback_input,
 
 }  // namespace math_opt
 }  // namespace operations_research
-#endif  // OR_TOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVERS_GUROBI_CALLBACK_H_

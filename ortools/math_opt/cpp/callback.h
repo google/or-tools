@@ -66,8 +66,8 @@
 // not). You should either solve with one thread (see
 // solver_parameters.threads), write a threadsafe callback, or consult
 // the documentation of your underlying solver.
-#ifndef OR_TOOLS_MATH_OPT_CPP_CALLBACK_H_
-#define OR_TOOLS_MATH_OPT_CPP_CALLBACK_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_CALLBACK_H_
+#define ORTOOLS_MATH_OPT_CPP_CALLBACK_H_
 
 #include <functional>
 #include <optional>
@@ -306,4 +306,4 @@ struct CallbackResult {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_CALLBACK_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_CALLBACK_H_

@@ -45,8 +45,8 @@
 //   printf("There is an issue with the input or no perfect matching exists.");
 // }
 
-#ifndef OR_TOOLS_GRAPH_ASSIGNMENT_H_
-#define OR_TOOLS_GRAPH_ASSIGNMENT_H_
+#ifndef ORTOOLS_GRAPH_ASSIGNMENT_H_
+#define ORTOOLS_GRAPH_ASSIGNMENT_H_
 
 #include <cstdint>
 #include <vector>
@@ -144,4 +144,4 @@ class SimpleLinearSumAssignment {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_ASSIGNMENT_H_
+#endif  // ORTOOLS_GRAPH_ASSIGNMENT_H_

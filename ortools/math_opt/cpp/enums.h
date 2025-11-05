@@ -76,8 +76,8 @@
 //  * operator<<(std::optional<MyEnum>)
 //
 // See examples of usage in the Enum struct documentation below.
-#ifndef OR_TOOLS_MATH_OPT_CPP_ENUMS_H_
-#define OR_TOOLS_MATH_OPT_CPP_ENUMS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_ENUMS_H_
+#define ORTOOLS_MATH_OPT_CPP_ENUMS_H_
 
 #include <optional>
 #include <ostream>
@@ -340,4 +340,4 @@ std::optional<E> EnumFromString(const absl::string_view str) {
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_ENUMS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_ENUMS_H_

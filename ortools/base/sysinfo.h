@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_SYSINFO_H_
-#define OR_TOOLS_BASE_SYSINFO_H_
+#ifndef ORTOOLS_BASE_SYSINFO_H_
+#define ORTOOLS_BASE_SYSINFO_H_
 
 #include <cstdint>
 
@@ -25,4 +25,4 @@ inline int64_t MemoryUsage(int unused) {
   return operations_research::GetProcessMemoryUsage();
 }
 
-#endif  // OR_TOOLS_BASE_SYSINFO_H_
+#endif  // ORTOOLS_BASE_SYSINFO_H_

@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Formatting functions for GLPK constants.
-#ifndef OR_TOOLS_GLPK_GLPK_FORMATTERS_H_
-#define OR_TOOLS_GLPK_GLPK_FORMATTERS_H_
+#ifndef ORTOOLS_GLPK_GLPK_FORMATTERS_H_
+#define ORTOOLS_GLPK_GLPK_FORMATTERS_H_
 
 #include <cstddef>
 #include <string>
@@ -41,4 +41,4 @@ std::string TruncateAndQuoteGLPKName(std::string_view original_name);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLPK_GLPK_FORMATTERS_H_
+#endif  // ORTOOLS_GLPK_GLPK_FORMATTERS_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GLOP_VARIABLES_INFO_H_
-#define OR_TOOLS_GLOP_VARIABLES_INFO_H_
+#ifndef ORTOOLS_GLOP_VARIABLES_INFO_H_
+#define ORTOOLS_GLOP_VARIABLES_INFO_H_
 
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -251,4 +251,4 @@ class VariablesInfo {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_VARIABLES_INFO_H_
+#endif  // ORTOOLS_GLOP_VARIABLES_INFO_H_

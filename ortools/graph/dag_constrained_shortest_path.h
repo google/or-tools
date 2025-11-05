@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
-#define OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#ifndef ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#define ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
 
 #include <cmath>
 #include <limits>
@@ -911,4 +911,4 @@ std::vector<T> GetInversePermutation(const std::vector<T>& permutation) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
+#endif  // ORTOOLS_GRAPH_DAG_CONSTRAINED_SHORTEST_PATH_H_
