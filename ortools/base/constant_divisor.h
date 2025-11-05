@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_CONSTANT_DIVISOR_H_
-#define OR_TOOLS_BASE_CONSTANT_DIVISOR_H_
+#ifndef ORTOOLS_BASE_CONSTANT_DIVISOR_H_
+#define ORTOOLS_BASE_CONSTANT_DIVISOR_H_
 
 // Provides faster division in situations where the same divisor is used
 // repeatedly but is not known at compile time. For example, a hash table might
@@ -191,4 +191,4 @@ class ConstantDivisor<uint8_t>
 }  // namespace math
 }  // namespace util
 
-#endif  // OR_TOOLS_BASE_CONSTANT_DIVISOR_H_
+#endif  // ORTOOLS_BASE_CONSTANT_DIVISOR_H_

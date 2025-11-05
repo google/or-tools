@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_MURMUR_H_
-#define OR_TOOLS_BASE_MURMUR_H_
+#ifndef ORTOOLS_BASE_MURMUR_H_
+#define ORTOOLS_BASE_MURMUR_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -28,4 +28,4 @@ inline uint64_t MurmurHash64(const char* buf, const size_t len) {
 }
 }  // namespace util_hash
 
-#endif  // OR_TOOLS_BASE_MURMUR_H_
+#endif  // ORTOOLS_BASE_MURMUR_H_

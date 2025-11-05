@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_LOGGING_H_
-#define OR_TOOLS_BASE_LOGGING_H_
+#ifndef ORTOOLS_BASE_LOGGING_H_
+#define ORTOOLS_BASE_LOGGING_H_
 
 #include "absl/base/log_severity.h"    // IWYU pragma: export
 #include "absl/base/macros.h"          // IWYU pragma: export
@@ -41,4 +41,4 @@ void FixFlagsAndEnvironmentForSwig();
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_BASE_LOGGING_H_
+#endif  // ORTOOLS_BASE_LOGGING_H_

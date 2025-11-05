@@ -58,8 +58,8 @@
 // indexable by the index type in debug mode. In optimized mode the
 // user can CHECK IsValidSize() when deemed important.
 
-#ifndef OR_TOOLS_BASE_STRONG_VECTOR_H_
-#define OR_TOOLS_BASE_STRONG_VECTOR_H_
+#ifndef ORTOOLS_BASE_STRONG_VECTOR_H_
+#define ORTOOLS_BASE_STRONG_VECTOR_H_
 
 #include <limits>
 #include <type_traits>
@@ -333,4 +333,4 @@ class StrongVector : protected std::vector<NativeType, Alloc> {
 
 }  // namespace util_intops
 
-#endif  // OR_TOOLS_BASE_STRONG_VECTOR_H_
+#endif  // ORTOOLS_BASE_STRONG_VECTOR_H_

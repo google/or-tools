@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_STATUS_MACROS_H_
-#define OR_TOOLS_BASE_STATUS_MACROS_H_
+#ifndef ORTOOLS_BASE_STATUS_MACROS_H_
+#define ORTOOLS_BASE_STATUS_MACROS_H_
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -69,4 +69,4 @@
 #define STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
 #define STATUS_MACROS_IMPL_CONCAT_(x, y) STATUS_MACROS_IMPL_CONCAT_INNER_(x, y)
 
-#endif  // OR_TOOLS_BASE_STATUS_MACROS_H_
+#endif  // ORTOOLS_BASE_STATUS_MACROS_H_

@@ -22,8 +22,8 @@
 // It has no XXX_H_ guard because SWIG protects all %include'd files to be used
 // only once.
 
-#ifndef OR_TOOLS_BASE_PYTHON_SWIG_H_
-#define OR_TOOLS_BASE_PYTHON_SWIG_H_
+#ifndef ORTOOLS_BASE_PYTHON_SWIG_H_
+#define ORTOOLS_BASE_PYTHON_SWIG_H_
 
 // Use Py3 unicode str() type for C++ strings.
 #ifdef PyString_FromStringAndSize
@@ -323,4 +323,4 @@ inline PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
 #undef PyInt_FromLong
 #define PyInt_FromLong PyLong_FromLong
 
-#endif  // OR_TOOLS_BASE_PYTHON_SWIG_H_
+#endif  // ORTOOLS_BASE_PYTHON_SWIG_H_
