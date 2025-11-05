@@ -26,8 +26,8 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/glpk/glpk_env_deleter.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
 
 extern "C" {
 #include "glpk.h"
