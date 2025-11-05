@@ -30,8 +30,8 @@
 
 // Code to be exported in parser.tab.hh
 %code requires {
-#if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
-#define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
+#if !defined(ORTOOLS_FLATZINC_FLATZINC_TAB_HH_)
+#define ORTOOLS_FLATZINC_FLATZINC_TAB_HH_
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/flatzinc/parser_util.h"
@@ -42,7 +42,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 // Defines the parameter to the orfz_lex() call from the orfz_parse() method.
 #define YYLEX_PARAM scanner
 
-#endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
+#endif  // ORTOOLS_FLATZINC_FLATZINC_TAB_HH_
 }  // code requires
 
 // Code in the implementation file.
@@ -671,6 +671,11 @@ annotation_arguments:  // Cannot be empty.
 
 annotation:
   IVALUE DOTDOT IVALUE { $$ = Annotation::Interval($1, $3); }
+| '{' integers '}' {
+  CHECK($2 != nullptr);
+  $$ = Annotation::IntegerList(std::move(*$2));
+  delete $2;
+}
 | IVALUE { $$ = Annotation::IntegerValue($1); }
 | SVALUE { $$ = Annotation::String($1); }
 | IDENTIFIER {
