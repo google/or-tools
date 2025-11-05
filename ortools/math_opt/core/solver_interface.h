@@ -20,9 +20,11 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/non_streamable_solver_init_arguments.h"
@@ -159,7 +161,7 @@ class AllSolversRegistry {
   AllSolversRegistry(const AllSolversRegistry&) = delete;
   AllSolversRegistry& operator=(const AllSolversRegistry&) = delete;
 
-  static AllSolversRegistry* Instance();
+  static AllSolversRegistry* absl_nonnull Instance();
 
   // Maps the given factory to the given solver type. Calling this twice will
   // result in an error, using static initialization is recommended, e.g. see
@@ -184,11 +186,43 @@ class AllSolversRegistry {
   std::string RegisteredSolversToString() const;
 
  private:
+  // Friendship to be able to build new instances and use
+  // SetTemporaryTestInstance().
+  friend class WithAlternateAllSolversRegistry;
+
   AllSolversRegistry() = default;
+
+  // Makes a copy of the registry, keeping the factories of the `kept` solver
+  // types.
+  //
+  // If a solver type is listed but not registered, it will generate a
+  // LOG(FATAL).
+  //
+  // See WithAlternateAllSolversRegistry.
+  AllSolversRegistry(const AllSolversRegistry& other,
+                     const absl::flat_hash_set<SolverTypeProto>& kept);
+
+  // Sets or resets a temporary replacement returned by Instance().
+  //
+  // It LOG(FATAL) if called twice without a reset (i.e., without calling
+  // SetTemporaryTestInstance(nullptr)). It also LOG(FATAL) if a reset happens
+  // without a previous set.
+  //
+  // This is for testing only. The user is responsible to make sure that no
+  // threads are using the temp_instance after it has been reset.
+  //
+  // See WithAlternateAllSolversRegistry.
+  static void SetTemporaryTestInstance(
+      AllSolversRegistry* absl_nullable temp_instance);
 
   mutable absl::Mutex mutex_;
   absl::flat_hash_map<SolverTypeProto, SolverInterface::Factory>
-      registered_solvers_;
+      registered_solvers_ ABSL_GUARDED_BY(mutex_);
+
+  // Temporary replacement of Instance() for tests; installed and removed by
+  // WithAlternateAllSolversRegistry via
+  // AllSolversRegistry::SetTemporaryTestInstance().
+  static AllSolversRegistry* absl_nullable temporary_test_instance_;
 };
 
 // Use to ensure that a solver is registered exactly one time. Invoke in each cc
