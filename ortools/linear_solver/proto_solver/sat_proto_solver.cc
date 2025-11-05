@@ -160,7 +160,8 @@ MPSolutionResponse TimeLimitResponse(SolverLogger& logger) {
 MPSolutionResponse SatSolveProto(
     LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt_solve,
     std::function<void(const std::string&)> logging_callback,
-    std::function<void(const MPSolution&)> solution_callback) {
+    std::function<void(const MPSolution&)> solution_callback,
+    std::function<void(const double)> best_bound_callback) {
   sat::SatParameters params;
   params.set_log_search_progress(request->enable_internal_solver_output());
 
@@ -430,6 +431,9 @@ MPSolutionResponse SatSolveProto(
         [&](const sat::CpSolverResponse& cp_response) {
           solution_callback(post_solve(cp_response));
         }));
+  }
+  if (best_bound_callback != nullptr) {
+    sat_model.Add(sat::NewBestBoundCallback(best_bound_callback));
   }
 
   // Solve.

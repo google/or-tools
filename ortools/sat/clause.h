@@ -797,15 +797,6 @@ class BinaryImplicationGraph : public SatPropagator {
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler);
 
-  // Changes the reason of the variable at trail index to a binary reason.
-  // Note that the implication "new_reason => trail_[trail_index]" should be
-  // part of the implication graph.
-  void ChangeReason(int trail_index, Literal new_reason) {
-    CHECK(trail_->Assignment().LiteralIsTrue(new_reason));
-    reasons_[trail_index] = new_reason.Negated();
-    trail_->ChangeReason(trail_index, propagator_id_);
-  }
-
   // The literals that are "directly" implied when literal is set to true. This
   // is not a full "reachability". It includes at most ones propagation. The set
   // of all direct implications is enough to describe the implications graph

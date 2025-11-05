@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -632,7 +633,8 @@ bool ClauseSubsumption(absl::Span<const Literal> a, SatClause* b) {
 
 }  // namespace
 
-int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
+int SatSolver::EnqueueDecisionAndBackjumpOnConflict(
+    Literal true_literal, std::optional<ConflictCallback> callback) {
   SCOPED_TIME_STAT(&stats_);
   if (model_is_unsat_) return kUnsatTrailIndex;
   DCHECK(PropagationIsDone());
@@ -643,18 +645,18 @@ int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   }
 
   EnqueueNewDecision(true_literal);
-  if (!FinishPropagation()) return kUnsatTrailIndex;
+  if (!FinishPropagation(callback)) return kUnsatTrailIndex;
   DCHECK(PropagationIsDone());
   return last_decision_or_backtrack_trail_index_;
 }
 
-bool SatSolver::FinishPropagation() {
+bool SatSolver::FinishPropagation(std::optional<ConflictCallback> callback) {
   if (model_is_unsat_) return false;
   int num_loop = 0;
   while (true) {
     const int old_decision_level = current_decision_level_;
     if (!Propagate()) {
-      ProcessCurrentConflict();
+      ProcessCurrentConflict(callback);
       if (model_is_unsat_) return false;
       if (current_decision_level_ == old_decision_level) {
         CHECK(!assumptions_.empty());
@@ -756,7 +758,8 @@ bool SatSolver::ReapplyAssumptionsIfNeeded() {
   return (status == SatSolver::FEASIBLE);
 }
 
-void SatSolver::ProcessCurrentConflict() {
+void SatSolver::ProcessCurrentConflict(
+    std::optional<ConflictCallback> callback) {
   SCOPED_TIME_STAT(&stats_);
   if (model_is_unsat_) return;
 
@@ -817,17 +820,21 @@ void SatSolver::ProcessCurrentConflict() {
 
   std::vector<ClauseId>* clause_ids_for_1iup = &tmp_clause_ids_for_1uip_;
   if (lrat_proof_handler_ != nullptr) {
-    ComputeLratProofForLearnedConflict(clause_ids_for_1iup);
+    FillLratProofForLearnedConflict(clause_ids_for_1iup);
   }
 
   // An empty conflict means that the problem is UNSAT.
   if (learned_conflict_.empty()) {
+    ClauseId clause_id = kNoClauseId;
     if (lrat_proof_handler_ != nullptr) {
-      if (!lrat_proof_handler_->AddInferredClause(
-              clause_id_generator_->GetNextId(), learned_conflict_,
-              *clause_ids_for_1iup)) {
+      clause_id = clause_id_generator_->GetNextId();
+      if (!lrat_proof_handler_->AddInferredClause(clause_id, learned_conflict_,
+                                                  *clause_ids_for_1iup)) {
         VLOG(1) << "WARNING: invalid LRAT inferred clause!";
       }
+    }
+    if (callback.has_value()) {
+      (*callback)(clause_id, learned_conflict_);
     }
     return (void)SetModelUnsat();
   }
@@ -994,31 +1001,6 @@ void SatSolver::ProcessCurrentConflict() {
   // Minimize the learned conflict.
   MinimizeConflict(&learned_conflict_, clause_ids_for_minimization);
 
-  // We notify the decision before backtracking so that we can save the phase.
-  // The current heuristic is to try to take a trail prefix for which there is
-  // currently no conflict (hence just before the last decision was taken).
-  //
-  // TODO(user): It is unclear what the best heuristic is here. Both the current
-  // trail index or the trail before the current decision perform well, but
-  // using the full trail seems slightly better even though it will contain the
-  // current conflicting literal.
-  decision_policy_->BeforeConflict(trail_->Index());
-
-  // Backtrack and add the reason to the set of learned clause.
-  counters_.num_literals_learned += learned_conflict_.size();
-  const int conflict_level =
-      trail_->Info(learned_conflict_[0].Variable()).level;
-  const int backjump_levels = CurrentDecisionLevel() - conflict_level;
-  const bool should_backjump =
-      !trail_->ChronologicalBacktrackingEnabled() ||
-      (num_failures() > parameters_->chronological_backtrack_min_conflicts() &&
-       backjump_levels > parameters_->max_backjump_levels());
-  const int backtrack_level = should_backjump
-                                  ? ComputePropagationLevel(learned_conflict_)
-                                  : std::max(0, conflict_level - 1);
-  Backtrack(backtrack_level);
-  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
-
   // Note that we need to output the learned clause before cleaning the clause
   // database. This is because we already backtracked and some of the clauses
   // that were needed to infer the conflict may not be "reasons" anymore and
@@ -1052,6 +1034,34 @@ void SatSolver::ProcessCurrentConflict() {
       VLOG(1) << "WARNING: invalid LRAT inferred clause!";
     }
   }
+  if (callback.has_value()) {
+    (*callback)(learned_conflict_clause_id, learned_conflict_);
+  }
+
+  // We notify the decision before backtracking so that we can save the phase.
+  // The current heuristic is to try to take a trail prefix for which there is
+  // currently no conflict (hence just before the last decision was taken).
+  //
+  // TODO(user): It is unclear what the best heuristic is here. Both the current
+  // trail index or the trail before the current decision perform well, but
+  // using the full trail seems slightly better even though it will contain the
+  // current conflicting literal.
+  decision_policy_->BeforeConflict(trail_->Index());
+
+  // Backtrack and add the reason to the set of learned clause.
+  counters_.num_literals_learned += learned_conflict_.size();
+  const int conflict_level =
+      trail_->Info(learned_conflict_[0].Variable()).level;
+  const int backjump_levels = CurrentDecisionLevel() - conflict_level;
+  const bool should_backjump =
+      !trail_->ChronologicalBacktrackingEnabled() ||
+      (num_failures() > parameters_->chronological_backtrack_min_conflicts() &&
+       backjump_levels > parameters_->max_backjump_levels());
+  const int backtrack_level = should_backjump
+                                  ? ComputePropagationLevel(learned_conflict_)
+                                  : std::max(0, conflict_level - 1);
+  Backtrack(backtrack_level);
+  DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
   // Detach any subsumed clause. They will actually be deleted on the next
   // clause cleanup phase.
@@ -1075,7 +1085,7 @@ void SatSolver::ProcessCurrentConflict() {
   restart_->OnConflict(conflict_trail_index, conflict_level, conflict_lbd);
 }
 
-void SatSolver::ComputeLratProofForLearnedConflict(
+void SatSolver::FillLratProofForLearnedConflict(
     std::vector<ClauseId>* clause_ids) {
   clause_ids->clear();
   // First add all the unit clauses used in the reasons to infer the conflict.
@@ -1552,19 +1562,20 @@ bool SatSolver::TryToMinimizeClause(SatClause* clause) {
   if (lrat_proof_handler_ != nullptr) {
     DCHECK(fixed_true_literal != kNoLiteralIndex ||
            !fixed_false_literals.empty());
+    clause_ids.clear();
     if (fixed_true_literal != kNoLiteralIndex) {
       // If some literals of the minimized clause fix another to true, we just
       // need the propagating clauses to prove this (assuming that all the
       // minimized clause literals are false will lead to a conflict on this
       // 'fixed to true' literal).
-      GetClausesFixing({Literal(fixed_true_literal)}, &clause_ids);
+      AppendClausesFixing({Literal(fixed_true_literal)}, &clause_ids);
     } else {
       // If some literals of the minimized clause fix those that have been
       // removed to false, the propagating clauses and the original one prove
       // this (assuming that all the minimized clause literals are false will
       // lead to all the literals of the original clause fixed to false, which
       // is a conflict with the original clause).
-      GetClausesFixing(fixed_false_literals, &clause_ids);
+      AppendClausesFixing(fixed_false_literals, &clause_ids);
       clause_ids.push_back(clauses_propagator_->GetClauseId(clause));
     }
   }
@@ -1824,24 +1835,24 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   SCOPED_TIME_STAT(&stats_);
   std::vector<Literal> unsat_assumptions;
 
-  is_marked_.ClearAndResize(num_variables_);
+  tmp_mark_.ClearAndResize(num_variables_);
 
   int trail_index = 0;
   for (const Literal lit : literals) {
     CHECK(Assignment().LiteralIsAssigned(lit));
     trail_index =
         std::max(trail_index, trail_->Info(lit.Variable()).trail_index);
-    is_marked_.Set(lit.Variable());
+    tmp_mark_.Set(lit.Variable());
   }
 
-  // We just expand the conflict until we only have decisions.
+  // We just expand the reasons recursively until we only have decisions.
   const int limit =
       CurrentDecisionLevel() > 0 ? decisions_[0].trail_index : trail_->Index();
   CHECK_LT(trail_index, trail_->Index());
   while (true) {
     // Find next marked literal to expand from the trail.
     while (trail_index >= limit &&
-           !is_marked_[(*trail_)[trail_index].Variable()]) {
+           !tmp_mark_[(*trail_)[trail_index].Variable()]) {
       --trail_index;
     }
     if (trail_index < limit) break;
@@ -1856,7 +1867,7 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
       for (const Literal literal : trail_->Reason(marked_literal.Variable())) {
         const BooleanVariable var = literal.Variable();
         const int level = AssignmentLevel(var);
-        if (level > 0 && !is_marked_[var]) is_marked_.Set(var);
+        if (level > 0 && !tmp_mark_[var]) tmp_mark_.Set(var);
       }
     }
   }
@@ -1867,34 +1878,33 @@ std::vector<Literal> SatSolver::GetDecisionsFixing(
   return unsat_assumptions;
 }
 
-void SatSolver::GetClausesFixing(absl::Span<const Literal> literals,
-                                 std::vector<ClauseId>* clause_ids) {
+void SatSolver::AppendClausesFixing(absl::Span<const Literal> literals,
+                                    std::vector<ClauseId>* clause_ids) {
   SCOPED_TIME_STAT(&stats_);
 
   // Unit clauses must come first. We put them in clause_ids directly. We put
   // the others in non_unit_clause_ids and append them to clause_ids at the end.
   std::vector<ClauseId> non_unit_clause_ids;
-  clause_ids->clear();
 
-  is_marked_.ClearAndResize(num_variables_);
+  tmp_mark_.ClearAndResize(num_variables_);
 
   int trail_index = 0;
   for (const Literal lit : literals) {
     CHECK(Assignment().LiteralIsAssigned(lit));
     trail_index =
         std::max(trail_index, trail_->Info(lit.Variable()).trail_index);
-    is_marked_.Set(lit.Variable());
+    tmp_mark_.Set(lit.Variable());
   }
 
-  // We just expand the conflict until we only have decisions. This is the same
-  // algorithm as in GetDecisionsFixing().
+  // We just expand the reasons recursively until we only have decisions. This
+  // is the same algorithm as in GetDecisionsFixing().
   const int limit =
       CurrentDecisionLevel() > 0 ? decisions_[0].trail_index : trail_->Index();
   CHECK_LT(trail_index, trail_->Index());
   while (true) {
     // Find next marked literal to expand from the trail.
     while (trail_index >= limit &&
-           !is_marked_[(*trail_)[trail_index].Variable()]) {
+           !tmp_mark_[(*trail_)[trail_index].Variable()]) {
       --trail_index;
     }
     if (trail_index < limit) break;
@@ -1910,10 +1920,9 @@ void SatSolver::GetClausesFixing(absl::Span<const Literal> literals,
     for (const Literal literal : trail_->Reason(marked_literal.Variable())) {
       const BooleanVariable var = literal.Variable();
       const int level = AssignmentLevel(var);
-      if (!is_marked_[var]) {
-        if (level > 0) {
-          is_marked_.Set(var);
-        } else {
+      if (!tmp_mark_[var]) {
+        tmp_mark_.Set(var);
+        if (level == 0) {
           clause_ids->push_back(trail_->GetUnitClauseId(var));
         }
       }
@@ -2222,7 +2231,9 @@ void SatSolver::ProcessNewlyFixedVariables() {
       lrat_proof_handler_->AddInferredClause(
           new_clause_id, {clause->begin(), new_size}, clause_ids);
       lrat_proof_handler_->DeleteClauses({old_clause_id});
-      clauses_propagator_->SetClauseId(clause, new_clause_id);
+      if (new_size > 2) {
+        clauses_propagator_->SetClauseId(clause, new_clause_id);
+      }
     }
 
     if (new_size == 2) {

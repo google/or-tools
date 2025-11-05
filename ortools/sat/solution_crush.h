@@ -81,6 +81,11 @@ class SolutionCrush {
   // `literal` already has a value.
   void MaybeSetLiteralToValueEncoding(int literal, int var, int64_t value);
 
+  // Sets the value of `literal` to "`var`'s value >=/<= `value`". Does nothing
+  // if `literal` already has a value.
+  void MaybeSetLiteralToOrderEncoding(int literal, int var, int64_t value,
+                                      bool is_le);
+
   // Sets the value of `var` to the value of the given linear expression, if all
   // the variables in this expression have a value. `linear` must be a list of
   // (variable index, coefficient) pairs.

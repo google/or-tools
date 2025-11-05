@@ -49,11 +49,18 @@ namespace operations_research {
 // found by the solver. The solver may call solution_callback from multiple
 // threads, but it will ensure that at most one thread executes
 // solution_callback at a time.
+//
+// The optional best_bound_callback will be called each time the best bound is
+// improved. The solver may call solution_callback from multiple
+// threads, but it will ensure that at most one thread executes
+// solution_callback at a time. It is guaranteed that the best bound is strictly
+// improving.
 MPSolutionResponse SatSolveProto(
     LazyMutableCopy<MPModelRequest> request,
     std::atomic<bool>* interrupt_solve = nullptr,
     std::function<void(const std::string&)> logging_callback = nullptr,
-    std::function<void(const MPSolution&)> solution_callback = nullptr);
+    std::function<void(const MPSolution&)> solution_callback = nullptr,
+    std::function<void(const double)> best_bound_callback = nullptr);
 
 // Returns a string that describes the version of the CP-SAT solver.
 std::string SatSolverVersion();

@@ -366,8 +366,7 @@ void ClauseManager::InternalDetach(SatClause* clause) {
   }
   if (lrat_proof_handler_ != nullptr) {
     const auto it = clause_id_.find(clause);
-    // TODO(user): why is it necessary to keep binary clauses?
-    if (it != clause_id_.end() && size != 2) {
+    if (it != clause_id_.end()) {
       lrat_proof_handler_->DeleteClauses({it->second});
       clause_id_.erase(it);
     }

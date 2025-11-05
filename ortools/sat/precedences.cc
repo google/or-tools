@@ -742,17 +742,17 @@ void EnforcedLinear2Bounds::CollectPrecedences(
   }
 }
 
-BinaryRelationRepository::~BinaryRelationRepository() {
+ConditionalLinear2Bounds::~ConditionalLinear2Bounds() {
   if (!VLOG_IS_ON(1)) return;
   std::vector<std::pair<std::string, int64_t>> stats;
-  stats.push_back({"BinaryRelationRepository/num_enforced_relations",
+  stats.push_back({"ConditionalLinear2Bounds/num_enforced_relations",
                    num_enforced_relations_});
-  stats.push_back({"BinaryRelationRepository/num_encoded_equivalences",
+  stats.push_back({"ConditionalLinear2Bounds/num_encoded_equivalences",
                    num_encoded_equivalences_});
   shared_stats_->AddStats(stats);
 }
 
-void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
+void ConditionalLinear2Bounds::Add(Literal lit, LinearExpression2 expr,
                                    IntegerValue lhs, IntegerValue rhs) {
   expr.SimpleCanonicalization();
   if (expr.coeffs[0] == 0 || expr.coeffs[1] == 0) return;
@@ -765,7 +765,7 @@ void BinaryRelationRepository::Add(Literal lit, LinearExpression2 expr,
       {.enforcement = lit, .expr = expr, .lhs = lhs, .rhs = rhs});
 }
 
-void BinaryRelationRepository::AddPartialRelation(Literal lit,
+void ConditionalLinear2Bounds::AddPartialRelation(Literal lit,
                                                   IntegerVariable a,
                                                   IntegerVariable b) {
   DCHECK_NE(a, kNoIntegerVariable);
@@ -774,7 +774,7 @@ void BinaryRelationRepository::AddPartialRelation(Literal lit,
   Add(lit, LinearExpression2(a, b, 1, 1), 0, 0);
 }
 
-void BinaryRelationRepository::Build() {
+void ConditionalLinear2Bounds::Build() {
   DCHECK(!is_built_);
   is_built_ = true;
   std::vector<std::pair<LiteralIndex, int>> literal_key_values;
@@ -869,7 +869,7 @@ void BinaryRelationRepository::Build() {
 bool PropagateLocalBounds(
     const IntegerTrail& integer_trail,
     const RootLevelLinear2Bounds& root_level_bounds,
-    const BinaryRelationRepository& repository,
+    const ConditionalLinear2Bounds& repository,
     const ImpliedBounds& implied_bounds, Literal lit,
     const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
     absl::flat_hash_map<IntegerVariable, IntegerValue>* output) {
@@ -1625,7 +1625,7 @@ bool Linear2Bounds::EnqueueLowerOrEqual(
   }
 
   // TODO(user): also check partially-encoded bounds, e.g. (expr <= ub) => l,
-  // which might be in BinaryRelationRepository as ~l => (-expr <= - ub - 1).
+  // which might be in ConditionalLinear2Bounds as ~l => (-expr <= - ub - 1).
   const auto reified_bound = reified_lin2_bounds_->GetEncodedBound(expr, ub);
 
   // Already true.

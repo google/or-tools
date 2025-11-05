@@ -14,8 +14,8 @@
 #include "ortools/sat/probing.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -33,6 +33,7 @@
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -505,64 +506,46 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   return sat_solver->FinishPropagation();
 }
 
+FailedLiteralProbing::FailedLiteralProbing(Model* model)
+    : sat_solver_(model->GetOrCreate<SatSolver>()),
+      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      trail_(*model->GetOrCreate<Trail>()),
+      assignment_(trail_.Assignment()),
+      clause_manager_(model->GetOrCreate<ClauseManager>()),
+      clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
+      lrat_proof_handler_(model->Mutable<LratProofHandler>()),
+      id_(implication_graph_->PropagatorId()),
+      clause_propagator_id_(clause_manager_->PropagatorId()),
+      num_variables_(sat_solver_->NumVariables()) {}
+
 // TODO(user): This might be broken if backtrack() propagates and go further
 // back. Investigate and fix any issue.
-bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
+bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   WallTimer wall_timer;
   wall_timer.Start();
+
   options.log_info |= VLOG_IS_ON(1);
 
   // Reset the solver in case it was already used.
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
-  if (!sat_solver->ResetToLevelZero()) return false;
+  if (!sat_solver_->ResetToLevelZero()) return false;
 
   // When called from Inprocessing, the implication graph should already be a
   // DAG, so these two calls should return right away. But we do need them to
   // get the topological order if this is used in isolation.
-  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
-  if (!implication_graph->DetectEquivalences()) return false;
-  if (!sat_solver->FinishPropagation()) return false;
+  if (!implication_graph_->DetectEquivalences()) return false;
+  if (!sat_solver_->FinishPropagation()) return false;
 
-  auto* time_limit = model->GetOrCreate<TimeLimit>();
-  const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+  const int initial_num_fixed = sat_solver_->LiteralTrail().Index();
   const double initial_deterministic_time =
-      time_limit->GetElapsedDeterministicTime();
+      time_limit_->GetElapsedDeterministicTime();
   const double limit = initial_deterministic_time + options.deterministic_limit;
 
-  int num_variables = sat_solver->NumVariables();
-  SparseBitset<LiteralIndex> processed(LiteralIndex(2 * num_variables));
+  processed_.ClearAndResize(LiteralIndex(2 * num_variables_));
 
-  int64_t num_probed = 0;
-  int64_t num_explicit_fix = 0;
-  int64_t num_conflicts = 0;
-  int64_t num_new_binary = 0;
-  int64_t num_subsumed = 0;
+  if (!options.use_queue) starts_.resize(2 * num_variables_, 0);
 
-  const auto& trail = *(model->Get<Trail>());
-  const auto& assignment = trail.Assignment();
-  auto* clause_manager = model->GetOrCreate<ClauseManager>();
-  const int id = implication_graph->PropagatorId();
-  const int clause_id = clause_manager->PropagatorId();
-
-  // This is only needed when options.use_queue is true.
-  struct SavedNextLiteral {
-    LiteralIndex literal_index;  // kNoLiteralIndex if we need to backtrack.
-    int rank;  // Cached position_in_order, we prefer lower positions.
-
-    bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
-  };
-  std::vector<SavedNextLiteral> queue;
-  util_intops::StrongVector<LiteralIndex, int> position_in_order;
-
-  // This is only needed when options use_queue is false;
-  util_intops::StrongVector<LiteralIndex, int> starts;
-  if (!options.use_queue) starts.resize(2 * num_variables, 0);
-
-  // We delay fixing of already assigned literal once we go back to level
-  // zero.
-  std::vector<Literal> to_fix;
-
-  // Depending on the options. we do not use the same order.
+  // Depending on the options, we do not use the same order.
   // With tree look, it is better to start with "leaf" first since we try
   // to reuse propagation as much as possible. This is also interesting to
   // do when extracting binary clauses since we will need to propagate
@@ -573,389 +556,479 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   // clauses, it is better to just probe the root of the binary implication
   // graph. This is exactly what happen when we probe using the topological
   // order.
-  int order_index(0);
-  std::vector<LiteralIndex> probing_order =
-      implication_graph->ReverseTopologicalOrder();
+  probing_order_ = implication_graph_->ReverseTopologicalOrder();
   if (!options.use_tree_look && !options.extract_binary_clauses) {
-    std::reverse(probing_order.begin(), probing_order.end());
+    std::reverse(probing_order_.begin(), probing_order_.end());
   }
 
   // We only use this for the queue version.
   if (options.use_queue) {
-    position_in_order.assign(2 * num_variables, -1);
-    for (int i = 0; i < probing_order.size(); ++i) {
-      position_in_order[probing_order[i]] = i;
+    position_in_order_.assign(2 * num_variables_, -1);
+    for (int i = 0; i < probing_order_.size(); ++i) {
+      position_in_order_[probing_order_[i]] = i;
     }
   }
 
-  while (!time_limit->LimitReached() &&
-         time_limit->GetElapsedDeterministicTime() <= limit) {
+  binary_clause_extracted_.assign(trail_.Index(), false);
+  subsumed_clauses_.clear();
+
+  while (!time_limit_->LimitReached() &&
+         time_limit_->GetElapsedDeterministicTime() <= limit) {
     // We only enqueue literal at level zero if we don't use "tree look".
     if (!options.use_tree_look) {
-      if (!sat_solver->BacktrackAndPropagateReimplications(0)) return false;
+      if (!sat_solver_->BacktrackAndPropagateReimplications(0)) return false;
     }
 
-    // Probing works by taking a series of decisions, and by analyzing what they
-    // propagate. For efficiency, we only take a new decision d' if it directly
-    // implies the last one d. By doing this we know that d' directly or
-    // indirectly implies all the previous decisions, which then propagate all
-    // the literals on the trail up to and excluding d'. The first step is to
-    // find the next_decision d', which can be done in different ways depending
-    // on the options.
+    // Probing works by taking a series of decisions, and by analyzing what
+    // they propagate. For efficiency, we only take a new decision d' if it
+    // directly implies the last one d. By doing this we know that d' directly
+    // or indirectly implies all the previous decisions, which then propagate
+    // all the literals on the trail up to and excluding d'. The first step is
+    // to find the next_decision d', which can be done in different ways
+    // depending on the options.
     LiteralIndex next_decision = kNoLiteralIndex;
-
-    // A first option is to use an unassigned literal which implies the last
-    // decision and which comes first in the probing order (which itself can be
-    // the topological order of the implication graph, or the reverse).
-    if (sat_solver->CurrentDecisionLevel() > 0 && options.use_queue) {
-      // TODO(user): Instead of minimizing index in topo order (which might be
-      // nice for binary extraction), we could try to maximize reusability in
-      // some way.
-      const Literal last_decision =
-          sat_solver->Decisions()[sat_solver->CurrentDecisionLevel() - 1]
-              .literal;
-      // If l => last_decision, then not(last_decision) => not(l). We can thus
-      // find the candidates for the next decision by looking at all the
-      // implications of not(last_decision).
-      const absl::Span<const Literal> list =
-          implication_graph->Implications(last_decision.Negated());
-      const int saved_queue_size = queue.size();
-      for (const Literal l : list) {
-        const Literal candidate = l.Negated();
-        if (processed[candidate]) continue;
-        if (position_in_order[candidate] == -1) continue;
-        if (assignment.LiteralIsAssigned(candidate)) {
-          // candidate => last_decision => all previous decisions, which then
-          // propagate not(candidate). Hence candidate must be false.
-          if (assignment.LiteralIsFalse(candidate)) {
-            to_fix.push_back(Literal(candidate.Negated()));
-          }
-          continue;
-        }
-        queue.push_back({candidate.Index(), -position_in_order[candidate]});
-      }
-      // Sort all the candidates.
-      std::sort(queue.begin() + saved_queue_size, queue.end());
-
-      // Set next_decision to the first unassigned candidate.
-      while (!queue.empty()) {
-        const LiteralIndex index = queue.back().literal_index;
-        queue.pop_back();
-        if (index == kNoLiteralIndex) {
-          // This is a backtrack marker, go back one level.
-          CHECK_GT(sat_solver->CurrentDecisionLevel(), 0);
-          if (!sat_solver->BacktrackAndPropagateReimplications(
-                  sat_solver->CurrentDecisionLevel() - 1))
-            return false;
-          continue;
-        }
-        const Literal candidate(index);
-        if (processed[candidate]) continue;
-        if (assignment.LiteralIsAssigned(candidate)) {
-          // candidate => last_decision => all previous decisions, which then
-          // propagate not(candidate). Hence candidate must be false.
-          if (assignment.LiteralIsFalse(candidate)) {
-            to_fix.push_back(Literal(candidate.Negated()));
-          }
-          continue;
-        }
-        next_decision = candidate.Index();
-        break;
-      }
+    if (sat_solver_->CurrentDecisionLevel() > 0 && options.use_queue) {
+      if (!ComputeNextDecisionInOrder(next_decision)) return false;
     }
-    // A second option to find the next decision is to use the first unassigned
-    // literal we find which implies the last decision, in no particular
-    // order.
-    if (sat_solver->CurrentDecisionLevel() > 0 &&
+    if (sat_solver_->CurrentDecisionLevel() > 0 &&
         next_decision == kNoLiteralIndex) {
-      const int level = sat_solver->CurrentDecisionLevel();
-      const Literal last_decision = sat_solver->Decisions()[level - 1].literal;
-      const absl::Span<const Literal> list =
-          implication_graph->Implications(last_decision.Negated());
-
-      // If l => last_decision, then not(last_decision) => not(l). We can thus
-      // find the candidates for the next decision by looking at all the
-      // implications of not(last_decision).
-      int j = starts[last_decision.NegatedIndex()];
-      for (int i = 0; i < list.size(); ++i, ++j) {
-        j %= list.size();
-        const Literal candidate = Literal(list[j]).Negated();
-        if (processed[candidate]) continue;
-        if (assignment.LiteralIsFalse(candidate)) {
-          // candidate => last_decision => all previous decisions, which then
-          // propagate not(candidate). Hence candidate must be false.
-          to_fix.push_back(Literal(candidate.Negated()));
-          continue;
-        }
-        // This shouldn't happen if extract_binary_clauses is false.
-        // We have an equivalence.
-        if (assignment.LiteralIsTrue(candidate)) continue;
-        next_decision = candidate.Index();
-        break;
-      }
-      starts[last_decision.NegatedIndex()] = j;
-      if (next_decision == kNoLiteralIndex) {
-        if (!sat_solver->BacktrackAndPropagateReimplications(level - 1)) {
-          return false;
-        }
-        continue;
-      }
+      if (!GetNextDecisionInRandomOrder(next_decision)) return false;
+      if (next_decision == kNoLiteralIndex) continue;
     }
-    // If there is no last decision we can use any literal as first decision.
-    // We use the first unassigned literal in probing_order.
-    if (sat_solver->CurrentDecisionLevel() == 0) {
-      // Fix any delayed fixed literal.
-      for (const Literal literal : to_fix) {
-        if (!assignment.LiteralIsTrue(literal)) {
-          ++num_explicit_fix;
-          if (!sat_solver->AddUnitClause(literal)) return false;
-        }
-      }
-      to_fix.clear();
-      if (!sat_solver->FinishPropagation()) return false;
-
-      // Probe an unexplored node.
-      for (; order_index < probing_order.size(); ++order_index) {
-        const Literal candidate(probing_order[order_index]);
-        if (processed[candidate]) continue;
-        if (assignment.LiteralIsAssigned(candidate)) continue;
-        next_decision = candidate.Index();
-        break;
-      }
-
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      if (!GetFirstDecision(next_decision)) return false;
       // The pass is finished.
       if (next_decision == kNoLiteralIndex) break;
     }
 
     // We now have a next decision, enqueue it and propagate until fix point.
-    ++num_probed;
-    processed.Set(next_decision);
-    CHECK_NE(next_decision, kNoLiteralIndex);
-    queue.push_back({kNoLiteralIndex, 0});  // Backtrack marker.
-    const int level = sat_solver->CurrentDecisionLevel();
-    const int first_new_trail_index =
-        sat_solver->EnqueueDecisionAndBackjumpOnConflict(
-            Literal(next_decision));
-
-    // This is tricky, depending on the parameters, and for integer problem,
-    // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
-    if (sat_solver->NumVariables() > num_variables) {
-      num_variables = sat_solver->NumVariables();
-      processed.Resize(LiteralIndex(2 * num_variables));
-      if (!options.use_queue) {
-        starts.resize(2 * num_variables, 0);
-      } else {
-        position_in_order.resize(2 * num_variables, -1);
-      }
-    }
-
-    const int new_level = sat_solver->CurrentDecisionLevel();
-    sat_solver->AdvanceDeterministicTime(time_limit);
-    if (sat_solver->ModelIsUnsat()) return false;
-    if (new_level <= level) {
-      ++num_conflicts;
-
-      // Sync the queue with the new level.
-      if (options.use_queue) {
-        if (new_level == 0) {
-          queue.clear();
-        } else {
-          int queue_level = level + 1;
-          while (queue_level > new_level) {
-            CHECK(!queue.empty());
-            if (queue.back().literal_index == kNoLiteralIndex) --queue_level;
-            queue.pop_back();
-          }
-        }
-      }
-
-      // Fix `next_decision` to `false` if not already done.
-      //
-      // Even if we fixed something at level zero, next_decision might not be
-      // fixed! But we can fix it. It can happen because when we propagate
-      // with clauses, we might have `a => b` but not `not(b) => not(a)`. Like
-      // `a => b` and clause `(not(a), not(b), c)`, propagating `a` will set
-      // `c`, but propagating `not(c)` will not do anything.
-      //
-      // We "delay" the fixing if we are not at level zero so that we can
-      // still reuse the current propagation work via tree look.
-      //
-      // TODO(user): Can we be smarter here? Maybe we can still fix the
-      // literal without going back to level zero by simply enqueuing it with
-      // no reason? it will be backtracked over, but we will still lazily fix
-      // it later.
-      if (sat_solver->CurrentDecisionLevel() != 0 ||
-          assignment.LiteralIsFalse(Literal(next_decision))) {
-        to_fix.push_back(Literal(next_decision).Negated());
-      }
+    int first_new_trail_index;
+    if (!EnqueueDecisionAndBackjumpOnConflict(next_decision, options.use_queue,
+                                              first_new_trail_index)) {
+      return false;
     }
 
     // Inspect the newly propagated literals. Depending on the options, try to
     // extract binary clauses via hyper binary resolution and/or mark the
     // literals on the trail so that they do not need to be probed later.
+    const int new_level = sat_solver_->CurrentDecisionLevel();
     if (new_level == 0) continue;
     const Literal last_decision =
-        sat_solver->Decisions()[new_level - 1].literal;
-    int num_new_subsumed = 0;
-    for (int i = first_new_trail_index; i < trail.Index(); ++i) {
-      const Literal l = trail[i];
+        sat_solver_->Decisions()[new_level - 1].literal;
+    for (int i = first_new_trail_index; i < trail_.Index(); ++i) {
+      const Literal l = trail_[i];
       if (l == last_decision) continue;
 
-      // If we can extract a binary clause that subsume the reason clause, we
-      // do add the binary and remove the subsumed clause.
-      //
-      // TODO(user): We could be slightly more generic and subsume some
-      // clauses that do not contains last_decision.Negated().
       bool subsumed = false;
-      if (options.subsume_with_binary_clause &&
-          trail.AssignmentType(l.Variable()) == clause_id) {
-        for (const Literal lit : trail.Reason(l.Variable())) {
-          if (lit == last_decision.Negated()) {
-            subsumed = true;
-            break;
-          }
-        }
-        if (subsumed) {
-          ++num_new_subsumed;
-          ++num_new_binary;
-          CHECK(implication_graph->AddBinaryClause(last_decision.Negated(), l));
-          const int trail_index = trail.Info(l.Variable()).trail_index;
-
-          int test = 0;
-          for (const Literal lit :
-               clause_manager->ReasonClause(trail_index)->AsSpan()) {
-            if (lit == l) ++test;
-            if (lit == last_decision.Negated()) ++test;
-          }
-          CHECK_EQ(test, 2);
-          clause_manager->LazyDetach(clause_manager->ReasonClause(trail_index));
-
-          // We need to change the reason now that the clause is cleared.
-          implication_graph->ChangeReason(trail_index, last_decision);
-        }
+      if (options.subsume_with_binary_clause) {
+        subsumed = MaybeSubsumeWithBinaryClause(last_decision, l);
       }
-
       if (options.extract_binary_clauses) {
-        // Anything not propagated by the BinaryImplicationGraph is a "new"
-        // binary clause. This is because the BinaryImplicationGraph has the
-        // highest priority of all propagators.
-        //
-        // Note(user): This is not 100% true, since when we launch the clause
-        // propagation for one literal we do finish it before calling again
-        // the binary propagation.
-        //
-        // TODO(user): Think about trying to extract clause that will not
-        // get removed by transitive reduction later. If we can both extract
-        // a => c and b => c , ideally we don't want to extract a => c first
-        // if we already know that a => b.
-        //
-        // TODO(user): Similar to previous point, we could find the LCA
-        // of all literals in the reason for this propagation. And use this
-        // as a reason for later hyber binary resolution. Like we do when
-        // this clause subsume the reason.
-        if (!subsumed && trail.AssignmentType(l.Variable()) != id) {
-          ++num_new_binary;
-          CHECK(implication_graph->AddBinaryClause(last_decision.Negated(), l));
+        if (!subsumed) {
+          MaybeExtractBinaryClause(last_decision, l);
         }
       } else {
         // If we don't extract binary, we don't need to explore any of
-        // these literal until more variables are fixed.
-        processed.Set(l.Index());
+        // these literals until more variables are fixed.
+        processed_.Set(l.Index());
       }
     }
 
-    // Inspect the watcher list for last_decision, If we have a blocking
-    // literal at true (implied by last decision), then we have subsumptions.
-    //
-    // The intuition behind this is that if a binary clause (a,b) subsume a
-    // clause, and we watch a.Negated() for this clause with a blocking
-    // literal b, then this watch entry will never change because we always
-    // propagate binary clauses first and the blocking literal will always be
-    // true. So after many propagations, we hope to have such configuration
-    // which is quite cheap to test here.
     if (options.subsume_with_binary_clause) {
-      // Tricky: If we have many "decision" and we do not extract the binary
-      // clause, then the fact that last_decision => literal might not be
-      // currently encoded in the problem clause, so if we use that relation
-      // to subsume, we should make sure it is added.
-      //
-      // Note that it is okay to add duplicate binary clause, we will clean that
-      // later.
-      const bool always_add_binary = sat_solver->CurrentDecisionLevel() > 1 &&
-                                     !options.extract_binary_clauses;
+      SubsumeWithBinaryClauseUsingBlockingLiteral(last_decision);
+    }
+  }
 
-      for (const auto& w :
-           clause_manager->WatcherListOnFalse(last_decision.Negated())) {
-        if (assignment.LiteralIsTrue(w.blocking_literal)) {
-          if (w.clause->IsRemoved()) continue;
-          CHECK_NE(w.blocking_literal, last_decision.Negated());
+  if (!sat_solver_->ResetToLevelZero()) return false;
+  if (!ProcessLiteralsToFix()) return false;
+  if (!subsumed_clauses_.empty()) {
+    for (SatClause* clause : subsumed_clauses_) {
+      clause_manager_->LazyDetach(clause);
+    }
+    clause_manager_->CleanUpWatchers();
+  }
 
-          // Add the binary clause if needed. Note that we change the reason
-          // to a binary one so that we never add the same clause twice.
-          //
-          // Tricky: while last_decision would be a valid reason, we need a
-          // reason that was assigned before this literal, so we use the
-          // decision at the level where this literal was assigned which is an
-          // even better reason. Maybe it is just better to change all the
-          // reason above to a binary one so we don't have an issue here.
-          if (always_add_binary ||
-              trail.AssignmentType(w.blocking_literal.Variable()) != id) {
-            // If the variable was true at level zero, there is no point
-            // adding the clause.
-            const auto& info = trail.Info(w.blocking_literal.Variable());
-            if (info.level > 0) {
-              ++num_new_binary;
-              CHECK(implication_graph->AddBinaryClause(last_decision.Negated(),
-                                                       w.blocking_literal));
+  // Display stats.
+  const int num_fixed = sat_solver_->LiteralTrail().Index();
+  const int num_newly_fixed = num_fixed - initial_num_fixed;
+  const double time_diff =
+      time_limit_->GetElapsedDeterministicTime() - initial_deterministic_time;
+  const bool limit_reached = time_limit_->LimitReached() ||
+                             time_limit_->GetElapsedDeterministicTime() > limit;
+  LOG_IF(INFO, options.log_info)
+      << "Probing. "
+      << " num_probed: " << num_probed_ << "/" << probing_order_.size()
+      << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
+      << num_variables_ << ")"
+      << " explicit_fix:" << num_explicit_fix_
+      << " num_conflicts:" << num_conflicts_
+      << " new_binary_clauses: " << num_new_binary_
+      << " subsumed: " << num_subsumed_ << " dtime: " << time_diff
+      << " wtime: " << wall_timer.Get() << (limit_reached ? " (Aborted)" : "");
+  return sat_solver_->FinishPropagation();
+}
 
-              const Literal d = sat_solver->Decisions()[info.level - 1].literal;
-              if (d != w.blocking_literal) {
-                implication_graph->ChangeReason(info.trail_index, d);
-              }
-            }
-          }
+// Sets `next_decision` to the unassigned literal which implies the last
+// decision and which comes first in the probing order (which itself can be
+// the topological order of the implication graph, or the reverse).
+bool FailedLiteralProbing::ComputeNextDecisionInOrder(
+    LiteralIndex& next_decision) {
+  // TODO(user): Instead of minimizing index in topo order (which might be
+  // nice for binary extraction), we could try to maximize reusability in
+  // some way.
+  const Literal last_decision =
+      sat_solver_->Decisions()[sat_solver_->CurrentDecisionLevel() - 1].literal;
+  // If l => last_decision, then not(last_decision) => not(l). We can thus
+  // find the candidates for the next decision by looking at all the
+  // implications of not(last_decision).
+  const absl::Span<const Literal> list =
+      implication_graph_->Implications(last_decision.Negated());
+  const int saved_queue_size = queue_.size();
+  for (const Literal l : list) {
+    const Literal candidate = l.Negated();
+    if (processed_[candidate]) continue;
+    if (position_in_order_[candidate] == -1) continue;
+    if (assignment_.LiteralIsAssigned(candidate)) {
+      // candidate => last_decision => all previous decisions, which then
+      // propagate not(candidate). Hence candidate must be false.
+      if (assignment_.LiteralIsFalse(candidate)) {
+        AddFailedLiteralToFix(candidate);
+      }
+      continue;
+    }
+    queue_.push_back({candidate.Index(), -position_in_order_[candidate]});
+  }
+  // Sort all the candidates.
+  std::sort(queue_.begin() + saved_queue_size, queue_.end());
 
-          ++num_new_subsumed;
-          clause_manager->LazyDetach(w.clause);
+  // Set next_decision to the first unassigned candidate.
+  while (!queue_.empty()) {
+    const LiteralIndex index = queue_.back().literal_index;
+    queue_.pop_back();
+    if (index == kNoLiteralIndex) {
+      // This is a backtrack marker, go back one level.
+      CHECK_GT(sat_solver_->CurrentDecisionLevel(), 0);
+      if (!sat_solver_->BacktrackAndPropagateReimplications(
+              sat_solver_->CurrentDecisionLevel() - 1))
+        return false;
+      continue;
+    }
+    const Literal candidate(index);
+    if (processed_[candidate]) continue;
+    if (assignment_.LiteralIsAssigned(candidate)) {
+      // candidate => last_decision => all previous decisions, which then
+      // propagate not(candidate). Hence candidate must be false.
+      if (assignment_.LiteralIsFalse(candidate)) {
+        AddFailedLiteralToFix(candidate);
+      }
+      continue;
+    }
+    next_decision = candidate.Index();
+    break;
+  }
+  return true;
+}
+
+// Sets `next_decision` to the first unassigned literal we find which implies
+// the last decision, in no particular order.
+bool FailedLiteralProbing::GetNextDecisionInRandomOrder(
+    LiteralIndex& next_decision) {
+  const int level = sat_solver_->CurrentDecisionLevel();
+  const Literal last_decision = sat_solver_->Decisions()[level - 1].literal;
+  const absl::Span<const Literal> list =
+      implication_graph_->Implications(last_decision.Negated());
+
+  // If l => last_decision, then not(last_decision) => not(l). We can thus
+  // find the candidates for the next decision by looking at all the
+  // implications of not(last_decision).
+  int j = starts_[last_decision.NegatedIndex()];
+  for (int i = 0; i < list.size(); ++i, ++j) {
+    j %= list.size();
+    const Literal candidate = Literal(list[j]).Negated();
+    if (processed_[candidate]) continue;
+    if (assignment_.LiteralIsFalse(candidate)) {
+      // candidate => last_decision => all previous decisions, which then
+      // propagate not(candidate). Hence candidate must be false.
+      AddFailedLiteralToFix(candidate);
+      continue;
+    }
+    // This shouldn't happen if extract_binary_clauses is false.
+    // We have an equivalence.
+    if (assignment_.LiteralIsTrue(candidate)) continue;
+    next_decision = candidate.Index();
+    break;
+  }
+  starts_[last_decision.NegatedIndex()] = j;
+  if (next_decision == kNoLiteralIndex) {
+    if (!sat_solver_->BacktrackAndPropagateReimplications(level - 1)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Sets `next_decision` to the first unassigned literal in probing_order (if
+// there is no last decision we can use any literal as first decision).
+bool FailedLiteralProbing::GetFirstDecision(LiteralIndex& next_decision) {
+  // Fix any delayed fixed literal.
+  if (!ProcessLiteralsToFix()) return false;
+
+  // Probe an unexplored node.
+  for (; order_index_ < probing_order_.size(); ++order_index_) {
+    const Literal candidate(probing_order_[order_index_]);
+    if (processed_[candidate]) continue;
+    if (assignment_.LiteralIsAssigned(candidate)) continue;
+    next_decision = candidate.Index();
+    break;
+  }
+  return true;
+}
+
+bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
+    LiteralIndex next_decision, bool use_queue, int& first_new_trail_index) {
+  ++num_probed_;
+  processed_.Set(next_decision);
+  CHECK_NE(next_decision, kNoLiteralIndex);
+  queue_.push_back({kNoLiteralIndex, 0});  // Backtrack marker.
+  const int level = sat_solver_->CurrentDecisionLevel();
+
+  // The unit clause ID that fixes next_decision to false, if it causes a
+  // conflict.
+  ClauseId fixed_decision_unit_id = kNoClauseId;
+  auto conflict_callback = [&](ClauseId conflict_id,
+                               absl::Span<const Literal> conflict_clause) {
+    if (fixed_decision_unit_id != kNoClauseId) return;
+    ComputeDecisionImplicationIds(Literal(next_decision), level,
+                                  /*end_level=*/0, tmp_clause_ids_);
+    sat_solver_->AppendClausesFixing(conflict_clause, &tmp_clause_ids_);
+    tmp_clause_ids_.push_back(conflict_id);
+    fixed_decision_unit_id = clause_id_generator_->GetNextId();
+    lrat_proof_handler_->AddInferredClause(fixed_decision_unit_id,
+                                           {Literal(next_decision).Negated()},
+                                           tmp_clause_ids_);
+  };
+  first_new_trail_index = sat_solver_->EnqueueDecisionAndBackjumpOnConflict(
+      Literal(next_decision),
+      lrat_proof_handler_ != nullptr
+          ? conflict_callback
+          : std::optional<SatSolver::ConflictCallback>());
+
+  if (first_new_trail_index == kUnsatTrailIndex) return false;
+  binary_clause_extracted_.resize(first_new_trail_index);
+  binary_clause_extracted_.resize(trail_.Index(), false);
+
+  // This is tricky, depending on the parameters, and for integer problem,
+  // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
+  if (sat_solver_->NumVariables() > num_variables_) {
+    num_variables_ = sat_solver_->NumVariables();
+    processed_.Resize(LiteralIndex(2 * num_variables_));
+    if (!use_queue) {
+      starts_.resize(2 * num_variables_, 0);
+    } else {
+      position_in_order_.resize(2 * num_variables_, -1);
+    }
+  }
+
+  const int new_level = sat_solver_->CurrentDecisionLevel();
+  sat_solver_->AdvanceDeterministicTime(time_limit_);
+  if (sat_solver_->ModelIsUnsat()) return false;
+  if (new_level <= level) {
+    ++num_conflicts_;
+
+    // Sync the queue with the new level.
+    if (use_queue) {
+      if (new_level == 0) {
+        queue_.clear();
+      } else {
+        int queue_level = level + 1;
+        while (queue_level > new_level) {
+          CHECK(!queue_.empty());
+          if (queue_.back().literal_index == kNoLiteralIndex) --queue_level;
+          queue_.pop_back();
         }
       }
     }
 
-    if (num_new_subsumed > 0) {
-      // TODO(user): We might just want to do that even more lazily by
-      // checking for detached clause while propagating here? and do a big
-      // cleanup at the end.
-      clause_manager->CleanUpWatchers();
-      num_subsumed += num_new_subsumed;
+    // Fix `next_decision` to `false` if not already done.
+    //
+    // Even if we fixed something at level zero, next_decision might not be
+    // fixed! But we can fix it. It can happen because when we propagate
+    // with clauses, we might have `a => b` but not `not(b) => not(a)`. Like
+    // `a => b` and clause `(not(a), not(b), c)`, propagating `a` will set
+    // `c`, but propagating `not(c)` will not do anything.
+    //
+    // We "delay" the fixing if we are not at level zero so that we can
+    // still reuse the current propagation work via tree look.
+    //
+    // TODO(user): Can we be smarter here? Maybe we can still fix the
+    // literal without going back to level zero by simply enqueuing it with
+    // no reason? it will be backtracked over, but we will still lazily fix
+    // it later.
+    if (sat_solver_->CurrentDecisionLevel() != 0 ||
+        assignment_.LiteralIsFalse(Literal(next_decision))) {
+      to_fix_.push_back(Literal(next_decision).Negated());
+      if (lrat_proof_handler_ != nullptr) {
+        to_fix_unit_id_.push_back(fixed_decision_unit_id);
+      }
     }
   }
+  return true;
+}
 
-  if (!sat_solver->ResetToLevelZero()) return false;
-  for (const Literal literal : to_fix) {
-    ++num_explicit_fix;
-    if (!sat_solver->AddUnitClause(literal)) return false;
+// If we can extract a binary clause that subsume the reason clause, we do add
+// the binary and remove the subsumed clause.
+//
+// TODO(user): We could be slightly more generic and subsume some clauses that
+// do not contain last_decision.Negated().
+bool FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
+    const Literal last_decision, const Literal l) {
+  const int trail_index = trail_.Info(l.Variable()).trail_index;
+  if (binary_clause_extracted_[trail_index] ||
+      trail_.AssignmentType(l.Variable()) != clause_propagator_id_) {
+    return false;
   }
-  to_fix.clear();
-  if (!sat_solver->FinishPropagation()) return false;
+  bool subsumed = false;
+  for (const Literal lit : trail_.Reason(l.Variable())) {
+    if (lit == last_decision.Negated()) {
+      subsumed = true;
+      break;
+    }
+  }
+  if (!subsumed) return false;
+  ++num_subsumed_;
+  ++num_new_binary_;
+  // TODO(user): add LRAT proof.
+  CHECK(implication_graph_->AddBinaryClause(last_decision.Negated(), l));
+  binary_clause_extracted_[trail_index] = true;
 
-  // Display stats.
-  const int num_fixed = sat_solver->LiteralTrail().Index();
-  const int num_newly_fixed = num_fixed - initial_num_fixed;
-  const double time_diff =
-      time_limit->GetElapsedDeterministicTime() - initial_deterministic_time;
-  const bool limit_reached = time_limit->LimitReached() ||
-                             time_limit->GetElapsedDeterministicTime() > limit;
-  LOG_IF(INFO, options.log_info)
-      << "Probing. "
-      << " num_probed: " << num_probed << "/" << probing_order.size()
-      << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
-      << num_variables << ")"
-      << " explicit_fix:" << num_explicit_fix
-      << " num_conflicts:" << num_conflicts
-      << " new_binary_clauses: " << num_new_binary
-      << " subsumed: " << num_subsumed << " dtime: " << time_diff
-      << " wtime: " << wall_timer.Get() << (limit_reached ? " (Aborted)" : "");
-  return sat_solver->FinishPropagation();
+  int test = 0;
+  for (const Literal lit :
+       clause_manager_->ReasonClause(trail_index)->AsSpan()) {
+    if (lit == l) ++test;
+    if (lit == last_decision.Negated()) ++test;
+  }
+  CHECK_EQ(test, 2);
+  subsumed_clauses_.push_back(clause_manager_->ReasonClause(trail_index));
+  return true;
+}
+
+void FailedLiteralProbing::MaybeExtractBinaryClause(const Literal last_decision,
+                                                    const Literal l) {
+  // Anything not propagated by the BinaryImplicationGraph is a "new"
+  // binary clause. This is because the BinaryImplicationGraph has the
+  // highest priority of all propagators.
+  //
+  // Note(user): This is not 100% true, since when we launch the clause
+  // propagation for one literal we do finish it before calling again
+  // the binary propagation.
+  //
+  // TODO(user): Think about trying to extract clause that will not
+  // get removed by transitive reduction later. If we can both extract
+  // a => c and b => c , ideally we don't want to extract a => c first
+  // if we already know that a => b.
+  //
+  // TODO(user): Similar to previous point, we could find the LCA
+  // of all literals in the reason for this propagation. And use this
+  // as a reason for later hyber binary resolution. Like we do when
+  // this clause subsumes the reason.
+  if (trail_.AssignmentType(l.Variable()) != id_) {
+    ++num_new_binary_;
+    // TODO(user): add LRAT proof.
+    CHECK(implication_graph_->AddBinaryClause(last_decision.Negated(), l));
+  }
+}
+
+// Inspect the watcher list for last_decision, If we have a blocking
+// literal at true (implied by last decision), then we have subsumptions.
+//
+// The intuition behind this is that if a binary clause (a,b) subsumes a
+// clause, and we watch a.Negated() for this clause with a blocking
+// literal b, then this watch entry will never change because we always
+// propagate binary clauses first and the blocking literal will always be
+// true. So after many propagations, we hope to have such configuration
+// which is quite cheap to test here.
+void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
+    const Literal last_decision) {
+  for (const auto& w :
+       clause_manager_->WatcherListOnFalse(last_decision.Negated())) {
+    if (assignment_.LiteralIsTrue(w.blocking_literal)) {
+      if (w.clause->IsRemoved()) continue;
+      const auto& info = trail_.Info(w.blocking_literal.Variable());
+      CHECK_NE(w.blocking_literal, last_decision.Negated());
+
+      // Add the binary clause if not already done. If the variable was true at
+      // level zero, there is no point adding the clause.
+      if (info.level > 0 && !binary_clause_extracted_[info.trail_index]) {
+        ++num_new_binary_;
+        // TODO(user): add LRAT proof.
+        CHECK(implication_graph_->AddBinaryClause(last_decision.Negated(),
+                                                  w.blocking_literal));
+        binary_clause_extracted_[info.trail_index] = true;
+      }
+
+      ++num_subsumed_;
+      subsumed_clauses_.push_back(w.clause);
+    }
+  }
+}
+
+// Sets `clause_ids` to the IDs of the implications from `l` to the decisions
+// from `start_level` to `end_level` (included, going backwards).
+void FailedLiteralProbing::ComputeDecisionImplicationIds(
+    Literal l, int start_level, int end_level,
+    std::vector<ClauseId>& clause_ids) {
+  clause_ids.clear();
+  int level = start_level;
+  while (level != end_level) {
+    const Literal decision = sat_solver_->Decisions()[--level].literal;
+    clause_ids.push_back(
+        implication_graph_->GetClauseId(l.Negated(), decision));
+    l = decision;
+  }
+}
+
+// Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies
+// the current decision, which itself implies all the previous decisions, with
+// some of them propagating 'not(literal)'.
+void FailedLiteralProbing::AddFailedLiteralToFix(const Literal literal) {
+  // TODO(user): skip if literal.Negated() is already in to_fix?
+  to_fix_.push_back(literal.Negated());
+  if (lrat_proof_handler_ == nullptr) return;
+
+  ClauseId unit_id = trail_.GetUnitClauseId(literal.Variable());
+  if (unit_id == kNoClauseId) {
+    // TODO(user): it should be possible to stop at the level of the
+    // first decision necessary to fix 'literal'. A first attempt at this
+    // failed.
+    ComputeDecisionImplicationIds(literal, sat_solver_->CurrentDecisionLevel(),
+                                  /*end_level=*/0, tmp_clause_ids_);
+    sat_solver_->AppendClausesFixing({literal.Negated()}, &tmp_clause_ids_);
+    unit_id = clause_id_generator_->GetNextId();
+    lrat_proof_handler_->AddInferredClause(unit_id, {literal.Negated()},
+                                           tmp_clause_ids_);
+  }
+  to_fix_unit_id_.push_back({unit_id});
+}
+
+// Fixes all the literals in to_fix_, and finish propagation.
+bool FailedLiteralProbing::ProcessLiteralsToFix() {
+  for (int i = 0; i < to_fix_.size(); ++i) {
+    const Literal literal = to_fix_[i];
+    if (assignment_.LiteralIsTrue(literal)) continue;
+    ++num_explicit_fix_;
+    const ClauseId clause_id =
+        lrat_proof_handler_ != nullptr ? to_fix_unit_id_[i] : kNoClauseId;
+    if (!clause_manager_->InprocessingAddUnitClause(clause_id, literal)) {
+      return false;
+    }
+  }
+  to_fix_.clear();
+  to_fix_unit_id_.clear();
+  return sat_solver_->FinishPropagation();
+}
+
+bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
+  return FailedLiteralProbing(model).DoOneRound(options);
 }
 
 }  // namespace sat

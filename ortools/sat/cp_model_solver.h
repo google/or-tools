@@ -115,7 +115,7 @@ std::function<void(Model*)> NewFeasibleSolutionLogCallback(
 
 /**
  * Creates a callbacks that will be called on each new best objective bound
- * found.
+ * found. It is guaranteed that the best bound is strictly improving.
  *
  * Note that this function is called before the update takes place.
  */

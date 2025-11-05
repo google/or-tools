@@ -121,7 +121,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       heads_(heads),
       literals_(literals),
       binary_relation_repository_(
-          *model->GetOrCreate<BinaryRelationRepository>()),
+          *model->GetOrCreate<ConditionalLinear2Bounds>()),
       implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
       trail_(*model->GetOrCreate<Trail>()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
@@ -1106,7 +1106,7 @@ class RouteRelationsBuilder {
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
       absl::Span<const AffineExpression> flat_node_dim_expressions,
-      const BinaryRelationRepository& binary_relation_repository)
+      const ConditionalLinear2Bounds& binary_relation_repository)
       : num_nodes_(num_nodes),
         num_arcs_(tails.size()),
         tails_(tails),
@@ -1683,7 +1683,7 @@ class RouteRelationsBuilder {
   absl::Span<const int> tails_;
   absl::Span<const int> heads_;
   absl::Span<const Literal> literals_;
-  const BinaryRelationRepository& binary_relation_repository_;
+  const ConditionalLinear2Bounds& binary_relation_repository_;
 
   int num_dimensions_;
   absl::flat_hash_map<PositiveOnlyIndex, int> dimension_by_var_;
@@ -1705,7 +1705,7 @@ class RouteRelationsBuilder {
 RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
-    const BinaryRelationRepository& binary_relation_repository) {
+    const ConditionalLinear2Bounds& binary_relation_repository) {
   RoutingCumulExpressions result;
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals, {},
                                 binary_relation_repository);
@@ -1789,7 +1789,7 @@ std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
-    const BinaryRelationRepository& binary_relation_repository, Model* model) {
+    const ConditionalLinear2Bounds& binary_relation_repository, Model* model) {
   CHECK(model != nullptr);
   if (flat_node_dim_expressions.empty()) return nullptr;
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
@@ -1886,10 +1886,10 @@ int ToNodeVariableIndex(IntegerVariable var) {
 // domains) of the enforced linear constraints (of size 2 only) in `model`. This
 // is the only information needed to infer the mapping from variables to nodes
 // in routes constraints.
-BinaryRelationRepository ComputePartialBinaryRelationRepository(
+ConditionalLinear2Bounds ComputePartialConditionalLinear2Bounds(
     const CpModelProto& model) {
   Model empty_model;
-  BinaryRelationRepository repository(&empty_model);
+  ConditionalLinear2Bounds repository(&empty_model);
   for (const ConstraintProto& ct : model.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const absl::Span<const int> vars = ct.linear().vars();
@@ -1905,7 +1905,7 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
 
 // Returns the number of dimensions added to the constraint.
 int MaybeFillRoutesConstraintNodeExpressions(
-    RoutesConstraintProto& routes, const BinaryRelationRepository& repository) {
+    RoutesConstraintProto& routes, const ConditionalLinear2Bounds& repository) {
   int max_node = 0;
   for (const int node : routes.tails()) {
     max_node = std::max(max_node, node);
@@ -1957,8 +1957,8 @@ std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
   if (routes_to_fill.empty()) return {0, 0};
 
   int total_num_dimensions = 0;
-  const BinaryRelationRepository partial_repository =
-      ComputePartialBinaryRelationRepository(input_model);
+  const ConditionalLinear2Bounds partial_repository =
+      ComputePartialConditionalLinear2Bounds(input_model);
   for (RoutesConstraintProto* routes : routes_to_fill) {
     total_num_dimensions +=
         MaybeFillRoutesConstraintNodeExpressions(*routes, partial_repository);
@@ -1983,7 +1983,7 @@ class RoutingCutHelper {
         trail_(*model->GetOrCreate<Trail>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         binary_relation_repository_(
-            *model->GetOrCreate<BinaryRelationRepository>()),
+            *model->GetOrCreate<ConditionalLinear2Bounds>()),
         implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -1996,7 +1996,7 @@ class RoutingCutHelper {
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
             num_nodes, tails_, heads_, literals_, flat_node_dim_expressions,
-            *model->GetOrCreate<BinaryRelationRepository>(), model)) {}
+            *model->GetOrCreate<ConditionalLinear2Bounds>(), model)) {}
 
   int num_nodes() const { return num_nodes_; }
 
@@ -2118,7 +2118,7 @@ class RoutingCutHelper {
   const SatParameters& params_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
-  const BinaryRelationRepository& binary_relation_repository_;
+  const ConditionalLinear2Bounds& binary_relation_repository_;
   const ImpliedBounds& implied_bounds_;
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;
