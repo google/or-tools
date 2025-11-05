@@ -16,10 +16,11 @@
 
 #include <atomic>
 #include <cstdint>
-#include <functional>
 #include <optional>
 
+#include "absl/base/nullability.h"
 #include "absl/base/thread_annotations.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/strong_int.h"
@@ -38,7 +39,7 @@ class SolveInterrupter {
   // Id used to identify a callback.
   DEFINE_STRONG_INT_TYPE(CallbackId, int64_t);
 
-  using Callback = std::function<void()>;
+  using Callback = absl::AnyInvocable<void() &&>;
 
   SolveInterrupter() = default;
 
@@ -74,7 +75,7 @@ class SolveInterrupter {
   // This method is `const` since it does not modify the state of the
   // interrupter (the result of IsInterrupted()). This enables passing a
   // const-ref to solvers, making sure they can't call Interrupt() by mistake.
-  CallbackId AddInterruptionCallback(Callback callback) const;
+  CallbackId AddInterruptionCallback(absl_nonnull Callback callback) const;
 
   // Unregisters a callback previously registered. It fails (with a CHECK) if
   // the callback was already unregistered or unkonwn. After this calls returns,
@@ -97,7 +98,14 @@ class SolveInterrupter {
 
   // The list of callbacks. We use a linked_hash_map to make sure the order of
   // calls to callback when the interrupter is triggered is stable.
-  mutable gtl::linked_hash_map<CallbackId, Callback> callbacks_
+  //
+  // The values are absl_nullable since the value will be nullptr:
+  // * either if AddInterruptionCallback() is called after Interrupt(), in which
+  //   case the callback is called before AddInterruptionCallback() returns,
+  // * or after Interrupt() has been called.
+  //
+  // This reflects the fact that callback can only be called once.
+  mutable gtl::linked_hash_map<CallbackId, absl_nullable Callback> callbacks_
       ABSL_GUARDED_BY(mutex_);
 };
 
@@ -120,8 +128,9 @@ class ScopedSolveInterrupterCallback {
  public:
   // Adds a callback to the interrupter if it is not nullptr. Does nothing when
   // interrupter is nullptr.
-  ScopedSolveInterrupterCallback(const SolveInterrupter* interrupter,
-                                 SolveInterrupter::Callback callback);
+  ScopedSolveInterrupterCallback(
+      const SolveInterrupter* absl_nullable interrupter,
+      absl_nonnull SolveInterrupter::Callback callback);
 
   ScopedSolveInterrupterCallback(const ScopedSolveInterrupterCallback&) =
       delete;
@@ -137,11 +146,13 @@ class ScopedSolveInterrupterCallback {
   void RemoveCallbackIfNecessary();
 
   // Returns the optional interrupter.
-  const SolveInterrupter* interrupter() const { return interrupter_; }
+  const SolveInterrupter* absl_nullable interrupter() const {
+    return interrupter_;
+  }
 
  private:
   // Optional interrupter.
-  const SolveInterrupter* const interrupter_;
+  const SolveInterrupter* absl_nullable const interrupter_;
 
   // Unset after the callback has been reset.
   std::optional<SolveInterrupter::CallbackId> callback_id_;

@@ -14,6 +14,7 @@
 #include "ortools/util/logging.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <ostream>
@@ -21,8 +22,23 @@
 #include <utility>
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 
 namespace operations_research {
+
+std::string FormatCounter(int64_t num) {
+  std::string s = absl::StrCat(num);
+  std::string out;
+  const int size = s.size();
+  for (int i = 0; i < size; ++i) {
+    if (i > 0 && (size - i) % 3 == 0) {
+      out.push_back('\'');
+    }
+    out.push_back(s[i]);
+  }
+  return out;
+}
 
 SolverLogger::SolverLogger() { timer_.Start(); }
 
@@ -91,6 +107,26 @@ void SolverLogger::FlushPendingThrottledLogs(bool ignore_rates) {
                            data.num_last_skipped_logs - 1, "]"));
       data.UpdateWhenDisplayed();
     }
+  }
+}
+
+PresolveTimer::~PresolveTimer() {
+  time_limit_->AdvanceDeterministicTime(work_);
+
+  std::string counter_string;
+  for (const auto& [counter_name, count] : counters_) {
+    absl::StrAppend(&counter_string, " #", counter_name, "=",
+                    FormatCounter(count));
+  }
+
+  // We use absl::Seconds() to get a nicer display.
+  if (override_logging_ ? log_when_override_ : logger_->LoggingIsEnabled()) {
+    logger_->LogInfo(
+        __FILE__, __LINE__,
+        absl::StrCat(absl::StrFormat("  %.2es", timer_.Get()),
+                     absl::StrFormat("  %.2ed", work_),
+                     (WorkLimitIsReached() ? " *" : "  "), "[", name_, "]",
+                     counter_string, " ", absl::StrJoin(extra_infos_, " ")));
   }
 }
 

@@ -35,11 +35,13 @@
 #include "ortools/base/types.h"
 #include "ortools/util/running_stat.h"
 
+#ifndef SWIG
 /**
  * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
 OR_DLL ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
+#endif  // SWIG
 
 namespace operations_research {
 

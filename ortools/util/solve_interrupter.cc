@@ -14,10 +14,11 @@
 #include "ortools/util/solve_interrupter.h"
 
 #include <atomic>
-#include <functional>
 #include <optional>
 #include <utility>
 
+#include "absl/base/nullability.h"
+#include "absl/functional/any_invocable.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/linked_hash_map.h"
 #include "ortools/base/logging.h"
@@ -44,30 +45,37 @@ void SolveInterrupter::Interrupt() {
   // to call Interrupt(), AddInterruptionCallback(), or
   // RemoveInterruptionCallback() from a callback but it ensures that external
   // code that can modify callbacks_ will wait until the end of Interrupt.
-  for (const auto& [callback_id, callback] : callbacks_) {
-    callback();
+  for (auto& [callback_id, callback] : callbacks_) {
+    // We can only have nullptr if:
+    // * interrupted_ was true when AddInterruptionCallback() was called,
+    // * or a previous Interrupt() has set the pointer to null.
+    // In these two cases we should not reach this code.
+    CHECK(callback != nullptr);
+    std::move(callback)();
+    callback = nullptr;
   }
 }
 
 SolveInterrupter::CallbackId SolveInterrupter::AddInterruptionCallback(
-    Callback callback) const {
+    absl_nonnull Callback callback) const {
   const absl::MutexLock lock(mutex_);
+
+  const CallbackId id = next_callback_id_;
+  ++next_callback_id_;
+
+  const auto [it, inserted] = callbacks_.try_emplace(id, std::move(callback));
+  CHECK(inserted);
 
   // We must make this call while holding the lock since we want to be sure that
   // the calls to the callbacks_ won't occur before we registered the new
   // one. If we were not holding the lock, this could return false and before we
   // could add the new callback to callbacks_, the Interrupt() function may
   // still have called them.
-  //
-  // We make the call before putting the callback in the map to since we need to
-  // move it in place.
   if (interrupted_.load()) {
-    callback();
+    std::move(it->second)();
+    it->second = nullptr;
   }
 
-  const CallbackId id = next_callback_id_;
-  ++next_callback_id_;
-  CHECK(callbacks_.try_emplace(id, std::move(callback)).second);
   return id;
 }
 
@@ -77,8 +85,8 @@ void SolveInterrupter::RemoveInterruptionCallback(CallbackId id) const {
 }
 
 ScopedSolveInterrupterCallback::ScopedSolveInterrupterCallback(
-    const SolveInterrupter* const interrupter,
-    SolveInterrupter::Callback callback)
+    const SolveInterrupter* absl_nullable const interrupter,
+    absl_nonnull SolveInterrupter::Callback callback)
     : interrupter_(interrupter),
       callback_id_(
           interrupter != nullptr

@@ -149,6 +149,12 @@ class Domain {
    */
   static Domain AllValues();
 
+  /** Returns the domain [int_min, value]. */
+  static Domain LowerOrEqual(int64_t value);
+
+  /** Returns the domain [value., int_max]. */
+  static Domain GreaterOrEqual(int64_t value);
+
   /**
    * Creates a domain from the union of an unsorted list of integer values.
    * Input values may be repeated, with no consequence on the output
@@ -350,6 +356,12 @@ class Domain {
    * Returns true iff D is included in the given domain.
    */
   bool IsIncludedIn(const Domain& domain) const;
+
+  /**
+   * Returns true iff D overlaps with the given domain, that is, the
+   * intersection of the two domains is not empty.
+   */
+  bool OverlapsWith(const Domain& domain) const;
 
   /**
    * Returns the set Int64 ∖ D.
@@ -663,7 +675,7 @@ class SortedDisjointIntervalList {
   const ClosedInterval& last() const { return *intervals_.rbegin(); }
 
   void clear() { intervals_.clear(); }
-  void swap(SortedDisjointIntervalList& other) {
+  void swap(SortedDisjointIntervalList& other) noexcept {
     intervals_.swap(other.intervals_);
   }
 

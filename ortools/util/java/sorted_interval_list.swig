@@ -62,11 +62,15 @@ SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
 %rename (fromFlatIntervals) operations_research::Domain::FromFlatIntervals;
 %rename (fromIntervals) operations_research::Domain::FromVectorIntervals;
 %rename (fromValues) operations_research::Domain::FromValues;
+%rename (greaterOrEqual) operations_research::Domain::GreaterOrEqual;
 %rename (intersectionWith) operations_research::Domain::IntersectionWith;
 %rename (isEmpty) operations_research::Domain::IsEmpty;
+%rename (isIncludedIn) operations_research::Domain::IsIncludedIn;
+%rename (lowerOrEqual) operations_research::Domain::LowerOrEqual;
 %rename (max) operations_research::Domain::Max;
 %rename (min) operations_research::Domain::Min;
 %rename (negation) operations_research::Domain::Negation;
+%rename (overlapsWith) operations_research::Domain::OverlapsWith;
 %rename (size) operations_research::Domain::Size;
 %rename (toString) operations_research::Domain::ToString;
 %rename (unionWith) operations_research::Domain::UnionWith;
