@@ -108,6 +108,10 @@ class DenseConnectedComponentsFinder {
   // Non-const because it does path compression internally.
   int FindRoot(int node);
 
+  // Returns the parent of the given node, in the chain towards the root of the
+  // set for this node. Returns the node itself if it is a root.
+  int GetParent(int node) const { return parent_[node]; }
+
   // Returns the same as GetConnectedComponents().
   std::vector<int> GetComponentIds();
 
