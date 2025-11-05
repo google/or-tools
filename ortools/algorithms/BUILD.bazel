@@ -131,7 +131,6 @@ cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -158,7 +157,6 @@ cc_test(
 cc_library(
     name = "adjustable_k_ary_heap",
     hdrs = ["adjustable_k_ary_heap.h"],
-    visibility = ["//visibility:public"],
     deps = ["@abseil-cpp//absl/log:check"],
 )
 

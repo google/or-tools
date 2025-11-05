@@ -25,7 +25,6 @@
 #ifndef ORTOOLS_BASE_PYTHON_SWIG_H_
 #define ORTOOLS_BASE_PYTHON_SWIG_H_
 
-#if PY_VERSION_HEX >= 0x03030000  // Py3.3+
 // Use Py3 unicode str() type for C++ strings.
 #ifdef PyString_FromStringAndSize
 #undef PyString_FromStringAndSize
@@ -51,7 +50,6 @@ static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
   PyErr_SetString(PyExc_TypeError, "Expecting str or bytes");
   return -1;
 }
-#endif  // Py3.3+
 
 template <class T>
 inline bool PyObjAs(PyObject* pystr, T* cstr) {
@@ -67,14 +65,12 @@ template <>
 inline bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
   char* buf;
   Py_ssize_t len;
-#if PY_VERSION_HEX >= 0x03030000
   if (PyUnicode_Check(pystr)) {
     buf = PyUnicode_AsUTF8AndSize(pystr, &len);
     if (!buf) return false;
-  } else  // NOLINT
-#endif
-      if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1)
+  } else if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1) {  // NOLINT
     return false;
+  }
   if (cstr) cstr->assign(buf, len);
   return true;
 }
@@ -83,14 +79,12 @@ template <class T>
 inline bool PyObjAs(PyObject* pystr, std::string* cstr) {
   char* buf;
   Py_ssize_t len;
-#if PY_VERSION_HEX >= 0x03030000
   if (PyUnicode_Check(pystr)) {
     buf = const_cast<char*>(PyUnicode_AsUTF8AndSize(pystr, &len));
     if (!buf) return false;
-  } else  // NOLINT
-#endif
-      if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1)
+  } else if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1) {  // NOLINT
     return false;
+  }
   if (cstr) cstr->assign(buf, len);
   return true;
 }
@@ -132,36 +126,18 @@ inline bool PyObjAs(PyObject* py, unsigned int* c) {
 
 template <>
 inline bool PyObjAs(PyObject* py, int64_t* c) {  // NOLINT
-  int64_t i;                                     // NOLINT
-#if PY_MAJOR_VERSION < 3
-  if (PyInt_Check(py)) {
-    i = PyInt_AsLong(py);
-  } else {
-    if (!PyLong_Check(py)) return false;  // Not a Python long.
-#else
-  {
-#endif
-    i = PyLong_AsLongLong(py);
-    if (i == -1 && PyErr_Occurred()) return false;  // Not a C long long.
-  }
+  const int64_t i = PyLong_AsLongLong(py);
+  if (i == -1 && PyErr_Occurred()) return false;  // Not a C long long.
   if (c) *c = i;
   return true;
 }
 
 template <>
 inline bool PyObjAs(PyObject* py, uint64_t* c) {  // NOLINT
-  uint64_t i;                                     // NOLINT
-#if PY_MAJOR_VERSION < 3
-  if (PyInt_Check(py)) {
-    i = PyInt_AsUnsignedLongLongMask(py);
-  } else  // NOLINT
-#endif
-  {
-    if (!PyLong_Check(py)) return false;  // Not a Python long.
-    i = PyLong_AsUnsignedLongLong(py);
-    if (i == (uint64_t)-1 && PyErr_Occurred())  // NOLINT
-      return false;
-  }
+  if (!PyLong_Check(py)) return false;            // Not a Python long.
+  const uint64_t i = PyLong_AsUnsignedLongLong(py);
+  if (i == (uint64_t)-1 && PyErr_Occurred())  // NOLINT
+    return false;
   if (c) *c = i;
   return true;
 }
@@ -171,12 +147,6 @@ inline bool PyObjAs(PyObject* py, double* c) {
   double d;
   if (PyFloat_Check(py)) {
     d = PyFloat_AsDouble(py);
-#if PY_MAJOR_VERSION < 3
-  } else if (PyInt_Check(py)) {
-    d = PyInt_AsLong(py);
-  } else if (!PyLong_Check(py)) {
-    return false;  // float or int/long expected
-#endif
   } else {
     d = PyLong_AsDouble(py);
     if (d == -1.0 && PyErr_Occurred()) {
@@ -210,13 +180,7 @@ inline bool PyObjAs(PyObject* py, bool* c) {
   return true;
 }
 
-inline int SwigPyIntOrLong_Check(PyObject* o) {
-  return (PyLong_Check(o)
-#if PY_MAJOR_VERSION <= 2
-          || PyInt_Check(o)
-#endif
-  );  // NOLINT
-}
+inline int SwigPyIntOrLong_Check(PyObject* o) { return PyLong_Check(o); }
 
 inline int SwigString_Check(PyObject* o) { return PyUnicode_Check(o); }
 
@@ -352,13 +316,11 @@ inline PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
 #endif
 }
 
-#if PY_MAJOR_VERSION > 2
 /* SWIG 2's own C preprocessor macro for this is too strict.
  * It requires a (x) parameter which doesn't work for the case where the
  * function is being passed by & as a converter into a helper such as
  * vector_output_helper above. */
 #undef PyInt_FromLong
 #define PyInt_FromLong PyLong_FromLong
-#endif
 
 #endif  // ORTOOLS_BASE_PYTHON_SWIG_H_

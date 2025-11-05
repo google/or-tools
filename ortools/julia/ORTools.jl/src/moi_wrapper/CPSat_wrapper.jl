@@ -10,12 +10,17 @@ MOI implementation for the CP-Sat solver
 mutable struct CPSATOptimizer <: MOI.AbstractOptimizer
     model::Union{Nothing,CpModel}
     parameters::Union{Nothing,SatParameters}
+    # Set of constraints in variable indices
+    variables_constraints::Set{MOI.ConstraintIndex}
+    constraint_types_present::Set{Tuple{Type,Type}}
     # This structure is updated by the optimize! function.
     solve_response::Union{Nothing,CpSolverResponse}
 
     function CPSATOptimizer(; name::String = "")
         model = CpModel(name = name)
         parameters = SatParameters()
+        variables_constraints = Set{MOI.ConstraintIndex}()
+        constraint_types_present = Set{Tuple{Type,Type}}()
 
         new(model, parameters, nothing)
     end
@@ -32,6 +37,8 @@ end
 
 function MOI.empty!(optimizer::CPSATOptimizer)
     optimizer.model = CpModel()
+    optimizer.variables_constraints = Set{MOI.ConstraintIndex}()
+    optimizer.constraint_types_present = Set{Tuple{Type,Type}}()
     optimizer.solve_response = nothing
 
     return nothing
@@ -202,4 +209,154 @@ function MOI.get(optimizer::CPSATOptimizer, ::Type{MOI.VariableIndex}, name::Str
     end
 
     return nothing
+end
+
+
+"""
+
+    Constraint overrides.
+
+"""
+
+function MOI.supports_constraint(
+    ::CPSATOptimizer,
+    ::Type{MOI.VariableIndex},
+    ::Type{<:SCALAR_SET},
+)
+    return true
+end
+
+function MOI.add_constraint(
+    optimizer::CPSATOptimizer,
+    vi::MOI.VariableIndex,
+    c::S,
+) where {S<:SCALAR_SET}
+    if S <: MOI.LessThan
+        throw_if_upper_bound_is_already_set(optimizer, vi, c)
+    end
+
+    if S <: MOI.GreaterThan
+        throw_if_lower_bound_is_already_set(optimizer, vi, c)
+    end
+
+    if S <: MOI.Interval
+        throw_if_upper_bound_is_already_set(optimizer, vi, c)
+        throw_if_lower_bound_is_already_set(optimizer, vi, c)
+    end
+
+    if S <: MOI.EqualTo
+        throw_if_upper_bound_is_already_set(optimizer, vi, c)
+        throw_if_lower_bound_is_already_set(optimizer, vi, c)
+    end
+
+    variable_index = vi.value
+
+    # retrieve the constraint bounds
+    lower_bound, upper_bound = bounds(c)
+    
+    # TODO: (b/452908268) - Update variable's domain instead of creating a new linear constraint.
+    linear_constraint = CPSatLinearConstraintProto()
+
+    push!(linear_constraint.vars, variable_index)
+    # In this case, we set the coefficient to 1.
+    push!(linear_constraint.coeffs, 1)
+    # Update the domain
+    push!(linear_constraint.domain, lower_bound)
+    push!(linear_constraint.domain, upper_bound)
+
+    constraint = CPSATConstraint()
+    constraint.name = :linear
+    constraint.value = linear_constraint
+
+    push!(optimizer.model.constraints, constraint)
+
+    push!(
+        optimizer.variables_constraints,
+        MOI.ConstraintIndex{MOI.VariableIndex,typeof(c)}(variable_index),
+    )
+    push!(optimizer.constraint_types_present, (MOI.VariableIndex, typeof(c)))
+
+    return MOI.ConstraintIndex{MOI.VariableIndex,typeof(c)}(variable_index)
+end
+
+function throw_if_upper_bound_is_already_set(
+    optimizer::CPSATOptimizer,
+    vi::MOI.VariableIndex,
+    c::S,
+) where {S<:SCALAR_SET}
+    # Assumes type consistency across all constraints.
+    T = typeof(c).parameters[1]
+    less_than_idx = MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{T}}(vi.value)
+    interval_idx = MOI.ConstraintIndex{MOI.VariableIndex,MOI.Interval{T}}(vi.value)
+    equal_to_idx = MOI.ConstraintIndex{MOI.VariableIndex,MOI.EqualTo{T}}(vi.value)
+
+    if in(less_than_idx, optimizer.variables_constraints)
+        throw(MOI.UpperBoundAlreadySet{MOI.LessThan{T},S}(vi))
+    end
+
+    if in(interval_idx, optimizer.variables_constraints)
+        throw(MOI.UpperBoundAlreadySet{MOI.Interval{T},S}(vi))
+    end
+
+    if in(equal_to_idx, optimizer.variables_constraints)
+        throw(MOI.UpperBoundAlreadySet{MOI.EqualTo{T},S}(vi))
+    end
+
+    return nothing
+end
+
+function throw_if_lower_bound_is_already_set(
+    optimizer::CPSATOptimizer,
+    vi::MOI.VariableIndex,
+    c::S,
+) where {S<:SCALAR_SET}
+    # Assumes type consistency across all constraints.
+    T = typeof(c).parameters[1]
+    greater_than_idx = MOI.ConstraintIndex{typeof(vi),MOI.GreaterThan{T}}(vi.value)
+    interval_idx = MOI.ConstraintIndex{typeof(vi),MOI.Interval{T}}(vi.value)
+    equal_to_idx = MOI.ConstraintIndex{typeof(vi),MOI.EqualTo{T}}(vi.value)
+
+    if in(greater_than_idx, optimizer.variables_constraints)
+        throw(MOI.LowerBoundAlreadySet{MOI.GreaterThan{T},S}(vi))
+    end
+
+    if in(interval_idx, optimizer.variables_constraints)
+        throw(MOI.LowerBoundAlreadySet{MOI.Interval{T},S}(vi))
+    end
+
+    if in(equal_to_idx, optimizer.variables_constraints)
+        throw(MOI.LowerBoundAlreadySet{MOI.EqualTo{T},S}(vi))
+    end
+
+    return nothing
+end
+
+function MOI.supports_constraint(
+    ::CPSATOptimizer,
+    ::Type{MOI.VariableIndex},
+    ::Type{MOI.ZeroOne},
+)
+    return true
+end
+
+function MOI.add_constraint(
+    optimizer::CPSATOptimizer,
+    vi::MOI.VariableIndex,
+    c::MOI.ZeroOne,
+)
+    # Get the int value of the variable index
+    index = vi.value
+
+    # Set the variable bounds to [0, 1] (override the existing domain)
+    optimizer.model.variables[index].domain = [zero(Int), one(Int)]
+
+    # Update the associated metadata.
+    # TODO: (b/452416646) - Fetch constraint types dynamically at runtime
+    push!(optimizer.constraint_types_present, (MOI.VariableIndex, MOI.ZeroOne))
+    push!(
+        optimizer.variables_constraints,
+        MOI.ConstraintIndex{MOI.VariableIndex,MOI.ZeroOne}(index),
+    )
+
+    return MOI.ConstraintIndex{MOI.VariableIndex,MOI.ZeroOne}(index)
 end

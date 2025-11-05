@@ -66,8 +66,8 @@ simple_sat_program()
 
 The interface to the C++ CP-SAT solver is implemented through the
 **CpModelBuilder** class described in
-*ortools/sat/cp_model.h*. This class is just a helper to fill
-in the cp_model protobuf.
+*ortools/sat/cp_model.h*. This class is just a helper to
+fill in the cp_model protobuf.
 
 Calling Solve() method will return a CpSolverResponse protobuf that contains the
 solve status, the values for each variable in the model if solve was successful,
