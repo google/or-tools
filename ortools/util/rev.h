@@ -12,8 +12,8 @@
 // limitations under the License.
 
 // Reversible (i.e Backtrackable) classes, used to simplify coding propagators.
-#ifndef OR_TOOLS_UTIL_REV_H_
-#define OR_TOOLS_UTIL_REV_H_
+#ifndef ORTOOLS_UTIL_REV_H_
+#define ORTOOLS_UTIL_REV_H_
 
 #include <cstdint>
 #include <utility>
@@ -313,4 +313,4 @@ void RevGrowingMultiMap<Key, Value>::Add(Key key, Value value) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_REV_H_
+#endif  // ORTOOLS_UTIL_REV_H_

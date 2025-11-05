@@ -19,8 +19,8 @@
 // IMPORTANT NOTICE: you need to compile your binary with -frounding-math if
 // you want to use rounding modes.
 
-#ifndef OR_TOOLS_UTIL_FP_UTILS_H_
-#define OR_TOOLS_UTIL_FP_UTILS_H_
+#ifndef ORTOOLS_UTIL_FP_UTILS_H_
+#define ORTOOLS_UTIL_FP_UTILS_H_
 
 #include <algorithm>
 #include <cmath>
@@ -260,4 +260,4 @@ inline double fast_scalbn(double value, int exponent) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_FP_UTILS_H_
+#endif  // ORTOOLS_UTIL_FP_UTILS_H_
