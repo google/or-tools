@@ -120,8 +120,8 @@
 // Keywords: Push-relabel, max-flow, network, graph, Goldberg, Tarjan, Dinic,
 //           Dinitz.
 
-#ifndef OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
-#define OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
+#ifndef ORTOOLS_GRAPH_GENERIC_MAX_FLOW_H_
+#define ORTOOLS_GRAPH_GENERIC_MAX_FLOW_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -1407,4 +1407,4 @@ FlowModelProto GenericMaxFlow<Graph, ArcFlowT, FlowSumT>::CreateFlowModel() {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_GENERIC_MAX_FLOW_H_
+#endif  // ORTOOLS_GRAPH_GENERIC_MAX_FLOW_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GRAPH_MAX_FLOW_H_
-#define OR_TOOLS_GRAPH_MAX_FLOW_H_
+#ifndef ORTOOLS_GRAPH_MAX_FLOW_H_
+#define ORTOOLS_GRAPH_MAX_FLOW_H_
 
 #include <cstdint>
 #include <memory>
@@ -137,4 +137,4 @@ class SimpleMaxFlow {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_MAX_FLOW_H_
+#endif  // ORTOOLS_GRAPH_MAX_FLOW_H_

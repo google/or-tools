@@ -26,8 +26,8 @@
 //   // Fill graph
 //   std::vector<int> tour = BuildEulerianPath(graph);
 //
-#ifndef OR_TOOLS_GRAPH_EULERIAN_PATH_H_
-#define OR_TOOLS_GRAPH_EULERIAN_PATH_H_
+#ifndef ORTOOLS_GRAPH_EULERIAN_PATH_H_
+#define ORTOOLS_GRAPH_EULERIAN_PATH_H_
 
 #include <cstdint>
 #include <vector>
@@ -180,4 +180,4 @@ bool GraphIsConnected(const Graph& graph) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_EULERIAN_PATH_H_
+#endif  // ORTOOLS_GRAPH_EULERIAN_PATH_H_
