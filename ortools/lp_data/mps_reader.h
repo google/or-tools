@@ -21,8 +21,8 @@
 // standard. We developed this reader to be able to read benchmark data files.
 // Using the MPS file format for new models is discouraged.
 
-#ifndef OR_TOOLS_LP_DATA_MPS_READER_H_
-#define OR_TOOLS_LP_DATA_MPS_READER_H_
+#ifndef ORTOOLS_LP_DATA_MPS_READER_H_
+#define ORTOOLS_LP_DATA_MPS_READER_H_
 
 #include <string>
 
@@ -73,4 +73,4 @@ class ABSL_DEPRECATED("Use the direct methods instead") MPSReader {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MPS_READER_H_
+#endif  // ORTOOLS_LP_DATA_MPS_READER_H_

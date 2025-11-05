@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_INIT_PYTHON_INIT_DOC_H_
-#define OR_TOOLS_INIT_PYTHON_INIT_DOC_H_
+#ifndef ORTOOLS_INIT_PYTHON_INIT_DOC_H_
+#define ORTOOLS_INIT_PYTHON_INIT_DOC_H_
 
 /*
   This file contains docstrings for use in the Python bindings.
@@ -141,4 +141,4 @@ static const char* __doc_operations_research_OrToolsVersion_VersionString =
 #pragma GCC diagnostic pop
 #endif
 
-#endif  // OR_TOOLS_INIT_PYTHON_INIT_DOC_H_
+#endif  // ORTOOLS_INIT_PYTHON_INIT_DOC_H_

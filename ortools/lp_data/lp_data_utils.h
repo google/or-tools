@@ -14,8 +14,8 @@
 // Utility helpers for manipulating LinearProgram and other types defined in
 // lp_data.
 
-#ifndef OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
-#define OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#ifndef ORTOOLS_LP_DATA_LP_DATA_UTILS_H_
+#define ORTOOLS_LP_DATA_LP_DATA_UTILS_H_
 
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
@@ -124,4 +124,4 @@ class LpScalingHelper {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#endif  // ORTOOLS_LP_DATA_LP_DATA_UTILS_H_
