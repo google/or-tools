@@ -233,7 +233,7 @@ class XpressMPCallbackContext : public MPCallbackContext {
   };
   void AddLazyConstraint(const LinearRange& lazy_constraint) override {
     LOG(WARNING)
-        << "AddLazyConstraint is not implemented yet in XPRESS interface";
+        << "AddLazyConstraint inside Callback is not implemented yet in XPRESS interface";
   };
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override;
@@ -1541,7 +1541,7 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
-
+      std::vector<int> delayedRows;
       // Loop over the new constraints, collecting rows for up to
       // CHUNK constraints into the arrays so that adding constraints
       // is faster.
@@ -1575,11 +1575,18 @@ void XpressInterface::ExtractNewConstraints() {
               ++nextNz;
             }
           }
+          if (ct->is_lazy()) {
+            delayedRows.push_back(offset + c);
+          }
         }
         if (nextRow > 0) {
           CHECK_STATUS(XPRSaddrows(mLp, nextRow, nextNz, sense.get(), rhs.get(),
                                    rngval.get(), rmatbeg.get(), rmatind.get(),
                                    rmatval.get()));
+        }
+        if (!delayedRows.empty()) {
+          CHECK_STATUS(XPRSloaddelayedrows(
+              mLp, static_cast<int>(delayedRows.size()), delayedRows.data()));
         }
       }
     } catch (...) {
