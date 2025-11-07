@@ -886,9 +886,8 @@ class OR_DLL RoutingModel {
   /// when using @ref AddDisjunction.
   enum PenaltyCostBehavior { PENALIZE_ONCE, PENALIZE_PER_INACTIVE };
 
-  /// Adds a disjunction constraint on the indices: exactly 'max_cardinality' of
-  /// the indices are active. Start and end indices of any vehicle cannot be
-  /// part of a disjunction.
+  /// @brief Adds a disjunction constraint on the indices.
+  /// @details exactly 'max_cardinality' of the indices are active.
   ///
   /// If a penalty is given, at most 'max_cardinality' of the indices can be
   /// active, and if less are active, 'penalty' is payed per inactive index if
@@ -902,11 +901,13 @@ class OR_DLL RoutingModel {
   ///     p == (Sum(i)active[i] != max_cardinality)
   /// where p is a boolean variable.
   /// The following cost is added to the cost function: p * penalty.
-  /// 'penalty' must be positive to make the disjunction optional; a negative
-  /// penalty will force 'max_cardinality' indices of the disjunction to be
-  /// performed, and therefore p == 0.
+  /// @param[in] penalty must be positive to make the disjunction optional; a
+  /// negative penalty will force 'max_cardinality' indices of the disjunction
+  /// to be performed, and therefore p == 0.
   /// Note: passing a vector with a single index will model an optional index
   /// with a penalty cost if it is not visited.
+  /// @warning Start and end indices of any vehicle cannot be part of a
+  /// disjunction.
   DisjunctionIndex AddDisjunction(const std::vector<int64_t>& indices,
                                   int64_t penalty = kNoPenalty,
                                   int64_t max_cardinality = 1,
