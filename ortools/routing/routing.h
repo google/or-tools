@@ -11,147 +11,143 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// The vehicle routing library lets one model and solve generic vehicle routing
-/// problems ranging from the Traveling Salesman Problem to more complex
-/// problems such as the Capacitated Vehicle Routing Problem with Time Windows.
-///
-/// The objective of a vehicle routing problem is to build routes covering a set
-/// of nodes minimizing the overall cost of the routes (usually proportional to
-/// the sum of the lengths of each segment of the routes) while respecting some
-/// problem-specific constraints (such as the length of a route). A route is
-/// equivalent to a path connecting nodes, starting/ending at specific
-/// starting/ending nodes.
-///
-/// The term "vehicle routing" is historical and the category of problems solved
-/// is not limited to the routing of vehicles: any problem involving finding
-/// routes visiting a given number of nodes optimally falls under this category
-/// of problems, such as finding the optimal sequence in a playlist.
-/// The literature around vehicle routing problems is extremely dense but one
-/// can find some basic introductions in the following links:
-/// - http://en.wikipedia.org/wiki/Travelling_salesman_problem
-/// - http://en.wikipedia.org/wiki/Vehicle_routing_problem
-///
-/// The vehicle routing library is a vertical layer above the constraint
-/// programming library (ortools/constraint_programming:cp).
-/// One has access to all underlying constrained variables of the vehicle
-/// routing model which can therefore be enriched by adding any constraint
-/// available in the constraint programming library.
-///
-/// There are two sets of variables available:
-/// - path variables:
-///   * "next(i)" variables representing the immediate successor of the node
-///     corresponding to i; use IndexToNode() to get the node corresponding to
-///     a "next" variable value; note that node indices are strongly typed
-///     integers (cf. ortools/base/int_type.h);
-///   * "vehicle(i)" variables representing the vehicle route to which the
-///     node corresponding to i belongs;
-///   * "active(i)" boolean variables, true if the node corresponding to i is
-///     visited and false if not; this can be false when nodes are either
-///     optional or part of a disjunction;
-///   * The following relationships hold for all i:
-///      active(i) == 0 <=> next(i) == i <=> vehicle(i) == -1,
-///      next(i) == j => vehicle(j) == vehicle(i).
-/// - dimension variables, used when one is accumulating quantities along
-///   routes, such as weight or volume carried, distance or time:
-///   * "cumul(i,d)" variables representing the quantity of dimension d when
-///     arriving at the node corresponding to i;
-///   * "transit(i,d)" variables representing the quantity of dimension d added
-///     after visiting the node corresponding to i.
-///   * The following relationship holds for all (i,d):
-///       next(i) == j => cumul(j,d) == cumul(i,d) + transit(i,d).
-/// Solving the vehicle routing problems is mainly done using approximate
-/// methods (namely local search,
-/// cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
-/// combined with exact techniques based on dynamic programming and exhaustive
-/// tree search.
-// TODO(user): Add a section on costs (vehicle arc costs, span costs,
-//                disjunctions costs).
-//
-/// Advanced tips: Flags are available to tune the search used to solve routing
-/// problems. Here is a quick overview of the ones one might want to modify:
-/// - Limiting the search for solutions:
-///   * routing_solution_limit (default: kint64max): stop the search after
-///     finding 'routing_solution_limit' improving solutions;
-///   * routing_time_limit (default: kint64max): stop the search after
-///     'routing_time_limit' milliseconds;
-/// - Customizing search:
-///   * routing_first_solution (default: select the first node with an unbound
-///     successor and connect it to the first available node): selects the
-///     heuristic to build a first solution which will then be improved by local
-///     search; possible values are GlobalCheapestArc (iteratively connect two
-///     nodes which produce the cheapest route segment), LocalCheapestArc
-///     (select the first node with an unbound successor and connect it to the
-///     node which produces the cheapest route segment), PathCheapestArc
-///     (starting from a route "start" node, connect it to the node which
-///     produces the cheapest route segment, then extend the route by iterating
-///     on the last node added to the route).
-///   * Local search neighborhoods:
-///     - routing_no_lns (default: false): forbids the use of Large Neighborhood
-///       Search (LNS); LNS can find good solutions but is usually very slow.
-///       Refer to the description of PATHLNS in the LocalSearchOperators enum
-///       in constraint_solver.h for more information.
-///     - routing_no_tsp (default: true): forbids the use of exact methods to
-///       solve "sub"-traveling salesman problems (TSPs) of the current model
-///       (such as sub-parts of a route, or one route in a multiple route
-///       problem). Uses dynamic programming to solve such TSPs with a maximum
-///       size (in number of nodes) up to cp_local_search_tsp_opt_size (flag
-///       with a default value of 13 nodes). It is not activated by default
-///       because it can slow down the search.
-///   * Meta-heuristics: used to guide the search out of local minima found by
-///     local search. Note that, in general, a search with metaheuristics
-///     activated never stops, therefore one must specify a search limit.
-///     Several types of metaheuristics are provided:
-///     - routing_guided_local_search (default: false): activates guided local
-///       search (cf. http://en.wikipedia.org/wiki/Guided_Local_Search);
-///       this is generally the most efficient metaheuristic for vehicle
-///       routing;
-///     - routing_simulated_annealing (default: false): activates simulated
-///       annealing (cf. http://en.wikipedia.org/wiki/Simulated_annealing);
-///     - routing_tabu_search (default: false): activates tabu search (cf.
-///       http://en.wikipedia.org/wiki/Tabu_search).
-///
-/// Code sample:
-/// Here is a simple example solving a traveling salesman problem given a cost
-/// function callback (returns the cost of a route segment):
-///
-/// - Define a custom distance/cost function from an index to another; in this
-///   example just returns the sum of the indices:
-///
-///     int64_t MyDistance(int64_t from, int64_t to) {
-///       return from + to;
-///     }
-///
-/// - Create a routing model for a given problem size (int number of nodes) and
-///   number of routes (here, 1):
-///
-///     RoutingIndexManager manager(...number of nodes..., 1);
-///     RoutingModel routing(manager);
-///
-/// - Set the cost function by registering an std::function<int64_t(int64_t,
-/// int64_t)> in the model and passing its index as the vehicle cost.
-///
-///    const int cost = routing.RegisterTransitCallback(MyDistance);
-///    routing.SetArcCostEvaluatorOfAllVehicles(cost);
-///
-/// - Find a solution using Solve(), returns a solution if any (owned by
-///   routing):
-///
-///    const Assignment* solution = routing.Solve();
-///    CHECK(solution != nullptr);
-///
-/// - Inspect the solution cost and route (only one route here):
-///
-///    LOG(INFO) << "Cost " << solution->ObjectiveValue();
-///    const int route_number = 0;
-///    for (int64_t node = routing.Start(route_number);
-///         !routing.IsEnd(node);
-///         node = solution->Value(routing.NextVar(node))) {
-///      LOG(INFO) << manager.IndexToNode(node);
-///    }
-///
-///
-/// Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW,
-/// PDP.
+/** @file routing.h
+@brief The vehicle routing library lets one model and solve generic vehicle
+routing problems ranging from the Traveling Salesman Problem to more complex
+problems such as the Capacitated Vehicle Routing Problem with Time Windows.
+@details The objective of a vehicle routing problem is to build routes covering
+a set of nodes minimizing the overall cost of the routes (usually proportional
+to the sum of the lengths of each segment of the routes) while respecting some
+problem-specific constraints (such as the length of a route). A route is
+equivalent to a path connecting nodes, starting/ending at specific
+starting/ending nodes.\n
+The term "vehicle routing" is historical and the category of problems solved
+is not limited to the routing of vehicles: any problem involving finding
+routes visiting a given number of nodes optimally falls under this category
+of problems, such as finding the optimal sequence in a playlist.\n
+The literature around vehicle routing problems is extremely dense but one
+can find some basic introductions in the following links:
+- http://en.wikipedia.org/wiki/Travelling_salesman_problem
+- http://en.wikipedia.org/wiki/Vehicle_routing_problem
+
+The vehicle routing library is a vertical layer above the constraint
+programming library (ortools/constraint_programming:cp).\n
+One has access to all underlying constrained variables of the vehicle
+routing model which can therefore be enriched by adding any constraint
+available in the constraint programming library.\n
+There are two sets of variables available:
+- path variables:
+  - "next(i)" variables representing the immediate successor of the node
+    corresponding to i; use IndexToNode() to get the node corresponding to
+    a "next" variable value; note that node indices are strongly typed
+    integers (cf. ortools/base/int_type.h);
+  - "vehicle(i)" variables representing the vehicle route to which the
+    node corresponding to i belongs;
+  - "active(i)" boolean variables, true if the node corresponding to i is
+    visited and false if not; this can be false when nodes are either
+    optional or part of a disjunction;
+  - The following relationships hold for all i:
+     active(i) == 0 <=> next(i) == i <=> vehicle(i) == -1,
+     next(i) == j => vehicle(j) == vehicle(i).
+- dimension variables, used when one is accumulating quantities along
+  routes, such as weight or volume carried, distance or time:
+  - "cumul(i,d)" variables representing the quantity of dimension d when
+    arriving at the node corresponding to i;
+  - "transit(i,d)" variables representing the quantity of dimension d added
+    after visiting the node corresponding to i.
+  - The following relationship holds for all (i,d):
+      next(i) == j => cumul(j,d) == cumul(i,d) + transit(i,d).
+
+Solving the vehicle routing problems is mainly done using approximate
+methods (namely local search,
+cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
+combined with exact techniques based on dynamic programming and exhaustive
+tree search.
+TODO(user): Add a section on costs (vehicle arc costs, span costs,
+               disjunctions costs).
+Advanced tips: Flags are available to tune the search used to solve routing
+problems. Here is a quick overview of the ones one might want to modify:
+- Limiting the search for solutions:
+  - routing_solution_limit (default: kint64max): stop the search after
+    finding 'routing_solution_limit' improving solutions;
+  - routing_time_limit (default: kint64max): stop the search after
+    'routing_time_limit' milliseconds;
+- Customizing search:
+  - routing_first_solution (default: select the first node with an unbound
+    successor and connect it to the first available node): selects the
+    heuristic to build a first solution which will then be improved by local
+    search; possible values are GlobalCheapestArc (iteratively connect two
+    nodes which produce the cheapest route segment), LocalCheapestArc
+    (select the first node with an unbound successor and connect it to the
+    node which produces the cheapest route segment), PathCheapestArc
+    (starting from a route "start" node, connect it to the node which
+    produces the cheapest route segment, then extend the route by iterating
+    on the last node added to the route).
+  - Local search neighborhoods:
+    - routing_no_lns (default: false): forbids the use of Large Neighborhood
+      Search (LNS); LNS can find good solutions but is usually very slow.
+      Refer to the description of PATHLNS in the LocalSearchOperators enum
+      in constraint_solver.h for more information.
+    - routing_no_tsp (default: true): forbids the use of exact methods to
+      solve "sub"-traveling salesman problems (TSPs) of the current model
+      (such as sub-parts of a route, or one route in a multiple route
+      problem). Uses dynamic programming to solve such TSPs with a maximum
+      size (in number of nodes) up to cp_local_search_tsp_opt_size (flag
+      with a default value of 13 nodes). It is not activated by default
+      because it can slow down the search.
+  - Meta-heuristics: used to guide the search out of local minima found by
+    local search. Note that, in general, a search with metaheuristics
+    activated never stops, therefore one must specify a search limit.
+    Several types of metaheuristics are provided:
+    - routing_guided_local_search (default: false): activates guided local
+      search (cf. http://en.wikipedia.org/wiki/Guided_Local_Search);
+      this is generally the most efficient metaheuristic for vehicle
+      routing;
+    - routing_simulated_annealing (default: false): activates simulated
+      annealing (cf. http://en.wikipedia.org/wiki/Simulated_annealing);
+    - routing_tabu_search (default: false): activates tabu search (cf.
+      http://en.wikipedia.org/wiki/Tabu_search).
+
+Code sample:\n
+Here is a simple example solving a traveling salesman problem given a cost
+function callback (returns the cost of a route segment):
+- Define a custom distance/cost function from an index to another; in this
+  example just returns the sum of the indices:
+  @code{.cpp}
+  int64_t MyDistance(int64_t from, int64_t to) {
+    return from + to;
+  }
+  @endcode
+- Create a routing model for a given problem size (int number of nodes) and
+  number of routes (here, 1):
+  @code{.cpp}
+  RoutingIndexManager manager(...number of nodes..., 1);
+  RoutingModel routing(manager);
+  @endcode
+- Set the cost function by registering an std::function<int64_t(int64_t,
+int64_t)> in the model and passing its index as the vehicle cost.
+  @code{.cpp}
+  const int cost = routing.RegisterTransitCallback(MyDistance);
+  routing.SetArcCostEvaluatorOfAllVehicles(cost);
+  @endcode
+- Find a solution using Solve(), returns a solution if any (owned by
+  routing):
+  @code{.cpp}
+  const Assignment* solution = routing.Solve();
+  CHECK(solution != nullptr);
+  @endcode
+- Inspect the solution cost and route (only one route here):
+  @code{.cpp}
+  LOG(INFO) << "Cost " << solution->ObjectiveValue();
+  const int route_number = 0;
+  for (int64_t node = routing.Start(route_number);
+      !routing.IsEnd(node);
+      node = solution->Value(routing.NextVar(node))) {
+    LOG(INFO) << manager.IndexToNode(node);
+  }
+  @endcode
+Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
+*/
 
 #ifndef ORTOOLS_ROUTING_ROUTING_H_
 #define ORTOOLS_ROUTING_ROUTING_H_
@@ -894,7 +890,7 @@ class OR_DLL RoutingModel {
   enum PenaltyCostBehavior { PENALIZE_ONCE, PENALIZE_PER_INACTIVE };
 
   /// @brief Adds a disjunction constraint on the indices.
-  /// @details exactly 'max_cardinality' of the indices are active.
+  /// @details Exactly 'max_cardinality' of the indices are active.
   ///
   /// If a penalty is given, at most 'max_cardinality' of the indices can be
   /// active, and if less are active, 'penalty' is payed per inactive index if
