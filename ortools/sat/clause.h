@@ -160,6 +160,22 @@ struct ClauseInfo {
 
 class BinaryImplicationGraph;
 
+// Used for tracking the source of LazyDelete() for each clauses.
+enum class DeletionSourceForStat {
+  FIXED_AT_TRUE,
+  CONTAINS_L_AND_NOT_L,
+  PROMOTED_TO_BINARY,
+  SUBSUMPTION_PROBING,
+  SUBSUMPTION_VIVIFY,
+  SUBSUMPTION_CONFLICT,
+  SUBSUMPTION_EAGER,
+  SUBSUMPTION_INPROCESSING,
+  BLOCKED,
+  ELIMINATED,
+  GARBAGE_COLLECTED,
+  LastElement,  // For resising.
+};
+
 // Stores the 2-watched literals data structure.  See
 // http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
 // detail.
@@ -190,6 +206,13 @@ class ClauseManager : public SatPropagator {
   // with a different return format.
   SatClause* ReasonClause(int trail_index) const;
 
+  // Returns the clause that fixed `var`, or nullptr if `var` is not fixed, or
+  // was not fixed by a clause.
+  SatClause* ReasonClauseOrNull(BooleanVariable var) const;
+
+  // Returns true iff the clause is the reason for an assigned variable.
+  bool ClauseIsUsedAsReason(SatClause* clause) const;
+
   // Adds a new clause and perform initial propagation for this clause only.
   bool AddClause(ClauseId id, absl::Span<const Literal> literals, Trail* trail,
                  int lbd);
@@ -200,20 +223,21 @@ class ClauseManager : public SatPropagator {
   SatClause* AddRemovableClause(ClauseId id, absl::Span<const Literal> literals,
                                 Trail* trail, int lbd);
 
-  // Lazily detach the given clause. The deletion will actually occur when
-  // CleanUpWatchers() is called. The later needs to be called before any other
-  // function in this class can be called. This is DCHECKed.
+  // Returns the number of deletion for each DeletionSourceForStat type.
+  absl::Span<const int64_t> DeletionCounters() const {
+    return deletion_counters_;
+  }
+
+  // Lazily detach the given clause. Watchers are removed during propagation or
+  // when CleanUpWatchers() is called, and the clause will be deleted by
+  // DeleteRemovedClauses().
   //
   // Note that we remove the clause from clauses_info_ right away.
-  void LazyDetach(SatClause* clause);
-  void CleanUpWatchers();
+  // Callers must not reattach `clause` after calling this method.
+  void LazyDelete(SatClause* clause, DeletionSourceForStat source);
 
-  // Detaches the given clause right away.
-  //
-  // TODO(user): It might be better to have a "slower" mode in
-  // Propagate() that deal with detached clauses in the watcher list and
-  // is activated until the next CleanUpWatchers() calls.
-  void Detach(SatClause* clause);
+  // Removes all watchers for any clauses that have been lazily detached.
+  void CleanUpWatchers();
 
   // Attaches the given clause. The first two literal of the clause must
   // be unassigned and the clause must not be already attached.
@@ -280,6 +304,13 @@ class ClauseManager : public SatPropagator {
   // Returns the next clause to probe in round-robin order.
   SatClause* NextClauseToProbe();
 
+  // This is used for the "eager" subsumption. Each time we learn a conflict, we
+  // see if one of the last learned clause can be subsumed with it or not.
+  absl::Span<SatClause*> LastNClauses(int n) {
+    if (n > clauses_.size()) n = clauses_.size();
+    return absl::MakeSpan(clauses_).subspan(clauses_.size() - n);
+  }
+
   // Restart the scans.
   void ResetToProbeIndex() { to_probe_index_ = 0; }
   void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
@@ -305,8 +336,10 @@ class ClauseManager : public SatPropagator {
   void DetachAllClauses();
   void AttachAllClauses();
 
-  // These must only be called between [Detach/Attach]AllClauses() calls.
-  void InprocessingRemoveClause(SatClause* clause);
+  // Replaces a clause with a subset of the literals.
+  // This may be called while clauses are attached, but the first two literals
+  // in new_clause must be valid watchers.
+  // This does *not* propagate the clause.
   ABSL_MUST_USE_RESULT bool InprocessingRewriteClause(
       SatClause* clause, absl::Span<const Literal> new_clause,
       absl::Span<const ClauseId> clause_ids = {});
@@ -379,8 +412,8 @@ class ClauseManager : public SatPropagator {
   void AttachOnFalse(Literal literal, Literal blocking_literal,
                      SatClause* clause);
 
-  // Common code between LazyDetach() and Detach().
-  void InternalDetach(SatClause* clause);
+  // Common code between LazyDelete() and Detach().
+  void InternalDetach(SatClause* clause, DeletionSourceForStat source);
 
   ClauseIdGenerator* clause_id_generator_;
 
@@ -398,6 +431,8 @@ class ClauseManager : public SatPropagator {
   BinaryImplicationGraph* implication_graph_;
   Trail* trail_;
 
+  // For statistic reporting.
+  std::vector<int64_t> deletion_counters_;
   int64_t num_inspected_clauses_;
   int64_t num_inspected_clause_literals_;
   int64_t num_watched_clauses_;
@@ -558,7 +593,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // - If we are at a positive decision level, we will propagate something if
   //   we can. However, if both literal are false, we will just return false
   //   and do nothing. In all other case, we will return true.
-  bool AddBinaryClause(ClauseId id, Literal a, Literal b);
+  bool AddBinaryClause(ClauseId id, Literal a, Literal b) {
+    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/false);
+  }
   bool AddBinaryClause(Literal a, Literal b) {
     return AddBinaryClause(kNoClauseId, a, b);
   }
@@ -797,6 +834,14 @@ class BinaryImplicationGraph : public SatPropagator {
 
   void SetDratProofHandler(DratProofHandler* drat_proof_handler);
 
+  // Adds a binary clause and changes the reason of `a` as if it were propagated
+  // by this new clause.
+  // This allows inprocessing to shrink clauses to binary without backtracking
+  // to the root.
+  bool AddBinaryClauseAndChangeReason(ClauseId id, Literal a, Literal b) {
+    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/true);
+  }
+
   // The literals that are "directly" implied when literal is set to true. This
   // is not a full "reachability". It includes at most ones propagation. The set
   // of all direct implications is enough to describe the implications graph
@@ -883,6 +928,9 @@ class BinaryImplicationGraph : public SatPropagator {
  private:
   friend class LratEquivalenceHelper;
 
+  bool AddBinaryClauseInternal(ClauseId id, Literal a, Literal b,
+                               bool change_reason = false);
+
   // Marks implications_[a] for cleanup in RemoveDuplicatesAndFixedVariables().
   void NotifyPossibleDuplicate(Literal a);
 
@@ -968,6 +1016,9 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // The binary clause IDs. Each key is sorted by variable index.
   absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId> clause_id_;
+  // Stores a list of clauses added to clause_id_ that are only needed due to
+  // ChangeReason calls. Once we backtrack past the first literal in the clause
+  std::vector<std::pair<Literal, Literal>> changed_reasons_on_trail_;
 
   // This is indexed by the Index() of a literal. Each entry stores two lists:
   //  - A list of literals that are implied if the index literal becomes true.

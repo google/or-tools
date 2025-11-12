@@ -22,6 +22,7 @@
 
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
@@ -119,6 +120,9 @@ class Prober {
   SatSolver* sat_solver_;
   TimeLimit* time_limit_;
   BinaryImplicationGraph* implication_graph_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
   // When probing b, we add all propagated literal to propagated, and when
@@ -128,11 +132,15 @@ class Prober {
   // Modifications found during probing.
   std::vector<Literal> to_fix_at_true_;
   std::vector<IntegerLiteral> new_integer_bounds_;
-  std::vector<std::pair<Literal, Literal>> new_binary_clauses_;
+  std::vector<Literal> new_literals_implied_by_decision_;
   absl::btree_set<LiteralIndex> new_propagated_literals_;
   absl::btree_set<LiteralIndex> always_propagated_literals_;
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
   absl::btree_map<IntegerVariable, IntegerValue> always_propagated_bounds_;
+
+  absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
+      tmp_binary_clause_ids_;
+  std::vector<ClauseId> tmp_clause_ids_;
 
   // Probing statistics.
   int num_decisions_ = 0;
@@ -273,6 +281,10 @@ class FailedLiteralProbing {
     bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
   };
 
+  // Returns true if we can skip this candidate decision.
+  // This factor out some code used by the functions below.
+  bool SkipCandidate(Literal last_decision, Literal candidate);
+
   // Sets `next_decision` to the unassigned literal which implies the last
   // decision and which comes first in the probing order (which itself can be
   // the topological order of the implication graph, or the reverse).
@@ -280,7 +292,7 @@ class FailedLiteralProbing {
 
   // Sets `next_decision` to the first unassigned literal we find which implies
   // the last decision, in no particular order.
-  bool GetNextDecisionInRandomOrder(LiteralIndex& next_decision);
+  bool GetNextDecisionInNoParticularOrder(LiteralIndex& next_decision);
 
   // Sets `next_decision` to the first unassigned literal in probing_order (if
   // there is no last decision we can use any literal as first decision).
@@ -297,9 +309,10 @@ class FailedLiteralProbing {
   //
   // TODO(user): We could be slightly more generic and subsume some clauses that
   // do not contain last_decision.Negated().
-  bool MaybeSubsumeWithBinaryClause(Literal last_decision, Literal l);
+  void MaybeSubsumeWithBinaryClause(Literal last_decision, Literal l);
 
-  void MaybeExtractBinaryClause(Literal last_decision, Literal l);
+  // If not already done, add last_decision => l to the repository.
+  void MaybeExtractImplication(Literal last_decision, Literal l);
 
   // Inspect the watcher list for last_decision, If we have a blocking
   // literal at true (implied by last decision), then we have subsumptions.
@@ -312,10 +325,7 @@ class FailedLiteralProbing {
   // which is quite cheap to test here.
   void SubsumeWithBinaryClauseUsingBlockingLiteral(Literal last_decision);
 
-  // Sets `clause_ids` to the IDs of the implications from `l` to the decisions
-  // from `start_level` to `end_level` (included, going backwards).
-  void ComputeDecisionImplicationIds(Literal l, int start_level, int end_level,
-                                     std::vector<ClauseId>& clause_ids);
+  void AddImplication(Literal last_decision, Literal l);
 
   // Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies
   // the current decision, which itself implies all the previous decisions, with
@@ -333,7 +343,7 @@ class FailedLiteralProbing {
   ClauseManager* clause_manager_;
   ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
-  int id_;
+  int binary_propagator_id_;
   int clause_propagator_id_;
 
   int num_variables_;
@@ -368,9 +378,6 @@ class FailedLiteralProbing {
   int64_t num_new_binary_ = 0;
   int64_t num_subsumed_ = 0;
 };
-
-// TODO(user): remove this and use the class directly.
-bool FailedLiteralProbingRound(ProbingOptions options, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

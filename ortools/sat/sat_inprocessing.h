@@ -34,6 +34,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -120,9 +121,9 @@ class Inprocessing {
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
         congruence_closure_(model->GetOrCreate<GateCongruenceClosure>()),
+        failed_literal_probing_(model->GetOrCreate<FailedLiteralProbing>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
-        logger_(model->GetOrCreate<SolverLogger>()),
-        model_(model) {}
+        logger_(model->GetOrCreate<SolverLogger>()) {}
 
   // Does some simplifications until a fix point is reached or the given
   // deterministic time is passed.
@@ -172,6 +173,7 @@ class Inprocessing {
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
   GateCongruenceClosure* congruence_closure_;
+  FailedLiteralProbing* failed_literal_probing_;
   PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
@@ -179,12 +181,6 @@ class Inprocessing {
   bool first_inprocessing_call_ = true;
   double reference_dtime_ = 0.0;
   double total_dtime_ = 0.0;
-
-  // TODO(user): This is only used for calling probing. We should probably
-  // create a Probing class to wraps its data. This will also be needed to not
-  // always probe the same variables in each round if the deterministic time
-  // limit is low.
-  Model* model_;
 
   // Last since clause database was cleaned up.
   int64_t last_num_redundant_literals_ = 0;

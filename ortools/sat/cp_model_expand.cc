@@ -1089,10 +1089,14 @@ void ExpandVariableElement(ConstraintProto* ct, PresolveContext* context,
   };
 
   std::vector<int64_t> invalid_index_values;
+  context->CanonicalizeLinearExpression(
+      {}, ct->mutable_element()->mutable_linear_target());
   for (const int64_t v : reduced_index_var_domain.Values()) {
     const int64_t index_value = AffineExpressionValueAt(index, v);
     DCHECK_GE(index_value, 0);
     DCHECK_LT(index_value, element.exprs_size());
+    context->CanonicalizeLinearExpression(
+        {}, ct->mutable_element()->mutable_exprs(index_value));
     const LinearExpressionProto& expr = element.exprs(index_value);
     const bool index_is_valid =
         context->IntersectionOfAffineExprsIsNotEmpty(target, expr);
@@ -2857,7 +2861,8 @@ void ExpandCpModel(PresolveContext* context) {
         ExpandAutomaton(ct, context);
         break;
       case ConstraintProto::kTable:
-        if (!context->params().cp_model_presolve()) {
+        if (!context->params().cp_model_presolve() ||
+            context->time_limit()->LimitReached()) {
           CanonicalizeTable(context, ct);
         }
         if (ct->table().negated()) {

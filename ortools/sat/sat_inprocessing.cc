@@ -158,7 +158,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     probing_options.deterministic_limit = time_left;
     probing_options.extract_binary_clauses =
         options.extract_binary_clauses_in_probing;
-    RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
+    RETURN_IF_FALSE(failed_literal_probing_->DoOneRound(probing_options));
     probing_time += wall_timer.Get() - saved_wtime;
 
     if (MoreFixedVariableToClean() || MoreRedundantVariableToClean() ||
@@ -258,7 +258,7 @@ bool Inprocessing::InprocessingRound() {
     probing_options.log_info = log_round_info;
     probing_options.deterministic_limit = params_.inprocessing_probing_dtime();
     probing_options.extract_binary_clauses = true;
-    RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
+    RETURN_IF_FALSE(failed_literal_probing_->DoOneRound(probing_options));
     probing_time += wall_timer.Get() - saved_wtime;
   }
 
@@ -424,7 +424,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
         if (clause_manager_->GetDratProofHandler() != nullptr) {
           clause_manager_->GetDratProofHandler()->AddClause({l});
         }
-        clause_manager_->InprocessingRemoveClause(clause);
+        clause_manager_->LazyDelete(clause,
+                                    DeletionSourceForStat::FIXED_AT_TRUE);
         num_removed_literals += clause->size();
         removed = true;
         break;
@@ -457,7 +458,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
         continue;
       }
       if (marked[r.NegatedIndex()] || assignment_.LiteralIsTrue(r)) {
-        clause_manager_->InprocessingRemoveClause(clause);
+        clause_manager_->LazyDelete(
+            clause, DeletionSourceForStat::CONTAINS_L_AND_NOT_L);
         num_removed_literals += clause->size();
         removed = true;
         break;
@@ -551,6 +553,14 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       break;
     }
 
+    // TODO(user): Work out why this has suddenly started producing
+    // clauses that are satisfied at the root.
+    if (clause->IsSatisfied(trail_->Assignment())) {
+      num_removed_literals += clause->size();
+      clause_manager_->LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
+      continue;
+    }
+
     // Check for subsumption, note that this currently ignore all clauses in the
     // binary implication graphs. Stamping is doing some of that (and some also
     // happen during probing), but we could consider only direct implications
@@ -598,7 +608,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         if (subsumed) {
           ++num_subsumed_clauses;
           num_removed_literals += clause->size();
-          clause_manager_->InprocessingRemoveClause(clause);
+          clause_manager_->LazyDelete(
+              clause, DeletionSourceForStat::SUBSUMPTION_INPROCESSING);
           removed = true;
           break;
         }
@@ -1013,7 +1024,8 @@ bool StampingSimplifier::ProcessClauses() {
     entries.clear();
     for (int i = 0; i < span.size(); ++i) {
       if (assignment_.LiteralIsTrue(span[i])) {
-        clause_manager_->InprocessingRemoveClause(clause);
+        clause_manager_->LazyDelete(clause,
+                                    DeletionSourceForStat::FIXED_AT_TRUE);
         break;
       }
       if (assignment_.LiteralIsFalse(span[i])) continue;
@@ -1081,7 +1093,8 @@ bool StampingSimplifier::ProcessClauses() {
           // top_entry. See TODO below.
           if (top_entry.is_negated) {
             num_subsumed_clauses_++;
-            clause_manager_->InprocessingRemoveClause(clause);
+            clause_manager_->LazyDelete(
+                clause, DeletionSourceForStat::SUBSUMPTION_INPROCESSING);
             break;
           }
         } else {
@@ -1126,7 +1139,8 @@ bool StampingSimplifier::ProcessClauses() {
           continue;
         }
         if (assignment_.LiteralIsTrue(span[i])) {
-          clause_manager_->InprocessingRemoveClause(clause);
+          clause_manager_->LazyDelete(clause,
+                                      DeletionSourceForStat::FIXED_AT_TRUE);
           continue;
         }
         if (assignment_.LiteralIsFalse(span[i])) {
@@ -1320,7 +1334,7 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
 
       // We can remove a blocked clause.
       ++num_blocked_clauses_;
-      clause_manager_->InprocessingRemoveClause(clauses_[i]);
+      clause_manager_->LazyDelete(clauses_[i], DeletionSourceForStat::BLOCKED);
     }
   }
 }
@@ -1454,7 +1468,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
         break;
       }
     }
-    if (remove) clause_manager_->InprocessingRemoveClause(c);
+    if (remove)
+      clause_manager_->LazyDelete(c, DeletionSourceForStat::ELIMINATED);
   }
 
   // Release some memory.
@@ -1488,7 +1503,8 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
     }
     if (assignment_.LiteralIsTrue(l)) {
       num_clauses_diff_--;
-      clause_manager_->InprocessingRemoveClause(sat_clause);
+      clause_manager_->LazyDelete(sat_clause,
+                                  DeletionSourceForStat::FIXED_AT_TRUE);
       return true;
     }
     resolvant_.push_back(l);
@@ -1515,7 +1531,8 @@ bool BoundedVariableElimination::Propagate() {
       if (clauses_[index]->IsRemoved()) continue;
       num_clauses_diff_--;
       num_literals_diff_ -= clauses_[index]->size();
-      clause_manager_->InprocessingRemoveClause(clauses_[index]);
+      clause_manager_->LazyDelete(clauses_[index],
+                                  DeletionSourceForStat::ELIMINATED);
     }
     literal_to_clauses_[l].clear();
     for (const ClauseIndex index : literal_to_clauses_[l.NegatedIndex()]) {
@@ -1564,7 +1581,7 @@ void BoundedVariableElimination::DeleteClause(SatClause* sat_clause) {
   }
 
   // Lazy deletion of the clause.
-  clause_manager_->InprocessingRemoveClause(sat_clause);
+  clause_manager_->LazyDelete(sat_clause, DeletionSourceForStat::ELIMINATED);
 }
 
 void BoundedVariableElimination::DeleteAllClausesContaining(Literal literal) {
@@ -2004,12 +2021,6 @@ void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
 }
 
 namespace {
-// The IDs of the two implications of an equivalence between two gate targets.
-struct GateEquivalenceClauses {
-  ClauseId parent_implies_child;
-  ClauseId child_implies_parent;
-};
-
 // Helper class to add LRAT proofs for equivalent gate target literals.
 class LratGateCongruenceHelper {
  public:
@@ -2169,6 +2180,12 @@ class LratGateCongruenceHelper {
   }
 
  private:
+  // The IDs of the two implications of an equivalence between two gate targets.
+  struct GateEquivalenceClauses {
+    ClauseId parent_implies_child;
+    ClauseId child_implies_parent;
+  };
+
   bool IsRepresentative(Literal l) const { return GetParent(l) == l; }
 
   Literal GetParent(Literal l) const {

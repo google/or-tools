@@ -5496,39 +5496,27 @@ TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
   EXPECT_GT(num_infeasible, 0);
 }
 
-TEST(CpModelSolverTest, LratProofIsValidForSimpleUnsatProblem) {
-  const CpModelProto cp_model = ParseTestProto(
-      R"pb(
-        variables { domain: 0 domain: 1 }
-        variables { domain: 0 domain: 1 }
-        variables { domain: 0 domain: 1 }
-        variables { domain: 0 domain: 1 }
-        constraints { bool_or { literals: 0 literals: 1 literals: -3 } }
-        constraints { bool_or { literals: -1 literals: -2 literals: 2 } }
-        constraints { bool_or { literals: 1 literals: 2 literals: -4 } }
-        constraints { bool_or { literals: -2 literals: -3 literals: 3 } }
-        constraints { bool_or { literals: -1 literals: -3 literals: -4 } }
-        constraints { bool_or { literals: 0 literals: 2 literals: 3 } }
-        constraints { bool_or { literals: -1 literals: 1 literals: 3 } }
-        constraints { bool_or { literals: 0 literals: -2 literals: -4 } }
-      )pb");
-
+TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(1);
   params.set_cp_model_presolve(false);
-  params.set_use_sat_inprocessing(false);
-  params.set_cp_model_probing_level(0);
   params.set_symmetry_level(0);
   params.set_linearization_level(0);
-  params.set_minimization_algorithm(SatParameters::NONE);
-  params.set_binary_minimization_algorithm(
-      SatParameters::NO_BINARY_MINIMIZATION);
-  params.set_log_search_progress(true);
   params.set_debug_crash_if_lrat_check_fails(true);
   absl::SetFlag(&FLAGS_cp_model_lrat_check, true);
 
-  CpSolverResponse response = SolveWithParameters(cp_model, params);
-  EXPECT_EQ(response.status(), CpSolverStatus::INFEASIBLE);
+  int num_infeasible = 0;
+  for (int i = 0; i < 100; ++i) {
+    const int kNumVariables = 100;
+    CpModelProto model_proto = Random3SatProblem(kNumVariables);
+
+    CpSolverResponse response = SolveWithParameters(model_proto, params);
+    if (response.status() == CpSolverStatus::INFEASIBLE) {
+      ++num_infeasible;
+    }
+  }
+  LOG(INFO) << "num_infeasible: " << num_infeasible;
+  EXPECT_GT(num_infeasible, 0);
 }
 
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS

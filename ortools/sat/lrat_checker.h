@@ -28,6 +28,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -115,6 +116,8 @@ class LratChecker {
 
   bool Error(ClauseId id, std::string_view error);
 
+  int num_variables_ = 0;
+
   // The problem and inferred clauses which have not been deleted. The clause
   // literals are sorted and without duplicates.
   // TODO(user): investigate more cache friendly data structures (could be
@@ -146,8 +149,8 @@ class LratChecker {
   bool complete_ = false;
 
   // Temporary sets used to check unit propagation proofs.
-  absl::flat_hash_set<Literal> tmp_false_literals_set_;
-  absl::flat_hash_set<Literal> tmp_rat_false_literals_set_;
+  SparseBitset<LiteralIndex> tmp_false_literals_set_;
+  SparseBitset<LiteralIndex> tmp_rat_false_literals_set_;
 
   // Temporary set used to check the RAT property of an inferred clause.
   absl::flat_hash_set<ClauseId> tmp_clause_ids_;

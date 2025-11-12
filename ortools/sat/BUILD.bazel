@@ -1198,6 +1198,26 @@ cc_test(
 )
 
 cc_library(
+    name = "variable_expand",
+    srcs = ["variable_expand.cc"],
+    hdrs = ["variable_expand.h"],
+    deps = [
+        ":cp_model_utils",
+        ":presolve_context",
+        ":solution_crush",
+        "//ortools/base:stl_util",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = [
         "cp_model_presolve.cc",
@@ -1232,6 +1252,7 @@ cc_library(
         ":solution_crush",
         ":util",
         ":var_domination",
+        ":variable_expand",
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:protobuf_util",
@@ -1470,6 +1491,7 @@ cc_library(
         "//ortools/util:stats",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
@@ -1539,6 +1561,8 @@ cc_library(
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -3428,6 +3452,7 @@ cc_library(
     srcs = ["stat_tables.cc"],
     hdrs = ["stat_tables.h"],
     deps = [
+        ":clause",
         ":cp_model_cc_proto",
         ":linear_programming_constraint",
         ":model",
@@ -3442,6 +3467,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -4245,6 +4271,7 @@ cc_library(
         ":sat_base",
         ":synchronization",
         ":util",
+        "//ortools/util:bitset",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",

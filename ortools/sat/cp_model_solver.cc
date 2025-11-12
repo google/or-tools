@@ -1084,8 +1084,10 @@ class FullProblemSolver : public SubSolver {
     shared_->stat_tables->AddLpStat(name(), &local_model_);
     shared_->stat_tables->AddSearchStat(name(), &local_model_);
     shared_->stat_tables->AddClausesStat(name(), &local_model_);
-    if (response.status() == CpSolverStatus::INFEASIBLE &&
-        lrat_proof_handler_ != nullptr && !lrat_proof_handler_->Check()) {
+    // TODO(user): move this to a final response post-processor?
+    if (lrat_proof_handler_ != nullptr &&
+        local_model_.GetOrCreate<SatSolver>()->ModelIsUnsat() &&
+        !lrat_proof_handler_->Check()) {
       auto* logger = local_model_.GetOrCreate<SolverLogger>();
       SOLVER_LOG(logger,
                  absl::StrFormat("ERROR: LRAT proof invalid for %s", name()));
