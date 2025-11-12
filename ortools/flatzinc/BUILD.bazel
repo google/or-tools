@@ -183,6 +183,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:path",
         "//ortools/base:timer",
+        "//ortools/sat:model",
         "//ortools/util:logging",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
@@ -190,5 +191,6 @@ cc_binary(
         "@abseil-cpp//absl/log:flags",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",
+        "@protobuf",
     ],
 )

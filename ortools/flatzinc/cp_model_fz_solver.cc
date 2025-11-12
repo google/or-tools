@@ -40,7 +40,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "google/protobuf/arena.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/flatzinc/checker.h"
@@ -3714,11 +3713,12 @@ void ProcessFloatingPointOVariablesAndObjective(fz::Model* fz_model) {
   }
 }
 
-void SolveFzWithCpModelProto(const fz::Model& fz_model,
-                             const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params,
-                             SolverLogger* logger,
-                             SolverLogger* solution_logger) {
+CpSolverResponse SolveFzWithCpModelProto(const fz::Model& fz_model,
+                                         const fz::FlatzincSatParameters& p,
+                                         const SatParameters& sat_params,
+                                         Model* sat_model,
+                                         SolverLogger* solution_logger) {
+  SolverLogger* logger = sat_model->GetOrCreate<SolverLogger>();
   const bool enumerate_all_solutions_of_a_sat_problem =
       p.search_all_solutions && fz_model.objective() == nullptr;
   CpModelProtoWithMapping m(enumerate_all_solutions_of_a_sat_problem);
@@ -3924,11 +3924,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   // The order is important, we want the flag parameters to overwrite anything
   // set in m.parameters.
-  sat::SatParameters flag_parameters;
-  CHECK(google::protobuf::TextFormat::ParseFromString(sat_params,
-                                                      &flag_parameters))
-      << sat_params;
-  m.parameters.MergeFrom(flag_parameters);
+  m.parameters.MergeFrom(sat_params);
 
   // We only need an observer if 'p.display_all_solutions' or
   // 'p.search_all_solutions' are true.
@@ -3979,19 +3975,12 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     };
   }
 
-  Model sat_model;
-
-  // Setup logging.
-  // Note that we need to do that before we start calling the sat functions
-  // below that might create a SolverLogger() themselves.
-  sat_model.Register<SolverLogger>(logger);
-
-  sat_model.Add(NewSatParameters(m.parameters));
+  sat_model->Add(NewSatParameters(m.parameters));
   if (solution_observer != nullptr) {
-    sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
+    sat_model->Add(NewFeasibleSolutionObserver(solution_observer));
   }
 
-  const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
+  const CpSolverResponse response = SolveCpModel(m.proto, sat_model);
 
   // Check the returned solution with the fz model checker.
   if (response.status() == CpSolverStatus::FEASIBLE ||
@@ -4065,6 +4054,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       OutputFlatzincStats(response, solution_logger);
     }
   }
+  return response;
 }
 
 }  // namespace sat
