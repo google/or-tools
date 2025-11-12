@@ -12,47 +12,47 @@
 // limitations under the License.
 
 /** @file constraint_solver.h
-* Declaration of the core objects for the constraint solver.
-*
-* The literature around constraint programming is extremely dense but one
-* can find some basic introductions in the following links:
-*   - http://en.wikipedia.org/wiki/Constraint_programming
-*   - http://kti.mff.cuni.cz/~bartak/constraints/index.html
-*
-* Here is a very simple Constraint Programming problem:
-*
-*   If we see 56 legs and 20 heads, how many two-legged pheasants
-*   and four-legged rabbits are we looking at?
-*
-* Here is some simple Constraint Programming code to find out:
-* @code{.cpp}
-*   void pheasant() {
-*     Solver s("pheasant");
-*     // Create integer variables to represent the number of pheasants and
-*     // rabbits, with a minimum of 0 and a maximum of 20.
-*     IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
-*     IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
-*     // The number of heads is the sum of pheasants and rabbits.
-*     IntExpr* const heads = s.MakeSum(p, r);
-*     // The number of legs is the sum of pheasants * 2 and rabbits * 4.
-*     IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
-*     // Constraints: the number of legs is 56 and heads is 20.
-*     Constraint* const ct_legs = s.MakeEquality(legs, 56);
-*     Constraint* const ct_heads = s.MakeEquality(heads, 20);
-*     s.AddConstraint(ct_legs);
-*     s.AddConstraint(ct_heads);
-*     DecisionBuilder* const db = s.MakePhase(p, r,
-*                                             Solver::CHOOSE_FIRST_UNBOUND,
-*                                             Solver::ASSIGN_MIN_VALUE);
-*     s.NewSearch(db);
-*     CHECK(s.NextSolution());
-*     LOG(INFO) << "rabbits -> " << r->Value() << ", pheasants -> "
-*               << p->Value();
-*     LOG(INFO) << s.DebugString();
-*     s.EndSearch();
-*   }
-* @endcode
-* which outputs:
+Declaration of the core objects for the constraint solver.
+
+The literature around constraint programming is extremely dense but one
+can find some basic introductions in the following links:
+  - http://en.wikipedia.org/wiki/Constraint_programming
+  - http://kti.mff.cuni.cz/~bartak/constraints/index.html
+
+Here is a very simple Constraint Programming problem:
+
+  If we see 56 legs and 20 heads, how many two-legged pheasants
+  and four-legged rabbits are we looking at?
+
+Here is some simple Constraint Programming code to find out:
+@code{.cpp}
+  void pheasant() {
+    Solver s("pheasant");
+    // Create integer variables to represent the number of pheasants and
+    // rabbits, with a minimum of 0 and a maximum of 20.
+    IntVar* const p = s.MakeIntVar(0, 20, "pheasant"));
+    IntVar* const r = s.MakeIntVar(0, 20, "rabbit"));
+    // The number of heads is the sum of pheasants and rabbits.
+    IntExpr* const heads = s.MakeSum(p, r);
+    // The number of legs is the sum of pheasants * 2 and rabbits * 4.
+    IntExpr* const legs = s.MakeSum(s.MakeProd(p, 2), s.MakeProd(r, 4));
+    // Constraints: the number of legs is 56 and heads is 20.
+    Constraint* const ct_legs = s.MakeEquality(legs, 56);
+    Constraint* const ct_heads = s.MakeEquality(heads, 20);
+    s.AddConstraint(ct_legs);
+    s.AddConstraint(ct_heads);
+    DecisionBuilder* const db = s.MakePhase(p, r,
+                                            Solver::CHOOSE_FIRST_UNBOUND,
+                                            Solver::ASSIGN_MIN_VALUE);
+    s.NewSearch(db);
+    CHECK(s.NextSolution());
+    LOG(INFO) << "rabbits -> " << r->Value() << ", pheasants -> "
+              << p->Value();
+    LOG(INFO) << s.DebugString();
+    s.EndSearch();
+  }
+@endcode
+which outputs:
 @verbatim
 rabbits -> 8, pheasants -> 12
 Solver(name = "pheasant",
@@ -1034,7 +1034,7 @@ class Solver {
   /// are relative to this time.
   absl::Time Now() const;
 
-  /// DEPRECATED: Use Now() instead.
+  /// @deprecated Use Now() instead.
   /// Time elapsed, in ms since the creation of the solver.
   int64_t wall_time() const;
 
