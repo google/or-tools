@@ -866,9 +866,9 @@ class MPSolver {
   static int64_t global_num_constraints();
 
   /// @deprecated Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
-  /// @note These deprecated functions used the convention `time_limit = 0`
-  /// to mean "no limit", which now corresponds
-  /// `to time_limit_ = InfiniteDuration()`.
+  /// @note These deprecated functions used the convention `time_limit = 0` to
+  /// mean "no limit", which now corresponds to
+  /// `time_limit_ = InfiniteDuration()`.
   int64_t time_limit() const {
     return time_limit_ == absl::InfiniteDuration()
                ? 0

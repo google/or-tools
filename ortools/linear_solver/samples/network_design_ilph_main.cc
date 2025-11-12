@@ -25,17 +25,17 @@
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 #include "ortools/routing/parsers/dow_parser.h"
 
-ABSL_FLAG(std::string, input, "", "File path of the problem.");
+DEFINE_string(input, "", "File path of the problem.");
 
 using operations_research::MPSolver;
 
 int main(int argc, char* argv[]) {
   InitGoogle(argv[0], &argc, &argv, true);
   absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
-  operations_research::CapacityPlanningInstance request;
+  operations_research::routing::CapacityPlanningInstance request;
   operations_research::CapacityPlanningProblem problem;
-  ::absl::Status status =
-      operations_research::ReadFile(absl::GetFlag(FLAGS_input), &request);
+  ::absl::Status status = operations_research::routing::ReadFile(
+      absl::GetFlag(FLAGS_input), &request);
   CHECK_OK(status);
   LOG(INFO) << "File was read.";
   status = operations_research::Convert(request, &problem);
