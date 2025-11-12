@@ -24,7 +24,9 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
@@ -45,11 +47,6 @@ SharedStatTables::SharedStatTables() {
 
   search_table_.push_back({"Search stats", "Bools", "Conflicts", "Branches",
                            "Restarts", "BoolPropag", "IntegerPropag"});
-
-  clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
-                            "LitLearned", "LitForgotten", "Subsumed",
-                            "MClauses", "MDecisions", "MLitTrue", "MSubsumed",
-                            "MLitRemoved", "MReused"});
 
   lp_table_.push_back({"Lp stats", "Component", "Iterations", "AddedCuts",
                        "OPTIMAL", "DUAL_F.", "DUAL_U."});
@@ -93,7 +90,15 @@ void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
 
 void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
   absl::MutexLock mutex_lock(mutex_);
-  SatSolver::Counters counters = model->GetOrCreate<SatSolver>()->counters();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  SatSolver::Counters counters = sat_solver->counters();
+
+  if (clauses_table_.empty()) {
+    clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
+                              "LitLearned", "LitForgotten", "Subsumed",
+                              "MClauses", "MDecisions", "MLitTrue", "MSubsumed",
+                              "MLitRemoved", "MReused"});
+  }
   clauses_table_.push_back(
       {FormatName(name), FormatCounter(counters.num_minimizations),
        FormatCounter(counters.num_literals_removed),
@@ -106,6 +111,58 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
        FormatCounter(counters.minimization_num_subsumed),
        FormatCounter(counters.minimization_num_removed_literals),
        FormatCounter(counters.minimization_num_reused)});
+
+  // Track reductions of Boolean variables.
+  if (bool_var_table_.empty()) {
+    bool_var_table_.push_back(
+        {"Boolean variables", "Fixed", "Equiv", "Total", "Left"});
+  }
+  const int64_t num_fixed = sat_solver->NumFixedVariables();
+  const int64_t num_equiv =
+      model->GetOrCreate<BinaryImplicationGraph>()->num_redundant_literals() /
+      2;
+  const int64_t num_bools = sat_solver->NumVariables();
+  bool_var_table_.push_back({FormatName(name), FormatCounter(num_fixed),
+                             FormatCounter(num_equiv), FormatCounter(num_bools),
+                             FormatCounter(num_bools - num_equiv - num_fixed)});
+
+  // Track the "life of a non-binary clause".
+  CpSolverResponse r;
+  model->GetOrCreate<SharedResponseManager>()->FillSolveStatsInResponse(model,
+                                                                        &r);
+  if (clauses_deletion_table_.empty()) {
+    clauses_deletion_table_.push_back(
+        {"Clause deletion", "at_true", "l_and_not(l)", "to_binary",
+         "sub_conflict", "sub_eager", "sub_vivify", "sub_probing", "sub_inpro",
+         "blocked", "eliminated", "forgotten", "#conflicts"});
+  }
+  absl::Span<const int64_t> deletion_by_source =
+      model->GetOrCreate<ClauseManager>()->DeletionCounters();
+  clauses_deletion_table_.push_back(
+      {FormatName(name),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::FIXED_AT_TRUE)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::CONTAINS_L_AND_NOT_L)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::PROMOTED_TO_BINARY)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_CONFLICT)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_EAGER)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_VIVIFY)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_PROBING)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_INPROCESSING)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::BLOCKED)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::ELIMINATED)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::GARBAGE_COLLECTED)]),
+       FormatCounter(r.num_conflicts())});
 }
 
 void SharedStatTables::AddLpStat(absl::string_view name, Model* model) {
@@ -266,8 +323,15 @@ void SharedStatTables::Display(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
   if (timing_table_.size() > 1) SOLVER_LOG(logger, FormatTable(timing_table_));
   if (search_table_.size() > 1) SOLVER_LOG(logger, FormatTable(search_table_));
+
+  if (bool_var_table_.size() > 1) {
+    SOLVER_LOG(logger, FormatTable(bool_var_table_));
+  }
   if (clauses_table_.size() > 1) {
     SOLVER_LOG(logger, FormatTable(clauses_table_));
+  }
+  if (clauses_deletion_table_.size() > 1) {
+    SOLVER_LOG(logger, FormatTable(clauses_deletion_table_));
   }
 
   if (lp_table_.size() > 1) SOLVER_LOG(logger, FormatTable(lp_table_));

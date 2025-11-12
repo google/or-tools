@@ -2106,11 +2106,15 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
   // Detect if the objective domain do not limit the "optimal" objective value.
   // If this is true, then we can apply any reduction that reduce the objective
   // value without any issues.
+  //
+  // TODO(user): implement an incremental method to update this flag.
+  const bool objective_domain_was_constraining =
+      objective_domain_is_constraining_;
   objective_domain_is_constraining_ =
-      !implied_domain
-           .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
-                                    objective_domain_.Max()))
-           .IsIncludedIn(objective_domain_);
+      !implied_domain.IsIncludedIn(objective_domain_);
+  if (objective_domain_was_constraining && !objective_domain_is_constraining_) {
+    UpdateRuleStats("objective: domain is no longer constraining");
+  }
   return true;
 }
 

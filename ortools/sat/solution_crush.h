@@ -59,6 +59,8 @@ class SolutionCrush {
   SolutionCrush& operator=(const SolutionCrush&) = delete;
   SolutionCrush& operator=(SolutionCrush&&) = delete;
 
+  std::optional<int64_t> GetHintedValue(int var) const;
+
   bool SolutionIsLoaded() const { return solution_is_loaded_; }
 
   // Visible for testing.

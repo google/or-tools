@@ -25,6 +25,7 @@
 #include "absl/types/span.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 namespace sat {
@@ -86,23 +87,23 @@ enum UnitPropagationStatus {
 
 UnitPropagationStatus Propagate(
     absl::Span<const Literal> clause,
-    absl::flat_hash_set<Literal>* false_literals_set) {
+    SparseBitset<LiteralIndex>& false_literals_set) {
   LiteralIndex unique_unassigned_literal = kNoLiteralIndex;
   for (const Literal literal : clause) {
-    if (!false_literals_set->contains(literal)) {
+    if (!false_literals_set[literal]) {
       if (unique_unassigned_literal != kNoLiteralIndex) return kError;
       unique_unassigned_literal = literal.Index();
     }
   }
   if (unique_unassigned_literal == kNoLiteralIndex) return kConflict;
   const Literal unassigned_literal = Literal(unique_unassigned_literal);
-  DCHECK(!false_literals_set->contains(unassigned_literal));
-  if (false_literals_set->contains(unassigned_literal.Negated())) {
+  DCHECK(!false_literals_set[unassigned_literal]);
+  if (false_literals_set[unassigned_literal.Negated()]) {
     // `clause` propagates `unassigned_literal` which was already propagated by
     // a previous clause.
     return kWarning;
   }
-  false_literals_set->insert(unassigned_literal.Negated());
+  false_literals_set.Set(unassigned_literal.Negated());
   return kUnit;
 }
 }  // namespace
@@ -126,10 +127,16 @@ bool LratChecker::AddClauseInternal(ClauseId id,
       return true;
     }
   }
+  if (!sorted_clause.empty()) {
+    num_variables_ =
+        std::max(num_variables_, sorted_clause.back().Variable().value() + 1);
+  }
 
   if (!is_problem_clause) {
-    tmp_false_literals_set_.clear();
-    tmp_false_literals_set_.insert(sorted_clause.begin(), sorted_clause.end());
+    tmp_false_literals_set_.ClearAndResize(LiteralIndex(2 * num_variables_));
+    for (const Literal literal : sorted_clause) {
+      tmp_false_literals_set_.Set(literal);
+    }
     UnitPropagationStatus last_propagation_status = kUnit;
     for (int i = 0; i < unit_ids.size(); ++i) {
       const ClauseId unit_id = unit_ids[i];
@@ -139,7 +146,7 @@ bool LratChecker::AddClauseInternal(ClauseId id,
       }
       ++num_processed_rup_clauses_;
       num_processed_rup_literals_ += it->second.size();
-      last_propagation_status = Propagate(it->second, &tmp_false_literals_set_);
+      last_propagation_status = Propagate(it->second, tmp_false_literals_set_);
       if (last_propagation_status == kError) {
         return Error(id, absl::StrCat("unit_id ", unit_id, " is not unit"));
       } else if (last_propagation_status == kWarning) {
@@ -183,15 +190,15 @@ bool LratChecker::AddClauseInternal(ClauseId id,
         // `resolvant` have two complementary literals (other than the pivot --
         // this is still valid if we use `tmp_false_literals_set_` instead of
         // `clause`).
-        tmp_rat_false_literals_set_ = tmp_false_literals_set_;
+        tmp_rat_false_literals_set_.CopyFrom(tmp_false_literals_set_);
         bool has_two_complementary_literals = false;
         for (const Literal literal : resolvant) {
           if (literal == pivot.Negated()) continue;
-          if (tmp_false_literals_set_.contains(literal.Negated())) {
+          if (tmp_false_literals_set_[literal.Negated()]) {
             has_two_complementary_literals = true;
             break;
           }
-          tmp_rat_false_literals_set_.insert(literal);
+          tmp_rat_false_literals_set_.Set(literal);
         }
         if (has_two_complementary_literals) continue;
         last_propagation_status = kUnit;
@@ -205,7 +212,7 @@ bool LratChecker::AddClauseInternal(ClauseId id,
           ++num_processed_rat_clauses_;
           num_processed_rat_literals_ += it->second.size();
           last_propagation_status =
-              Propagate(it->second, &tmp_rat_false_literals_set_);
+              Propagate(it->second, tmp_rat_false_literals_set_);
           if (last_propagation_status == kError) {
             return Error(id,
                          absl::StrCat("rat.unit_id ", unit_id, " is not unit"));

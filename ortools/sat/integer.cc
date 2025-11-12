@@ -1731,10 +1731,16 @@ bool IntegerTrail::EnqueueInternal(
   // important, so that in the corner case where all variables are actually
   // fixed, we still make sure no propagator detect a conflict.
   //
+  // Tricky: We still propagates bounds in {-1, 0, 1}, this is because it seems
+  // nice to propagate Boolean views. Also some propagator like the product one
+  // pushes X >= 0 or X <= 0 and assume this is now true in the rest of the
+  // code. Note that these push are safe since they cannot be more than
+  // O(num_variables) of them.
+  //
   // TODO(user): Some propagation code have CHECKS in place and not like when
   // something they just pushed is not reflected right away. They must be aware
   // of that, which is a bit tricky.
-  if (InPropagationLoop()) {
+  if (InPropagationLoop() && IntTypeAbs(i_lit.bound) > 1) {
     // Note that we still propagate "big" push as it seems better to do that
     // now rather than to delay to the next decision.
     const IntegerValue lb = LowerBound(var);

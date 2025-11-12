@@ -66,10 +66,35 @@ bool WatcherListContains(const std::vector<Watcher>& list,
   return false;
 }
 
-// A simple wrapper to simplify the erase(std::remove_if()) pattern.
-template <typename Container, typename Predicate>
-void RemoveIf(Container c, Predicate p) {
-  c->erase(std::remove_if(c->begin(), c->end(), p), c->end());
+bool WatchersAreValid(const Trail& trail, absl::Span<const Literal> literals) {
+  int min_watcher_level = trail.CurrentDecisionLevel();
+  for (Literal w : literals.subspan(0, 2)) {
+    if (trail.Assignment().LiteralIsAssigned(w)) {
+      min_watcher_level = std::min(min_watcher_level, trail.AssignmentLevel(w));
+    }
+  }
+  for (Literal l : literals.subspan(2)) {
+    if (trail.Assignment().LiteralIsFalse(l) &&
+        trail.AssignmentLevel(l) > min_watcher_level) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool ClauseIsSatisfiedAtRoot(const Trail& trail,
+                             absl::Span<const Literal> literals) {
+  return absl::c_any_of(literals, [&](Literal l) {
+    return trail.Assignment().LiteralIsTrue(l) && trail.AssignmentLevel(l) == 0;
+  });
+}
+
+bool LiteralsAreFixedAtRoot(const Trail& trail,
+                            absl::Span<const Literal> literals) {
+  return absl::c_any_of(literals, [&](Literal l) {
+    return trail.Assignment().LiteralIsAssigned(l) &&
+           trail.AssignmentLevel(l) == 0;
+  });
 }
 
 }  // namespace
@@ -87,6 +112,8 @@ ClauseManager::ClauseManager(Model* model)
       stats_("ClauseManager"),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()) {
   trail_->RegisterPropagator(this);
+  deletion_counters_.resize(
+      static_cast<int>(DeletionSourceForStat::LastElement));
 }
 
 ClauseManager::~ClauseManager() {
@@ -106,14 +133,12 @@ void ClauseManager::Resize(int num_variables) {
 void ClauseManager::AttachOnFalse(Literal literal, Literal blocking_literal,
                                   SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(is_clean_);
   DCHECK(!WatcherListContains(watchers_on_false_[literal], *clause));
   watchers_on_false_[literal].push_back(Watcher(clause, blocking_literal));
 }
 
 bool ClauseManager::Propagate(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(is_clean_);
   Trail::EnqueueHelper helper = trail->GetEnqueueHelper(propagator_id_);
 
   const int old_index = trail->Index();
@@ -138,6 +163,10 @@ bool ClauseManager::Propagate(Trail* trail) {
       }
       ++num_inspected_clauses_;
 
+      const int size = it->clause->size();
+      // If this clause has been lazily detached, skip and remove the watcher.
+      if (size == 0) continue;
+
       // If the other watched literal is true, just change the blocking literal.
       // Note that we use the fact that the first two literals of the clause are
       // the ones currently watched.
@@ -158,7 +187,6 @@ bool ClauseManager::Propagate(Trail* trail) {
       // the watched ones.
       {
         const int start = it->start_index;
-        const int size = it->clause->size();
         DCHECK_GE(start, 2);
 
         int i = start;
@@ -262,6 +290,16 @@ SatClause* ClauseManager::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
+SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
+  if (!trail_->Assignment().VariableIsAssigned(var)) return nullptr;
+  if (trail_->AssignmentType(var) != propagator_id_) return nullptr;
+  return reasons_[trail_->Info(var).trail_index];
+}
+
+bool ClauseManager::ClauseIsUsedAsReason(SatClause* clause) const {
+  return clause == ReasonClauseOrNull(clause->PropagatedLiteral().Variable());
+}
+
 bool ClauseManager::AddClause(absl::Span<const Literal> literals) {
   return AddClause(kNoClauseId, literals, trail_, -1);
 }
@@ -358,9 +396,15 @@ void ClauseManager::Attach(SatClause* clause, Trail* trail) {
   AttachOnFalse(literals[1], literals[0], clause);
 }
 
-void ClauseManager::InternalDetach(SatClause* clause) {
-  --num_watched_clauses_;
+void ClauseManager::InternalDetach(SatClause* clause,
+                                   DeletionSourceForStat source) {
   const size_t size = clause->size();
+
+  // Double-deletion.
+  // TODO(user): change that to a check?
+  if (size == 0) return;
+
+  --num_watched_clauses_;
   if (drat_proof_handler_ != nullptr && size > 2) {
     drat_proof_handler_->DeleteClause({clause->begin(), size});
   }
@@ -371,24 +415,18 @@ void ClauseManager::InternalDetach(SatClause* clause) {
       clause_id_.erase(it);
     }
   }
+  deletion_counters_[static_cast<int>(source)]++;
   clauses_info_.erase(clause);
   clause->Clear();
 }
 
-void ClauseManager::LazyDetach(SatClause* clause) {
-  InternalDetach(clause);
-  is_clean_ = false;
-  needs_cleaning_.Set(clause->FirstLiteral());
-  needs_cleaning_.Set(clause->SecondLiteral());
-}
-
-void ClauseManager::Detach(SatClause* clause) {
-  InternalDetach(clause);
-  for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
-    needs_cleaning_.Clear(l);
-    RemoveIf(&(watchers_on_false_[l]), [](const Watcher& watcher) {
-      return watcher.clause->IsRemoved();
-    });
+void ClauseManager::LazyDelete(SatClause* clause,
+                               DeletionSourceForStat source) {
+  InternalDetach(clause, source);
+  if (all_clauses_are_attached_) {
+    is_clean_ = false;
+    needs_cleaning_.Set(clause->FirstLiteral());
+    needs_cleaning_.Set(clause->SecondLiteral());
   }
 }
 
@@ -455,24 +493,6 @@ bool ClauseManager::InprocessingFixLiteral(
   return implication_graph_->Propagate(trail_);
 }
 
-// TODO(user): We could do something slower if the clauses are attached like
-// we do for InprocessingRewriteClause().
-void ClauseManager::InprocessingRemoveClause(SatClause* clause) {
-  DCHECK(!all_clauses_are_attached_);
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->DeleteClause(clause->AsSpan());
-  }
-  if (lrat_proof_handler_ != nullptr) {
-    const auto it = clause_id_.find(clause);
-    if (it != clause_id_.end()) {
-      lrat_proof_handler_->DeleteClauses({it->second});
-      clause_id_.erase(it);
-    }
-  }
-  clauses_info_.erase(clause);
-  clause->Clear();
-}
-
 bool ClauseManager::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause,
     absl::Span<const ClauseId> clause_ids) {
@@ -482,30 +502,31 @@ bool ClauseManager::InprocessingRewriteClause(
     lrat_proof_handler_->AddInferredClause(new_clause_id, new_clause,
                                            clause_ids);
   }
+  const bool is_reason = ClauseIsUsedAsReason(clause);
+
+  CHECK(!is_reason || new_clause[0] == clause->PropagatedLiteral());
 
   if (new_clause.empty()) return false;  // UNSAT.
 
-  // TODO(user): Ideally it would be better to not call this with a clause with
-  // fixed literals at level zero, but it can happen if for instance an earlier
-  // call to InprocessingRewriteClause() has a unit clause and causes fixing.
-  // Also, for the LRAT proof, we might not want to deal with fixed literals in
-  // many different places.
-  if (/*DISABLES_CODE*/ (false) && DEBUG_MODE) {
-    for (const Literal l : new_clause) {
-      DCHECK(!trail_->Assignment().LiteralIsAssigned(l));
-    }
-  }
-
   if (new_clause.size() == 1) {
     if (!InprocessingAddUnitClause(new_clause_id, new_clause[0])) return false;
-    InprocessingRemoveClause(clause);
+    LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
     return true;
   }
 
+  DCHECK(WatchersAreValid(*trail_, new_clause));
+  DCHECK(!ClauseIsSatisfiedAtRoot(*trail_, new_clause));
+  DCHECK(!LiteralsAreFixedAtRoot(*trail_, new_clause));
+
   if (new_clause.size() == 2) {
-    CHECK(implication_graph_->AddBinaryClause(new_clause_id, new_clause[0],
-                                              new_clause[1]));
-    InprocessingRemoveClause(clause);
+    if (is_reason) {
+      CHECK(implication_graph_->AddBinaryClauseAndChangeReason(
+          new_clause_id, new_clause[0], new_clause[1]));
+    } else {
+      CHECK(implication_graph_->AddBinaryClause(new_clause_id, new_clause[0],
+                                                new_clause[1]));
+    }
+    LazyDelete(clause, DeletionSourceForStat::PROMOTED_TO_BINARY);
     return true;
   }
 
@@ -516,25 +537,37 @@ bool ClauseManager::InprocessingRewriteClause(
   }
 
   if (all_clauses_are_attached_) {
-    // We can still rewrite the clause, but it is inefficient. We first
-    // detach it in a non-lazy way.
-    --num_watched_clauses_;
+    // We must eagerly detach the clause
+    // TODO(user): If we were to create a totally new clause instead of
+    // reusing the memory we could use LazyDelete. Investigate.
     clause->Clear();
     for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
       needs_cleaning_.Clear(l);
-      RemoveIf(&(watchers_on_false_[l]), [](const Watcher& watcher) {
-        return watcher.clause->IsRemoved();
-      });
+      // std::erase_if is C++20, not yet fully supported on OR-Tools.
+      watchers_on_false_[l].erase(
+          std::remove_if(watchers_on_false_[l].begin(),
+                         watchers_on_false_[l].end(),
+                         [](const Watcher& watcher) {
+                           return watcher.clause->IsRemoved();
+                         }),
+          watchers_on_false_[l].end());
     }
   }
 
   clause->Rewrite(new_clause);
   if (lrat_proof_handler_ != nullptr) {
+    const auto it = clause_id_.find(clause);
+    if (it != clause_id_.end()) {
+      lrat_proof_handler_->DeleteClauses({it->second});
+    }
     SetClauseId(clause, new_clause_id);
   }
 
   // And we reattach it.
-  if (all_clauses_are_attached_) Attach(clause, trail_);
+  if (all_clauses_are_attached_) {
+    AttachOnFalse(new_clause[0], new_clause[1], clause);
+    AttachOnFalse(new_clause[1], new_clause[0], clause);
+  }
   return true;
 }
 
@@ -567,10 +600,13 @@ SatClause* ClauseManager::InprocessingAddClause(
 void ClauseManager::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (const LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
-    DCHECK(needs_cleaning_[index]);
-    RemoveIf(&(watchers_on_false_[index]), [](const Watcher& watcher) {
-      return watcher.clause->IsRemoved();
-    });
+    if (!needs_cleaning_[index]) continue;
+    // std::erase_if is C++20, not yet fully supported on OR-Tools.
+    watchers_on_false_[index].erase(
+        std::remove_if(
+            watchers_on_false_[index].begin(), watchers_on_false_[index].end(),
+            [](const Watcher& watcher) { return watcher.clause->IsRemoved(); }),
+        watchers_on_false_[index].end());
     needs_cleaning_.Clear(index);
   }
   needs_cleaning_.NotifyAllClear();
@@ -582,7 +618,7 @@ void ClauseManager::CleanUpWatchers() {
 // TODO(user): If more indices are needed, generalize the code to a vector of
 // indices.
 void ClauseManager::DeleteRemovedClauses() {
-  DCHECK(is_clean_);
+  if (!is_clean_) CleanUpWatchers();
 
   int new_size = 0;
   const int old_size = clauses_.size();
@@ -753,8 +789,9 @@ bool BinaryImplicationGraph::HasNoDuplicates() {
 // use them here to maintains invariant? Explore this when we start cleaning our
 // clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
-bool BinaryImplicationGraph::AddBinaryClause(ClauseId id, Literal a,
-                                             Literal b) {
+bool BinaryImplicationGraph::AddBinaryClauseInternal(ClauseId id, Literal a,
+                                                     Literal b,
+                                                     bool change_reason) {
   SCOPED_TIME_STAT(&stats_);
 
   // Tricky: If this is the first clause, the propagator will be added and
@@ -798,10 +835,24 @@ bool BinaryImplicationGraph::AddBinaryClause(ClauseId id, Literal a,
       rep_id = clause_id_generator_->GetNextId();
       lrat_proof_handler_->AddInferredClause(rep_id, {rep_a, rep_b},
                                              clause_ids);
-      lrat_proof_handler_->DeleteClauses({id});
+      if (change_reason) {
+        // Remember the non-canonical clause so we can delete it on restart.
+        changed_reasons_on_trail_.emplace_back(std::minmax(a, b));
+        AddClauseId(id, a, b);
+      } else {
+        lrat_proof_handler_->DeleteClauses({id});
+      }
     }
     AddClauseId(rep_id, rep_a, rep_b);
   }
+  if (change_reason) {
+    CHECK(trail_->Assignment().LiteralIsFalse(b));
+    CHECK(trail_->Assignment().LiteralIsTrue(a));
+    const int trail_index = trail_->Info(a.Variable()).trail_index;
+    reasons_[trail_index] = b;
+    trail_->ChangeReason(trail_index, propagator_id_);
+  }
+
   if (rep_a == rep_b) {
     return FixLiteral(rep_a, {rep_id});
   }
@@ -1248,7 +1299,6 @@ void BinaryImplicationGraph::AppendImplicationChain(
   LiteralIndex negated_index = literal.NegatedIndex();
   const int initial_size = clause_ids->size();
   while (implied_by_[negated_index] != Literal(negated_index)) {
-    DCHECK_NE(trail_->AssignmentLevel(Literal(negated_index)), 0);
     const ClauseId clause_id = GetClauseId(
         Literal(negated_index), implied_by_[negated_index].Negated());
     DCHECK_NE(clause_id, kNoClauseId);
@@ -1490,9 +1540,9 @@ class LratEquivalenceHelper {
   // literal is proved using the proof of its parent).
   bool FixAllLiteralsInComponent(LiteralIndex fixed_literal, bool all_true) {
     DCHECK(stack_.empty());
-    stack_.push(fixed_literal);
+    stack_.push(all_true ? fixed_literal : Literal(fixed_literal).Negated());
     is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
-    is_marked_.Set(fixed_literal);
+    is_marked_.Set(stack_.top());
     while (!stack_.empty()) {
       const LiteralIndex node = stack_.top();
       stack_.pop();
@@ -1711,6 +1761,15 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   wall_timer.Start();
   log_info |= VLOG_IS_ON(1);
 
+  if (trail_->CurrentDecisionLevel() == 0) {
+    for (std::pair<Literal, Literal> clause : changed_reasons_on_trail_) {
+      auto it = clause_id_.find(clause);
+      lrat_proof_handler_->DeleteClauses({it->second});
+      clause_id_.erase(it);
+    }
+    changed_reasons_on_trail_.clear();
+  }
+
   // Lets remove all fixed/duplicate variables first.
   if (!RemoveDuplicatesAndFixedVariables()) return false;
   const VariablesAssignment& assignment = trail_->Assignment();
@@ -1738,6 +1797,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   is_redundant_.resize(size);
 
   int num_equivalences = 0;
+  // We increment num_redundant_literals_ only at the end, to avoid breaking the
+  // invariant "num_redundant_literals_ % 2 == 0" in case of early return.
+  int num_new_redundant_literals = 0;
   reverse_topological_order_.clear();
   for (int index = 0; index < scc.size(); ++index) {
     const absl::Span<int32_t> component = scc[index];
@@ -1788,7 +1850,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
       if (!is_redundant_[literal]) {
-        ++num_redundant_literals_;
+        ++num_new_redundant_literals;
         is_redundant_.Set(literal);
       }
       representative_of_[literal] = representative;
@@ -1860,6 +1922,9 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // In any case, all fixed literals are marked as redundant.
   for (int index = 0; index < scc.size(); ++index) {
     const absl::Span<int32_t> component = scc[index];
+    if (component.size() == 1 || is_removed_[LiteralIndex(component[0])]) {
+      continue;
+    }
     bool all_fixed = false;
     bool all_true = false;
     LiteralIndex fixed_literal = kNoLiteralIndex;
@@ -1876,12 +1941,13 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     for (const int32_t i : component) {
       const Literal l = Literal(LiteralIndex(i));
       if (!is_redundant_[l]) {
-        ++num_redundant_literals_;
+        ++num_new_redundant_literals;
         is_redundant_.Set(l);
         representative_of_[l] = l.Index();
       }
     }
     if (lrat_helper_ != nullptr) {
+      lrat_helper_->NewComponent(component);
       if (!lrat_helper_->FixAllLiteralsInComponent(fixed_literal, all_true)) {
         return false;
       }
@@ -1918,6 +1984,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     }
   }
 
+  num_redundant_literals_ += num_new_redundant_literals;
   time_limit_->AdvanceDeterministicTime(dtime);
   const int num_fixed_during_scc =
       trail_->Index() - num_processed_fixed_variables_;

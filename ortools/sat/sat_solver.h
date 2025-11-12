@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -258,8 +259,28 @@ class SatSolver {
   // Appends to `clause_ids` the IDs of the clauses which, by unit propagation
   // from some decisions, are sufficient to ensure that all literals in
   // `literals` are fixed to their current value.
-  void AppendClausesFixing(absl::Span<const Literal> literals,
-                           std::vector<ClauseId>* clause_ids);
+  //
+  // If `decision` is not `kNoLiteralIndex`, also appends the IDs of the clauses
+  // proving that `decision` implies all the literals in `literals`. In this
+  // case, `decision` must either be the last decision on the trail, or must
+  // directly imply it. Furthermore, each decision must directly imply the
+  // previous one on the trail.
+  //
+  // This method expands the reasons of each literal recursively until a
+  // decision, or a literal implied by the decision at its decision level, is
+  // found. The latter criterion avoids a quadratic complexity when implications
+  // of the form "decision => literal" are added for each newly propagated
+  // literal after taking a decision (provided these implications are added to
+  // the binary implication graph right away, in trail index order).
+  //
+  // If `additional_binary_clause_ids` is not null, it is used to look for
+  // existing binary clauses if they are not found in the binary implication
+  // graph.
+  void AppendClausesFixing(
+      absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+      LiteralIndex decision = kNoLiteralIndex,
+      absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
+          additional_binary_clause_ids = nullptr);
 
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
@@ -618,7 +639,9 @@ class SatSolver {
   // Returns the relevant pointer if the given variable was propagated by the
   // constraint in question. This is used to bump the activity of the learned
   // clauses or pb constraints.
-  SatClause* ReasonClauseOrNull(BooleanVariable var) const;
+  SatClause* ReasonClauseOrNull(BooleanVariable var) const {
+    return clauses_propagator_->ReasonClauseOrNull(var);
+  }
   UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
       BooleanVariable var) const;
   // Returns the ID of the unit, binary, or general clause that is the reason
@@ -637,19 +660,6 @@ class SatSolver {
   bool ResolvePBConflict(BooleanVariable var,
                          MutableUpperBoundedLinearConstraint* conflict,
                          Coefficient* slack);
-
-  // Returns true iff the clause is the reason for an assigned variable.
-  //
-  // TODO(user): With our current data structures, we could also return true
-  // for clauses that were just used as a reason (like just before an untrail).
-  // This may be beneficial, but should properly be defined so that we can
-  // have the same behavior if we change the implementation.
-  bool ClauseIsUsedAsReason(SatClause* clause) const {
-    const BooleanVariable var = clause->PropagatedLiteral().Variable();
-    return trail_->Info(var).trail_index < trail_->Index() &&
-           (*trail_)[trail_->Info(var).trail_index].Variable() == var &&
-           ReasonClauseOrNull(var) == clause;
-  }
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
@@ -707,6 +717,13 @@ class SatSolver {
       int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict,
       std::vector<SatClause*>* subsumed_clauses);
+
+  // Use the learned conflict to subsumes some clause.
+  //
+  // Returns false iff the conflict is no longer "redundant" and need to be kept
+  // forever.
+  bool SubsumptionsInConflictResolution(absl::Span<const Literal> conflict,
+                                        absl::Span<const Literal> reason_used);
 
   // Fills `clause_ids` with the LRAT proof for the learned conflict.
   void FillLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);
@@ -882,6 +899,7 @@ class SatSolver {
   int64_t minimization_by_propagation_threshold_ = 0;
 
   // Temporary members used during conflict analysis.
+  Bitset64<LiteralIndex> tmp_literal_set_;
   SparseBitset<BooleanVariable> is_marked_;
   SparseBitset<BooleanVariable> is_marked_for_lrat_;
   SparseBitset<BooleanVariable> is_independent_;
@@ -897,6 +915,7 @@ class SatSolver {
   // Temporary members used when adding LRAT inferred clauses.
   std::vector<ClauseId> tmp_clause_ids_for_1uip_;
   std::vector<ClauseId> tmp_clause_ids_for_minimization_;
+  std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
   absl::flat_hash_set<ClauseId> tmp_clause_id_set_;
 
   // A boolean vector used to temporarily mark decision levels.

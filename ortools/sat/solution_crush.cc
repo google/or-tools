@@ -62,6 +62,12 @@ void SolutionCrush::Resize(int new_size) {
   var_values_.resize(new_size, 0);
 }
 
+std::optional<int64_t> SolutionCrush::GetHintedValue(int var) const {
+  if (!solution_is_loaded_) return std::nullopt;
+  if (!HasValue(var)) return std::nullopt;
+  return var_values_[var];
+}
+
 void SolutionCrush::MaybeSetLiteralToValueEncoding(int literal, int var,
                                                    int64_t value) {
   DCHECK(RefIsPositive(var));
