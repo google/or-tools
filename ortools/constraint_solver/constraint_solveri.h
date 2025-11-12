@@ -13,8 +13,10 @@
 
 /** @file constraint_solveri.h
 Collection of objects used to extend the Constraint Solver library.
+
 This file contains a set of objects that simplifies writing extensions
 of the library.
+
 The main objects that define extensions are:
   - BaseIntExpr, the base class of all expressions that are not variables.
   - SimpleRevFIFO, a reversible FIFO list with templatized values.
@@ -39,6 +41,7 @@ The main objects that define extensions are:
     Principles and Practice of Constraint Programming CP2002
     (Vol. 2470, pp. 415-430). Springer. Retrieved from
     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442.
+
 Then, there are some internal classes that are used throughout the solver
 and exposed in this file:
   - SearchLog, the root class of all periodic outputs during search.
