@@ -101,11 +101,12 @@ class SubSolver {
   // called sequentially. Subclasses do not need to call this.
   void AddTaskDuration(double duration_in_seconds) {
     ++num_finished_tasks_;
-    wall_time_ += duration_in_seconds;
-    timing_.AddTimeInSec(duration_in_seconds);
+    if (duration_in_seconds > 0) {
+      wall_time_ += duration_in_seconds;
+      timing_.AddTimeInSec(duration_in_seconds);
+    }
   }
 
-  // Note that this is protected by the global execution mutex and so it is
   // called sequentially. Subclasses do not need to call this.
   void NotifySelection() { ++num_scheduled_tasks_; }
 
