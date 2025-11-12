@@ -19,7 +19,6 @@
 
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/linear_solver/samples/network_design_ilph.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 
 // An implementation of the algorithm described in "An Efficient Matheuristic
@@ -51,7 +50,7 @@ struct CapacityPlanningProblem {
 
 // Converts a CapacityPlanningInstance to a CapacityPlanningProblem, which is
 // easier to use for modeling using MIPs.
-::absl::Status Convert(const CapacityPlanningInstance& request,
+::absl::Status Convert(const routing::CapacityPlanningInstance& request,
                        CapacityPlanningProblem* problem);
 
 struct CapacityPlanningParameters {
