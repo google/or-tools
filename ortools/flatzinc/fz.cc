@@ -37,12 +37,14 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/path.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
+#include "ortools/sat/model.h"
 #include "ortools/util/logging.h"
 
 constexpr bool kOrToolsMode = true;
@@ -234,20 +236,23 @@ int main(int argc, char** argv) {
     input = residual_flags.back();
   }
 
-  operations_research::SolverLogger logger;
+  operations_research::sat::Model sat_model;
+  operations_research::SolverLogger* logger =
+      sat_model.GetOrCreate<operations_research::SolverLogger>();
   if (absl::GetFlag(FLAGS_ortools_mode)) {
-    logger.EnableLogging(absl::GetFlag(FLAGS_fz_logging));
+    logger->EnableLogging(absl::GetFlag(FLAGS_fz_logging));
     // log_to_stdout is disabled later.
-    logger.AddInfoLoggingCallback(operations_research::fz::LogInFlatzincFormat);
+    logger->AddInfoLoggingCallback(
+        operations_research::fz::LogInFlatzincFormat);
   } else {
-    logger.EnableLogging(true);
-    logger.SetLogToStdOut(true);
+    logger->EnableLogging(true);
+    logger->SetLogToStdOut(true);
   }
 
   absl::Duration parse_duration;
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(
-          input, !absl::GetFlag(FLAGS_read_from_stdin), &logger,
+          input, !absl::GetFlag(FLAGS_read_from_stdin), logger,
           &parse_duration);
   operations_research::sat::ProcessFloatingPointOVariablesAndObjective(&model);
 
@@ -275,14 +280,17 @@ int main(int argc, char** argv) {
       SOLVER_LOG(&solution_logger, "%% TIMEOUT");
     }
     if (parameters.log_search_progress) {
-      SOLVER_LOG(&logger, "CpSolverResponse summary:");
-      SOLVER_LOG(&logger, "status: UNKNOWN");
+      SOLVER_LOG(logger, "CpSolverResponse summary:");
+      SOLVER_LOG(logger, "status: UNKNOWN");
     }
     return EXIT_SUCCESS;
   }
 
-  operations_research::sat::SolveFzWithCpModelProto(model, parameters,
-                                                    absl::GetFlag(FLAGS_params),
-                                                    &logger, &solution_logger);
+  operations_research::sat::SatParameters flag_parameters;
+  CHECK(google::protobuf::TextFormat::ParseFromString(
+      absl::GetFlag(FLAGS_params), &flag_parameters))
+      << absl::GetFlag(FLAGS_params);
+  operations_research::sat::SolveFzWithCpModelProto(
+      model, parameters, flag_parameters, &sat_model, &solution_logger);
   return EXIT_SUCCESS;
 }
