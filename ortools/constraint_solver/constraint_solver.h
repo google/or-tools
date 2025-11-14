@@ -105,10 +105,10 @@ Solver(name = "pheasant",
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
 
-#if !defined(SWIG)
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(int64_t, cp_random_seed);
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_disable_solve);
-#endif  // !defined(SWIG)
+#endif  // SWIG
 
 class File;
 
@@ -178,9 +178,9 @@ inline int64_t CpRandomSeed() {
              : absl::GetFlag(FLAGS_cp_random_seed);
 }
 
-/// This struct holds all parameters for the default search.
-/// DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
-/// Note this is for advanced users only.
+/// @brief This struct holds all parameters for the default search.
+/// @details DefaultPhaseParameters is only used by Solver::MakeDefaultPhase
+/// methods. Note this is for advanced users only.
 struct DefaultPhaseParameters {
  public:
   enum VariableSelection {
@@ -240,23 +240,22 @@ struct DefaultPhaseParameters {
   DefaultPhaseParameters();
 };
 
-/// Solver Class
-///
-/// A solver represents the main computation engine. It implements the entire
-/// range of Constraint Programming protocols:
-///   - Reversibility
-///   - Propagation
-///   - Search
-///
-/// Usually, Constraint Programming code consists of
-///   - the creation of the Solver,
-///   - the creation of the decision variables of the model,
-///   - the creation of the constraints of the model and their addition to the
-///     solver() through the AddConstraint() method,
-///   - the creation of the main DecisionBuilder class,
-///   - the launch of the solve() method with the decision builder.
-///
-/// For the time being, Solver is neither MT_SAFE nor MT_HOT.
+/** @brief Solver Class.
+@details A solver represents the main computation engine. It implements the
+entire range of Constraint Programming protocols:
+- Reversibility
+- Propagation
+- Search
+
+Usually, Constraint Programming code consists of
+- the creation of the Solver,
+- the creation of the decision variables of the model,
+- the creation of the constraints of the model and their addition to the
+  solver() through the AddConstraint() method,
+- the creation of the main DecisionBuilder class,
+- the launch of the solve() method with the decision builder.
+
+For the time being, Solver is neither MT_SAFE nor MT_HOT. */
 class Solver {
  public:
   /// Holds semantic information stating that the 'expression' has been
@@ -445,9 +444,11 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     /// (where (1, 5) are first and last nodes of the path and can therefore not
     /// be moved):
+    /// @code
     ///   1 -> [3 -> 2] -> 4  -> 5
     ///   1 -> [4 -> 3  -> 2] -> 5
     ///   1 ->  2 -> [4 -> 3] -> 5
+    /// @endcode
     TWOOPT,
 
     /// Relocate: OROPT and RELOCATE.
@@ -458,9 +459,10 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5, for a chain
     /// length of 2 (where (1, 5) are first and last nodes of the path and can
     /// therefore not be moved):
+    /// @code
     ///   1 ->  4 -> [2 -> 3] -> 5
     ///   1 -> [3 -> 4] -> 2  -> 5
-    ///
+    /// @endcode
     /// Using Relocate with chain lengths of 1, 2 and 3 together is equivalent
     /// to the OrOpt operator on a path. The OrOpt operator is a limited
     ///  version of 3Opt (breaks 3 arcs on a path).
@@ -473,9 +475,11 @@ class Solver {
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     /// (where (1, 5) are first and last nodes of the path and can therefore not
     /// be moved):
+    /// @code
     ///   1 -> [3] -> [2] ->  4  -> 5
     ///   1 -> [4] ->  3  -> [2] -> 5
     ///   1 ->  2  -> [4] -> [3] -> 5
+    /// @endcode
     EXCHANGE,
 
     /// Operator which cross exchanges the starting chains of 2 paths, including
@@ -484,47 +488,59 @@ class Solver {
     /// Possible neighbors for the paths 1 -> 2 -> 3 -> 4 -> 5 and 6 -> 7 -> 8
     /// (where (1, 5) and (6, 8) are first and last nodes of the paths and can
     /// therefore not be moved):
+    /// @code
     ///   1 -> [7] -> 3 -> 4 -> 5  6 -> [2] -> 8
     ///   1 -> [7] -> 4 -> 5       6 -> [2 -> 3] -> 8
     ///   1 -> [7] -> 5            6 -> [2 -> 3 -> 4] -> 8
+    /// @endcode
     CROSS,
 
     /// Operator which inserts an inactive node into a path.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
+    /// @code
     ///   1 -> [5] ->  2  ->  3  -> 4
     ///   1 ->  2  -> [5] ->  3  -> 4
     ///   1 ->  2  ->  3  -> [5] -> 4
+    /// @endcode
     MAKEACTIVE,
 
     /// Operator which makes path nodes inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are
     /// first and last nodes of the path) are:
+    /// @code
     ///   1 -> 3 -> 4 with 2 inactive
     ///   1 -> 2 -> 4 with 3 inactive
+    /// @endcode
     MAKEINACTIVE,
 
     /// Operator which makes a "chain" of path nodes inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are
     /// first and last nodes of the path) are:
+    /// @code
     ///   1 -> 3 -> 4 with 2 inactive
     ///   1 -> 2 -> 4 with 3 inactive
     ///   1 -> 4 with 2 and 3 inactive
+    /// @endcode
     MAKECHAININACTIVE,
 
     /// Operator which replaces an active node by an inactive one.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
+    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
+    /// @endcode
     SWAPACTIVE,
 
     /// Operator which replaces a chain of active nodes by an inactive one.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
+    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
     ///   1 -> [5] -> 4 with 2 and 3 inactive
+    /// @endcode
     SWAPACTIVECHAIN,
 
     /// Operator which makes an inactive node active and an active one inactive.
@@ -533,10 +549,12 @@ class Solver {
     /// the node made inactive.
     /// Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     /// (where 1 and 4 are first and last nodes of the path) are:
+    /// @code
     ///   1 -> [5] ->  3  -> 4 with 2 inactive
     ///   1 ->  3  -> [5] -> 4 with 2 inactive
     ///   1 -> [5] ->  2  -> 4 with 3 inactive
     ///   1 ->  2  -> [5] -> 4 with 3 inactive
+    /// @endcode
     EXTENDEDSWAPACTIVE,
 
     /// Operator which relaxes two sub-chains of three consecutive arcs each.
@@ -3610,7 +3628,11 @@ class Demon : public BaseObject {
 };
 
 /// Model visitor.
-class OR_DLL ModelVisitor : public BaseObject {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    ModelVisitor : public BaseObject {
  public:
   /// Constraint and Expression types.
   static const char kAbs[];
@@ -4826,7 +4848,11 @@ class ImprovementSearchLimit : public SearchLimit {
 /// cannot be accessed any more. An interval var is automatically marked
 /// as unperformed when it is not consistent anymore (start greater
 /// than end, duration < 0...)
-class OR_DLL IntervalVar : public PropagationBaseObject {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    IntervalVar : public PropagationBaseObject {
  public:
   /// The smallest acceptable value to be returned by StartMin()
   static const int64_t kMinValidValue;
