@@ -49,6 +49,14 @@
 namespace operations_research {
 namespace sat {
 
+// Removes all elements for which `pred` returns true.
+// This implementation provides std::erase_if for C++17.
+template <class Container, class Pred>
+void OpenSourceEraseIf(Container& c, Pred pred) {
+  auto it = std::remove_if(c.begin(), c.end(), pred);
+  c.erase(it, c.end());
+}
+
 // A simple class with always IdentityMap[t] == t.
 // This is to avoid allocating vector with std::iota() in some Apis.
 template <typename T>

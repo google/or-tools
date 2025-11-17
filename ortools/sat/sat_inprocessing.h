@@ -30,7 +30,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"

@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -60,12 +61,6 @@ void SolutionCrush::Resize(int new_size) {
   if (!solution_is_loaded_) return;
   var_has_value_.resize(new_size, false);
   var_values_.resize(new_size, 0);
-}
-
-std::optional<int64_t> SolutionCrush::GetHintedValue(int var) const {
-  if (!solution_is_loaded_) return std::nullopt;
-  if (!HasValue(var)) return std::nullopt;
-  return var_values_[var];
 }
 
 void SolutionCrush::MaybeSetLiteralToValueEncoding(int literal, int var,
@@ -236,6 +231,36 @@ void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     SetVarValue(var, domain.ClosestValue(GetVarValue(var)));
+  } else if (domain.IsFixed()) {
+    SetVarValue(var, domain.FixedValue());
+  }
+}
+
+void SolutionCrush::SetOrUpdateVarToDomain(
+    int var, const Domain& domain,
+    const absl::btree_map<int64_t, int>& encoding, bool has_objective,
+    bool minimize) {
+  if (!solution_is_loaded_) return;
+  if (HasValue(var)) {
+    const int64_t old_value = GetVarValue(var);
+    if (domain.Contains(old_value)) return;
+    int64_t new_value = old_value;
+    if (!has_objective) {
+      new_value = domain.ClosestValue(old_value);
+    } else if (minimize) {
+      new_value = domain.ValueAtOrBefore(old_value);
+    } else {
+      new_value = domain.ValueAtOrAfter(old_value);
+    }
+    SetVarValue(var, new_value);
+    VLOG(3) << "SetOrUpdateVarToDomain: " << var << ", old_value: " << old_value
+            << ", new_value: " << new_value
+            << ", domain: " << domain.ToString();
+    DCHECK(encoding.contains(new_value))
+        << "domain: " << domain.ToString() << "old_value: " << old_value
+        << " new_value: " << new_value;
+    const int encoding_lit = encoding.at(new_value);
+    SetLiteralValue(encoding_lit, true);
   } else if (domain.IsFixed()) {
     SetVarValue(var, domain.FixedValue());
   }

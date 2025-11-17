@@ -15,7 +15,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <string>
@@ -122,7 +121,7 @@ std::pair<std::optional<EncodingLinear1>, EncodingLinear1Status> ProcessLinear1(
     if (complement.IsEmpty()) {
       return {std::nullopt, EncodingLinear1Status::kIgnore};
     } else if (complement.IsFixed()) {
-      CHECK(var_domain.Contains(complement.FixedValue()));
+      DCHECK(var_domain.Contains(complement.FixedValue()));
       lin.type = EncodingLinear1Type::kVarNeValue;
       lin.value = complement.FixedValue();
     } else if (rhs.Min() > complement.Max()) {
@@ -146,19 +145,16 @@ void AbslStringify(Sink& sink, const EncodingLinear1& lin) {
 
 }  // namespace
 
-ValueEncoding::ValueEncoding(int var, PresolveContext* context,
-                             SolutionCrush& solution_crush)
-    : var_(var),
-      var_domain_(context->DomainOf(var)),
-      context_(context),
-      solution_crush_(solution_crush) {}
+ValueEncoding::ValueEncoding(int var, PresolveContext* context)
+    : var_(var), var_domain_(context->DomainOf(var)), context_(context) {}
 
 void ValueEncoding::AddValueToEncode(int64_t value) {
   DCHECK(!is_closed_);
   encoded_values_.push_back(value);
 }
 
-void ValueEncoding::CloseEncodedValues(ObjectiveStatus objective_status) {
+void ValueEncoding::CanonicalizeEncodedValuesAndAddEscapeValue(
+    bool var_in_objective, bool var_has_positive_objective_coefficient) {
   if (!is_closed_) {
     gtl::STLSortAndRemoveDuplicates(&encoded_values_);
     // Add an escape value to the existing encoded values when the encoding is
@@ -172,29 +168,12 @@ void ValueEncoding::CloseEncodedValues(ObjectiveStatus objective_status) {
     if (encoded_values_.size() < var_domain_.Size()) {
       const Domain residual = var_domain_.IntersectionWith(
           Domain::FromValues(encoded_values_).Complement());
-      int64_t escape_value = 0;
-      switch (objective_status) {
-        case ObjectiveStatus::kNotInObjective:
-          escape_value = residual.SmallestValue();
-          break;
-        case ObjectiveStatus::kInObjectiveAndMinimization:
-          escape_value = residual.Min();
-          break;
-        case ObjectiveStatus::kInObjectiveAndMaximization:
-          escape_value = residual.Max();
-          break;
-      }
+      const int64_t escape_value =
+          !var_in_objective
+              ? residual.SmallestValue()
+              : (var_has_positive_objective_coefficient ? residual.Min()
+                                                        : residual.Max());
       encoded_values_.push_back(escape_value);
-
-      // Add the hinted value if it exists and does not appear in the encoded
-      // values.
-      const std::optional<int64_t> hint = solution_crush_.GetHintedValue(var_);
-      if (hint.has_value() && residual.Contains(hint.value()) &&
-          hint.value() != escape_value) {
-        encoded_values_.push_back(hint.value());
-      }
-
-      absl::c_sort(encoded_values_);
     }
     is_closed_ = true;
     is_fully_encoded_ = encoded_values_.size() == var_domain_.Size();
@@ -236,7 +215,7 @@ void ValueEncoding::CreateAllValueEncodingLiterals() {
 int ValueEncoding::literal(int64_t value) const {
   DCHECK(is_closed_);
   const auto it = encoding_.find(value);
-  CHECK(it != encoding_.end());
+  DCHECK(it != encoding_.end());
   return it->second;
 }
 
@@ -296,8 +275,8 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
     const ValueEncoding& values) {
   CollectAllOrderEncodingValues();
   for (const auto& [value, literal] : encoded_le_literal_) {
-    CHECK(values.encoding().contains(value));
-    CHECK(values.encoding().contains(var_domain_.ValueAtOrAfter(value + 1)))
+    DCHECK(values.encoding().contains(value));
+    DCHECK(values.encoding().contains(var_domain_.ValueAtOrAfter(value + 1)))
         << "Cannot find " << var_domain_.ValueAtOrAfter(value + 1)
         << " for var <= " << value;
   }
@@ -328,7 +307,7 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
             encoded_le_literal_.find(var_domain_.ValueAtOrBefore(value - 1));
         if (it_ge != encoded_le_literal_.end()) {
           const int ge_literal = NegatedRef(it_ge->second);
-          CHECK(not_ge != nullptr);
+          DCHECK(not_ge != nullptr);
           not_ge->add_enforcement_literal(ge_literal);
           if (value != max_ge_value) {
             not_ge = context_->working_model->add_constraints();
@@ -346,16 +325,16 @@ void OrderEncoding::CreateAllOrderEncodingLiterals(
 }
 
 int OrderEncoding::ge_literal(int64_t value) const {
-  CHECK_GT(value, var_domain_.Min());
+  DCHECK_GT(value, var_domain_.Min());
   const auto it =
       encoded_le_literal_.find(var_domain_.ValueAtOrBefore(value - 1));
-  CHECK(it != encoded_le_literal_.end());
+  DCHECK(it != encoded_le_literal_.end());
   return NegatedRef(it->second);
 }
 
 int OrderEncoding::le_literal(int64_t value) const {
   const auto it = encoded_le_literal_.find(value);
-  CHECK(it != encoded_le_literal_.end());
+  DCHECK(it != encoded_le_literal_.end());
   return it->second;
 }
 
@@ -388,16 +367,17 @@ bool ProcessEncodingConstraints(
     int var, PresolveContext* context, ValueEncoding& values,
     OrderEncoding& order,
     std::vector<std::vector<EncodingLinear1>>& linear_ones_by_type,
-    std::vector<int>& constraint_indices, ObjectiveStatus& objective_status) {
+    std::vector<int>& constraint_indices, bool& var_in_objective,
+    bool& var_has_positive_objective_coefficient) {
   const Domain& var_domain = context->DomainOf(var);
   constraint_indices.clear();
-  objective_status = ObjectiveStatus::kNotInObjective;
+  var_in_objective = false;
+  var_has_positive_objective_coefficient = false;
   for (const int c : context->VarToConstraints(var)) {
     if (c == kObjectiveConstraint) {
       const int64_t obj_coeff = context->ObjectiveMap().at(var);
-      objective_status = obj_coeff > 0
-                             ? ObjectiveStatus::kInObjectiveAndMinimization
-                             : ObjectiveStatus::kInObjectiveAndMaximization;
+      var_in_objective = true;
+      var_has_positive_objective_coefficient = obj_coeff > 0;
       continue;
     }
     if (c < 0) continue;
@@ -460,23 +440,25 @@ bool ProcessEncodingConstraints(
 
     linear_ones_by_type[static_cast<int>(lin.type)].push_back(lin);
   }
-  values.CloseEncodedValues(objective_status);
+  values.CanonicalizeEncodedValuesAndAddEscapeValue(
+      var_in_objective, var_has_positive_objective_coefficient);
   return true;
 }
 
-void TryToReplaceVariableByItsEncoding(
-    int var, std::function<void(ConstraintProto*)> presolve_one_constraint,
-    PresolveContext* context, SolutionCrush& solution_crush) {
+void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
+                                       PresolveContext* context,
+                                       SolutionCrush& solution_crush) {
   const Domain var_domain = context->DomainOf(var);
   std::vector<std::vector<EncodingLinear1>> linear_ones_by_type(
       kNumEncodingLinear1Types);
-  ValueEncoding values(var, context, solution_crush);
+  ValueEncoding values(var, context);
   OrderEncoding order(var, context, solution_crush);
-  ObjectiveStatus objective_status = ObjectiveStatus::kNotInObjective;
+  bool var_in_objective = false;
+  bool var_has_positive_objective_coefficient = false;
   std::vector<int> constraint_indices;
-  if (!ProcessEncodingConstraints(var, context, values, order,
-                                  linear_ones_by_type, constraint_indices,
-                                  objective_status)) {
+  if (!ProcessEncodingConstraints(
+          var, context, values, order, linear_ones_by_type, constraint_indices,
+          var_in_objective, var_has_positive_objective_coefficient)) {
     return;
   }
 
@@ -516,7 +498,7 @@ void TryToReplaceVariableByItsEncoding(
   }
 
   VLOG(2) << "ProcessVariableOnlyUsedInEncoding(): var(" << var
-          << "): " << var_domain
+          << "): " << var_domain << ", size: " << var_domain.Size()
           << ", #encoded_values: " << values.encoded_values().size()
           << ", #ordered_values: " << order.num_encoded_values()
           << ", #var_eq_value: " << lin_eq.size()
@@ -524,7 +506,9 @@ void TryToReplaceVariableByItsEncoding(
           << ", #var_ge_value: " << lin_ge.size()
           << ", #var_le_value: " << lin_le.size()
           << ", #var_in_domain: " << lin_domain.size()
-          << ", objective_status: " << objective_status
+          << ", var_in_objective: " << var_in_objective
+          << ", var_has_positive_objective_coefficient: "
+          << var_has_positive_objective_coefficient
           << ", #implied_literals_in_complex_domains: "
           << num_implied_literals_in_complex_domains;
   if (!lin_domain.empty() && (!values.is_fully_encoded() ||
@@ -539,6 +523,10 @@ void TryToReplaceVariableByItsEncoding(
   }
 
   values.CreateAllValueEncodingLiterals();
+  // Fix the hinted value if needed.
+  solution_crush.SetOrUpdateVarToDomain(
+      var, Domain::FromValues(values.encoded_values()), values.encoding(),
+      var_in_objective, var_has_positive_objective_coefficient);
   order.CreateAllOrderEncodingLiterals(values);
 
   // Link all Boolean in our linear1 to the encoding literals.
@@ -619,14 +607,13 @@ void TryToReplaceVariableByItsEncoding(
 
   // Update the objective if needed. Note that this operation can fail if
   // the new expression result in potential overflow.
-  if (objective_status != ObjectiveStatus::kNotInObjective) {
+  if (var_in_objective) {
     // We substract the min or the max of the variable from all
     // coefficients. This should reduce the objective size and helps with
     // the bounds.
-    const int64_t base_value =
-        objective_status == ObjectiveStatus::kInObjectiveAndMinimization
-            ? var_domain.Min()
-            : var_domain.Max();
+    const int64_t base_value = var_has_positive_objective_coefficient
+                                   ? var_domain.Min()
+                                   : var_domain.Max();
     // Tricky: We cannot just choose an arbitrary value if the objective has
     // a restrictive domain!
     if (!values.is_fully_encoded() &&
@@ -693,7 +680,7 @@ void TryToReplaceVariableByItsEncoding(
     }
   }
   if (!values.is_fully_encoded()) {
-    VLOG(1) << "Reduce domain size: " << var_domain.Size() << " to  "
+    VLOG(2) << "Reduce domain size: " << var_domain.Size() << " to  "
             << values.encoded_values().size() << ": " << var_domain << " -> "
             << Domain::FromValues(values.encoded_values());
     context->UpdateRuleStats("variables: reduce domain to encoded values");
@@ -715,17 +702,17 @@ void TryToReplaceVariableByItsEncoding(
   }
 
   // This must be done after we removed all the constraint containing var.
-  ConstraintProto* encoding = context->working_model->add_constraints();
-  BoolArgumentProto* arg = encoding->mutable_exactly_one();
+  new_exo_to_presolve_index = context->working_model->constraints_size();
+  ConstraintProto* exo = context->working_model->add_constraints();
+  BoolArgumentProto* arg = exo->mutable_exactly_one();
   for (const auto& [value, literal] : values.encoding()) {
     arg->add_literals(literal);
   }
-  presolve_one_constraint(encoding);
   context->UpdateNewConstraintsVariableUsage();
   if (context->ModelIsUnsat()) return;
 
   // To simplify the postsolve, we output a single constraint to infer X from
-  // the bi:  X = sum bi * (Vi - special_value) + special_value
+  // the bi:  X = sum bi * (Vi - min_value) + min_value
   const int64_t var_min = var_domain.Min();
   ConstraintProto* mapping_ct =
       context->NewMappingConstraint(__FILE__, __LINE__);

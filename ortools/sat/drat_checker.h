@@ -57,7 +57,7 @@ class DratChecker {
   void AddProblemClause(absl::Span<const Literal> clause);
 
   // Adds a clause which is inferred from the problem clauses and the previously
-  // inferred clauses (that are have not been deleted). inferred clauses must be
+  // inferred clauses (that are have not been deleted). Inferred clauses must be
   // added after the problem clauses. Clauses with the Reverse Asymmetric
   // Tautology (RAT) property for literal l must start with this literal. The
   // given clause must not contain a literal and its negation. Must not be

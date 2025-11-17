@@ -32,6 +32,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/drat_checker.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -1583,6 +1584,68 @@ void SharedStatistics::Log(SolverLogger* logger) {
     SOLVER_LOG(logger, "  ", key, ": ", FormatCounter(count));
   }
   SOLVER_LOG(logger, "");
+}
+
+SharedLratProofStatus::SharedLratProofStatus()
+    : num_subsolvers_(0),
+      num_valid_proofs_(0),
+      num_invalid_proofs_(0),
+      num_unknown_proofs_(0),
+      lrat_check_enabled_(false),
+      drat_check_enabled_(false),
+      num_assumed_clauses_(0),
+      walltime_in_seconds_(0.0) {}
+
+void SharedLratProofStatus::NewSubSolver() {
+  absl::MutexLock mutex_lock(mutex_);
+  num_subsolvers_++;
+}
+
+void SharedLratProofStatus::NewSubsolverProofStatus(
+    DratChecker::Status status, bool lrat_check_enabled,
+    bool drat_check_enabled, int num_assumed_clauses,
+    double walltime_in_seconds) {
+  absl::MutexLock mutex_lock(mutex_);
+  if (status == DratChecker::Status::VALID) {
+    num_valid_proofs_++;
+  } else if (status == DratChecker::Status::INVALID) {
+    num_invalid_proofs_++;
+  } else if (status == DratChecker::Status::UNKNOWN) {
+    num_unknown_proofs_++;
+  }
+  lrat_check_enabled_ |= lrat_check_enabled;
+  drat_check_enabled_ |= drat_check_enabled;
+  num_assumed_clauses_ += num_assumed_clauses;
+  if (drat_check_enabled) {
+    walltime_in_seconds_ += walltime_in_seconds;
+  }
+}
+
+void SharedLratProofStatus::Log(SolverLogger* logger) {
+  absl::MutexLock mutex_lock(mutex_);
+  if (lrat_check_enabled_ || drat_check_enabled_) {
+    if (num_valid_proofs_ == num_subsolvers_) {
+      if (num_assumed_clauses_ > 0) {
+        SOLVER_LOG(logger, "LRAT_status: VALID_WITH_ASSUMED_CLAUSES");
+      } else {
+        SOLVER_LOG(logger, "LRAT_status: VALID");
+      }
+    } else if (num_invalid_proofs_ > 0) {
+      SOLVER_LOG(logger, "LRAT_status: INVALID");
+    } else {
+      SOLVER_LOG(logger, "LRAT_status: UNKNOWN");
+    }
+    if (drat_check_enabled_) {
+      SOLVER_LOG(logger, "DRAT_walltime: ", walltime_in_seconds_);
+    }
+  } else {
+    // Always log an LRAT status to make it easier to extract it from a
+    // multirun result with awk.
+    SOLVER_LOG(logger, "LRAT_status: NA");
+    if (drat_check_enabled_) {
+      SOLVER_LOG(logger, "DRAT_walltime: NA");
+    }
+  }
 }
 
 }  // namespace sat

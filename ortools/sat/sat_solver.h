@@ -38,7 +38,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -126,12 +125,14 @@ class SatSolver {
   // We call this a "problem" clause just because we will never delete such
   // clause unless it is proven to always be satisfied. So this can be called
   // with the initial clause of a problem, but also an inferred clause that we
-  // don't want to delete.
+  // don't want to delete (`shared` must be true iff the clause was inferred by
+  // another solver, from the same initial clauses).
   //
   // TODO(user): Rename this to AddClause() ? Also get rid of the specialized
   // AddUnitClause(), AddBinaryClause() and AddTernaryClause() since they
   // just end up calling this?
-  bool AddProblemClause(absl::Span<const Literal> literals);
+  bool AddProblemClause(absl::Span<const Literal> literals,
+                        bool shared = false);
 
   // Adds a pseudo-Boolean constraint to the problem. Returns false if the
   // problem is detected to be UNSAT. If the constraint is always true, this
@@ -504,12 +505,6 @@ class SatSolver {
   void SaveDebugAssignment();
   void LoadDebugSolution(absl::Span<const Literal> solution);
 
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
-    drat_proof_handler_ = drat_proof_handler;
-    clauses_propagator_->SetDratProofHandler(drat_proof_handler_);
-    binary_implication_graph_->SetDratProofHandler(drat_proof_handler_);
-  }
-
   // This function is here to deal with the case where a SAT/CP model is found
   // to be trivially UNSAT while the user is constructing the model. Instead of
   // having to test the status of all the lines adding a constraint, one can
@@ -663,7 +658,8 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(absl::Span<const Literal> literals);
+  bool AddProblemClauseInternal(absl::Span<const Literal> literals,
+                                bool shared = false);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
@@ -693,9 +689,6 @@ class SatSolver {
 
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
-
-  // Output to the DRAT proof handler any newly fixed variables.
-  void ProcessNewlyFixedVariablesForDratProof();
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
@@ -877,9 +870,6 @@ class SatSolver {
   int num_processed_fixed_variables_ = 0;
   double deterministic_time_of_last_fixed_variables_cleanup_ = 0.0;
 
-  // Used in ProcessNewlyFixedVariablesForDratProof().
-  int drat_num_processed_fixed_variables_ = 0;
-
   Counters counters_;
 
   // Solver information.
@@ -950,7 +940,6 @@ class SatSolver {
   // it is necessary to keep track of the last time the time was advanced.
   double deterministic_time_at_last_advanced_time_limit_ = 0;
 
-  DratProofHandler* drat_proof_handler_ = nullptr;
   LratProofHandler* lrat_proof_handler_ = nullptr;
 
   mutable StatsGroup stats_;

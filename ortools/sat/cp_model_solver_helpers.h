@@ -56,6 +56,7 @@ struct SharedClasses {
   SharedTreeManager* const shared_tree_manager;
   SharedLsSolutionRepository* const ls_hints;
   SolverProgressLogger* const progress_logger;
+  SharedLratProofStatus* const lrat_proof_status;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;

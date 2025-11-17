@@ -38,7 +38,6 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/sysinfo.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/enforcement.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -218,7 +217,8 @@ bool SatSolver::AddTernaryClause(Literal a, Literal b, Literal c) {
 // better to make sure we always have "clean" clause in the solver rather than
 // to over-optimize this. In particular, presolve might be disabled or
 // incomplete, so such unclean clause might find their way here.
-bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
+bool SatSolver::AddProblemClause(absl::Span<const Literal> literals,
+                                 bool shared) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
   if (model_is_unsat_) return false;
@@ -241,10 +241,11 @@ bool SatSolver::AddProblemClause(absl::Span<const Literal> literals) {
     }
   }
 
-  return AddProblemClauseInternal(tmp_literals_);
+  return AddProblemClauseInternal(tmp_literals_, shared);
 }
 
-bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
+bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals,
+                                         bool shared) {
   SCOPED_TIME_STAT(&stats_);
   if (DEBUG_MODE && CurrentDecisionLevel() == 0) {
     for (const Literal l : literals) {
@@ -254,23 +255,22 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   ClauseId id = kNoClauseId;
   if (lrat_proof_handler_ != nullptr) {
     id = clause_id_generator_->GetNextId();
-    lrat_proof_handler_->AddProblemClause(id, literals);
+    if (shared) {
+      lrat_proof_handler_->AddSharedClause(id, literals);
+    } else {
+      lrat_proof_handler_->AddProblemClause(id, literals);
+    }
   }
 
   if (literals.empty()) return SetModelUnsat();
 
   if (literals.size() == 1) {
-    if (drat_proof_handler_ != nullptr) {
-      // Note that we will output problem unit clauses twice, but that is a
-      // small price to pay for having a single variable fixing API.
-      drat_proof_handler_->AddClause({literals[0]});
-    }
     trail_->EnqueueWithUnitReason(id, literals[0]);
   } else if (literals.size() == 2) {
     // TODO(user): Make sure the presolve do not generate such clauses.
     if (literals[0] == literals[1]) {
       // Literal must be true.
-      trail_->EnqueueWithUnitReason(literals[0]);
+      trail_->EnqueueWithUnitReason(id, literals[0]);
     } else if (literals[0] == literals[1].Negated()) {
       // Always true.
       return true;
@@ -288,6 +288,8 @@ bool SatSolver::AddProblemClauseInternal(absl::Span<const Literal> literals) {
   // tigger computation (like the LP) even if no domain changed since the last
   // call. We do not want to do that.
   if (!PropagationIsDone() && !Propagate()) {
+    // This adds the UNSAT proof to the LRAT handler, if any.
+    ProcessCurrentConflict();
     return SetModelUnsat();
   }
   return true;
@@ -982,9 +984,6 @@ void SatSolver::ProcessCurrentConflict(
   // database. This is because we already backtracked and some of the clauses
   // that were needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->AddClause(learned_conflict_);
-  }
   ClauseId learned_conflict_clause_id = kNoClauseId;
   if (lrat_proof_handler_ != nullptr) {
     if (!clause_ids_for_minimization->empty()) {
@@ -1529,7 +1528,6 @@ bool SatSolver::TryToMinimizeClause(SatClause* clause) {
         const int variable_level =
             LiteralTrail().Info(literal.Variable()).level;
         if (variable_level == 0) {
-          ProcessNewlyFixedVariablesForDratProof();
           DCHECK(lrat_proof_handler_ == nullptr ||
                  trail_->GetUnitClauseId(literal.Variable()) != kNoClauseId);
           counters_.minimization_num_true++;
@@ -1647,12 +1645,9 @@ bool SatSolver::TryToMinimizeClause(SatClause* clause) {
   if (CurrentDecisionLevel() == 0) {
     // Ensure nothing is fixed at level 0 in case more propagation happened
     // after backtracking.
-    // std::erase_if is C++20, not yet fully supported on OR-Tools.
-    candidate.erase(
-        std::remove_if(
-            candidate.begin(), candidate.end(),
-            [&](Literal l) { return trail_->Assignment().LiteralIsFalse(l); }),
-        candidate.end());
+    OpenSourceEraseIf(candidate, [&](Literal l) {
+      return trail_->Assignment().LiteralIsFalse(l);
+    });
     if (absl::c_any_of(clause->AsSpan(), [&](Literal l) {
           return trail_->Assignment().LiteralIsTrue(l);
         })) {
@@ -2235,35 +2230,11 @@ std::string SatSolver::RunningStatisticsString() const {
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
-void SatSolver::ProcessNewlyFixedVariablesForDratProof() {
-  if (drat_proof_handler_ == nullptr) return;
-  if (CurrentDecisionLevel() != 0) return;
-
-  // We need to output the literals that are fixed so we can remove all
-  // clauses that contains them. Note that this doesn't seems to be needed
-  // for drat-trim.
-  //
-  // TODO(user): Ideally we could output such literal as soon as they are fixed,
-  // but this is not that easy to do. Spend some time to find a cleaner
-  // alternative? Currently this works, but:
-  // - We will output some fixed literals twice since we already output learnt
-  //   clauses of size one.
-  // - We need to call this function when needed.
-  Literal temp;
-  for (; drat_num_processed_fixed_variables_ < trail_->Index();
-       ++drat_num_processed_fixed_variables_) {
-    temp = (*trail_)[drat_num_processed_fixed_variables_];
-    drat_proof_handler_->AddClause({&temp, 1});
-  }
-}
-
 void SatSolver::ProcessNewlyFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
   int num_detached_clauses = 0;
   int num_binary = 0;
-
-  ProcessNewlyFixedVariablesForDratProof();
 
   // We remove the clauses that are always true and the fixed literals from the
   // others. Note that none of the clause should be all false because we should
@@ -2284,12 +2255,6 @@ void SatSolver::ProcessNewlyFixedVariables() {
     const size_t new_size = clause->size();
     if (new_size == old_size) continue;
 
-    if (drat_proof_handler_ != nullptr) {
-      CHECK_GT(new_size, 0);
-      drat_proof_handler_->AddClause({clause->begin(), new_size});
-      drat_proof_handler_->DeleteClause({clause->begin(), old_size});
-    }
-
     ClauseId new_clause_id = kNoClauseId;
     if (lrat_proof_handler_ != nullptr) {
       std::vector<ClauseId>& clause_ids = tmp_clause_ids_for_minimization_;
@@ -2304,8 +2269,14 @@ void SatSolver::ProcessNewlyFixedVariables() {
       new_clause_id = clause_id_generator_->GetNextId();
       lrat_proof_handler_->AddInferredClause(
           new_clause_id, {clause->begin(), new_size}, clause_ids);
-      lrat_proof_handler_->DeleteClauses({old_clause_id});
       if (new_size > 2) {
+        // If the new size is 2 the LRAT clause is deleted as part of the
+        // LazyDelete(clause, PROMOTED_TO_BINARY) call below. Also the SatClause
+        // ID must not be changed to the new ID in this case, otherwise we would
+        // get a SatClause and a binary clause with the same ID, leading to a
+        // double delete.
+        lrat_proof_handler_->DeleteClause(old_clause_id,
+                                          {clause->begin(), old_size});
         clauses_propagator_->SetClauseId(clause, new_clause_id);
       }
     }

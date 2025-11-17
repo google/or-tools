@@ -35,7 +35,6 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -1142,20 +1141,6 @@ bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out) {
                       " 0\n");
     }
   }
-  return true;
-}
-
-bool LoadCpModelInDratProofHandler(const CpModelProto& cp_model,
-                                   DratProofHandler* drat_proof_handler) {
-  const int num_vars = cp_model.variables().size();
-  int num_clauses = 0;
-  if (!ModelIsPureSat(cp_model, &num_clauses)) return false;
-
-  drat_proof_handler->SetNumVariables(num_vars);
-  ConvertSatCpModelProtoToClauses(
-      cp_model, [&drat_proof_handler](const std::vector<Literal>& clause) {
-        drat_proof_handler->AddProblemClause(clause);
-      });
   return true;
 }
 

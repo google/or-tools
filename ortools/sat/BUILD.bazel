@@ -328,7 +328,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":drat_proof_handler",
         ":sat_base",
         "//ortools/base:base_export",
         "//ortools/base:file",
@@ -372,6 +371,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":drat_checker",
         ":integer_base",
         ":model",
         ":sat_base",
@@ -701,6 +701,7 @@ cc_library(
         ":linear_programming_constraint",
         ":linear_relaxation",
         ":lp_utils",
+        ":lrat_proof_handler",
         ":max_hs",
         ":model",
         ":optimization",
@@ -817,7 +818,6 @@ cc_library(
         ":cuts",
         ":diffn_util",
         ":drat_checker",
-        ":drat_proof_handler",
         ":feasibility_jump",
         ":feasibility_pump",
         ":implied_bounds",
@@ -908,7 +908,6 @@ cc_test(
         ":cp_model_test_utils",
         ":cp_model_utils",
         ":drat_checker",
-        ":drat_proof_handler",
         ":lp_utils",
         ":model",
         ":sat_base",
@@ -1154,6 +1153,7 @@ cc_library(
         "//ortools/algorithms:sparse_permutation",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
@@ -1470,7 +1470,6 @@ cc_library(
     hdrs = ["sat_solver.h"],
     deps = [
         ":clause",
-        ":drat_proof_handler",
         ":enforcement",
         ":lrat_proof_handler",
         ":model",
@@ -1594,7 +1593,6 @@ cc_library(
     hdrs = ["sat_inprocessing.h"],
     deps = [
         ":clause",
-        ":drat_checker",
         ":linear_programming_constraint",
         ":lrat_proof_handler",
         ":model",
@@ -1688,7 +1686,6 @@ cc_library(
     hdrs = ["clause.h"],
     deps = [
         ":container",
-        ":drat_proof_handler",
         ":inclusion",
         ":lrat_proof_handler",
         ":model",
@@ -1742,7 +1739,6 @@ cc_library(
     srcs = ["simplification.cc"],
     hdrs = ["simplification.h"],
     deps = [
-        ":drat_proof_handler",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
@@ -4198,23 +4194,6 @@ cc_test(
 )
 
 cc_library(
-    name = "drat_proof_handler",
-    srcs = ["drat_proof_handler.cc"],
-    hdrs = ["drat_proof_handler.h"],
-    deps = [
-        ":drat_checker",
-        ":drat_writer",
-        ":sat_base",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:strong_vector",
-        "//ortools/util:strong_integers",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "drat_checker",
     srcs = ["drat_checker.cc"],
     hdrs = ["drat_checker.h"],
@@ -4287,9 +4266,12 @@ cc_library(
     srcs = ["lrat_proof_handler.cc"],
     hdrs = ["lrat_proof_handler.h"],
     deps = [
+        ":drat_checker",
+        ":drat_writer",
         ":lrat_checker",
         ":model",
         ":sat_base",
+        "//ortools/base:file",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
