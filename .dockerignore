@@ -42,6 +42,7 @@ CONTRIBUTING.md
 #LICENSE-2.0.txt
 
 # Native CMake/Make build
+.cache/
 dependencies/sources
 dependencies/install
 ortools/gen
