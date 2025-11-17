@@ -33,7 +33,6 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
@@ -205,11 +204,6 @@ void SatPresolver::AddClause(absl::Span<const Literal> clause) {
   signatures_.push_back(ComputeSignatureOfClauseVariables(ci));
   DCHECK_EQ(signatures_.size(), clauses_.size());
 
-  if (drat_proof_handler_ != nullptr && changed) {
-    drat_proof_handler_->AddClause(clause_ref);
-    drat_proof_handler_->DeleteClause(clause);
-  }
-
   const Literal max_literal = clause_ref.back();
   const int required_size = std::max(max_literal.Index().value(),
                                      max_literal.NegatedIndex().value()) +
@@ -245,8 +239,6 @@ void SatPresolver::RebuildLiteralToClauses() {
 }
 
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
-  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(*clause);
-
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
   DCHECK_GT(clause->size(), 0) << "TODO(user): Unsat during presolve?";
   const ClauseIndex ci(clauses_.size());
@@ -507,7 +499,6 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
   bva_pq_elements_[x_false.value()].literal = x_false;
 
   // Add the new clauses.
-  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddOneVariable();
   for (const LiteralIndex lit : m_lit_) {
     tmp_new_clause_ = {Literal(lit), Literal(x_true)};
     AddClauseInternal(&tmp_new_clause_);
@@ -612,10 +603,6 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
       } else {
         DCHECK_NE(opposite_literal, lit.Index());
         if (clauses_[ci].empty()) return false;  // UNSAT.
-        if (drat_proof_handler_ != nullptr) {
-          // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_proof_handler_->AddClause(clauses_[ci]);
-        }
 
         // Recompute signature.
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
@@ -692,10 +679,6 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
                          &num_inspected_literals_)) {
         DCHECK_EQ(opposite_literal, lit.NegatedIndex());
         if (clauses_[ci].empty()) return false;  // UNSAT.
-        if (drat_proof_handler_ != nullptr) {
-          // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_proof_handler_->AddClause(clauses_[ci]);
-        }
 
         // Recompute signature.
         signatures_[ci] = ComputeSignatureOfClauseVariables(ci);
@@ -849,9 +832,6 @@ void SatPresolver::Remove(ClauseIndex ci) {
     UpdatePriorityQueue(e.Variable());
     UpdateBvaPriorityQueue(Literal(e.Variable(), true).Index());
     UpdateBvaPriorityQueue(Literal(e.Variable(), false).Index());
-  }
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->DeleteClause(clauses_[ci]);
   }
   gtl::STLClearObject(&clauses_[ci]);
 }
@@ -1185,7 +1165,6 @@ class PropagationGraph {
 
 void ProbeAndFindEquivalentLiteral(
     SatSolver* solver, SatPostsolver* postsolver,
-    DratProofHandler* drat_proof_handler,
     util_intops::StrongVector<LiteralIndex, LiteralIndex>* mapping,
     SolverLogger* logger) {
   WallTimer timer;
@@ -1255,9 +1234,6 @@ void ProbeAndFindEquivalentLiteral(
                                      ? Literal(rep)
                                      : Literal(rep).Negated();
         if (!solver->AddUnitClause(true_lit)) return;
-        if (drat_proof_handler != nullptr) {
-          drat_proof_handler->AddClause({true_lit});
-        }
       }
     }
     for (LiteralIndex i(0); i < size; ++i) {
@@ -1269,9 +1245,6 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(i)
                                        : Literal(i).Negated();
           if (!solver->AddUnitClause(true_lit)) return;
-          if (drat_proof_handler != nullptr) {
-            drat_proof_handler->AddClause({true_lit});
-          }
         }
       } else if (assignment.LiteralIsAssigned(Literal(i))) {
         if (!assignment.LiteralIsAssigned(Literal(rep))) {
@@ -1279,16 +1252,10 @@ void ProbeAndFindEquivalentLiteral(
                                        ? Literal(rep)
                                        : Literal(rep).Negated();
           if (!solver->AddUnitClause(true_lit)) return;
-          if (drat_proof_handler != nullptr) {
-            drat_proof_handler->AddClause({true_lit});
-          }
         }
       } else if (rep != i) {
         ++num_equiv;
         postsolver->Add(Literal(i), {Literal(i), Literal(rep).Negated()});
-        if (drat_proof_handler != nullptr) {
-          drat_proof_handler->AddClause({Literal(i), Literal(rep).Negated()});
-        }
       }
     }
   }

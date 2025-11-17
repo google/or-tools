@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
@@ -58,8 +59,6 @@ class SolutionCrush {
   SolutionCrush(SolutionCrush&&) = delete;
   SolutionCrush& operator=(const SolutionCrush&) = delete;
   SolutionCrush& operator=(SolutionCrush&&) = delete;
-
-  std::optional<int64_t> GetHintedValue(int var) const;
 
   bool SolutionIsLoaded() const { return solution_is_loaded_; }
 
@@ -151,6 +150,15 @@ class SolutionCrush {
   // Otherwise, if the domain is fixed, sets the value of `var` to this fixed
   // value. Otherwise does nothing.
   void SetOrUpdateVarToDomain(int var, const Domain& domain);
+
+  // If `var` already has a value, updates it to be within the given domain
+  // following the given encoding and the status of the variable w.r.t. the
+  // objective. Otherwise, if the domain is fixed, sets the value of `var` to
+  // this fixed value. Otherwise does nothing. In the process, update the
+  // encoding literals to reflect the new value of `var`.
+  void SetOrUpdateVarToDomain(int var, const Domain& domain,
+                              const absl::btree_map<int64_t, int>& encoding,
+                              bool has_objective, bool minimize);
 
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).

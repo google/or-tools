@@ -33,7 +33,6 @@
 #include "ortools/base/strong_vector.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/sat/container.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -276,11 +275,6 @@ class ClauseManager : public SatPropagator {
   // Number of clauses currently watched.
   int64_t num_watched_clauses() const { return num_watched_clauses_; }
 
-  DratProofHandler* GetDratProofHandler() const { return drat_proof_handler_; }
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
-    drat_proof_handler_ = drat_proof_handler;
-  }
-
   ClauseId GetClauseId(const SatClause* clause) const {
     const auto it = clause_id_.find(clause);
     return it != clause_id_.end() ? it->second : kNoClauseId;
@@ -457,7 +451,6 @@ class ClauseManager : public SatPropagator {
   // Only contains removable clause.
   absl::flat_hash_map<SatClause*, ClauseInfo> clauses_info_;
 
-  DratProofHandler* drat_proof_handler_ = nullptr;
   LratProofHandler* lrat_proof_handler_ = nullptr;
 
   // Temporary member used when adding LRAT inferred clauses.
@@ -584,7 +577,12 @@ class BinaryImplicationGraph : public SatPropagator {
   bool IsEmpty() const final { return no_constraint_ever_added_; }
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
-  // Note that it is also equivalent to (not b => a).
+  // Note that it is also equivalent to (not b => a). More precisely, adds the
+  // binary clause (rep(a) OR rep(b)), where rep(l) is the representative of l.
+  // If they are different from a and b, a new inferred LRAT clause is also
+  // added (if an LRAT proof handler is set), with a new clause ID (and the old
+  // LRAT `id` clause is deleted, unless `delete_non_representative_id` is
+  // false).
   //
   // Preconditions:
   // - If we are at root node, then none of the literal should be assigned.
@@ -593,8 +591,10 @@ class BinaryImplicationGraph : public SatPropagator {
   // - If we are at a positive decision level, we will propagate something if
   //   we can. However, if both literal are false, we will just return false
   //   and do nothing. In all other case, we will return true.
-  bool AddBinaryClause(ClauseId id, Literal a, Literal b) {
-    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/false);
+  bool AddBinaryClause(ClauseId id, Literal a, Literal b,
+                       bool delete_non_representative_id = true) {
+    return AddBinaryClauseInternal(id, a, b, /*change_reason=*/false,
+                                   delete_non_representative_id);
   }
   bool AddBinaryClause(Literal a, Literal b) {
     return AddBinaryClause(kNoClauseId, a, b);
@@ -832,8 +832,6 @@ class BinaryImplicationGraph : public SatPropagator {
     }
   }
 
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler);
-
   // Adds a binary clause and changes the reason of `a` as if it were propagated
   // by this new clause.
   // This allows inprocessing to shrink clauses to binary without backtracking
@@ -929,7 +927,8 @@ class BinaryImplicationGraph : public SatPropagator {
   friend class LratEquivalenceHelper;
 
   bool AddBinaryClauseInternal(ClauseId id, Literal a, Literal b,
-                               bool change_reason = false);
+                               bool change_reason = false,
+                               bool delete_non_representative_id = true);
 
   // Marks implications_[a] for cleanup in RemoveDuplicatesAndFixedVariables().
   void NotifyPossibleDuplicate(Literal a);
@@ -1001,7 +1000,6 @@ class BinaryImplicationGraph : public SatPropagator {
   ModelRandomGenerator* random_;
   Trail* trail_;
   ClauseIdGenerator* clause_id_generator_;
-  DratProofHandler* drat_proof_handler_ = nullptr;
   LratProofHandler* lrat_proof_handler_ = nullptr;
   LratEquivalenceHelper* lrat_helper_ = nullptr;
 

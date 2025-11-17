@@ -72,7 +72,6 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/drat_checker.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
@@ -135,20 +134,24 @@ ABSL_FLAG(bool, cp_model_fingerprint_model, true, "Fingerprint the model.");
 
 ABSL_FLAG(std::string, cp_model_drat_output, "",
           "If non-empty, a proof in DRAT format will be written to this file. "
-          "This will only be used for pure-SAT problems. And, as of September "
-          "2025, only works with a single worker, no presolve, and symmetry "
-          "level 0 or 1.");
+          "This only works in the same conditions as the --cp_model_lrat_check "
+          "flag, and only for pure SAT models.");
 
 ABSL_FLAG(bool, cp_model_drat_check, false,
           "If true, a proof in DRAT format will be stored in memory and "
-          "checked if the problem is UNSAT. This will only be used for "
-          "pure-SAT problems. And, as of September 2025, only works with a "
-          "single worker, no presolve, and symmetry level 0 or 1.");
+          "checked if the problem is UNSAT. This only works in the same "
+          "conditions as the --cp_model_lrat_check flag, and only for pure SAT "
+          "models.");
 
 ABSL_FLAG(bool, cp_model_lrat_check, false,
-          "If true, inferred clauses are checker with an LRAT checker as they "
-          "are learned. As of October 2025, this is currently being "
-          "implemented and is not working yet.");
+          "If true, inferred clauses are checked with an LRAT checker as they "
+          "are learned. As of November 2025, this only works with a single "
+          "worker and symmetry level 0 or 1. This also works with presolve, if "
+          "find_clauses_that_are_exactly_one is false and "
+          "merge_at_most_one_work_limit is 0. However, in this case, the "
+          "presolved problem is assumed to be correct, without proof. If the "
+          "model is not pure SAT, the checks are only partial (some clauses "
+          "can be assumed without proof).");
 
 ABSL_FLAG(double, cp_model_max_drat_time_in_seconds,
           std::numeric_limits<double>::infinity(),
@@ -1032,13 +1035,32 @@ bool SolutionHintIsCompleteAndFeasible(
   }
 }
 
+std::unique_ptr<LratProofHandler> MaybeCreateLratProofHandler(Model* model) {
+  const bool check_lrat = absl::GetFlag(FLAGS_cp_model_lrat_check);
+  const bool check_drat = absl::GetFlag(FLAGS_cp_model_drat_check);
+  File* drat_output = nullptr;
+  if (!absl::GetFlag(FLAGS_cp_model_drat_output).empty()) {
+    CHECK_OK(file::Open(absl::GetFlag(FLAGS_cp_model_drat_output), "w",
+                        &drat_output, file::Defaults()));
+  }
+  if (!check_lrat && !check_drat && drat_output == nullptr) return nullptr;
+
+  // TODO(user): pass the [presolved] model proto to the handler, so that
+  // it can map internal problem clause IDs to constraint indices in the
+  // original model. This will be needed to write the LRAT proof in a file that
+  // can be checked with an external LRAT checker, expecting the standard LRAT
+  // ASCII file format (which requires problem clauses IDs between 1 and n).
+  return std::make_unique<LratProofHandler>(model, check_lrat, check_drat,
+                                            drat_output,
+                                            /*in_binary_drat_format=*/false);
+}
+
 // Encapsulate a full CP-SAT solve without presolve in the SubSolver API.
 class FullProblemSolver : public SubSolver {
  public:
   FullProblemSolver(absl::string_view name,
                     const SatParameters& local_parameters, bool split_in_chunks,
-                    SharedClasses* shared, DratProofHandler* drat_proof_handler,
-                    bool use_lrat_checker, bool stop_at_first_solution = false)
+                    SharedClasses* shared, bool stop_at_first_solution = false)
       : SubSolver(name, stop_at_first_solution ? FIRST_SOLUTION : FULL_PROBLEM),
         shared_(shared),
         split_in_chunks_(split_in_chunks),
@@ -1059,13 +1081,12 @@ class FullProblemSolver : public SubSolver {
     // by registering the SharedStatistics class with LNS local model.
     shared_->RegisterSharedClassesInLocalModel(&local_model_);
 
-    if (drat_proof_handler != nullptr) {
-      local_model_.GetOrCreate<SatSolver>()->SetDratProofHandler(
-          drat_proof_handler);
-    }
-    if (use_lrat_checker) {
-      lrat_proof_handler_ = std::make_unique<LratProofHandler>(&local_model_);
-      local_model_.Register<LratProofHandler>(lrat_proof_handler_.get());
+    std::unique_ptr<LratProofHandler> lrat_proof_handler =
+        MaybeCreateLratProofHandler(&local_model_);
+    if (lrat_proof_handler != nullptr) {
+      local_model_.Register<LratProofHandler>(lrat_proof_handler.get());
+      local_model_.TakeOwnership(lrat_proof_handler.release());
+      shared_->lrat_proof_status->NewSubSolver();
     }
 
     // Setup the local logger, in multi-thread log_search_progress should be
@@ -1084,13 +1105,21 @@ class FullProblemSolver : public SubSolver {
     shared_->stat_tables->AddLpStat(name(), &local_model_);
     shared_->stat_tables->AddSearchStat(name(), &local_model_);
     shared_->stat_tables->AddClausesStat(name(), &local_model_);
-    // TODO(user): move this to a final response post-processor?
-    if (lrat_proof_handler_ != nullptr &&
-        local_model_.GetOrCreate<SatSolver>()->ModelIsUnsat() &&
-        !lrat_proof_handler_->Check()) {
-      auto* logger = local_model_.GetOrCreate<SolverLogger>();
-      SOLVER_LOG(logger,
-                 absl::StrFormat("ERROR: LRAT proof invalid for %s", name()));
+    LratProofHandler* lrat_proof_handler =
+        local_model_.Mutable<LratProofHandler>();
+    if (lrat_proof_handler != nullptr) {
+      WallTimer timer;
+      timer.Start();
+      const bool valid = local_model_.GetOrCreate<SatSolver>()->ModelIsUnsat()
+                             ? lrat_proof_handler->Check(absl::GetFlag(
+                                   FLAGS_cp_model_max_drat_time_in_seconds))
+                             : lrat_proof_handler->Valid();
+      shared_->lrat_proof_status->NewSubsolverProofStatus(
+          valid ? DratChecker::Status::VALID : DratChecker::Status::INVALID,
+          lrat_proof_handler->lrat_check_enabled(),
+          lrat_proof_handler->drat_check_enabled(),
+          lrat_proof_handler->num_assumed_clauses(), timer.Get());
+      lrat_proof_handler->AddStats();
     }
   }
 
@@ -1225,7 +1254,6 @@ class FullProblemSolver : public SubSolver {
   const bool split_in_chunks_;
   const bool stop_at_first_solution_;
   Model local_model_;
-  std::unique_ptr<LratProofHandler> lrat_proof_handler_;
 
   // The first chunk is special. It is the one in which we load the model and
   // try to follow the hint.
@@ -1773,6 +1801,14 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
   if (global_model->GetOrCreate<TimeLimit>()->LimitReached()) return;
 
+  if (absl::GetFlag(FLAGS_cp_model_drat_check) ||
+      !absl::GetFlag(FLAGS_cp_model_drat_output).empty()) {
+    LOG(WARNING)
+        << "DRAT check and output are skipped when using several workers";
+    absl::SetFlag(&FLAGS_cp_model_drat_check, false);
+    absl::SetFlag(&FLAGS_cp_model_drat_output, "");
+  }
+
   // If specified by the user, we might disable some parameters based on their
   // name.
   SubsolverNameFilter name_filter(params);
@@ -1836,8 +1872,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
              num_shared_tree_workers)) {
       full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
           local_params.name(), local_params,
-          /*split_in_chunks=*/params.interleave_search(), shared,
-          /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
+          /*split_in_chunks=*/params.interleave_search(), shared));
     }
   }
 
@@ -1860,8 +1895,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
 
     full_worker_subsolvers.push_back(std::make_unique<FullProblemSolver>(
         local_params.name(), local_params,
-        /*split_in_chunks=*/params.interleave_search(), shared,
-        /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false));
+        /*split_in_chunks=*/params.interleave_search(), shared));
   }
 
   // Add FeasibilityPumpSolver if enabled.
@@ -2209,7 +2243,6 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
             std::make_unique<FullProblemSolver>(
                 local_params.name(), local_params,
                 /*split_in_chunks=*/local_params.interleave_search(), shared,
-                /*drat_proof_handler=*/nullptr, /*use_lrat_checker=*/false,
                 /*stop_on_first_solution=*/true));
       }
     }
@@ -2380,64 +2413,6 @@ void MergeParamsWithFlagsAndDefaults(SatParameters* params) {
       params->MergeFrom(flag_params);
     }
   }
-}
-
-std::unique_ptr<DratProofHandler> MaybeCreateDratProofHandler(
-    const CpModelProto& model_proto,
-    SharedResponseManager* shared_response_manager, SolverLogger* logger) {
-  std::unique_ptr<DratProofHandler> drat_proof_handler;
-  if (!absl::GetFlag(FLAGS_cp_model_drat_output).empty() ||
-      absl::GetFlag(FLAGS_cp_model_drat_check)) {
-    if (!absl::GetFlag(FLAGS_cp_model_drat_output).empty()) {
-      File* output;
-      CHECK_OK(file::Open(absl::GetFlag(FLAGS_cp_model_drat_output), "w",
-                          &output, file::Defaults()));
-      drat_proof_handler = std::make_unique<DratProofHandler>(
-          /*in_binary_format=*/false, output,
-          absl::GetFlag(FLAGS_cp_model_drat_check));
-    } else {
-      drat_proof_handler = std::make_unique<DratProofHandler>();
-    }
-    if (!LoadCpModelInDratProofHandler(model_proto, drat_proof_handler.get())) {
-      SOLVER_LOG(logger,
-                 "Model is not pure SAT: cannot output nor check DRAT proof");
-      return nullptr;
-    }
-  } else {
-    return nullptr;
-  }
-  shared_response_manager->AddFinalResponsePostprocessor(
-      [logger, drat_proof_handler =
-                   drat_proof_handler.get()](CpSolverResponse* response) {
-        if (absl::GetFlag(FLAGS_cp_model_drat_check) &&
-            response->status() == CpSolverStatus::INFEASIBLE) {
-          WallTimer drat_timer;
-          drat_timer.Start();
-          DratChecker::Status drat_status = drat_proof_handler->Check(
-              absl::GetFlag(FLAGS_cp_model_max_drat_time_in_seconds));
-          switch (drat_status) {
-            case DratChecker::UNKNOWN:
-              SOLVER_LOG(logger, "DRAT_status: UNKNOWN");
-              break;
-            case DratChecker::VALID:
-              SOLVER_LOG(logger, "DRAT_status: VALID");
-              break;
-            case DratChecker::INVALID:
-              SOLVER_LOG(logger, "DRAT_status: INVALID");
-              break;
-            default:
-              // Should not happen.
-              break;
-          }
-          SOLVER_LOG(logger, "DRAT_walltime: ", drat_timer.Get());
-        } else {
-          // Always log a DRAT status to make it easier to extract it from a
-          // multirun result with awk.
-          SOLVER_LOG(logger, "DRAT_status: NA");
-          SOLVER_LOG(logger, "DRAT_walltime: NA");
-        }
-      });
-  return drat_proof_handler;
 }
 
 void FixVariablesToHintValue(const PartialVariableAssignment& solution_hint,
@@ -2640,9 +2615,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Initial ", CpModelStats(model_proto));
-
-  std::unique_ptr<DratProofHandler> drat_proof_handler =
-      MaybeCreateDratProofHandler(model_proto, shared_response_manager, logger);
 
   // Presolve and expansions.
   SOLVER_LOG(logger, "");
@@ -3116,8 +3088,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // the multi-thread architecture.
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
-          "main", params, /*split_in_chunks=*/false, &shared,
-          drat_proof_handler.get(), absl::GetFlag(FLAGS_cp_model_lrat_check)));
+          "main", params, /*split_in_chunks=*/false, &shared));
       LaunchSubsolvers(params, &shared, subsolvers, {});
     }
   }

@@ -190,13 +190,14 @@ double GetIntegralityMultiplier(const MPModelProto& mp_model,
   }
   DCHECK_NE(var_coeff, 0.0);
 
-  // The constraint bound need to be infinite or integer.
+  // Makes sure that the constraint bound is infinite or integer.
   for (const double bound : {ct.lower_bound(), ct.upper_bound()}) {
     if (!std::isfinite(bound)) continue;
-    if (std::abs(std::round(bound * multiplier) - bound * multiplier) >
-        tolerance * multiplier) {
-      return 0.0;
-    }
+
+    const double scaled_bound = multiplier * bound;
+    multiplier *=
+        FindRationalFactor(scaled_bound, /*limit=*/100, multiplier * tolerance);
+    if (multiplier == 0 || multiplier > max_multiplier) return 0.0;
   }
   return std::abs(multiplier * var_coeff);
 }

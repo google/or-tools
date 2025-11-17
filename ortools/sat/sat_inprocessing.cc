@@ -37,7 +37,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/probing.h"
@@ -402,7 +401,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   int64_t num_removed_literals = 0;
   int64_t num_inspected_literals = 0;
 
-  // We need this temporary vector for the DRAT proof settings, otherwise
+  // We need this temporary vector for the LRAT proof settings, otherwise
   // we could just have done an in-place transformation.
   std::vector<Literal> new_clause;
 
@@ -421,9 +420,6 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       if (assignment_.LiteralIsTrue(l)) {
         DCHECK(lrat_proof_handler_ == nullptr ||
                trail_->GetUnitClauseId(l.Variable()) != kNoClauseId);
-        if (clause_manager_->GetDratProofHandler() != nullptr) {
-          clause_manager_->GetDratProofHandler()->AddClause({l});
-        }
         clause_manager_->LazyDelete(clause,
                                     DeletionSourceForStat::FIXED_AT_TRUE);
         num_removed_literals += clause->size();
@@ -508,7 +504,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   int64_t num_inspected_signatures = 0;
   int64_t num_inspected_literals = 0;
 
-  // We need this temporary vector for the DRAT proof settings, otherwise
+  // We need this temporary vector for the LRAT proof settings, otherwise
   // we could just have done an in-place transformation.
   std::vector<Literal> new_clause;
 
@@ -2041,7 +2037,18 @@ class LratGateCongruenceHelper {
 
   ~LratGateCongruenceHelper() {
     if (lrat_proof_handler_ != nullptr) {
-      lrat_proof_handler_->DeleteClauses(to_delete_);
+      if (lrat_proof_handler_->drat_check_enabled() ||
+          lrat_proof_handler_->drat_output_enabled()) {
+        for (int i = 0; i < to_delete_.size(); ++i) {
+          lrat_proof_handler_->DeleteClause(
+              to_delete_[i],
+              {clauses_to_delete_[i].first, clauses_to_delete_[i].second});
+        }
+      } else {
+        for (const ClauseId id : to_delete_) {
+          lrat_proof_handler_->DeleteClause(id, {});
+        }
+      }
     }
   }
 
@@ -2088,6 +2095,11 @@ class LratGateCongruenceHelper {
       child_clauses.child_implies_parent = child_implies_rep;
       to_delete_.push_back(rep_implies_child);
       to_delete_.push_back(child_implies_rep);
+      if (lrat_proof_handler_->drat_check_enabled() ||
+          lrat_proof_handler_->drat_output_enabled()) {
+        clauses_to_delete_.push_back({representative.Negated(), child});
+        clauses_to_delete_.push_back({child.Negated(), representative});
+      }
     }
     if (!literals.empty()) {
       // Make sure the parent links in union_find_ are shorten too, to keep the
@@ -2226,6 +2238,9 @@ class LratGateCongruenceHelper {
   absl::flat_hash_map<Literal, GateEquivalenceClauses> parent_equivalence_;
   // Equivalence clauses which are not needed after the current round.
   std::vector<ClauseId> to_delete_;
+  // The literals of the clauses in `to_delete_`. Only needed when checking
+  // DRAT.
+  std::vector<std::pair<Literal, Literal>> clauses_to_delete_;
 };
 }  // namespace
 

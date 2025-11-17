@@ -27,6 +27,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -820,73 +821,87 @@ void RegisterVariableBoundsLevelZeroImport(
   auto* trail = model->GetOrCreate<Trail>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* lrat_proof_handler = model->Mutable<LratProofHandler>();
+  auto* clause_id_generator = model->GetOrCreate<ClauseIdGenerator>();
   const int id = shared_bounds_manager->RegisterNewId();
 
-  const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          name = name, sat_solver,
-                                          integer_trail, trail, id, mapping]() {
-    std::vector<int> model_variables;
-    std::vector<int64_t> new_lower_bounds;
-    std::vector<int64_t> new_upper_bounds;
-    shared_bounds_manager->GetChangedBounds(
-        id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    for (int i = 0; i < model_variables.size(); ++i) {
-      const int model_var = model_variables[i];
+  const auto& import_level_zero_bounds =
+      [&model_proto, shared_bounds_manager, name = name, sat_solver,
+       integer_trail, trail, lrat_proof_handler, clause_id_generator, id,
+       mapping]() {
+        std::vector<int> model_variables;
+        std::vector<int64_t> new_lower_bounds;
+        std::vector<int64_t> new_upper_bounds;
+        shared_bounds_manager->GetChangedBounds(
+            id, &model_variables, &new_lower_bounds, &new_upper_bounds);
+        for (int i = 0; i < model_variables.size(); ++i) {
+          const int model_var = model_variables[i];
 
-      // If this is a Boolean, fix it if not already done.
-      // Note that it is important not to use AddUnitClause() as we do not
-      // want to propagate after each addition.
-      if (mapping->IsBoolean(model_var)) {
-        Literal lit = mapping->Literal(model_var);
-        if (new_upper_bounds[i] == 0) lit = lit.Negated();
-        if (trail->Assignment().LiteralIsTrue(lit)) continue;
-        if (trail->Assignment().LiteralIsFalse(lit)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return false;
+          // If this is a Boolean, fix it if not already done.
+          // Note that it is important not to use AddUnitClause() as we do not
+          // want to propagate after each addition.
+          if (mapping->IsBoolean(model_var)) {
+            Literal lit = mapping->Literal(model_var);
+            if (new_upper_bounds[i] == 0) lit = lit.Negated();
+            if (trail->Assignment().LiteralIsTrue(lit)) continue;
+            ClauseId clause_id = kNoClauseId;
+            if (lrat_proof_handler != nullptr) {
+              clause_id = clause_id_generator->GetNextId();
+              lrat_proof_handler->AddSharedClause(clause_id, {lit});
+            }
+            if (trail->Assignment().LiteralIsFalse(lit)) {
+              if (lrat_proof_handler != nullptr) {
+                // Add the UNSAT proof.
+                lrat_proof_handler->AddInferredClause(
+                    clause_id_generator->GetNextId(), {},
+                    {clause_id, trail->GetUnitClauseId(lit.Variable())});
+              }
+              sat_solver->NotifyThatModelIsUnsat();
+              return false;
+            }
+            trail->EnqueueWithUnitReason(clause_id, lit);
+            continue;
+          }
+
+          // Deal with integer.
+          if (!mapping->IsInteger(model_var)) continue;
+          const IntegerVariable var = mapping->Integer(model_var);
+          const IntegerValue new_lb(new_lower_bounds[i]);
+          const IntegerValue new_ub(new_upper_bounds[i]);
+          const IntegerValue old_lb = integer_trail->LowerBound(var);
+          const IntegerValue old_ub = integer_trail->UpperBound(var);
+          const bool changed_lb = new_lb > old_lb;
+          const bool changed_ub = new_ub < old_ub;
+          if (!changed_lb && !changed_ub) continue;
+
+          if (VLOG_IS_ON(3)) {
+            const IntegerVariableProto& var_proto =
+                model_proto.variables(model_var);
+            const std::string& var_name =
+                var_proto.name().empty()
+                    ? absl::StrCat("anonymous_var(", model_var, ")")
+                    : var_proto.name();
+            LOG(INFO) << "  '" << name << "' imports new bounds for "
+                      << var_name << ": from [" << old_lb << ", " << old_ub
+                      << "] to [" << new_lb << ", " << new_ub << "]";
+          }
+
+          if (changed_lb &&
+              !integer_trail->Enqueue(
+                  IntegerLiteral::GreaterOrEqual(var, new_lb), {}, {})) {
+            return false;
+          }
+          if (changed_ub &&
+              !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
+                                      {}, {})) {
+            return false;
+          }
         }
-        trail->EnqueueWithUnitReason(lit);
-        continue;
-      }
 
-      // Deal with integer.
-      if (!mapping->IsInteger(model_var)) continue;
-      const IntegerVariable var = mapping->Integer(model_var);
-      const IntegerValue new_lb(new_lower_bounds[i]);
-      const IntegerValue new_ub(new_upper_bounds[i]);
-      const IntegerValue old_lb = integer_trail->LowerBound(var);
-      const IntegerValue old_ub = integer_trail->UpperBound(var);
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      if (!changed_lb && !changed_ub) continue;
-
-      if (VLOG_IS_ON(3)) {
-        const IntegerVariableProto& var_proto =
-            model_proto.variables(model_var);
-        const std::string& var_name =
-            var_proto.name().empty()
-                ? absl::StrCat("anonymous_var(", model_var, ")")
-                : var_proto.name();
-        LOG(INFO) << "  '" << name << "' imports new bounds for " << var_name
-                  << ": from [" << old_lb << ", " << old_ub << "] to ["
-                  << new_lb << ", " << new_ub << "]";
-      }
-
-      if (changed_lb &&
-          !integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
-                                  {}, {})) {
-        return false;
-      }
-      if (changed_ub &&
-          !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
-                                  {})) {
-        return false;
-      }
-    }
-
-    // Note that we will propagate if they are new bounds separately.
-    // See BeforeTakingDecision().
-    return true;
-  };
+        // Note that we will propagate if they are new bounds separately.
+        // See BeforeTakingDecision().
+        return true;
+      };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
       import_level_zero_bounds);
 }
@@ -1122,7 +1137,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddProblemClause({l1, l2})) {
+      if (!sat_solver->AddProblemClause({l1, l2}, /*shared=*/true)) {
         return false;
       }
     }
@@ -1146,8 +1161,8 @@ int RegisterClausesLevelZeroImport(int id,
           local_clause[i] = mapping->Literal(shared_clause[i]);
         }
         if (!sat_solver->AddProblemClause(
-                absl::MakeSpan(local_clause)
-                    .subspan(0, shared_clause.size()))) {
+                absl::MakeSpan(local_clause).subspan(0, shared_clause.size()),
+                /*shared=*/true)) {
           return false;
         }
       }
@@ -1388,6 +1403,9 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     // in the SharedResponseManager.
     SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
+  }
+  if (model->Mutable<LratProofHandler>() != nullptr) {
+    model->Mutable<LratProofHandler>()->EndProblemClauses();
   }
 
   model->GetOrCreate<IntegerEncoder>()
@@ -2223,7 +2241,8 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       response(global_model->GetOrCreate<SharedResponseManager>()),
       shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
       ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()),
-      progress_logger(global_model->GetOrCreate<SolverProgressLogger>()) {
+      progress_logger(global_model->GetOrCreate<SolverProgressLogger>()),
+      lrat_proof_status(global_model->GetOrCreate<SharedLratProofStatus>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -2329,6 +2348,8 @@ void SharedClasses::LogFinalStatistics() {
   // Extra logging if needed. Note that these are mainly activated on
   // --vmodule *some_file*=1 and are here for development.
   stats->Log(logger);
+
+  lrat_proof_status->Log(logger);
 }
 
 }  // namespace sat

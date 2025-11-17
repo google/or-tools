@@ -38,7 +38,6 @@ class LratChecker {
  public:
   explicit LratChecker(Model* model)
       : stats_(model->GetOrCreate<SharedStatistics>()) {}
-  ~LratChecker();
 
   // The clause IDs used in a proof that a clause has a Resolution Asymmetric
   // Tautology (RAT) property. See AddInferredClause() for more details.
@@ -95,6 +94,9 @@ class LratChecker {
   // already been deleted or has never been added.
   void DeleteClauses(absl::Span<const ClauseId> clause_ids);
 
+  // Returns true if all the operations made so far were valid.
+  bool Valid() const { return valid_; }
+
   // Returns true if the unsatisfiability proof is valid and complete, i.e.
   // whether the empty clause has been successfully inferred.
   bool Check() {
@@ -103,6 +105,8 @@ class LratChecker {
     }
     return complete_;
   }
+
+  void AddStats() const;
 
   // Returns the reason of the first failed operation, or an empty string if all
   // operations were successful.

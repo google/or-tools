@@ -40,7 +40,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/sat/container.h"
-#include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/inclusion.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -398,20 +397,15 @@ void ClauseManager::Attach(SatClause* clause, Trail* trail) {
 
 void ClauseManager::InternalDetach(SatClause* clause,
                                    DeletionSourceForStat source) {
-  const size_t size = clause->size();
-
   // Double-deletion.
   // TODO(user): change that to a check?
-  if (size == 0) return;
+  if (clause->size() == 0) return;
 
   --num_watched_clauses_;
-  if (drat_proof_handler_ != nullptr && size > 2) {
-    drat_proof_handler_->DeleteClause({clause->begin(), size});
-  }
   if (lrat_proof_handler_ != nullptr) {
     const auto it = clause_id_.find(clause);
     if (it != clause_id_.end()) {
-      lrat_proof_handler_->DeleteClauses({it->second});
+      lrat_proof_handler_->DeleteClause(it->second, clause->AsSpan());
       clause_id_.erase(it);
     }
   }
@@ -460,9 +454,6 @@ void ClauseManager::AttachAllClauses() {
 bool ClauseManager::InprocessingAddUnitClause(ClauseId unit_clause_id,
                                               Literal true_literal) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->AddClause({true_literal});
-  }
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
 
   trail_->EnqueueWithUnitReason(unit_clause_id, true_literal);
@@ -475,9 +466,6 @@ bool ClauseManager::InprocessingAddUnitClause(ClauseId unit_clause_id,
 bool ClauseManager::InprocessingFixLiteral(
     Literal true_literal, absl::Span<const ClauseId> clause_ids) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->AddClause({true_literal});
-  }
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
 
   ClauseId clause_id = kNoClauseId;
@@ -530,10 +518,12 @@ bool ClauseManager::InprocessingRewriteClause(
     return true;
   }
 
-  if (drat_proof_handler_ != nullptr) {
-    // We must write the new clause before we delete the old one.
-    drat_proof_handler_->AddClause(new_clause);
-    drat_proof_handler_->DeleteClause(clause->AsSpan());
+  if (lrat_proof_handler_ != nullptr) {
+    const auto it = clause_id_.find(clause);
+    if (it != clause_id_.end()) {
+      lrat_proof_handler_->DeleteClause(it->second, clause->AsSpan());
+    }
+    SetClauseId(clause, new_clause_id);
   }
 
   if (all_clauses_are_attached_) {
@@ -543,25 +533,13 @@ bool ClauseManager::InprocessingRewriteClause(
     clause->Clear();
     for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
       needs_cleaning_.Clear(l);
-      // std::erase_if is C++20, not yet fully supported on OR-Tools.
-      watchers_on_false_[l].erase(
-          std::remove_if(watchers_on_false_[l].begin(),
-                         watchers_on_false_[l].end(),
-                         [](const Watcher& watcher) {
-                           return watcher.clause->IsRemoved();
-                         }),
-          watchers_on_false_[l].end());
+      OpenSourceEraseIf(watchers_on_false_[l], [](const Watcher& watcher) {
+        return watcher.clause->IsRemoved();
+      });
     }
   }
 
   clause->Rewrite(new_clause);
-  if (lrat_proof_handler_ != nullptr) {
-    const auto it = clause_id_.find(clause);
-    if (it != clause_id_.end()) {
-      lrat_proof_handler_->DeleteClauses({it->second});
-    }
-    SetClauseId(clause, new_clause_id);
-  }
 
   // And we reattach it.
   if (all_clauses_are_attached_) {
@@ -601,12 +579,9 @@ void ClauseManager::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (const LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
     if (!needs_cleaning_[index]) continue;
-    // std::erase_if is C++20, not yet fully supported on OR-Tools.
-    watchers_on_false_[index].erase(
-        std::remove_if(
-            watchers_on_false_[index].begin(), watchers_on_false_[index].end(),
-            [](const Watcher& watcher) { return watcher.clause->IsRemoved(); }),
-        watchers_on_false_[index].end());
+    OpenSourceEraseIf(watchers_on_false_[index], [](const Watcher& watcher) {
+      return watcher.clause->IsRemoved();
+    });
     needs_cleaning_.Clear(index);
   }
   needs_cleaning_.NotifyAllClear();
@@ -789,23 +764,15 @@ bool BinaryImplicationGraph::HasNoDuplicates() {
 // use them here to maintains invariant? Explore this when we start cleaning our
 // clauses using equivalence during search. We can easily do it for every
 // conflict we learn instead of here.
-bool BinaryImplicationGraph::AddBinaryClauseInternal(ClauseId id, Literal a,
-                                                     Literal b,
-                                                     bool change_reason) {
+bool BinaryImplicationGraph::AddBinaryClauseInternal(
+    ClauseId id, Literal a, Literal b, bool change_reason,
+    bool delete_non_representative_id) {
   SCOPED_TIME_STAT(&stats_);
 
   // Tricky: If this is the first clause, the propagator will be added and
   // assumed to be in a "propagated" state. This makes sure this is the case.
   if (no_constraint_ever_added_) propagation_trail_index_ = trail_->Index();
   no_constraint_ever_added_ = false;
-
-  if (drat_proof_handler_ != nullptr) {
-    // TODO(user): Like this we will duplicate all binary clause from the
-    // problem. However this leads to a simpler API (since we don't need to
-    // special case the loading of the original clauses) and we mainly use drat
-    // proof for testing anyway.
-    drat_proof_handler_->AddClause({a, b});
-  }
 
   Literal rep_a = a;
   Literal rep_b = b;
@@ -839,8 +806,8 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(ClauseId id, Literal a,
         // Remember the non-canonical clause so we can delete it on restart.
         changed_reasons_on_trail_.emplace_back(std::minmax(a, b));
         AddClauseId(id, a, b);
-      } else {
-        lrat_proof_handler_->DeleteClauses({id});
+      } else if (delete_non_representative_id) {
+        lrat_proof_handler_->DeleteClause(id, {a, b});
       }
     }
     AddClauseId(rep_id, rep_a, rep_b);
@@ -939,9 +906,6 @@ bool BinaryImplicationGraph::FixLiteral(Literal true_literal,
     return false;
   }
 
-  if (drat_proof_handler_ != nullptr) {
-    drat_proof_handler_->AddClause({true_literal});
-  }
   ClauseId new_clause_id = kNoClauseId;
   if (lrat_proof_handler_ != nullptr) {
     new_clause_id = clause_id_generator_->GetNextId();
@@ -1515,7 +1479,6 @@ class LratEquivalenceHelper {
         trail_(graph->trail_),
         implications_and_amos_(graph->implications_and_amos_),
         clause_id_generator_(graph->clause_id_generator_),
-        drat_proof_handler_(graph->drat_proof_handler_),
         lrat_proof_handler_(graph->lrat_proof_handler_) {}
 
   // Initializes the internal data structures to process the given component
@@ -1714,9 +1677,6 @@ class LratEquivalenceHelper {
   void AddInferredClause(ClauseId new_clause_id,
                          absl::Span<const Literal> literals,
                          absl::Span<const ClauseId> clause_ids) {
-    if (drat_proof_handler_ != nullptr) {
-      drat_proof_handler_->AddClause(literals);
-    }
     if (lrat_proof_handler_ != nullptr) {
       lrat_proof_handler_->AddInferredClause(new_clause_id, literals,
                                              clause_ids);
@@ -1728,7 +1688,6 @@ class LratEquivalenceHelper {
   util_intops::StrongVector<LiteralIndex, LiteralsOrOffsets>&
       implications_and_amos_;
   ClauseIdGenerator* clause_id_generator_;
-  DratProofHandler* drat_proof_handler_;
   LratProofHandler* lrat_proof_handler_;
 
   // Temporary data structures used by the above methods:
@@ -1745,14 +1704,6 @@ class LratEquivalenceHelper {
   std::vector<Literal> tmp_literals_;
 };
 
-void BinaryImplicationGraph::SetDratProofHandler(
-    DratProofHandler* drat_proof_handler) {
-  drat_proof_handler_ = drat_proof_handler;
-  if (lrat_helper_ == nullptr) {
-    lrat_helper_ = new LratEquivalenceHelper(this);
-  }
-}
-
 bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   // This was already called, and no new constraint where added. Note that new
   // fixed variable cannot create new equivalence, only new binary clauses do.
@@ -1764,7 +1715,8 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   if (trail_->CurrentDecisionLevel() == 0) {
     for (std::pair<Literal, Literal> clause : changed_reasons_on_trail_) {
       auto it = clause_id_.find(clause);
-      lrat_proof_handler_->DeleteClauses({it->second});
+      lrat_proof_handler_->DeleteClause(it->second,
+                                        {clause.first, clause.second});
       clause_id_.erase(it);
     }
     changed_reasons_on_trail_.clear();
@@ -3157,15 +3109,9 @@ void BinaryImplicationGraph::RemoveBooleanVariable(
   // Notify the deletion to the proof checker and the postsolve.
   // Note that we want var first in these clauses for the postsolve.
   for (const Literal b : direct_implications_) {
-    if (drat_proof_handler_ != nullptr) {
-      drat_proof_handler_->DeleteClause({Literal(var, false), b});
-    }
     postsolve_clauses->push_back({Literal(var, false), b});
   }
   for (const Literal a_negated : direct_implications_of_negated_literal_) {
-    if (drat_proof_handler_ != nullptr) {
-      drat_proof_handler_->DeleteClause({Literal(var, true), a_negated});
-    }
     postsolve_clauses->push_back({Literal(var, true), a_negated});
   }
 

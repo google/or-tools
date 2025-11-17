@@ -510,6 +510,24 @@ std::string ValidateElementConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateInverseConstraint(const CpModelProto& model,
+                                      const ConstraintProto& ct) {
+  if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
+    return absl::StrCat("Non-matching fields size in inverse: ",
+                        ProtobufShortDebugString(ct));
+  }
+  const InverseConstraintProto& inverse = ct.inverse();
+  for (const auto* vars : {&inverse.f_direct(), &inverse.f_inverse()}) {
+    for (const int var : *vars) {
+      if (!VariableIndexIsValid(model, var)) {
+        return absl::StrCat("Invalid variable index in inverse constraint: ",
+                            var);
+      }
+    }
+  }
+  return "";
+}
+
 std::string ValidateTableConstraint(const CpModelProto& model,
                                     const ConstraintProto& ct) {
   const TableConstraintProto& arg = ct.table();
@@ -1147,10 +1165,7 @@ std::string ValidateCpModel(const CpModelProto& model, bool after_presolve) {
         RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
-          return absl::StrCat("Non-matching fields size in inverse: ",
-                              ProtobufShortDebugString(ct));
-        }
+        RETURN_IF_NOT_EMPTY(ValidateInverseConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
         for (const LinearExpressionProto& expr : ct.all_diff().exprs()) {

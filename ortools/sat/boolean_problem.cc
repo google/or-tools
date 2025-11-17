@@ -844,8 +844,7 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     }
 
     util_intops::StrongVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral(&solver, postsolver,
-                                  /*drat_proof_handler=*/nullptr, &equiv_map);
+    ProbeAndFindEquivalentLiteral(&solver, postsolver, &equiv_map);
 
     // We can abort if no information is learned.
     if (equiv_map.empty() && solver.LiteralTrail().Index() == 0) break;

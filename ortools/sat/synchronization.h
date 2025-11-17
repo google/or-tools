@@ -23,6 +23,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,6 +43,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -1285,6 +1287,32 @@ void SharedSolutionRepository<ValueType>::Synchronize(
   }
   num_queried_at_last_sync_ = num_queried_;
 }
+
+// Thread-safe.
+class SharedLratProofStatus {
+ public:
+  SharedLratProofStatus();
+
+  void NewSubSolver();
+
+  void NewSubsolverProofStatus(DratChecker::Status status,
+                               bool lrat_check_enabled, bool drat_check_enabled,
+                               int num_assumed_clauses,
+                               double walltime_in_seconds);
+
+  void Log(SolverLogger* logger);
+
+ private:
+  absl::Mutex mutex_;
+  int num_subsolvers_ ABSL_GUARDED_BY(mutex_);
+  int num_valid_proofs_ ABSL_GUARDED_BY(mutex_);
+  int num_invalid_proofs_ ABSL_GUARDED_BY(mutex_);
+  int num_unknown_proofs_ ABSL_GUARDED_BY(mutex_);
+  bool lrat_check_enabled_ ABSL_GUARDED_BY(mutex_);
+  bool drat_check_enabled_ ABSL_GUARDED_BY(mutex_);
+  int num_assumed_clauses_ ABSL_GUARDED_BY(mutex_);
+  double walltime_in_seconds_ ABSL_GUARDED_BY(mutex_);
+};
 
 }  // namespace sat
 }  // namespace operations_research

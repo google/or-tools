@@ -15,7 +15,6 @@
 #define ORTOOLS_SAT_VARIABLE_EXPAND_H_
 
 #include <cstdint>
-#include <functional>
 #include <vector>
 
 #include "absl/container/btree_map.h"
@@ -27,34 +26,24 @@
 namespace operations_research {
 namespace sat {
 
-enum class ObjectiveStatus {
-  kNotInObjective,
-  kInObjectiveAndMinimization,
-  kInObjectiveAndMaximization,
-};
-
-template <typename Sink>
-void AbslStringify(Sink& sink, ObjectiveStatus obj_status) {
-  switch (obj_status) {
-    case ObjectiveStatus::kNotInObjective:
-      sink.Append("kNotInObjective");
-      return;
-    case ObjectiveStatus::kInObjectiveAndMinimization:
-      sink.Append("kInObjectiveAndMinimization");
-      return;
-    case ObjectiveStatus::kInObjectiveAndMaximization:
-      sink.Append("kInObjectiveAndMaximization");
-      return;
-  }
-}
-
 class ValueEncoding {
  public:
-  ValueEncoding(int var, PresolveContext* context,
-                SolutionCrush& solution_crush);
-  // Build the set of observed values.
+  ValueEncoding(int var, PresolveContext* context);
+  // Build the set of observed values. This cannot be called after
+  // CanonicalizeEncodedValuesAndAddEscapeValues() has been called.
   void AddValueToEncode(int64_t value);
-  void CloseEncodedValues(ObjectiveStatus objective_status);
+
+  // This method is called after all values from lit => var ==/!= value have
+  // been added. It canonicalizes the encoded values and adds an escape value
+  // if needed. It there is an objective, the escape value is the min or the max
+  // of the residual domain of the variable depending on the objective
+  // coefficient of the variable. It there are no objective, the escape value is
+  // the smallest value of the residual domain.
+  // With this escape value, we can safely reduce the domain of the variable to
+  // observed + escape values, and add an exactly_one constraint on all the
+  // literals involved.
+  void CanonicalizeEncodedValuesAndAddEscapeValue(
+      bool var_in_objective, bool var_has_positive_objective_coefficient);
 
   // Getters on the observed values.
   bool empty() const;
@@ -71,7 +60,6 @@ class ValueEncoding {
   const int var_;
   const Domain var_domain_;
   PresolveContext* context_;
-  SolutionCrush& solution_crush_;
   std::vector<int64_t> encoded_values_;
   absl::btree_map<int64_t, int> encoding_;
   bool is_closed_ = false;
@@ -101,9 +89,9 @@ class OrderEncoding {
   absl::btree_map<int64_t, int> encoded_le_literal_;
 };
 
-void TryToReplaceVariableByItsEncoding(
-    int var, std::function<void(ConstraintProto*)> presolve_one_constraint,
-    PresolveContext* context, SolutionCrush& solution_crush);
+void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
+                                       PresolveContext* context,
+                                       SolutionCrush& solution_crush);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -104,6 +104,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     if (!implied_bounds_->ProcessIntegerTrail(decision)) return false;
     product_detector_->ProcessTrailAtLevelOne();
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
+    to_fix_at_true_.clear();
+    new_literals_implied_by_decision_.clear();
     for (int i = saved_index + 1; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
 
@@ -163,7 +165,6 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         return false;
       }
     }
-    to_fix_at_true_.clear();
     if (!sat_solver_->FinishPropagation()) return false;
     for (const Literal l : new_literals_implied_by_decision_) {
       // Some variables can be fixed by the above loop.
@@ -175,12 +176,20 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
             tmp_binary_clause_ids_.at(std::minmax(decision.Negated(), l));
       }
       num_new_binary_++;
-      if (!implication_graph_->AddBinaryClause(clause_id, decision.Negated(),
-                                               l)) {
+      // Tricky: by default AddBinaryClause() can delete the LRAT `clause_id`
+      // and create a new ID for a similar clause between the representatives.
+      // But `clause_id`, registered in tmp_binary_clause_ids_, can be needed in
+      // the next iteration for the proof of a new fixed literal. Hence we must
+      // not delete it here. Instead, it is deleted at the end of this method,
+      // with the other non-longer needed clauses.
+      // TODO(user): can we maintain a one to one correspondence of clauses
+      // in LRAT and in the binary implication graph to avoid this?
+      if (!implication_graph_->AddBinaryClause(
+              clause_id, decision.Negated(), l,
+              /*delete_non_representative_id=*/false)) {
         return false;
       }
     }
-    new_literals_implied_by_decision_.clear();
     if (!sat_solver_->FinishPropagation()) return false;
   }
   if (lrat_proof_handler_ != nullptr) {
@@ -189,7 +198,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     for (const auto& [binary_clause, clause_id] : tmp_binary_clause_ids_) {
       if (implication_graph_->GetClauseId(binary_clause.first,
                                           binary_clause.second) != clause_id) {
-        lrat_proof_handler_->DeleteClauses({clause_id});
+        lrat_proof_handler_->DeleteClause(
+            clause_id, {binary_clause.first, binary_clause.second});
       }
     }
   }

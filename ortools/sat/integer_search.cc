@@ -1372,6 +1372,8 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   if (integer_trail_->HasPendingRootLevelDeduction()) {
     sat_solver_->Backtrack(0);
     if (!sat_solver_->Propagate()) {
+      // This adds the UNSAT proof to the LRAT handler, if any.
+      sat_solver_->ProcessCurrentConflict();
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
@@ -1398,6 +1400,8 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
       integer_trail_->num_enqueues() > saved_integer_index ||
       integer_trail_->HasPendingRootLevelDeduction()) {
     if (!sat_solver_->Propagate()) {
+      // This adds the UNSAT proof to the LRAT handler, if any.
+      sat_solver_->ProcessCurrentConflict();
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }

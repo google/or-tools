@@ -8761,8 +8761,7 @@ bool CpModelPresolver::PresolvePureSatPart() {
 
     // Probe + find equivalent literals.
     // TODO(user): Use a derived time limit in the probing phase.
-    ProbeAndFindEquivalentLiteral(sat_solver, &sat_postsolver,
-                                  /*drat_proof_handler=*/nullptr, &equiv_map,
+    ProbeAndFindEquivalentLiteral(sat_solver, &sat_postsolver, &equiv_map,
                                   logger_);
 
     if (sat_solver->ModelIsUnsat()) return false;
@@ -13171,13 +13170,15 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     return;
   }
 
-  const auto presolve_one_constraint = [this](ConstraintProto* ct) {
-    CHECK(ct->has_exactly_one());
-    PresolveExactlyOne(ct);
-  };
-
-  TryToReplaceVariableByItsEncoding(var, presolve_one_constraint, context_,
+  int new_exo_to_presolve_index = -1;
+  TryToReplaceVariableByItsEncoding(var, new_exo_to_presolve_index, context_,
                                     solution_crush_);
+  if (new_exo_to_presolve_index != -1) {
+    if (PresolveExactlyOne(context_->working_model->mutable_constraints(
+            new_exo_to_presolve_index))) {
+      context_->UpdateConstraintVariableUsage(new_exo_to_presolve_index);
+    }
+  }
 }
 
 void CpModelPresolver::TryToSimplifyDomain(int var) {

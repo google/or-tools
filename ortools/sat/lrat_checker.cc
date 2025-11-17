@@ -30,7 +30,7 @@
 namespace operations_research {
 namespace sat {
 
-LratChecker::~LratChecker() {
+void LratChecker::AddStats() const {
   if (!VLOG_IS_ON(1)) return;
   stats_->AddStats(
       {{"LratChecker/num_problem_clauses", num_problem_clauses_},
