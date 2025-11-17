@@ -159,6 +159,7 @@ help:
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo -e "\t${BOLD}VERBOSE=1${RESET}: use 'docker build --progress=plain' when building container."
+	@echo -e "\t${BOLD}CMAKE_BUILD_PARALLEL_LEVEL=4${RESET}: number of concurrent processes to use when building."
 	@echo
 	@echo -e "branch: $(BRANCH)"
 	@echo -e "sha1: $(SHA1)"
@@ -189,6 +190,10 @@ endif
 ifdef VERBOSE
 DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --progress=plain
 DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --progress=plain
+endif
+ifdef CMAKE_BUILD_PARALLEL_LEVEL
+DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --build-arg CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}
+DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --build-arg CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}
 endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
