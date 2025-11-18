@@ -54,6 +54,16 @@
 namespace operations_research {
 namespace sat {
 
+namespace {
+
+bool SomeLiteralAreAssigned(const VariablesAssignment& assignment,
+                            absl::Span<const Literal> literals) {
+  return absl::c_any_of(
+      literals, [&](Literal l) { return assignment.LiteralIsAssigned(l); });
+}
+
+}  // namespace
+
 void PostsolveClauses::AddClauseWithSpecialLiteral(
     Literal literal, absl::Span<const Literal> clause) {
   bool found = false;
@@ -305,12 +315,14 @@ bool Inprocessing::InprocessingRound() {
   total_dtime_ += time_limit_->GetElapsedDeterministicTime() - start_dtime;
   if (log_info) {
     SOLVER_LOG(
-        logger_, "Inprocessing.", " fixed:", trail_->Index(),
-        " equiv:", implication_graph_->num_redundant_literals() / 2,
-        " bools:", sat_solver_->NumVariables(),
-        " implications:", implication_graph_->ComputeNumImplicationsForLog(),
-        " watched:", clause_manager_->num_watched_clauses(),
-        " minimization:", mini_num_clause, "|", mini_num_removed,
+        logger_, "Inprocessing.", " fixed:", FormatCounter(trail_->Index()),
+        " equiv:",
+        FormatCounter(implication_graph_->num_redundant_literals() / 2),
+        " bools:", FormatCounter(sat_solver_->NumVariables()), " implications:",
+        FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
+        " watched:", FormatCounter(clause_manager_->num_watched_clauses()),
+        " minimization:", FormatCounter(mini_num_clause), "|",
+        FormatCounter(mini_num_removed),
         " dtime:", time_limit_->GetElapsedDeterministicTime() - start_dtime,
         " wtime:", wall_timer.Get(),
         " np_wtime:", (wall_timer.Get() - probing_time));
@@ -378,22 +390,6 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
   if (!LevelZeroPropagate()) return false;
 
-  // Test if some work is needed.
-  //
-  // TODO(user): If only new fixed variables are there, we can use a faster
-  // function. We should also merge the code with the deletion code in
-  // sat_solver_.cc, but that require some refactoring of the dependence between
-  // files.
-  const int64_t new_num_redundant_literals =
-      implication_graph_->num_redundant_literals();
-  const int64_t new_num_fixed_variables = trail_->Index();
-  if (last_num_redundant_literals_ == new_num_redundant_literals &&
-      last_num_fixed_variables_ == new_num_fixed_variables) {
-    return true;
-  }
-  last_num_fixed_variables_ = new_num_fixed_variables;
-  last_num_redundant_literals_ = new_num_redundant_literals;
-
   // Start the round.
   WallTimer wall_timer;
   wall_timer.Start();
@@ -401,80 +397,116 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   int64_t num_removed_literals = 0;
   int64_t num_inspected_literals = 0;
 
-  // We need this temporary vector for the LRAT proof settings, otherwise
-  // we could just have done an in-place transformation.
-  std::vector<Literal> new_clause;
-
-  // Used to mark clause literals.
-  const int num_literals(sat_solver_->NumVariables() * 2);
-  util_intops::StrongVector<LiteralIndex, bool> marked(num_literals, false);
-
-  clause_manager_->DeleteRemovedClauses();
-  clause_manager_->DetachAllClauses();
-  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
-    bool removed = false;
-    bool need_rewrite = false;
-
-    // We first do a loop to see if there is anything to do.
-    for (const Literal l : clause->AsSpan()) {
-      if (assignment_.LiteralIsTrue(l)) {
-        DCHECK(lrat_proof_handler_ == nullptr ||
-               trail_->GetUnitClauseId(l.Variable()) != kNoClauseId);
-        clause_manager_->LazyDelete(clause,
-                                    DeletionSourceForStat::FIXED_AT_TRUE);
-        num_removed_literals += clause->size();
-        removed = true;
-        break;
-      }
-      if (assignment_.LiteralIsFalse(l) || implication_graph_->IsRedundant(l)) {
-        need_rewrite = true;
-        break;
-      }
+  // We use a huge "limit" in case we have some bad interactions and we need to
+  // loop often to reach the fixed point.
+  while (num_inspected_literals < 1e10) {
+    // Test if some work is needed.
+    //
+    // TODO(user): If only new fixed variables are there, we can use a faster
+    // function. We should also merge the code with the deletion code in
+    // sat_solver_.cc, but that require some refactoring of the dependence
+    // between files.
+    const int64_t new_num_redundant_literals =
+        implication_graph_->num_redundant_literals();
+    const int64_t new_num_fixed_variables = trail_->Index();
+    if (last_num_redundant_literals_ == new_num_redundant_literals &&
+        last_num_fixed_variables_ == new_num_fixed_variables) {
+      return true;
     }
+    last_num_fixed_variables_ = new_num_fixed_variables;
+    last_num_redundant_literals_ = new_num_redundant_literals;
 
-    num_inspected_literals += clause->size();
-    if (removed || !need_rewrite) continue;
-    num_inspected_literals += clause->size();
+    // We need this temporary vector for the LRAT proof settings, otherwise
+    // we could just have done an in-place transformation.
+    std::vector<Literal> new_clause;
 
-    // Rewrite the clause.
-    new_clause.clear();
-    clause_ids_.clear();
-    for (const Literal l : clause->AsSpan()) {
-      const Literal r = implication_graph_->RepresentativeOf(l);
+    // Used to mark clause literals.
+    const int num_literals(sat_solver_->NumVariables() * 2);
+    util_intops::StrongVector<LiteralIndex, bool> marked(num_literals, false);
+
+    clause_manager_->DeleteRemovedClauses();
+    clause_manager_->DetachAllClauses();
+    for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+      bool removed = false;
+      bool need_rewrite = false;
+
+      // We first do a loop to see if there is anything to do.
+      for (const Literal l : clause->AsSpan()) {
+        if (assignment_.LiteralIsTrue(l)) {
+          DCHECK(lrat_proof_handler_ == nullptr ||
+                 trail_->GetUnitClauseId(l.Variable()) != kNoClauseId);
+          clause_manager_->LazyDelete(clause,
+                                      DeletionSourceForStat::FIXED_AT_TRUE);
+          num_removed_literals += clause->size();
+          removed = true;
+          break;
+        }
+        if (assignment_.LiteralIsFalse(l) ||
+            implication_graph_->IsRedundant(l)) {
+          need_rewrite = true;
+          break;
+        }
+      }
+
+      num_inspected_literals += clause->size();
+      if (removed || !need_rewrite) continue;
+      num_inspected_literals += clause->size();
+
+      // Rewrite the clause.
+      new_clause.clear();
+      clause_ids_.clear();
+      for (const Literal l : clause->AsSpan()) {
+        const Literal r = implication_graph_->RepresentativeOf(l);
+        if (lrat_proof_handler_ != nullptr) {
+          if (!marked[r] && assignment_.LiteralIsFalse(r)) {
+            clause_ids_.push_back(trail_->GetUnitClauseId(r.Variable()));
+          }
+          if (r != l) {
+            clause_ids_.push_back(
+                implication_graph_->GetClauseId(l.Negated(), r));
+          }
+        }
+        if (marked[r] || assignment_.LiteralIsFalse(r)) {
+          continue;
+        }
+        if (marked[r.NegatedIndex()] || assignment_.LiteralIsTrue(r)) {
+          clause_manager_->LazyDelete(
+              clause, DeletionSourceForStat::CONTAINS_L_AND_NOT_L);
+          num_removed_literals += clause->size();
+          removed = true;
+          break;
+        }
+        marked[r] = true;
+        new_clause.push_back(r);
+      }
+
+      // Restore marked.
+      for (const Literal l : new_clause) marked[l] = false;
+      if (removed) continue;
+
       if (lrat_proof_handler_ != nullptr) {
-        if (!marked[r] && assignment_.LiteralIsFalse(r)) {
-          clause_ids_.push_back(trail_->GetUnitClauseId(r.Variable()));
-        }
-        if (r != l) {
-          clause_ids_.push_back(
-              implication_graph_->GetClauseId(l.Negated(), r));
-        }
+        clause_ids_.push_back(clause_manager_->GetClauseId(clause));
       }
-      if (marked[r] || assignment_.LiteralIsFalse(r)) {
-        continue;
+      num_removed_literals += clause->size() - new_clause.size();
+      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
+                                                      clause_ids_)) {
+        return false;
       }
-      if (marked[r.NegatedIndex()] || assignment_.LiteralIsTrue(r)) {
-        clause_manager_->LazyDelete(
-            clause, DeletionSourceForStat::CONTAINS_L_AND_NOT_L);
-        num_removed_literals += clause->size();
-        removed = true;
-        break;
-      }
-      marked[r] = true;
-      new_clause.push_back(r);
     }
 
-    // Restore marked.
-    for (const Literal l : new_clause) marked[l] = false;
-    if (removed) continue;
+    // If clause became binary, make sure to clean up the relevant implication
+    // lists. This should be fast in all cases since it is incremental.
+    //
+    // Tricky: This might fix more variables in some corner case, so we need to
+    // loop to reach the "fixed point" and maintain the invariant that no clause
+    // contain fixed variable.
+    if (!implication_graph_->RemoveDuplicatesAndFixedVariables()) return false;
+  }
 
-    if (lrat_proof_handler_ != nullptr) {
-      clause_ids_.push_back(clause_manager_->GetClauseId(clause));
-    }
-    num_removed_literals += clause->size() - new_clause.size();
-    if (!clause_manager_->InprocessingRewriteClause(clause, new_clause,
-                                                    clause_ids_)) {
-      return false;
+  // Invariant. There should be no clause with fixed variables left.
+  if (DEBUG_MODE) {
+    for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+      CHECK(!SomeLiteralAreAssigned(trail_->Assignment(), clause->AsSpan()));
     }
   }
 
@@ -485,9 +517,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
                          << num_removed_literals << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get();
 
-  // If clause became binary, make sure to clean up the relevant implication
-  // lists. This should be fast in all cases since it is incremental.
-  return implication_graph_->RemoveDuplicatesAndFixedVariables();
+  return true;
 }
 
 // TODO(user): Use better work limits, see SAT09.CRAFTED.ramseycube.Q3inK12
@@ -540,6 +570,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   std::vector<std::pair<Literal, SatClause*>> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
     SatClause* clause = clauses[clause_index];
+    DCHECK(!SomeLiteralAreAssigned(trail_->Assignment(), clause->AsSpan()));
 
     // TODO(user): Better abort limit. We could also limit the watcher sizes and
     // never look at really long clauses. Note that for an easier
@@ -547,14 +578,6 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     // what new stuff need to be done.
     if (num_inspected_literals + num_inspected_signatures > 1e9) {
       break;
-    }
-
-    // TODO(user): Work out why this has suddenly started producing
-    // clauses that are satisfied at the root.
-    if (clause->IsSatisfied(trail_->Assignment())) {
-      num_removed_literals += clause->size();
-      clause_manager_->LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
-      continue;
     }
 
     // Check for subsumption, note that this currently ignore all clauses in the
@@ -652,6 +675,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         new_clause.push_back(l);
       }
       CHECK_EQ(new_clause.size() + 1, clause->size());
+      CHECK_GE(new_clause.size(), 2);  // No-unit here.
 
       num_removed_literals += clause->size() - new_clause.size();
       if (lrat_proof_handler_ != nullptr) {

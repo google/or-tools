@@ -872,12 +872,16 @@ class SharedClausesManager {
   // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId(absl::string_view worker_name, bool may_terminate_early);
 
-  // Search statistics.
-  void LogStatistics(SolverLogger* logger);
-
   // Unlocks waiting binary clauses for workers if always_synchronize is false.
   // Periodically starts a new sharing round, making glue clauses visible.
   void Synchronize();
+
+  // For statistics, notify how many clauses where imported in that worker id
+  // database.
+  void NotifyNumImported(int id, int64_t num_imported);
+
+  // Search statistics.
+  void LogStatistics(SolverLogger* logger);
 
  private:
   // Returns true if `reader_id` should read batches produced by `writer_id`.
@@ -915,6 +919,7 @@ class SharedClausesManager {
 
   // Stats:
   std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_num_imported_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64_t> id_to_num_updated_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
 };

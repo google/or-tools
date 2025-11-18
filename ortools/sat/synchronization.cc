@@ -27,6 +27,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1336,6 +1337,7 @@ int SharedClausesManager::RegisterNewId(absl::string_view worker_name,
   id_to_last_processed_binary_clause_.resize(id + 1, 0);
   id_to_last_returned_batch_.resize(id + 1, -1);
   id_to_last_finished_batch_.resize(id + 1, -1);
+  id_to_num_imported_.resize(id + 1, 0);
   id_to_num_exported_.resize(id + 1, 0);
   id_to_worker_name_.resize(id + 1);
   id_to_worker_name_[id] = worker_name;
@@ -1410,18 +1412,27 @@ void SharedClausesManager::GetUnseenBinaryClauses(
   id_to_last_processed_binary_clause_[id] = last_visible_binary_clause_;
 }
 
+void SharedClausesManager::NotifyNumImported(int id, int64_t num_imported) {
+  absl::MutexLock mutex_lock(mutex_);
+  id_to_num_imported_[id] += num_imported;
+}
+
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  absl::btree_map<std::string, int64_t> name_to_table_line;
+  std::vector<std::tuple<std::string, int64_t, int64_t>> name_to_table_line;
   for (int id = 0; id < id_to_num_exported_.size(); ++id) {
-    if (id_to_num_exported_[id] == 0) continue;
-    name_to_table_line[id_to_worker_name_[id]] = id_to_num_exported_[id];
+    if (id_to_num_exported_[id] == 0 && id_to_num_imported_[id] == 0) continue;
+    name_to_table_line.push_back({id_to_worker_name_[id],
+                                  id_to_num_exported_[id],
+                                  id_to_num_imported_[id]});
   }
   if (!name_to_table_line.empty()) {
+    absl::c_sort(name_to_table_line);
     std::vector<std::vector<std::string>> table;
-    table.push_back({"Clauses shared", "Num"});
-    for (const auto& [name, count] : name_to_table_line) {
-      table.push_back({FormatName(name), FormatCounter(count)});
+    table.push_back({"Clauses shared", "#Exported", "#Imported"});
+    for (const auto& [name, exported, imported] : name_to_table_line) {
+      table.push_back(
+          {FormatName(name), FormatCounter(exported), FormatCounter(imported)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }

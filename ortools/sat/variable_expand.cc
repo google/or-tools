@@ -477,10 +477,15 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
   // We force the full encoding if the variable is mostly encoded and some
   // linear1 involves domains that do not correspond to value or order
   // encodings.
-  if (!lin_domain.empty() && !values.is_fully_encoded()) {
-    if (context->IsMostlyFullyEncoded(var) || var_domain.Size() <= 32) {
-      values.ForceFullEncoding();
-    }
+  const bool full_encoding_is_not_too_expensive =
+      context->IsMostlyFullyEncoded(var) || var_domain.Size() <= 32;
+  const bool full_encoding_is_needed =
+      (!lin_domain.empty() ||
+       (var_in_objective && context->ObjectiveDomainIsConstraining()));
+  if (!values.is_fully_encoded() && full_encoding_is_not_too_expensive &&
+      full_encoding_is_needed) {
+    VLOG(3) << "Forcing full encoding of var: " << var;
+    values.ForceFullEncoding();
   }
 
   if (values.empty()) {
@@ -511,14 +516,23 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
           << var_has_positive_objective_coefficient
           << ", #implied_literals_in_complex_domains: "
           << num_implied_literals_in_complex_domains;
-  if (!lin_domain.empty() && (!values.is_fully_encoded() ||
-                              num_implied_literals_in_complex_domains > 2500)) {
+  if (full_encoding_is_needed &&
+      (!values.is_fully_encoded() ||
+       num_implied_literals_in_complex_domains > 2500)) {
     VLOG(2) << "Abort - fully_encode_var: " << values.is_fully_encoded()
             << ", num_implied_literals_in_complex_domains: "
-            << num_implied_literals_in_complex_domains;
-    context->UpdateRuleStats(
-        "TODO variables: only used in large value encoding and order "
-        "encoding.");
+            << num_implied_literals_in_complex_domains
+            << ", full_encoding_is_not_too_expensive: "
+            << full_encoding_is_not_too_expensive
+            << ", full_encoding_is_needed: " << full_encoding_is_needed;
+    if (var_in_objective) {
+      context->UpdateRuleStats(
+          "TODO variables: only used in constrained objective and in encoding");
+    } else {
+      context->UpdateRuleStats(
+          "TODO variables: only used in large value encoding and order "
+          "encoding.");
+    }
     return;
   }
 
@@ -616,14 +630,8 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
                                    : var_domain.Max();
     // Tricky: We cannot just choose an arbitrary value if the objective has
     // a restrictive domain!
-    if (!values.is_fully_encoded() &&
-        context->ObjectiveDomainIsConstraining()) {
-      VLOG(2) << "Abort - objective is constraining";
-      context->UpdateRuleStats(
-          "TODO variables: only used in constrained objective and in "
-          "encoding");
-      return;
-    }
+    DCHECK(values.is_fully_encoded() ||
+           !context->ObjectiveDomainIsConstraining());
 
     // Checks for overflow before trying to substitute the variable in the
     // objective.

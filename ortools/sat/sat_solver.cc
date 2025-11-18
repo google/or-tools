@@ -1446,6 +1446,8 @@ bool SatSolver::TryToMinimizeClause(SatClause* clause) {
   CHECK(clause != nullptr);
   ++counters_.minimization_num_clauses;
 
+  // TODO(user): Make sure clause do not contain any redundant literal before
+  // we try to minimize it.
   std::vector<Literal> candidate;
   candidate.reserve(clause->size());
 

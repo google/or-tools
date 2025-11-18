@@ -325,8 +325,6 @@ class FailedLiteralProbing {
   // which is quite cheap to test here.
   void SubsumeWithBinaryClauseUsingBlockingLiteral(Literal last_decision);
 
-  void AddImplication(Literal last_decision, Literal l);
-
   // Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies
   // the current decision, which itself implies all the previous decisions, with
   // some of them propagating 'not(literal)'.
@@ -366,7 +364,6 @@ class FailedLiteralProbing {
   // For each literal 'l' in the trail, whether a binary clause "d => l" has
   // been extracted, with 'd' the decision at the same level as 'l'.
   std::vector<bool> binary_clause_extracted_;
-  std::vector<SatClause*> subsumed_clauses_;
 
   // Temporary vector used for LRAT proofs.
   std::vector<ClauseId> tmp_clause_ids_;

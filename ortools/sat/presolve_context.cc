@@ -2111,6 +2111,12 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
            .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
                                     objective_domain_.Max()))
            .IsIncludedIn(objective_domain_);
+  if (objective_domain_is_constraining_) {
+    VLOG(3) << "objective domain is constraining: size: "
+            << objective_map_.size()
+            << ", implied: " << implied_domain.ToString()
+            << " objective: " << objective_domain_.ToString();
+  }
   return true;
 }
 
@@ -2247,14 +2253,53 @@ bool PresolveContext::SubstituteVariableInObjective(
 
   RemoveVariableFromObjective(var_in_equality);
 
-  // Because we can assume that the constraint we used was constraining
-  // (otherwise it would have been removed), the objective domain should be now
-  // constraining.
-  objective_domain_is_constraining_ = true;
+  // If the objective is small enough,  recompute the value of
+  // objective_domain_is_constrainting_, otherwise, we just assume it to be
+  // true. This uses the updated objective_map_.
+  if (objective_map_.size() < 256) {
+    Domain implied_domain(0);
 
-  if (objective_domain_.IsEmpty()) {
-    return NotifyThatModelIsUnsat();
+    // We need to sort the entries to be deterministic.
+    tmp_entries_.clear();
+    for (const auto& entry : objective_map_) {
+      tmp_entries_.push_back(entry);
+    }
+    std::sort(tmp_entries_.begin(), tmp_entries_.end());
+    for (const auto& entry : tmp_entries_) {
+      const int var = entry.first;
+      const int64_t coeff = entry.second;
+      implied_domain =
+          implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+    }
+
+    // This is the new domain.
+    // Note that the domain never include the offset.
+    objective_domain_ = objective_domain_.IntersectionWith(implied_domain)
+                            .SimplifyUsingImpliedDomain(implied_domain);
+
+    if (objective_domain_.IsEmpty()) {
+      return NotifyThatModelIsUnsat("empty objective domain");
+    }
+
+    // Detect if the objective domain do not limit the "optimal" objective
+    // value. If this is true, then we can apply any reduction that reduce the
+    // objective value without any issues.
+    objective_domain_is_constraining_ =
+        !implied_domain
+             .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
+                                      objective_domain_.Max()))
+             .IsIncludedIn(objective_domain_);
+    if (objective_domain_is_constraining_) {
+      VLOG(3) << "objective domain is constraining: size: "
+              << objective_map_.size()
+              << ", implied: " << implied_domain.ToString()
+              << " objective: " << objective_domain_.ToString();
+    }
+  } else {
+    objective_domain_is_constraining_ = true;
   }
+
   return true;
 }
 

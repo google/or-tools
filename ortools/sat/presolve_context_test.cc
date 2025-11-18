@@ -506,7 +506,7 @@ TEST(PresolveContextTest, ObjectiveSubstitutionWithLargeCoeff) {
     objective {
       vars: [ 1, 2 ]
       coeffs: [ 2, 2 ]
-      domain: [ 12, 1012 ]  #  [0, 1000] initially, + 2*6 offset.
+      domain: [ 12, 36 ]  #  [0, 1000] initially, + 2*6 offset.
       offset: -9
       integer_before_offset: -12
       scaling_factor: 1
