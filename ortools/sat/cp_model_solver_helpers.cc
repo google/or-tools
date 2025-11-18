@@ -1168,6 +1168,10 @@ int RegisterClausesLevelZeroImport(int id,
       }
     }
     clause_manager->SetAddClauseCallback(std::move(callback));
+    if (new_clauses > 0) {
+      shared_clauses_manager->NotifyNumImported(id, new_clauses);
+    }
+
     if (new_clauses > 0 && !sat_solver->FinishPropagation()) return false;
     if (minimize_shared_clauses && new_clauses > 0) {
       // The new clauses may be subsumed, so try to minimize them to reduce

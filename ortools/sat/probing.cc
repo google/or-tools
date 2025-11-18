@@ -654,7 +654,6 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   }
 
   binary_clause_extracted_.assign(trail_.Index(), false);
-  subsumed_clauses_.clear();
 
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= limit) {
@@ -738,15 +737,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
 
   if (!sat_solver_->ResetToLevelZero()) return false;
   if (!ProcessLiteralsToFix()) return false;
-  if (!subsumed_clauses_.empty()) {
-    for (SatClause* clause : subsumed_clauses_) {
-      if (clause->size() == 0) continue;
-      ++num_subsumed_;
-      clause_manager_->LazyDelete(clause,
-                                  DeletionSourceForStat::SUBSUMPTION_PROBING);
-    }
-    clause_manager_->CleanUpWatchers();
-  }
+  clause_manager_->CleanUpWatchers();
 
   // Display stats.
   const int num_fixed = sat_solver_->LiteralTrail().Index();
@@ -994,7 +985,31 @@ void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
   // of all literals in the reason for this propagation. And use this
   // as a reason for later hyber binary resolution. Like we do when
   // this clause subsumes the reason.
-  AddImplication(last_decision, l);
+  ++num_new_binary_;
+  DCHECK(assignment_.LiteralIsTrue(l));
+  CHECK_NE(l.Variable(), last_decision.Variable());
+
+  // We should never probe a redundant literal.
+  //
+  // TODO(user): We should be able to enforce that l is non-redundant either if
+  // we made sure the clause database is cleaned up before FailedLiteralProbing
+  // is called. This should maybe simplify the ChangeReason() handling.
+  DCHECK(!implication_graph_->IsRedundant(last_decision));
+
+  ClauseId clause_id = kNoClauseId;
+  if (lrat_proof_handler_ != nullptr) {
+    clause_id = clause_id_generator_->GetNextId();
+    tmp_clause_ids_.clear();
+    sat_solver_->AppendClausesFixing({l}, &tmp_clause_ids_, last_decision);
+    lrat_proof_handler_->AddInferredClause(
+        clause_id, {last_decision.Negated(), l}, tmp_clause_ids_);
+  }
+
+  // Each time we extract a binary clause, we change the reason in the trail.
+  // This is important as it will allow us to remove clauses that are now
+  // subsumed by this binary, even if it was a reason.
+  CHECK(implication_graph_->AddBinaryClauseAndChangeReason(
+      clause_id, l, last_decision.Negated()));
 }
 
 // If we can extract a binary clause that subsume the reason clause, we do add
@@ -1006,6 +1021,7 @@ void FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
     const Literal last_decision, const Literal l) {
   const int trail_index = trail_.Info(l.Variable()).trail_index;
   if (trail_.AssignmentType(l.Variable()) != clause_propagator_id_) return;
+  SatClause* clause = clause_manager_->ReasonClause(trail_index);
 
   bool subsumed = false;
   for (const Literal lit : trail_.Reason(l.Variable())) {
@@ -1027,7 +1043,12 @@ void FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
     if (lit == last_decision.Negated()) ++test;
   }
   CHECK_EQ(test, 2);
-  subsumed_clauses_.push_back(clause_manager_->ReasonClause(trail_index));
+
+  // Because of MaybeExtractImplication(), this shouldn't be a reason anymore.
+  CHECK(!clause_manager_->ClauseIsUsedAsReason(clause));
+  ++num_subsumed_;
+  clause_manager_->LazyDelete(clause,
+                              DeletionSourceForStat::SUBSUMPTION_PROBING);
 }
 
 // Inspect the watcher list for last_decision, If we have a blocking
@@ -1043,34 +1064,21 @@ void FailedLiteralProbing::SubsumeWithBinaryClauseUsingBlockingLiteral(
     const Literal last_decision) {
   for (const auto& w :
        clause_manager_->WatcherListOnFalse(last_decision.Negated())) {
-    if (assignment_.LiteralIsTrue(w.blocking_literal)) {
-      if (w.clause->IsRemoved()) continue;
+    if (!assignment_.LiteralIsTrue(w.blocking_literal)) continue;
+    if (w.clause->IsRemoved()) continue;
 
-      // This should be enough for proof correctness.
-      if (clause_manager_->ClauseIsUsedAsReason(w.clause)) {
-        MaybeExtractImplication(last_decision, w.blocking_literal);
-      }
-      subsumed_clauses_.push_back(w.clause);
+    // This should be enough for proof correctness.
+    if (clause_manager_->ClauseIsUsedAsReason(w.clause)) {
+      MaybeExtractImplication(last_decision, w.blocking_literal);
+
+      // It should have been replaced by a binary clause now.
+      CHECK(!clause_manager_->ClauseIsUsedAsReason(w.clause));
     }
-  }
-}
 
-void FailedLiteralProbing::AddImplication(const Literal last_decision,
-                                          const Literal l) {
-  ++num_new_binary_;
-  DCHECK(assignment_.LiteralIsTrue(l));
-  CHECK_NE(l.Variable(), last_decision.Variable());
-
-  ClauseId clause_id = kNoClauseId;
-  if (lrat_proof_handler_ != nullptr) {
-    clause_id = clause_id_generator_->GetNextId();
-    tmp_clause_ids_.clear();
-    sat_solver_->AppendClausesFixing({l}, &tmp_clause_ids_, last_decision);
-    lrat_proof_handler_->AddInferredClause(
-        clause_id, {last_decision.Negated(), l}, tmp_clause_ids_);
+    ++num_subsumed_;
+    clause_manager_->LazyDelete(w.clause,
+                                DeletionSourceForStat::SUBSUMPTION_PROBING);
   }
-  CHECK(implication_graph_->AddBinaryClause(clause_id, last_decision.Negated(),
-                                            l));
 }
 
 // Adds 'not(literal)' to `to_fix_`, assuming that 'literal' directly implies

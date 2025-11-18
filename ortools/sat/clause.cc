@@ -292,6 +292,9 @@ SatClause* ClauseManager::ReasonClause(int trail_index) const {
 SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
   if (!trail_->Assignment().VariableIsAssigned(var)) return nullptr;
   if (trail_->AssignmentType(var) != propagator_id_) return nullptr;
+
+  DCHECK_EQ(trail_->Reason(var),
+            reasons_[trail_->Info(var).trail_index]->PropagationReason());
   return reasons_[trail_->Info(var).trail_index];
 }
 
@@ -546,6 +549,14 @@ bool ClauseManager::InprocessingRewriteClause(
     AttachOnFalse(new_clause[0], new_clause[1], clause);
     AttachOnFalse(new_clause[1], new_clause[0], clause);
   }
+
+  // We need to change the reason now that the clause size changed because
+  // we cache the span into the reason data directly.
+  if (is_reason) {
+    trail_->ChangeReason(trail_->Info(new_clause[0].Variable()).trail_index,
+                         propagator_id_);
+  }
+
   return true;
 }
 
