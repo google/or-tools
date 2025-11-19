@@ -26,17 +26,6 @@
 namespace operations_research {
 namespace glop {
 
-// For all constraints in linear_program, if the constraint has a slack
-// variable, change its value in *values so that the constraints itself is
-// satisfied.
-// Note that this obviously won't always imply that the bounds of the slack
-// variable itself will be satisfied.
-// The code assumes (and DCHECKs) that all constraints with a slack variable
-// have their upper and lower bounds both set to 0. This is ensured by
-// LinearProgram::AddSlackVariablesWhereNecessary().
-void ComputeSlackVariablesValues(const LinearProgram& linear_program,
-                                 DenseRow* values);
-
 // This is separated from LinearProgram class because of a cyclic dependency
 // when scaling as an LP.
 void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
