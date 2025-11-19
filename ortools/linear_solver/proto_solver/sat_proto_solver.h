@@ -19,6 +19,8 @@
 #include <string>
 
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/model.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/logging.h"
 
@@ -64,6 +66,13 @@ MPSolutionResponse SatSolveProto(
 
 // Returns a string that describes the version of the CP-SAT solver.
 std::string SatSolverVersion();
+
+// Internal version of SatSolveProto that can configure a sat::Model object
+// before the solve and return the CpSolverResponse proto to extract statistics.
+MPSolutionResponse SatSolveProtoInternal(
+    LazyMutableCopy<MPModelRequest> request, sat::Model* sat_model,
+    sat::CpSolverResponse* cp_response,
+    std::function<void(const MPSolution&)> solution_callback = nullptr);
 
 }  // namespace operations_research
 

@@ -232,8 +232,8 @@ class XpressMPCallbackContext : public MPCallbackContext {
     LOG(WARNING) << "AddCut is not implemented yet in XPRESS interface";
   };
   void AddLazyConstraint(const LinearRange& lazy_constraint) override {
-    LOG(WARNING)
-        << "AddLazyConstraint inside Callback is not implemented yet in XPRESS interface";
+    LOG(WARNING) << "AddLazyConstraint inside Callback is not implemented yet "
+                    "in XPRESS interface";
   };
   double SuggestSolution(
       const absl::flat_hash_map<const MPVariable*, double>& solution) override;

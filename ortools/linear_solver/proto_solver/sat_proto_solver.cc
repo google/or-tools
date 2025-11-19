@@ -157,68 +157,13 @@ MPSolutionResponse TimeLimitResponse(SolverLogger& logger) {
 
 }  // namespace
 
-MPSolutionResponse SatSolveProto(
-    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt_solve,
-    std::function<void(const std::string&)> logging_callback,
-    std::function<void(const MPSolution&)> solution_callback,
-    std::function<void(const double)> best_bound_callback) {
-  sat::SatParameters params;
-  params.set_log_search_progress(request->enable_internal_solver_output());
-
-  // TODO(user): We do not support all the parameters here. In particular the
-  // logs before the solver is called will not be appended to the response. Fix
-  // that, and remove code duplication for the logger config. One way should be
-  // to not touch/configure anything if the logger is already created while
-  // calling SolveCpModel() and call a common config function from here or from
-  // inside Solve()?
-  SolverLogger logger;
-  if (logging_callback != nullptr) {
-    logger.AddInfoLoggingCallback(logging_callback);
-  }
-  logger.EnableLogging(params.log_search_progress());
-  logger.SetLogToStdOut(params.log_to_stdout());
-
-  // Set it now so that it can be overwritten by the solver specific parameters.
-  if (request->has_solver_specific_parameters()) {
-    // See EncodeSatParametersAsString() documentation.
-    if constexpr (!std::is_base_of<Message, sat::SatParameters>::value) {
-      if (!params.MergeFromString(request->solver_specific_parameters())) {
-        return InvalidParametersResponse(
-            logger,
-            "solver_specific_parameters is not a valid binary stream of the "
-            "SatParameters proto");
-      }
-    } else {
-      if (!ProtobufTextFormatMergeFromString(
-              request->solver_specific_parameters(), &params)) {
-        return InvalidParametersResponse(
-            logger,
-            "solver_specific_parameters is not a valid textual representation "
-            "of the SatParameters proto");
-      }
-    }
-  }
-
-  // Validate parameters.
-  {
-    const std::string error = sat::ValidateParameters(params);
-    if (!error.empty()) {
-      return InvalidParametersResponse(
-          logger, absl::StrCat("Invalid CP-SAT parameters: ", error));
-    }
-  }
-
-  // Reconfigure the logger in case the solver_specific_parameters overwrite its
-  // configuration. Note that the invalid parameter message will be logged
-  // before that though according to request.enable_internal_solver_output().
-  logger.EnableLogging(params.log_search_progress());
-  logger.SetLogToStdOut(params.log_to_stdout());
-
-  if (request->has_solver_time_limit_seconds()) {
-    params.set_max_time_in_seconds(request->solver_time_limit_seconds());
-  }
-
-  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromParameters(params);
+MPSolutionResponse SatSolveProtoInternal(
+    LazyMutableCopy<MPModelRequest> request, sat::Model* sat_model,
+    sat::CpSolverResponse* cp_response,
+    std::function<void(const MPSolution&)> solution_callback) {
+  SolverLogger* logger = sat_model->GetOrCreate<SolverLogger>();
+  sat::SatParameters& params = *sat_model->GetOrCreate<sat::SatParameters>();
+  TimeLimit* time_limit = sat_model->GetOrCreate<TimeLimit>();
 
   // Model validation and delta handling.
   MPSolutionResponse response;
@@ -231,10 +176,10 @@ MPSolutionResponse SatSolveProto(
     //
     // The logging is only needed for our benchmark script, so we use UNKNOWN
     // here, but we could log the proper status instead.
-    if (logger.LoggingIsEnabled()) {
+    if (logger->LoggingIsEnabled()) {
       sat::CpSolverResponse cp_response;
       cp_response.set_status(FromMPSolverResponseStatus(response.status()));
-      SOLVER_LOG(&logger, CpSolverResponseStats(cp_response));
+      SOLVER_LOG(logger, CpSolverResponseStats(cp_response));
     }
     return response;
   }
@@ -252,23 +197,22 @@ MPSolutionResponse SatSolveProto(
   // of input.
   if (params.mip_treat_high_magnitude_bounds_as_infinity()) {
     sat::ChangeLargeBoundsToInfinity(params.mip_max_valid_magnitude(),
-                                     mp_model.get(), &logger);
+                                     mp_model.get(), logger);
   }
-  if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model,
-                                                   &logger)) {
-    return InvalidModelResponse(logger, "Extra CP-SAT validation failed.");
+  if (!sat::MPModelProtoValidationBeforeConversion(params, *mp_model, logger)) {
+    return InvalidModelResponse(*logger, "Extra CP-SAT validation failed.");
   }
 
   // This is good to do before any presolve.
   if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
-                                                &logger)) {
-    return InfeasibleResponse(logger,
+                                                logger)) {
+    return InfeasibleResponse(*logger,
                               "An integer variable has an empty domain");
   }
 
   // Coefficients really close to zero can cause issues.
   // We remove them right away according to our parameters.
-  RemoveNearZeroTerms(params, mp_model.get(), &logger);
+  RemoveNearZeroTerms(params, mp_model.get(), logger);
 
   // Note(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
@@ -276,17 +220,17 @@ MPSolutionResponse SatSolveProto(
   std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
   if (!params.enumerate_all_solutions() && params.mip_presolve_level() > 0) {
     const glop::ProblemStatus status = ApplyMipPresolveSteps(
-        glop_params, mp_model.get(), &for_postsolve, &logger);
+        glop_params, mp_model.get(), &for_postsolve, logger);
     switch (status) {
       case glop::ProblemStatus::INIT:
         // Continue with the solve.
         break;
       case glop::ProblemStatus::PRIMAL_INFEASIBLE:
         return InfeasibleResponse(
-            logger, "Problem proven infeasible during MIP presolve");
+            *logger, "Problem proven infeasible during MIP presolve");
       case glop::ProblemStatus::INVALID_PROBLEM:
         return InvalidModelResponse(
-            logger, "Problem detected invalid during MIP presolve");
+            *logger, "Problem detected invalid during MIP presolve");
       default:
         // TODO(user): We put the INFEASIBLE_OR_UNBOUNBED case here since there
         // is no return status that exactly matches it.
@@ -294,7 +238,7 @@ MPSolutionResponse SatSolveProto(
           // This is needed for our benchmark scripts.
           sat::CpSolverResponse cp_response;
           cp_response.set_status(sat::CpSolverStatus::UNKNOWN);
-          SOLVER_LOG(&logger, "MIP presolve: problem infeasible or unbounded.");
+          SOLVER_LOG(logger, "MIP presolve: problem infeasible or unbounded.");
           LOG(INFO) << CpSolverResponseStats(cp_response);
         }
         response.set_status(MPSolverResponseStatus::MPSOLVER_UNKNOWN_STATUS);
@@ -307,22 +251,22 @@ MPSolutionResponse SatSolveProto(
   }
 
   if (time_limit->LimitReached()) {
-    return TimeLimitResponse(logger);
+    return TimeLimitResponse(*logger);
   }
   // We need to do that before the automatic detection of integers.
-  RemoveNearZeroTerms(params, mp_model.get(), &logger);
+  RemoveNearZeroTerms(params, mp_model.get(), logger);
 
-  SOLVER_LOG(&logger, "");
-  SOLVER_LOG(&logger, "Scaling to pure integer problem.");
+  SOLVER_LOG(logger, "");
+  SOLVER_LOG(logger, "Scaling to pure integer problem.");
 
   const int num_variables = mp_model->variable_size();
   std::vector<double> var_scaling(num_variables, 1.0);
   if (params.mip_automatically_scale_variables()) {
-    var_scaling = sat::DetectImpliedIntegers(mp_model.get(), &logger);
+    var_scaling = sat::DetectImpliedIntegers(mp_model.get(), logger);
     if (!sat::MakeBoundsOfIntegerVariablesInteger(params, mp_model.get(),
-                                                  &logger)) {
+                                                  logger)) {
       return InfeasibleResponse(
-          logger, "A detected integer variable has an empty domain");
+          *logger, "A detected integer variable has an empty domain");
     }
   }
   if (params.mip_var_scaling() != 1.0) {
@@ -347,7 +291,7 @@ MPSolutionResponse SatSolveProto(
     }
     if (!all_integer) {
       return InvalidModelResponse(
-          logger,
+          *logger,
           "The model contains non-integer variables but the parameter "
           "'only_solve_ip' was set. Change this parameter if you "
           "still want to solve a more constrained version of the original MIP "
@@ -357,8 +301,8 @@ MPSolutionResponse SatSolveProto(
 
   sat::CpModelProto cp_model;
   if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model,
-                                         &logger)) {
-    return InvalidModelResponse(logger,
+                                         logger)) {
+    return InvalidModelResponse(*logger,
                                 "Failed to convert model into CP-SAT model");
   }
   DCHECK_EQ(cp_model.variables().size(), var_scaling.size());
@@ -391,30 +335,16 @@ MPSolutionResponse SatSolveProto(
   const bool is_maximize = mp_model->maximize();
   mp_model.reset();
 
-  params.set_max_time_in_seconds(time_limit->GetTimeLeft());
-  if (time_limit->GetDeterministicTimeLeft() !=
-      std::numeric_limits<double>::infinity()) {
-    params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
-  }
-
   // Configure model.
-  sat::Model sat_model;
-  sat_model.Register<SolverLogger>(&logger);
-  sat_model.Add(NewSatParameters(params));
-  if (interrupt_solve != nullptr) {
-    sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
-        interrupt_solve);
-  }
-
-  auto post_solve = [&](const sat::CpSolverResponse& cp_response) {
+  auto post_solve = [&](const sat::CpSolverResponse& sat_response) {
     MPSolution mp_solution;
-    mp_solution.set_objective_value(cp_response.objective_value());
+    mp_solution.set_objective_value(sat_response.objective_value());
     // Postsolve the bound shift and scaling.
     glop::ProblemSolution glop_solution((glop::RowIndex(old_num_constraints)),
                                         (glop::ColIndex(old_num_variables)));
     for (int v = 0; v < glop_solution.primal_values.size(); ++v) {
       glop_solution.primal_values[glop::ColIndex(v)] =
-          static_cast<double>(cp_response.solution(v)) / var_scaling[v];
+          static_cast<double>(sat_response.solution(v)) / var_scaling[v];
     }
     for (int i = for_postsolve.size(); --i >= 0;) {
       for_postsolve[i]->RecoverSolution(&glop_solution);
@@ -427,33 +357,29 @@ MPSolutionResponse SatSolveProto(
   };
 
   if (solution_callback != nullptr) {
-    sat_model.Add(sat::NewFeasibleSolutionObserver(
-        [&](const sat::CpSolverResponse& cp_response) {
-          solution_callback(post_solve(cp_response));
+    sat_model->Add(sat::NewFeasibleSolutionObserver(
+        [&](const sat::CpSolverResponse& sat_response) {
+          solution_callback(post_solve(sat_response));
         }));
-  }
-  if (best_bound_callback != nullptr) {
-    sat_model.Add(sat::NewBestBoundCallback(best_bound_callback));
   }
 
   // Solve.
-  const sat::CpSolverResponse cp_response =
-      sat::SolveCpModel(cp_model, &sat_model);
+  *cp_response = sat::SolveCpModel(cp_model, sat_model);
 
   // Convert the response.
   //
   // TODO(user): Implement the row and column status.
   response.mutable_solve_info()->set_solve_wall_time_seconds(
-      cp_response.wall_time());
+      cp_response->wall_time());
   response.mutable_solve_info()->set_solve_user_time_seconds(
-      cp_response.user_time());
-  response.set_status(
-      ToMPSolverResponseStatus(cp_response.status(), cp_model.has_objective()));
+      cp_response->user_time());
+  response.set_status(ToMPSolverResponseStatus(cp_response->status(),
+                                               cp_model.has_objective()));
   if (response.status() == MPSOLVER_FEASIBLE ||
       response.status() == MPSOLVER_OPTIMAL) {
-    response.set_objective_value(cp_response.objective_value());
-    response.set_best_objective_bound(cp_response.best_objective_bound());
-    MPSolution post_solved_solution = post_solve(cp_response);
+    response.set_objective_value(cp_response->objective_value());
+    response.set_best_objective_bound(cp_response->best_objective_bound());
+    MPSolution post_solved_solution = post_solve(*cp_response);
     *response.mutable_variable_value() =
         std::move(*post_solved_solution.mutable_variable_value());
   }
@@ -462,9 +388,9 @@ MPSolutionResponse SatSolveProto(
   //
   // TODO(user): Remove the postsolve hack of copying to a response.
   for (const sat::CpSolverSolution& additional_solution :
-       cp_response.additional_solutions()) {
+       cp_response->additional_solutions()) {
     if (absl::MakeConstSpan(additional_solution.values()) ==
-        absl::MakeConstSpan(cp_response.solution())) {
+        absl::MakeConstSpan(cp_response->solution())) {
       continue;
     }
     double obj = cp_model.floating_point_objective().offset();
@@ -492,6 +418,84 @@ MPSolutionResponse SatSolveProto(
               }
             });
   return response;
+}
+
+MPSolutionResponse SatSolveProto(
+    LazyMutableCopy<MPModelRequest> request, std::atomic<bool>* interrupt_solve,
+    std::function<void(const std::string&)> logging_callback,
+    std::function<void(const MPSolution&)> solution_callback,
+    std::function<void(const double)> best_bound_callback) {
+  sat::Model sat_model;
+  sat::SatParameters& params = *sat_model.GetOrCreate<sat::SatParameters>();
+  params.set_log_search_progress(request->enable_internal_solver_output());
+
+  // TODO(user): We do not support all the parameters here. In particular the
+  // logs before the solver is called will not be appended to the response. Fix
+  // that, and remove code duplication for the logger config. One way should be
+  // to not touch/configure anything if the logger is already created while
+  // calling SolveCpModel() and call a common config function from here or from
+  // inside Solve()?
+  SolverLogger* logger = sat_model.GetOrCreate<SolverLogger>();
+  if (logging_callback != nullptr) {
+    logger->AddInfoLoggingCallback(logging_callback);
+  }
+  logger->EnableLogging(params.log_search_progress());
+  logger->SetLogToStdOut(params.log_to_stdout());
+
+  // Set it now so that it can be overwritten by the solver specific parameters.
+  if (request->has_solver_specific_parameters()) {
+    // See EncodeSatParametersAsString() documentation.
+    if constexpr (!std::is_base_of<Message, sat::SatParameters>::value) {
+      if (!params.MergeFromString(request->solver_specific_parameters())) {
+        return InvalidParametersResponse(
+            *logger,
+            "solver_specific_parameters is not a valid binary stream of the "
+            "SatParameters proto");
+      }
+    } else {
+      if (!ProtobufTextFormatMergeFromString(
+              request->solver_specific_parameters(), &params)) {
+        return InvalidParametersResponse(
+            *logger,
+            "solver_specific_parameters is not a valid textual representation "
+            "of the SatParameters proto");
+      }
+    }
+  }
+
+  // Validate parameters.
+  {
+    const std::string error = sat::ValidateParameters(params);
+    if (!error.empty()) {
+      return InvalidParametersResponse(
+          *logger, absl::StrCat("Invalid CP-SAT parameters: ", error));
+    }
+  }
+
+  // Reconfigure the logger in case the solver_specific_parameters overwrite its
+  // configuration. Note that the invalid parameter message will be logged
+  // before that though according to request.enable_internal_solver_output().
+  logger->EnableLogging(params.log_search_progress());
+  logger->SetLogToStdOut(params.log_to_stdout());
+
+  if (request->has_solver_time_limit_seconds()) {
+    params.set_max_time_in_seconds(request->solver_time_limit_seconds());
+  }
+
+  sat_model.GetOrCreate<TimeLimit>()->ResetLimitFromParameters(params);
+
+  if (interrupt_solve != nullptr) {
+    sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        interrupt_solve);
+  }
+
+  if (best_bound_callback != nullptr) {
+    sat_model.Add(sat::NewBestBoundCallback(best_bound_callback));
+  }
+
+  sat::CpSolverResponse cp_response;
+  return SatSolveProtoInternal(std::move(request), &sat_model, &cp_response,
+                               solution_callback);
 }
 
 std::string SatSolverVersion() { return sat::CpSatSolverVersion(); }
