@@ -36,7 +36,7 @@ message SpatiallyCloseRoutesRuinStrategy {
   optional uint32 num_ruined_routes = 3;
 }
 
-// Ruin strategy that removes a number of customers by performing a random walk
+// Ruin strategy that removes a number of nodes by performing a random walk
 // on the underlying routing solution. More precisely, starting from a randomly
 // selected seed visit, the walk is extended by either moving within the
 // same route or by jumping to a visit served by a different neighboring
@@ -132,7 +132,7 @@ message SISRRuinStrategy {
   // paper is \bar{c} and the suggested value is 10.
   optional uint32 avg_num_removed_visits = 2;
 
-  // Value in [0, 1] ruling the number of preserved customers in the split
+  // Value in [0, 1] ruling the number of preserved nodes in the split
   // sequence removal. The parameter name in the paper is \alpha and the
   // suggested value is 0.01.
   optional double bypass_factor = 3;
@@ -262,8 +262,12 @@ message CoolingScheduleStrategy {
   }
 }
 
-// Specifies the behavior of a simulated annealing acceptance strategy.
-message SimulatedAnnealingParameters {
+// Acceptance strategy in which only improving solutions are accepted.
+message GreedyDescentAcceptanceStrategy {}
+
+// Acceptance strategy in which solutions are accepted with a probability that
+// depends on its quality and on the current state of the search.
+message SimulatedAnnealingAcceptanceStrategy {
   // Determines the speed at which the temperature changes from initial to
   // final.
   CoolingScheduleStrategy.Value cooling_schedule_strategy = 1;
@@ -287,21 +291,17 @@ message SimulatedAnnealingParameters {
   optional bool automatic_temperatures = 4;
 }
 
-// Determines when a neighbor solution, obtained by the application of a
-// perturbation and improvement step to a reference solution, is used to
-// replace the reference solution.
+// Acceptance strategy in which a solution is accepted only if all nodes
+// are performed. Disjunctions are respected when several nodes can be
+// performed.
+message AllNodesPerformedAcceptanceStrategy {}
+
+// Determines when a candidate solution replaces another one.
 message AcceptanceStrategy {
-  enum Value {
-    // Unspecified value.
-    UNSET = 0;
-
-    // Accepts only solutions that are improving with respect to the reference
-    // one.
-    GREEDY_DESCENT = 1;
-
-    // Accepts a candidate solution with a probability that depends on its
-    // quality and on the current state of the search.
-    SIMULATED_ANNEALING = 2;
+  oneof strategy {
+    GreedyDescentAcceptanceStrategy greedy_descent = 1;
+    SimulatedAnnealingAcceptanceStrategy simulated_annealing = 2;
+    AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
   }
 }
 
@@ -320,9 +320,9 @@ message IteratedLocalSearchParameters {
 
   // Determines when the neighbor solution S', possibly improved if
   // `improve_perturbed_solution` is true, replaces the reference solution S.
-  AcceptanceStrategy.Value acceptance_strategy = 4;
+  AcceptanceStrategy reference_solution_acceptance_strategy = 4;
 
-  // Parameters to customize a simulated annealing acceptance strategy. These
-  // parameters are required iff the acceptance_strategy is SIMULATED_ANNEALING.
-  SimulatedAnnealingParameters simulated_annealing_parameters = 5;
+  // Determines when the neighbor solution S' replaces the best solution found
+  // so far.
+  AcceptanceStrategy best_solution_acceptance_strategy = 5;
 }
