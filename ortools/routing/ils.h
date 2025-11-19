@@ -43,30 +43,30 @@ class RoutingSolution {
   // vehicle, if not already done.
   void InitializeRouteInfoIfNeeded(int vehicle);
 
-  // Returns whether node_index belongs to a route that has been initialized.
-  bool BelongsToInitializedRoute(int64_t node_index) const;
+  // Returns whether node belongs to a route that has been initialized.
+  bool BelongsToInitializedRoute(int64_t node) const;
 
-  // Returns the next node index of the given node_index.
-  int64_t GetNextNodeIndex(int64_t node_index) const;
+  // Returns the next node index of the given node.
+  int64_t GetNextNodeIndex(int64_t node) const;
 
-  // Returns the previous node index of the given node_index.
-  // This must be called for node_index belonging to initialized routes.
-  int64_t GetInitializedPrevNodeIndex(int64_t node_index) const;
+  // Returns the previous node index of the given node.
+  // This must be called for node belonging to initialized routes.
+  int64_t GetInitializedPrevNodeIndex(int64_t node) const;
 
   // Returns the number of visits performed by the given vehicle.
   // This must be called for a vehicle associated with an initialized route.
   int GetRouteSize(int vehicle) const;
 
-  // Returns whether node_index can be removed from the solution.
-  // This must be called for node_index belonging to initialized routes.
-  bool CanBeRemoved(int64_t node_index) const;
+  // Returns whether node can be removed from the solution.
+  // This must be called for node belonging to initialized routes.
+  bool CanBeRemoved(int64_t node) const;
 
-  // Removes the node with the given node_index.
-  // This must be called for node_index belonging to initialized routes.
-  void RemoveNode(int64_t node_index);
+  // Removes the node with the given node.
+  // This must be called for node belonging to initialized routes.
+  void RemoveNode(int64_t node);
 
-  // Removes the performed sibling pickup or delivery of customer, if any.
-  void RemovePerformedPickupDeliverySibling(int64_t customer);
+  // Removes the performed sibling pickup or delivery of node, if any.
+  void RemovePerformedPickupDeliverySibling(int64_t node);
 
   // Randomly returns the next or previous visit of the given performed
   // visit. Returns -1 if there are no other available visits. When the
@@ -115,7 +115,7 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
                                   int num_neighbors_for_route_selection);
   // Returns next accessors where at most num_routes routes have been shortcut,
   // i.e., next(shortcut route begin) = shortcut route end.
-  // Next accessors for customers belonging to shortcut routes are still set to
+  // Next accessors for nodes belonging to shortcut routes are still set to
   // their original value and should not be used.
   std::function<int64_t(int64_t)> Ruin(const Assignment* assignment) override;
 
@@ -124,7 +124,7 @@ class CloseRoutesRemovalRuinProcedure : public RuinProcedure {
   const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
   const size_t num_routes_;
   std::mt19937& rnd_;
-  std::uniform_int_distribution<int64_t> customer_dist_;
+  std::uniform_int_distribution<int64_t> node_dist_;
   SparseBitset<int64_t> removed_routes_;
 };
 
@@ -149,7 +149,7 @@ class RandomWalkRemovalRuinProcedure : public RuinProcedure {
   const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
   std::mt19937& rnd_;
   const int walk_length_;
-  std::uniform_int_distribution<int64_t> customer_dist_;
+  std::uniform_int_distribution<int64_t> node_dist_;
   std::bernoulli_distribution boolean_dist_;
 };
 
@@ -233,7 +233,7 @@ class SISRRuinProcedure : public RuinProcedure {
   int avg_num_removed_visits_;
   double bypass_factor_;
   const RoutingModel::NodeNeighborsByCostClass* const neighbors_manager_;
-  std::uniform_int_distribution<int64_t> customer_dist_;
+  std::uniform_int_distribution<int64_t> node_dist_;
   std::bernoulli_distribution boolean_dist_;
   std::uniform_real_distribution<double> probability_dist_;
   SparseBitset<int64_t> ruined_routes_;
@@ -269,14 +269,15 @@ class NeighborAcceptanceCriterion {
 
 // Returns a neighbor acceptance criterion based on the given parameters.
 std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
-    const RoutingModel& model, const RoutingSearchParameters& parameters,
+    const RoutingModel& model, const AcceptanceStrategy& acceptance_strategy,
+    const NeighborAcceptanceCriterion::SearchState& final_search_state,
     std::mt19937* rnd);
 
 // Returns initial and final simulated annealing temperatures according to the
 // given simulated annealing input parameters.
 std::pair<double, double> GetSimulatedAnnealingTemperatures(
-    const RoutingModel& model, const SimulatedAnnealingParameters& sa_params,
-    std::mt19937* rnd);
+    const RoutingModel& model,
+    const SimulatedAnnealingAcceptanceStrategy& sa_params, std::mt19937* rnd);
 
 }  // namespace operations_research::routing
 

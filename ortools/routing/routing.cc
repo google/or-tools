@@ -3605,12 +3605,29 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     return true;
   };
 
-  std::unique_ptr<NeighborAcceptanceCriterion> acceptance_criterion =
-      MakeNeighborAcceptanceCriterion(*this, parameters, &rnd);
+  const IteratedLocalSearchParameters& ils_parameters =
+      parameters.iterated_local_search_parameters();
+
+  const absl::Duration final_duration =
+      !parameters.has_time_limit()
+          ? absl::InfiniteDuration()
+          : util_time::DecodeGoogleApiProto(parameters.time_limit()).value();
+
+  NeighborAcceptanceCriterion::SearchState final_search_state = {
+      final_duration, parameters.solution_limit()};
+
+  std::unique_ptr<NeighborAcceptanceCriterion> reference_acceptance_criterion =
+      MakeNeighborAcceptanceCriterion(
+          *this, ils_parameters.reference_solution_acceptance_strategy(),
+          final_search_state, &rnd);
+
+  std::unique_ptr<NeighborAcceptanceCriterion> best_acceptance_criterion =
+      MakeNeighborAcceptanceCriterion(
+          *this, ils_parameters.best_solution_acceptance_strategy(),
+          final_search_state, &rnd);
 
   const bool improve_perturbed_solution =
-      parameters.iterated_local_search_parameters()
-          .improve_perturbed_solution();
+      ils_parameters.improve_perturbed_solution();
 
   while (update_time_limits() &&
          explored_solutions < parameters.solution_limit()) {
@@ -3635,15 +3652,17 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
       }
     }
 
-    if (neighbor_solution->ObjectiveValue() < best_solution->ObjectiveValue()) {
+    absl::Duration elapsed_time =
+        absl::Milliseconds(solver_->wall_time() - start_time_ms);
+
+    if (best_acceptance_criterion->Accept({elapsed_time, explored_solutions},
+                                          neighbor_solution, best_solution)) {
       best_solution->CopyIntersection(neighbor_solution);
     }
 
-    absl::Duration elapsed_time =
-        absl::Milliseconds(solver_->wall_time() - start_time_ms);
-    if (acceptance_criterion->Accept({elapsed_time, explored_solutions},
-                                     neighbor_solution,
-                                     last_accepted_solution)) {
+    if (reference_acceptance_criterion->Accept(
+            {elapsed_time, explored_solutions}, neighbor_solution,
+            last_accepted_solution)) {
       // Note that the perturbation_db is using last_accepted_solution as
       // reference assignment. By updating last_accepted_solution here we thus
       // also keep the perturbation_db reference assignment up to date.
