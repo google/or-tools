@@ -617,17 +617,6 @@ class SortedDisjointIntervalList {
   Iterator InsertInterval(int64_t start, int64_t end);
 
   /**
-   * If value is in an interval, increase its end by one, otherwise insert the
-   * interval [value, value]. In both cases, this returns an iterator to the
-   * new/modified interval (possibly merged with others) and fills newly_covered
-   * with the new value that was just added in the union of all the intervals.
-   *
-   * If this causes an interval ending at kint64max to grow, it will die with a
-   * CHECK fail.
-   */
-  Iterator GrowRightByOne(int64_t value, int64_t* newly_covered);
-
-  /**
    * Adds all intervals [starts[i]..ends[i]].
    *
    * Same behavior as InsertInterval() upon invalid intervals. There's a version
