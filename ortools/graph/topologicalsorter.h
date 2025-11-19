@@ -63,6 +63,9 @@ namespace graph {
 // StaticGraph<> in ./graph.h: FastTopologicalSort() can take any such graph as
 // input.
 //
+// If you have a util_graph::Graph and don't need input validation, consider
+// util_graph::TopoOrder(): it has an even simpler API and is only 1.5x slower.
+//
 // ERRORS: returns InvalidArgumentError if the input is broken (negative or
 // out-of-bounds integers) or if the graph is cyclic. In the latter case, the
 // error message will contain "cycle". Note that if cycles may occur in your
@@ -72,7 +75,7 @@ namespace graph {
 // TIE BREAKING: the returned topological order is deterministic and fixed, and
 // corresponds to iterating on nodes in a LIFO (Breadth-first) order.
 //
-// Benchmark: gpaste/6147236302946304, 4-10x faster than util_graph::TopoSort().
+// Benchmark: gpaste/4894742655664128.
 //
 // EXAMPLES:
 //   std::vector<std::vector<int>> adj = {{..}, {..}, ..};

@@ -49,10 +49,13 @@ namespace util {
 // TODO(user): Currently only max-flow handles this graph, but not
 // min-cost-flow.
 template <typename NodeIndexType = int32_t, typename ArcIndexType = int32_t>
-class FlowGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
+class FlowGraph : public BaseGraph<FlowGraph<NodeIndexType, ArcIndexType>,
+                                   NodeIndexType, ArcIndexType, false> {
   // Note that we do NOT use negated indices for reverse arc. So we use false
   // for the last template argument here HasNegativeReverseArcs.
-  typedef BaseGraph<NodeIndexType, ArcIndexType, false> Base;
+  typedef BaseGraph<FlowGraph<NodeIndexType, ArcIndexType>, NodeIndexType,
+                    ArcIndexType, false>
+      Base;
   using Base::arc_capacity_;
   using Base::const_capacities_;
   using Base::node_capacity_;
@@ -146,7 +149,7 @@ class FlowGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   }
 
   void Build() { Build(nullptr); }
-  void Build(std::vector<ArcIndexType>* permutation);
+  void Build(std::vector<ArcIndexType>* permutation) final;
 
   // This influence what Build() does. If true, we will detect already existing
   // pairs of (arc, reverse_arc) and only construct new reverse arc for the one

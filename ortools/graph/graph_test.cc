@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/log/check.h"
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -37,7 +38,10 @@
 
 namespace util {
 
+using testing::_;
+using testing::AllOf;
 using testing::ElementsAre;
+using testing::Field;
 using testing::Pair;
 using testing::UnorderedElementsAre;
 
