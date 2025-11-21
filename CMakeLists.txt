@@ -196,6 +196,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
 message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
+  set(OR_TOOLS_BUILD_TESTING ON)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
@@ -215,6 +216,7 @@ if(BUILD_TESTING)
       "NOT BUILD_DEPS" ON)
   endif()
 else()
+  set(OR_TOOLS_BUILD_TESTING OFF)
   set(BUILD_googletest OFF)
   set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
