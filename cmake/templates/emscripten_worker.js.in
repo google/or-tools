@@ -1,0 +1,82 @@
+const postStdout = (text) => {
+  if (text === undefined) return;
+  postMessage({ type: "stdout", text: String(text) });
+};
+
+const postStderr = (text) => {
+  if (text === undefined) return;
+  postMessage({ type: "stderr", text: String(text) });
+};
+
+let runtimeReady = false;
+let runInProgress = false;
+
+self.Module = {
+  noInitialRun: true,
+  print: postStdout,
+  printErr: postStderr,
+  onRuntimeInitialized() {
+    runtimeReady = true;
+    postMessage({ type: "ready" });
+  },
+};
+
+importScripts("@TARGET_NAME@.js");
+
+async function callMainAsync(args) {
+  const fullArgs = ['@TARGET_NAME@', ...(args || [])];
+  const argc = fullArgs.length;
+  const argvPtr = Module._malloc((argc + 1) * 4);
+  if (!argvPtr) throw new Error('Failed to allocate argv buffer.');
+  const allocated = [];
+  try {
+    fullArgs.forEach((arg, index) => {
+      const strPtr = Module.allocateUTF8(arg);
+      allocated.push(strPtr);
+      Module.HEAPU32[(argvPtr >> 2) + index] = strPtr;
+    });
+    Module.HEAPU32[(argvPtr >> 2) + argc] = 0;
+    await Module.ccall(
+      'main',
+      'number',
+      ['number', 'number'],
+      [argc, argvPtr],
+      { async: true });
+  } finally {
+    allocated.forEach((ptr) => Module._free(ptr));
+    Module._free(argvPtr);
+  }
+}
+
+async function runMain(args) {
+  if (!runtimeReady) {
+    postMessage({ type: "error", message: "Runtime not initialized." });
+    return;
+  }
+  if (runInProgress) {
+    postMessage({ type: "error", message: "Run already in progress." });
+    return;
+  }
+  runInProgress = true;
+  try {
+    await callMainAsync(args || []);
+    postMessage({ type: "done" });
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    postMessage({ type: "error", message });
+  } finally {
+    runInProgress = false;
+  }
+}
+
+const previousOnMessage = self.onmessage;
+self.onmessage = (event) => {
+  const data = event.data || {};
+  if (data.type === "run") {
+    runMain(data.args || []);
+    return;
+  }
+  if (typeof previousOnMessage === "function") {
+    previousOnMessage.call(self, event);
+  }
+};

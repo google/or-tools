@@ -1,0 +1,12 @@
+{
+  "name": "ortools-cpsat-wasm",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:emsdk": "./emsdk/emsdk install latest && ./emsdk/emsdk activate latest",
+    "configure": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake'",
+    "build": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake && cmake --build build --target cp_sat_api -j'",
+    "clean": "rm -rf build",
+    "serve:magic-square": "bash -lc 'source ./emsdk/emsdk_env.sh && emrun --no_browser --port 8080 build/bin'"
+  }
+}

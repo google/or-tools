@@ -1,0 +1,11 @@
+if(NOT DEFINED TEMPLATE_FILE)
+  message(FATAL_ERROR "TEMPLATE_FILE not provided")
+endif()
+if(NOT DEFINED TARGET_NAME)
+  message(FATAL_ERROR "TARGET_NAME not provided")
+endif()
+if(NOT DEFINED OUTPUT_FILE)
+  message(FATAL_ERROR "OUTPUT_FILE not provided")
+endif()
+
+configure_file("${TEMPLATE_FILE}" "${OUTPUT_FILE}" @ONLY)

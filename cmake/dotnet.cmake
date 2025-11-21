@@ -20,7 +20,6 @@ if(NOT TARGET ${PROJECT_NAMESPACE}::ortools)
 endif()
 
 # Will need swig
-set(SWIG_SOURCE_FILE_EXTENSIONS ".i" ".swig")
 set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
@@ -506,7 +505,7 @@ if(BUILD_DOTNET_DOC)
   if(DOXYGEN_FOUND)
     configure_file(${PROJECT_SOURCE_DIR}/ortools/dotnet/Doxyfile.in ${PROJECT_BINARY_DIR}/dotnet/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -518,8 +517,6 @@ if(BUILD_DOTNET_DOC)
         dotnet_package
         ${PROJECT_BINARY_DIR}/dotnet/Doxyfile
         ${PROJECT_BINARY_DIR}/dotnet/doxygen-awesome.css
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/dotnet/stylesheet.css
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating .Net API documentation with Doxygen"

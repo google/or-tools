@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>@TARGET_NAME@ (WASM)</title>
+		<style>
+			body {
+				font-family: system-ui, sans-serif;
+				margin: 2rem;
+			}
+			pre {
+				background: #f6f8fa;
+				padding: 1rem;
+				border-radius: 6px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>@TARGET_NAME@ (Emscripten)</h1>
+		<p>Open the console to see the program output.</p>
+		<div style="margin-bottom: 1rem;">
+			<label>
+				<input type="checkbox" id="use-threads">
+				Use multithreading (num_search_workers)
+			</label>
+			<input id="workers" type="number" min="1" value="1" style="width: 4rem;">
+			<label style="margin-left: 1rem;">Size:
+				<input id="size" type="number" min="1" value="3" style="width: 4rem;"></label>
+			<label style="margin-left: 1rem;">Extra params (comma-separated):
+				<input id="extra-params" type="text" placeholder="max_time_in_seconds:2,log_search_progress:true" style="width: 20rem;"></label>
+			<button id="run-btn">Run</button>
+		</div>
+		<pre id="status">Loading…</pre>
+  <script>
+    const status = document.getElementById('status');
+    const append = (txt) => {
+      const prefix = status.textContent ? '\n' : '';
+      status.textContent += `${prefix}${txt}`;
+    };
+    const state = { worker: null, runtimeReady: false, running: false };
+
+    function buildArgs() {
+      const args = [];
+      const size = document.getElementById('size').value.trim();
+      if (size) args.push(`--size=${size}`);
+
+      const params = [];
+      if (document.getElementById('use-threads').checked) {
+        const workers = document.getElementById('workers').value.trim();
+        if (workers) params.push(`num_search_workers:${workers}`);
+      } else {
+        params.push('num_search_workers:1');
+      }
+      const extra = document.getElementById('extra-params').value.trim();
+      if (extra) params.push(extra);
+      if (params.length) args.push(`--params=${params.join(',')}`);
+
+      return args;
+    }
+
+    function initWorker() {
+      if (state.worker) return;
+      const worker = new Worker('@TARGET_NAME@_worker.js');
+      state.worker = worker;
+      worker.onmessage = (event) => {
+        const data = event.data || {};
+        switch (data.type) {
+          case 'ready':
+            state.runtimeReady = true;
+            append('Runtime initialized. Click "Run" to start.');
+            break;
+          case 'stdout':
+          case 'stderr':
+            if (data.text) append(data.text);
+            break;
+          case 'done':
+            state.running = false;
+            append('Run completed.');
+            break;
+          case 'error':
+            state.running = false;
+            append(`Run failed: ${data.message || 'Unknown error.'}`);
+            break;
+        }
+      };
+      worker.onerror = (event) => {
+        append(`Worker error: ${event.message || event.type}`);
+      };
+    }
+
+    function runExample() {
+      if (!state.worker) {
+        append('Worker not initialized yet.');
+        return;
+      }
+      if (!state.runtimeReady) {
+        append('Runtime not initialized yet.');
+        return;
+      }
+      if (state.running) {
+        append('Run already in progress.');
+        return;
+      }
+      const args = buildArgs();
+      append(`Running with args: ${args.join(' ') || '(none)'}`);
+      state.running = true;
+      state.worker.postMessage({ type: 'run', args });
+    }
+
+    document.getElementById('run-btn').addEventListener('click', runExample);
+    initWorker();
+  </script>
+	</body>
+</html>

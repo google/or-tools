@@ -12,7 +12,7 @@
 # limitations under the License.
 
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.20)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Enable output of compile commands during generation.
@@ -27,6 +27,18 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
 #message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
 #message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  # Ensure all targets—including third-party deps—are built with pthread support
+  # so shared memory can be used when linking with -sUSE_PTHREADS=1.
+  set(EMSCRIPTEN_USE_PTHREADS ON CACHE BOOL
+      "Enable pthread support when targeting Emscripten")
+  message(STATUS "Emscripten pthreads support (global): ${EMSCRIPTEN_USE_PTHREADS}")
+  if(EMSCRIPTEN_USE_PTHREADS)
+    add_compile_options(-pthread)
+    add_link_options(-pthread -sUSE_PTHREADS=1)
+  endif()
+endif()
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD 20)
@@ -90,11 +102,11 @@ if(MSVC AND BUILD_SHARED_LIBS)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-# Enable CCache if any
-include(ccache)
-
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten" AND NOT DEFINED BUILD_TESTING)
+  set(BUILD_TESTING OFF CACHE BOOL "Enable testing" FORCE)
+endif()
 include(CTest)
 
 # By default only build the C++ library which agregate all components.
@@ -159,6 +171,11 @@ message(STATUS "Build documentation: ${BUILD_DOC}")
 CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_CXX AND BUILD_DOC" OFF)
 message(STATUS "Install doc: ${INSTALL_DOC}")
 
+# WASM JS bindings (optional, Emscripten only)
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  add_subdirectory(javascript)
+endif()
+
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
 # BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
@@ -171,43 +188,40 @@ message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
-CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build BZip2: ${BUILD_BZip2}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_Eigen3 "Build the eigen3 dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build eigen3: ${BUILD_Eigen3}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" OFF
+CMAKE_DEPENDENT_OPTION(BUILD_re2 "Build the re2 dependency Library" ON
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build re2: ${BUILD_re2}")
 
 if(BUILD_TESTING)
-  set(OR_TOOLS_BUILD_TESTING ON)
   CMAKE_DEPENDENT_OPTION(BUILD_googletest "Build googletest" OFF
     "NOT BUILD_DEPS" ON)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
-  set(BUILD_protobuf_matchers ON)
   # Fuzztest do not support MSVC or toolchain
-  if(APPLE OR MSVC OR CMAKE_CROSSCOMPILING)
+  if(MSVC OR CMAKE_CROSSCOMPILING)
     set(USE_fuzztest OFF)
   else()
-    # since no distro provide a fuzztest package disable support by default.
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS} "BUILD_CXX" OFF)
+    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ON "BUILD_CXX" OFF)
   endif()
   if(NOT USE_fuzztest)
     set(BUILD_fuzztest OFF)
@@ -216,15 +230,12 @@ if(BUILD_TESTING)
       "NOT BUILD_DEPS" ON)
   endif()
 else()
-  set(OR_TOOLS_BUILD_TESTING OFF)
   set(BUILD_googletest OFF)
-  set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
   set(USE_fuzztest OFF)
   set(BUILD_fuzztest OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
-message(STATUS "Build protobuf_matchers: ${BUILD_protobuf_matchers}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
 message(STATUS "Enable fuzztest: ${USE_fuzztest}")
 message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
@@ -236,7 +247,7 @@ CMAKE_DEPENDENT_OPTION(USE_BOP "Use the BOP solver" ON "BUILD_CXX" OFF)
 message(STATUS "BOP support: ${USE_BOP}")
 
 ## COIN-OR Solvers (Cbc, Clp)
-CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" OFF "BUILD_CXX" OFF)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
 if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
@@ -291,7 +302,7 @@ message(STATUS "Gurobi support: ${USE_GUROBI}")
 
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
-CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" ON "BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" OFF "BUILD_CXX" OFF)
 message(STATUS "HiGHS support: ${USE_HIGHS}")
 if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
@@ -314,7 +325,7 @@ message(STATUS "Build PDLP: ${BUILD_PDLP}")
 
 ## SCIP
 # see: https://github.com/scipopt/scip
-CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" OFF "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_Boost "Build the Boost dependency Library" OFF

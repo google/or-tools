@@ -15,35 +15,28 @@ if(NOT BUILD_CXX)
   return()
 endif()
 
-# Check primitive types
-option(CHECK_TYPE "Check primitive type size" OFF)
-if(CHECK_TYPE)
-  include(CMakePushCheckState)
-  cmake_push_check_state(RESET)
-  set(CMAKE_EXTRA_INCLUDE_FILES "cstdint")
-  include(CheckTypeSize)
-  check_type_size("long" SIZEOF_LONG LANGUAGE CXX)
-  message(STATUS "Found long size: ${SIZEOF_LONG}")
-  check_type_size("long long" SIZEOF_LONG_LONG LANGUAGE CXX)
-  message(STATUS "Found long long size: ${SIZEOF_LONG_LONG}")
-  check_type_size("int64_t" SIZEOF_INT64_T LANGUAGE CXX)
-  message(STATUS "Found int64_t size: ${SIZEOF_INT64_T}")
+# Basic type
+include(CMakePushCheckState)
+cmake_push_check_state(RESET)
+set(CMAKE_EXTRA_INCLUDE_FILES "cstdint")
+include(CheckTypeSize)
+check_type_size("long" SIZEOF_LONG LANGUAGE CXX)
+message(STATUS "Found long size: ${SIZEOF_LONG}")
+check_type_size("long long" SIZEOF_LONG_LONG LANGUAGE CXX)
+message(STATUS "Found long long size: ${SIZEOF_LONG_LONG}")
+check_type_size("int64_t" SIZEOF_INT64_T LANGUAGE CXX)
+message(STATUS "Found int64_t size: ${SIZEOF_INT64_T}")
 
-  check_type_size("unsigned long" SIZEOF_ULONG LANGUAGE CXX)
-  message(STATUS "Found unsigned long size: ${SIZEOF_ULONG}")
-  check_type_size("unsigned long long" SIZEOF_ULONG_LONG LANGUAGE CXX)
-  message(STATUS "Found unsigned long long size: ${SIZEOF_ULONG_LONG}")
-  check_type_size("uint64_t" SIZEOF_UINT64_T LANGUAGE CXX)
-  message(STATUS "Found uint64_t size: ${SIZEOF_UINT64_T}")
+check_type_size("unsigned long" SIZEOF_ULONG LANGUAGE CXX)
+message(STATUS "Found unsigned long size: ${SIZEOF_ULONG}")
+check_type_size("unsigned long long" SIZEOF_ULONG_LONG LANGUAGE CXX)
+message(STATUS "Found unsigned long long size: ${SIZEOF_ULONG_LONG}")
+check_type_size("uint64_t" SIZEOF_UINT64_T LANGUAGE CXX)
+message(STATUS "Found uint64_t size: ${SIZEOF_UINT64_T}")
 
-  check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
-  message(STATUS "Found int * size: ${SIZEOF_INT_P}")
-  check_type_size("intptr_t" SIZEOF_INTPTR_T LANGUAGE CXX)
-  message(STATUS "Found intptr_t size: ${SIZEOF_INTPTR_T}")
-  check_type_size("uintptr_t" SIZEOF_UINTPTR_T LANGUAGE CXX)
-  message(STATUS "Found uintptr_t size: ${SIZEOF_UINTPTR_T}")
-  cmake_pop_check_state()
-endif()
+check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
+message(STATUS "Found int * size: ${SIZEOF_INT_P}")
+cmake_pop_check_state()
 
 #############
 ##  FLAGS  ##
@@ -51,6 +44,15 @@ endif()
 set(OR_TOOLS_COMPILE_DEFINITIONS)
 set(OR_TOOLS_COMPILE_OPTIONS)
 set(OR_TOOLS_LINK_OPTIONS)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  option(EMSCRIPTEN_USE_PTHREADS "Enable pthread support when targeting Emscripten" ON)
+  message(STATUS "Emscripten pthreads support: ${EMSCRIPTEN_USE_PTHREADS}")
+  if(EMSCRIPTEN_USE_PTHREADS)
+    list(APPEND OR_TOOLS_COMPILE_OPTIONS "-pthread")
+    list(APPEND OR_TOOLS_LINK_OPTIONS "-pthread" "-sUSE_PTHREADS=1")
+  endif()
+endif()
 
 if(MSVC AND BUILD_SHARED_LIBS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_BUILD_DLL")
@@ -79,6 +81,7 @@ if(USE_GLOP)
 endif()
 if(USE_GLPK)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_GLPK")
+  set(GLPK_DIR glpk)
 endif()
 if(USE_GUROBI)
   set(GUROBI_DIR gurobi)
@@ -92,6 +95,7 @@ if(USE_PDLP)
 endif()
 if(USE_SCIP)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
+  set(GSCIP_DIR gscip)
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
@@ -202,7 +206,6 @@ function(ortools_cxx_test)
   target_compile_options(${TEST_NAME} PRIVATE ${TEST_COMPILE_OPTIONS})
   target_link_libraries(${TEST_NAME} PRIVATE
     ${PROJECT_NAMESPACE}::ortools
-    ${PROJECT_NAMESPACE}::base_gmock
     ${TEST_LINK_LIBRARIES}
   )
   target_link_options(${TEST_NAME} PRIVATE ${TEST_LINK_OPTIONS})
@@ -237,7 +240,7 @@ endfunction()
 # Parameters:
 # NAME: CMake target name
 # SOURCES: List of source files
-# [TYPE]: SHARED, STATIC or INTERFACE
+# [TYPE]: SHARED or STATIC
 # [COMPILE_DEFINITIONS]: List of private compile definitions
 # [COMPILE_OPTIONS]: List of private compile options
 # [LINK_LIBRARIES]: List of **public** libraries to use when linking
@@ -281,18 +284,16 @@ function(ortools_cxx_library)
   message(STATUS "Configuring library ${LIBRARY_NAME} ...")
 
   add_library(${LIBRARY_NAME} ${LIBRARY_TYPE} "")
-  if(LIBRARY_TYPE STREQUAL "INTERFACE")
-    target_include_directories(${LIBRARY_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(${LIBRARY_NAME} INTERFACE ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
-  else()
-    target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
-    target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-    target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
-    target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
-    target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
-    target_link_libraries(${LIBRARY_NAME} PUBLIC ${PROJECT_NAMESPACE}::ortools ${LIBRARY_LINK_LIBRARIES})
-    target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
-  endif()
+  target_sources(${LIBRARY_NAME} PRIVATE ${LIBRARY_SOURCES})
+  target_include_directories(${LIBRARY_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_DEFINITIONS})
+  target_compile_features(${LIBRARY_NAME} PRIVATE cxx_std_17)
+  target_compile_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_COMPILE_OPTIONS})
+  target_link_libraries(${LIBRARY_NAME} PUBLIC
+    ${PROJECT_NAMESPACE}::ortools
+    ${LIBRARY_LINK_LIBRARIES}
+  )
+  target_link_options(${LIBRARY_NAME} PRIVATE ${LIBRARY_LINK_OPTIONS})
 
   include(GNUInstallDirs)
   if(APPLE)
@@ -413,6 +414,7 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/glop/*.proto"
   "ortools/graph/*.proto"
   "ortools/linear_solver/*.proto"
+  "ortools/linear_solver/*.proto"
   "ortools/packing/*.proto"
   "ortools/sat/*.proto"
   "ortools/scheduling/*.proto"
@@ -422,6 +424,10 @@ file(GLOB_RECURSE OR_TOOLS_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
 if(USE_PDLP OR BUILD_MATH_OPT)
   file(GLOB_RECURSE PDLP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/pdlp/*.proto")
   list(APPEND OR_TOOLS_PROTO_FILES ${PDLP_PROTO_FILES})
+endif()
+if(USE_SCIP OR BUILD_MATH_OPT)
+  file(GLOB_RECURSE GSCIP_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND OR_TOOLS_PROTO_FILES ${GSCIP_PROTO_FILES})
 endif()
 
 # ORTools proto
@@ -516,28 +522,23 @@ foreach(SUBPROJECT IN ITEMS
  linear_solver
  bop
  glop
+ ${GLPK_DIR}
+ ${GSCIP_DIR}
  ${GUROBI_DIR}
  ${PDLP_DIR}
  sat
+ xpress
  lp_data
  packing
  scheduling
  set_cover
  port
- third_party_solvers
  util)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
   add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
-
-if(USE_GLPK)
-  add_subdirectory(ortools/third_party_solvers/glpk)
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_glpk)
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_glpk>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_glpk)
-endif()
 
 if(BUILD_MATH_OPT)
   add_subdirectory(ortools/${MATH_OPT_DIR})
@@ -587,20 +588,9 @@ if(BUILD_CXX_DOC)
   # add a target to generate API documentation with Doxygen
   find_package(Doxygen REQUIRED)
   if(DOXYGEN_FOUND)
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in
-      ${PROJECT_BINARY_DIR}/cpp/Doxyfile
-      @ONLY)
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/cpp/dirs.cpp.dox.in
-      ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
-      @ONLY)
-    configure_file(
-      ${PROJECT_SOURCE_DIR}/ortools/cpp/main.cpp.dox.in
-      ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
-      @ONLY)
+    configure_file(${PROJECT_SOURCE_DIR}/ortools/cpp/Doxyfile.in ${PROJECT_BINARY_DIR}/cpp/Doxyfile @ONLY)
     file(DOWNLOAD
-      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.3.4/doxygen-awesome.css
+      https://raw.githubusercontent.com/jothepro/doxygen-awesome-css/v2.1.0/doxygen-awesome.css
       ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
       SHOW_PROGRESS
     )
@@ -609,14 +599,9 @@ if(BUILD_CXX_DOC)
       COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/docs/cpp
       COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/cpp/Doxyfile
       DEPENDS
-        ${PROJECT_NAMESPACE}::ortools
         ${PROJECT_BINARY_DIR}/cpp/Doxyfile
         ${PROJECT_BINARY_DIR}/cpp/doxygen-awesome.css
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/header.html
-        ${PROJECT_SOURCE_DIR}/ortools/doxygen/DoxygenLayout.xml
         ${PROJECT_SOURCE_DIR}/ortools/cpp/stylesheet.css
-        ${PROJECT_BINARY_DIR}/ortools/main.cpp.dox
-        ${PROJECT_BINARY_DIR}/ortools/dirs.cpp.dox
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMENT "Generating C++ API documentation with Doxygen"
       VERBATIM)
@@ -644,8 +629,7 @@ install(TARGETS ${PROJECT_NAME}
 
 install(EXPORT ${PROJECT_NAME}Targets
   NAMESPACE ${PROJECT_NAMESPACE}::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  COMPONENT Devel)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 install(DIRECTORY ortools
   TYPE INCLUDE
   COMPONENT Devel
@@ -722,6 +706,38 @@ install(DIRECTORY ortools/constraint_solver/docs/
   PATTERN "*.md")
 endif()
 
+function(_ortools_maybe_add_emscripten_launcher target)
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    return()
+  endif()
+  set(template "${PROJECT_SOURCE_DIR}/cmake/templates/emscripten_index.html.in")
+  if(NOT EXISTS "${template}")
+    message(FATAL_ERROR "Missing Emscripten HTML template: ${template}")
+  endif()
+  set(worker_template "${PROJECT_SOURCE_DIR}/cmake/templates/emscripten_worker.js.in")
+  if(NOT EXISTS "${worker_template}")
+    message(FATAL_ERROR "Missing Emscripten worker template: ${worker_template}")
+  endif()
+  set(generator "${PROJECT_SOURCE_DIR}/cmake/generate_emscripten_html.cmake")
+  add_custom_command(TARGET ${target} POST_BUILD
+    COMMAND ${CMAKE_COMMAND}
+      -DTEMPLATE_FILE=${template}
+      -DTARGET_NAME=${target}
+      -DOUTPUT_FILE=$<TARGET_FILE_DIR:${target}>/${target}.html
+      -P ${generator}
+    COMMAND ${CMAKE_COMMAND}
+      -DTEMPLATE_FILE=${template}
+      -DTARGET_NAME=${target}
+      -DOUTPUT_FILE=$<TARGET_FILE_DIR:${target}>/index.html
+      -P ${generator}
+    COMMAND ${CMAKE_COMMAND}
+      -DTEMPLATE_FILE=${worker_template}
+      -DTARGET_NAME=${target}
+      -DOUTPUT_FILE=$<TARGET_FILE_DIR:${target}>/${target}_worker.js
+      -P ${generator}
+    COMMENT "Generating ${target} Emscripten HTML launcher")
+endfunction()
+
 ##################
 ##  C++ Sample  ##
 ##################
@@ -781,6 +797,8 @@ function(add_cxx_sample)
       INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${SAMPLE_NAME})
+
+  _ortools_maybe_add_emscripten_launcher(${SAMPLE_NAME})
 
   if(BUILD_TESTING)
     add_test(
@@ -848,6 +866,21 @@ function(add_cxx_example)
       INSTALL_RPATH "$ORIGIN/${libdir_relative_path}")
   endif()
   install(TARGETS ${EXAMPLE_NAME})
+
+  _ortools_maybe_add_emscripten_launcher(${EXAMPLE_NAME})
+
+  if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    target_link_options(${EXAMPLE_NAME} PRIVATE
+      "-sEXPORTED_RUNTIME_METHODS=callMain,ccall,cwrap,UTF8ToString,stringToUTF8,allocateUTF8,HEAPU8,HEAPU32"
+      "-sEXPORTED_FUNCTIONS=['_main','_malloc','_free']"
+      "-sUSE_PTHREADS=1"
+      "-sPTHREAD_POOL_SIZE=4"
+      "-sPTHREAD_POOL_DELAY_LOAD=1"
+      "-sASSERTIONS=2"
+      "-sASYNCIFY=1"
+      "-gsource-map"
+      "--source-map-base=./")
+  endif()
 
   if(BUILD_TESTING)
     add_test(
