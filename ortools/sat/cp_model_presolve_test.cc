@@ -8158,6 +8158,7 @@ TEST(PresolveCpModelTest, SolveDiophantine) {
   // Should solve in < .01 second. Note that deterministic time is not
   // completely accurate.
   params.set_max_deterministic_time(.001);
+  params.set_num_workers(1);
   const CpSolverResponse response_with =
       SolveWithParameters(model_proto, params);
 

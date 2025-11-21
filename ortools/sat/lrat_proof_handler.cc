@@ -146,8 +146,32 @@ bool LratProofHandler::AddAssumedClause(ClauseId id,
   return true;
 }
 
+void LratProofHandler::PinClause(ClauseId id,
+                                 absl::Span<const Literal> clause) {
+  DCHECK_NE(id, kNoClauseId);
+  DCHECK_EQ(pinned_clause_id_, kNoClauseId);
+  pinned_clause_id_ = id;
+  if (drat_checker_ != nullptr || drat_writer_ != nullptr) {
+    pinned_clause_.assign(clause.begin(), clause.end());
+  }
+  delete_pinned_clause_ = false;
+}
+
+void LratProofHandler::UnpinClause(ClauseId id) {
+  DCHECK_NE(id, kNoClauseId);
+  DCHECK_EQ(pinned_clause_id_, id);
+  pinned_clause_id_ = kNoClauseId;
+  if (delete_pinned_clause_) {
+    DeleteClause(id, pinned_clause_);
+  }
+}
+
 void LratProofHandler::DeleteClause(ClauseId id,
                                     absl::Span<const Literal> clause) {
+  if (pinned_clause_id_ == id) {
+    delete_pinned_clause_ = true;
+    return;
+  }
   VLOG(1) << "DeleteClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (drat_checker_ != nullptr) {

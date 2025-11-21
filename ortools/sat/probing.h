@@ -35,6 +35,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/time_limit.h"
@@ -91,8 +92,25 @@ class Prober {
   // Probes the given problem DNF (disjunction of conjunctions). Since one of
   // the conjunction must be true, we might be able to fix literal or improve
   // integer bounds if all conjunction propagate the same thing.
+  enum DnfType {
+    // DNF is an existing clause 'dnf_clause' = (l1) OR ... (ln), minus its
+    // literals which are already assigned.
+    kAtLeastOne,
+    // DNF is the tautology "either at least one of n literals is true, or all
+    // of them are false": (l1) OR ... (ln) OR (not(l1) AND ... not(ln)). The
+    // single literal conjunctions must be listed first.
+    kAtLeastOneOrZero,
+    // DNF is the tautology "one of the 2^n possible assignments of n Boolean
+    // variables is true". The n variables must be in the same order in each
+    // conjunction, and their assignment in the i-th conjunction must be the
+    // binary representation of i. For instance, if the variables are b0 and b1,
+    // the conjunctions must be (not(b0) AND not(b1)), (not(b0) AND b1),
+    // (b0 AND not(b1)), and (b0 AND b1), in this order.
+    kAtLeastOneCombination,
+  };
   bool ProbeDnf(absl::string_view name,
-                absl::Span<const std::vector<Literal>> dnf);
+                absl::Span<const std::vector<Literal>> dnf, DnfType type,
+                const SatClause* dnf_clause = nullptr);
 
   // Statistics.
   // They are reset each time ProbleBooleanVariables() is called.
@@ -111,6 +129,23 @@ class Prober {
  private:
   bool ProbeOneVariableInternal(BooleanVariable b);
 
+  // Computes the LRAT proofs that all the `propagated_literals` can be fixed to
+  // true, and fixes them.
+  bool FixProbedDnfLiterals(
+      absl::Span<const std::vector<Literal>> dnf,
+      const absl::btree_set<LiteralIndex>& propagated_literals, DnfType type,
+      ClauseId dnf_clause_id, absl::Span<const Literal> dnf_clause_literals);
+
+  // Computes the LRAT proof that `propagated_lit` can be fixed to true, and
+  // fixes it. `conjunctions` must have the property described for
+  // DnfType::kAtLeastOneCombination. `clause_ids` must contain the IDs of the
+  // LRAT clauses "conjunctions[i] => propagated_lit" (some IDs can be
+  // kNoClauseId, if a conjunction contains `propagated_lit`). Deletes all
+  // `clause_ids` and replaces these IDs with kNoClauseId values.
+  bool FixLiteralImpliedByAnAtLeastOneCombinationDnf(
+      absl::Span<const std::vector<Literal>> conjunctions,
+      absl::Span<ClauseId> clause_ids, Literal propagated_lit);
+
   // Model owned classes.
   const Trail& trail_;
   const VariablesAssignment& assignment_;
@@ -123,6 +158,7 @@ class Prober {
   ClauseManager* clause_manager_;
   ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
+  const bool drat_enabled_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
   // When probing b, we add all propagated literal to propagated, and when
@@ -141,6 +177,8 @@ class Prober {
   absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
       tmp_binary_clause_ids_;
   std::vector<ClauseId> tmp_clause_ids_;
+  std::vector<Literal> tmp_literals_;
+  CompactVectorVector<int, ClauseId> tmp_dnf_clause_ids_;
 
   // Probing statistics.
   int num_decisions_ = 0;
