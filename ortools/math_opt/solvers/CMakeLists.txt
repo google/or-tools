@@ -89,7 +89,7 @@ if(USE_SCIP)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
   # This test fail on windows and takes too long so we disable it.
-  if(TARGET cxx_math_opt_solvers_gscip_solver_test)
+  if(TARGET math_opt_solvers_gscip_solver_test)
     set_tests_properties(cxx_math_opt_solvers_gscip_solver_test
       PROPERTIES DISABLED TRUE)
   endif()
@@ -150,7 +150,7 @@ ortools_cxx_test(
     "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
 )
 # This test takes too long so we disable it.
-if(TARGET cxx_math_opt_solvers_cp_sat_solver_test)
+if(TARGET math_opt_solvers_cp_sat_solver_test)
   set_tests_properties(cxx_math_opt_solvers_cp_sat_solver_test
     PROPERTIES DISABLED TRUE)
 endif()
@@ -252,7 +252,7 @@ if(USE_HIGHS)
       "$<LINK_LIBRARY:WHOLE_ARCHIVE,ortools::math_opt_status_tests>"
   )
   # This test fail on windows and takes too long so we disable it.
-  if(TARGET cxx_math_opt_solvers_highs_solver_test)
+  if(TARGET math_opt_solvers_highs_solver_test)
     set_tests_properties(cxx_math_opt_solvers_highs_solver_test
       PROPERTIES DISABLED TRUE)
   endif()
