@@ -59,6 +59,7 @@ help:
 	@echo -e "\t\t${BOLD}311${RESET} Python3.11"
 	@echo -e "\t\t${BOLD}312${RESET} Python3.12"
 	@echo -e "\t\t${BOLD}313${RESET} Python3.13"
+	@echo -e "\t\t${BOLD}314${RESET} Python3.14"
 	@echo
 	@echo -e "\t${BOLD}<step>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -204,7 +205,7 @@ cache/python: | cache
 	-mkdir $@
 
 ## MANYLINUX ##
-PYTHON_VERSIONS := 39 310 311 312 313
+PYTHON_VERSIONS := 39 310 311 312 313 314
 
 export/python/manylinux: | export/python
 	-mkdir -p $@

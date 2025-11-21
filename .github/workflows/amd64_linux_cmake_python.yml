@@ -28,6 +28,7 @@ jobs:
           #{version: "3.11"},
           #{version: "3.12"},
           {version: "3.13"},
+          {version: "3.14"},
          ]
       fail-fast: false
     name: amd64•Linux•CMake•Python${{matrix.python.version}}
