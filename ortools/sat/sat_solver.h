@@ -481,6 +481,7 @@ class SatSolver {
     int64_t num_literals_forgotten = 0;
     int64_t num_subsumed_clauses = 0;
     int64_t num_cleanup_rounds = 0;
+    int64_t num_deleted_clauses = 0;
 
     // TryToMinimizeClause() stats.
     int64_t minimization_num_clauses = 0;
@@ -680,8 +681,8 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      ClauseId clause_id, absl::Span<const Literal> literals,
-      bool is_redundant);
+      ClauseId clause_id, absl::Span<const Literal> literals, bool is_redundant,
+      int min_lbd_of_subsumed_clauses);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -713,10 +714,11 @@ class SatSolver {
 
   // Use the learned conflict to subsumes some clause.
   //
-  // Returns false iff the conflict is no longer "redundant" and need to be kept
-  // forever.
-  bool SubsumptionsInConflictResolution(absl::Span<const Literal> conflict,
-                                        absl::Span<const Literal> reason_used);
+  // Returns the pair <is_redundant, minimum_lbd of the subsumed clause>.
+  // A clause will be marked as redundant only if all the subsumed clauses are.
+  std::pair<bool, int> SubsumptionsInConflictResolution(
+      absl::Span<const Literal> conflict,
+      absl::Span<const Literal> reason_used);
 
   // Fills `clause_ids` with the LRAT proof for the learned conflict.
   void FillLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);

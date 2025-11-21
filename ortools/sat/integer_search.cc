@@ -1366,9 +1366,9 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   DCHECK(sat_solver_->PropagationIsDone());
 
   // If we pushed root level deductions, we go back to level zero and call
-  // Propagate() to incorporate them. Note that the propagation is not strcily
+  // Propagate() to incorporate them. Note that the propagation is not strictly
   // needed, but it is nicer to be at fixed point when we call the level zero
-  // callabacks.
+  // callbacks.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
     sat_solver_->Backtrack(0);
     if (!sat_solver_->Propagate()) {
@@ -1843,7 +1843,8 @@ SatSolver::Status ContinuousProber::Probe() {
           tmp_dnf_.push_back({literal});
         }
         ++num_at_least_one_probed_;
-        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOne, clause)) {
           return SatSolver::INFEASIBLE;
         }
 
@@ -1866,7 +1867,8 @@ SatSolver::Status ContinuousProber::Probe() {
         }
         tmp_dnf_.push_back(tmp_literals_);
         ++num_at_most_one_probed_;
-        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOneOrZero)) {
           return SatSolver::INFEASIBLE;
         }
 
@@ -1887,12 +1889,12 @@ SatSolver::Status ContinuousProber::Probe() {
           for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
             const BooleanVariable& bv2 = bool_vars_[current_bv2_];
             if (assignment.VariableIsAssigned(bv2)) continue;
-            if (!prober_->ProbeDnf(
-                    "pair_of_bool_vars",
-                    {{Literal(bv1, true), Literal(bv2, true)},
-                     {Literal(bv1, true), Literal(bv2, false)},
-                     {Literal(bv1, false), Literal(bv2, true)},
-                     {Literal(bv1, false), Literal(bv2, false)}})) {
+            if (!prober_->ProbeDnf("pair_of_bool_vars",
+                                   {{Literal(bv1, false), Literal(bv2, false)},
+                                    {Literal(bv1, false), Literal(bv2, true)},
+                                    {Literal(bv1, true), Literal(bv2, false)},
+                                    {Literal(bv1, true), Literal(bv2, true)}},
+                                   Prober::DnfType::kAtLeastOneCombination)) {
               return SatSolver::INFEASIBLE;
             }
             RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
@@ -1910,12 +1912,12 @@ SatSolver::Status ContinuousProber::Probe() {
           if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
             continue;
           }
-          if (!prober_->ProbeDnf(
-                  "rnd_pair_of_bool_vars",
-                  {{Literal(bv1, true), Literal(bv2, true)},
-                   {Literal(bv1, true), Literal(bv2, false)},
-                   {Literal(bv1, false), Literal(bv2, true)},
-                   {Literal(bv1, false), Literal(bv2, false)}})) {
+          if (!prober_->ProbeDnf("rnd_pair_of_bool_vars",
+                                 {{Literal(bv1, false), Literal(bv2, false)},
+                                  {Literal(bv1, false), Literal(bv2, true)},
+                                  {Literal(bv1, true), Literal(bv2, false)},
+                                  {Literal(bv1, true), Literal(bv2, true)}},
+                                 Prober::DnfType::kAtLeastOneCombination)) {
             return SatSolver::INFEASIBLE;
           }
 
@@ -1948,12 +1950,13 @@ SatSolver::Status ContinuousProber::Probe() {
         }
         tmp_dnf_.clear();
         for (int i = 0; i < 8; ++i) {
-          tmp_dnf_.push_back({Literal(bv1, (i & 1) > 0),
+          tmp_dnf_.push_back({Literal(bv1, (i & 4) > 0),
                               Literal(bv2, (i & 2) > 0),
-                              Literal(bv3, (i & 4) > 0)});
+                              Literal(bv3, (i & 1) > 0)});
         }
 
-        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOneCombination)) {
           return SatSolver::INFEASIBLE;
         }
 

@@ -89,8 +89,7 @@ class OrderEncoding {
   absl::btree_map<int64_t, int> encoded_le_literal_;
 };
 
-void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
-                                       PresolveContext* context,
+void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
                                        SolutionCrush& solution_crush);
 
 }  // namespace sat

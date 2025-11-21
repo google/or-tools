@@ -4504,6 +4504,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int ct_index,
     // actual changes.
     if (is_in_objective &&
         !context_->SubstituteVariableInObjective(var, var_coeff, *ct)) {
+      if (context_->ModelIsUnsat()) return false;
       continue;
     }
 
@@ -13170,13 +13171,12 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     return;
   }
 
-  int new_exo_to_presolve_index = -1;
-  TryToReplaceVariableByItsEncoding(var, new_exo_to_presolve_index, context_,
-                                    solution_crush_);
-  if (new_exo_to_presolve_index != -1) {
-    if (PresolveExactlyOne(context_->working_model->mutable_constraints(
-            new_exo_to_presolve_index))) {
-      context_->UpdateConstraintVariableUsage(new_exo_to_presolve_index);
+  // Presolve newly created constraints.
+  const int old_size = context_->working_model->constraints_size();
+  TryToReplaceVariableByItsEncoding(var, context_, solution_crush_);
+  for (int c = old_size; c < context_->working_model->constraints_size(); ++c) {
+    if (PresolveOneConstraint(c)) {
+      context_->UpdateConstraintVariableUsage(c);
     }
   }
 }

@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
@@ -62,6 +63,9 @@ Prober::Prober(Model* model)
       clause_manager_(model->GetOrCreate<ClauseManager>()),
       clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
+      drat_enabled_(lrat_proof_handler_ != nullptr &&
+                    (lrat_proof_handler_->drat_check_enabled() ||
+                     lrat_proof_handler_->drat_output_enabled())),
       logger_(model->GetOrCreate<SolverLogger>()) {}
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
@@ -380,8 +384,26 @@ bool Prober::ProbeBooleanVariables(
 }
 
 bool Prober::ProbeDnf(absl::string_view name,
-                      absl::Span<const std::vector<Literal>> dnf) {
+                      absl::Span<const std::vector<Literal>> dnf,
+                      DnfType dnf_type, const SatClause* dnf_clause) {
   if (dnf.size() <= 1) return true;
+
+  // dnf_clause can be deleted as a side effect of probing, but is needed for
+  // LRAT in FixProbedDnfLiterals(). We thus copy its literals first, and
+  // prevent the corresponding LRAT clause from being deleted.
+  ClauseId dnf_clause_id = kNoClauseId;
+  std::vector<Literal> dnf_clause_literals;
+  if (dnf_clause != nullptr && lrat_proof_handler_ != nullptr) {
+    dnf_clause_id = clause_manager_->GetClauseId(dnf_clause);
+    dnf_clause_literals.assign(dnf_clause->AsSpan().begin(),
+                               dnf_clause->AsSpan().end());
+    lrat_proof_handler_->PinClause(dnf_clause_id, dnf_clause_literals);
+  }
+  absl::Cleanup cleanup = [this, dnf_clause_id] {
+    if (dnf_clause_id != kNoClauseId) {
+      lrat_proof_handler_->UnpinClause(dnf_clause_id);
+    }
+  };
 
   // Reset the solver in case it was already used.
   if (!sat_solver_->ResetToLevelZero()) return false;
@@ -389,7 +411,13 @@ bool Prober::ProbeDnf(absl::string_view name,
   always_propagated_bounds_.clear();
   always_propagated_literals_.clear();
   int num_valid_conjunctions = 0;
-  for (const std::vector<Literal>& conjunction : dnf) {
+  for (absl::Span<const Literal> conjunction : dnf) {
+    // TODO(user): instead of going back to level zero, we could backtrack
+    // to level 'n', where n is the length of the longest prefix shared between
+    // the current conjunction and the previous one (more or less -- conjunction
+    // literals which are already assigned or lead to a conflict do not
+    // translate to a decision). For a kAtLeastOneCombination DNF with 8
+    // conjunctions, this would reduce the number of enqueues from 8*3=24 to 14.
     if (!sat_solver_->ResetToLevelZero()) return false;
     if (num_valid_conjunctions > 0 && always_propagated_bounds_.empty() &&
         always_propagated_literals_.empty()) {
@@ -398,7 +426,6 @@ bool Prober::ProbeDnf(absl::string_view name,
     }
 
     bool conjunction_is_valid = true;
-    int num_literals_enqueued = 0;
     const int root_trail_index = trail_.Index();
     const int root_integer_trail_index = integer_trail_->Index();
     for (const Literal& lit : conjunction) {
@@ -407,7 +434,6 @@ bool Prober::ProbeDnf(absl::string_view name,
         conjunction_is_valid = false;
         break;
       }
-      ++num_literals_enqueued;
       const int decision_level_before_enqueue =
           sat_solver_->CurrentDecisionLevel();
       sat_solver_->EnqueueDecisionAndBackjumpOnConflict(lit);
@@ -461,11 +487,18 @@ bool Prober::ProbeDnf(absl::string_view name,
   if (!sat_solver_->ResetToLevelZero()) return false;
   // Fix literals implied by the dnf.
   const int previous_num_literals_fixed = num_new_literals_fixed_;
-  for (const LiteralIndex literal_index : always_propagated_literals_) {
-    const Literal lit(literal_index);
-    if (assignment_.LiteralIsTrue(lit)) continue;
-    ++num_new_literals_fixed_;
-    if (!sat_solver_->AddUnitClause(lit)) return false;
+  if (lrat_proof_handler_ != nullptr) {
+    if (!FixProbedDnfLiterals(dnf, always_propagated_literals_, dnf_type,
+                              dnf_clause_id, dnf_clause_literals)) {
+      return false;
+    }
+  } else {
+    for (const LiteralIndex literal_index : always_propagated_literals_) {
+      const Literal lit(literal_index);
+      if (assignment_.LiteralIsTrue(lit)) continue;
+      ++num_new_literals_fixed_;
+      if (!sat_solver_->AddUnitClause(lit)) return false;
+    }
   }
 
   // Fix integer bounds implied by the dnf.
@@ -495,6 +528,289 @@ bool Prober::ProbeDnf(absl::string_view name,
   return true;
 }
 
+namespace {
+// Sets `implication` to the clause "conjunction => literal". Returns true if
+// `conjunction` does not contain `literal`. Otherwise ("conjunction => literal"
+// is a tautology), returns false and leaves `implication` in an undefined
+// state.
+bool GetConjunctionImpliesLiteralClause(absl::Span<const Literal> conjunction,
+                                        Literal literal,
+                                        std::vector<Literal>& implication) {
+  implication.clear();
+  for (const Literal lit : conjunction) {
+    if (lit == literal) return false;
+    if (lit.Negated() == literal) continue;
+    implication.push_back(lit.Negated());
+  }
+  implication.push_back(literal);
+  return true;
+}
+}  // namespace
+
+bool Prober::FixProbedDnfLiterals(
+    absl::Span<const std::vector<Literal>> dnf,
+    const absl::btree_set<LiteralIndex>& propagated_literals, DnfType dnf_type,
+    ClauseId dnf_clause_id, absl::Span<const Literal> dnf_clause_literals) {
+  if (propagated_literals.empty()) return true;
+
+  // For each propagated literal (in propagated_literals order), and for each
+  // conjunction, the ID of a temporary LRAT clause "conjunction => propagated
+  // literal" (or kNoClauseId if "conjunction" contains "propagated_literal", if
+  // the clause has not been created yet, or has been deleted).
+  CompactVectorVector<int, ClauseId>& propagation_clause_ids =
+      tmp_dnf_clause_ids_;
+  propagation_clause_ids.clear();
+  propagation_clause_ids.reserve(propagated_literals.size() * dnf.size());
+  for (int i = 0; i < propagated_literals.size(); ++i) {
+    propagation_clause_ids.Add({});
+    for (int j = 0; j < dnf.size(); ++j) {
+      propagation_clause_ids.AppendToLastVector(kNoClauseId);
+    }
+  }
+  // Redo the loop that was done in ProbeDnf() to compute the LRAT proofs of the
+  // propagated literals. This allows computing proofs only for those literals
+  // (on the other hand, we need to redo the propagations). Another method might
+  // be to make copies of the trail (one per conjunction), but how to handle
+  // backjump on conflict in this case?.
+  for (int conjunction_index = 0; conjunction_index < dnf.size();
+       ++conjunction_index) {
+    absl::Span<const Literal> conjunction = dnf[conjunction_index];
+    // TODO(user): same comment as in ProbeDnf().
+    if (!sat_solver_->ResetToLevelZero()) return false;
+
+    // Enqueue the literals of `conjunction` one by one.
+    // The first literal of `conjunction` which is propagated to false, if any,
+    // and the ID of a temporary LRAT clause proving that the previous literals
+    // of `conjunction` imply this.
+    LiteralIndex first_false_literal = kNoLiteralIndex;
+    ClauseId first_false_literal_clause_id = kNoClauseId;
+    tmp_literals_.clear();
+    for (const Literal lit : conjunction) {
+      tmp_literals_.push_back(lit.Negated());
+      if (assignment_.LiteralIsAssigned(lit)) {
+        if (assignment_.LiteralIsTrue(lit)) continue;
+        first_false_literal = lit.Index();
+        first_false_literal_clause_id = clause_id_generator_->GetNextId();
+        tmp_clause_ids_.clear();
+        sat_solver_->AppendClausesFixing({lit.Negated()}, &tmp_clause_ids_);
+        lrat_proof_handler_->AddInferredClause(first_false_literal_clause_id,
+                                               tmp_literals_, tmp_clause_ids_);
+        break;
+      }
+
+      // If enqueuing `lit` causes a conflict, the previous literals of
+      // `conjunction` imply not(lit). Use the learned conflict to prove that.
+      auto conflict_callback = [&](ClauseId conflict_id,
+                                   absl::Span<const Literal> conflict_clause) {
+        if (first_false_literal != kNoLiteralIndex) return;
+        first_false_literal = lit.Index();
+        first_false_literal_clause_id = clause_id_generator_->GetNextId();
+        tmp_clause_ids_.clear();
+        sat_solver_->AppendClausesFixing(conflict_clause, &tmp_clause_ids_);
+        tmp_clause_ids_.push_back(conflict_id);
+        lrat_proof_handler_->AddInferredClause(first_false_literal_clause_id,
+                                               tmp_literals_, tmp_clause_ids_);
+      };
+      sat_solver_->EnqueueDecisionAndBackjumpOnConflict(lit, conflict_callback);
+
+      if (sat_solver_->ModelIsUnsat()) return false;
+      if (first_false_literal != kNoLiteralIndex) break;
+    }
+
+    // Use the trail to compute the LRAT proofs that `conjunction` implies the
+    // propagated literals.
+    int i = 0;
+    for (const LiteralIndex literal_index : propagated_literals) {
+      const Literal propagated_lit(literal_index);
+      absl::Span<ClauseId> propagation_ids = propagation_clause_ids[i++];
+      // Create the clause "conjunction => propagated_lit".
+      if (!GetConjunctionImpliesLiteralClause(conjunction, propagated_lit,
+                                              tmp_literals_)) {
+        // The clause is a tautology.
+        continue;
+      }
+      // Compute its proof.
+      tmp_clause_ids_.clear();
+      if (first_false_literal_clause_id != kNoClauseId) {
+        // If some literals of `conjunction` imply that another one is false,
+        // the corresponding LRAT clause is sufficient to prove that
+        // `conjunction` is false and thus that "conjunction => propagated_lit".
+        tmp_clause_ids_.push_back(first_false_literal_clause_id);
+      } else {
+        // TODO(user): processing the propagated literals in trail order
+        // and reusing the previous proofs to compute new ones
+        // could reduce the algorithmic complexity here.
+        sat_solver_->AppendClausesFixing({propagated_lit}, &tmp_clause_ids_);
+      }
+      // Add the inferred clause to the LratProofHandler.
+      const ClauseId clause_id = clause_id_generator_->GetNextId();
+      lrat_proof_handler_->AddInferredClause(clause_id, tmp_literals_,
+                                             tmp_clause_ids_);
+      propagation_ids[conjunction_index] = clause_id;
+    }
+    if (first_false_literal_clause_id != kNoClauseId) {
+      if (drat_enabled_) {
+        // DRAT needs the clause literals to delete a clause.
+        tmp_literals_.clear();
+        for (const Literal lit : conjunction) {
+          tmp_literals_.push_back(lit.Negated());
+          if (lit.Index() == first_false_literal) break;
+        }
+        lrat_proof_handler_->DeleteClause(first_false_literal_clause_id,
+                                          tmp_literals_);
+      } else {
+        lrat_proof_handler_->DeleteClause(first_false_literal_clause_id, {});
+      }
+    }
+  }
+
+  if (!sat_solver_->ResetToLevelZero()) return false;
+
+  // Fix literals implied by the dnf.
+  int i = 0;
+  for (const LiteralIndex literal_index : propagated_literals) {
+    const Literal propagated_lit(literal_index);
+    absl::Span<ClauseId> propagation_ids = propagation_clause_ids[i++];
+    if (assignment_.LiteralIsTrue(propagated_lit)) continue;
+
+    ++num_new_literals_fixed_;
+    switch (dnf_type) {
+      case DnfType::kAtLeastOne:
+        // `propagation_ids` contains the clauses "not(l_i) OR propagated_lit"
+        // for each literal l_i of the dnf. Together with the unit clauses for
+        // the already assigned literals of the original clause, and the clause
+        // itself, they prove that propagated_lit is true.
+        CHECK_NE(dnf_clause_id, kNoClauseId);
+        tmp_clause_ids_.clear();
+        for (const ClauseId clause_id : propagation_ids) {
+          if (clause_id == kNoClauseId) continue;
+          tmp_clause_ids_.push_back(clause_id);
+        }
+        for (const Literal lit : dnf_clause_literals) {
+          if (assignment_.LiteralIsAssigned(lit)) {
+            tmp_clause_ids_.push_back(trail_.GetUnitClauseId(lit.Variable()));
+          }
+        }
+        tmp_clause_ids_.push_back(dnf_clause_id);
+        if (!clause_manager_->InprocessingFixLiteral(propagated_lit,
+                                                     tmp_clause_ids_)) {
+          return false;
+        }
+        break;
+      case DnfType::kAtLeastOneOrZero:
+        // `propagation_ids` contains the clauses "not(l_i) OR propagated_lit"
+        // (for each single literal conjunction), and "l1 OR ... OR ln OR
+        // propagated_lit", in this order. These are sufficient to prove that
+        // propagated_lit is true.
+        tmp_clause_ids_.clear();
+        for (const ClauseId clause_id : propagation_ids) {
+          if (clause_id == kNoClauseId) continue;
+          tmp_clause_ids_.push_back(clause_id);
+        }
+        if (!clause_manager_->InprocessingFixLiteral(propagated_lit,
+                                                     tmp_clause_ids_)) {
+          return false;
+        }
+        break;
+      case DnfType::kAtLeastOneCombination:
+        if (!FixLiteralImpliedByAnAtLeastOneCombinationDnf(dnf, propagation_ids,
+                                                           propagated_lit)) {
+          return false;
+        }
+        break;
+    }
+  }
+
+  // Delete the temporary LRAT clauses.
+  i = 0;
+  for (const LiteralIndex literal_index : propagated_literals) {
+    const Literal propagated_lit(literal_index);
+    const absl::Span<ClauseId> propagation_ids = propagation_clause_ids[i++];
+    for (int j = 0; j < dnf.size(); ++j) {
+      const ClauseId clause_id = propagation_ids[j];
+      if (clause_id == kNoClauseId) continue;
+      if (drat_enabled_) {
+        // DRAT needs the clause literals to delete a clause.
+        GetConjunctionImpliesLiteralClause(dnf[j], propagated_lit,
+                                           tmp_literals_);
+        lrat_proof_handler_->DeleteClause(clause_id, tmp_literals_);
+      } else {
+        lrat_proof_handler_->DeleteClause(clause_id, {});
+      }
+    }
+  }
+  return true;
+}
+
+bool Prober::FixLiteralImpliedByAnAtLeastOneCombinationDnf(
+    absl::Span<const std::vector<Literal>> conjunctions,
+    absl::Span<ClauseId> clause_ids, Literal propagated_lit) {
+  const int num_clauses = clause_ids.size();
+  CHECK_EQ(conjunctions.size(), num_clauses);
+  // Combine the clauses 2 by 2 repeatedly, to remove one literal from each
+  // conjunction at each step, until we get the unit clause `propagated_lit`.
+  // For instance, with 4 conjunctions:
+  //
+  //                          step1                 step2
+  // not(a) and not(b) => p   ---->   not(a) => p   ---->   p
+  // not(a) and     b  => p   _/                      /
+  //     a  and not(b) => p   ---->       a  => p   _/
+  //     a  and     b  => p   _/
+  //
+  // The combined clauses are stored in `clause_ids`, and replace the ones of
+  // the previous step, which are deleted. At step i=0,1,..., each conjunction
+  // has n-i remaining literals, and we combine the clauses at indices
+  // (2*stride)k and (2*stride)k + stride, where stride = 2^i. This relies on
+  // the conjunctions being sorted as described in kAtLeastOneCombination's
+  // comment.
+  int num_literals_per_conjunction = conjunctions[0].size();
+  int stride = 1;
+  while (true) {
+    for (int i = 0; i < num_clauses; i += 2 * stride) {
+      // The two clauses "... AND not(b) => propagated_lit" and "... AND b =>
+      // propagated_lit" prove that "... => propagated_lit".
+      tmp_clause_ids_.clear();
+      // Tautologies have no clause ID.
+      if (clause_ids[i] != kNoClauseId) {
+        tmp_clause_ids_.push_back(clause_ids[i]);
+      }
+      if (clause_ids[i + stride] != kNoClauseId) {
+        tmp_clause_ids_.push_back(clause_ids[i + stride]);
+      }
+      if (tmp_clause_ids_.empty()) continue;
+      const ClauseId new_clause_id = clause_id_generator_->GetNextId();
+      GetConjunctionImpliesLiteralClause(
+          absl::MakeConstSpan(conjunctions[i])
+              .subspan(0, num_literals_per_conjunction - 1),
+          propagated_lit, tmp_literals_);
+      lrat_proof_handler_->AddInferredClause(new_clause_id, tmp_literals_,
+                                             tmp_clause_ids_);
+      // Delete the clauses used to derive the new one.
+      for (const int index : {i, i + stride}) {
+        if (clause_ids[index] == kNoClauseId) continue;
+        if (drat_enabled_) {
+          // DRAT needs the clause literals to delete a clause.
+          GetConjunctionImpliesLiteralClause(
+              absl::MakeConstSpan(conjunctions[index])
+                  .subspan(0, num_literals_per_conjunction),
+              propagated_lit, tmp_literals_);
+          lrat_proof_handler_->DeleteClause(clause_ids[index], tmp_literals_);
+        } else {
+          lrat_proof_handler_->DeleteClause(clause_ids[index], {});
+        }
+        clause_ids[index] = kNoClauseId;
+      }
+      if (num_literals_per_conjunction == 1) {
+        return clause_manager_->InprocessingAddUnitClause(new_clause_id,
+                                                          propagated_lit);
+      }
+      clause_ids[i] = new_clause_id;
+    }
+    num_literals_per_conjunction--;
+    stride *= 2;
+  }
+}
+
 bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
                                SolverLogger* logger) {
   WallTimer wall_timer;
@@ -520,6 +836,11 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 
   double elapsed_dtime = 0.0;
 
+  // We need to keep a copy of the time limit to restore it later since we will
+  // reset it by calling Model::SetParameters().
+  TimeLimit original_time_limit;
+  original_time_limit.MergeWithGlobalTimeLimit(model->GetOrCreate<TimeLimit>());
+
   const int num_times = 1000;
   bool limit_reached = false;
   auto* random = model->GetOrCreate<ModelRandomGenerator>();
@@ -532,6 +853,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
 
     // SetParameters() reset the deterministic time to zero inside time_limit.
     sat_solver->SetParameters(new_params);
+    time_limit->MergeWithGlobalTimeLimit(&original_time_limit);
     sat_solver->ResetDecisionHeuristic();
     const SatSolver::Status result = sat_solver->SolveWithTimeLimit(time_limit);
     elapsed_dtime += time_limit->GetElapsedDeterministicTime();
@@ -559,6 +881,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
   // Restore the initial parameters.
   sat_solver->SetParameters(initial_params);
   sat_solver->ResetDecisionHeuristic();
+  time_limit->MergeWithGlobalTimeLimit(&original_time_limit);
   time_limit->AdvanceDeterministicTime(elapsed_dtime);
   if (!sat_solver->ResetToLevelZero()) return false;
 

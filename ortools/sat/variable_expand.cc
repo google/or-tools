@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/log_severity.h"
 #include "absl/container/btree_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -271,55 +272,96 @@ void OrderEncoding::InsertGeLiteral(int64_t value, int literal) {
 // x_ge_1 => not(x == 0)
 // x_ge_3 => not(x == 1) && not(x == 2) && x_ge_1
 // x_ge_4 => not(x == 3) && x_ge_3
+//
+// x_le_0 => x == 0
+// x_le_1 => x == 1 || x_le_0
+// x_le_3 => x == 3 || x == 2 || x_le_1
+//
+// x_ge_1 => x == 1 || x == 2 || x_ge_3
+// x_ge_3 => x == 3 || x == x_ge_4
+// x_ge_4 => x == 4
+//
+// If we have x_le_0 and x_ge_4, then we can infer x_le_4 and x_ge_0.
+// This is done by the code below.
 void OrderEncoding::CreateAllOrderEncodingLiterals(
     const ValueEncoding& values) {
   CollectAllOrderEncodingValues();
-  for (const auto& [value, literal] : encoded_le_literal_) {
-    DCHECK(values.encoding().contains(value));
-    DCHECK(values.encoding().contains(var_domain_.ValueAtOrAfter(value + 1)))
-        << "Cannot find " << var_domain_.ValueAtOrAfter(value + 1)
-        << " for var <= " << value;
+  if (encoded_le_literal_.empty()) return;
+
+  if (DEBUG_MODE) {
+    // Check that all values are present in the encoding.
+    for (const auto& [value, literal] : encoded_le_literal_) {
+      CHECK(values.encoding().contains(value));
+      CHECK(values.encoding().contains(var_domain_.ValueAtOrAfter(value + 1)))
+          << "Cannot find " << var_domain_.ValueAtOrAfter(value + 1)
+          << " for var <= " << value;
+    }
   }
-  if (!encoded_le_literal_.empty()) {
-    const int64_t max_ge_value =
-        var_domain_.ValueAtOrAfter(encoded_le_literal_.rbegin()->first + 1);
-    ConstraintProto* not_le = nullptr;
-    ConstraintProto* not_ge = context_->working_model->add_constraints();
-    for (const auto [value, eq_literal] : values.encoding()) {
-      const int ne_literal = NegatedRef(eq_literal);
 
-      // Lower or equal.
+  const int64_t max_le_value = encoded_le_literal_.rbegin()->first;
+  const int64_t max_ge_value = var_domain_.ValueAtOrAfter(max_le_value + 1);
+  ConstraintProto* not_le = nullptr;
+  ConstraintProto* not_ge = context_->working_model->add_constraints();
+  ConstraintProto* le = context_->working_model->add_constraints();
+  ConstraintProto* ge = nullptr;
+
+  for (const auto [value, eq_literal] : values.encoding()) {
+    const int ne_literal = NegatedRef(eq_literal);
+
+    // Lower or equal.
+    if (not_le != nullptr) {
+      not_le->mutable_bool_and()->add_literals(ne_literal);
+    }
+    if (le != nullptr) {
+      le->mutable_bool_or()->add_literals(eq_literal);
+    }
+
+    const auto it_le = encoded_le_literal_.find(value);
+    if (it_le != encoded_le_literal_.end()) {
+      const int le_literal = it_le->second;
+
+      DCHECK(le != nullptr);
+      le->add_enforcement_literal(le_literal);
+      if (value < max_le_value) {
+        le = context_->working_model->add_constraints();
+        le->mutable_bool_or()->add_literals(le_literal);
+      } else {
+        le = nullptr;
+      }
+
       if (not_le != nullptr) {
-        not_le->mutable_bool_and()->add_literals(ne_literal);
+        not_le->mutable_bool_and()->add_literals(le_literal);
       }
-      const auto it_le = encoded_le_literal_.find(value);
-      if (it_le != encoded_le_literal_.end()) {
-        const int le_literal = it_le->second;
-        if (not_le != nullptr) {
-          not_le->mutable_bool_and()->add_literals(le_literal);
-        }
-        not_le = context_->AddEnforcedConstraint({le_literal});
-      }
+      not_le = context_->AddEnforcedConstraint({le_literal});
+    }
 
-      // Greater or equal.
-      if (value > var_domain_.Min()) {  // var >= min is not created..
-        const auto it_ge =
-            encoded_le_literal_.find(var_domain_.ValueAtOrBefore(value - 1));
-        if (it_ge != encoded_le_literal_.end()) {
-          const int ge_literal = NegatedRef(it_ge->second);
-          DCHECK(not_ge != nullptr);
-          not_ge->add_enforcement_literal(ge_literal);
-          if (value != max_ge_value) {
-            not_ge = context_->working_model->add_constraints();
-            not_ge->mutable_bool_and()->add_literals(ge_literal);
-          } else {
-            not_ge = nullptr;
-          }
+    // Greater or equal.
+    if (value > var_domain_.Min()) {  // var >= min is not created..
+      const auto it_ge =
+          encoded_le_literal_.find(var_domain_.ValueAtOrBefore(value - 1));
+      if (it_ge != encoded_le_literal_.end()) {
+        const int ge_literal = NegatedRef(it_ge->second);
+
+        if (ge != nullptr) {
+          ge->mutable_bool_or()->add_literals(ge_literal);
+        }
+        ge = context_->AddEnforcedConstraint({ge_literal});
+
+        DCHECK(not_ge != nullptr);
+        not_ge->add_enforcement_literal(ge_literal);
+        if (value != max_ge_value) {
+          not_ge = context_->working_model->add_constraints();
+          not_ge->mutable_bool_and()->add_literals(ge_literal);
+        } else {
+          not_ge = nullptr;
         }
       }
-      if (not_ge != nullptr) {
-        not_ge->mutable_bool_and()->add_literals(ne_literal);
-      }
+    }
+    if (ge != nullptr) {
+      ge->mutable_bool_or()->add_literals(eq_literal);
+    }
+    if (not_ge != nullptr) {
+      not_ge->mutable_bool_and()->add_literals(ne_literal);
     }
   }
 }
@@ -445,8 +487,7 @@ bool ProcessEncodingConstraints(
   return true;
 }
 
-void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
-                                       PresolveContext* context,
+void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
                                        SolutionCrush& solution_crush) {
   const Domain var_domain = context->DomainOf(var);
   std::vector<std::vector<EncodingLinear1>> linear_ones_by_type(
@@ -495,13 +536,6 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
     return;
   }
 
-  // Compute how many literals are implied by the complex domains.
-  int num_implied_literals_in_complex_domains = 0;
-  for (const EncodingLinear1& info : lin_domain) {
-    num_implied_literals_in_complex_domains +=
-        var_domain.Size() - info.rhs.Size();
-  }
-
   VLOG(2) << "ProcessVariableOnlyUsedInEncoding(): var(" << var
           << "): " << var_domain << ", size: " << var_domain.Size()
           << ", #encoded_values: " << values.encoded_values().size()
@@ -513,25 +547,20 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
           << ", #var_in_domain: " << lin_domain.size()
           << ", var_in_objective: " << var_in_objective
           << ", var_has_positive_objective_coefficient: "
-          << var_has_positive_objective_coefficient
-          << ", #implied_literals_in_complex_domains: "
-          << num_implied_literals_in_complex_domains;
+          << var_has_positive_objective_coefficient;
   if (full_encoding_is_needed &&
       (!values.is_fully_encoded() ||
-       num_implied_literals_in_complex_domains > 2500)) {
+       var_domain.Size() * lin_domain.size() > 2500)) {
     VLOG(2) << "Abort - fully_encode_var: " << values.is_fully_encoded()
-            << ", num_implied_literals_in_complex_domains: "
-            << num_implied_literals_in_complex_domains
             << ", full_encoding_is_not_too_expensive: "
             << full_encoding_is_not_too_expensive
             << ", full_encoding_is_needed: " << full_encoding_is_needed;
     if (var_in_objective) {
       context->UpdateRuleStats(
-          "TODO variables: only used in constrained objective and in encoding");
+          "TODO variables: only used in objective and in complex encodings");
     } else {
       context->UpdateRuleStats(
-          "TODO variables: only used in large value encoding and order "
-          "encoding.");
+          "TODO variables: only used in large complex encodings");
     }
     return;
   }
@@ -565,12 +594,18 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
   }
 
   for (const EncodingLinear1& info_in : lin_domain) {
-    ConstraintProto* imply =
+    ConstraintProto* forces =
+        context->AddEnforcedConstraint({info_in.enforcement_literal});
+    for (const int64_t v : info_in.rhs.Values()) {
+      forces->mutable_bool_or()->add_literals(values.literal(v));
+    }
+
+    ConstraintProto* remove =
         context->AddEnforcedConstraint({info_in.enforcement_literal});
     const Domain implied_complement =
         var_domain.IntersectionWith(info_in.rhs.Complement());
     for (const int64_t v : implied_complement.Values()) {
-      imply->mutable_bool_and()->add_literals(NegatedRef(values.literal(v)));
+      remove->mutable_bool_and()->add_literals(NegatedRef(values.literal(v)));
     }
   }
 
@@ -710,7 +745,6 @@ void TryToReplaceVariableByItsEncoding(int var, int& new_exo_to_presolve_index,
   }
 
   // This must be done after we removed all the constraint containing var.
-  new_exo_to_presolve_index = context->working_model->constraints_size();
   ConstraintProto* exo = context->working_model->add_constraints();
   BoolArgumentProto* arg = exo->mutable_exactly_one();
   for (const auto& [value, literal] : values.encoding()) {

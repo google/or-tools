@@ -262,6 +262,11 @@ class ClauseManager : public SatPropagator {
   absl::flat_hash_map<SatClause*, ClauseInfo>* mutable_clauses_info() {
     return &clauses_info_;
   }
+  int LbdOrZeroIfNotRemovable(SatClause* const clause) const {
+    auto it = clauses_info_.find(clause);
+    if (it == clauses_info_.end()) return 0;
+    return it->second.lbd;
+  }
 
   // Total number of clauses inspected during calls to Propagate().
   int64_t num_inspected_clauses() const { return num_inspected_clauses_; }

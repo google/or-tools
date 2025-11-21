@@ -314,13 +314,23 @@ bool Inprocessing::InprocessingRound() {
   sat_solver_->AdvanceDeterministicTime(time_limit_);
   total_dtime_ += time_limit_->GetElapsedDeterministicTime() - start_dtime;
   if (log_info) {
+    const int num_fixed = trail_->Index();
+    const int num_equiv = implication_graph_->num_redundant_literals() / 2;
+
     SOLVER_LOG(
         logger_, "Inprocessing.", " fixed:", FormatCounter(trail_->Index()),
         " equiv:",
         FormatCounter(implication_graph_->num_redundant_literals() / 2),
-        " bools:", FormatCounter(sat_solver_->NumVariables()), " implications:",
+        " left:",
+        FormatCounter(sat_solver_->NumVariables() - num_fixed - num_equiv),
+        " binary:",
         FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
-        " watched:", FormatCounter(clause_manager_->num_watched_clauses()),
+        " clauses:",
+        FormatCounter(clause_manager_->num_watched_clauses() -
+                      clause_manager_->num_removable_clauses()),
+        "|", FormatCounter(clause_manager_->num_removable_clauses()), "|",
+        FormatCounter(sat_solver_->counters().num_deleted_clauses), "|",
+        FormatCounter(sat_solver_->num_failures()),
         " minimization:", FormatCounter(mini_num_clause), "|",
         FormatCounter(mini_num_removed),
         " dtime:", time_limit_->GetElapsedDeterministicTime() - start_dtime,

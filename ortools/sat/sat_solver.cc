@@ -458,7 +458,8 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
 }
 
 int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
-    ClauseId clause_id, absl::Span<const Literal> literals, bool is_redundant) {
+    ClauseId clause_id, absl::Span<const Literal> literals, bool is_redundant,
+    int min_lbd_of_subsumed_clauses) {
   SCOPED_TIME_STAT(&stats_);
 
   if (literals.size() == 1) {
@@ -485,7 +486,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
   // Important: Even though the only literal at the last decision level has
   // been unassigned, its level was not modified, so ComputeLbd() works.
-  const int lbd = ComputeLbd(literals);
+  const int lbd = std::min(min_lbd_of_subsumed_clauses, ComputeLbd(literals));
   if (is_redundant && lbd > parameters_->clause_cleanup_lbd_bound()) {
     --num_learned_clause_before_cleanup_;
 
@@ -1026,8 +1027,9 @@ void SatSolver::ProcessCurrentConflict(
 
   // Note that this should happen after the new_conflict "proof", but before
   // we backtrack and add the new conflict to the clause_propagator_.
-  const bool is_redundant = SubsumptionsInConflictResolution(
-      learned_conflict_, reason_used_to_infer_the_conflict_);
+  const auto [is_redundant, min_lbd_of_subsumed_clauses] =
+      SubsumptionsInConflictResolution(learned_conflict_,
+                                       reason_used_to_infer_the_conflict_);
 
   // Backtrack and add the reason to the set of learned clause.
   counters_.num_literals_learned += learned_conflict_.size();
@@ -1046,7 +1048,9 @@ void SatSolver::ProcessCurrentConflict(
 
   // Create and attach the new learned clause.
   const int conflict_lbd = AddLearnedClauseAndEnqueueUnitPropagation(
-      learned_conflict_clause_id, learned_conflict_, is_redundant);
+      learned_conflict_clause_id, learned_conflict_, is_redundant,
+      min_lbd_of_subsumed_clauses);
+
   restart_->OnConflict(conflict_trail_index, conflict_level, conflict_lbd);
 }
 
@@ -1065,38 +1069,43 @@ bool ClauseSubsumption(absl::Span<const Literal> a, SatClause* b) {
 
 }  // namespace
 
-bool SatSolver::SubsumptionsInConflictResolution(
+std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
     absl::Span<const Literal> conflict, absl::Span<const Literal> reason_used) {
   // Note that conflict is not yet in the clauses_propagator_.
   tmp_literal_set_.Resize(Literal(num_variables_, true).Index());
   for (const Literal l : conflict) tmp_literal_set_.Set(l);
 
   bool is_redundant = true;
+  int min_lbd_of_subsumed_clauses = std::numeric_limits<int>::max();
   const auto in_conflict = tmp_literal_set_.const_view();
-  const auto maybe_subsume = [&is_redundant, in_conflict, conflict, this](
-                                 SatClause* clause,
-                                 DeletionSourceForStat source) {
-    if (clause == nullptr || clause->size() < conflict.size()) return;
-    const int limit = clause->size() - conflict.size();
-    int missing = 0;
-    for (const Literal l : clause->AsSpan()) {
-      if (!in_conflict[l]) {
-        ++missing;
-        if (missing > limit) break;
-      }
-    }
+  const auto maybe_subsume =
+      [&is_redundant, &min_lbd_of_subsumed_clauses, in_conflict, conflict,
+       this](SatClause* clause, DeletionSourceForStat source) {
+        if (clause == nullptr || clause->size() < conflict.size()) return;
+        const int limit = clause->size() - conflict.size();
+        int missing = 0;
+        for (const Literal l : clause->AsSpan()) {
+          if (!in_conflict[l]) {
+            ++missing;
+            if (missing > limit) break;
+          }
+        }
 
-    // This algorithm relies of never having duplicate literals in a clause.
-    // TODO(user): double check that this is always the case.
-    if (missing <= limit) {
-      ++counters_.num_subsumed_clauses;
-      DCHECK(ClauseSubsumption(conflict, clause));
-      if (!clauses_propagator_->IsRemovable(clause)) {
-        is_redundant = false;
-      }
-      clauses_propagator_->LazyDelete(clause, source);
-    }
-  };
+        // This algorithm relies of never having duplicate literals in a clause.
+        // TODO(user): double check that this is always the case.
+        if (missing <= limit) {
+          ++counters_.num_subsumed_clauses;
+          DCHECK(ClauseSubsumption(conflict, clause));
+          if (!clauses_propagator_->IsRemovable(clause)) {
+            is_redundant = false;
+          } else {
+            min_lbd_of_subsumed_clauses =
+                std::min(min_lbd_of_subsumed_clauses,
+                         clauses_propagator_->LbdOrZeroIfNotRemovable(clause));
+          }
+          clauses_propagator_->LazyDelete(clause, source);
+        }
+      };
 
   // This is faster than conflict analysis, and stronger than the old assumption
   // mecanism we had. This is because once the conflict is minimized, we might
@@ -1122,7 +1131,7 @@ bool SatSolver::SubsumptionsInConflictResolution(
   for (const Literal l : conflict) tmp_literal_set_.Clear(l);
 
   clauses_propagator_->CleanUpWatchers();
-  return is_redundant;
+  return {is_redundant, min_lbd_of_subsumed_clauses};
 }
 
 void SatSolver::FillLratProofForLearnedConflict(
@@ -1935,7 +1944,6 @@ void SatSolver::AppendClausesFixing(
   std::vector<ClauseId>& non_unit_clause_ids =
       tmp_clause_ids_for_append_clauses_fixing_;
   non_unit_clause_ids.clear();
-  clause_ids->clear();
 
   while (true) {
     // Find next marked literal to expand from the trail.
@@ -1946,14 +1954,18 @@ void SatSolver::AppendClausesFixing(
     if (trail_index < min_trail_index) break;
     const Literal marked_literal = (*trail_)[trail_index--];
 
-    // Stop at decisions and at literals implied by the decision at their level.
+    // Stop at decisions, at literals fixed at root, and at literals implied by
+    // the decision at their level.
     const int level = trail_->Info(marked_literal.Variable()).level;
-    min_level = std::min(min_level, level);
+    if (level > 0) min_level = std::min(min_level, level);
     if (trail_->AssignmentType(marked_literal.Variable()) ==
         AssignmentType::kSearchDecision) {
       continue;
     }
-    DCHECK_GT(level, 0);
+    if (level == 0) {
+      clause_ids->push_back(trail_->GetUnitClauseId(marked_literal.Variable()));
+      continue;
+    }
     const Literal level_decision = decisions_[level - 1].literal;
     ClauseId clause_id = binary_implication_graph_->GetClauseId(
         level_decision.Negated(), marked_literal);
@@ -3316,6 +3328,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   VLOG(1) << "Database cleanup, #protected:" << num_protected_clauses
           << " #kept:" << num_kept_clauses
           << " #deleted:" << num_deleted_clauses;
+  counters_.num_deleted_clauses += num_deleted_clauses;
 }
 
 std::string SatStatusString(SatSolver::Status status) {

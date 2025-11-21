@@ -63,6 +63,14 @@ class LratProofHandler {
   // checks are enabled and the ID is already used by another clause).
   bool AddAssumedClause(ClauseId id, absl::Span<const Literal> clause);
 
+  // Prevents the given clause from being deleted, until UnpinClause() is called
+  // with the same ID. At most one clause can be pinned at any time.
+  void PinClause(ClauseId id, absl::Span<const Literal> clause);
+
+  // Unpins the clause with the given ID, and deletes it if a call to
+  // DeleteClause() for this clause was made since it was pinned.
+  void UnpinClause(ClauseId id);
+
   // Deletes a problem or inferred clause. The clause literals are only needed
   // when checking DRAT.
   void DeleteClause(ClauseId id, absl::Span<const Literal> clause);
@@ -92,7 +100,11 @@ class LratProofHandler {
 
   bool all_problem_clauses_loaded_ = false;
   int64_t num_assumed_clauses_ = 0;
-  bool debug_crash_on_error_;
+  bool debug_crash_on_error_ = false;
+
+  ClauseId pinned_clause_id_ = kNoClauseId;
+  std::vector<Literal> pinned_clause_;
+  bool delete_pinned_clause_ = false;
 
   // Only used when checking DRAT, because the DRAT checker does not support
   // interleaving problem and inferred clauses.
