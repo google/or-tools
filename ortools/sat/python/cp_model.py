@@ -1870,6 +1870,19 @@ class CpSolver:
         return self._checked_response.user_time
 
     @property
+    def solve_log(self) -> str:
+        """Returns the solve log.
+
+        To enable this, the parameter log_to_response must be set to True.
+        """
+        return self._checked_response.solve_log
+
+    @property
+    def solve_info(self) -> str:
+        """Returns the information about the solve."""
+        return self._checked_response.solve_info
+
+    @property
     def response_proto(self) -> cmh.CpSolverResponse:
         """Returns the response object."""
         return self._checked_response

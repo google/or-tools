@@ -492,10 +492,6 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
     SatClause* clause = clauses_propagator_->AddRemovableClause(
         clause_id, literals, trail_, lbd);
-
-    // BumpClauseActivity() must be called after clauses_info_[clause] has
-    // been created or it will have no effect.
-    (*clauses_propagator_->mutable_clauses_info())[clause].lbd = lbd;
     BumpClauseActivity(clause);
   } else {
     CHECK(clauses_propagator_->AddClause(clause_id, literals, trail_, lbd));
@@ -831,16 +827,17 @@ void SatSolver::ProcessCurrentConflict(
   }
 
   // Bump the clause activities.
-  // Note that the activity of the learned clause will be bumped too
-  // by AddLearnedClauseAndEnqueueUnitPropagation().
+  //
+  // Note that the activity of the learned clause will be bumped too by
+  // AddLearnedClauseAndEnqueueUnitPropagation() after we update the increment.
   if (trail_->FailingSatClause() != nullptr) {
     BumpClauseActivity(trail_->FailingSatClause());
   }
   BumpReasonActivities(reason_used_to_infer_the_conflict_);
+  UpdateClauseActivityIncrement();
 
   // Decay the activities.
   decision_policy_->UpdateVariableActivityIncrement();
-  UpdateClauseActivityIncrement();
   pb_constraints_->UpdateActivityIncrement();
 
   // Hack from Glucose that seems to perform well.
@@ -1385,8 +1382,7 @@ void SatSolver::KeepAllClausesUsedToInfer(BooleanVariable variable) {
     const BooleanVariable var = (*trail_)[trail_index].Variable();
     SatClause* clause = ReasonClauseOrNull(var);
     if (clause != nullptr) {
-      // Keep this clause.
-      clauses_propagator_->mutable_clauses_info()->erase(clause);
+      clauses_propagator_->KeepClauseForever(clause);
     }
     if (trail_->AssignmentType(var) == AssignmentType::kSearchDecision) {
       continue;
@@ -2044,43 +2040,26 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   auto it = clauses_propagator_->mutable_clauses_info()->find(clause);
   if (it == clauses_propagator_->mutable_clauses_info()->end()) return;
 
-  // Check if the new clause LBD is below our threshold to keep this clause
-  // indefinitely.
-  const int new_lbd = ComputeLbd(clause->AsSpan());
-  if (new_lbd <= parameters_->clause_cleanup_lbd_bound()) {
-    clauses_propagator_->mutable_clauses_info()->erase(clause);
-    return;
-  }
-
-  // Potentially protect this clause for the next cleanup phase.
-  if (new_lbd <= parameters_->clause_protection_lbd_bound()) {
-    switch (parameters_->clause_cleanup_protection()) {
-      case SatParameters::PROTECTION_NONE:
-        break;
-      case SatParameters::PROTECTION_ALWAYS:
-        it->second.protected_during_next_cleanup = true;
-        break;
-      case SatParameters::PROTECTION_LBD:
-        if (new_lbd < it->second.lbd) {
-          it->second.protected_during_next_cleanup = true;
-          it->second.lbd = new_lbd;
-        }
-    }
-  }
+  it->second.num_cleanup_rounds_since_last_bumped = 0;
 
   // Increase the activity.
   const double activity = it->second.activity += clause_activity_increment_;
   if (activity > parameters_->max_clause_activity_value()) {
     RescaleClauseActivities(1.0 / parameters_->max_clause_activity_value());
   }
+
+  // Update this clause LBD using the new decision orders.
+  // Note that this can keep the clause forever depending on the parameters.
+  //
+  // TODO(user): This cause one more hash lookup, probably not a big deal, but
+  // could be optimized away.
+  clauses_propagator_->ChangeLbdIfBetter(clause, ComputeLbd(clause->AsSpan()));
 }
 
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (auto& entry : *clauses_propagator_->mutable_clauses_info()) {
-    entry.second.activity *= scaling_factor;
-  }
+  clauses_propagator_->RescaleClauseActivities(scaling_factor);
 }
 
 void SatSolver::UpdateClauseActivityIncrement() {
@@ -2157,9 +2136,7 @@ int SatSolver::ComputeLbd(absl::Span<const Literal> literals) {
     const SatDecisionLevel level(AssignmentLevel(literal.Variable()));
     DCHECK_GE(level, 0);
     num_at_max_level += (level == max_level) ? 1 : 0;
-    if (level > limit && !is_level_marked_[level]) {
-      is_level_marked_.Set(level);
-    }
+    if (level > limit) is_level_marked_.Set(level);
   }
 
   return is_level_marked_.NumberOfSetCallsWithDifferentArguments() +
@@ -2258,10 +2235,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
     if (clause->IsRemoved()) continue;
 
     const size_t old_size = clause->size();
-    if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
-      // The clause is always true, detach it.
-      clauses_propagator_->LazyDelete(clause,
-                                      DeletionSourceForStat::FIXED_AT_TRUE);
+    if (clauses_propagator_->RemoveFixedLiteralsAndTestIfTrue(clause)) {
       ++num_detached_clauses;
       continue;
     }
@@ -3253,14 +3227,25 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   std::vector<Entry> entries;
   auto& clauses_info = *(clauses_propagator_->mutable_clauses_info());
   for (auto& entry : clauses_info) {
+    entry.second.num_cleanup_rounds_since_last_bumped++;
     if (clauses_propagator_->ClauseIsUsedAsReason(entry.first)) continue;
-    if (entry.second.protected_during_next_cleanup) {
-      entry.second.protected_during_next_cleanup = false;
+
+    if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier1() &&
+        entry.second.num_cleanup_rounds_since_last_bumped <= 32) {
       continue;
     }
+
+    if (entry.second.lbd <= parameters_->clause_cleanup_lbd_tier2() &&
+        entry.second.num_cleanup_rounds_since_last_bumped <= 1) {
+      continue;
+    }
+
+    // The LBD should always have been updated to be <= size.
+    DCHECK_LE(entry.second.lbd, entry.first->size());
     entries.push_back(entry);
   }
-  const int num_protected_clauses = clauses_info.size() - entries.size();
+  const int num_protected_clauses =
+      clauses_propagator_->num_removable_clauses() - entries.size();
 
   if (parameters_->clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
     // Order the clauses by decreasing LBD and then increasing activity.

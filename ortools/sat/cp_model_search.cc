@@ -934,6 +934,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
         params.search_branching() == SatParameters::FIXED_SEARCH) {
       continue;
     }
+    // As of November 2025, we don't support any LP reasoning when producing an
+    // UNSAT proof.
+    if ((params.check_lrat_proof() || params.check_drat_proof() ||
+         params.output_drat_proof()) &&
+        params.linearization_level() > 1) {
+      continue;
+    }
 
     // TODO(user): Enable probing_search in deterministic mode.
     // Currently it timeouts on small problems as the deterministic time limit

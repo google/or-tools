@@ -24,7 +24,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 344
+// NEXT TAG: 351
 message SatParameters {
   // In some context, like in a portfolio of search, it makes sense to name a
   // given parameters set for logging purpose.
@@ -176,23 +176,25 @@ message SatParameters {
   // target of clauses to keep.
   optional double clause_cleanup_ratio = 190 [default = 0.5];
 
-  // Each time a clause activity is bumped, the clause has a chance to be
-  // protected during the next cleanup phase. Note that clauses used as a reason
-  // are always protected.
-  enum ClauseProtection {
-    PROTECTION_NONE = 0;    // No protection.
-    PROTECTION_ALWAYS = 1;  // Protect all clauses whose activity is bumped.
-    PROTECTION_LBD = 2;     // Only protect clause with a better LBD.
-  }
-  optional ClauseProtection clause_cleanup_protection = 58
-      [default = PROTECTION_NONE];
-
   // All the clauses with a LBD (literal blocks distance) lower or equal to this
   // parameters will always be kept.
+  //
+  // Note that the LBD of a clause that just propagated is 1 + number of
+  // different decision levels of its literals. So that the "classic" LBD of a
+  // learned conflict is the same as its LBD when we backjump and then propagate
+  // it.
   optional int32 clause_cleanup_lbd_bound = 59 [default = 5];
 
-  // Only protect clauses up to this maximum LBD.
-  optional int32 clause_protection_lbd_bound = 338 [default = 8];
+  // All the clause with a LBD lower or equal to this will be kept except if
+  // its activity hasn't been bumped in the last 32 cleanup phase. Note that
+  // this has no effect if it is <= clause_cleanup_lbd_bound.
+  optional int32 clause_cleanup_lbd_tier1 = 349 [default = 0];
+
+  // All the clause with a LBD lower or equal to this will be kept except if its
+  // activity hasn't been bumped since the previous cleanup phase. Note that
+  // this has no effect if it is <= clause_cleanup_lbd_bound or <=
+  // clause_cleanup_lbd_tier1.
+  optional int32 clause_cleanup_lbd_tier2 = 350 [default = 0];
 
   // The clauses that will be kept during a cleanup are the ones that come
   // first under this order. We always keep or exclude ties together.
@@ -777,6 +779,43 @@ message SatParameters {
 
   // The amount of dtime between each export of shared glue clauses.
   optional double share_glue_clauses_dtime = 322 [default = 1.0];
+
+  // ==========================================================================
+  // Proofs
+  // ==========================================================================
+
+  // If true, inferred clauses are checked with an LRAT checker as they are
+  // learned. As of November 2025, this only works with pure SAT problems, with
+  //  - cp_model_presolve = false,
+  //  - linearization_level <= 1,
+  //  - symmetry_level <= 1,
+  //  - shared_tree_num_workers = 0.
+  optional bool check_lrat_proof = 344 [default = false];
+
+  // TODO(user): add and implement an output_lrat_proof field.
+  reserved 345;
+
+  // If true, and if the problem is UNSAT, a DRAT proof of this UNSAT property
+  // is checked after the solver has finished. As of November 2025, this only
+  // works for pure SAT problems, with
+  //  - num_workers = 1,
+  //  - cp_model_presolve = false,
+  //  - linearization_level <= 1,
+  //  - symmetry_level <= 1.
+  optional bool check_drat_proof = 346 [default = false];
+
+  // If true, a DRAT proof that all the clauses inferred by the solver are valid
+  // is output to a file. As of November 2025, this only works for pure SAT
+  // problems, with
+  //  - num_workers = 1,
+  //  - cp_model_presolve = false,
+  //  - linearization_level <= 1,
+  //  - symmetry_level <= 1.
+  optional bool output_drat_proof = 347 [default = false];
+
+  // The maximum time allowed to check the DRAT proof (this can take more time
+  // than the solve itself). Only used if check_drat_proof is true.
+  optional double max_drat_time_in_seconds = 348 [default = inf];
 
   // ==========================================================================
   // Debugging parameters

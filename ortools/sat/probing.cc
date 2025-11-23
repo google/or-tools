@@ -1353,7 +1353,12 @@ void FailedLiteralProbing::MaybeSubsumeWithBinaryClause(
       break;
     }
   }
-  if (!subsumed) return;
+  if (!subsumed) {
+    // The clause is not subsumed but its lbd is 2 when last_decision is
+    // propagated. This is a "glue" clause.
+    clause_manager_->ChangeLbdIfBetter(clause, 2);
+    return;
+  }
 
   // Since we will remove the clause, we need to make sure we do have the
   // implication in our repository.

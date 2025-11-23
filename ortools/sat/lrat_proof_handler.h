@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "absl/types/span.h"
-#include "ortools/base/file.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_writer.h"
 #include "ortools/sat/lrat_checker.h"
@@ -34,8 +33,12 @@ namespace sat {
 // and/or by saving it to a file.
 class LratProofHandler {
  public:
-  explicit LratProofHandler(Model* model, bool check_lrat, bool check_drat,
-                            File* drat_output, bool in_binary_drat_format);
+  // TODO(user): pass the [presolved] model proto to the handler, so that
+  // it can map internal problem clause IDs to constraint indices in the
+  // original model. This will be needed to write the LRAT proof in a file that
+  // can be checked with an external LRAT checker, expecting the standard LRAT
+  // ASCII file format (which requires problem clauses IDs between 1 and n).
+  static std::unique_ptr<LratProofHandler> MaybeCreate(Model* model);
 
   bool lrat_check_enabled() const { return lrat_checker_ != nullptr; }
   bool drat_check_enabled() const { return drat_checker_ != nullptr; }
@@ -84,23 +87,25 @@ class LratProofHandler {
   // whether the empty clause has been successfully inferred. Returns INVALID if
   // it is not. Returns UNKNOWN if the check timed out (this can only occur
   // with DRAT checks), or if neither LRAT nor DRAT checks were enabled.
-  DratChecker::Status Check(double max_drat_check_time_in_seconds =
-                                std::numeric_limits<double>::infinity());
+  DratChecker::Status Check();
 
   void AddStats() const;
 
   int64_t num_assumed_clauses() const { return num_assumed_clauses_; }
 
  private:
+  explicit LratProofHandler(Model* model);
+
   bool CheckResult(bool result) const;
 
   std::unique_ptr<LratChecker> lrat_checker_;
   std::unique_ptr<DratChecker> drat_checker_;
   std::unique_ptr<DratWriter> drat_writer_;
+  double max_drat_time_in_seconds_ = std::numeric_limits<double>::infinity();
+  bool debug_crash_on_error_ = false;
 
   bool all_problem_clauses_loaded_ = false;
   int64_t num_assumed_clauses_ = 0;
-  bool debug_crash_on_error_ = false;
 
   ClauseId pinned_clause_id_ = kNoClauseId;
   std::vector<Literal> pinned_clause_;

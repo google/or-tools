@@ -107,14 +107,6 @@ class SatClause {
     return absl::Span<const Literal>(&(literals_[0]), size_);
   }
 
-  // Removes literals that are fixed. This should only be called at level 0
-  // where a literal is fixed iff it is assigned. Aborts and returns true if
-  // they are not all false.
-  //
-  // Note that the removed literal can still be accessed in the portion [size,
-  // old_size) of literals().
-  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
-
   // Returns true if the clause is satisfied for the given assignment. Note that
   // the assignment may be partial, so false does not mean that the clause can't
   // be satisfied by completing the assignment.
@@ -133,6 +125,14 @@ class SatClause {
   // and actually remove it. We use size_ = 0 for this since the clause will
   // never be used afterwards.
   void Clear() { size_ = 0; }
+
+  // Removes literals that are fixed. This should only be called at level 0
+  // where a literal is fixed iff it is assigned. Aborts and returns true if
+  // they are not all false.
+  //
+  // Note that the removed literal can still be accessed in the portion [size,
+  // old_size) of literals().
+  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
 
   // Rewrites a clause with another shorter one. Note that the clause shouldn't
   // be attached when this is called.
@@ -154,7 +154,7 @@ class SatClause {
 struct ClauseInfo {
   double activity = 0.0;
   int32_t lbd = 0;
-  bool protected_during_next_cleanup = false;
+  int32_t num_cleanup_rounds_since_last_bumped = 0;
 };
 
 class BinaryImplicationGraph;
@@ -267,6 +267,18 @@ class ClauseManager : public SatPropagator {
     if (it == clauses_info_.end()) return 0;
     return it->second.lbd;
   }
+  void KeepClauseForever(SatClause* const clause) {
+    clauses_info_.erase(clause);
+  }
+  void RescaleClauseActivities(double scaling_factor) {
+    for (auto& entry : clauses_info_) {
+      entry.second.activity *= scaling_factor;
+    }
+  }
+
+  // If the new lbd is better than the stored one, update it.
+  // And return the result of IsRemovable() (this save one hash lookup).
+  void ChangeLbdIfBetter(SatClause* clause, int new_lbd);
 
   // Total number of clauses inspected during calls to Propagate().
   int64_t num_inspected_clauses() const { return num_inspected_clauses_; }
@@ -279,6 +291,10 @@ class ClauseManager : public SatPropagator {
 
   // Number of clauses currently watched.
   int64_t num_watched_clauses() const { return num_watched_clauses_; }
+
+  // Number of time an existing clause lbd was reduced (due to inprocessing or
+  // recomputation of lbd in different branches).
+  int64_t num_lbd_promotions() const { return num_lbd_promotions_; }
 
   ClauseId GetClauseId(const SatClause* clause) const {
     const auto it = clause_id_.find(clause);
@@ -342,6 +358,8 @@ class ClauseManager : public SatPropagator {
   ABSL_MUST_USE_RESULT bool InprocessingRewriteClause(
       SatClause* clause, absl::Span<const Literal> new_clause,
       absl::Span<const ClauseId> clause_ids = {});
+
+  bool RemoveFixedLiteralsAndTestIfTrue(SatClause* clause);
 
   // Fix a literal either with an existing LRAT `unit_clause_id`, or with a new
   // inferred unit clause, using `clause_ids` as proof.
@@ -427,14 +445,17 @@ class ClauseManager : public SatPropagator {
   SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_ = true;
 
+  const SatParameters& parameters_;
+  const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
   Trail* trail_;
 
   // For statistic reporting.
   std::vector<int64_t> deletion_counters_;
-  int64_t num_inspected_clauses_;
-  int64_t num_inspected_clause_literals_;
-  int64_t num_watched_clauses_;
+  int64_t num_inspected_clauses_ = 0;
+  int64_t num_inspected_clause_literals_ = 0;
+  int64_t num_watched_clauses_ = 0;
+  int64_t num_lbd_promotions_ = 0;
   mutable StatsGroup stats_;
 
   // For DetachAllClauses()/AttachAllClauses().

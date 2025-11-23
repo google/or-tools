@@ -68,40 +68,6 @@ public final class CpSolver {
     return solveResponse.getStatus();
   }
 
-  /**
-   * Solves the given model, passes each incumber solution to the solution callback if not null, and
-   * returns the solve status.
-   *
-   * @deprecated Use the solve() method with the same signature.
-   */
-  @Deprecated
-  public CpSolverStatus solveWithSolutionCallback(CpModel model, CpSolverSolutionCallback cb) {
-    return solve(model, cb);
-  }
-
-  /**
-   * Searches for all solutions of a satisfiability problem.
-   *
-   * <p>This method searches for all feasible solutions of a given model. Then it feeds the
-   * solutions to the callback.
-   *
-   * <p>Note that the model cannot have an objective.
-   *
-   * @param model the model to solve
-   * @param cb the callback that will be called at each solution
-   * @return the status of the solve (FEASIBLE, INFEASIBLE...)
-   * @deprecated Use the solve() method with the same signature, after setting the
-   *     enumerate_all_solution parameter to true.
-   */
-  @Deprecated
-  public CpSolverStatus searchAllSolutions(CpModel model, CpSolverSolutionCallback cb) {
-    boolean oldValue = solveParameters.getEnumerateAllSolutions();
-    solveParameters.setEnumerateAllSolutions(true);
-    CpSolverStatus status = solve(model, cb);
-    solveParameters.setEnumerateAllSolutions(oldValue);
-    return status;
-  }
-
   private synchronized void createSolveWrapper() {
     solveWrapper = new SolveWrapper();
   }
@@ -213,8 +179,21 @@ public final class CpSolver {
    * Returns some information on how the solution was found, or the reason why the model or the
    * parameters are invalid.
    */
+  public String solutionInfo() {
+    return solveResponse.getSolutionInfo();
+  }
+
+  /** Returns the solution info. @Deprecated */
   public String getSolutionInfo() {
     return solveResponse.getSolutionInfo();
+  }
+
+  /**
+   * Returns the solve log. You need to set the parameters log_to_response to true to get the solve
+   * log.
+   */
+  public String solveLog() {
+    return solveResponse.getSolveLog();
   }
 
   private CpSolverResponse solveResponse;

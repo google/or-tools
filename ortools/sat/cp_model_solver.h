@@ -26,9 +26,6 @@
 
 #ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_response);
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_drat_check);
-OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_lrat_check);
-OR_DLL ABSL_DECLARE_FLAG(double, cp_model_max_drat_time_in_seconds);
 #endif
 
 namespace operations_research {

@@ -103,6 +103,8 @@ bool LiteralsAreFixedAtRoot(const Trail& trail,
 ClauseManager::ClauseManager(Model* model)
     : SatPropagator("ClauseManager"),
       clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
+      parameters_(*model->GetOrCreate<SatParameters>()),
+      assignment_(model->GetOrCreate<Trail>()->Assignment()),
       implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
@@ -327,6 +329,9 @@ SatClause* ClauseManager::AddRemovableClause(ClauseId id,
   }
   if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
   CHECK(AttachAndPropagate(clause, trail));
+
+  // Create an entry in clauses_info_ to mark that clause as removable.
+  clauses_info_[clause].lbd = lbd;
   return clause;
 }
 
@@ -484,6 +489,35 @@ bool ClauseManager::InprocessingFixLiteral(
   return implication_graph_->Propagate(trail_);
 }
 
+void ClauseManager::ChangeLbdIfBetter(SatClause* clause, int new_lbd) {
+  auto it = clauses_info_.find(clause);
+  if (it == clauses_info_.end()) return;
+
+  // Always take the min.
+  if (new_lbd > it->second.lbd) return;
+
+  ++num_lbd_promotions_;
+  if (new_lbd <= parameters_.clause_cleanup_lbd_bound()) {
+    // We keep the clause forever.
+    clauses_info_.erase(it);
+  } else {
+    it->second.lbd = new_lbd;
+  }
+}
+
+bool ClauseManager::RemoveFixedLiteralsAndTestIfTrue(SatClause* clause) {
+  if (clause->RemoveFixedLiteralsAndTestIfTrue(assignment_)) {
+    // The clause is always true, detach it.
+    LazyDelete(clause, DeletionSourceForStat::FIXED_AT_TRUE);
+    return true;
+  }
+
+  // We should have dealt with unit and unsat clause before this.
+  CHECK_GE(clause->size(), 2);
+  ChangeLbdIfBetter(clause, clause->size());
+  return false;
+}
+
 bool ClauseManager::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause,
     absl::Span<const ClauseId> clause_ids) {
@@ -543,6 +577,7 @@ bool ClauseManager::InprocessingRewriteClause(
   }
 
   clause->Rewrite(new_clause);
+  ChangeLbdIfBetter(clause, new_clause.size());
 
   // And we reattach it.
   if (all_clauses_are_attached_) {
