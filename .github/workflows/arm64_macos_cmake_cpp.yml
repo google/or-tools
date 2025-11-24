@@ -20,7 +20,7 @@ jobs:
     name: arm64•MacOS•CMake(${{matrix.cmake.name}})•C++
     runs-on: macos-latest # macos M1 based runner
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Check CMake
         run: cmake --version
       - name: Configure
@@ -54,4 +54,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
