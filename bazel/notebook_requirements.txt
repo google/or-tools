@@ -4,7 +4,7 @@
 #
 #    bazel run //bazel:notebook_requirements.update
 #
-absl-py==2.2.2
+absl-py==2.3.1
     # via -r bazel/notebook_requirements.in
 anyio==4.10.0
     # via
