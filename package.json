@@ -3,10 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "configure": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake'",
-    "build": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake && cmake --build build --target cp_sat_api -j'",
-    "install": "npm run configure && npm run build",
+    "ts:site": "node ./node_modules/typescript/bin/tsc -p javascript/site/tsconfig.json",
+    "ts:check": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",
+    "install:ts": "npm run ts:site",
+    "install:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake && cmake --build build --target cp_sat_api -j'",
+    "install": "npm run install:ts && npm run install:wasm && npm run ts:check",
     "clean": "rm -rf build",
     "start": "bash -lc 'source ./emsdk/emsdk_env.sh && emrun --no_browser --serve_root build/bin --port 8080 build/bin/'"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

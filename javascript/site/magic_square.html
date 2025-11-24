@@ -13,7 +13,7 @@
 		</style>
 	</head>
 	<body>
-		<nav><a href="index.html">← All examples</a></nav>
+		<nav><a href="../index.html">← All examples</a></nav>
 		<h1>Magic Square (CP-SAT WASM)</h1>
 		<p>This page exercises the <code>cp_sat_api</code>
 			WASM module by building and solving a magic square model directly in the browser.</p>
@@ -27,126 +27,8 @@
 		<pre id="status"></pre>
 
 			<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
-			<script src="cp_sat_api.js"></script>
-			<script src="cpsat_api.js"></script>
-			<script>
-				const statusEl = document.getElementById('status');
-				const append = (txt) => {
-					statusEl.textContent += `${txt}\n`;
-				};
-
-				function buildMagicSquareModel(size) {
-					const numCells = size * size;
-					const variables = [];
-					const domain = [1, numCells];
-					for (let r = 0; r < size; ++r) {
-						for (let c = 0; c < size; ++c) {
-							variables.push({
-								name: `cell_${r}_${c}`,
-								domain: domain.slice(),
-							});
-						}
-					}
-
-					const constraints = [];
-					const allDiffExprs = [];
-					for (let i = 0; i < numCells; ++i) {
-						allDiffExprs.push({ vars: [i], coeffs: [1], offset: 0 });
-					}
-					constraints.push({
-						name: 'all_diff',
-						all_diff: { exprs: allDiffExprs },
-					});
-
-					const target = (size * (size * size + 1)) / 2;
-					const addLinearConstraint = (name, vars) => {
-						constraints.push({
-							name,
-							linear: {
-								vars,
-								coeffs: Array(vars.length).fill(1),
-								domain: [target, target],
-							},
-						});
-					};
-
-					for (let r = 0; r < size; ++r) {
-						const vars = [];
-						for (let c = 0; c < size; ++c) {
-							vars.push(r * size + c);
-						}
-						addLinearConstraint(`row_${r}`, vars);
-					}
-
-					for (let c = 0; c < size; ++c) {
-						const vars = [];
-						for (let r = 0; r < size; ++r) {
-							vars.push(r * size + c);
-						}
-						addLinearConstraint(`col_${c}`, vars);
-					}
-
-					const diagMain = [];
-					const diagAnti = [];
-					for (let i = 0; i < size; ++i) {
-						diagMain.push(i * size + i);
-						diagAnti.push(i * size + (size - 1 - i));
-					}
-					addLinearConstraint('diag_main', diagMain);
-					addLinearConstraint('diag_anti', diagAnti);
-
-					return {
-						name: `magic_square_${size}`,
-						variables,
-						constraints,
-					};
-				}
-
-				async function runMagicSquare() {
-					const size = Math.max(1, parseInt(document.getElementById('size').value, 10));
-					const workers = parseInt(document.getElementById('workers').value, 10);
-					append(`Building model (size=${size})…`);
-
-					let model;
-					try {
-						model = await CpSat.createModel(buildMagicSquareModel(size));
-					} catch (err) {
-						append(`Model build failed: ${err.message}`);
-						return;
-					}
-
-					const validation = await CpSat.validate(model);
-					if (!validation.ok) {
-						append(`Model invalid: ${validation.message}`);
-						return;
-					}
-
-					const params = {};
-					if (workers > 0) {
-						params.num_search_workers = workers;
-					}
-
-					append('Solving…');
-					try {
-						const result = await CpSat.solve(model, params);
-						if (!result.response) {
-							append('Solver returned no response.');
-							return;
-						}
-						statusEl.textContent = JSON.stringify(result.response, null, 2);
-					} catch (err) {
-						append(`Solve failed: ${err.message}`);
-					}
-				}
-
-				document.getElementById('run').addEventListener('click', runMagicSquare);
-
-				CpSat.loadModule().then(() => {
-					document.getElementById('ready-indicator').textContent = 'Module ready.';
-				}).catch(err => {
-					document.getElementById('ready-indicator').textContent = 'Module failed to load.';
-					append(String(err));
-				});
-			</script>
+			<script src="../cp_sat_api.js"></script>
+			<script src="../cpsat_api.js"></script>
+			<script src="magic_square.js"></script>
 	</body>
 </html>

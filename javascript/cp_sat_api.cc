@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 
+#include <emscripten/bind.h>
 #include <emscripten/emscripten.h>
 
 #include "generated_proto_schemas.h"
@@ -20,6 +21,8 @@ using operations_research::sat::Model;
 using operations_research::sat::NewSatParameters;
 using operations_research::sat::SatParameters;
 using operations_research::sat::SolveCpModel;
+using operations_research::sat::wasm::kCpModelProtoSchema;
+using operations_research::sat::wasm::kSatParametersProtoSchema;
 
 uint8_t* SerializeResponse(const CpSolverResponse& response, size_t* out_len) {
   if (out_len == nullptr) return nullptr;
@@ -65,11 +68,11 @@ uint8_t* CopyStringToBuffer(const std::string& message, size_t* out_len) {
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE const char* get_cp_model_schema() {
-  return operations_research::sat::wasm::kCpModelProtoSchema;
+  return kCpModelProtoSchema;
 }
 
 EMSCRIPTEN_KEEPALIVE const char* get_sat_parameters_schema() {
-  return operations_research::sat::wasm::kSatParametersProtoSchema;
+  return kSatParametersProtoSchema;
 }
 
 // Solve a CpModelProto and optional SatParameters provided as serialized binary
@@ -127,3 +130,15 @@ EMSCRIPTEN_KEEPALIVE uint8_t* validate_model(const uint8_t* model_data,
 }
 
 }  // extern "C"
+
+namespace {
+
+std::string GetCpModelSchemaString() { return kCpModelProtoSchema; }
+std::string GetSatParametersSchemaString() { return kSatParametersProtoSchema; }
+
+}  // namespace
+
+EMSCRIPTEN_BINDINGS(cp_sat_api_bindings) {
+  emscripten::function("getCpModelSchema", &GetCpModelSchemaString);
+  emscripten::function("getSatParametersSchema", &GetSatParametersSchemaString);
+}
