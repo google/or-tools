@@ -172,6 +172,8 @@ class MaxActiveVehiclesFilter : public IntVarLocalSearchFilter {
         routing_model_(routing_model),
         is_active_(routing_model.vehicles(), false),
         active_vehicles_(0) {}
+  ~MaxActiveVehiclesFilter() override = default;
+  std::string DebugString() const override { return "MaxActiveVehiclesFilter"; }
   bool Accept(const Assignment* delta, const Assignment* /*deltadelta*/,
               int64_t /*objective_min*/, int64_t /*objective_max*/) override {
     const int64_t kUnassigned = -1;
