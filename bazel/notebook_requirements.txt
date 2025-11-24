@@ -73,7 +73,7 @@ idna==3.10
     #   httpx
     #   jsonschema
     #   requests
-immutabledict==4.2.1
+immutabledict==4.2.2
     # via -r bazel/notebook_requirements.in
 ipykernel==6.30.1
     # via jupyterlab
@@ -177,7 +177,7 @@ notebook-shim==0.2.4
     # via
     #   jupyterlab
     #   notebook
-numpy==2.2.0
+numpy==2.3.5
     # via
     #   -r bazel/notebook_requirements.in
     #   pandas
@@ -194,7 +194,7 @@ packaging==25.0
     #   jupyterlab-server
     #   nbconvert
     #   plotly
-pandas==2.2.3
+pandas==2.3.3
     # via -r bazel/notebook_requirements.in
 pandocfilters==1.5.1
     # via nbconvert
@@ -272,7 +272,7 @@ rpds-py==0.26.0
     # via
     #   jsonschema
     #   referencing
-scipy==1.14.1
+scipy==1.16.3
     # via -r bazel/notebook_requirements.in
 send2trash==1.8.3
     # via jupyter-server
@@ -322,7 +322,7 @@ types-protobuf==6.30.2.20250703
     # via mypy-protobuf
 types-python-dateutil==2.9.0.20250708
     # via arrow
-typing-extensions==4.13.1
+typing-extensions==4.15.0
     # via
     #   -r bazel/notebook_requirements.in
     #   anyio
