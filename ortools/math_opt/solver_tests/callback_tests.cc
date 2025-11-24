@@ -13,6 +13,8 @@
 
 #include "ortools/math_opt/solver_tests/callback_tests.h"
 
+#include <atomic>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -44,6 +46,7 @@
 #include "ortools/math_opt/solver_tests/test_models.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/port/scoped_std_stream_capture.h"
+#include "ortools/util/fp_roundtrip_conv.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -418,8 +421,8 @@ TEST_P(CallbackTest, EventSolutionAlwaysCalled) {
   SolveArguments args = {
       .callback_registration = {.events = {CallbackEvent::kMipSolution}}};
   absl::Mutex mutex;
-  bool cb_called = false;
-  bool cb_called_on_optimal = false;
+  std::atomic<bool> cb_called = false;
+  std::atomic<bool> cb_called_on_optimal = false;
   args.callback = [&](const CallbackData& callback_data) {
     const absl::MutexLock lock(mutex);
     cb_called = true;
@@ -433,6 +436,8 @@ TEST_P(CallbackTest, EventSolutionAlwaysCalled) {
     EXPECT_THAT(
         sol, AnyOf(IsNear({{x, 0.0}, {y, 0.0}}), IsNear({{x, 1.0}, {y, 0.0}}),
                    IsNear({{x, 0.0}, {y, 1.0}})));
+    EXPECT_LE(callback_data.mip_stats.primal_bound(), 2.05);
+    EXPECT_GE(callback_data.mip_stats.dual_bound(), 1.95);
     if (gtl::FindWithDefault(sol, y) > 0.5) {
       cb_called_on_optimal = true;
     }
@@ -646,8 +651,8 @@ TEST_P(CallbackTest, EventSolutionFilter) {
                              .events = {CallbackEvent::kMipSolution},
                              .mip_solution_filter = MakeKeepKeysFilter({y})}};
   absl::Mutex mutex;
-  bool cb_called = false;
-  bool cb_called_on_optimal = false;
+  std::atomic<bool> cb_called = false;
+  std::atomic<bool> cb_called_on_optimal = false;
   args.callback = [&](const CallbackData& callback_data) {
     const absl::MutexLock lock(mutex);
     cb_called = true;
@@ -793,6 +798,47 @@ TEST_P(CallbackTest, EventNodeFilter) {
   LOG(INFO) << "callback_data.solution was not set " << empty_solution_count
             << " times";
   EXPECT_THAT(solutions, Each(UnorderedElementsAre(Pair(x0, _), Pair(x2, _))));
+}
+
+TEST_P(CallbackTest, EventMip) {
+  if (!GetParam().supported_events.contains(CallbackEvent::kMip)) {
+    GTEST_SKIP() << "Test skipped because this solver does not support "
+                    "CallbackEvent::kMip.";
+  }
+
+  // This test must use integer variables.
+  ASSERT_TRUE(GetParam().integer_variables);
+
+  // Use the MIPLIB instance 23588, which has optimal solution 8090 and LP
+  // relaxation of 7649.87. This instance was selected because every
+  // supported solver can solve it quickly (a few seconds), but no solver can
+  // solve it in one node (so the node callback will be invoked).
+  ASSERT_OK_AND_ASSIGN(const std::unique_ptr<Model> model,
+                       LoadMiplibInstance("23588"));
+
+  std::atomic<double> best_primal_bound =
+      std::numeric_limits<double>::infinity();
+  std::atomic<double> best_dual_bound =
+      -std::numeric_limits<double>::infinity();
+  const SolveArguments args = {
+      .callback_registration = {.events = {CallbackEvent::kMip}},
+      .callback = [&](const CallbackData& callback_data) {
+        CHECK_EQ(callback_data.event, CallbackEvent::kMip);
+        const double primal_bound = callback_data.mip_stats.primal_bound();
+        const double dual_bound = callback_data.mip_stats.dual_bound();
+        best_primal_bound = std::fmin(best_primal_bound, primal_bound);
+        best_dual_bound = std::fmax(best_dual_bound, dual_bound);
+        return CallbackResult();
+      }};
+  EXPECT_THAT(Solve(*model, GetParam().solver_type, args),
+              IsOkAndHolds(IsOptimal(8090)));
+  LOG(INFO) << "best_primal_bound: "
+            << RoundTripDoubleFormat(best_primal_bound.load());
+  LOG(INFO) << "best_dual_bound: "
+            << RoundTripDoubleFormat(best_dual_bound.load());
+  EXPECT_THAT(best_primal_bound.load(), testing::DoubleNear(8090, 0.5));
+  EXPECT_LE(best_dual_bound.load(), 8090.5);
+  EXPECT_GE(best_dual_bound.load(), 7640);
 }
 
 TEST_P(CallbackTest, StatusPropagation) {

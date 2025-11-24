@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Defines how to request a callback and the input and output of a callback."""
+
 import dataclasses
 import datetime
 import enum
@@ -36,7 +37,8 @@ class Event(enum.Enum):
     * MIP: The solver is in the MIP loop (called periodically before starting a
         new node). Useful for early termination. Note that this event does not
         provide information on LP relaxations nor about new incumbent solutions.
-        Gurobi only.
+        Fully supported by Gurobi only. If used with CP-SAT, it is called when the
+        dual bound is improved.
     * MIP_SOLUTION: Called every time a new MIP incumbent is found. Fully
         supported by Gurobi, partially supported by CP-SAT (you can observe new
         solutions, but not add lazy constraints).

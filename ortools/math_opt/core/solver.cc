@@ -120,10 +120,16 @@ absl::StatusOr<SolveResultProto> Solver::Solve(const SolveArgs& arguments) {
       ValidateModelSolveParameters(arguments.model_parameters, model_summary_))
       << "invalid model_parameters";
 
+  RETURN_IF_ERROR(ValidateCallbackRegistration(arguments.callback_registration,
+                                               model_summary_));
   SolverInterface::Callback cb = nullptr;
+  if (!arguments.callback_registration.request_registration().empty() &&
+      arguments.user_cb == nullptr) {
+    return absl::InvalidArgumentError(
+        "no callback function was provided but callback events were "
+        "registered");
+  }
   if (arguments.user_cb != nullptr) {
-    RETURN_IF_ERROR(ValidateCallbackRegistration(
-        arguments.callback_registration, model_summary_));
     cb = [&](const CallbackDataProto& callback_data)
         -> absl::StatusOr<CallbackResultProto> {
       RETURN_IF_ERROR(ValidateCallbackDataProto(
