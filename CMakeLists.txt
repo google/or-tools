@@ -188,12 +188,23 @@ message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
-CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" ON
+CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+
+CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" OFF
+  "NOT BUILD_DEPS" ON)
+
+set(_ORTOOLS_PATCH_DIR "${CMAKE_CURRENT_LIST_DIR}/patches")
+if(BUILD_ZLIB AND NOT EXISTS "${_ORTOOLS_PATCH_DIR}/ZLIB-v1.3.1.patch")
+  message(WARNING "Disabling BUILD_ZLIB (missing patches/ZLIB-v1.3.1.patch)")
+  set(BUILD_ZLIB OFF CACHE BOOL "Build the ZLIB dependency Library" FORCE)
+endif()
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_BZip2 "Build the BZip2 dependency Library" ON
-  "NOT BUILD_DEPS" ON)
+if(BUILD_BZip2 AND NOT EXISTS "${_ORTOOLS_PATCH_DIR}/bzip2.patch")
+  message(WARNING "Disabling BUILD_BZip2 (missing patches/bzip2.patch)")
+  set(BUILD_BZip2 OFF CACHE BOOL "Build the BZip2 dependency Library" FORCE)
+endif()
 message(STATUS "Build BZip2: ${BUILD_BZip2}")
 
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" ON
@@ -483,21 +494,9 @@ include(dotnet)
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
 foreach(SAMPLES IN ITEMS
- algorithms
- graph
  glop
- constraint_solver
- linear_solver
  ${MATH_OPT_DIR}
  ${PDLP_DIR}
  sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
-
-# Same for examples
-foreach(EXAMPLES IN ITEMS contrib cpp dotnet java python)
-  add_subdirectory(examples/${EXAMPLES})
-endforeach()
-
-# Add tests in examples/tests
-add_subdirectory(examples/tests)

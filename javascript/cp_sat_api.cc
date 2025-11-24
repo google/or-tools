@@ -1,6 +1,7 @@
 // Minimal C API surface for CP-SAT over WASM.
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -12,10 +13,10 @@
 
 namespace {
 
+using operations_research::Domain;
 using operations_research::sat::CpModelBuilder;
 using operations_research::sat::CpModelProto;
 using operations_research::sat::CpSolverResponse;
-using operations_research::sat::Domain;
 using operations_research::sat::LinearExpr;
 using operations_research::sat::Model;
 using operations_research::sat::NewSatParameters;
@@ -43,7 +44,7 @@ uint8_t* SerializeResponse(const CpSolverResponse& response, size_t* out_len) {
 CpSolverResponse MakeInvalidResponse(const std::string& message) {
   CpSolverResponse response;
   response.set_status(operations_research::sat::CpSolverStatus::MODEL_INVALID);
-  response.set_status_detail(message);
+  response.set_solution_info(message);
   return response;
 }
 

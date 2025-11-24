@@ -514,14 +514,12 @@ if(BUILD_MATH_OPT)
 endif()
 
 foreach(SUBPROJECT IN ITEMS
+ algorithms
  base
  init
- algorithms
- graph
- constraint_solver
- linear_solver
  bop
  glop
+ graph
  ${GLPK_DIR}
  ${GSCIP_DIR}
  ${GUROBI_DIR}
@@ -532,8 +530,8 @@ foreach(SUBPROJECT IN ITEMS
  packing
  scheduling
  set_cover
- port
- util)
+ util
+ port)
   add_subdirectory(ortools/${SUBPROJECT})
   #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
   target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>)
@@ -544,14 +542,6 @@ if(BUILD_MATH_OPT)
   add_subdirectory(ortools/${MATH_OPT_DIR})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_math_opt)
 endif()
-
-add_subdirectory(ortools/linear_solver/wrappers)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_wrappers>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
-
-add_subdirectory(ortools/linear_solver/proto_solver)
-target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
 
 # Dependencies
 if(APPLE)

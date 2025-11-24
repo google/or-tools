@@ -69,6 +69,15 @@ if(BUILD_ZLIB)
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB-v1.3.1.patch")
   FetchContent_MakeAvailable(ZLIB)
+  if(NOT TARGET ZLIB::ZLIB)
+    if(TARGET zlib)
+      add_library(ZLIB::ZLIB ALIAS zlib)
+    elseif(TARGET zlibstatic)
+      add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    else()
+      message(FATAL_ERROR "ZLIB::ZLIB target missing after FetchContent")
+    endif()
+  endif()
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -91,6 +100,15 @@ if(BUILD_BZip2)
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/bzip2.patch"
   )
   FetchContent_MakeAvailable(BZip2)
+  if(NOT TARGET BZip2::BZip2)
+    if(TARGET bz2)
+      add_library(BZip2::BZip2 ALIAS bz2)
+    elseif(TARGET bzip2)
+      add_library(BZip2::BZip2 ALIAS bzip2)
+    else()
+      message(FATAL_ERROR "BZip2::BZip2 target missing after FetchContent")
+    endif()
+  endif()
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
@@ -159,7 +177,8 @@ if(BUILD_re2)
     GIT_REPOSITORY "https://github.com/google/re2.git"
     GIT_TAG "2024-07-02"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2024-07-02.patch"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/re2-2024-07-02.patch"
   )
   FetchContent_MakeAvailable(re2)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -181,7 +200,8 @@ if(BUILD_Eigen3)
     GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
     GIT_TAG "3.4.0"
     GIT_SHALLOW TRUE
-    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/eigen3-3.4.0.patch"
+    PATCH_COMMAND git apply --ignore-whitespace
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/eigen3-3.4.0.patch"
   )
   FetchContent_MakeAvailable(eigen3)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
