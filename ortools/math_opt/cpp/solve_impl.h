@@ -81,11 +81,6 @@ class IncrementalSolverImpl : public IncrementalSolver {
       BaseSolverFactory solver_factory, Model* model, SolverType solver_type,
       const SolveInterrupter* user_canceller, bool remove_names);
 
-  absl::StatusOr<SolveResult> Solve(const SolveArguments& arguments) override;
-
-  absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystem(
-      const ComputeInfeasibleSubsystemArguments& arguments) override;
-
   absl::StatusOr<UpdateResult> Update() override;
 
   absl::StatusOr<SolveResult> SolveWithoutUpdate(

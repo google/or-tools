@@ -115,20 +115,21 @@ TEST(ApproximateMapMatcherTest, VariableIsNear) {
   EXPECT_THAT(actual, Not(IsNear({{z, -2.5}})));
 }
 
-TEST(ApproximateMapMatcherTest, VariableIsNearlySubsetOf) {
+TEST(ApproximateMapMatcherTest, VariableIsNearlySupersetOf) {
   Model model;
   const Variable w = model.AddBinaryVariable("w");
   const Variable x = model.AddBinaryVariable("x");
   const Variable y = model.AddBinaryVariable("y");
   const Variable z = model.AddBinaryVariable("z");
   const VariableMap<double> actual = {{x, 2.0}, {y, 4.1}, {z, -2.5}};
-  EXPECT_THAT(actual, IsNearlySubsetOf(actual));
-  EXPECT_THAT(actual, IsNearlySubsetOf({{y, 4.1}, {z, -2.5}}));
-  EXPECT_THAT(actual, Not(IsNearlySubsetOf({{w, 1}, {y, 4.1}, {z, -2.5}})));
-  EXPECT_THAT(actual, Not(IsNearlySubsetOf({{y, 4.4}, {z, -2.5}})));
+  EXPECT_THAT(actual, IsNearlySupersetOf(actual));
+  EXPECT_THAT(actual, IsNearlySupersetOf({{y, 4.1}, {z, -2.5}}));
+  EXPECT_THAT(actual, Not(IsNearlySupersetOf({{w, 1}, {y, 4.1}, {z, -2.5}})));
+  EXPECT_THAT(actual, Not(IsNearlySupersetOf({{y, 4.4}, {z, -2.5}})));
 }
 
-TEST(ApproximateMapMatcherTest, QuadraticConstraintIsNearAndIsNearlySubsetOf) {
+TEST(ApproximateMapMatcherTest,
+     QuadraticConstraintIsNearAndIsNearlySupersetOf) {
   Model model;
   const Variable x = model.AddBinaryVariable("x");
   const QuadraticConstraint c = model.AddQuadraticConstraint(x * x <= 0, "c");
@@ -137,29 +138,29 @@ TEST(ApproximateMapMatcherTest, QuadraticConstraintIsNearAndIsNearlySubsetOf) {
 
   const absl::flat_hash_map<QuadraticConstraint, double> actual = {{c, 2},
                                                                    {e, 5}};
-  EXPECT_THAT(actual, IsNearlySubsetOf(actual));
+  EXPECT_THAT(actual, IsNearlySupersetOf(actual));
   EXPECT_THAT(actual, IsNear(actual));
   EXPECT_THAT(actual, IsNear({{c, 2 + 1e-8}, {e, 5}}));
   EXPECT_THAT(actual, Not(IsNear({{e, 5}})));
   EXPECT_THAT(actual, Not(IsNear({{c, 2 + 1e-2}, {e, 5}})));
   EXPECT_THAT(actual, Not(IsNear({{d, 5}})));
-  EXPECT_THAT(actual, IsNearlySubsetOf({{e, 5}}));
+  EXPECT_THAT(actual, IsNearlySupersetOf({{e, 5}}));
 }
 
-TEST(ApproximateMapMatcherTest, LinearConstraintIsNearAndIsNearlySubsetOf) {
+TEST(ApproximateMapMatcherTest, LinearConstraintIsNearAndIsNearlySupersetOf) {
   Model model;
   const LinearConstraint c = model.AddLinearConstraint("c");
   const LinearConstraint d = model.AddLinearConstraint("d");
   const LinearConstraint e = model.AddLinearConstraint("e");
 
   const LinearConstraintMap<double> actual = {{c, 2}, {e, 5}};
-  EXPECT_THAT(actual, IsNearlySubsetOf(actual));
+  EXPECT_THAT(actual, IsNearlySupersetOf(actual));
   EXPECT_THAT(actual, IsNear(actual));
   EXPECT_THAT(actual, IsNear({{c, 2 + 1e-8}, {e, 5}}));
   EXPECT_THAT(actual, Not(IsNear({{e, 5}})));
   EXPECT_THAT(actual, Not(IsNear({{c, 2 + 1e-2}, {e, 5}})));
   EXPECT_THAT(actual, Not(IsNear({{d, 5}})));
-  EXPECT_THAT(actual, IsNearlySubsetOf({{e, 5}}));
+  EXPECT_THAT(actual, IsNearlySupersetOf({{e, 5}}));
 }
 
 TEST(LinearExpressionMatcherTest, IsIdentical) {

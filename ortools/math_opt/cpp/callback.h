@@ -109,7 +109,9 @@ enum class CallbackEvent {
   // node). Useful for early termination. Note that this event does not provide
   // information on LP relaxations nor about new incumbent solutions.
   //
-  // This event is supported for MIP models with SolverType::kGurobi only.
+  // This event is fully supported for MIP models with SolverType::kGurobi only.
+  // If used with SolverType::kCpSat, it is called when the dual bound is
+  // improved.
   kMip = CALLBACK_EVENT_MIP,
 
   // Called every time a new MIP incumbent is found.

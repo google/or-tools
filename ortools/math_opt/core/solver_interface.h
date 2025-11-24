@@ -43,8 +43,9 @@ namespace math_opt {
 //
 // This interface is not meant to be used directly. The actual API is the one of
 // the Solver class. The Solver class validates the models before calling this
-// interface. It makes sure no concurrent calls happen on Solve(), CanUpdate()
-// and Update(). It makes sure no other function is called after Solve(),
+// interface. It makes sure no concurrent calls happen on Solve(),
+// ComputeInfeasibleSubsystem(), CanUpdate() and Update(). It makes sure no
+// other function is called after Solve(), ComputeInfeasibleSubsystem(),
 // Update() or a callback have failed.
 //
 // Implementations of this interface should not have public constructors but
@@ -69,12 +70,28 @@ class SolverInterface {
   // See Solver::MessageCallback documentation for details.
   using MessageCallback = std::function<void(const std::vector<std::string>&)>;
 
-  // A callback function (if non null) is a function that validates its input
-  // and its output, and if fails, return a status. The invariant is that the
-  // solver implementation can rely on receiving valid data. The implementation
-  // of this interface must provide valid input (which will be validated) and
-  // in error, it will return a status (without actually calling the callback
-  // function). This is enforced in the solver.cc layer.
+  // A callback function (if non null) provided by the Solver class to its
+  // SolverInterface that wraps the user callback function
+  // (BaseSolver::Callback) and validates its inputs (provided by the
+  // SolverInterface implementation) and outputs (provided by the user). A
+  // failing status is returned if those inputs or outputs are invalid.
+  //
+  // To be clear the SolverInterface::Callback is implemented by the Solver
+  // class and looks like:
+  //
+  //   absl::Status Callback(const CallbackDataProto& callback_data) {
+  //     RETURN_IF_ERROR(ValidateCallbackDataProto(callback_data, ...));
+  //     CallbackResultProto result = user_cb(callback_data);
+  //     RETURN_IF_ERROR(ValidateCallbackResultProto(result));
+  //     return result;
+  //   }
+  //
+  // As a consequence SolverInterface implementations can rely on receiving a
+  // valid CallbackResultProto.
+  //
+  // When the SolverInterface::Callback returns an error the SolverInterface
+  // implementation must interrupt the Solve() as soon as possible and return
+  // this error.
   using Callback = std::function<absl::StatusOr<CallbackResultProto>(
       const CallbackDataProto&)>;
 
@@ -114,7 +131,11 @@ class SolverInterface {
   // When parameter `message_cb` is not null and the underlying solver does not
   // supports message callbacks, it should ignore it.
   //
-  // Solvers should return a InvalidArgumentError when called with events on
+  // The parameter `cb` won't be null when
+  // callback_registration.request_registration is not empty (solver.cc will
+  // return an error in that case before calling SolverInterface::Solve()).
+  //
+  // Solvers should return an InvalidArgumentError when called with events on
   // callback_registration that are not supported by the solver for the type of
   // model being solved (for example MIP events if the model is an LP, or events
   // that are not emitted by the solver). Solvers should use
