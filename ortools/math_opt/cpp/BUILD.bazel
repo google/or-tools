@@ -895,6 +895,7 @@ cc_library(
 
 cc_library(
     name = "incremental_solver",
+    srcs = ["incremental_solver.cc"],
     hdrs = ["incremental_solver.h"],
     deps = [
         ":compute_infeasible_subsystem_arguments",
@@ -903,7 +904,22 @@ cc_library(
         ":solve_arguments",
         ":solve_result",
         ":update_result",
+        "//ortools/base:status_macros",
         "@abseil-cpp//absl/status:statusor",
+    ],
+)
+
+cc_test(
+    name = "incremental_solver_test",
+    srcs = ["incremental_solver_test.cc"],
+    deps = [
+        ":incremental_solver",
+        ":matchers",
+        ":math_opt",
+        "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@abseil-cpp//absl/strings:string_view",
     ],
 )
 

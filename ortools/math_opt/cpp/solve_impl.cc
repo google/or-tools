@@ -193,21 +193,6 @@ IncrementalSolverImpl::IncrementalSolverImpl(
       update_tracker_(std::move(update_tracker)),
       solver_(std::move(solver)) {}
 
-absl::StatusOr<SolveResult> IncrementalSolverImpl::Solve(
-    const SolveArguments& arguments) {
-  // TODO: b/260337466 - Add permanent errors and concurrency protection.
-  RETURN_IF_ERROR(Update().status());
-  return SolveWithoutUpdate(arguments);
-}
-
-absl::StatusOr<ComputeInfeasibleSubsystemResult>
-IncrementalSolverImpl::ComputeInfeasibleSubsystem(
-    const ComputeInfeasibleSubsystemArguments& arguments) {
-  // TODO: b/260337466 - Add permanent errors and concurrency protection.
-  RETURN_IF_ERROR(Update().status());
-  return ComputeInfeasibleSubsystemWithoutUpdate(arguments);
-}
-
 absl::StatusOr<UpdateResult> IncrementalSolverImpl::Update() {
   // TODO: b/260337466 - Add permanent errors and concurrency protection.
   ASSIGN_OR_RETURN(std::optional<ModelUpdateProto> model_update,
