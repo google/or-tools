@@ -1870,6 +1870,19 @@ class CpSolver:
         return self._checked_response.user_time
 
     @property
+    def solve_log(self) -> str:
+        """Returns the solve log.
+
+        To enable this, the parameter log_to_response must be set to True.
+        """
+        return self._checked_response.solve_log
+
+    @property
+    def solve_info(self) -> str:
+        """Returns the information about the solve."""
+        return self._checked_response.solve_info
+
+    @property
     def response_proto(self) -> cmh.CpSolverResponse:
         """Returns the response object."""
         return self._checked_response
@@ -1947,17 +1960,6 @@ class CpSolver:
 
     def WallTime(self) -> float:
         return self.wall_time
-
-    def SolveWithSolutionCallback(
-        self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cmh.CpSolverStatus:
-        """DEPRECATED Use solve() with the callback argument."""
-        warnings.warn(
-            "solve_with_solution_callback is deprecated; use solve() with"
-            + "the callback argument.",
-            DeprecationWarning,
-        )
-        return self.solve(model, callback)
 
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"

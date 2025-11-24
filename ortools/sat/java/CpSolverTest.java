@@ -109,7 +109,7 @@ public final class CpSolverTest {
     final CpSolverStatus status = solver.solve(model);
 
     assertThat(status).isEqualTo(CpSolverStatus.MODEL_INVALID);
-    assertEquals("var #0 has no domain(): name: \"x\"", solver.getSolutionInfo());
+    assertEquals("var #0 has no domain(): name: \"x\"", solver.solutionInfo());
   }
 
   @Test
@@ -303,6 +303,32 @@ public final class CpSolverTest {
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
     String log = logBuilder.toString();
+    assertThat(log).isNotEmpty();
+    assertThat(log).contains("Parameters");
+    assertThat(log).contains("log_to_stdout: false");
+    assertThat(log).contains("OPTIMAL");
+  }
+
+  @Test
+  public void testCpSolver_logToResponse() throws Exception {
+    System.out.println("testCpSolver_logToResponse");
+    final CpModel model = new CpModel();
+    assertNotNull(model);
+    // Creates the variables.
+    final int numVals = 3;
+    final IntVar x = model.newIntVar(0, numVals - 1, "x");
+    final IntVar y = model.newIntVar(0, numVals - 1, "y");
+    // Creates the constraints.
+    model.addDifferent(x, y);
+
+    // Creates a solver and solves the model.
+    final CpSolver solver = new CpSolver();
+    assertNotNull(solver);
+    solver.getParameters().setLogToStdout(false).setLogSearchProgress(true).setLogToResponse(true);
+    final CpSolverStatus status = solver.solve(model);
+
+    assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
+    String log = solver.solveLog();
     assertThat(log).isNotEmpty();
     assertThat(log).contains("Parameters");
     assertThat(log).contains("log_to_stdout: false");

@@ -2080,7 +2080,26 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(10, solver.value(x))
         self.assertEqual(-5, solver.value(y))
 
-        self.assertRegex(log_callback.log, ".*log_to_stdout.*")
+        self.assertRegex(log_callback.log, "Starting CP-SAT solver")
+
+    def test_log_to_response(self) -> None:
+        model = cp_model.CpModel()
+        x = model.new_int_var(-10, 10, "x")
+        y = model.new_int_var(-10, 10, "y")
+        model.add_linear_constraint(x + 2 * y, 0, 10)
+        model.minimize(y)
+        solver = cp_model.CpSolver()
+        solver.parameters.log_search_progress = True
+        solver.parameters.log_to_stdout = False
+        solver.parameters.log_to_response = True
+
+        self.assertEqual(cp_model.OPTIMAL, solver.solve(model))
+        self.assertEqual(10, solver.value(x))
+        self.assertEqual(-5, solver.value(y))
+
+        self.assertRegex(solver.solve_log, "Starting CP-SAT solver")
+        print(solver.solution_info)
+        print(solver.solve_log)
 
     def test_issue2762(self) -> None:
         model = cp_model.CpModel()

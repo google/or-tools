@@ -201,6 +201,8 @@ public sealed class CpSolver : IDisposable
 
     public double WallTime() => Response!.WallTime;
 
+    public string SolveLog() => Response!.SolveLog;
+
     public IList<int> SufficientAssumptionsForInfeasibility() => Response!.SufficientAssumptionsForInfeasibility;
 
     public string SolutionInfo() => Response!.SolutionInfo;

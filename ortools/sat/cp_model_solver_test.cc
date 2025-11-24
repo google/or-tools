@@ -14,12 +14,10 @@
 #include "ortools/sat/cp_model_solver.h"
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "gtest/gtest.h"
@@ -29,15 +27,10 @@
 #include "ortools/port/os.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/cp_model_solver_helpers.h"
 #include "ortools/sat/cp_model_test_utils.h"
-#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/lp_utils.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/sat/sat_solver.h"
-#include "ortools/sat/synchronization.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -5462,11 +5455,11 @@ TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(1);
   params.set_cp_model_presolve(false);
-  params.set_symmetry_level(0);
-  params.set_linearization_level(0);
+  params.set_symmetry_level(1);
+  params.set_linearization_level(1);
+  params.set_check_drat_proof(true);
+  params.set_max_drat_time_in_seconds(60);
   params.set_debug_crash_if_lrat_check_fails(true);
-  absl::SetFlag(&FLAGS_cp_model_drat_check, true);
-  absl::SetFlag(&FLAGS_cp_model_max_drat_time_in_seconds, 60);
 
   int num_infeasible = 0;
   for (int i = 0; i < 100; ++i) {
@@ -5484,12 +5477,12 @@ TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
 
 TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   SatParameters params;
-  params.set_num_workers(1);
+  params.set_num_workers(8);
   params.set_cp_model_presolve(false);
-  params.set_symmetry_level(0);
-  params.set_linearization_level(0);
+  params.set_symmetry_level(1);
+  params.set_linearization_level(1);
+  params.set_check_lrat_proof(true);
   params.set_debug_crash_if_lrat_check_fails(true);
-  absl::SetFlag(&FLAGS_cp_model_lrat_check, true);
 
   int num_infeasible = 0;
   for (int i = 0; i < 100; ++i) {

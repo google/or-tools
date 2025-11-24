@@ -115,16 +115,17 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
   // Track reductions of Boolean variables.
   if (bool_var_table_.empty()) {
     bool_var_table_.push_back(
-        {"Boolean variables", "Fixed", "Equiv", "Total", "Left"});
+        {"Boolean variables", "Fixed", "Equiv", "Total", "Left", "Binary"});
   }
+  auto* binary = model->GetOrCreate<BinaryImplicationGraph>();
   const int64_t num_fixed = sat_solver->NumFixedVariables();
-  const int64_t num_equiv =
-      model->GetOrCreate<BinaryImplicationGraph>()->num_redundant_literals() /
-      2;
+  const int64_t num_equiv = binary->num_redundant_literals() / 2;
   const int64_t num_bools = sat_solver->NumVariables();
-  bool_var_table_.push_back({FormatName(name), FormatCounter(num_fixed),
-                             FormatCounter(num_equiv), FormatCounter(num_bools),
-                             FormatCounter(num_bools - num_equiv - num_fixed)});
+  bool_var_table_.push_back(
+      {FormatName(name), FormatCounter(num_fixed), FormatCounter(num_equiv),
+       FormatCounter(num_bools),
+       FormatCounter(num_bools - num_equiv - num_fixed),
+       FormatCounter(binary->ComputeNumImplicationsForLog())});
 
   // Track the "life of a non-binary clause".
   CpSolverResponse r;
@@ -134,7 +135,7 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
     clauses_deletion_table_.push_back(
         {"Clause deletion", "at_true", "l_and_not(l)", "to_binary",
          "sub_conflict", "sub_eager", "sub_vivify", "sub_probing", "sub_inpro",
-         "blocked", "eliminated", "forgotten", "#conflicts"});
+         "blocked", "eliminated", "forgotten", "promoted", "conflicts"});
   }
   absl::Span<const int64_t> deletion_by_source =
       model->GetOrCreate<ClauseManager>()->DeletionCounters();
@@ -162,6 +163,7 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
            DeletionSourceForStat::ELIMINATED)]),
        FormatCounter(deletion_by_source[static_cast<int>(
            DeletionSourceForStat::GARBAGE_COLLECTED)]),
+       FormatCounter(model->GetOrCreate<ClauseManager>()->num_lbd_promotions()),
        FormatCounter(r.num_conflicts())});
 }
 

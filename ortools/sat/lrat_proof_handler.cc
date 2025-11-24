@@ -16,18 +16,29 @@
 #include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <vector>
 
+#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/file.h"
+#include "ortools/base/options.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_writer.h"
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+
+#if defined(_MSC_VER)
+ABSL_FLAG(std::string, cp_model_drat_output, ".\\drat.txt",
+          "File name for the generated DRAT proof, if DRAT output is enabled.");
+#else
+ABSL_FLAG(std::string, cp_model_drat_output, "/tmp/drat.txt",
+          "File name for the generated DRAT proof, if DRAT output is enabled.");
+#endif
 
 namespace operations_research {
 namespace sat {
@@ -46,18 +57,33 @@ std::vector<Literal> SortClauseForDrat(absl::Span<const Literal> clause) {
 }
 }  // namespace
 
-LratProofHandler::LratProofHandler(Model* model, bool check_lrat,
-                                   bool check_drat, File* drat_output,
-                                   bool in_binary_drat_format)
-    : lrat_checker_(check_lrat ? std::make_unique<LratChecker>(model)
-                               : nullptr),
-      drat_checker_(check_drat ? std::make_unique<DratChecker>() : nullptr),
-      drat_writer_(
-          drat_output != nullptr
-              ? std::make_unique<DratWriter>(in_binary_drat_format, drat_output)
-              : nullptr),
-      debug_crash_on_error_(model->GetOrCreate<SatParameters>()
-                                ->debug_crash_if_lrat_check_fails()) {}
+std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(Model* model) {
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  if (!params.check_lrat_proof() && !params.check_drat_proof() &&
+      !params.output_drat_proof()) {
+    return nullptr;
+  }
+  return std::unique_ptr<LratProofHandler>(new LratProofHandler(model));
+}
+
+LratProofHandler::LratProofHandler(Model* model) {
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  if (params.check_lrat_proof()) {
+    lrat_checker_ = std::make_unique<LratChecker>(model);
+  }
+  if (params.check_drat_proof()) {
+    drat_checker_ = std::make_unique<DratChecker>();
+  }
+  if (params.output_drat_proof()) {
+    File* drat_output = nullptr;
+    CHECK_OK(file::Open(absl::GetFlag(FLAGS_cp_model_drat_output), "w",
+                        &drat_output, file::Defaults()));
+    drat_writer_ = std::make_unique<DratWriter>(
+        /*in_binary_drat_format=*/false, drat_output);
+  }
+  max_drat_time_in_seconds_ = params.max_drat_time_in_seconds();
+  debug_crash_on_error_ = params.debug_crash_if_lrat_check_fails();
+}
 
 bool LratProofHandler::AddProblemClause(ClauseId id,
                                         absl::Span<const Literal> clause) {
@@ -193,15 +219,14 @@ DratChecker::Status LratProofHandler::Valid() const {
   return DratChecker::Status::UNKNOWN;
 }
 
-DratChecker::Status LratProofHandler::Check(
-    double max_drat_check_time_in_seconds) {
+DratChecker::Status LratProofHandler::Check() {
   DratChecker::Status status = DratChecker::Status::UNKNOWN;
   if (lrat_checker_ != nullptr) {
     status = CheckResult(lrat_checker_->Check()) ? DratChecker::Status::VALID
                                                  : DratChecker::Status::INVALID;
   }
   if (status != DratChecker::Status::INVALID && drat_checker_ != nullptr) {
-    drat_checker_->Check(max_drat_check_time_in_seconds);
+    drat_checker_->Check(max_drat_time_in_seconds_);
     if (status == DratChecker::Status::INVALID && debug_crash_on_error_) {
       LOG(FATAL) << "DRAT check failed";
     }
