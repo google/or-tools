@@ -2,9 +2,27 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   return()
 endif()
 
+# Embed proto schemas directly into the WASM binary so browsers don't need to
+# fetch .proto files separately.
+set(PROTO_SCHEMA_HEADER "${PROJECT_BINARY_DIR}/javascript/generated_proto_schemas.h")
+add_custom_command(
+  OUTPUT "${PROTO_SCHEMA_HEADER}"
+  COMMAND "${CMAKE_COMMAND}"
+          -DCP_MODEL_PROTO="${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
+          -DSAT_PARAMETERS_PROTO="${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto"
+          -DTEMPLATE_FILE="${PROJECT_SOURCE_DIR}/javascript/generated_proto_schemas.h.in"
+          -DOUTPUT_FILE="${PROTO_SCHEMA_HEADER}"
+          -P "${PROJECT_SOURCE_DIR}/scripts/embed_proto.cmake"
+  DEPENDS
+    "${PROJECT_SOURCE_DIR}/scripts/embed_proto.cmake"
+    "${PROJECT_SOURCE_DIR}/javascript/generated_proto_schemas.h.in"
+    "${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
+    "${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto")
+
 # WASM CP-SAT API target (kept separate so other targets remain unchanged).
-add_executable(cp_sat_api cp_sat_api.cc)
+add_executable(cp_sat_api cp_sat_api.cc "${PROTO_SCHEMA_HEADER}")
 target_link_libraries(cp_sat_api PRIVATE ${PROJECT_NAMESPACE}::ortools)
+target_include_directories(cp_sat_api PRIVATE "${PROJECT_BINARY_DIR}/javascript")
 
 set_target_properties(cp_sat_api PROPERTIES
   OUTPUT_NAME "cp_sat_api"
@@ -23,7 +41,7 @@ target_link_options(cp_sat_api PRIVATE
   "-sUSE_PTHREADS=1"
   "-sPTHREAD_POOL_SIZE=32"
   "-sASYNCIFY=1"
-  "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_solve_magic_square']"
+  "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_validate_model','_get_cp_model_schema','_get_sat_parameters_schema']"
   "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,allocateUTF8,HEAPU8"
   "-pthread"
   "--shared-memory"
@@ -34,19 +52,13 @@ target_link_options(cp_sat_api PRIVATE
 # Static site assets copied to both javascript/ and bin/ for serving.
 set(JS_SITE_FILES
   "${PROJECT_SOURCE_DIR}/javascript/site/index.html"
-  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.html")
+  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.js")
 foreach(site_file IN LISTS JS_SITE_FILES)
   get_filename_component(site_name "${site_file}" NAME)
   foreach(dst "${JS_OUTPUT_DIR}" "${WEB_DEPLOY_DIR}")
     configure_file("${site_file}" "${dst}/${site_name}" COPYONLY)
-  endforeach()
-endforeach()
-
-set(JS_STATIC_FILES "${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto")
-foreach(static_file IN LISTS JS_STATIC_FILES)
-  get_filename_component(static_name "${static_file}" NAME)
-  foreach(dst "${JS_OUTPUT_DIR}" "${WEB_DEPLOY_DIR}")
-    configure_file("${static_file}" "${dst}/${static_name}" COPYONLY)
   endforeach()
 endforeach()
 

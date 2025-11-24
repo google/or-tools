@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CP-SAT WASM • Schema Viewer</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+      textarea { width: 100%; min-height: 12rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9rem; }
+      button { font-size: 1rem; padding: 0.35rem 0.8rem; }
+      #status { color: #555; margin-bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <nav><a href="index.html">← All examples</a></nav>
+    <h1>Schema Viewer</h1>
+    <p>This demo calls the WASM exports that expose the embedded <code>cp_model.proto</code> and <code>sat_parameters.proto</code> schemas and prints their contents.</p>
+    <p id="status">Loading module…</p>
+    <button id="load-schemas" disabled>Load schemas</button>
+    <h2>CpModelProto</h2>
+    <textarea id="cp-schema" readonly></textarea>
+    <h2>SatParameters</h2>
+    <textarea id="sat-schema" readonly></textarea>
+
+    <script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
+    <script src="cp_sat_api.js"></script>
+    <script src="cpsat_api.js"></script>
+    <script>
+      const statusEl = document.getElementById('status');
+      const cpEl = document.getElementById('cp-schema');
+      const satEl = document.getElementById('sat-schema');
+      const button = document.getElementById('load-schemas');
+
+      async function loadSchemas() {
+        statusEl.textContent = 'Fetching embedded schemas…';
+        button.disabled = true;
+        try {
+          const schemas = await CpSat.getSchemas();
+          cpEl.value = schemas.cp_model;
+          satEl.value = schemas.sat_parameters;
+          statusEl.textContent = 'Schemas loaded.';
+        } catch (err) {
+          statusEl.textContent = `Failed to load schemas: ${err.message}`;
+          button.disabled = false;
+        }
+      }
+
+      button.addEventListener('click', loadSchemas);
+      CpSat.loadModule()
+        .then(() => {
+          statusEl.textContent = 'Module ready.';
+          button.disabled = false;
+        })
+        .catch((err) => {
+          statusEl.textContent = `Module failed to load: ${err.message}`;
+        });
+    </script>
+  </body>
+</html>

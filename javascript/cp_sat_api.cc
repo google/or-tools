@@ -3,21 +3,19 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
-#include <vector>
 
 #include <emscripten/emscripten.h>
 
+#include "generated_proto_schemas.h"
 #include "ortools/sat/cp_model.h"
+#include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 
 namespace {
 
-using operations_research::Domain;
-using operations_research::sat::CpModelBuilder;
 using operations_research::sat::CpModelProto;
 using operations_research::sat::CpSolverResponse;
-using operations_research::sat::LinearExpr;
 using operations_research::sat::Model;
 using operations_research::sat::NewSatParameters;
 using operations_research::sat::SatParameters;
@@ -48,9 +46,31 @@ CpSolverResponse MakeInvalidResponse(const std::string& message) {
   return response;
 }
 
+uint8_t* CopyStringToBuffer(const std::string& message, size_t* out_len) {
+  if (out_len == nullptr) return nullptr;
+  *out_len = message.size();
+  if (message.empty()) return nullptr;
+  auto* buffer =
+      static_cast<uint8_t*>(std::malloc(sizeof(uint8_t) * message.size()));
+  if (buffer == nullptr) {
+    *out_len = 0;
+    return nullptr;
+  }
+  std::memcpy(buffer, message.data(), message.size());
+  return buffer;
+}
+
 }  // namespace
 
 extern "C" {
+
+EMSCRIPTEN_KEEPALIVE const char* get_cp_model_schema() {
+  return operations_research::sat::wasm::kCpModelProtoSchema;
+}
+
+EMSCRIPTEN_KEEPALIVE const char* get_sat_parameters_schema() {
+  return operations_research::sat::wasm::kSatParametersProtoSchema;
+}
 
 // Solve a CpModelProto and optional SatParameters provided as serialized binary
 // blobs. Returns a malloc()'d buffer containing a serialized CpSolverResponse.
@@ -81,67 +101,29 @@ EMSCRIPTEN_KEEPALIVE uint8_t* solve_model(const uint8_t* model_data,
   return SerializeResponse(response, out_len);
 }
 
-// Convenience: build and solve a magic square of the given size. Returns a
-// serialized CpSolverResponse. Intended for quick smoke tests from JS.
-EMSCRIPTEN_KEEPALIVE uint8_t* solve_magic_square(int size, int num_workers,
-                                                 size_t* out_len) {
-  if (out_len == nullptr) return nullptr;
-  *out_len = 0;
-  if (size <= 0) size = 1;
-
-  CpModelBuilder builder;
-  std::vector<std::vector<operations_research::sat::IntVar>> square(size);
-  std::vector<operations_research::sat::IntVar> all_variables;
-  const Domain domain(1, size * size);
-  for (int i = 0; i < size; ++i) {
-    for (int j = 0; j < size; ++j) {
-      const auto var = builder.NewIntVar(domain);
-      square[i].push_back(var);
-      all_variables.push_back(var);
-    }
-  }
-
-  builder.AddAllDifferent(all_variables);
-
-  const int magic_value = size * (size * size + 1) / 2;
-
-  for (int i = 0; i < size; ++i) {
-    LinearExpr sum;
-    for (int j = 0; j < size; ++j) {
-      sum += square[i][j];
-    }
-    builder.AddEquality(sum, magic_value);
-  }
-  for (int j = 0; j < size; ++j) {
-    LinearExpr sum;
-    for (int i = 0; i < size; ++i) {
-      sum += square[i][j];
-    }
-    builder.AddEquality(sum, magic_value);
-  }
-  LinearExpr diag1_sum;
-  LinearExpr diag2_sum;
-  for (int i = 0; i < size; ++i) {
-    diag1_sum += square[i][i];
-    diag2_sum += square[i][size - 1 - i];
-  }
-  builder.AddEquality(diag1_sum, magic_value);
-  builder.AddEquality(diag2_sum, magic_value);
-
-  Model model;
-  SatParameters params;
-  if (num_workers > 0) {
-    params.set_num_search_workers(num_workers);
-  }
-  model.Add(NewSatParameters(params));
-
-  const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
-  return SerializeResponse(response, out_len);
-}
-
-// Free a buffer returned by solve_model() / solve_magic_square().
+// Free a buffer returned by solve_model() / validate_model().
 EMSCRIPTEN_KEEPALIVE void free_buffer(uint8_t* ptr) {
   std::free(ptr);
+}
+
+// Validate a CpModelProto. Returns nullptr if valid, otherwise a malloc()'d
+// buffer containing a UTF-8 error message.
+EMSCRIPTEN_KEEPALIVE uint8_t* validate_model(const uint8_t* model_data,
+                                             size_t model_len,
+                                             size_t* out_len) {
+  if (out_len == nullptr) return nullptr;
+  *out_len = 0;
+
+  CpModelProto model_proto;
+  if (model_data == nullptr ||
+      !model_proto.ParseFromArray(model_data, static_cast<int>(model_len))) {
+    return CopyStringToBuffer("Failed to parse CpModelProto.", out_len);
+  }
+
+  const std::string validation =
+      operations_research::sat::ValidateCpModel(model_proto);
+  if (validation.empty()) return nullptr;
+  return CopyStringToBuffer(validation, out_len);
 }
 
 }  // extern "C"

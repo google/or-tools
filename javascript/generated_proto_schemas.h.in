@@ -1,0 +1,14 @@
+// Generated from cp_model.proto and sat_parameters.proto. Do not edit.
+#pragma once
+
+namespace operations_research::sat::wasm {
+
+inline constexpr const char kCpModelProtoSchema[] = R"ORTOOLS_PROTO(
+@CP_MODEL_PROTO_TEXT@
+)ORTOOLS_PROTO";
+
+inline constexpr const char kSatParametersProtoSchema[] = R"ORTOOLS_PROTO(
+@SAT_PARAMETERS_PROTO_TEXT@
+)ORTOOLS_PROTO";
+
+}  // namespace operations_research::sat::wasm
