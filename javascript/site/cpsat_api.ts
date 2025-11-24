@@ -84,12 +84,12 @@ declare const cpSatModule: CpSatModuleFactory | undefined;
       typeof Module.getCpModelSchema === 'function'
         ? Module.getCpModelSchema.bind(Module)
         : () =>
-            Module.ccall('get_cp_model_schema', 'string', [], []) as unknown as string;
+          Module.ccall('get_cp_model_schema', 'string', [], []) as unknown as string;
     const getSatSchema =
       typeof Module.getSatParametersSchema === 'function'
         ? Module.getSatParametersSchema.bind(Module)
         : () =>
-            Module.ccall('get_sat_parameters_schema', 'string', [], []) as unknown as string;
+          Module.ccall('get_sat_parameters_schema', 'string', [], []) as unknown as string;
     return {
       cp_model: getCpSchema(),
       sat_parameters: getSatSchema(),
@@ -187,8 +187,7 @@ declare const cpSatModule: CpSatModuleFactory | undefined;
           paramsBytes ? paramsBytes.length : 0,
           lenPtr,
         ],
-        { async: true },
-      )) as number;
+      ) as number);
     } finally {
       if (modelPtr) Module._free(modelPtr);
       if (paramsPtr) Module._free(paramsPtr);

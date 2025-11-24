@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>CP-SAT WASM • Sports Scheduling</title>
+		<style>
+			body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+			input, button { font-size: 1rem; }
+			#status { white-space: pre-wrap; background: #f6f8fa; padding: 1rem; border-radius: 6px; min-height: 12rem; }
+			nav { margin-bottom: 1rem; }
+			nav a { text-decoration: none; color: #0b57d0; }
+			#schedule-output { margin: 1rem 0; }
+			#schedule-message { margin-bottom: 0.5rem; color: #555; }
+			table { border-collapse: collapse; width: 100%; max-width: 100%; }
+			th, td { border: 1px solid #d0d7de; padding: 0.35rem 0.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+			th { background: #f0f4ff; }
+			td[data-location="home"] { background: #e8f5e9; }
+			td[data-location="away"] { background: #fbe9e7; }
+			table.hidden { display: none; }
+			.controls { display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem; }
+		</style>
+	</head>
+	<body>
+		<nav><a href="../index.html">← All examples</a></nav>
+		<h1>Sports Scheduling (CP-SAT WASM)</h1>
+		<p>This demo adapts the <code>sports_scheduling_sat</code> sample to the browser using the <code>cp_sat_api</code>
+			WebAssembly module. It builds a double round-robin schedule where teams play each opponent once per half-season
+			while minimizing home/away breaks.</p>
+		<div class="controls">
+			<label>Teams <input id="teams" type="number" value="10" min="2" step="2" style="width:5rem"></label>
+			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
+			<button id="run">Build schedule</button>
+			<span id="ready-indicator" style="color:#555;">Loading module…</span>
+		</div>
+		<div id="schedule-output">
+			<p id="schedule-message">Provide parameters and run the solver to see a schedule.</p>
+			<table id="schedule-table" class="hidden"></table>
+		</div>
+		<p>Status / Response:</p>
+		<pre id="status"></pre>
+
+			<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
+			<script src="../cp_sat_api.js"></script>
+			<script src="../cpsat_api.js"></script>
+			<script src="sports_scheduling.js"></script>
+	</body>
+</html>

@@ -127,6 +127,17 @@ https://developers.google.com/optimization/introduction/get_started
 If you want to learn from code examples, take a look at the examples in the
 [examples](examples) directory.
 
+## JavaScript workflow
+
+You can build and serve the WebAssembly-based demos from this repository with npm.
+From the repository root run:
+
+```
+npm install
+npm run build
+npm run start
+```
+
 ## Documentation
 
 The complete documentation for OR-Tools is available at:

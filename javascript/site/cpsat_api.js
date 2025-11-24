@@ -83,13 +83,13 @@
         const paramsPtr = copyBytesToHeap(Module, paramsBytes);
         let responsePtr = 0;
         try {
-            responsePtr = (await Module.ccall('solve_model', 'number', ['number', 'number', 'number', 'number', 'number'], [
+            responsePtr = await Module.ccall('solve_model', 'number', ['number', 'number', 'number', 'number', 'number'], [
                 modelPtr,
                 modelBytes.length,
                 paramsPtr,
                 paramsBytes ? paramsBytes.length : 0,
                 lenPtr,
-            ], { async: true }));
+            ]);
         }
         finally {
             if (modelPtr)

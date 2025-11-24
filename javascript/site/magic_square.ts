@@ -18,6 +18,7 @@
   };
 
   const statusEl = document.getElementById('status') as HTMLPreElement | null;
+  const solutionGrid = document.getElementById('solution-grid') as HTMLElement | null;
   const sizeInput = document.getElementById('size') as HTMLInputElement | null;
   const workerInput = document.getElementById('workers') as HTMLInputElement | null;
   const runButton = document.getElementById('run') as HTMLButtonElement | null;
@@ -27,6 +28,43 @@
     if (statusEl) {
       statusEl.textContent += `${text}\n`;
     }
+  }
+
+  function showSolutionMessage(message: string) {
+    if (!solutionGrid) return;
+    solutionGrid.textContent = message;
+    solutionGrid.style.removeProperty('gridTemplateColumns');
+  }
+
+  function renderSolution(size: number, values: Array<number | string>) {
+    if (!solutionGrid) return;
+    if (!values.length) {
+      showSolutionMessage('Solver returned no solution.');
+      return;
+    }
+
+    const normalize = (value: number | string) => {
+      if (typeof value === 'number') return value;
+      const parsed = Number.parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const parsedValues = values.map(normalize);
+    solutionGrid.innerHTML = '';
+    solutionGrid.style.gridTemplateColumns = `repeat(${size}, minmax(2.5rem, auto))`;
+    for (let r = 0; r < size; ++r) {
+      for (let c = 0; c < size; ++c) {
+        const idx = r * size + c;
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = String(parsedValues[idx] ?? '?');
+        solutionGrid.appendChild(cell);
+      }
+    }
+  }
+
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
   }
 
   function buildMagicSquareModel(size: number): MagicSquareModel {
@@ -105,6 +143,7 @@
     const size = Math.max(1, Number.parseInt(sizeInput.value, 10) || 1);
     const workers = Number.parseInt(workerInput.value, 10) || 0;
     append(`Building model (size=${size})…`);
+    showSolutionMessage('Solving…');
 
     let model: CpSatModelInstance;
     try {
@@ -130,11 +169,19 @@
       const result = await CpSat.solve(model, params);
       if (!result.response || !statusEl) {
         append('Solver returned no response.');
+        showSolutionMessage('Solver returned no response.');
         return;
       }
       statusEl.textContent = JSON.stringify(result.response, null, 2);
+
+      if (!isRecord(result.response) || !Array.isArray(result.response.solution)) {
+        showSolutionMessage('No solution entries returned.');
+        return;
+      }
+      renderSolution(size, result.response.solution as Array<number | string>);
     } catch (err) {
       append(`Solve failed: ${(err as Error).message}`);
+      showSolutionMessage('Solve failed.');
     }
   }
 

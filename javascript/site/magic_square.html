@@ -10,6 +10,24 @@
 			#status { white-space: pre-wrap; background: #f6f8fa; padding: 1rem; border-radius: 6px; min-height: 12rem; }
 			nav { margin-bottom: 1rem; }
 			nav a { text-decoration: none; color: #0b57d0; }
+			#solution-wrapper { margin: 1rem 0; }
+			#solution-grid {
+				display: inline-grid;
+				gap: 0.35rem;
+				padding: 0.5rem;
+				background: #fff;
+				border: 1px solid #d0d7de;
+				border-radius: 6px;
+				min-height: 3rem;
+			}
+			#solution-grid .cell {
+				min-width: 2.5rem;
+				text-align: center;
+				padding: 0.25rem 0.4rem;
+				border-radius: 4px;
+				background: #e8eef8;
+				font-variant-numeric: tabular-nums;
+			}
 		</style>
 	</head>
 	<body>
@@ -22,6 +40,10 @@
 			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
 			<button id="run">Run magic square</button>
 			<span id="ready-indicator" style="color:#555;">Loading module…</span>
+		</div>
+		<div id="solution-wrapper">
+			<p>Latest solution:</p>
+			<div id="solution-grid">Run the solver to view a magic square.</div>
 		</div>
 		<p>Status / Response:</p>
 		<pre id="status"></pre>

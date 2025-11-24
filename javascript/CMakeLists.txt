@@ -42,9 +42,12 @@ target_link_options(cp_sat_api PRIVATE
   "-sMODULARIZE=1"
   "-sEXPORT_NAME=cpSatModule"
   "-sENVIRONMENT=web,worker,node"
+  "-sASSERTIONS=1"
+  "-sALLOW_MEMORY_GROWTH=1"
+  "-sJSPI=2"
+  "-sJSPI_EXPORTS=['solve_model']"
   "-sUSE_PTHREADS=1"
   "-sPTHREAD_POOL_SIZE=32"
-  "-sASYNCIFY=1"
   "--bind"
   "--emit-tsd"
   "${JS_OUTPUT_DIR}/cp_sat_api.d.ts"
@@ -74,7 +77,10 @@ set(JS_SITE_EXAMPLE_FILES
   "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.js.map"
   "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.html"
   "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js.map")
+  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js.map"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js.map")
 foreach(site_file IN LISTS JS_SITE_EXAMPLE_FILES)
   get_filename_component(site_name "${site_file}" NAME)
   foreach(dst "${JS_EXAMPLES_DIR}" "${WEB_EXAMPLES_DIR}")
