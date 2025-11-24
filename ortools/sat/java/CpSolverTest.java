@@ -324,10 +324,8 @@ public final class CpSolverTest {
     // Creates a solver and solves the model.
     final CpSolver solver = new CpSolver();
     assertNotNull(solver);
-    StringBuilder logBuilder = new StringBuilder();
-    Consumer<String> appendToLog = (String message) -> logBuilder.append(message).append('\n');
     solver.getParameters().setLogToStdout(false).setLogSearchProgress(true).setLogToResponse(true);
-    CpSolverStatus status = solver.solve(model);
+    final CpSolverStatus status = solver.solve(model);
 
     assertThat(status).isEqualTo(CpSolverStatus.OPTIMAL);
     String log = solver.solveLog();

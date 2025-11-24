@@ -1961,17 +1961,6 @@ class CpSolver:
     def WallTime(self) -> float:
         return self.wall_time
 
-    def SolveWithSolutionCallback(
-        self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cmh.CpSolverStatus:
-        """DEPRECATED Use solve() with the callback argument."""
-        warnings.warn(
-            "solve_with_solution_callback is deprecated; use solve() with"
-            + "the callback argument.",
-            DeprecationWarning,
-        )
-        return self.solve(model, callback)
-
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
     ) -> cmh.CpSolverStatus:
