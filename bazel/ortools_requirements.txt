@@ -4,7 +4,7 @@
 #
 #    bazel run //bazel:ortools_requirements.update
 #
-absl-py==2.2.2
+absl-py==2.3.1
     # via -r bazel/ortools_requirements.in
 black==24.8.0
     # via -r bazel/ortools_requirements.in

@@ -1,5 +1,5 @@
 # OR-Tools code dependencies
-absl-py==2.2.2
+absl-py==2.3.1
 immutabledict==4.2.2
 numpy==2.3.5
 protobuf==6.32.0
