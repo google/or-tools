@@ -31,13 +31,14 @@
 #include "absl/log/check.h"
 #include "absl/log/globals.h"
 #include "absl/log/log.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/options.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/routing/index_manager.h"
 #include "ortools/routing/parameters.h"
@@ -166,15 +167,12 @@ namespace {
 bool SafeParseInt64Array(const std::string& str,
                          std::vector<int64_t>* parsed_int) {
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
-  std::vector<std::string> items =
-      absl::StrSplit(str, absl::ByAnyChar(kWhiteSpaces), absl::SkipEmpty());
-  parsed_int->assign(items.size(), 0);
-  for (int i = 0; i < items.size(); ++i) {
-    const char* item = items[i].c_str();
-    char* endptr = nullptr;
-    (*parsed_int)[i] = strto64(item, &endptr, 10);
-    // The whole item should have been consumed.
-    if (*endptr != '\0') return false;
+  parsed_int->clear();
+  for (absl::string_view token :
+       absl::StrSplit(str, absl::ByAnyChar(kWhiteSpaces), absl::SkipEmpty())) {
+    int value;
+    if (!absl::SimpleAtoi(token, &value)) return false;
+    parsed_int->push_back(value);
   }
   return true;
 }
