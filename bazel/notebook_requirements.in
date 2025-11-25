@@ -21,7 +21,7 @@ svgwrite==1.4.3
 plotly==5.15.0
 
 # Notebook
-jupyterlab==4.4.3
+jupyterlab==4.4.8
 notebook==7.4.2
 jupyter-server==2.16.0
 tornado==6.5.0
