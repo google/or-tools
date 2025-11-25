@@ -1,0 +1,2 @@
+RUN: $(dimacs_assignment) $(dimacs_example.txt) --alsologtostderr --assignment_maximize_cost 2>&1
+CHECK: "Cost of optimum assignment: -110"

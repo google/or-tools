@@ -1,0 +1,137 @@
+# Copyright 2010-2025 Google LLC
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("//tools/testing:bintest.bzl", "bintest", "py_bintest")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["bintest_script_launcher.py"])
+
+# The following libraries are used to implement the `bintest` and `py_bintest` rules.
+
+py_library(
+    name = "bintest_run_utils",
+    srcs = ["bintest_run_utils.py"],
+)
+
+py_test(
+    name = "bintest_run_utils_test",
+    srcs = ["bintest_run_utils_test.py"],
+    deps = [
+        ":bintest_run_utils",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "bintest_matchers",
+    srcs = ["bintest_matchers.py"],
+)
+
+py_test(
+    name = "bintest_matchers_test",
+    srcs = ["bintest_matchers_test.py"],
+    deps = [
+        ":bintest_matchers",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "binary_test",
+    srcs = ["binary_test.py"],
+    deps = [
+        ":bintest_matchers",
+        ":bintest_run_utils",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "bintest_script_runner",
+    srcs = ["bintest_script_runner.py"],
+    deps = [
+        ":bintest_matchers",
+        ":bintest_run_utils",
+        requirement("absl-py"),
+    ],
+)
+
+py_binary(
+    name = "bintest_script_launcher",
+    srcs = ["bintest_script_launcher.py"],
+    deps = [
+        ":bintest_script_runner",
+        requirement("absl-py"),
+    ],
+)
+
+cc_binary(
+    name = "echo",
+    testonly = True,
+    srcs = ["echo.cc"],
+)
+
+cc_binary(
+    name = "fail",
+    testonly = True,
+    srcs = ["fail.cc"],
+)
+
+py_test(
+    name = "bintest_script_runner_test",
+    srcs = ["bintest_script_runner_test.py"],
+    data = [
+        ":echo",
+        ":fail",
+    ],
+    env = {
+        "BINTEST_ECHO": "$(rootpath :echo)",
+        "BINTEST_FAIL": "$(rootpath :fail)",
+    },
+    deps = [
+        ":bintest_script_runner",
+        requirement("absl-py"),
+    ],
+)
+
+# The following targets demonstrate the usage of the `bintest` and `py_bintest` rules.
+
+cc_binary(
+    name = "print_args",
+    srcs = ["print_args.cc"],
+)
+
+bintest(
+    name = "print_args_bintest",
+    srcs = ["print_args.bintest"],
+    named_data = {
+        "print_args": ":print_args",
+        "data_file": ":print_args_data.txt",
+    },
+)
+
+py_bintest(
+    name = "print_args_test",
+    srcs = ["print_args_test.py"],
+    named_data = {
+        "print_args": ":print_args",
+        "data_file": ":print_args_data.txt",
+    },
+    deps = [requirement("absl-py")],
+)

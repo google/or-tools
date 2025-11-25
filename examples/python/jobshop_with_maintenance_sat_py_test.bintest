@@ -1,0 +1,1 @@
+RUN: $(jobshop_with_maintenance_sat_py3)

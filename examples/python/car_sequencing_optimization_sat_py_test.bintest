@@ -1,0 +1,1 @@
+RUN: $(car_sequencing_optimization_sat_py3)

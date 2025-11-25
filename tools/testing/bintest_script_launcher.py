@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 # Copyright 2010-2025 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e # Fail on error
+"""Launcher for the bintest script runner."""
 
-declare -r LOGFILE="${TEST_TMPDIR}/log.txt"
-{{binary_path}} "$@" > "${LOGFILE}" 2>&1
-{{post_script}}
+from absl import app
+from tools.testing import bintest_script_runner
+
+
+if __name__ == "__main__":
+    app.run(bintest_script_runner.main)

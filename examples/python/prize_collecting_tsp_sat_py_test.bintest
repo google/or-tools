@@ -1,0 +1,1 @@
+RUN: $(prize_collecting_tsp_sat_py3)

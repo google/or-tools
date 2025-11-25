@@ -1,0 +1,1 @@
+RUN: $(spread_robots_sat_py3)

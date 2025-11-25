@@ -1,0 +1,1 @@
+RUN: $(cvrptw_with_refueling) --vrp_use_deterministic_random_seed --cp_random_seed=144

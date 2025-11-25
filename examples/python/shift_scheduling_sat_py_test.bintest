@@ -1,0 +1,1 @@
+RUN: $(shift_scheduling_sat_py3) --params=max_time_in_seconds:10

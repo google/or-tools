@@ -13,7 +13,7 @@
 
 load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:py_binary.bzl", "py_binary")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -39,10 +39,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "assignment_with_constraints_sat_py_test",
     size = "medium",
-    binary = ":assignment_with_constraints_sat_py3",
+    srcs = [":assignment_with_constraints_sat_py_test.bintest"],
+    named_data = {"assignment_with_constraints_sat_py3": ":assignment_with_constraints_sat_py3"},
 )
 
 py_binary(
@@ -55,10 +56,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "balance_group_sat_py_test",
     size = "medium",
-    binary = ":balance_group_sat_py3",
+    srcs = [":balance_group_sat_py_test.bintest"],
+    named_data = {"balance_group_sat_py3": ":balance_group_sat_py3"},
 )
 
 py_binary(
@@ -71,11 +73,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "bus_driver_scheduling_sat_py_test",
     size = "medium",
-    args = ["--params=max_time_in_seconds:40"],
-    binary = ":bus_driver_scheduling_sat_py3",
+    srcs = [":bus_driver_scheduling_sat_py_test.bintest"],
+    named_data = {"bus_driver_scheduling_sat_py3": ":bus_driver_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -88,10 +90,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "car_sequencing_optimization_sat_py_test",
     size = "small",
-    binary = ":car_sequencing_optimization_sat_py3",
+    srcs = [":car_sequencing_optimization_sat_py_test.bintest"],
+    named_data = {"car_sequencing_optimization_sat_py3": ":car_sequencing_optimization_sat_py3"},
 )
 
 py_binary(
@@ -104,10 +107,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "chemical_balance_sat_py_test",
     size = "medium",
-    binary = ":chemical_balance_sat_py3",
+    srcs = [":chemical_balance_sat_py_test.bintest"],
+    named_data = {"chemical_balance_sat_py3": ":chemical_balance_sat_py3"},
 )
 
 py_binary(
@@ -120,10 +124,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "clustering_sat_py_test",
     size = "medium",
-    binary = ":clustering_sat_py3",
+    srcs = [":clustering_sat_py_test.bintest"],
+    named_data = {"clustering_sat_py3": ":clustering_sat_py3"},
 )
 
 py_binary(
@@ -136,10 +141,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cover_rectangle_sat_py_test",
     size = "medium",
-    binary = ":cover_rectangle_sat_py3",
+    srcs = [":cover_rectangle_sat_py_test.bintest"],
+    named_data = {"cover_rectangle_sat_py3": ":cover_rectangle_sat_py3"},
 )
 
 py_binary(
@@ -149,9 +155,10 @@ py_binary(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "flexible_job_shop_sat_py_test",
-    binary = ":flexible_job_shop_sat_py3",
+    srcs = [":flexible_job_shop_sat_py_test.bintest"],
+    named_data = {"flexible_job_shop_sat_py3": ":flexible_job_shop_sat_py3"},
 )
 
 py_binary(
@@ -165,9 +172,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "gate_scheduling_sat_py_test",
-    binary = ":gate_scheduling_sat_py3",
+    srcs = [":gate_scheduling_sat_py_test.bintest"],
+    named_data = {"gate_scheduling_sat_py3": ":gate_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -180,10 +188,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "golomb_sat_py_test",
     size = "medium",
-    binary = ":golomb_sat_py3",
+    srcs = [":golomb_sat_py_test.bintest"],
+    named_data = {"golomb_sat_py3": ":golomb_sat_py3"},
 )
 
 py_binary(
@@ -197,9 +206,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "hidato_sat_py_test",
-    binary = ":hidato_sat_py3",
+    srcs = [":hidato_sat_py_test.bintest"],
+    named_data = {"hidato_sat_py3": ":hidato_sat_py3"},
 )
 
 py_binary(
@@ -209,9 +219,10 @@ py_binary(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "jobshop_ft06_distance_sat_py_test",
-    binary = ":jobshop_ft06_distance_sat_py3",
+    srcs = [":jobshop_ft06_distance_sat_py_test.bintest"],
+    named_data = {"jobshop_ft06_distance_sat_py3": ":jobshop_ft06_distance_sat_py3"},
 )
 
 py_binary(
@@ -224,9 +235,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "jobshop_ft06_sat_py_test",
-    binary = ":jobshop_ft06_sat_py3",
+    srcs = [":jobshop_ft06_sat_py_test.bintest"],
+    named_data = {"jobshop_ft06_sat_py3": ":jobshop_ft06_sat_py3"},
 )
 
 py_binary(
@@ -239,10 +251,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "jobshop_with_maintenance_sat_py_test",
     size = "medium",
-    binary = ":jobshop_with_maintenance_sat_py3",
+    srcs = [":jobshop_with_maintenance_sat_py_test.bintest"],
+    named_data = {"jobshop_with_maintenance_sat_py3": ":jobshop_with_maintenance_sat_py3"},
 )
 
 py_binary(
@@ -257,10 +270,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "knapsack_2d_sat_py_test",
     size = "medium",
-    binary = ":knapsack_2d_sat_py3",
+    srcs = [":knapsack_2d_sat_py_test.bintest"],
+    named_data = {"knapsack_2d_sat_py3": ":knapsack_2d_sat_py3"},
 )
 
 py_binary(
@@ -273,12 +287,13 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "line_balancing_sat_salbp_20_1_py_test",
-    args = ["--input=$(rootpath //examples/python/testdata:salbp_20_1.alb)"],
-    binary = ":line_balancing_sat_py3",
-    data = ["//examples/python/testdata:salbp_20_1.alb"],
-    grep_lines = ["objective: 3"],
+    srcs = [":line_balancing_sat_salbp_20_1_py_test.bintest"],
+    named_data = {
+        "line_balancing_sat_py3": ":line_balancing_sat_py3",
+        "salbp_20_1.alb": "//examples/python/testdata:salbp_20_1.alb",
+    },
 )
 
 py_binary(
@@ -291,10 +306,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "maximize_combinations_sat_py_test",
     size = "medium",
-    binary = ":maximize_combinations_sat_py3",
+    srcs = [":maximize_combinations_sat_py_test.bintest"],
+    named_data = {"maximize_combinations_sat_py3": ":maximize_combinations_sat_py3"},
 )
 
 py_binary(
@@ -307,9 +323,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "maze_escape_sat_py_test",
-    binary = ":maze_escape_sat_py3",
+    srcs = [":maze_escape_sat_py_test.bintest"],
+    named_data = {"maze_escape_sat_py3": ":maze_escape_sat_py3"},
 )
 
 py_binary(
@@ -322,9 +339,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "music_playlist_sat_py_test",
-    binary = ":music_playlist_sat_py3",
+    srcs = [":music_playlist_sat_py_test.bintest"],
+    named_data = {"music_playlist_sat_py3": ":music_playlist_sat_py3"},
 )
 
 py_binary(
@@ -337,10 +355,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "no_wait_baking_scheduling_sat_py_test",
     size = "medium",
-    binary = ":no_wait_baking_scheduling_sat_py3",
+    srcs = [":no_wait_baking_scheduling_sat_py_test.bintest"],
+    named_data = {"no_wait_baking_scheduling_sat_py3": ":no_wait_baking_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -353,10 +372,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "pell_equation_sat_py_test",
     size = "medium",
-    binary = ":pell_equation_sat_py3",
+    srcs = [":pell_equation_sat_py_test.bintest"],
+    named_data = {"pell_equation_sat_py3": ":pell_equation_sat_py3"},
 )
 
 py_binary(
@@ -369,10 +389,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "pentominoes_sat_py_test",
     size = "medium",
-    binary = ":pentominoes_sat_py3",
+    srcs = [":pentominoes_sat_py_test.bintest"],
+    named_data = {"pentominoes_sat_py3": ":pentominoes_sat_py3"},
 )
 
 py_binary(
@@ -385,10 +406,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "prize_collecting_tsp_sat_py_test",
     size = "medium",
-    binary = ":prize_collecting_tsp_sat_py3",
+    srcs = [":prize_collecting_tsp_sat_py_test.bintest"],
+    named_data = {"prize_collecting_tsp_sat_py3": ":prize_collecting_tsp_sat_py3"},
 )
 
 py_binary(
@@ -401,10 +423,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "prize_collecting_vrp_sat_py_test",
     size = "medium",
-    binary = ":prize_collecting_vrp_sat_py3",
+    srcs = [":prize_collecting_vrp_sat_py_test.bintest"],
+    named_data = {"prize_collecting_vrp_sat_py3": ":prize_collecting_vrp_sat_py3"},
 )
 
 py_binary(
@@ -417,26 +440,29 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "qubo_sat_py_test",
     size = "medium",
-    binary = ":qubo_sat_py3",
+    srcs = [":qubo_sat_py_test.bintest"],
+    named_data = {"qubo_sat_py3": ":qubo_sat_py3"},
 )
 
-run_binary_test(
+bintest(
     name = "rcpsp_sat_c1510_1_py_test",
-    args = ["--input=$(rootpath //ortools/scheduling/testdata:c1510_1.mm.txt)"],
-    binary = ":rcpsp_sat_py3",
-    data = ["//ortools/scheduling/testdata:c1510_1.mm.txt"],
-    grep_lines = ["objective: 21"],
+    srcs = [":rcpsp_sat_c1510_1_py_test.bintest"],
+    named_data = {
+        "rcpsp_sat_py3": ":rcpsp_sat_py3",
+        "c1510_1.mm.txt": "//ortools/scheduling/testdata:c1510_1.mm.txt",
+    },
 )
 
-run_binary_test(
+bintest(
     name = "rcpsp_sat_j301_1_py_test",
-    args = ["--input=$(rootpath //ortools/scheduling/testdata:j301_1.sm)"],
-    binary = ":rcpsp_sat_py3",
-    data = ["//ortools/scheduling/testdata:j301_1.sm"],
-    grep_lines = ["objective: 43"],
+    srcs = [":rcpsp_sat_j301_1_py_test.bintest"],
+    named_data = {
+        "rcpsp_sat_py3": ":rcpsp_sat_py3",
+        "j301_1.sm": "//ortools/scheduling/testdata:j301_1.sm",
+    },
 )
 
 py_binary(
@@ -461,10 +487,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "shift_scheduling_sat_py_test",
-    args = ["--params=max_time_in_seconds:10"],
-    binary = ":shift_scheduling_sat_py3",
+    srcs = [":shift_scheduling_sat_py_test.bintest"],
+    named_data = {"shift_scheduling_sat_py3": ":shift_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -477,10 +503,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "single_machine_scheduling_with_setup_release_due_dates_sat_py_test",
     size = "medium",
-    binary = ":single_machine_scheduling_with_setup_release_due_dates_sat_py3",
+    srcs = [":single_machine_scheduling_with_setup_release_due_dates_sat_py_test.bintest"],
+    named_data = {"single_machine_scheduling_with_setup_release_due_dates_sat_py3": ":single_machine_scheduling_with_setup_release_due_dates_sat_py3"},
 )
 
 py_binary(
@@ -493,9 +520,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "spread_robots_sat_py_test",
-    binary = ":spread_robots_sat_py3",
+    srcs = [":spread_robots_sat_py_test.bintest"],
+    named_data = {"spread_robots_sat_py3": ":spread_robots_sat_py3"},
 )
 
 py_binary(
@@ -508,9 +536,10 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "steel_mill_slab_sat_py_test",
-    binary = ":steel_mill_slab_sat_py3",
+    srcs = [":steel_mill_slab_sat_py_test.bintest"],
+    named_data = {"steel_mill_slab_sat_py3": ":steel_mill_slab_sat_py3"},
 )
 
 py_binary(
@@ -520,9 +549,10 @@ py_binary(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "sudoku_sat_py_test",
-    binary = ":sudoku_sat_py3",
+    srcs = [":sudoku_sat_py_test.bintest"],
+    named_data = {"sudoku_sat_py3": ":sudoku_sat_py3"},
 )
 
 py_binary(
@@ -535,10 +565,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "task_allocation_sat_py_test",
     size = "medium",
-    binary = ":task_allocation_sat_py3",
+    srcs = [":task_allocation_sat_py_test.bintest"],
+    named_data = {"task_allocation_sat_py3": ":task_allocation_sat_py3"},
 )
 
 py_binary(
@@ -551,10 +582,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "tasks_and_workers_assignment_sat_py_test",
     size = "medium",
-    binary = ":tasks_and_workers_assignment_sat_py3",
+    srcs = [":tasks_and_workers_assignment_sat_py_test.bintest"],
+    named_data = {"tasks_and_workers_assignment_sat_py3": ":tasks_and_workers_assignment_sat_py3"},
 )
 
 py_binary(
@@ -568,10 +600,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "test_scheduling_sat_py_test",
     size = "medium",
-    binary = ":test_scheduling_sat_py3",
+    srcs = [":test_scheduling_sat_py_test.bintest"],
+    named_data = {"test_scheduling_sat_py3": ":test_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -581,10 +614,11 @@ py_binary(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "tsp_sat_py_test",
     size = "medium",
-    binary = ":tsp_sat_py3",
+    srcs = [":tsp_sat_py_test.bintest"],
+    named_data = {"tsp_sat_py3": ":tsp_sat_py3"},
 )
 
 py_binary(
@@ -597,10 +631,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "vendor_scheduling_sat_py_test",
     size = "medium",
-    binary = ":vendor_scheduling_sat_py3",
+    srcs = [":vendor_scheduling_sat_py_test.bintest"],
+    named_data = {"vendor_scheduling_sat_py3": ":vendor_scheduling_sat_py3"},
 )
 
 py_binary(
@@ -613,10 +648,11 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "wedding_optimal_chart_sat_py_test",
     size = "medium",
-    binary = ":wedding_optimal_chart_sat_py3",
+    srcs = [":wedding_optimal_chart_sat_py_test.bintest"],
+    named_data = {"wedding_optimal_chart_sat_py3": ":wedding_optimal_chart_sat_py3"},
 )
 
 py_binary(
@@ -626,7 +662,8 @@ py_binary(
     deps = ["//ortools/sat/python:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "zebra_sat_py_test",
-    binary = ":zebra_sat_py3",
+    srcs = [":zebra_sat_py_test.bintest"],
+    named_data = {"zebra_sat_py3": ":zebra_sat_py3"},
 )

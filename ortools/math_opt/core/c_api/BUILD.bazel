@@ -14,7 +14,7 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 cc_library(
     name = "solver",
@@ -75,11 +75,8 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cpp_example_test",
-    binary = ":cpp_example",
-    grep_lines = [
-        "Termination is optimal: 1",
-        "Objective value: 1",
-    ],
+    srcs = [":cpp_example_test.bintest"],
+    named_data = {"cpp_example": ":cpp_example"},
 )

@@ -13,7 +13,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_python//python:py_binary.bzl", "py_binary")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -31,10 +31,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "set_cover_cc_test",
     size = "small",
-    binary = ":set_cover_cc",
+    srcs = [":set_cover_cc_test.bintest"],
+    named_data = {"set_cover_cc": ":set_cover_cc"},
 )
 
 py_binary(
@@ -47,8 +48,9 @@ py_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "set_cover_py_test",
     size = "small",
-    binary = ":set_cover_py3",
+    srcs = [":set_cover_py_test.bintest"],
+    named_data = {"set_cover_py3": ":set_cover_py3"},
 )
