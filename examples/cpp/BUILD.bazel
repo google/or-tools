@@ -54,6 +54,53 @@ bintest(
     },
 )
 
+cc_library(
+    name = "cgc",
+    srcs = ["cgc.cc"],
+    hdrs = [
+        "cgc.h",
+        "cgc_data.h",
+    ],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/constraint_solver:cp",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@re2",
+    ],
+)
+
+cc_binary(
+    name = "cgc_main",
+    srcs = ["cgc_main.cc"],
+    deps = [
+        ":cgc",
+        "//ortools/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+bintest(
+    name = "cgc_test_solution",
+    size = "small",
+    srcs = [":cgc_test_solution.bintest"],
+    named_data = {
+        "cgc_main": ":cgc_main",
+        "1.in": "testdata/cgc/1.in",
+        "2.in": "testdata/cgc/2.in",
+        "3.in": "testdata/cgc/3.in",
+        "cgcut1.in": "testdata/cgc/cgcut1.in",
+        "cgcut2.in": "testdata/cgc/cgcut2.in",
+        "cgcut3.in": "testdata/cgc/cgcut3.in",
+    },
+)
+
 cc_binary(
     name = "constraint_programming_cp",
     srcs = ["constraint_programming_cp.cc"],
