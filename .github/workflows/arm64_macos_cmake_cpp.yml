@@ -34,7 +34,7 @@ jobs:
       deps_build_key: arm64_macos_cpp_deps_build_${{matrix.cmake.name}}
       ccache_key: arm64_macos_cpp_ccache_${{matrix.cmake.name}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install Dependencies
         run: brew install ccache
 
@@ -120,4 +120,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6

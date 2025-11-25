@@ -35,7 +35,7 @@ jobs:
       cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Check Java
         run: java -version
       - name: Check mvn
@@ -85,4 +85,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: amd64-Linux-Bazel-Python
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
