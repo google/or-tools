@@ -40,6 +40,7 @@ endif()
 
 file(GLOB CXX_SRCS "*.cc")
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/binpacking_2d_sat.cc")
+list(FILTER CXX_SRCS EXCLUDE REGEX ".*/cgc_main.cc") # needs to be linked with "cgc.cc"
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling_run.cc") # missing proto
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/course_scheduling.cc") # missing proto
 list(FILTER CXX_SRCS EXCLUDE REGEX ".*/dimacs_assignment.cc") # crash
