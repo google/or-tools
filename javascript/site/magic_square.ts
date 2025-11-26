@@ -21,8 +21,31 @@
   const solutionGrid = document.getElementById('solution-grid') as HTMLElement | null;
   const sizeInput = document.getElementById('size') as HTMLInputElement | null;
   const workerInput = document.getElementById('workers') as HTMLInputElement | null;
+  const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+  const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
   const runButton = document.getElementById('run') as HTMLButtonElement | null;
   const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
+
+  function applyWorkerBridgePreference(enabled: boolean) {
+    if (typeof CpSat?.setWorkerBridgeEnabled === 'function') {
+      CpSat.setWorkerBridgeEnabled(enabled);
+    }
+  }
+
+  if (workerInput) {
+    workerInput.max = String(maxWorkerCount);
+    workerInput.min = '1';
+    workerInput.value = String(maxWorkerCount);
+  }
+  if (workerBridgeToggle) {
+    workerBridgeToggle.checked = true;
+    applyWorkerBridgePreference(workerBridgeToggle.checked);
+    workerBridgeToggle.addEventListener('change', () => {
+      const enabled = workerBridgeToggle.checked;
+      applyWorkerBridgePreference(enabled);
+      console.debug('[MagicSquare] worker bridge preference set to', enabled);
+    });
+  }
 
   function append(text: string) {
     if (statusEl) {
@@ -141,7 +164,9 @@
     }
 
     const size = Math.max(1, Number.parseInt(sizeInput.value, 10) || 1);
-    const workers = Number.parseInt(workerInput.value, 10) || 0;
+    const requestedWorkers = Number.parseInt(workerInput.value, 10) || 1;
+    const workers = Math.min(Math.max(1, requestedWorkers), maxWorkerCount);
+    workerInput.value = String(workers);
     append(`Building model (size=${size})…`);
     showSolutionMessage('Solving…');
 
@@ -163,6 +188,10 @@
     if (workers > 0) {
       params.num_search_workers = workers;
     }
+    console.debug(
+      '[MagicSquare] solve params',
+      JSON.stringify({ ...params, num_search_workers: params.num_search_workers ?? 'default' }),
+    );
 
     append('Solving…');
     try {

@@ -45,9 +45,9 @@ target_link_options(cp_sat_api PRIVATE
   "-sASSERTIONS=1"
   "-sALLOW_MEMORY_GROWTH=1"
   "-sJSPI=2"
-  "-sJSPI_EXPORTS=['solve_model']"
+  "-sJSPI_EXPORTS=['solve_model','validate_model']"
   "-sUSE_PTHREADS=1"
-  "-sPTHREAD_POOL_SIZE=32"
+  "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
   "--bind"
   "--emit-tsd"
   "${JS_OUTPUT_DIR}/cp_sat_api.d.ts"
@@ -63,6 +63,9 @@ target_link_options(cp_sat_api PRIVATE
 set(JS_SITE_ROOT_FILES
   "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.js"
   "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.js.map"
+  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.js"
+  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.js.map"
   "${PROJECT_SOURCE_DIR}/javascript/site/index.html")
 foreach(site_file IN LISTS JS_SITE_ROOT_FILES)
   get_filename_component(site_name "${site_file}" NAME)
@@ -75,12 +78,15 @@ set(JS_SITE_EXAMPLE_FILES
   "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.html"
   "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.js"
   "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.js.map"
+  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.ts"
   "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.html"
   "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js"
   "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js.map"
+  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.ts"
   "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.html"
   "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js.map")
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js.map"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.ts")
 foreach(site_file IN LISTS JS_SITE_EXAMPLE_FILES)
   get_filename_component(site_name "${site_file}" NAME)
   foreach(dst "${JS_EXAMPLES_DIR}" "${WEB_EXAMPLES_DIR}")
@@ -88,7 +94,8 @@ foreach(site_file IN LISTS JS_SITE_EXAMPLE_FILES)
   endforeach()
 endforeach()
 
-add_custom_command(TARGET cp_sat_api POST_BUILD
+add_custom_target(cp_sat_api_site ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${WEB_DEPLOY_DIR}"
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${JS_OUTPUT_DIR}" "${WEB_DEPLOY_DIR}"
+  DEPENDS cp_sat_api
   COMMENT "Copying cp_sat_api artifacts into ${WEB_DEPLOY_DIR}")

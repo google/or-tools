@@ -38,6 +38,7 @@
 		<div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin-bottom:0.5rem;">
 			<label>Size <input id="size" type="number" value="5" min="1" style="width:4rem"></label>
 			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
+			<label><input id="use-worker-bridge" type="checkbox" checked> Use worker bridge</label>
 			<button id="run">Run magic square</button>
 			<span id="ready-indicator" style="color:#555;">Loading module…</span>
 		</div>
@@ -48,9 +49,9 @@
 		<p>Status / Response:</p>
 		<pre id="status"></pre>
 
-			<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
-			<script src="../cp_sat_api.js"></script>
-			<script src="../cpsat_api.js"></script>
-			<script src="magic_square.js"></script>
+		<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
+		<script src="../cp_sat_api.js"></script>
+		<script src="../cpsat_api.js"></script>
+		<script src="magic_square.js"></script>
 	</body>
 </html>

@@ -30,8 +30,31 @@
   const scheduleTable = document.getElementById('schedule-table') as HTMLTableElement | null;
   const teamsInput = document.getElementById('teams') as HTMLInputElement | null;
   const workerInput = document.getElementById('workers') as HTMLInputElement | null;
+  const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
   const runButton = document.getElementById('run') as HTMLButtonElement | null;
   const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
+  const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+  if (workerInput) {
+    workerInput.max = String(maxWorkerCount);
+    workerInput.min = '1';
+    workerInput.value = String(maxWorkerCount);
+  }
+  if (workerBridgeToggle) {
+    applyWorkerBridgePreference(true);
+    workerBridgeToggle.addEventListener('change', () => {
+      const enabled = workerBridgeToggle.checked;
+      applyWorkerBridgePreference(enabled);
+    });
+  }
+
+  function applyWorkerBridgePreference(enabled: boolean) {
+    if (workerBridgeToggle) {
+      workerBridgeToggle.checked = enabled;
+    }
+    if (typeof CpSat?.setWorkerBridgeEnabled === 'function') {
+      CpSat.setWorkerBridgeEnabled(enabled);
+    }
+  }
 
   function append(text: string) {
     if (statusEl) {
@@ -326,7 +349,9 @@
       return;
     }
 
-    const workers = Number.parseInt(workerInput.value, 10) || 0;
+    const requestedWorkers = Number.parseInt(workerInput.value, 10) || 1;
+    const workers = Math.min(Math.max(1, requestedWorkers), maxWorkerCount);
+    workerInput.value = String(workers);
     append(`Building sports scheduling model (teams=${numTeams})…`);
     showScheduleMessage('Solving…');
 
@@ -359,6 +384,9 @@
     if (workers > 0) {
       params.num_search_workers = workers;
     }
+    console.debug('[SportsScheduling] solve params', {
+      num_search_workers: params.num_search_workers ?? 'default',
+    });
 
     append('Solving…');
     try {

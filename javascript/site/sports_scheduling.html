@@ -23,12 +23,14 @@
 	<body>
 		<nav><a href="../index.html">← All examples</a></nav>
 		<h1>Sports Scheduling (CP-SAT WASM)</h1>
-		<p>This demo adapts the <code>sports_scheduling_sat</code> sample to the browser using the <code>cp_sat_api</code>
+		<p>This demo adapts the <code>sports_scheduling_sat</code>
+			sample to the browser using the <code>cp_sat_api</code>
 			WebAssembly module. It builds a double round-robin schedule where teams play each opponent once per half-season
 			while minimizing home/away breaks.</p>
 		<div class="controls">
 			<label>Teams <input id="teams" type="number" value="10" min="2" step="2" style="width:5rem"></label>
 			<label>Workers <input id="workers" type="number" value="4" min="1" style="width:4rem"></label>
+			<label><input id="use-worker-bridge" type="checkbox" checked> Use worker bridge</label>
 			<button id="run">Build schedule</button>
 			<span id="ready-indicator" style="color:#555;">Loading module…</span>
 		</div>
@@ -39,9 +41,9 @@
 		<p>Status / Response:</p>
 		<pre id="status"></pre>
 
-			<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
-			<script src="../cp_sat_api.js"></script>
-			<script src="../cpsat_api.js"></script>
-			<script src="sports_scheduling.js"></script>
+		<script src="https://unpkg.com/protobufjs@7.2.5/dist/protobuf.min.js"></script>
+		<script src="../cp_sat_api.js"></script>
+		<script src="../cpsat_api.js"></script>
+		<script src="sports_scheduling.js"></script>
 	</body>
 </html>
