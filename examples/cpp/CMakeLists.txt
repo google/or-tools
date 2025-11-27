@@ -65,3 +65,5 @@ list(FILTER CXX_SRCS EXCLUDE REGEX ".*/weighted_tardiness_sat.cc")
 foreach(EXAMPLE IN LISTS CXX_SRCS)
   add_cxx_example(FILE_NAME ${EXAMPLE})
 endforeach()
+
+include("CMakeBazel.txt")
