@@ -1,51 +1,52 @@
-(() => {
-  type Domain = [number, number] | number[];
-  type LinearConstraint = {
-    name?: string;
-    linear: { vars: number[]; coeffs: number[]; domain: number[] };
-  };
-  type TableConstraint = {
-    name?: string;
-    table: { vars: number[]; values: number[]; negate?: boolean };
-  };
-  type CpModelInput = {
-    name: string;
-    variables: Array<{ name: string; domain: Domain }>;
-    constraints: Array<LinearConstraint | TableConstraint>;
-    objective?: { vars: number[]; coeffs: number[]; offset?: number; scaling_factor?: number };
-  };
+import { CpSat, type CpSatModelInstance } from './cpsat_api';
 
-  type ScheduleCell = { opponent: number; home: boolean };
-  type ScheduleGrid = ScheduleCell[][];
+type Domain = [number, number] | number[];
+type LinearConstraint = {
+  name?: string;
+  linear: { vars: number[]; coeffs: number[]; domain: number[] };
+};
+type TableConstraint = {
+  name?: string;
+  table: { vars: number[]; values: number[]; negate?: boolean };
+};
+type CpModelInput = {
+  name: string;
+  variables: Array<{ name: string; domain: Domain }>;
+  constraints: Array<LinearConstraint | TableConstraint>;
+  objective?: { vars: number[]; coeffs: number[]; offset?: number; scaling_factor?: number };
+};
 
-  type SchedulingBuild = {
-    model: CpModelInput;
-    fixtures: number[][][];
-    numTeams: number;
-    numDays: number;
-  };
+type ScheduleCell = { opponent: number; home: boolean };
+type ScheduleGrid = ScheduleCell[][];
 
-  const statusEl = document.getElementById('status') as HTMLPreElement | null;
-  const scheduleMessage = document.getElementById('schedule-message') as HTMLElement | null;
-  const scheduleTable = document.getElementById('schedule-table') as HTMLTableElement | null;
-  const teamsInput = document.getElementById('teams') as HTMLInputElement | null;
-  const workerInput = document.getElementById('workers') as HTMLInputElement | null;
-  const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
-  const runButton = document.getElementById('run') as HTMLButtonElement | null;
-  const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
-  const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
-  if (workerInput) {
-    workerInput.max = String(maxWorkerCount);
-    workerInput.min = '1';
-    workerInput.value = String(maxWorkerCount);
-  }
-  if (workerBridgeToggle) {
-    applyWorkerBridgePreference(true);
-    workerBridgeToggle.addEventListener('change', () => {
-      const enabled = workerBridgeToggle.checked;
-      applyWorkerBridgePreference(enabled);
-    });
-  }
+type SchedulingBuild = {
+  model: CpModelInput;
+  fixtures: number[][][];
+  numTeams: number;
+  numDays: number;
+};
+
+const statusEl = document.getElementById('status') as HTMLPreElement | null;
+const scheduleMessage = document.getElementById('schedule-message') as HTMLElement | null;
+const scheduleTable = document.getElementById('schedule-table') as HTMLTableElement | null;
+const teamsInput = document.getElementById('teams') as HTMLInputElement | null;
+const workerInput = document.getElementById('workers') as HTMLInputElement | null;
+const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
+const runButton = document.getElementById('run') as HTMLButtonElement | null;
+const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
+const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+if (workerInput) {
+  workerInput.max = String(maxWorkerCount);
+  workerInput.min = '1';
+  workerInput.value = String(maxWorkerCount);
+}
+if (workerBridgeToggle) {
+  applyWorkerBridgePreference(true);
+  workerBridgeToggle.addEventListener('change', () => {
+    const enabled = workerBridgeToggle.checked;
+    applyWorkerBridgePreference(enabled);
+  });
+}
 
   function applyWorkerBridgePreference(enabled: boolean) {
     if (workerBridgeToggle) {
@@ -416,17 +417,16 @@
     });
   }
 
-  void CpSat.loadModule()
-    .then(() => {
-      if (readyIndicator) {
-        readyIndicator.textContent = 'Module ready.';
-      }
-    })
-    .catch((err) => {
-      if (readyIndicator) {
-        readyIndicator.textContent = 'Module failed to load.';
-      }
-      append(String(err));
-      showScheduleMessage('Module failed to load.');
-    });
-})();
+void CpSat.loadModule()
+  .then(() => {
+    if (readyIndicator) {
+      readyIndicator.textContent = 'Module ready.';
+    }
+  })
+  .catch((err) => {
+    if (readyIndicator) {
+      readyIndicator.textContent = 'Module failed to load.';
+    }
+    append(String(err));
+    showScheduleMessage('Module failed to load.');
+  });

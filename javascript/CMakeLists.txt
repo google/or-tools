@@ -40,6 +40,7 @@ file(MAKE_DIRECTORY "${WEB_EXAMPLES_DIR}")
 # Emscripten link options for a modular JS/WASM bundle exporting the C API.
 target_link_options(cp_sat_api PRIVATE
   "-sMODULARIZE=1"
+  "-sEXPORT_ES6=1"
   "-sEXPORT_NAME=cpSatModule"
   "-sENVIRONMENT=web,worker,node"
   "-sASSERTIONS=1"
@@ -59,37 +60,36 @@ target_link_options(cp_sat_api PRIVATE
   "-gsource-map"
   "--source-map-base=./")
 
+set(SITE_PUBLIC_DIR "${PROJECT_SOURCE_DIR}/javascript/site/public")
+file(MAKE_DIRECTORY "${SITE_PUBLIC_DIR}")
+add_custom_command(TARGET cp_sat_api POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_api.wasm"
+          "${SITE_PUBLIC_DIR}/cp_sat_api.wasm"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_api.wasm.map"
+          "${SITE_PUBLIC_DIR}/cp_sat_api.wasm.map"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_api.js"
+          "${SITE_PUBLIC_DIR}/cp_sat_api.js"
+  COMMENT "Syncing cp_sat_api assets into javascript/site/public")
+
 # Static site assets copied to both javascript/ and bin/ for serving.
 set(JS_SITE_ROOT_FILES
-  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.js.map"
   "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.ts"
-  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.js.map"
-  "${PROJECT_SOURCE_DIR}/javascript/site/index.html")
+  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/globals.d.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/index.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.html"
+  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/tsconfig.json")
 foreach(site_file IN LISTS JS_SITE_ROOT_FILES)
   get_filename_component(site_name "${site_file}" NAME)
   foreach(dst "${JS_OUTPUT_DIR}" "${WEB_DEPLOY_DIR}")
-    configure_file("${site_file}" "${dst}/${site_name}" COPYONLY)
-  endforeach()
-endforeach()
-
-set(JS_SITE_EXAMPLE_FILES
-  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.html"
-  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.js.map"
-  "${PROJECT_SOURCE_DIR}/javascript/site/magic_square.ts"
-  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.html"
-  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.js.map"
-  "${PROJECT_SOURCE_DIR}/javascript/site/schema_viewer.ts"
-  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.html"
-  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js"
-  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.js.map"
-  "${PROJECT_SOURCE_DIR}/javascript/site/sports_scheduling.ts")
-foreach(site_file IN LISTS JS_SITE_EXAMPLE_FILES)
-  get_filename_component(site_name "${site_file}" NAME)
-  foreach(dst "${JS_EXAMPLES_DIR}" "${WEB_EXAMPLES_DIR}")
     configure_file("${site_file}" "${dst}/${site_name}" COPYONLY)
   endforeach()
 endforeach()

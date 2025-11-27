@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "None",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "noImplicitAny": true,
-    "sourceMap": true,
-    "noEmitOnError": true,
     "skipLibCheck": true,
-    "lib": ["ES2020", "DOM"]
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
+    "types": ["vite/client"]
   },
   "include": ["*.ts", "*.d.ts"]
 }

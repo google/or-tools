@@ -129,14 +129,40 @@ If you want to learn from code examples, take a look at the examples in the
 
 ## JavaScript workflow
 
-You can build and serve the WebAssembly-based demos from this repository with npm.
-From the repository root run:
+You can build and serve the WebAssembly-based demos with npm. A full build looks like:
 
 ```
 npm install
-npm run build
-npm run start
+npm run build:wasm
+npm run dev   # or: npm run build && npm run preview
 ```
+
+`npm run build:wasm` bootstraps the emsdk, configures CMake, and rebuilds the
+`cp_sat_api` WebAssembly target (including the generated `cp_sat_api.d.ts`). The
+post-build step mirrors `cp_sat_api.wasm` into `javascript/site/public` so Vite
+can serve it during development.
+
+The frontend is bundled via Vite (see `vite.config.ts`). All `.ts` entrypoints
+under `javascript/site` are compiled and emitted into `build/site`, so individual
+HTML pages no longer need to include separate `<script>` tags for the Emscripten
+glue and our handwritten APIs.
+
+### npm scripts
+
+- `npm run build:wasm` — rebuilds the `cp_sat_api` wasm/js bundle via emsdk + CMake.
+- `npm run dev` / `npm run start` — launches the Vite dev server (requires a prior `build:wasm` so the wasm artifacts exist).
+- `npm run build` — runs `build:wasm`, builds the Vite site into `build/site`, then runs both TypeScript projects (`ts:check` + `ts:site`) to ensure type safety.
+- `npm run preview` — serves the already-built Vite site from `build/site`.
+- `npm run ts:check` — runs the strict project-wide type check defined by the root `tsconfig.json`.
+- `npm run ts:site` — type-checks the browser sources under `javascript/site` with `tsc --noEmit`.
+- `npm run clean` — removes both the CMake output under `build/` and the bundled site under `build/site`.
+
+### Running the demos
+
+- The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `navigator.hardwareConcurrency` to match the pthread pool size.
+- Each demo exposes a “Use worker bridge” checkbox (enabled by default). When it is checked, solves are routed through `cpsat_worker.ts`, keeping the main thread responsive even though `cp_sat_api` itself uses WebAssembly threads. Clear the checkbox to run solves directly on the main thread when workers are unavailable.
+- The WebAssembly build sets `-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency`, so the pthread pool matches the host CPU at startup and never silently grows beyond the browser’s limits.
+- Schema Viewer now imports the bundled `CpSat` API automatically; no extra `<script>` ordering is required in the HTML.
 
 ## Documentation
 
