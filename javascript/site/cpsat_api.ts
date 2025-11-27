@@ -1,4 +1,3 @@
-import protobuf from 'protobufjs';
 import type { MainModule } from '../../build/bin/cp_sat_api.js';
 import createCpSatModule from '../../build/bin/cp_sat_api.js';
 import cpSatWasmUrl from '../../build/bin/cp_sat_api.wasm?url';
@@ -45,6 +44,22 @@ type CpSatApi = {
   }>;
   setWorkerBridgeEnabled(enabled: boolean): void;
   isWorkerBridgeEnabled(): boolean;
+};
+
+type ProtobufModule = typeof import('protobufjs');
+let protobufModule: ProtobufModule | null = null;
+
+const loadProtobuf = async (): Promise<ProtobufModule> => {
+  if (protobufModule) return protobufModule;
+  try {
+    const mod = await import('protobufjs');
+    protobufModule = mod;
+    return mod;
+  } catch (error) {
+    throw new Error(
+      'protobufjs is required to parse the embedded schemas in the demos. Install it optionally with `npm install protobufjs`.',
+    );
+  }
 };
 
 const isBrowserMainThread = typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -136,6 +151,7 @@ const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module) => {
 
 const protoTypesPromise = (async () => {
   const { cp_model, sat_parameters } = await schemaPromise;
+  const protobuf = await loadProtobuf();
   const root = new protobuf.Root();
   protobuf.parse(sat_parameters, root);
   protobuf.parse(cp_model, root);

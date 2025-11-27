@@ -13,7 +13,8 @@
     "start": "npm run dev",
     "preview": "vite preview --host"
   },
-  "dependencies": {
+  "dependencies": {},
+  "optionalDependencies": {
     "protobufjs": "^7.5.4"
   },
   "devDependencies": {
