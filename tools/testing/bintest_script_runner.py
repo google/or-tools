@@ -36,7 +36,7 @@ class Re:
 
 def line_error(line_number: int, line: str, msg: str) -> ScriptError:
     """Creates a ScriptError for a line with a message."""
-    return ScriptError(f"At l.{line_number} : {msg}\n{line!r}")
+    return ScriptError(f"At l.{line_number}, {line!r}\n{msg}")
 
 
 def main(argv: Sequence[str]):
@@ -86,9 +86,17 @@ def main(argv: Sequence[str]):
                     raise line_error(line_number, line, "CHECK without previous RUN")
                 if match := re.findall(Re.STRING, matchers):
                     arg_list = [string[1:-1] for string in match]
-                    bintest_matchers.extract(
-                        last_run_output, *arg_list, check_matcher_specs=True
-                    )
+                    try:
+                        bintest_matchers.extract(
+                            last_run_output, *arg_list, check_matcher_specs=True
+                        )
+                    except bintest_matchers.MatchError as e:
+                        message = (
+                            f"command : {last_cmd_line!r}\n"  #
+                            f"output  : {last_run_output!r}\n"  #
+                            f"error   : {e}"
+                        )
+                        raise line_error(line_number, line, message) from None
                     continue
                 raise line_error(line_number, line, "CHECK requires quoted strings")
             raise line_error(line_number, line, "unknown directive")
@@ -97,6 +105,4 @@ def main(argv: Sequence[str]):
     except FileNotFoundError as e:
         sys.exit(str(e))
     except ScriptError as e:
-        sys.exit(str(e))
-    except bintest_matchers.MatchError as e:
         sys.exit(str(e))

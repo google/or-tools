@@ -206,18 +206,14 @@ def extract(log: str, *patterns: str, check_matcher_specs: bool) -> Sequence[flo
     floats = []
     unmatched_log = log
     for pattern in patterns:
-        try:
-            regex, check_functions = _split_pattern(pattern, check_matcher_specs)
-            match = re.search(regex, unmatched_log)
-            if not match:
-                raise MatchError(f"No match for {pattern!r}")
-            assert len(match.groups()) == len(check_functions)
-            for float_str, check_fn in zip(match.groups(), check_functions):
-                actual_float = float(float_str)
-                check_fn(actual_float)
-                floats.append(actual_float)
-            unmatched_log = unmatched_log[match.end() :]
-        except MatchError as e:
-            amended_message = f"{e}\nFor pattern: {pattern!r}\nChecking {log!r}"
-            raise MatchError(amended_message) from None
+        regex, check_functions = _split_pattern(pattern, check_matcher_specs)
+        match = re.search(regex, unmatched_log)
+        if not match:
+            raise MatchError(f"No match for {pattern!r}")
+        assert len(match.groups()) == len(check_functions)
+        for float_str, check_fn in zip(match.groups(), check_functions):
+            actual_float = float(float_str)
+            check_fn(actual_float)
+            floats.append(actual_float)
+        unmatched_log = unmatched_log[match.end() :]
     return tuple(floats)
