@@ -15,6 +15,15 @@
 
 #include "ortools/linear_solver/wrappers/model_builder_helper.h"
 
+#include <Python.h>
+
+#if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
+#define Py_BUILD_CORE
+#include "internal/pycore_frame.h"
+#include "internal/pycore_interpframe.h"
+#undef Py_BUILD_CORE
+#endif
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -300,6 +309,41 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(
   }
 }
 
+#if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
+bool check_unique_temporary(PyObject* op) {
+  PyFrameObject* frame = PyEval_GetFrame();
+  if (frame == NULL) {
+    return false;
+  }
+  _PyInterpreterFrame* f = frame->f_frame;
+  _PyStackRef* base = _PyFrame_Stackbase(f);
+  _PyStackRef* stackpointer = f->stackpointer;
+
+  while (stackpointer > base) {
+    stackpointer--;
+    if (op == PyStackRef_AsPyObjectBorrow(*stackpointer)) {
+      // We want detect if the object is a temporary and borrowed. If so, it
+      // should be only referenced once in the stack, but it should not be safe.
+      return !PyStackRef_IsHeapSafe(*stackpointer);
+    }
+  }
+  return false;
+}
+
+template <class T>
+bool IsFree(std::shared_ptr<T> expr) {
+  PyObject* lhs = py::cast(expr).ptr();
+  const int num_uses = Py_REFCNT(lhs);
+  const bool is_referenced_in_caller_frame = check_unique_temporary(lhs);
+  return num_uses == 3 && !is_referenced_in_caller_frame;
+}
+#else
+template <class T>
+bool IsFree(std::shared_ptr<T> expr) {
+  return Py_REFCNT(py::cast(expr).ptr()) == 4;
+}
+#endif
+
 PYBIND11_MODULE(model_builder_helper, m) {
   pybind11_protobuf::ImportNativeProtoCasters();
 
@@ -434,43 +478,33 @@ PYBIND11_MODULE(model_builder_helper, m) {
       .def(py::init<std::vector<std::shared_ptr<LinearExpr>>, double>())
       .def(
           "__add__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+            return IsFree(expr) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           "Returns the sum of `self` and `other`.")
       .def(
           "__add__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
-                                   : expr->AddFloat(cst);
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return IsFree(expr) ? expr->AddFloatInPlace(cst)
+                                : expr->AddFloat(cst);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
       .def(
           "__radd__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+            return IsFree(expr) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
       .def(
           "__radd__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
-                                   : expr->AddFloat(cst);
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return IsFree(expr) ? expr->AddFloatInPlace(cst)
+                                : expr->AddFloat(cst);
           },
           py::arg("cst"), "Returns `self` + `cst`.")
       .def(
@@ -490,23 +524,18 @@ PYBIND11_MODULE(model_builder_helper, m) {
           py::arg("cst"), "Returns `self` + `cst`.")
       .def(
           "__sub__",
-          [](py::object self,
+          [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddInPlace(other->Neg())
-                                   : expr->Sub(other);
+            return IsFree(expr) ? expr->AddInPlace(other->Neg())
+                                : expr->Sub(other);
           },
           py::arg("other").none(false), "Returns `self` - `other`.")
       .def(
           "__sub__",
-          [](py::object self, double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(self.ptr());
-            std::shared_ptr<SumArray> expr =
-                self.cast<std::shared_ptr<SumArray>>();
-            return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
-                                   : expr->SubFloat(cst);
+          [](std::shared_ptr<SumArray> expr,
+             double cst) -> std::shared_ptr<LinearExpr> {
+            return IsFree(expr) ? expr->AddFloatInPlace(-cst)
+                                : expr->SubFloat(cst);
           },
           py::arg("cst"), "Returns `self` - `cst`.")
       .def(
