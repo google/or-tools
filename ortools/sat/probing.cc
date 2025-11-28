@@ -141,7 +141,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
       // MarkDescendant() + parent inspection for this.
       if (lrat_proof_handler_ != nullptr) {
         tmp_clause_ids_.clear();
-        sat_solver_->AppendClausesFixing(
+        clause_manager_->AppendClauseIdsFixing(
             {l}, &tmp_clause_ids_, decision.Index(), &tmp_binary_clause_ids_);
         const ClauseId clause_id = clause_id_generator_->GetNextId();
         lrat_proof_handler_->AddInferredClause(
@@ -592,7 +592,8 @@ bool Prober::FixProbedDnfLiterals(
         first_false_literal = lit.Index();
         first_false_literal_clause_id = clause_id_generator_->GetNextId();
         tmp_clause_ids_.clear();
-        sat_solver_->AppendClausesFixing({lit.Negated()}, &tmp_clause_ids_);
+        clause_manager_->AppendClauseIdsFixing({lit.Negated()},
+                                               &tmp_clause_ids_);
         lrat_proof_handler_->AddInferredClause(first_false_literal_clause_id,
                                                tmp_literals_, tmp_clause_ids_);
         break;
@@ -606,7 +607,8 @@ bool Prober::FixProbedDnfLiterals(
         first_false_literal = lit.Index();
         first_false_literal_clause_id = clause_id_generator_->GetNextId();
         tmp_clause_ids_.clear();
-        sat_solver_->AppendClausesFixing(conflict_clause, &tmp_clause_ids_);
+        clause_manager_->AppendClauseIdsFixing(conflict_clause,
+                                               &tmp_clause_ids_);
         tmp_clause_ids_.push_back(conflict_id);
         lrat_proof_handler_->AddInferredClause(first_false_literal_clause_id,
                                                tmp_literals_, tmp_clause_ids_);
@@ -640,7 +642,8 @@ bool Prober::FixProbedDnfLiterals(
         // TODO(user): processing the propagated literals in trail order
         // and reusing the previous proofs to compute new ones
         // could reduce the algorithmic complexity here.
-        sat_solver_->AppendClausesFixing({propagated_lit}, &tmp_clause_ids_);
+        clause_manager_->AppendClauseIdsFixing({propagated_lit},
+                                               &tmp_clause_ids_);
       }
       // Add the inferred clause to the LratProofHandler.
       const ClauseId clause_id = clause_id_generator_->GetNextId();
@@ -1019,8 +1022,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
     // literals on the trail so that they do not need to be probed later.
     const int new_level = sat_solver_->CurrentDecisionLevel();
     if (new_level == 0) continue;
-    const Literal last_decision =
-        sat_solver_->Decisions()[new_level - 1].literal;
+    const Literal last_decision = trail_.Decisions()[new_level - 1].literal;
     for (int i = first_new_trail_index; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
       if (l == last_decision) continue;
@@ -1114,7 +1116,7 @@ bool FailedLiteralProbing::ComputeNextDecisionInOrder(
   // nice for binary extraction), we could try to maximize reusability in
   // some way.
   const Literal last_decision =
-      sat_solver_->Decisions()[sat_solver_->CurrentDecisionLevel() - 1].literal;
+      trail_.Decisions()[sat_solver_->CurrentDecisionLevel() - 1].literal;
   // If l => last_decision, then not(last_decision) => not(l). We can thus
   // find the candidates for the next decision by looking at all the
   // implications of not(last_decision).
@@ -1155,7 +1157,7 @@ bool FailedLiteralProbing::ComputeNextDecisionInOrder(
 bool FailedLiteralProbing::GetNextDecisionInNoParticularOrder(
     LiteralIndex& next_decision) {
   const int level = sat_solver_->CurrentDecisionLevel();
-  const Literal last_decision = sat_solver_->Decisions()[level - 1].literal;
+  const Literal last_decision = trail_.Decisions()[level - 1].literal;
   const absl::Span<const Literal> list =
       implication_graph_->Implications(last_decision.Negated());
 
@@ -1213,8 +1215,8 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
                                absl::Span<const Literal> conflict_clause) {
     if (fixed_decision_unit_id != kNoClauseId) return;
     tmp_clause_ids_.clear();
-    sat_solver_->AppendClausesFixing(conflict_clause, &tmp_clause_ids_,
-                                     next_decision);
+    clause_manager_->AppendClauseIdsFixing(conflict_clause, &tmp_clause_ids_,
+                                           next_decision);
     tmp_clause_ids_.push_back(conflict_id);
     fixed_decision_unit_id = clause_id_generator_->GetNextId();
     lrat_proof_handler_->AddInferredClause(fixed_decision_unit_id,
@@ -1279,7 +1281,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
     // no reason? it will be backtracked over, but we will still lazily fix
     // it later.
     if (sat_solver_->CurrentDecisionLevel() != 0 ||
-        assignment_.LiteralIsFalse(Literal(next_decision))) {
+        !assignment_.LiteralIsFalse(Literal(next_decision))) {
       to_fix_.push_back(Literal(next_decision).Negated());
       if (lrat_proof_handler_ != nullptr) {
         to_fix_unit_id_.push_back(fixed_decision_unit_id);
@@ -1323,7 +1325,8 @@ void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
   if (lrat_proof_handler_ != nullptr) {
     clause_id = clause_id_generator_->GetNextId();
     tmp_clause_ids_.clear();
-    sat_solver_->AppendClausesFixing({l}, &tmp_clause_ids_, last_decision);
+    clause_manager_->AppendClauseIdsFixing({l}, &tmp_clause_ids_,
+                                           last_decision);
     lrat_proof_handler_->AddInferredClause(
         clause_id, {last_decision.Negated(), l}, tmp_clause_ids_);
   }
@@ -1420,8 +1423,8 @@ void FailedLiteralProbing::AddFailedLiteralToFix(const Literal literal) {
   if (lrat_proof_handler_ == nullptr) return;
 
   tmp_clause_ids_.clear();
-  sat_solver_->AppendClausesFixing({literal.Negated()}, &tmp_clause_ids_,
-                                   literal);
+  clause_manager_->AppendClauseIdsFixing({literal.Negated()}, &tmp_clause_ids_,
+                                         literal);
   const ClauseId unit_id = clause_id_generator_->GetNextId();
   lrat_proof_handler_->AddInferredClause(unit_id, {literal.Negated()},
                                          tmp_clause_ids_);

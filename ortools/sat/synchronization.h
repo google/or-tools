@@ -1298,12 +1298,16 @@ class SharedLratProofStatus {
  public:
   SharedLratProofStatus();
 
-  void NewSubSolver();
+  // Each LratProofHandler should call this to get a unique "worker ID".
+  int NewSubSolverId();
 
   void NewSubsolverProofStatus(DratChecker::Status status,
                                bool lrat_check_enabled, bool drat_check_enabled,
                                int num_assumed_clauses,
                                double walltime_in_seconds);
+
+  void NewProofFile(absl::string_view filename);
+  std::vector<std::string> GetProofFilenames();
 
   void Log(SolverLogger* logger);
 
@@ -1317,6 +1321,7 @@ class SharedLratProofStatus {
   bool drat_check_enabled_ ABSL_GUARDED_BY(mutex_);
   int num_assumed_clauses_ ABSL_GUARDED_BY(mutex_);
   double walltime_in_seconds_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> proof_filenames_ ABSL_GUARDED_BY(mutex_);
 };
 
 }  // namespace sat

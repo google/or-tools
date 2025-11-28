@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <limits>
-#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -26,18 +25,14 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
-#include "absl/meta/type_traits.h"
+#include "absl/log/log.h"
 #include "absl/random/distributions.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
-#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
@@ -511,7 +506,7 @@ int64_t ActivityBoundHelper::ComputeMaxActivityInternal(
   return max_activity;
 }
 
-bool ActivityBoundHelper::AppearInTriggeredAmo(int literal) {
+bool ActivityBoundHelper::AppearInTriggeredAmo(int literal) const {
   const Index index = IndexFromLiteral(literal);
   if (index >= amo_indices_.size()) return false;
   for (const int amo : amo_indices_[index]) {
@@ -582,7 +577,46 @@ bool ActivityBoundHelper::PresolveEnforcement(
 int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
     absl::Span<const std::pair<int, int64_t>> boolean_terms,
     const Domain& other_terms, const Domain& rhs, ConstraintProto* ct) {
+  if (boolean_terms.empty()) return 0;
   tmp_set_.clear();
+  triggered_amo_.clear();
+  tmp_boolean_terms_in_some_amo_.clear();
+  tmp_boolean_terms_in_some_amo_.reserve(boolean_terms.size());
+  int num_enforcement_to_check = 0;
+  for (const int enf_lit : ct->enforcement_literal()) {
+    const Index negated_index = IndexFromLiteral(NegatedRef(enf_lit));
+    if (negated_index >= amo_indices_.size()) continue;
+    if (amo_indices_[negated_index].empty()) continue;
+    triggered_amo_.insert(amo_indices_[negated_index].begin(),
+                          amo_indices_[negated_index].end());
+    ++num_enforcement_to_check;
+  }
+  int non_amo_min_activity = 0;
+  int non_amo_max_activity = 0;
+  auto log_work = [&]() {
+    VLOG(1) << "RemoveEnforcementThatMakesConstraintTrivial: "
+               "aborting because too expensive: "
+            << num_enforcement_to_check << " " << boolean_terms.size();
+    return 0;
+  };
+  static const int kMaxWork = 1e9;
+  int work = 0;
+  for (int i = 0; i < boolean_terms.size(); ++i) {
+    const int ref = boolean_terms[i].first;
+    const int64_t coeff = boolean_terms[i].second;
+    if (AppearInTriggeredAmo(ref) || AppearInTriggeredAmo(NegatedRef(ref))) {
+      tmp_boolean_terms_in_some_amo_.push_back(i);
+    } else {
+      if (coeff > 0) {
+        non_amo_max_activity += coeff;
+      } else {
+        non_amo_min_activity += coeff;
+      }
+    }
+    work += NumAmoForVariable(ref);
+    if (work > kMaxWork) return log_work();
+  }
+
   for (const int enf_lit : ct->enforcement_literal()) {
     const Index negated_index = IndexFromLiteral(NegatedRef(enf_lit));
     if (negated_index >= amo_indices_.size()) continue;
@@ -593,15 +627,19 @@ int ActivityBoundHelper::RemoveEnforcementThatMakesConstraintTrivial(
                           amo_indices_[negated_index].end());
 
     // Compute min_max activity when enf_lit is false.
-    int64_t min_activity = 0;
-    int64_t max_activity = 0;
-    for (const auto [ref, coeff] : boolean_terms) {
+    int64_t min_activity = non_amo_min_activity;
+    int64_t max_activity = non_amo_max_activity;
+    for (const int i : tmp_boolean_terms_in_some_amo_) {
+      const int ref = boolean_terms[i].first;
+      const int64_t coeff = boolean_terms[i].second;
       // This is not supposed to happen after PresolveEnforcement(), so we
       // just abort in this case.
       if (ref == enf_lit || ref == NegatedRef(enf_lit)) break;
 
       const bool is_true = AppearInTriggeredAmo(NegatedRef(ref));
       const bool is_false = AppearInTriggeredAmo(ref);
+      work += NumAmoForVariable(ref);
+      if (work > kMaxWork) return log_work();
 
       // Similarly, this is not supposed to happen after PresolveEnforcement().
       if (is_true && is_false) break;

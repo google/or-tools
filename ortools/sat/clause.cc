@@ -294,13 +294,17 @@ SatClause* ClauseManager::ReasonClause(int trail_index) const {
 SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
   if (!trail_->Assignment().VariableIsAssigned(var)) return nullptr;
   if (trail_->AssignmentType(var) != propagator_id_) return nullptr;
+  SatClause* result = reasons_[trail_->Info(var).trail_index];
 
-  DCHECK_EQ(trail_->Reason(var),
-            reasons_[trail_->Info(var).trail_index]->PropagationReason());
-  return reasons_[trail_->Info(var).trail_index];
+  // Tricky: In some corner case, that clause was subsumed, so we don't want
+  // to check it nor use it.
+  if (result->size() == 0) return nullptr;
+  DCHECK_EQ(trail_->Reason(var), result->PropagationReason());
+  return result;
 }
 
 bool ClauseManager::ClauseIsUsedAsReason(SatClause* clause) const {
+  DCHECK(clause != nullptr);
   return clause == ReasonClauseOrNull(clause->PropagatedLiteral().Variable());
 }
 
@@ -699,6 +703,131 @@ SatClause* ClauseManager::NextClauseToProbe() {
   return nullptr;
 }
 
+ClauseId ClauseManager::ReasonClauseId(Literal literal) const {
+  const BooleanVariable var = literal.Variable();
+  DCHECK(trail_->Assignment().VariableIsAssigned(var));
+  const int assignment_type = trail_->AssignmentType(var);
+  const int trail_index = trail_->Info(var).trail_index;
+  if (assignment_type == AssignmentType::kUnitReason) {
+    return trail_->GetUnitClauseId(var);
+  } else if (assignment_type == implication_graph_->PropagatorId()) {
+    absl::Span<const Literal> reason =
+        implication_graph_->Reason(*trail_, trail_index,
+                                   /*conflict_id=*/-1);
+    CHECK_EQ(reason.size(), 1);
+    return implication_graph_->GetClauseId(literal, reason[0]);
+  } else if (assignment_type == propagator_id_) {
+    const SatClause* reason = ReasonClause(trail_index);
+    if (reason != nullptr) {
+      return GetClauseId(reason);
+    }
+  }
+  return kNoClauseId;
+}
+
+void ClauseManager::AppendClauseIdsFixing(
+    absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+    LiteralIndex decision,
+    absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
+        additional_binary_clause_ids) {
+  SCOPED_TIME_STAT(&stats_);
+  const auto& assignment = trail_->Assignment();
+
+  // Mark the literals whose reason must be expanded, and compute their min and
+  // max trail index.
+  tmp_mark_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
+  int trail_index = 0;
+  int min_trail_index = trail_->Index();
+  for (const Literal lit : literals) {
+    CHECK(assignment.LiteralIsAssigned(lit));
+    const int var_trail_index = trail_->Info(lit.Variable()).trail_index;
+    trail_index = std::max(trail_index, var_trail_index);
+    min_trail_index = std::min(min_trail_index, var_trail_index);
+    tmp_mark_.Set(lit.Variable());
+  }
+
+  const int current_level = trail_->CurrentDecisionLevel();
+
+  // The min level of the expanded literals.
+  int min_level = current_level;
+
+  // Unit clauses must come first. We put them in clause_ids directly. We put
+  // the others in non_unit_clause_ids and append them to clause_ids at the end.
+  std::vector<ClauseId>& non_unit_clause_ids =
+      tmp_clause_ids_for_append_clauses_fixing_;
+  non_unit_clause_ids.clear();
+
+  const auto& decisions = trail_->Decisions();
+  while (true) {
+    // Find next marked literal to expand from the trail.
+    while (trail_index >= min_trail_index &&
+           !tmp_mark_[(*trail_)[trail_index].Variable()]) {
+      --trail_index;
+    }
+    if (trail_index < min_trail_index) break;
+    const Literal marked_literal = (*trail_)[trail_index--];
+
+    // Stop at decisions, at literals fixed at root, and at literals implied by
+    // the decision at their level.
+    const int level = trail_->Info(marked_literal.Variable()).level;
+    if (level > 0) min_level = std::min(min_level, level);
+    if (trail_->AssignmentType(marked_literal.Variable()) ==
+        AssignmentType::kSearchDecision) {
+      continue;
+    }
+    if (level == 0) {
+      clause_ids->push_back(trail_->GetUnitClauseId(marked_literal.Variable()));
+      continue;
+    }
+    const Literal level_decision = decisions[level - 1].literal;
+    ClauseId clause_id = implication_graph_->GetClauseId(
+        level_decision.Negated(), marked_literal);
+    if (clause_id == kNoClauseId && additional_binary_clause_ids != nullptr) {
+      const auto it = additional_binary_clause_ids->find(
+          std::minmax(level_decision.Negated(), marked_literal));
+      if (it != additional_binary_clause_ids->end()) {
+        clause_id = it->second;
+      }
+    }
+    if (clause_id != kNoClauseId) {
+      non_unit_clause_ids.push_back(clause_id);
+      continue;
+    }
+
+    // Mark all the literals of its reason.
+    for (const Literal literal : trail_->Reason(marked_literal.Variable())) {
+      const BooleanVariable var = literal.Variable();
+      if (!tmp_mark_[var]) {
+        tmp_mark_.Set(var);
+        const AssignmentInfo& info = trail_->Info(var);
+        if (info.level > 0) {
+          min_trail_index = std::min(min_trail_index, info.trail_index);
+        } else {
+          clause_ids->push_back(trail_->GetUnitClauseId(var));
+        }
+      }
+    }
+    non_unit_clause_ids.push_back(ReasonClauseId(marked_literal));
+  }
+
+  if (decision != kNoLiteralIndex) {
+    // Add the implication chain from `decision` to all the decisions found
+    // during the expansion.
+    if (Literal(decision) != decisions[current_level - 1].literal) {
+      // If `decision` is not the last decision, it must directly imply it.
+      clause_ids->push_back(implication_graph_->GetClauseId(
+          Literal(decision).Negated(), decisions[current_level - 1].literal));
+    }
+    for (int level = current_level - 1; level >= min_level; --level) {
+      clause_ids->push_back(implication_graph_->GetClauseId(
+          decisions[level].literal.Negated(), decisions[level - 1].literal));
+    }
+  }
+
+  clause_ids->insert(clause_ids->end(), non_unit_clause_ids.rbegin(),
+                     non_unit_clause_ids.rend());
+}
+
 // ----- BinaryImplicationGraph -----
 
 void BinaryImplicationGraph::Resize(int num_variables) {
@@ -888,25 +1017,20 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
     add_binary_callback_(a, b);
   }
 
-  // TODO(user): with chronological backtracking, we should deal with literal
-  // fixed at level zero even if we call this at a positive level.
   const auto& assignment = trail_->Assignment();
-  if (trail_->CurrentDecisionLevel() == 0) {
-    DCHECK(!assignment.LiteralIsAssigned(a));
-    DCHECK(!assignment.LiteralIsAssigned(b));
-  } else {
-    if (assignment.LiteralIsFalse(a)) {
-      if (assignment.LiteralIsAssigned(b)) {
-        if (assignment.LiteralIsFalse(b)) return false;
-      } else {
-        reasons_[trail_->Index()] = a;
-        trail_->EnqueueAtLevel(b, propagator_id_, trail_->AssignmentLevel(a));
-      }
-    } else if (assignment.LiteralIsFalse(b)) {
-      if (!assignment.LiteralIsAssigned(a)) {
-        reasons_[trail_->Index()] = b;
-        trail_->EnqueueAtLevel(a, propagator_id_, trail_->AssignmentLevel(b));
-      }
+  if (assignment.LiteralIsFalse(a)) {
+    if (assignment.LiteralIsAssigned(b)) {
+      if (assignment.LiteralIsFalse(b)) return false;
+    } else {
+      reasons_[trail_->Index()] = a;
+      trail_->EnqueueAtLevel(b, propagator_id_, trail_->AssignmentLevel(a));
+    }
+  } else if (assignment.LiteralIsFalse(b)) {
+    if (assignment.LiteralIsAssigned(a)) {
+      if (assignment.LiteralIsFalse(a)) return false;
+    } else {
+      reasons_[trail_->Index()] = b;
+      trail_->EnqueueAtLevel(a, propagator_id_, trail_->AssignmentLevel(b));
     }
   }
 

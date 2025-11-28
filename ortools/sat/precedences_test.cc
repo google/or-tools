@@ -372,7 +372,7 @@ TEST(PrecedencesPropagatorTest, Cycles) {
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // Cycle of weight zero is fine.
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+7));  // dummy
   EXPECT_TRUE(integer_trail->Propagate(trail));
   trail->Enqueue(Literal(+1), AssignmentType::kUnitReason);
   trail->Enqueue(Literal(+2), AssignmentType::kUnitReason);
@@ -386,16 +386,15 @@ TEST(PrecedencesPropagatorTest, Cycles) {
               UnorderedElementsAre(Literal(-1), Literal(-3)));
 
   // Test the untrail.
-  trail->SetDecisionLevel(0);
+  trail->PrepareBacktrack(0);
   integer_trail->Untrail(*trail, 0);
   propagator->Untrail(*trail, 0);
   trail->Untrail(0);
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // Still fine here.
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+5));
   EXPECT_TRUE(integer_trail->Propagate(trail));
-  trail->Enqueue(Literal(+5), AssignmentType::kUnitReason);
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // But fail there with a different and longer reason.
@@ -416,7 +415,8 @@ TEST(PrecedencesPropagatorTest, TrickyCycle) {
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   PrecedencesPropagator* propagator =
       model.GetOrCreate<PrecedencesPropagator>();
-  trail->Resize(10);
+  const Literal a(model.Add(NewBooleanVariable()), true);
+  const Literal b(model.Add(NewBooleanVariable()), true);
 
   std::vector<IntegerVariable> vars = AddVariables(integer_trail);
   propagator->AddPrecedenceWithVariableOffset(vars[0], vars[1], vars[2]);
@@ -424,17 +424,17 @@ TEST(PrecedencesPropagatorTest, TrickyCycle) {
 
   // This will cause an infinite cycle.
   propagator->AddConditionalPrecedenceWithOffset(vars[3], vars[0],
-                                                 IntegerValue(1), Literal(+1));
+                                                 IntegerValue(1), a);
 
   // So far so good.
+  trail->EnqueueSearchDecision(b);
   EXPECT_TRUE(propagator->Propagate(trail));
-  trail->SetDecisionLevel(1);
   EXPECT_TRUE(integer_trail->Propagate(trail));
 
   // Conflict.
-  trail->Enqueue(Literal(+1), AssignmentType::kUnitReason);
+  trail->Enqueue(a, AssignmentType::kUnitReason);
   EXPECT_FALSE(propagator->Propagate(trail));
-  EXPECT_THAT(trail->FailingClause(), ElementsAre(Literal(-1)));
+  EXPECT_THAT(trail->FailingClause(), ElementsAre(a.Negated()));
 
   // Test that the code detected properly a positive cycle in the dependency
   // graph instead of just pushing the bounds until the upper bound is reached.

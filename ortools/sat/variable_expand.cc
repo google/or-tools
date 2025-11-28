@@ -411,6 +411,46 @@ bool ProcessEncodingConstraints(
     std::vector<std::vector<EncodingLinear1>>& linear_ones_by_type,
     std::vector<int>& constraint_indices, bool& var_in_objective,
     bool& var_has_positive_objective_coefficient) {
+  // We have a variable that appears only in linear1 constraints. That means
+  // that the model should not change feasibility as long as the values that
+  // the variable take does not the satisfiability of the linear1s. Thus, we
+  // have "domains of equivalence" of the possible values of the variable.
+  // Suppose we have a variable `v` in the domain `[0, 15]` that is only used in
+  // the following linear1:
+  // (c1)   x => v <= 10
+  // (c2)   y => v == 5
+  // (c3)   z => 2 <= v <= 7
+  //
+  // We can represent that as intervals:
+  //
+  //             0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+  //             +---------------------------------------------+
+  // v <= 10     ...............................*
+  // v == 5                     *
+  // 2 <= v <= 7       *..............*
+  //
+  // If we cut the classes of equivalences for `v` into contiguous intervals,
+  // they are:
+  //  - [0, 1]  (c1, ~c2, ~c3)
+  //  - [2, 4]  (c1, ~c2, c3)
+  //  - {5}     (c1, c2, c3)
+  //  - [6, 7]  (c1, ~c2, c3)
+  //  - [8, 10]  (c1, ~c2, ~c3)
+  //  - [11, 15] (~c1, ~c2, ~c3)
+  //
+  // We can pick either the lowest or the highest value of each interval
+  // depending on the sign of the objective coefficient. Thus, a possible
+  // encoding would be:
+  //   - x == 0
+  //   - x == 2
+  //   - x == 5
+  //   - x == 6
+  //   - x == 8
+  //   - x == 11
+  //
+  // TODO(user): Pick a single value for each equivalence class, not one
+  // per contiguous interval.
+  // TODO(user): Supports more domains, for now only <= and >= are supported.
   const Domain& var_domain = context->DomainOf(var);
   constraint_indices.clear();
   var_in_objective = false;
@@ -425,6 +465,9 @@ bool ProcessEncodingConstraints(
     if (c < 0) continue;
     constraint_indices.push_back(c);
   }
+
+  const bool push_down_when_unconstrained =
+      !var_in_objective || var_has_positive_objective_coefficient;
 
   // Sort the constraint indices to make the encoding deterministic.
   absl::c_sort(constraint_indices);
@@ -458,9 +501,27 @@ bool ProcessEncodingConstraints(
     switch (lin.type) {
       case EncodingLinear1Type::kVarEqValue:
         values.AddValueToEncode(lin.value);
+        if (push_down_when_unconstrained) {
+          if (lin.value < var_domain.Max()) {
+            values.AddValueToEncode(var_domain.ValueAtOrAfter(lin.value + 1));
+          }
+        } else {
+          if (lin.value > var_domain.Min()) {
+            values.AddValueToEncode(var_domain.ValueAtOrBefore(lin.value - 1));
+          }
+        }
         break;
       case EncodingLinear1Type::kVarNeValue:
         values.AddValueToEncode(lin.value);
+        if (push_down_when_unconstrained) {
+          if (lin.value < var_domain.Max()) {
+            values.AddValueToEncode(var_domain.ValueAtOrAfter(lin.value + 1));
+          }
+        } else {
+          if (lin.value > var_domain.Min()) {
+            values.AddValueToEncode(var_domain.ValueAtOrBefore(lin.value - 1));
+          }
+        }
         break;
       case EncodingLinear1Type::kVarGeValue: {
         values.AddValueToEncode(lin.value);
@@ -478,6 +539,12 @@ bool ProcessEncodingConstraints(
         // TODO(user): fine grained management of the domains.
         break;
       }
+    }
+
+    if (push_down_when_unconstrained) {
+      values.AddValueToEncode(var_domain.Min());
+    } else {
+      values.AddValueToEncode(var_domain.Max());
     }
 
     linear_ones_by_type[static_cast<int>(lin.type)].push_back(lin);
@@ -567,9 +634,11 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
 
   values.CreateAllValueEncodingLiterals();
   // Fix the hinted value if needed.
+  const bool push_down_when_unconstrained =
+      !var_in_objective || var_has_positive_objective_coefficient;
   solution_crush.SetOrUpdateVarToDomain(
       var, Domain::FromValues(values.encoded_values()), values.encoding(),
-      var_in_objective, var_has_positive_objective_coefficient);
+      push_down_when_unconstrained);
   order.CreateAllOrderEncodingLiterals(values);
 
   // Link all Boolean in our linear1 to the encoding literals.
@@ -711,15 +780,15 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       return;
     }
     context->UpdateRuleStats(
-        "variables: only used in objective and in encoding");
+        "variables: only used in objective and in encodings");
   } else {
     if ((!lin_eq.empty() || !lin_ne.empty()) && lin_domain.empty()) {
       context->UpdateRuleStats(
           "variables: only used in value and order encodings");
     } else if (!lin_domain.empty()) {
-      context->UpdateRuleStats("variables: only used in complex encoding");
+      context->UpdateRuleStats("variables: only used in complex encodings");
     } else {
-      context->UpdateRuleStats("variables: only used in value encoding");
+      context->UpdateRuleStats("variables: only used in value encodings");
     }
   }
   if (!values.is_fully_encoded()) {

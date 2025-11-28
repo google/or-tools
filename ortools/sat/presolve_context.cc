@@ -2019,6 +2019,7 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
 }
 
 bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
+  if (ModelIsUnsat()) return false;
   objective_proto_is_up_to_date_ = false;
 
   // We replace each entry by its affine representative.

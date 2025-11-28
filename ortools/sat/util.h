@@ -870,6 +870,22 @@ class TopN {
   std::vector<Element> elements_;
 };
 
+// Returns true iff subset is strictly included in superset.
+// This assumes that superset has no duplicates (otherwise it is wrong).
+inline bool IsStrictlyIncluded(Bitset64<LiteralIndex>::ConstView in_subset,
+                               int subset_size,
+                               absl::Span<const Literal> superset) {
+  if (subset_size >= superset.size()) return false;
+  int budget = superset.size() - subset_size;
+  for (const Literal l : superset) {
+    if (!in_subset[l]) {
+      --budget;
+      if (budget < 0) return false;
+    }
+  }
+  return true;
+}
+
 // ============================================================================
 // Implementation.
 // ============================================================================

@@ -770,7 +770,7 @@ void SharedTreeWorker::MaybeProposeSplits() {
   const int max_split_level =
       std::min<int>(trail_->CurrentDecisionLevel(), manager_->MaxPathDepth());
   for (int i = assigned_tree_.MaxLevel(); i < max_split_level; ++i) {
-    const Literal split_decision = sat_solver_->Decisions()[i].literal;
+    const Literal split_decision = trail_->Decisions()[i].literal;
     const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
     if (!encoded.has_value()) break;
     tmp_splits_.push_back(*encoded);

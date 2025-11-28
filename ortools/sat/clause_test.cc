@@ -363,7 +363,6 @@ TEST(BinaryImplicationGraphTest, LargeAtMostOnePropagation) {
   EXPECT_TRUE(graph->AddAtMostOne(large_at_most_one));
 
   const Literal decision = Literal(BooleanVariable(42), true);
-  trail->SetDecisionLevel(1);
   trail->EnqueueSearchDecision(Literal(decision));
   EXPECT_TRUE(graph->Propagate(trail));
 

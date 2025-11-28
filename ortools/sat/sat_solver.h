@@ -257,32 +257,6 @@ class SatSolver {
   // `literals` are fixed to their current value.
   std::vector<Literal> GetDecisionsFixing(absl::Span<const Literal> literals);
 
-  // Appends to `clause_ids` the IDs of the clauses which, by unit propagation
-  // from some decisions, are sufficient to ensure that all literals in
-  // `literals` are fixed to their current value.
-  //
-  // If `decision` is not `kNoLiteralIndex`, also appends the IDs of the clauses
-  // proving that `decision` implies all the literals in `literals`. In this
-  // case, `decision` must either be the last decision on the trail, or must
-  // directly imply it. Furthermore, each decision must directly imply the
-  // previous one on the trail.
-  //
-  // This method expands the reasons of each literal recursively until a
-  // decision, or a literal implied by the decision at its decision level, is
-  // found. The latter criterion avoids a quadratic complexity when implications
-  // of the form "decision => literal" are added for each newly propagated
-  // literal after taking a decision (provided these implications are added to
-  // the binary implication graph right away, in trail index order).
-  //
-  // If `additional_binary_clause_ids` is not null, it is used to look for
-  // existing binary clauses if they are not found in the binary implication
-  // graph.
-  void AppendClausesFixing(
-      absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
-      LiteralIndex decision = kNoLiteralIndex,
-      absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
-          additional_binary_clause_ids = nullptr);
-
   // Advanced usage. The next 3 functions allow to drive the search from outside
   // the solver.
 
@@ -435,18 +409,10 @@ class SatSolver {
   const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
-  struct Decision {
-    Decision() = default;
-    Decision(int i, Literal l) : trail_index(i), literal(l) {}
-    int trail_index = 0;
-    Literal literal;
-  };
-
-  // Note that the Decisions() vector is always of size NumVariables(), and that
-  // only the first CurrentDecisionLevel() entries have a meaning. The decision
-  // made at level l is Decisions()[l - 1] (there are no decisions at level 0).
-  const std::vector<Decision>& Decisions() const { return decisions_; }
-  int CurrentDecisionLevel() const { return current_decision_level_; }
+  const std::vector<LiteralWithTrailIndex>& Decisions() const {
+    return trail_->Decisions();
+  }
+  int CurrentDecisionLevel() const { return trail_->CurrentDecisionLevel(); }
   const Trail& LiteralTrail() const { return *trail_; }
   const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
 
@@ -543,8 +509,9 @@ class SatSolver {
   void ProcessNewlyFixedVariables();
 
   int64_t NumFixedVariables() const {
-    if (!decisions_.empty()) return decisions_[0].trail_index;
-    CHECK_EQ(CurrentDecisionLevel(), 0);
+    if (CurrentDecisionLevel() > 0) {
+      return trail_->Decisions()[0].trail_index;
+    }
     return trail_->Index();
   }
 
@@ -603,10 +570,10 @@ class SatSolver {
   // assumption_level of 0 (meaning no assumptions).
   Status SolveInternal(int assumption_level);
 
-  // Applies the previous decisions (which are still on decisions_), in order,
-  // starting from the one at the current decision level. Stops at the one at
-  // decisions_[level] or on the first decision already propagated to "false"
-  // and thus incompatible.
+  // Applies the previous decisions (which are still on trail_->Decisions()), in
+  // order, starting from the one at the current decision level. Stops at the
+  // one at decisions[level] or on the first decision already propagated to
+  // "false" and thus incompatible.
   //
   // Note that during this process, conflicts may arise which will lead to
   // backjumps. In this case, we will simply keep reapplying decisions from the
@@ -635,14 +602,8 @@ class SatSolver {
   // Returns the relevant pointer if the given variable was propagated by the
   // constraint in question. This is used to bump the activity of the learned
   // clauses or pb constraints.
-  SatClause* ReasonClauseOrNull(BooleanVariable var) const {
-    return clauses_propagator_->ReasonClauseOrNull(var);
-  }
   UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
       BooleanVariable var) const;
-  // Returns the ID of the unit, binary, or general clause that is the reason
-  // for the given literal, or kNoClauseId if there is none.
-  ClauseId ReasonClauseId(Literal literal) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -659,8 +620,8 @@ class SatSolver {
 
   // Add a problem clause. The clause is assumed to be "cleaned", that is no
   // duplicate variables (not strictly required) and not empty.
-  bool AddProblemClauseInternal(absl::Span<const Literal> literals,
-                                bool shared = false);
+  bool AddProblemClauseInternal(ClauseId id,
+                                absl::Span<const Literal> literals);
 
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
@@ -709,19 +670,23 @@ class SatSolver {
   // http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
   void ComputeFirstUIPConflict(
       int max_trail_index, std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict,
-      std::vector<SatClause*>* subsumed_clauses);
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
 
   // Use the learned conflict to subsumes some clause.
   //
   // Returns the pair <is_redundant, minimum_lbd of the subsumed clause>.
   // A clause will be marked as redundant only if all the subsumed clauses are.
   std::pair<bool, int> SubsumptionsInConflictResolution(
-      absl::Span<const Literal> conflict,
+      ClauseId learned_conflict_id, absl::Span<const Literal> conflict,
       absl::Span<const Literal> reason_used);
 
-  // Fills `clause_ids` with the LRAT proof for the learned conflict.
-  void FillLratProofForLearnedConflict(std::vector<ClauseId>* clause_ids);
+  // Append the necessary `clause_ids` for the corresponding part of an LRAT
+  // proof. Note that the first function modify is_marked_.
+  void AppendLratProofForFixedLiterals(absl::Span<const Literal> literals,
+                                       std::vector<ClauseId>* clause_ids);
+  void AppendLratProofForFailingClause(std::vector<ClauseId>* clause_ids);
+  void AppendLratProofFromReasons(absl::Span<const Literal> reasons,
+                                  std::vector<ClauseId>* clause_ids);
 
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
@@ -851,13 +816,6 @@ class SatSolver {
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;
 
-  // The stack of decisions taken by the solver. They are stored in [0,
-  // current_decision_level_). The vector is of size num_variables_ so it can
-  // store all the decisions. This is done this way because in some situation we
-  // need to remember the previously taken decisions after a backtrack.
-  int current_decision_level_ = 0;
-  std::vector<Decision> decisions_;
-
   // The trail index after the last Backtrack() call or before the last
   // EnqueueNewDecision() call.
   int last_decision_or_backtrack_trail_index_ = 0;
@@ -892,6 +850,7 @@ class SatSolver {
 
   // Temporary members used during conflict analysis.
   Bitset64<LiteralIndex> tmp_literal_set_;
+  Bitset64<LiteralIndex> tmp_decision_set_;
   SparseBitset<BooleanVariable> is_marked_;
   SparseBitset<BooleanVariable> is_marked_for_lrat_;
   SparseBitset<BooleanVariable> is_independent_;
@@ -905,9 +864,9 @@ class SatSolver {
   // Temporary member used when adding clauses.
   std::vector<Literal> tmp_literals_;
   // Temporary members used when adding LRAT inferred clauses.
+  std::vector<ClauseId> tmp_clause_ids_;
   std::vector<ClauseId> tmp_clause_ids_for_1uip_;
   std::vector<ClauseId> tmp_clause_ids_for_minimization_;
-  std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
   absl::flat_hash_set<ClauseId> tmp_clause_id_set_;
 
   // A boolean vector used to temporarily mark decision levels.
@@ -918,7 +877,20 @@ class SatSolver {
   std::vector<Literal> learned_conflict_;
   std::vector<Literal> reason_used_to_infer_the_conflict_;
   std::vector<Literal> extra_reason_literals_;
+
   std::vector<SatClause*> subsumed_clauses_;
+
+  std::vector<int> subsuming_lrat_index_;
+  CompactVectorVector<int, Literal> subsuming_clauses_;
+  CompactVectorVector<int, SatClause*> subsuming_groups_;
+
+  struct DelayedNewClause {
+    ClauseId id;
+    bool is_redundant;
+    int min_lbd_of_subsumed_clauses;
+    std::vector<Literal> clause;
+  };
+  std::vector<DelayedNewClause> delayed_to_add_;
 
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use
@@ -1128,7 +1100,8 @@ inline std::function<int64_t(const Model&)> Value(BooleanVariable b) {
 // is no more new solutions.
 inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+    const auto& decisions = model->GetOrCreate<Trail>()->Decisions();
+    auto* sat_solver = model->GetOrCreate<SatSolver>();
 
     // Note that we only exclude the current decisions, which is an efficient
     // way to not get the same SAT assignment.
@@ -1136,8 +1109,7 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
     std::vector<Literal> clause_to_exclude_solution;
     clause_to_exclude_solution.reserve(current_level);
     for (int i = 0; i < current_level; ++i) {
-      clause_to_exclude_solution.push_back(
-          sat_solver->Decisions()[i].literal.Negated());
+      clause_to_exclude_solution.push_back(decisions[i].literal.Negated());
     }
     sat_solver->Backtrack(0);
     model->Add(ClauseConstraint(clause_to_exclude_solution));

@@ -45,6 +45,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -1287,6 +1288,28 @@ TEST(HeuristicallySplitLongLinearTest, BasicExamples) {
 
   EXPECT_THAT(HeuristicallySplitLongLinear({1, 1, 1, 1, 3, 3, 3, 3, 3}),
               ElementsAre(Pair(0, 2), Pair(2, 2), Pair(4, 2), Pair(6, 3)));
+}
+
+bool IsStrictlyIncludedWrapper(absl::Span<const int> a,
+                               absl::Span<const int> b) {
+  std::vector<Literal> a_lits, b_lits;
+  for (const int i : a) a_lits.push_back(Literal(i));
+  for (const int i : b) b_lits.push_back(Literal(i));
+
+  Bitset64<LiteralIndex> in_a(LiteralIndex(1000));
+  for (const Literal l : a_lits) in_a.Set(l);
+  return IsStrictlyIncluded(in_a.const_view(), a_lits.size(), b_lits);
+}
+
+TEST(IsStricltyIncludedTest, BasicExamples) {
+  EXPECT_FALSE(IsStrictlyIncludedWrapper({}, {}));
+  EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+1, +3}));
+  EXPECT_FALSE(IsStrictlyIncludedWrapper({+3, +1}, {+2, +3, +5}));
+
+  EXPECT_TRUE(IsStrictlyIncludedWrapper({}, {+1}));
+  EXPECT_TRUE(IsStrictlyIncludedWrapper({}, {+1, +2, +3}));
+  EXPECT_TRUE(IsStrictlyIncludedWrapper({+3, +1}, {+1, +2, +3}));
+  EXPECT_TRUE(IsStrictlyIncludedWrapper({+3, +1, +4}, {+4, +1, +2, +3}));
 }
 
 }  // namespace

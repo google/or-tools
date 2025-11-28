@@ -238,19 +238,20 @@ void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
 
 void SolutionCrush::SetOrUpdateVarToDomain(
     int var, const Domain& domain,
-    const absl::btree_map<int64_t, int>& encoding, bool has_objective,
-    bool minimize) {
+    const absl::btree_map<int64_t, int>& encoding,
+    bool push_down_when_repairing_hints) {
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     const int64_t old_value = GetVarValue(var);
     if (domain.Contains(old_value)) return;
     int64_t new_value = old_value;
-    if (!has_objective) {
-      new_value = domain.ClosestValue(old_value);
-    } else if (minimize) {
+    if (push_down_when_repairing_hints) {
       new_value = domain.ValueAtOrBefore(old_value);
     } else {
       new_value = domain.ValueAtOrAfter(old_value);
+    }
+    for (const auto [value, lit] : encoding) {
+      SetLiteralValue(lit, value == new_value);
     }
     SetVarValue(var, new_value);
     VLOG(3) << "SetOrUpdateVarToDomain: " << var << ", old_value: " << old_value
@@ -259,8 +260,6 @@ void SolutionCrush::SetOrUpdateVarToDomain(
     DCHECK(encoding.contains(new_value))
         << "domain: " << domain.ToString() << "old_value: " << old_value
         << " new_value: " << new_value;
-    const int encoding_lit = encoding.at(new_value);
-    SetLiteralValue(encoding_lit, true);
   } else if (domain.IsFixed()) {
     SetVarValue(var, domain.FixedValue());
   }

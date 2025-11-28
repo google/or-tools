@@ -686,7 +686,7 @@ void ProductDetector::ProcessTrailAtLevelOne() {
   if (trail_->CurrentDecisionLevel() != 1) return;
   ++num_trail_updates_;
 
-  const SatSolver::Decision decision = sat_solver_->Decisions()[0];
+  const LiteralWithTrailIndex decision = trail_->Decisions()[0];
   if (decision.literal.Index() >= seen_.size() ||
       !seen_[decision.literal.Index()]) {
     return;

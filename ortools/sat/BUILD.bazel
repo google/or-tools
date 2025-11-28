@@ -173,7 +173,9 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":lrat_proof_handler",
         ":presolve_context",
+        ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base:logging",
         "//ortools/base:protobuf_util",
@@ -1030,21 +1032,16 @@ cc_library(
         ":cp_model_utils",
         ":util",
         "//ortools/base:strong_vector",
-        "//ortools/base:timer",
         "//ortools/util:bitset",
-        "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -3424,6 +3421,7 @@ cc_test(
         "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:btree",
@@ -4256,6 +4254,18 @@ cc_library(
     ],
 )
 
+proto_library(
+    name = "lrat_proto",
+    srcs = ["lrat.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "lrat_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":lrat_proto"],
+)
+
 cc_library(
     name = "lrat_proof_handler",
     srcs = ["lrat_proof_handler.cc"],
@@ -4263,10 +4273,16 @@ cc_library(
     deps = [
         ":drat_checker",
         ":drat_writer",
+        ":lrat_cc_proto",
         ":lrat_checker",
         ":model",
+        ":recordio",
         ":sat_base",
+        ":synchronization",
         "//ortools/base:file",
+        "//ortools/base:intops",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -4328,6 +4344,24 @@ cc_test(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "recordio",
+    srcs = ["recordio.cc"],
+    hdrs = ["recordio.h"],
+    deps = ["@protobuf"],
+)
+
+cc_test(
+    name = "recordio_test",
+    srcs = ["recordio_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":recordio",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
     ],
 )
 
