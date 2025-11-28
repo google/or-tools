@@ -75,10 +75,7 @@ py_library(
 py_binary(
     name = "bintest_script_launcher",
     srcs = ["bintest_script_launcher.py"],
-    deps = [
-        ":bintest_script_runner",
-        requirement("absl-py"),
-    ],
+    deps = [":bintest_script_runner"],
 )
 
 cc_binary(
