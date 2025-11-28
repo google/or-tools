@@ -158,7 +158,7 @@ class SolutionCrush {
   // encoding literals to reflect the new value of `var`.
   void SetOrUpdateVarToDomain(int var, const Domain& domain,
                               const absl::btree_map<int64_t, int>& encoding,
-                              bool has_objective, bool minimize);
+                              bool push_down_when_repairing_hints);
 
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).

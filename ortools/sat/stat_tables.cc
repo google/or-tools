@@ -134,8 +134,9 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
   if (clauses_deletion_table_.empty()) {
     clauses_deletion_table_.push_back(
         {"Clause deletion", "at_true", "l_and_not(l)", "to_binary",
-         "sub_conflict", "sub_eager", "sub_vivify", "sub_probing", "sub_inpro",
-         "blocked", "eliminated", "forgotten", "promoted", "conflicts"});
+         "sub_conflict", "sub_extra", "sub_decisions", "sub_eager",
+         "sub_vivify", "sub_probing", "sub_inpro", "blocked", "eliminated",
+         "forgotten", "promoted", "conflicts"});
   }
   absl::Span<const int64_t> deletion_by_source =
       model->GetOrCreate<ClauseManager>()->DeletionCounters();
@@ -149,6 +150,10 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
            DeletionSourceForStat::PROMOTED_TO_BINARY)]),
        FormatCounter(deletion_by_source[static_cast<int>(
            DeletionSourceForStat::SUBSUMPTION_CONFLICT)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_CONFLICT_EXTRA)]),
+       FormatCounter(deletion_by_source[static_cast<int>(
+           DeletionSourceForStat::SUBSUMPTION_DECISIONS)]),
        FormatCounter(deletion_by_source[static_cast<int>(
            DeletionSourceForStat::SUBSUMPTION_EAGER)]),
        FormatCounter(deletion_by_source[static_cast<int>(

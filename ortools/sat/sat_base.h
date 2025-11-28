@@ -293,6 +293,14 @@ struct AssignmentType {
   static constexpr int kFirstFreePropagationId = 4;
 };
 
+// A Boolean "decision" taken by the solver.
+struct LiteralWithTrailIndex {
+  LiteralWithTrailIndex() = default;
+  LiteralWithTrailIndex(Literal l, int i) : literal(l), trail_index(i) {}
+  Literal literal;
+  int trail_index = 0;
+};
+
 // The solver trail stores the assignment made by the solver in order.
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
@@ -389,9 +397,35 @@ class Trail {
                          &assignment_, &unit_clause_id_);
   }
 
-  // Specific Enqueue() version for the search decision.
+  // Specific Enqueue() for search decisions.
   void EnqueueSearchDecision(Literal true_literal) {
+    decisions_[current_decision_level_] =
+        LiteralWithTrailIndex(true_literal, Index());
+    current_info_.level = ++current_decision_level_;
     Enqueue(true_literal, AssignmentType::kSearchDecision);
+  }
+
+  // Specific Enqueue() for assumptions.
+  void EnqueueAssumption(Literal assumptions) {
+    if (current_decision_level_ == 0) {
+      // Special decision. This should never be accessed.
+      decisions_[0] = LiteralWithTrailIndex(Literal(), Index());
+      current_info_.level = ++current_decision_level_;
+    }
+    CHECK_EQ(current_decision_level_, 1);
+    Enqueue(assumptions, AssignmentType::kSearchDecision);
+  }
+
+  void OverrideDecision(int level, Literal literal) {
+    decisions_[level].literal = literal;
+  }
+
+  // Allows to recover the list of decisions.
+  // Note that the Decisions() vector is always of size NumVariables(), and that
+  // only the first CurrentDecisionLevel() entries have a meaning. The decision
+  // made at level l is Decisions()[l - 1] (there are no decisions at level 0).
+  const std::vector<LiteralWithTrailIndex>& Decisions() const {
+    return decisions_;
   }
 
   // Specific Enqueue() version for a fixed variable.
@@ -515,6 +549,17 @@ class Trail {
     old_type_[var] = propagator_id;
   }
 
+  // On bactrack we should always do:
+  //
+  // const int target_trail_index = PrepareBacktrack(level);
+  // ...
+  // Untrail(target_trail_index);
+  int PrepareBacktrack(int level) {
+    current_decision_level_ = level;
+    current_info_.level = level;
+    return decisions_[level].trail_index;
+  }
+
   // Reverts the trail and underlying assignment to the given target trail
   // index. Note that we do not touch the assignment info.
   void Untrail(int target_trail_index) {
@@ -529,8 +574,6 @@ class Trail {
     }
   }
 
-  // Changes the decision level used by the next Enqueue().
-  void SetDecisionLevel(int level) { current_info_.level = level; }
   int CurrentDecisionLevel() const { return current_info_.level; }
 
   // Generic interface to set the current failing clause.
@@ -678,6 +721,13 @@ class Trail {
       nullptr;
 
   int last_num_reimplication_ = 0;
+
+  // The stack of decisions taken by the solver. They are stored in [0,
+  // current_decision_level_). The vector is of size num_variables_ so it can
+  // store all the decisions. This is done this way because in some situation we
+  // need to remember the previously taken decisions after a backtrack.
+  int current_decision_level_ = 0;
+  std::vector<LiteralWithTrailIndex> decisions_;
 };
 
 // Base class for all the SAT constraints.
@@ -809,6 +859,11 @@ inline void Trail::Resize(int num_variables) {
   // dynamically.
   old_type_.resize(num_variables);
   reference_var_with_same_reason_as_.resize(num_variables);
+
+  // The +1 is a bit tricky, it is because in
+  // EnqueueDecisionAndBacktrackOnConflict() we artificially enqueue the
+  // decision before checking if it is not already assigned.
+  decisions_.resize(num_variables + 1);
 }
 
 inline void Trail::RegisterPropagator(SatPropagator* propagator) {

@@ -74,6 +74,7 @@ class SatClause {
 
   // Number of literals in the clause.
   int size() const { return size_; }
+  bool empty() const { return size_ == 0; }
 
   // We re-use the size to lazily remove clause and notify that they need to be
   // deleted. It is why this is not called empty() to emphasis that fact. Note
@@ -167,6 +168,8 @@ enum class DeletionSourceForStat {
   SUBSUMPTION_PROBING,
   SUBSUMPTION_VIVIFY,
   SUBSUMPTION_CONFLICT,
+  SUBSUMPTION_CONFLICT_EXTRA,
+  SUBSUMPTION_DECISIONS,
   SUBSUMPTION_EAGER,
   SUBSUMPTION_INPROCESSING,
   BLOCKED,
@@ -418,6 +421,36 @@ class ClauseManager : public SatPropagator {
     return std::move(add_clause_callback_);
   }
 
+  // Returns the ID of the unit, binary, or general clause that is the reason
+  // for the given literal, or kNoClauseId if there is none.
+  ClauseId ReasonClauseId(Literal literal) const;
+
+  // Appends to `clause_ids` the IDs of the clauses which, by unit propagation
+  // from some decisions, are sufficient to ensure that all literals in
+  // `literals` are fixed to their current value.
+  //
+  // If `decision` is not `kNoLiteralIndex`, also appends the IDs of the clauses
+  // proving that `decision` implies all the literals in `literals`. In this
+  // case, `decision` must either be the last decision on the trail, or must
+  // directly imply it. Furthermore, each decision must directly imply the
+  // previous one on the trail.
+  //
+  // This method expands the reasons of each literal recursively until a
+  // decision, or a literal implied by the decision at its decision level, is
+  // found. The latter criterion avoids a quadratic complexity when implications
+  // of the form "decision => literal" are added for each newly propagated
+  // literal after taking a decision (provided these implications are added to
+  // the binary implication graph right away, in trail index order).
+  //
+  // If `additional_binary_clause_ids` is not null, it is used to look for
+  // existing binary clauses if they are not found in the binary implication
+  // graph.
+  void AppendClauseIdsFixing(
+      absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+      LiteralIndex decision = kNoLiteralIndex,
+      absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
+          additional_binary_clause_ids = nullptr);
+
  private:
   // Attaches the given clause. This eventually propagates a literal which is
   // enqueued on the trail. Returns false if a contradiction was encountered.
@@ -484,6 +517,9 @@ class ClauseManager : public SatPropagator {
 
   absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
       add_clause_callback_ = nullptr;
+
+  SparseBitset<BooleanVariable> tmp_mark_;
+  std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
 };
 
 // A binary clause. This is used by BinaryClauseManager.

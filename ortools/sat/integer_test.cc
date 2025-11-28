@@ -236,10 +236,12 @@ TEST(IntegerTrailTest, Untrail) {
 
   // We need a reason for the Enqueue():
   const Literal r(model.Add(NewBooleanVariable()), true);
+  const Literal dummy1(model.Add(NewBooleanVariable()), true);
+  const Literal dummy2(model.Add(NewBooleanVariable()), true);
   trail->EnqueueWithUnitReason(r.Negated());
 
   // Enqueue.
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(dummy1);
   EXPECT_TRUE(p->Propagate(trail));
   EXPECT_TRUE(
       p->Enqueue(IntegerLiteral::GreaterOrEqual(a, IntegerValue(5)), {r}, {}));
@@ -248,18 +250,18 @@ TEST(IntegerTrailTest, Untrail) {
       p->Enqueue(IntegerLiteral::GreaterOrEqual(b, IntegerValue(7)), {r}, {}));
   EXPECT_EQ(7, p->LowerBound(b));
 
-  trail->SetDecisionLevel(2);
+  trail->EnqueueSearchDecision(dummy2);
   EXPECT_TRUE(p->Propagate(trail));
   EXPECT_TRUE(
       p->Enqueue(IntegerLiteral::GreaterOrEqual(b, IntegerValue(9)), {r}, {}));
   EXPECT_EQ(9, p->LowerBound(b));
 
   // Untrail.
-  trail->SetDecisionLevel(1);
+  trail->Untrail(trail->PrepareBacktrack(1));
   p->Untrail(*trail, 0);
   EXPECT_EQ(7, p->LowerBound(b));
 
-  trail->SetDecisionLevel(0);
+  trail->Untrail(trail->PrepareBacktrack(0));
   p->Untrail(*trail, 0);
   EXPECT_EQ(1, p->LowerBound(a));
   EXPECT_EQ(2, p->LowerBound(b));
@@ -275,8 +277,7 @@ TEST(IntegerTrailTest, BasicReason) {
   trail->EnqueueWithUnitReason(Literal(-1));
   trail->EnqueueWithUnitReason(Literal(-2));
   trail->EnqueueWithUnitReason(Literal(+3));
-  trail->EnqueueWithUnitReason(Literal(+4));
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+4));
   EXPECT_TRUE(p->Propagate(trail));
 
   // Enqueue.
@@ -321,7 +322,7 @@ TEST(IntegerTrailTest, LazyReason) {
 
   Trail* trail = model.GetOrCreate<Trail>();
   trail->Resize(10);
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+1));
   EXPECT_TRUE(p->Propagate(trail));
 
   LazyReasonForTest mock;
@@ -350,8 +351,7 @@ TEST(IntegerTrailTest, LiteralAndBoundReason) {
   trail->EnqueueWithUnitReason(Literal(-1));
   trail->EnqueueWithUnitReason(Literal(-2));
   trail->EnqueueWithUnitReason(Literal(-3));
-  trail->EnqueueWithUnitReason(Literal(-4));
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(-4));
   EXPECT_TRUE(p->Propagate(trail));
 
   // Enqueue.
@@ -380,9 +380,8 @@ TEST(IntegerTrailTest, LevelZeroBounds) {
 
   Trail* trail = model.GetOrCreate<Trail>();
   trail->Resize(10);
-  trail->SetDecisionLevel(1);
   trail->EnqueueWithUnitReason(Literal(-1));
-  trail->EnqueueWithUnitReason(Literal(-2));
+  trail->EnqueueSearchDecision(Literal(-2));
   EXPECT_TRUE(integer_trail->Propagate(trail));
 
   // Enqueue.
@@ -509,7 +508,8 @@ TEST(GenericLiteralWatcherTest, LevelZeroModifiedVariablesCallbackTest) {
   EXPECT_EQ(NegationOf(b), collector[1]);
 
   // Modify 1 variable at level 1.
-  model.GetOrCreate<Trail>()->SetDecisionLevel(1);
+  const Literal dummy1(model.Add(NewBooleanVariable()), true);
+  model.GetOrCreate<Trail>()->EnqueueSearchDecision(dummy1);
   EXPECT_TRUE(sat_solver->Propagate());
   collector.clear();
   EXPECT_TRUE(integer_trail->Enqueue(
@@ -990,13 +990,11 @@ TEST(IntegerEncoderTest, EncodingToIntegerTrailPropagation) {
   EXPECT_BOUNDS_EQ(var, 3, 9);
 
   // We remove the value 4, nothing happen.
-  trail->SetDecisionLevel(1);
   trail->EnqueueSearchDecision(encoding[1].literal.Negated());
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 3, 9);
 
   // When we remove 3, the lower bound change though.
-  trail->SetDecisionLevel(2);
   trail->EnqueueSearchDecision(encoding[0].literal.Negated());
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 7, 9);
@@ -1011,7 +1009,6 @@ TEST(IntegerEncoderTest, EncodingToIntegerTrailPropagation) {
   }
 
   // Test the other direction.
-  trail->SetDecisionLevel(3);
   trail->EnqueueSearchDecision(encoding[3].literal.Negated());
   EXPECT_TRUE(sat_solver->Propagate());
   EXPECT_BOUNDS_EQ(var, 7, 7);

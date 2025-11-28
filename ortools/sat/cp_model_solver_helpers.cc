@@ -847,7 +847,7 @@ void RegisterVariableBoundsLevelZeroImport(
             ClauseId clause_id = kNoClauseId;
             if (lrat_proof_handler != nullptr) {
               clause_id = clause_id_generator->GetNextId();
-              lrat_proof_handler->AddSharedClause(clause_id, {lit});
+              lrat_proof_handler->AddImportedClause(clause_id, {lit});
             }
             if (trail->Assignment().LiteralIsFalse(lit)) {
               if (lrat_proof_handler != nullptr) {
@@ -2291,6 +2291,7 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   local_model->Register<SharedTreeManager>(shared_tree_manager);
   local_model->Register<SharedStatistics>(stats);
   local_model->Register<SharedStatTables>(stat_tables);
+  local_model->Register<SharedLratProofStatus>(lrat_proof_status);
 
   // TODO(user): Use parameters and not the presence/absence of these class
   // to decide when to use them? this is not clear.

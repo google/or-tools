@@ -290,10 +290,8 @@ TEST(UpperBoundedLinearConstraintTest, Conflict) {
   EXPECT_EQ(threshold, 0);
 
   // Two assignment from other part of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
 
   // We propagate only +1.
   threshold -= 1;
@@ -318,12 +316,9 @@ TEST(UpperBoundedLinearConstraintTest, CompactReason) {
   EXPECT_EQ(threshold, 3);
 
   // Two assignment from other part of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(3);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
 
   // We propagate when +3 is processed.
   threshold = -3;
@@ -357,16 +352,11 @@ TEST(UpperBoundedLinearConstraintTest, ConflictAfterEnforcementStatusChange) {
   EXPECT_EQ(threshold, 3);
 
   // Some assignments from other parts of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(3);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(4);
-  trail.Enqueue(Literal(+4), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(5);
-  trail.Enqueue(Literal(+9), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
+  trail.EnqueueSearchDecision(Literal(+4));
+  trail.EnqueueSearchDecision(Literal(+9));
 
   // We detect a conflict when +9 is processed.
   threshold = -7;
@@ -395,16 +385,11 @@ TEST(UpperBoundedLinearConstraintTest, PropagateEnforcementAfterStatusChange) {
   EXPECT_EQ(threshold, 3);
 
   // Some assignments from other parts of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(3);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(4);
-  trail.Enqueue(Literal(+4), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(5);
-  trail.Enqueue(Literal(+9), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
+  trail.EnqueueSearchDecision(Literal(+3));
+  trail.EnqueueSearchDecision(Literal(+4));
+  trail.EnqueueSearchDecision(Literal(+9));
 
   // We should propagate -8 when +9 is processed.
   threshold = -7;
@@ -442,10 +427,8 @@ TEST(UpperBoundedLinearConstraintTest,
   EXPECT_EQ(threshold, 0);
 
   // Some assignments from other parts of the solver.
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+2), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
+  trail.EnqueueSearchDecision(Literal(+2));
 
   // We should propagate -9 when +2 is processed.
   const int source_trail_index = trail.Info(Literal(+1).Variable()).trail_index;
@@ -497,8 +480,7 @@ TEST(PbConstraintsTest, BasicPropagation) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(-1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(-1));
 
   csts.Resize(10);
   csts.AddConstraint(MakePb({{-1, 1}, {+2, 1}}), Coefficient(1), &trail);
@@ -519,7 +501,7 @@ TEST(PbConstraintsTest, BasicPropagation) {
   // Untrail, and repropagate everything.
   csts.Untrail(trail, 0);
   trail.Untrail(0);
-  trail.Enqueue(Literal(-1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(-1));
   while (!csts.PropagationIsDone(trail)) EXPECT_TRUE(csts.Propagate(&trail));
   EXPECT_THAT(TrailToVector(trail), LiteralsAre(-1, -2, -3, -4));
 }
@@ -532,7 +514,6 @@ TEST(PbConstraintsTest, BasicDeletion) {
   PbConstraintsEnqueueHelper helper;
   helper.reasons.resize(10);
   trail.Resize(10);
-  trail.SetDecisionLevel(0);
   csts.Resize(10);
   csts.AddConstraint(MakePb({{-1, 1}, {+2, 1}}), Coefficient(1), &trail);
   csts.AddConstraint(MakePb({{-1, 7}, {-2, 7}, {+3, 7}}), Coefficient(20),
@@ -584,8 +565,7 @@ TEST(PbConstraintsTest, UnsatAtConstruction) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kUnitReason);
+  trail.EnqueueSearchDecision(Literal(+1));
   trail.Enqueue(Literal(+2), AssignmentType::kUnitReason);
   trail.Enqueue(Literal(+3), AssignmentType::kUnitReason);
 
@@ -610,7 +590,6 @@ TEST(PbConstraintsTest, AddConstraintWithLevel0Propagation) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(0);
   csts.Resize(10);
 
   EXPECT_TRUE(csts.AddConstraint(MakePb({{+1, 1}, {+2, 3}, {+3, 7}}),
@@ -637,7 +616,7 @@ TEST(PbConstraintsDeathTest, AddConstraintWithLevel0PropagationInSearch) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(10);
+  trail.EnqueueSearchDecision(Literal(+10));
   csts.Resize(10);
 
   // If the decision level is not 0, this will fail.
@@ -652,11 +631,10 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
   Trail& trail = *(model.GetOrCreate<Trail>());
 
   trail.Resize(10);
-  trail.SetDecisionLevel(1);
-  trail.Enqueue(Literal(+1), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+1));
   trail.Enqueue(Literal(+2), AssignmentType::kUnitReason);
-  trail.SetDecisionLevel(2);
-  trail.Enqueue(Literal(+3), AssignmentType::kSearchDecision);
+  trail.EnqueueSearchDecision(Literal(+4));  // dummy.
+  trail.Enqueue(Literal(+3), AssignmentType::kUnitReason);
   csts.Resize(10);
 
   // We can't add this constraint since it is conflicting under the current
@@ -665,8 +643,8 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
                                   Coefficient(2), &trail));
 
   trail.Untrail(trail.Index() - 1);  //  Remove the +3.
-  EXPECT_EQ(trail.Index(), 2);
-  csts.Untrail(trail, 2);
+  EXPECT_EQ(trail.Index(), 3);
+  csts.Untrail(trail, 3);
 
   // Adding this one at a decision level of 2 will also fail because it will
   // propagate 3 from decision level 1.
@@ -676,7 +654,7 @@ TEST(PbConstraintsDeathTest, AddConstraintPrecondition) {
 
   // However, adding the same constraint while the decision level is 1 is ok.
   // It will propagate -3 at the correct decision level.
-  trail.SetDecisionLevel(1);
+  trail.Untrail(trail.PrepareBacktrack(1));
   EXPECT_TRUE(csts.AddConstraint(MakePb({{+1, 1}, {+2, 1}, {+3, 2}}),
                                  Coefficient(3), &trail));
   EXPECT_EQ(trail.Index(), 3);

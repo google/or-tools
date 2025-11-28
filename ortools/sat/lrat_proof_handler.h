@@ -15,34 +15,127 @@
 #define ORTOOLS_SAT_LRAT_PROOF_HANDLER_H_
 
 #include <cstdint>
+#include <fstream>
 #include <limits>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/types/span.h"
+#include "ortools/base/strong_int.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_writer.h"
+#include "ortools/sat/lrat.pb.h"
 #include "ortools/sat/lrat_checker.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/recordio.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
+
+// Writes an LRAT proof to a file in "record io" format.
+class LratWriter {
+ public:
+  explicit LratWriter(std::string_view filename);
+  ~LratWriter();
+
+  std::string_view filename() const { return filename_; }
+
+  void AddImportedClause(ClauseId id, absl::Span<const Literal> clause);
+
+  void AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
+                         absl::Span<const ClauseId> unit_ids,
+                         absl::Span<const LratChecker::RatIds> rat = {});
+
+  void DeleteClause(ClauseId id);
+
+ private:
+  std::string filename_;
+  std::ofstream ofstream_;
+  RecordWriter writer_;
+};
+
+// Merges separate LRAT proofs into a single LRAT file in ASCII format.
+class LratMerger {
+ public:
+  explicit LratMerger(Model* model);
+  ~LratMerger();
+
+  // Merges the given LRAT proofs in a single one, and writes it to a file in
+  // ASCII format. The first proof must be the presolve proof. Its imported
+  // clauses must be the input problem clauses, and their ID must be the 1-based
+  // clause index in the input CNF file. Returns true on success, false
+  // otherwise.
+  bool Merge(absl::Span<const std::string> proof_filenames);
+
+ private:
+  // Clause IDs used in the merged proof. Local clause IDs in individual proof
+  // files are remapped to global clause IDs (except for the presolve proof: its
+  // IDs are kept unchanged). This mapping is stored in `local_to_global_ids_`
+  // (one map per proof file, except for the presolve proof).
+  DEFINE_STRONG_INT_TYPE(GlobalId, int64_t);
+
+  // Reads the proof of the presolved model and adds its clauses to
+  // `shared_clause_ids_`. Also checks this proof if lrat_checker_ is not null.
+  // Returns true on success, false otherwise.
+  bool ReadPresolveProof(const std::string& filename);
+
+  // Canonicalizes (i.e., sorts) and registers a clause so that it can be
+  // imported from an individual proof file.
+  // TODO(user): is the canonicalization really needed?
+  void SortAndAddSharedClause(GlobalId id, std::vector<Literal>& literals);
+
+  // Remaps the local clause IDs in the given inferred clause to global IDs, in
+  // place. Returns true on success, false otherwise.
+  bool RemapInferredClause(int worker_index, const std::string& filename,
+                           LratInferredClause& inferred_clause);
+  bool RemapClauseIds(int worker_index, const std::string& filename,
+                      google::protobuf::RepeatedField<int64_t>* clause_ids);
+
+  // Writes the given clause to the merged proof file, in LRAT ASCII file
+  // format. Also checks it if lrat_checker_ is not null. Returns true on
+  // success, false otherwise.
+  bool WriteInferredClause(const LratInferredClause& inferred_clause);
+
+  GlobalId NextGlobalId() { return GlobalId(next_global_id_++); }
+
+  bool Error(std::string_view message) const;
+  bool LratError() const;
+
+  const int id_;
+  SharedLratProofStatus* proof_status_;
+  std::unique_ptr<LratChecker> lrat_checker_;
+  bool debug_crash_on_error_;
+
+  std::string merged_proof_filename_;
+  std::ofstream merged_proof_file_;
+  GlobalId next_global_id_;
+
+  absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_clause_ids_;
+  std::vector<absl::flat_hash_map<ClauseId, GlobalId>> local_to_global_ids_;
+  std::vector<LratProofStep> last_read_steps_;
+
+  std::vector<Literal> tmp_clause_;
+  std::vector<ClauseId> tmp_unit_ids_;
+  std::vector<LratChecker::RatIds> tmp_rat_ids_;
+};
 
 // Handles the LRAT proof of a SAT problem by either checking it incrementally
 // and/or by saving it to a file.
 class LratProofHandler {
  public:
-  // TODO(user): pass the [presolved] model proto to the handler, so that
-  // it can map internal problem clause IDs to constraint indices in the
-  // original model. This will be needed to write the LRAT proof in a file that
-  // can be checked with an external LRAT checker, expecting the standard LRAT
-  // ASCII file format (which requires problem clauses IDs between 1 and n).
   static std::unique_ptr<LratProofHandler> MaybeCreate(Model* model);
 
   bool lrat_check_enabled() const { return lrat_checker_ != nullptr; }
+  bool lrat_output_enabled() const { return lrat_writer_ != nullptr; }
   bool drat_check_enabled() const { return drat_checker_ != nullptr; }
   bool drat_output_enabled() const { return drat_writer_ != nullptr; }
+
+  int64_t num_assumed_clauses() const { return num_assumed_clauses_; }
 
   // Adds a clause of the problem. See LratChecker for more details.
   bool AddProblemClause(ClauseId id, absl::Span<const Literal> clause);
@@ -59,7 +152,7 @@ class LratProofHandler {
   // Adds a clause which was inferred by another worker. Returns true if
   // successful (the operation can fail if LRAT checks are enabled, and the ID
   // is already used by another clause).
-  bool AddSharedClause(ClauseId id, absl::Span<const Literal> clause);
+  bool AddImportedClause(ClauseId id, absl::Span<const Literal> clause);
 
   // Adds a clause which is assumed to be true, without proof. Returns true if
   // successful (the operation fails if DRAT checks are enabled, or if LRAT
@@ -89,16 +182,17 @@ class LratProofHandler {
   // with DRAT checks), or if neither LRAT nor DRAT checks were enabled.
   DratChecker::Status Check();
 
-  void AddStats() const;
-
-  int64_t num_assumed_clauses() const { return num_assumed_clauses_; }
+  void Close(bool model_is_unsat);
 
  private:
   explicit LratProofHandler(Model* model);
 
-  bool CheckResult(bool result) const;
+  bool LratError() const;
 
+  const int id_;
+  SharedLratProofStatus* proof_status_;
   std::unique_ptr<LratChecker> lrat_checker_;
+  std::unique_ptr<LratWriter> lrat_writer_;
   std::unique_ptr<DratChecker> drat_checker_;
   std::unique_ptr<DratWriter> drat_writer_;
   double max_drat_time_in_seconds_ = std::numeric_limits<double>::infinity();

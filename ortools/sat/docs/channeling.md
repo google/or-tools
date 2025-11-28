@@ -524,8 +524,8 @@ To make this more concrete, let's say you have 10 bins of capacity 100, and
 items to pack into the bins. You would like to maximize the number of bins that
 can accept one emergency load of size 20.
 
-To do this, you need to maximize the number of bins that have a load less
-than 80. In the code below, channeling is used to link the *load* and *slack*
+To do this, you need to maximize the number of bins that have a load less than
+80. In the code below, channeling is used to link the *load* and *slack*
 variables together:
 
 ### Python code

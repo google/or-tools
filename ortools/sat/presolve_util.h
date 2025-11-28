@@ -16,7 +16,6 @@
 
 #include <array>
 #include <cstdint>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -25,15 +24,12 @@
 #include "absl/random/bit_gen_ref.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
-#include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/logging.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/strong_integers.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -229,7 +225,7 @@ class ActivityBoundHelper {
                            absl::flat_hash_set<int>* literals_at_true);
 
   // For each enforcement literal enf, if not(enf) implies that the constraint
-  // is trivial, then we can just remove not(enf) from the list.
+  // is trivial, then we can just remove enf from the list.
   //
   // Actually, we could even "lift" such enforcement so that if it is negative
   // the constraint is still trivial but tighter.
@@ -259,7 +255,7 @@ class ActivityBoundHelper {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
 
-  bool AppearInTriggeredAmo(int literal);
+  bool AppearInTriggeredAmo(int literal) const;
 
   int64_t ComputeActivity(
       bool compute_min, absl::Span<const std::pair<int, int64_t>> terms,
@@ -298,6 +294,7 @@ class ActivityBoundHelper {
 
   absl::flat_hash_set<int> triggered_amo_;
   absl::flat_hash_set<int> tmp_set_;
+  std::vector<int> tmp_boolean_terms_in_some_amo_;
 };
 
 // Class to help detects clauses that differ on a single literal.

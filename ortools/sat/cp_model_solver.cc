@@ -70,7 +70,6 @@
 #include "ortools/sat/cp_model_symmetries.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/diffn_util.h"
-#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/feasibility_jump.h"
 #include "ortools/sat/feasibility_pump.h"
 #include "ortools/sat/integer.h"
@@ -801,11 +800,12 @@ void LogSubsolverNames(absl::Span<const std::unique_ptr<SubSolver>> subsolvers,
   SOLVER_LOG(logger, "");
 }
 
-void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
+void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
                       std::vector<std::unique_ptr<SubSolver>>& subsolvers,
                       absl::Span<const std::string> ignored) {
   // Initial logging.
   SOLVER_LOG(shared->logger, "");
+  SatParameters& params = *global_model->GetOrCreate<SatParameters>();
   if (params.interleave_search()) {
     SOLVER_LOG(shared->logger,
                absl::StrFormat("Starting deterministic search at %.2fs with "
@@ -842,6 +842,13 @@ void LaunchSubsolvers(const SatParameters& params, SharedClasses* shared,
   for (int i = 0; i < subsolvers.size(); ++i) {
     subsolvers[i].reset();
   }
+
+  if (params.check_merged_lrat_proof() && shared->response->ProblemIsSolved() &&
+      !shared->response->HasFeasibleSolution()) {
+    LratMerger(global_model)
+        .Merge(shared->lrat_proof_status->GetProofFilenames());
+  }
+
   shared->LogFinalStatistics();
 }
 
@@ -1039,7 +1046,6 @@ class FullProblemSolver : public SubSolver {
     if (lrat_proof_handler != nullptr) {
       local_model_.Register<LratProofHandler>(lrat_proof_handler.get());
       local_model_.TakeOwnership(lrat_proof_handler.release());
-      shared_->lrat_proof_status->NewSubSolver();
     }
 
     // Setup the local logger, in multi-thread log_search_progress should be
@@ -1061,17 +1067,8 @@ class FullProblemSolver : public SubSolver {
     LratProofHandler* lrat_proof_handler =
         local_model_.Mutable<LratProofHandler>();
     if (lrat_proof_handler != nullptr) {
-      WallTimer timer;
-      timer.Start();
-      const bool valid = local_model_.GetOrCreate<SatSolver>()->ModelIsUnsat()
-                             ? lrat_proof_handler->Check()
-                             : lrat_proof_handler->Valid();
-      shared_->lrat_proof_status->NewSubsolverProofStatus(
-          valid ? DratChecker::Status::VALID : DratChecker::Status::INVALID,
-          lrat_proof_handler->lrat_check_enabled(),
-          lrat_proof_handler->drat_check_enabled(),
-          lrat_proof_handler->num_assumed_clauses(), timer.Get());
-      lrat_proof_handler->AddStats();
+      lrat_proof_handler->Close(
+          local_model_.GetOrCreate<SatSolver>()->ModelIsUnsat());
     }
   }
 
@@ -2221,7 +2218,7 @@ void SolveCpModelParallel(SharedClasses* shared, Model* global_model) {
         [shared]() { shared->response->UpdateGapIntegral(); }));
   }
 
-  LaunchSubsolvers(params, shared, subsolvers, name_filter.AllIgnored());
+  LaunchSubsolvers(global_model, shared, subsolvers, name_filter.AllIgnored());
 }
 
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
@@ -2579,9 +2576,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context = std::make_unique<PresolveContext>(model, new_cp_model_proto,
                                                    mapping_proto);
 
-  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get())) {
+  std::unique_ptr<LratProofHandler> lrat_proof_handler =
+      LratProofHandler::MaybeCreate(model);
+  if (!ImportModelWithBasicPresolveIntoContext(model_proto, context.get(),
+                                               lrat_proof_handler.get())) {
     const std::string info = "Problem proven infeasible during initial copy.";
     SOLVER_LOG(logger, info);
+    if (lrat_proof_handler != nullptr) {
+      lrat_proof_handler->Close(/*model_is_unsat=*/true);
+    }
     CpSolverResponse status_response;
     status_response.set_status(CpSolverStatus::INFEASIBLE);
     status_response.set_solution_info(info);
@@ -2751,6 +2754,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Delete the context as soon as the presolve is done. Note that only
   // postsolve_mapping and mapping_proto are needed for postsolve.
   context.reset(nullptr);
+  if (lrat_proof_handler != nullptr) {
+    lrat_proof_handler->Close(presolve_status == CpSolverStatus::INFEASIBLE);
+    lrat_proof_handler.reset();
+  }
 
   if (presolve_status != CpSolverStatus::UNKNOWN) {
     if (presolve_status == CpSolverStatus::INFEASIBLE &&
@@ -3037,7 +3044,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       std::vector<std::unique_ptr<SubSolver>> subsolvers;
       subsolvers.push_back(std::make_unique<FullProblemSolver>(
           "main", params, /*split_in_chunks=*/false, &shared));
-      LaunchSubsolvers(params, &shared, subsolvers, {});
+      LaunchSubsolvers(model, &shared, subsolvers, {});
     }
   }
 

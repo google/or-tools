@@ -1607,9 +1607,9 @@ SharedLratProofStatus::SharedLratProofStatus()
       num_assumed_clauses_(0),
       walltime_in_seconds_(0.0) {}
 
-void SharedLratProofStatus::NewSubSolver() {
+int SharedLratProofStatus::NewSubSolverId() {
   absl::MutexLock mutex_lock(mutex_);
-  num_subsolvers_++;
+  return num_subsolvers_++;
 }
 
 void SharedLratProofStatus::NewSubsolverProofStatus(
@@ -1630,6 +1630,16 @@ void SharedLratProofStatus::NewSubsolverProofStatus(
   if (drat_check_enabled) {
     walltime_in_seconds_ += walltime_in_seconds;
   }
+}
+
+void SharedLratProofStatus::NewProofFile(absl::string_view filename) {
+  absl::MutexLock mutex_lock(mutex_);
+  proof_filenames_.push_back(std::string(filename));
+}
+
+std::vector<std::string> SharedLratProofStatus::GetProofFilenames() {
+  absl::MutexLock mutex_lock(mutex_);
+  return proof_filenames_;
 }
 
 void SharedLratProofStatus::Log(SolverLogger* logger) {
