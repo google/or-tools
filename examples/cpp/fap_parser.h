@@ -23,6 +23,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace operations_research {
 
@@ -214,7 +215,7 @@ class ParametersParser {
 };
 
 // Function that finds the disjoint sub-graphs of the graph of the instance.
-void FindComponents(const std::vector<FapConstraint>& constraints,
+void FindComponents(absl::Span<const FapConstraint> constraints,
                     const absl::btree_map<int, FapVariable>& variables,
                     int maximum_variable_id,
                     absl::flat_hash_map<int, FapComponent>* components);

@@ -379,6 +379,8 @@ function(ortools_cxx_binary)
   message(STATUS "Configuring binary ${BINARY_NAME} ...DONE")
 endfunction()
 
+find_package(Python3 COMPONENTS Interpreter)
+
 # ortools_cxx_bintest()
 # CMake function to generate and build C++ test.
 # Parameters:
@@ -410,16 +412,21 @@ function(ortools_cxx_bintest)
   if(NOT BINTEST_SCRIPT)
     message(FATAL_ERROR "no SCRIPT provided")
   endif()
-  message(STATUS "Configuring binary test ${BINTEST_NAME} ...")
+  if(NOT Python3_Interpreter_FOUND)
+    message(WARNING "No python3 interpreter found, the bintest ${BINTEST_NAME} is disable")
+    return()
+  endif()
+
+  message(STATUS "Configuring bintest ${BINTEST_NAME} ...")
   add_test(
     NAME ${BINTEST_NAME}
-    COMMAND python3 -m tools.testing.bintest_script_launcher ${BINTEST_SCRIPT}
+    COMMAND ${Python3_EXECUTABLE} -m tools.testing.bintest_script_launcher ${BINTEST_SCRIPT}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
   set_tests_properties(${BINTEST_NAME} PROPERTIES
     ENVIRONMENT "${BINTEST_ENVIRONMENT}"
   )
-  message(STATUS "Configuring binary test ${BINTEST_NAME} ...DONE")
+  message(STATUS "Configuring bintest ${BINTEST_NAME} ...DONE")
 endfunction()
 
 ##################

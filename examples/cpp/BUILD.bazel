@@ -354,7 +354,7 @@ bintest(
     srcs = [":shift_minimization_sat_test.bintest"],
     named_data = {
         "shift_minimization_sat": ":shift_minimization_sat",
-        "shift_minimization.dat": ":shift_minimization.dat",
+        "shift_minimization.dat": "testdata/shift_minimization.dat",
     },
 )
 
@@ -386,7 +386,7 @@ bintest(
     srcs = [":weighted_tardiness_sat_test.bintest"],
     named_data = {
         "weighted_tardiness_sat": ":weighted_tardiness_sat",
-        "wt40.txt": ":wt40.txt",
+        "wt40.txt": "testdata/wt40.txt",
     },
 )
 
@@ -517,6 +517,26 @@ cc_binary(
         "@abseil-cpp//absl/strings:str_format",
         "@protobuf",
     ],
+)
+
+bintest(
+    name = "pdptw_test",
+    size = "medium",
+    srcs = [":pdptw_test.bintest"],
+    named_data = {
+        "pdptw": ":pdptw",
+        "lc102.txt": "testdata/lc102.txt",
+    },
+)
+
+bintest(
+    name = "pdptw_non_homogenous_fleet_test",
+    size = "medium",
+    srcs = [":pdptw_non_homogenous_fleet_test.bintest"],
+    named_data = {
+        "pdptw": ":pdptw",
+        "lc102.txt": "testdata/lc102.txt",
+    },
 )
 
 # Routing examples.
@@ -662,8 +682,28 @@ cc_binary(
         "//ortools/graph:linear_assignment",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
+)
+
+bintest(
+    name = "dimacs_assignment_min_cost_test",
+    size = "small",
+    srcs = [":dimacs_assignment_min_cost_test.bintest"],
+    named_data = {
+        "dimacs_assignment": ":dimacs_assignment",
+        "dimacs_example.txt": "testdata/dimacs_example.txt",
+    },
+)
+
+bintest(
+    name = "dimacs_assignment_max_cost_test",
+    size = "small",
+    srcs = [":dimacs_assignment_max_cost_test.bintest"],
+    named_data = {
+        "dimacs_assignment": ":dimacs_assignment",
+        "dimacs_example.txt": "testdata/dimacs_example.txt",
+    },
 )
 
 # MPS driver for LP and MIP.

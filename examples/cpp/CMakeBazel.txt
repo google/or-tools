@@ -152,7 +152,7 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_shift_minimization_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/shift_minimization_sat_test.bintest
-  ENVIRONMENT BINTEST_shift_minimization_sat=$<TARGET_FILE:bzl_cc_example_shift_minimization_sat> BINTEST_shift_minimization.dat=${CMAKE_CURRENT_SOURCE_DIR}/shift_minimization.dat
+  ENVIRONMENT BINTEST_shift_minimization_sat=$<TARGET_FILE:bzl_cc_example_shift_minimization_sat> BINTEST_shift_minimization.dat=${CMAKE_CURRENT_SOURCE_DIR}/testdata/shift_minimization.dat
 )
 
 ortools_cxx_binary(
@@ -163,7 +163,7 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_weighted_tardiness_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/weighted_tardiness_sat_test.bintest
-  ENVIRONMENT BINTEST_weighted_tardiness_sat=$<TARGET_FILE:bzl_cc_example_weighted_tardiness_sat> BINTEST_wt40.txt=${CMAKE_CURRENT_SOURCE_DIR}/wt40.txt
+  ENVIRONMENT BINTEST_weighted_tardiness_sat=$<TARGET_FILE:bzl_cc_example_weighted_tardiness_sat> BINTEST_wt40.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/wt40.txt
 )
 
 ortools_cxx_binary(
@@ -213,6 +213,18 @@ ortools_cxx_bintest(
 ortools_cxx_binary(
   NAME bzl_cc_example_pdptw
   SOURCES pdptw.cc
+)
+
+ortools_cxx_bintest(
+  NAME bzl_cc_example_pdptw_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/pdptw_test.bintest
+  ENVIRONMENT BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw> BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
+)
+
+ortools_cxx_bintest(
+  NAME bzl_cc_example_pdptw_non_homogenous_fleet_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/pdptw_non_homogenous_fleet_test.bintest
+  ENVIRONMENT BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw> BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
 )
 
 ortools_cxx_binary(
@@ -280,6 +292,18 @@ ortools_cxx_binary(
   NAME bzl_cc_example_dimacs_assignment
   SOURCES dimacs_assignment.cc
   LINK_LIBRARIES bzl_cc_example_parse_dimacs_assignment bzl_cc_example_print_dimacs_assignment
+)
+
+ortools_cxx_bintest(
+  NAME bzl_cc_example_dimacs_assignment_min_cost_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/dimacs_assignment_min_cost_test.bintest
+  ENVIRONMENT BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment> BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
+)
+
+ortools_cxx_bintest(
+  NAME bzl_cc_example_dimacs_assignment_max_cost_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/dimacs_assignment_max_cost_test.bintest
+  ENVIRONMENT BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment> BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
 )
 
 ortools_cxx_binary(
