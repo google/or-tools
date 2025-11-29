@@ -44,6 +44,7 @@ type CpSatApi = {
   }>;
   setWorkerBridgeEnabled(enabled: boolean): void;
   isWorkerBridgeEnabled(): boolean;
+  cancelSolve(): Promise<void>;
 };
 
 type ProtobufModule = typeof import('protobufjs');
@@ -113,11 +114,7 @@ async function postWorkerRequest<T extends WorkerResponse>(request: WorkerReques
       resolve: (value: WorkerResponse) => resolve(value as T),
       reject,
     });
-    const transfers: Transferable[] = [];
-    if ('paramsBytes' in request && request.paramsBytes) {
-      transfers.push(request.paramsBytes.buffer);
-    }
-    worker.postMessage(request, transfers);
+    worker.postMessage(request);
   });
 }
 
@@ -223,7 +220,18 @@ function decodeSolverResponse(bytes: Uint8Array, CpSolverResponse: ProtobufType)
   return CpSolverResponse.toObject(message, { longs: String });
 }
 
+function cloneResponse<T>(value: T): T {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 let workerBridgePreferred = Boolean(worker);
+let activeWorkerSolveId: number | null = null;
 
 function shouldUseWorkerBridge() {
   return workerBridgePreferred && Boolean(worker);
@@ -247,17 +255,26 @@ async function solveViaWorker(
   const { CpSolverResponse, SatParameters } = await protoTypesPromise;
   const paramsBytes = encodeSatParameters(params, SatParameters);
   const id = nextWorkerRequestId++;
-  const response = await postWorkerRequest<WorkerSolveResponse>({
-    type: 'solve',
-    id,
-    modelBytes,
-    paramsBytes: paramsBytes ?? undefined,
-  });
-  const decoded = decodeSolverResponse(response.bytes, CpSolverResponse);
-  return {
-    bytes: response.bytes,
-    response: decoded,
-  };
+  activeWorkerSolveId = id;
+  try {
+    const response = await postWorkerRequest<WorkerSolveResponse>({
+      type: 'solve',
+      id,
+      modelBytes,
+      paramsBytes: paramsBytes ?? undefined,
+    });
+    const bytes = new Uint8Array(response.bytes);
+    const decoded = decodeSolverResponse(bytes, CpSolverResponse);
+    const responseObject = cloneResponse(decoded);
+    return {
+      bytes,
+      response: responseObject,
+    };
+  } finally {
+    if (activeWorkerSolveId === id) {
+      activeWorkerSolveId = null;
+    }
+  }
 }
 
 async function validateViaWorker(model: CpSatModelInstance | Uint8Array) {
@@ -317,10 +334,12 @@ async function solveDirect(
     Module._free_buffer(responsePtr);
   }
 
-  const decoded = decodeSolverResponse(bytes, CpSolverResponse);
+  const safeBytes = new Uint8Array(bytes);
+  const decoded = decodeSolverResponse(safeBytes, CpSolverResponse);
+  const responseObject = cloneResponse(decoded);
   return {
-    bytes,
-    response: decoded,
+    bytes: safeBytes,
+    response: responseObject,
   };
 }
 
@@ -356,6 +375,16 @@ async function validateDirect(model: CpSatModelInstance | Uint8Array) {
   return { ok: false, message };
 }
 
+async function cancelSolve() {
+  if (worker && activeWorkerSolveId !== null) {
+    await workerReadyPromise;
+    worker.postMessage({ type: 'cancel', id: activeWorkerSolveId });
+    return;
+  }
+  const Module = await modulePromise;
+  Module.ccall('interrupt_solve', 'void', [], []);
+}
+
 export const CpSat: CpSatApi = {
   CpSatModel,
   createModel,
@@ -367,6 +396,7 @@ export const CpSat: CpSatApi = {
   loadTypes: () => protoTypesPromise,
   setWorkerBridgeEnabled: (enabled: boolean) => setWorkerBridgePreferred(enabled),
   isWorkerBridgeEnabled: () => shouldUseWorkerBridge(),
+  cancelSolve,
 };
 
 if (isBrowserMainThread) {

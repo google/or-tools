@@ -15,7 +15,12 @@ export type ValidateRequest = {
   modelBytes: Uint8Array;
 };
 
-export type WorkerRequest = SolveRequest | ValidateRequest;
+export type CancelRequest = {
+  type: 'cancel';
+  id: number;
+};
+
+export type WorkerRequest = SolveRequest | ValidateRequest | CancelRequest;
 
 export type WorkerResponse =
   | { type: 'ready' }
@@ -39,6 +44,7 @@ const moduleOptions = {
 };
 
 let moduleInstance: MainModule | null = null;
+let activeSolveId: number | null = null;
 
 const moduleReady = createCpSatModule(moduleOptions)
   .then((module) => {
@@ -150,6 +156,13 @@ workerScope.onmessage = async (event) => {
       throw new Error('Module not initialized.');
     }
 
+    if (message.type === 'cancel') {
+      if (activeSolveId !== null && activeSolveId === message.id) {
+        moduleInstance.ccall('interrupt_solve', 'void', [], []);
+      }
+      return;
+    }
+
     if (message.type === 'validate') {
       const validation = await validateModel(message.modelBytes);
       workerScope.postMessage({
@@ -162,20 +175,21 @@ workerScope.onmessage = async (event) => {
     }
 
     if (message.type === 'solve') {
+      activeSolveId = message.id;
       const bytes = await solveModel(message.modelBytes, message.paramsBytes);
-      const transfers: Transferable[] = bytes.length ? [bytes.buffer] : [];
-      workerScope.postMessage(
-        {
-          type: 'solveResult',
-          id: message.id,
-          bytes,
-        } satisfies WorkerResponse,
-        transfers,
-      );
+      workerScope.postMessage({
+        type: 'solveResult',
+        id: message.id,
+        bytes,
+      } satisfies WorkerResponse);
+      activeSolveId = null;
       return;
     }
   } catch (error) {
     console.error('[cpsat_worker] request failed', message?.type, error);
+    if (message?.type === 'solve') {
+      activeSolveId = null;
+    }
     workerScope.postMessage({
       type: 'error',
       id: message?.id ?? 0,

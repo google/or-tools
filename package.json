@@ -2,6 +2,7 @@
   "name": "ortools-cpsat-wasm",
   "private": false,
   "version": "0.1.0",
+  "type": "module",
   "main": "dist/wasm/cp_sat_api.js",
   "types": "dist/wasm/cp_sat_api.d.ts",
   "scripts": {

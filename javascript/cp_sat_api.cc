@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <mutex>
 
 #include <emscripten/bind.h>
 #include <emscripten/emscripten.h>
@@ -23,6 +24,11 @@ using operations_research::sat::SatParameters;
 using operations_research::sat::SolveCpModel;
 using operations_research::sat::wasm::kCpModelProtoSchema;
 using operations_research::sat::wasm::kSatParametersProtoSchema;
+using operations_research::sat::StopSearch;
+
+// Track the in-flight model so we can interrupt it from JS.
+std::mutex g_active_model_mutex;
+Model* g_active_model = nullptr;
 
 uint8_t* SerializeResponse(const CpSolverResponse& response, size_t* out_len) {
   if (out_len == nullptr) return nullptr;
@@ -100,13 +106,31 @@ EMSCRIPTEN_KEEPALIVE uint8_t* solve_model(const uint8_t* model_data,
   Model model;
   model.Add(NewSatParameters(sat_params));
 
+  {
+    std::lock_guard<std::mutex> lock(g_active_model_mutex);
+    g_active_model = &model;
+  }
+
   const CpSolverResponse response = SolveCpModel(model_proto, &model);
+
+  {
+    std::lock_guard<std::mutex> lock(g_active_model_mutex);
+    g_active_model = nullptr;
+  }
   return SerializeResponse(response, out_len);
 }
 
 // Free a buffer returned by solve_model() / validate_model().
 EMSCRIPTEN_KEEPALIVE void free_buffer(uint8_t* ptr) {
   std::free(ptr);
+}
+
+// Interrupt the currently running solve, if any.
+EMSCRIPTEN_KEEPALIVE void interrupt_solve() {
+  std::lock_guard<std::mutex> lock(g_active_model_mutex);
+  if (g_active_model != nullptr) {
+    StopSearch(g_active_model);
+  }
 }
 
 // Validate a CpModelProto. Returns nullptr if valid, otherwise a malloc()'d

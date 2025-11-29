@@ -287,6 +287,7 @@ const problemSelect = document.getElementById('problem-id') as HTMLSelectElement
 const breakSymCheckbox = document.getElementById('break-symmetries') as HTMLInputElement | null;
 const workersInput = document.getElementById('workers') as HTMLInputElement | null;
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
+const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
 const paramsInput = document.getElementById('params') as HTMLInputElement | null;
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
 const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
@@ -923,6 +924,9 @@ const buildColumnRows = (solution: number[], metadata: ModelMetadata): SlabRow[]
 const runExperiment = async () => {
   if (!runButton) return;
   runButton.disabled = true;
+  if (stopButton) {
+    stopButton.disabled = false;
+  }
   const solverMethod = (solverSelect?.value as SolverMethod) ?? 'sat';
   const problemId = Number.parseInt(problemSelect?.value ?? '3', 10);
   const breakSymmetries = breakSymCheckbox?.checked ?? true;
@@ -981,15 +985,37 @@ const runExperiment = async () => {
         summaryEl.textContent = `Solver ${bundle.metadata.solver} used ${rows.length} slabs.`;
       }
     } catch (error) {
-      appendStatus(`Solve failed: ${(error as Error).message}`);
+      const err = error as Error;
+      const message = err?.message ?? String(err);
+      appendStatus(`Solve failed: ${message}`);
+      if (err?.stack) {
+        appendStatus(err.stack);
+      }
+      // Surface detailed error information (message + stack) in DevTools.
+      console.error('[steel_mill_slab] solve failed:', message);
+      if (err?.stack) {
+        console.error(err.stack);
+      }
     }
   } finally {
     runButton.disabled = false;
+    if (stopButton) {
+      stopButton.disabled = true;
+    }
   }
 };
 
 if (runButton) {
   runButton.addEventListener('click', () => void runExperiment());
+}
+
+if (stopButton) {
+  stopButton.addEventListener('click', () => {
+    appendStatus('Cancellation requested.');
+    void CpSat.cancelSolve().catch((error) => {
+      appendStatus(`Cancellation failed: ${(error as Error).message}`);
+    });
+  });
 }
 
 if (solverSelect && breakSymCheckbox) {
