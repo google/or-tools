@@ -42,11 +42,14 @@ def _enclosed(delimiters: str):
 class Re:
     """Regular expression patterns used for parsing."""
 
-    STRING = f'({_enclosed('""')}|{_enclosed("''")})'
+    _SQ_STRING = _enclosed('""')
+    _DQ_STRING = _enclosed("''")
+    STRING = f"({_SQ_STRING}|{_DQ_STRING})"
     NUMBER = r"([-+]?[0-9]*(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)"
 
-    _KEYWORD_EXPR = f"(@num{_enclosed('()')})"
-    _KEYWORD_SPEC = f"@num({_enclosed('()')})"
+    _PARENTHESIZED_EXPR = _enclosed("()")
+    _KEYWORD_EXPR = f"(@num{_PARENTHESIZED_EXPR})"
+    _KEYWORD_SPEC = f"@num({_PARENTHESIZED_EXPR})"
     _SPEC_ALMOST = f"{NUMBER}(?:~{NUMBER})?"
     _SPEC_BINOP = f"(>=|<=|>|<) *{NUMBER}"
     _SPEC_BINOPS = _SPEC_BINOP + f"(?: *, *{_SPEC_BINOP})?"
