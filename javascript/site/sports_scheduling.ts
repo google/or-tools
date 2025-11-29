@@ -33,6 +33,7 @@ const teamsInput = document.getElementById('teams') as HTMLInputElement | null;
 const workerInput = document.getElementById('workers') as HTMLInputElement | null;
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
+const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
 const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
 const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
 if (workerInput) {
@@ -60,6 +61,15 @@ if (workerBridgeToggle) {
   function append(text: string) {
     if (statusEl) {
       statusEl.textContent += `${text}\n`;
+    }
+  }
+
+  function setRunning(running: boolean) {
+    if (runButton) {
+      runButton.disabled = running;
+    }
+    if (stopButton) {
+      stopButton.disabled = !running;
     }
   }
 
@@ -356,64 +366,79 @@ if (workerBridgeToggle) {
     append(`Building sports scheduling model (teams=${numTeams})…`);
     showScheduleMessage('Solving…');
 
-    let build: SchedulingBuild;
+    setRunning(true);
     try {
-      build = createSchedulingModel(numTeams);
-    } catch (err) {
-      append(`Model creation failed: ${(err as Error).message}`);
-      showScheduleMessage('Model creation failed.');
-      return;
-    }
-
-    let model: CpSatModelInstance;
-    try {
-      model = await CpSat.createModel(build.model);
-    } catch (err) {
-      append(`Model build failed: ${(err as Error).message}`);
-      showScheduleMessage('Model build failed.');
-      return;
-    }
-
-    const validation = await CpSat.validate(model);
-    if (!validation.ok) {
-      append(`Model invalid: ${validation.message}`);
-      showScheduleMessage('Model invalid.');
-      return;
-    }
-
-    const params: Record<string, unknown> = {};
-    if (workers > 0) {
-      params.num_search_workers = workers;
-    }
-    console.debug('[SportsScheduling] solve params', {
-      num_search_workers: params.num_search_workers ?? 'default',
-    });
-
-    append('Solving…');
-    try {
-      const result = await CpSat.solve(model, params);
-      if (!result.response || !statusEl) {
-        append('Solver returned no response.');
-        showScheduleMessage('Solver returned no response.');
+      let build: SchedulingBuild;
+      try {
+        build = createSchedulingModel(numTeams);
+      } catch (err) {
+        append(`Model creation failed: ${(err as Error).message}`);
+        showScheduleMessage('Model creation failed.');
         return;
       }
-      statusEl.textContent = JSON.stringify(result.response, null, 2);
-      const values = parseSolution((result.response as Record<string, unknown>).solution);
-      if (!values) {
-        showScheduleMessage('Unable to parse solver solution.');
+
+      let model: CpSatModelInstance;
+      try {
+        model = await CpSat.createModel(build.model);
+      } catch (err) {
+        append(`Model build failed: ${(err as Error).message}`);
+        showScheduleMessage('Model build failed.');
         return;
       }
-      const schedule = extractSchedule(values, build.fixtures, build.numTeams, build.numDays);
-      renderSchedule(schedule, build.numDays);
-    } catch (err) {
-      append(`Solve failed: ${(err as Error).message}`);
-      showScheduleMessage('Solve failed.');
+
+      const validation = await CpSat.validate(model);
+      if (!validation.ok) {
+        append(`Model invalid: ${validation.message}`);
+        showScheduleMessage('Model invalid.');
+        return;
+      }
+
+      const params: Record<string, unknown> = {};
+      if (workers > 0) {
+        params.num_search_workers = workers;
+      }
+      console.debug('[SportsScheduling] solve params', {
+        num_search_workers: params.num_search_workers ?? 'default',
+      });
+
+      append('Solving…');
+      try {
+        const result = await CpSat.solve(model, params);
+        if (!result.response || !statusEl) {
+          append('Solver returned no response.');
+          showScheduleMessage('Solver returned no response.');
+          return;
+        }
+        statusEl.textContent = JSON.stringify(result.response, null, 2);
+        const values = parseSolution((result.response as Record<string, unknown>).solution);
+        if (!values) {
+          showScheduleMessage('Unable to parse solver solution.');
+          return;
+        }
+        const schedule = extractSchedule(values, build.fixtures, build.numTeams, build.numDays);
+        renderSchedule(schedule, build.numDays);
+      } catch (err) {
+        append(`Solve failed: ${(err as Error).message}`);
+        showScheduleMessage('Solve failed.');
+      }
+    } finally {
+      setRunning(false);
     }
   }
 
   if (runButton) {
     runButton.addEventListener('click', () => {
       void runSportsScheduling();
+    });
+  }
+
+  if (stopButton) {
+    stopButton.disabled = true;
+    stopButton.addEventListener('click', () => {
+      append('Cancellation requested.');
+      void CpSat.cancelSolve().catch((err) => {
+        append(`Cancellation failed: ${(err as Error).message}`);
+      });
     });
   }
 

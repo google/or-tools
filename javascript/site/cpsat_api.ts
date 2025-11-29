@@ -66,7 +66,8 @@ const loadProtobuf = async (): Promise<ProtobufModule> => {
 const isBrowserMainThread = typeof window !== 'undefined' && typeof document !== 'undefined';
 const workerCapable = typeof Worker !== 'undefined';
 const workerBridgeAvailable = isBrowserMainThread && workerCapable;
-const worker = workerBridgeAvailable ? new CpSatWorker() : null;
+let worker: Worker | null = null;
+let workerReadyPromise: Promise<void> | null = null;
 const pendingWorkerRequests = new Map<
   number,
   {
@@ -76,10 +77,29 @@ const pendingWorkerRequests = new Map<
 >();
 let nextWorkerRequestId = 1;
 
-const workerReadyPromise = (() => {
-  if (!worker) return Promise.resolve();
-  return new Promise<void>((resolve, reject) => {
-    worker.onmessage = (event) => {
+function terminateWorker(reason?: string) {
+  if (!worker) return;
+  worker.terminate();
+  worker = null;
+  workerReadyPromise = null;
+  const error = new Error(reason ?? 'CP-SAT worker terminated.');
+  for (const pending of pendingWorkerRequests.values()) {
+    pending.reject(error);
+  }
+  pendingWorkerRequests.clear();
+}
+
+function ensureWorker(): Worker {
+  if (!workerBridgeAvailable) {
+    throw new Error('Worker bridge is not available.');
+  }
+  if (worker) {
+    return worker;
+  }
+  const instance = new CpSatWorker();
+  worker = instance;
+  workerReadyPromise = new Promise<void>((resolve, reject) => {
+    instance.onmessage = (event) => {
       const message = event.data as WorkerResponse;
       if (message.type === 'ready') {
         resolve();
@@ -87,11 +107,12 @@ const workerReadyPromise = (() => {
       }
       const pending = pendingWorkerRequests.get(message.id);
       if (message.type === 'error') {
+        const error = new Error(message.error);
         if (pending) {
-          pending.reject(new Error(message.error));
+          pending.reject(error);
           pendingWorkerRequests.delete(message.id);
         } else {
-          reject(new Error(message.error));
+          reject(error);
         }
         return;
       }
@@ -100,21 +121,39 @@ const workerReadyPromise = (() => {
         pending.resolve(message);
       }
     };
-    worker.onerror = (event) => {
-      reject(event.error ?? new Error(event.message || 'cpsat_worker error'));
+    instance.onerror = (event) => {
+      const error =
+        event.error ?? new Error(event.message || 'cpsat_worker error');
+      reject(error);
+      terminateWorker(error.message);
     };
   });
-})();
+  return instance;
+}
+
+async function waitForWorkerReady() {
+  if (!workerBridgeAvailable) {
+    throw new Error('Worker bridge is not available.');
+  }
+  ensureWorker();
+  if (!workerReadyPromise) {
+    throw new Error('Worker ready state unavailable.');
+  }
+  await workerReadyPromise;
+}
 
 async function postWorkerRequest<T extends WorkerResponse>(request: WorkerRequest): Promise<T> {
-  if (!worker) throw new Error('Worker bridge is not available.');
-  await workerReadyPromise;
+  if (!workerBridgeAvailable) {
+    throw new Error('Worker bridge is not available.');
+  }
+  const workerInstance = ensureWorker();
+  await waitForWorkerReady();
   return new Promise<T>((resolve, reject) => {
     pendingWorkerRequests.set(request.id, {
       resolve: (value: WorkerResponse) => resolve(value as T),
       reject,
     });
-    worker.postMessage(request);
+    workerInstance.postMessage(request);
   });
 }
 
@@ -127,8 +166,6 @@ const locateCpSatAsset = (path: string) => {
 
 const modulePromise = createCpSatModule({
   locateFile: (path: string) => locateCpSatAsset(path),
-  print: (...args: unknown[]) => console.log('[cp_sat_api]', ...args),
-  printErr: (...args: unknown[]) => console.error('[cp_sat_api]', ...args),
 });
 
 const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module) => {
@@ -230,16 +267,16 @@ function cloneResponse<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-let workerBridgePreferred = Boolean(worker);
+let workerBridgePreferred = workerBridgeAvailable;
 let activeWorkerSolveId: number | null = null;
 
 function shouldUseWorkerBridge() {
-  return workerBridgePreferred && Boolean(worker);
+  return workerBridgePreferred && workerBridgeAvailable;
 }
 
 function setWorkerBridgePreferred(enabled: boolean) {
   workerBridgePreferred = Boolean(enabled);
-  if (workerBridgePreferred && !worker) {
+  if (workerBridgePreferred && !workerBridgeAvailable) {
     console.warn('Worker bridge requested but no worker is initialized in this environment.');
   }
 }
@@ -377,8 +414,11 @@ async function validateDirect(model: CpSatModelInstance | Uint8Array) {
 
 async function cancelSolve() {
   if (worker && activeWorkerSolveId !== null) {
-    await workerReadyPromise;
-    worker.postMessage({ type: 'cancel', id: activeWorkerSolveId });
+    // Worker solves previously posted a cancel message that attempted to call interrupt_solve(),
+    // but the worker thread is busy while the solver runs. Terminate the worker to guarantee
+    // immediate cancellation and spin up a fresh instance on the next solve.
+    terminateWorker('Solve canceled by user.');
+    activeWorkerSolveId = null;
     return;
   }
   const Module = await modulePromise;

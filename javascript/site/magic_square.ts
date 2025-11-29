@@ -25,6 +25,7 @@ const workerInput = document.getElementById('workers') as HTMLInputElement | nul
 const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
+const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
 const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
 
 function applyWorkerBridgePreference(enabled: boolean) {
@@ -51,6 +52,15 @@ if (workerBridgeToggle) {
 function append(text: string) {
   if (statusEl) {
     statusEl.textContent += `${text}\n`;
+  }
+}
+
+function setRunning(running: boolean) {
+  if (runButton) {
+    runButton.disabled = running;
+  }
+  if (stopButton) {
+    stopButton.disabled = !running;
   }
 }
 
@@ -164,60 +174,75 @@ async function runMagicSquare() {
     return;
   }
 
-  const size = Math.max(1, Number.parseInt(sizeInput.value, 10) || 1);
-  const requestedWorkers = Number.parseInt(workerInput.value, 10) || 1;
-  const workers = Math.min(Math.max(1, requestedWorkers), maxWorkerCount);
-  workerInput.value = String(workers);
-  append(`Building model (size=${size})…`);
-  showSolutionMessage('Solving…');
-
-  let model: CpSatModelInstance;
+  setRunning(true);
   try {
-    model = await CpSat.createModel(buildMagicSquareModel(size));
-  } catch (err) {
-    append(`Model build failed: ${(err as Error).message}`);
-    return;
-  }
+    const size = Math.max(1, Number.parseInt(sizeInput.value, 10) || 1);
+    const requestedWorkers = Number.parseInt(workerInput.value, 10) || 1;
+    const workers = Math.min(Math.max(1, requestedWorkers), maxWorkerCount);
+    workerInput.value = String(workers);
+    append(`Building model (size=${size})…`);
+    showSolutionMessage('Solving…');
 
-  const validation = await CpSat.validate(model);
-  if (!validation.ok) {
-    append(`Model invalid: ${validation.message}`);
-    return;
-  }
-
-  const params: Record<string, unknown> = {};
-  if (workers > 0) {
-    params.num_search_workers = workers;
-  }
-  console.debug(
-    '[MagicSquare] solve params',
-    JSON.stringify({ ...params, num_search_workers: params.num_search_workers ?? 'default' }),
-  );
-
-  append('Solving…');
-  try {
-    const result = await CpSat.solve(model, params);
-    if (!result.response || !statusEl) {
-      append('Solver returned no response.');
-      showSolutionMessage('Solver returned no response.');
+    let model: CpSatModelInstance;
+    try {
+      model = await CpSat.createModel(buildMagicSquareModel(size));
+    } catch (err) {
+      append(`Model build failed: ${(err as Error).message}`);
       return;
     }
-    statusEl.textContent = JSON.stringify(result.response, null, 2);
 
-    if (!isRecord(result.response) || !Array.isArray(result.response.solution)) {
-      showSolutionMessage('No solution entries returned.');
+    const validation = await CpSat.validate(model);
+    if (!validation.ok) {
+      append(`Model invalid: ${validation.message}`);
       return;
     }
-    renderSolution(size, result.response.solution as Array<number | string>);
-  } catch (err) {
-    append(`Solve failed: ${(err as Error).message}`);
-    showSolutionMessage('Solve failed.');
+
+    const params: Record<string, unknown> = {};
+    if (workers > 0) {
+      params.num_search_workers = workers;
+    }
+    console.debug(
+      '[MagicSquare] solve params',
+      JSON.stringify({ ...params, num_search_workers: params.num_search_workers ?? 'default' }),
+    );
+
+    append('Solving…');
+    try {
+      const result = await CpSat.solve(model, params);
+      if (!result.response || !statusEl) {
+        append('Solver returned no response.');
+        showSolutionMessage('Solver returned no response.');
+        return;
+      }
+      statusEl.textContent = JSON.stringify(result.response, null, 2);
+
+      if (!isRecord(result.response) || !Array.isArray(result.response.solution)) {
+        showSolutionMessage('No solution entries returned.');
+        return;
+      }
+      renderSolution(size, result.response.solution as Array<number | string>);
+    } catch (err) {
+      append(`Solve failed: ${(err as Error).message}`);
+      showSolutionMessage('Solve failed.');
+    }
+  } finally {
+    setRunning(false);
   }
 }
 
 if (runButton) {
   runButton.addEventListener('click', () => {
     void runMagicSquare();
+  });
+}
+
+if (stopButton) {
+  stopButton.disabled = true;
+  stopButton.addEventListener('click', () => {
+    append('Cancellation requested.');
+    void CpSat.cancelSolve().catch((err) => {
+      append(`Cancellation failed: ${(err as Error).message}`);
+    });
   });
 }
 
