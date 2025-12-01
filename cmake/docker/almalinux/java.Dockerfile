@@ -1,11 +1,11 @@
 FROM ortools/cmake:almalinux_swig AS env
 
 RUN dnf -y update \
-&& dnf -y install java-11-openjdk  java-11-openjdk-devel maven \
+&& dnf -y install java-21-openjdk  java-21-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-RUN alternatives --set java /usr/lib/jvm/java-11-openjdk*.x86_64/bin/java
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk
+RUN alternatives --set java /usr/lib/jvm/java-21-openjdk/bin/java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 
 FROM env AS devel
 WORKDIR /home/project
