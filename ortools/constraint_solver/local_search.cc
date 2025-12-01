@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -4372,7 +4373,7 @@ namespace {
 // ----- NestedSolve decision wrapper -----
 
 // This decision calls a nested Solve on the given DecisionBuilder in its
-// left branch; does nothing in the left branch.
+// left branch; does nothing in the right branch.
 // The state of the decision corresponds to the result of the nested Solve:
 // DECISION_PENDING - Nested Solve not called yet
 // DECISION_FAILED  - Nested Solve failed
@@ -4383,9 +4384,9 @@ class NestedSolveDecision : public Decision {
   // This enum is used internally to tag states in the local search tree.
   enum StateType { DECISION_PENDING, DECISION_FAILED, DECISION_FOUND };
 
-  NestedSolveDecision(DecisionBuilder* db, bool restore,
+  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore,
                       const std::vector<SearchMonitor*>& monitors);
-  NestedSolveDecision(DecisionBuilder* db, bool restore);
+  NestedSolveDecision(DecisionBuilder* absl_nonnull db, bool restore);
   ~NestedSolveDecision() override {}
   void Apply(Solver* solver) override;
   void Refute(Solver* solver) override;
@@ -4395,25 +4396,21 @@ class NestedSolveDecision : public Decision {
  private:
   DecisionBuilder* const db_;
   const bool restore_;
-  std::vector<SearchMonitor*> monitors_;
+  const std::vector<SearchMonitor*> monitors_;
   int state_;
 };
 
 NestedSolveDecision::NestedSolveDecision(
-    DecisionBuilder* const db, bool restore,
+    DecisionBuilder* absl_nonnull db, bool restore,
     const std::vector<SearchMonitor*>& monitors)
     : db_(db),
       restore_(restore),
       monitors_(monitors),
-      state_(DECISION_PENDING) {
-  CHECK(nullptr != db);
-}
+      state_(DECISION_PENDING) {}
 
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
+NestedSolveDecision::NestedSolveDecision(DecisionBuilder* absl_nonnull db,
                                          bool restore)
-    : db_(db), restore_(restore), state_(DECISION_PENDING) {
-  CHECK(nullptr != db);
-}
+    : NestedSolveDecision(db, restore, {}) {}
 
 void NestedSolveDecision::Apply(Solver* const solver) {
   CHECK(nullptr != solver);
