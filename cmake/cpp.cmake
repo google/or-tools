@@ -219,13 +219,11 @@ function(ortools_cxx_test)
       INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
   endif()
 
-  if(BUILD_TESTING)
-    add_test(
-      NAME cxx_${TEST_NAME}
-      COMMAND ${TEST_NAME}
-      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    )
-  endif()
+  add_test(
+    NAME cxx_${TEST_NAME}
+    COMMAND ${TEST_NAME}
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
   message(STATUS "Configuring test ${TEST_NAME} ...DONE")
 endfunction()
 
