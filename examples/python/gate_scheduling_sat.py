@@ -24,9 +24,8 @@ The objective is to minimize the max end time of all jobs.
 """
 
 from absl import app
-
-from ortools.sat.colab import visualization
 from ortools.sat.python import cp_model
+from ortools.sat.colab import visualization
 
 
 def main(_) -> None:

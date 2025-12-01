@@ -1,0 +1,2 @@
+RUN: $(horse_jumping_show_py3)
+CHECK: "Day 3:  C_1.60m_Grand_Prix"

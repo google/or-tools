@@ -1,0 +1,1 @@
+RUN: $(integer_programming_py3)

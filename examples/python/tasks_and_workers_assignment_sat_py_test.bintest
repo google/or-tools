@@ -1,0 +1,1 @@
+RUN: $(tasks_and_workers_assignment_sat_py3)

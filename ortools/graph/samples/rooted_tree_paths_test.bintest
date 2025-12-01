@@ -1,0 +1,2 @@
+RUN: $(rooted_tree_paths)
+CHECK: "0 -> 4 [0, 1, 4]"

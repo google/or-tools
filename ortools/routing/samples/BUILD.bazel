@@ -15,7 +15,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -60,11 +60,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cvrptw_test",
     size = "large",
-    args = ["--vrp_use_deterministic_random_seed"],
-    binary = ":cvrptw",
+    srcs = ["cvrptw_test.bintest"],
+    named_data = {"cvrptw": ":cvrptw"},
 )
 
 cc_binary(
@@ -87,19 +87,20 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cvrp_disjoint_tw_test",
     size = "large",
-    args = ["--vrp_use_deterministic_random_seed"],
-    binary = ":cvrp_disjoint_tw",
+    srcs = ["cvrp_disjoint_tw_test.bintest"],
+    named_data = {"cvrp_disjoint_tw": ":cvrp_disjoint_tw"},
 )
 
 # This test is temporarily down because the time dependent functionality is
 # being revised.
-# run_binary_test(
+# bintest(
 #     name = "cvrptw_with_time_dependent_costs_test",
+#     srcs = ["cvrptw_with_time_dependent_costs_test.bintest"],
 #     size = "large",
-#     binary = ":cvrptw_with_time_dependent_costs",
+#     named_data = {"cvrptw_with_time_dependent_costs": ":cvrptw_with_time_dependent_costs"},
 # )
 
 cc_binary(
@@ -144,11 +145,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cvrptw_with_resources_test",
     size = "large",
-    args = ["--vrp_use_deterministic_random_seed"],
-    binary = ":cvrptw_with_resources",
+    srcs = ["cvrptw_with_resources_test.bintest"],
+    named_data = {"cvrptw_with_resources": ":cvrptw_with_resources"},
 )
 
 cc_binary(
@@ -172,11 +173,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cvrptw_with_stop_times_and_resources_test",
     size = "large",
-    args = ["--vrp_use_deterministic_random_seed"],
-    binary = ":cvrptw_with_stop_times_and_resources",
+    srcs = ["cvrptw_with_stop_times_and_resources_test.bintest"],
+    named_data = {"cvrptw_with_stop_times_and_resources": ":cvrptw_with_stop_times_and_resources"},
 )
 
 cc_binary(
@@ -199,14 +200,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "cvrptw_with_refueling_test",
     size = "large",
-    args = [
-        "--vrp_use_deterministic_random_seed",
-        "--cp_random_seed=144",
-    ],
-    binary = ":cvrptw_with_refueling",
+    srcs = ["cvrptw_with_refueling_test.bintest"],
+    named_data = {"cvrptw_with_refueling": ":cvrptw_with_refueling"},
 )
 
 cc_test(

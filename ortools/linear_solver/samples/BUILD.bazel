@@ -15,7 +15,7 @@ load("@pip_deps//:requirements.bzl", "requirement")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -224,9 +224,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentMbTest",
-    binary = ":AssignmentMb",
+    srcs = [":AssignmentMbTest.bintest"],
+    named_data = {"AssignmentMb": ":AssignmentMb"},
 )
 
 java_binary(
@@ -240,9 +241,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "BinPackingMbTest",
-    binary = ":BinPackingMb",
+    srcs = [":BinPackingMbTest.bintest"],
+    named_data = {"BinPackingMb": ":BinPackingMb"},
 )
 
 java_binary(
@@ -256,9 +258,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "CloneModelMbTest",
-    binary = ":CloneModelMb",
+    srcs = [":CloneModelMbTest.bintest"],
+    named_data = {"CloneModelMb": ":CloneModelMb"},
 )
 
 java_binary(
@@ -272,9 +275,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SimpleLpProgramMbTest",
-    binary = ":SimpleLpProgramMb",
+    srcs = [":SimpleLpProgramMbTest.bintest"],
+    named_data = {"SimpleLpProgramMb": ":SimpleLpProgramMb"},
 )
 
 java_binary(
@@ -288,7 +292,8 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SimpleMipProgramMbTest",
-    binary = ":SimpleMipProgramMb",
+    srcs = [":SimpleMipProgramMbTest.bintest"],
+    named_data = {"SimpleMipProgramMb": ":SimpleMipProgramMb"},
 )

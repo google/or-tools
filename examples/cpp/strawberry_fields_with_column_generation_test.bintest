@@ -1,0 +1,1 @@
+RUN: $(strawberry_fields_with_column_generation) --colgen_instance=4

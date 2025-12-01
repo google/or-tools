@@ -1,0 +1,1 @@
+RUN: $(nqueens_sat_py3)

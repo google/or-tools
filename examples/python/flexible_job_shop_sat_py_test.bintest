@@ -1,0 +1,1 @@
+RUN: $(flexible_job_shop_sat_py3)

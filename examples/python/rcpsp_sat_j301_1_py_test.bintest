@@ -1,0 +1,2 @@
+RUN: $(rcpsp_sat_py3) --input=$(j301_1.sm)
+CHECK: "objective: 43"

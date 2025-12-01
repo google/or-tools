@@ -36,10 +36,3 @@ compile_pip_requirements(
 )
 
 package(default_visibility = ["//visibility:public"])
-
-filegroup(
-    name = "test_runner_template",
-    testonly = 1,
-    srcs = ["test_runner_template.sh"],
-    visibility = ["//visibility:public"],
-)

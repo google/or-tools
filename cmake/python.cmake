@@ -1020,3 +1020,44 @@ if(NOT EXAMPLE_FILE_NAME)
   endif()
   message(STATUS "Configuring example ${EXAMPLE_FILE_NAME} ...DONE")
 endfunction()
+
+# add_python_binary()
+# CMake function to generate a shell wrapper to execute a Python program.
+# Parameters:
+#  NAME: the target name
+#  FILE: the Python filename
+# e.g.:
+# add_python_binary(
+#   NAME
+#     foo_bin
+#   FILE
+#     ${PROJECT_SOURCE_DIR}/examples/foo/bar.py
+# )
+function(add_python_binary)
+  set(options "")
+  set(oneValueArgs NAME;FILE)
+  set(multiValueArgs "")
+  cmake_parse_arguments(PY_BINARY
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  message(STATUS "Configuring python binary ${PY_BINARY_NAME} ...")
+  if(NOT PY_BINARY_NAME)
+    message(FATAL_ERROR "no NAME provided for python binary")
+  endif()
+  if(NOT PY_BINARY_FILE)
+    message(FATAL_ERROR "no FILE provided for python binary")
+  endif()
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${PY_BINARY_NAME}" "#!/usr/bin/env sh\n${VENV_Python3_EXECUTABLE} ${PY_BINARY_FILE} \"$@\"\n")
+  file(CHMOD "${CMAKE_CURRENT_BINARY_DIR}/${PY_BINARY_NAME}"
+      FILE_PERMISSIONS
+          OWNER_READ OWNER_EXECUTE
+          GROUP_READ GROUP_EXECUTE
+          WORLD_READ WORLD_EXECUTE
+  )
+  add_executable("${PY_BINARY_NAME}" IMPORTED)
+  set_target_properties("${PY_BINARY_NAME}" PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/${PY_BINARY_NAME}")
+  message(STATUS "Configuring python binary ${PY_BINARY_NAME} ...DONE")
+endfunction()
