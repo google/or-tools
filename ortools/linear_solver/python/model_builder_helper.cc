@@ -310,7 +310,7 @@ std::shared_ptr<LinearExpr> WeightedSumArguments(
 }
 
 #if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
-bool check_unique_temporary(PyObject* op) {
+bool was_optimized_in_function_call(PyObject* op) {
   PyFrameObject* frame = PyEval_GetFrame();
   if (frame == NULL) {
     return false;
@@ -330,12 +330,24 @@ bool check_unique_temporary(PyObject* op) {
   return false;
 }
 
+bool IsOnwedExclusivelyThroughPyBind11(PyObject* op) {
+#if !defined(Py_GIL_DISABLED)
+  return Py_REFCNT(ob) == 3;
+#else
+  // NOTE: the entire ob_ref_shared field must be zero, including flags, to
+  // ensure that other threads cannot concurrently create new references to
+  // this object.
+  return (_Py_IsOwnedByCurrentThread(ob) &&
+          _Py_atomic_load_uint32_relaxed(&ob->ob_ref_local) == 3 &&
+          _Py_atomic_load_ssize_relaxed(&ob->ob_ref_shared) == 0);
+#endif
+}
+
 template <class T>
 bool IsFree(std::shared_ptr<T> expr) {
-  PyObject* lhs = py::cast(expr).ptr();
-  const int num_uses = Py_REFCNT(lhs);
-  const bool is_referenced_in_caller_frame = check_unique_temporary(lhs);
-  return num_uses == 3 && !is_referenced_in_caller_frame;
+  PyObject* op = py::cast(expr).ptr();
+  return IsOnwedExclusivelyThroughPyBind11(op) &&
+         !was_optimized_in_function_call(op);
 }
 #else
 template <class T>
