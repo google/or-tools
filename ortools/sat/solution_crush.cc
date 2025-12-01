@@ -245,7 +245,7 @@ void SolutionCrush::SetOrUpdateVarToDomain(
     const int64_t old_value = GetVarValue(var);
     if (domain.Contains(old_value)) return;
     int64_t new_value = old_value;
-    if (push_down_when_repairing_hints) {
+    if (push_down_when_repairing_hints && old_value >= domain.Min()) {
       new_value = domain.ValueAtOrBefore(old_value);
     } else {
       new_value = domain.ValueAtOrAfter(old_value);
