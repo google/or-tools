@@ -1,8 +1,8 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 96aefab..760b0f8 100644
+index 9511442..58a8a58 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -27,6 +27,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
+@@ -31,6 +31,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
  set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
  include(CPack)
  
@@ -13,7 +13,7 @@ index 96aefab..760b0f8 100644
  option(ZLIB "Use ZLIB" ON)
  option(GMP "Use GMP" ON)
  option(EMSCRIPTEN_HTML "Emscripten HTML output" OFF)
-@@ -43,11 +47,17 @@ option(SANITIZE_THREAD "should the thread sanitizer be enabled in debug mode if
+@@ -44,11 +48,17 @@ option(SANITIZE "should sanitizers be enabled if available" OFF)
  option(COVERAGE "enable coverage support" OFF)
  option(PAPILO "should papilo library be linked" ON)
  
@@ -34,12 +34,7 @@ index 96aefab..760b0f8 100644
  
  # for colorized output
  if(NOT WIN32)
-@@ -65,10 +75,12 @@ if(NOT CMAKE_BUILD_TYPE)
- endif()
- 
- # set the correct rpath for OS X
--set(CMAKE_MACOSX_RPATH ON)
-+set(CMAKE_MACOSX_RPATH TRUE)
+@@ -70,6 +80,8 @@ set(CMAKE_MACOSX_RPATH ON)
  
  # use C++14 standard
  set(CMAKE_CXX_STANDARD 14)
@@ -48,7 +43,7 @@ index 96aefab..760b0f8 100644
  
  # set function visibility default to hidden
  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-@@ -123,12 +135,11 @@ if(COVERAGE)
+@@ -124,12 +136,11 @@ if(COVERAGE)
  endif()
  
  if(ZLIB)
@@ -66,7 +61,7 @@ index 96aefab..760b0f8 100644
  endif()
  
  if(GMP)
-@@ -170,39 +181,24 @@ else()
+@@ -171,42 +182,24 @@ else()
      set(SOPLEX_WITH_PAPILO off)
  endif()
  
@@ -76,7 +71,6 @@ index 96aefab..760b0f8 100644
 -    find_package(Boost ${BOOST_MINIMUM_VERSION}) # PaPILO requires at least Boost 1.65 (on mac 1.72)
 -    if(Boost_FOUND)
 -        set(SOPLEX_WITH_BOOST on)
--        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 -        if(NOT Boost_VERSION_MACRO)
 -           set(Boost_VERSION_MACRO ${Boost_VERSION})
 -        endif()
@@ -89,11 +83,15 @@ index 96aefab..760b0f8 100644
 -                       Found Boost version is ${Boost_VERSION_STRING}.")
 -            endif()
 -        endif()
+-        if(Boost_DIR)
+-            message(STATUS "Found Boost: ${Boost_DIR}")
+-        endif()
+-        set(libs ${libs} Boost::boost)
 -        if(MPFR) # MPFR is used within boost multiprecision, so using it without Boost does not make sense
 -            find_package(MPFR)
 -        endif()
 -        if(MPFR_FOUND)
--            message(STATUS "SoPlex with Boost MPFR libraries")
+-            message(STATUS "SoPlex with Boost MPFR ${MPFR_VERSION} libraries")
 -            set(SOPLEX_WITH_MPFR on)
 -            include_directories(${MPFR_INCLUDE_DIRS})
 -            set(libs ${libs} ${MPFR_LIBRARIES})
@@ -123,7 +121,7 @@ index 96aefab..760b0f8 100644
  endif()
  
  # disable fused floating point contraction to enhance reproducibility across compilers and architectures
-@@ -244,7 +240,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/soplex/config.h.in ${PROJECT_BINA
+@@ -251,7 +244,7 @@ set(EXTRA_CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
  configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
  
  add_subdirectory(src)
@@ -136,18 +134,18 @@ index 96aefab..760b0f8 100644
 +  add_subdirectory(check)
 +endif()
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 16ffb17..b5a0b56 100644
+index d57c5fe..11f914a 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -193,25 +193,27 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
+@@ -193,28 +193,32 @@ target_link_libraries(libsoplexshared libsoplex ${libs})
  set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
  
  # create soplex binary using library without pic
 -add_executable(soplex soplexmain.cpp)
--target_link_libraries(soplex LINK_PUBLIC libsoplex ${Boost_LIBRARIES})
+-target_link_libraries(soplex LINK_PUBLIC libsoplex)
 +if(SOPLEX_SOPLEX)
-+  add_executable(soplex EXCLUDE_FROM_ALL soplexmain.cpp)
-+  target_link_libraries(soplex PRIVATE libsoplex ${Boost_LIBRARIES})
++  add_executable(soplex soplexmain.cpp)
++  target_link_libraries(soplex LINK_PUBLIC libsoplex)
  
 -if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
 +  if(EMSCRIPTEN AND EMSCRIPTEN_HTML)
@@ -159,40 +157,58 @@ index 16ffb17..b5a0b56 100644
 +  # set the install rpath to the installed destination
 +  set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
  
--if(CMAKE_BUILD_TYPE EQUAL "Debug")
--   find_package(Sanitizers)
--   add_sanitizers(soplex)
-+  if(CMAKE_BUILD_TYPE EQUAL "Debug")
-+    find_package(Sanitizers)
-+    add_sanitizers(soplex)
-+  endif()
- endif()
- 
- add_executable(example EXCLUDE_FROM_ALL example.cpp)
- target_link_libraries(example libsoplex)
+-if(SANITIZE)
++  if(SANITIZE)
+     find_package(Sanitizers)
+     add_sanitizers(libsoplex)
+     add_sanitizers(libsoplex-pic)
+     add_sanitizers(libsoplexshared)
+     add_sanitizers(soplex)
+     get_target_property(CONF_SANITIZE_FLAGS libsoplex SANITIZE_FLAGS)
+-endif(SANITIZE)
+-
+-add_executable(example EXCLUDE_FROM_ALL example.cpp)
+-target_link_libraries(example libsoplex)
++  endif(SANITIZE)
++endif()
  
 -# set the install rpath to the installed destination
 -set_target_properties(soplex PROPERTIES INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
--
++if(SOPLEX_EXAMPLE)
++  add_executable(example EXCLUDE_FROM_ALL example.cpp)
++  target_link_libraries(example libsoplex)
++endif()
+ 
  # install the header files of soplex
  install(FILES ${headers} ${PROJECT_BINARY_DIR}/soplex/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/soplex)
- install(FILES soplex.h soplex.hpp soplex_interface.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-@@ -237,15 +239,23 @@ install(FILES
-   DESTINATION include/soplex/external/zstr)
+@@ -243,14 +247,23 @@ install(FILES
+ install(FILES ${PROJECT_SOURCE_DIR}/src/soplex/external/zstr/License.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/soplex/zstr)
  
  # install the binary and the library to appropriate lcoations and add them to an export group
 -install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-targets
 +if(SOPLEX_SOPLEX)
-+  install(TARGETS soplex
-+    EXPORT soplex-targets
++  install(TARGETS soplex EXPORT soplex-targets
 +    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
++
++  if(MSVC)
++    install(FILES $<TARGET_PDB_FILE:soplex> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
++  endif()
 +endif()
 +
 +install(TARGETS libsoplex libsoplex-pic libsoplexshared EXPORT soplex-targets
- 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
- 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
- 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
- 	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ if(MSVC)
+-    install(FILES $<TARGET_PDB_FILE:libsoplexshared> $<TARGET_PDB_FILE:soplex> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
++    install(FILES $<TARGET_PDB_FILE:libsoplexshared> DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+ endif()
+ 
+ # install license files of soplex and fmt
+@@ -258,8 +271,10 @@ install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}
+ install(FILES ${PROJECT_SOURCE_DIR}/src/soplex/external/fmt/LICENSE.rst DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/soplex/fmt)
  
  # Add library targets to the build-tree export set
 -export(TARGETS libsoplex libsoplex-pic libsoplexshared
