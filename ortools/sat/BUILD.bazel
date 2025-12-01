@@ -4382,6 +4382,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:path",
+        "//ortools/base:zipfile",
         "//ortools/util:file_util",
         "//ortools/util:logging",
         "//ortools/util:sigint",

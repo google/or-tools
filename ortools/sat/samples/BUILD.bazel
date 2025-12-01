@@ -879,6 +879,13 @@ cc_test(
     ],
 )
 
+py_test(
+    name = "soft_constraints_sat_py3",
+    srcs = ["soft_constraints_sat.py"],
+    main = "soft_constraints_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
+
 go_binary(
     name = "solution_hinting_sample_sat_go",
     srcs = ["solution_hinting_sample_sat.go"],
