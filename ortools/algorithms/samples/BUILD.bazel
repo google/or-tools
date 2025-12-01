@@ -14,7 +14,7 @@
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -65,7 +65,8 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "KnapsackTest",
-    binary = ":Knapsack",
+    srcs = [":KnapsackTest.bintest"],
+    named_data = {"Knapsack": ":Knapsack"},
 )

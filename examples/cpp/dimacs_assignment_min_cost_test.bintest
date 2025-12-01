@@ -1,0 +1,2 @@
+RUN: $(dimacs_assignment) $(dimacs_example.txt) 2>&1
+CHECK: "Cost of optimum assignment: 84"

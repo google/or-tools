@@ -1,0 +1,1 @@
+RUN: $(rcpsp_sat_py3) --input=$(testset_mm30_psp3.sch) --params=max_time_in_seconds:8.0

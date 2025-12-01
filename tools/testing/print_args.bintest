@@ -1,0 +1,36 @@
+# This is a test script for the "binary testing" framework.
+# Check `README.md` for more details.
+
+# In this example, the build rule attribute 'named_data' contains an entry for
+# 'print_args' that refers to a 'print_args' file. This binary prints "Hello world!"
+# on the first line and copies all the provided arguments on individual lines.
+
+# [START program]
+# Running the binary with no argument prints "Hello world!"
+RUN: $(print_args)
+CHECK: "Hello world!"
+
+# Running the binary with arguments also prints the arguments verbatim.
+RUN: $(print_args) --value=0.99999999
+CHECK: "Hello world!" "--value=@num(1)"
+
+RUN: $(print_args) a=1 b=54.7 c=12
+CHECK: "a=@num(>0)" "b=@num(55~1)" "c=@num(>10, <15)"
+
+# Passing a named variable should be expanded, here we pass the binary path to
+# itself.
+RUN: $(print_args) --input=$(print_args)
+CHECK: "print_args"
+
+# Passing quoted strings
+RUN: $(print_args) "Double quoted" 'Single quoted'
+CHECK: "Hello world!" "Double quoted" "Single quoted"
+
+# Capturing stderr
+RUN: $(print_args) --stderr "written to stderr" 2>&1
+CHECK: "written to stderr"
+
+# Expanding side data file
+RUN: $(print_args) --file=$(data_file)
+CHECK: "This file contains side data."
+# [END program]

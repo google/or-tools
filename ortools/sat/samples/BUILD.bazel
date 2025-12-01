@@ -16,7 +16,7 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_go//go:def.bzl", "go_binary")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 py_test(
     name = "all_different_except_zero_sample_sat_py3",
@@ -1053,9 +1053,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentGroupsSatTest",
-    binary = ":AssignmentGroupsSat",
+    srcs = ["AssignmentGroupsSatTest.bintest"],
+    named_data = {"AssignmentGroupsSat": ":AssignmentGroupsSat"},
 )
 
 java_binary(
@@ -1069,9 +1070,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentSatTest",
-    binary = ":AssignmentSat",
+    srcs = ["AssignmentSatTest.bintest"],
+    named_data = {"AssignmentSat": ":AssignmentSat"},
 )
 
 java_binary(
@@ -1085,9 +1087,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentTaskSizesSatTest",
-    binary = ":AssignmentTaskSizesSat",
+    srcs = ["AssignmentTaskSizesSatTest.bintest"],
+    named_data = {"AssignmentTaskSizesSat": ":AssignmentTaskSizesSat"},
 )
 
 java_binary(
@@ -1101,9 +1104,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentTeamsSatTest",
-    binary = ":AssignmentTeamsSat",
+    srcs = ["AssignmentTeamsSatTest.bintest"],
+    named_data = {"AssignmentTeamsSat": ":AssignmentTeamsSat"},
 )
 
 java_binary(
@@ -1117,9 +1121,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssumptionsSampleSatTest",
-    binary = ":AssumptionsSampleSat",
+    srcs = ["AssumptionsSampleSatTest.bintest"],
+    named_data = {"AssumptionsSampleSat": ":AssumptionsSampleSat"},
 )
 
 java_binary(
@@ -1133,9 +1138,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "BinPackingProblemSatTest",
-    binary = ":BinPackingProblemSat",
+    srcs = ["BinPackingProblemSatTest.bintest"],
+    named_data = {"BinPackingProblemSat": ":BinPackingProblemSat"},
 )
 
 java_binary(
@@ -1148,9 +1154,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "BoolOrSampleSatTest",
-    binary = ":BoolOrSampleSat",
+    srcs = ["BoolOrSampleSatTest.bintest"],
+    named_data = {"BoolOrSampleSat": ":BoolOrSampleSat"},
 )
 
 java_binary(
@@ -1165,9 +1172,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "ChannelingSampleSatTest",
-    binary = ":ChannelingSampleSat",
+    srcs = ["ChannelingSampleSatTest.bintest"],
+    named_data = {"ChannelingSampleSat": ":ChannelingSampleSat"},
 )
 
 java_binary(
@@ -1181,9 +1189,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "CloneModelSampleSatTest",
-    binary = ":CloneModelSampleSat",
+    srcs = ["CloneModelSampleSatTest.bintest"],
+    named_data = {"CloneModelSampleSat": ":CloneModelSampleSat"},
 )
 
 java_binary(
@@ -1197,9 +1206,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "CpIsFunSatTest",
-    binary = ":CpIsFunSat",
+    srcs = ["CpIsFunSatTest.bintest"],
+    named_data = {"CpIsFunSat": ":CpIsFunSat"},
 )
 
 java_binary(
@@ -1213,9 +1223,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "CpSatExampleTest",
-    binary = ":CpSatExample",
+    srcs = ["CpSatExampleTest.bintest"],
+    named_data = {"CpSatExample": ":CpSatExample"},
 )
 
 java_binary(
@@ -1230,9 +1241,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "EarlinessTardinessCostSampleSatTest",
-    binary = ":EarlinessTardinessCostSampleSat",
+    srcs = ["EarlinessTardinessCostSampleSatTest.bintest"],
+    named_data = {"EarlinessTardinessCostSampleSat": ":EarlinessTardinessCostSampleSat"},
 )
 
 java_binary(
@@ -1245,9 +1257,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "IntervalSampleSatTest",
-    binary = ":IntervalSampleSat",
+    srcs = ["IntervalSampleSatTest.bintest"],
+    named_data = {"IntervalSampleSat": ":IntervalSampleSat"},
 )
 
 java_binary(
@@ -1260,9 +1273,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "LiteralSampleSatTest",
-    binary = ":LiteralSampleSat",
+    srcs = ["LiteralSampleSatTest.bintest"],
+    named_data = {"LiteralSampleSat": ":LiteralSampleSat"},
 )
 
 java_binary(
@@ -1276,9 +1290,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "MinimalJobshopSatTest",
-    binary = ":MinimalJobshopSat",
+    srcs = ["MinimalJobshopSatTest.bintest"],
+    named_data = {"MinimalJobshopSat": ":MinimalJobshopSat"},
 )
 
 java_binary(
@@ -1292,9 +1307,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "MultipleKnapsackSatTest",
-    binary = ":MultipleKnapsackSat",
+    srcs = ["MultipleKnapsackSatTest.bintest"],
+    named_data = {"MultipleKnapsackSat": ":MultipleKnapsackSat"},
 )
 
 java_binary(
@@ -1308,9 +1324,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "NQueensSatTest",
-    binary = ":NQueensSat",
+    srcs = ["NQueensSatTest.bintest"],
+    named_data = {"NQueensSat": ":NQueensSat"},
 )
 
 java_binary(
@@ -1324,9 +1341,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "NoOverlapSampleSatTest",
-    binary = ":NoOverlapSampleSat",
+    srcs = ["NoOverlapSampleSatTest.bintest"],
+    named_data = {"NoOverlapSampleSat": ":NoOverlapSampleSat"},
 )
 
 java_binary(
@@ -1340,9 +1358,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "NonLinearSatTest",
-    binary = ":NonLinearSat",
+    srcs = ["NonLinearSatTest.bintest"],
+    named_data = {"NonLinearSat": ":NonLinearSat"},
 )
 
 java_binary(
@@ -1356,9 +1375,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "NursesSatTest",
-    binary = ":NursesSat",
+    srcs = ["NursesSatTest.bintest"],
+    named_data = {"NursesSat": ":NursesSat"},
 )
 
 java_binary(
@@ -1371,9 +1391,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "OptionalIntervalSampleSatTest",
-    binary = ":OptionalIntervalSampleSat",
+    srcs = ["OptionalIntervalSampleSatTest.bintest"],
+    named_data = {"OptionalIntervalSampleSat": ":OptionalIntervalSampleSat"},
 )
 
 java_binary(
@@ -1387,9 +1408,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "RabbitsAndPheasantsSatTest",
-    binary = ":RabbitsAndPheasantsSat",
+    srcs = ["RabbitsAndPheasantsSatTest.bintest"],
+    named_data = {"RabbitsAndPheasantsSat": ":RabbitsAndPheasantsSat"},
 )
 
 java_binary(
@@ -1403,9 +1425,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "RankingSampleSatTest",
-    binary = ":RankingSampleSat",
+    srcs = ["RankingSampleSatTest.bintest"],
+    named_data = {"RankingSampleSat": ":RankingSampleSat"},
 )
 
 java_binary(
@@ -1418,9 +1441,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "ReifiedSampleSatTest",
-    binary = ":ReifiedSampleSat",
+    srcs = ["ReifiedSampleSatTest.bintest"],
+    named_data = {"ReifiedSampleSat": ":ReifiedSampleSat"},
 )
 
 java_binary(
@@ -1434,9 +1458,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "ScheduleRequestsSatTest",
-    binary = ":ScheduleRequestsSat",
+    srcs = ["ScheduleRequestsSatTest.bintest"],
+    named_data = {"ScheduleRequestsSat": ":ScheduleRequestsSat"},
 )
 
 java_binary(
@@ -1450,9 +1475,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SearchForAllSolutionsSampleSatTest",
-    binary = ":SearchForAllSolutionsSampleSat",
+    srcs = ["SearchForAllSolutionsSampleSatTest.bintest"],
+    named_data = {"SearchForAllSolutionsSampleSat": ":SearchForAllSolutionsSampleSat"},
 )
 
 java_binary(
@@ -1466,9 +1492,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SimpleSatProgramTest",
-    binary = ":SimpleSatProgram",
+    srcs = ["SimpleSatProgramTest.bintest"],
+    named_data = {"SimpleSatProgram": ":SimpleSatProgram"},
 )
 
 java_binary(
@@ -1482,9 +1509,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SolutionHintingSampleSatTest",
-    binary = ":SolutionHintingSampleSat",
+    srcs = ["SolutionHintingSampleSatTest.bintest"],
+    named_data = {"SolutionHintingSampleSat": ":SolutionHintingSampleSat"},
 )
 
 java_binary(
@@ -1498,9 +1526,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SolveAndPrintIntermediateSolutionsSampleSatTest",
-    binary = ":SolveAndPrintIntermediateSolutionsSampleSat",
+    srcs = ["SolveAndPrintIntermediateSolutionsSampleSatTest.bintest"],
+    named_data = {"SolveAndPrintIntermediateSolutionsSampleSat": ":SolveAndPrintIntermediateSolutionsSampleSat"},
 )
 
 java_binary(
@@ -1514,9 +1543,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SolveWithTimeLimitSampleSatTest",
-    binary = ":SolveWithTimeLimitSampleSat",
+    srcs = ["SolveWithTimeLimitSampleSatTest.bintest"],
+    named_data = {"SolveWithTimeLimitSampleSat": ":SolveWithTimeLimitSampleSat"},
 )
 
 java_binary(
@@ -1532,9 +1562,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "StepFunctionSampleSatTest",
-    binary = ":StepFunctionSampleSat",
+    srcs = ["StepFunctionSampleSatTest.bintest"],
+    named_data = {"StepFunctionSampleSat": ":StepFunctionSampleSat"},
 )
 
 java_binary(
@@ -1548,7 +1579,8 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "StopAfterNSolutionsSampleSatTest",
-    binary = ":StopAfterNSolutionsSampleSat",
+    srcs = ["StopAfterNSolutionsSampleSatTest.bintest"],
+    named_data = {"StopAfterNSolutionsSampleSat": ":StopAfterNSolutionsSampleSat"},
 )

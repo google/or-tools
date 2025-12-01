@@ -13,7 +13,7 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 # Description:
 # C++ examples for operations_research.
@@ -44,15 +44,61 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "binpacking_2d_sat_class01_instance2_test",
     size = "medium",
-    args = [
-        "--input $(rootpath //ortools/packing/testdata:Class_01.2bp)",
-        "--instance 2",
+    srcs = [":binpacking_2d_sat_class01_instance2_test.bintest"],
+    named_data = {
+        "binpacking_2d_sat": ":binpacking_2d_sat",
+        "Class_01.2bp": "//ortools/packing/testdata:Class_01.2bp",
+    },
+)
+
+cc_library(
+    name = "cgc",
+    srcs = ["cgc.cc"],
+    hdrs = [
+        "cgc.h",
+        "cgc_data.h",
     ],
-    binary = ":binpacking_2d_sat",
-    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/constraint_solver:cp",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+        "@abseil-cpp//absl/types:span",
+        "@re2",
+    ],
+)
+
+cc_binary(
+    name = "cgc_main",
+    srcs = ["cgc_main.cc"],
+    deps = [
+        ":cgc",
+        "//ortools/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/time",
+    ],
+)
+
+bintest(
+    name = "cgc_test_solution",
+    size = "small",
+    srcs = [":cgc_test_solution.bintest"],
+    named_data = {
+        "cgc_main": ":cgc_main",
+        "1.in": "testdata/cgc/1.in",
+        "2.in": "testdata/cgc/2.in",
+        "3.in": "testdata/cgc/3.in",
+        "cgcut1.in": "testdata/cgc/cgcut1.in",
+        "cgcut2.in": "testdata/cgc/cgcut2.in",
+        "cgcut3.in": "testdata/cgc/cgcut3.in",
+    },
 )
 
 cc_binary(
@@ -67,10 +113,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "constraint_programming_cp_test",
     size = "small",
-    binary = ":constraint_programming_cp",
+    srcs = [":constraint_programming_cp_test.bintest"],
+    named_data = {"constraint_programming_cp": ":constraint_programming_cp"},
 )
 
 cc_binary(
@@ -91,37 +138,25 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "costas_array_sat_model1_test",
     size = "medium",
-    args = [
-        "--minsize=6",
-        "--maxsize=6",
-        "--model=1",
-    ],
-    binary = ":costas_array_sat",
+    srcs = [":costas_array_sat_model1_test.bintest"],
+    named_data = {"costas_array_sat": ":costas_array_sat"},
 )
 
-run_binary_test(
+bintest(
     name = "costas_array_sat_model2_test",
     size = "medium",
-    args = [
-        "--minsize=6",
-        "--maxsize=6",
-        "--model=2",
-    ],
-    binary = ":costas_array_sat",
+    srcs = [":costas_array_sat_model2_test.bintest"],
+    named_data = {"costas_array_sat": ":costas_array_sat"},
 )
 
-run_binary_test(
+bintest(
     name = "costas_array_sat_model3_test",
     size = "medium",
-    args = [
-        "--minsize=6",
-        "--maxsize=6",
-        "--model=3",
-    ],
-    binary = ":costas_array_sat",
+    srcs = [":costas_array_sat_model3_test.bintest"],
+    named_data = {"costas_array_sat": ":costas_array_sat"},
 )
 
 cc_binary(
@@ -130,10 +165,11 @@ cc_binary(
     deps = ["//ortools/sat:cp_model"],
 )
 
-run_binary_test(
+bintest(
     name = "cryptarithm_sat_test",
     size = "small",
-    binary = ":cryptarithm_sat",
+    srcs = [":cryptarithm_sat_test.bintest"],
+    named_data = {"cryptarithm_sat": ":cryptarithm_sat"},
 )
 
 cc_binary(
@@ -151,11 +187,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dobble_ls_test",
     size = "medium",
-    args = ["--time_limit_in_ms=10000"],
-    binary = ":dobble_ls",
+    srcs = [":dobble_ls_test.bintest"],
+    named_data = {"dobble_ls": ":dobble_ls"},
 )
 
 cc_binary(
@@ -176,11 +212,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "golomb_sat_test",
     size = "medium",
-    args = ["--size 5"],
-    binary = ":golomb_sat",
+    srcs = [":golomb_sat_test.bintest"],
+    named_data = {"golomb_sat": ":golomb_sat"},
 )
 
 cc_binary(
@@ -203,15 +239,14 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "knapsack_2d_sat_class01_instance2_test",
     size = "medium",
-    args = [
-        "--input $(rootpath //ortools/packing/testdata:Class_01.2bp)",
-        "--instance 2",
-    ],
-    binary = ":knapsack_2d_sat",
-    data = ["//ortools/packing/testdata:Class_01.2bp"],
+    srcs = [":knapsack_2d_sat_class01_instance2_test.bintest"],
+    named_data = {
+        "knapsack_2d_sat": ":knapsack_2d_sat",
+        "Class_01.2bp": "//ortools/packing/testdata:Class_01.2bp",
+    },
 )
 
 cc_binary(
@@ -241,12 +276,14 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "jobshop_sat_ft06",
     size = "small",
-    args = ["--input $(rootpath //ortools/scheduling/testdata:ft06)"],
-    binary = ":jobshop_sat",
-    data = ["//ortools/scheduling/testdata:ft06"],
+    srcs = [":jobshop_sat_ft06.bintest"],
+    named_data = {
+        "jobshop_sat": ":jobshop_sat",
+        "ft06": "//ortools/scheduling/testdata:ft06",
+    },
 )
 
 cc_binary(
@@ -264,10 +301,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "magic_sequence_sat_test",
     size = "medium",
-    binary = ":magic_sequence_sat",
+    srcs = [":magic_sequence_sat_test.bintest"],
+    named_data = {"magic_sequence_sat": ":magic_sequence_sat"},
 )
 
 cc_binary(
@@ -284,10 +322,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "multi_knapsack_sat_test",
     size = "medium",
-    binary = ":multi_knapsack_sat",
+    srcs = [":multi_knapsack_sat_test.bintest"],
+    named_data = {"multi_knapsack_sat": ":multi_knapsack_sat"},
 )
 
 cc_binary(
@@ -309,12 +348,14 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "shift_minimization_sat_test",
     size = "medium",
-    args = ["--input $(rootpath :shift_minimization.dat)"],
-    binary = ":shift_minimization_sat",
-    data = [":shift_minimization.dat"],
+    srcs = [":shift_minimization_sat_test.bintest"],
+    named_data = {
+        "shift_minimization_sat": ":shift_minimization_sat",
+        "shift_minimization.dat": "testdata/shift_minimization.dat",
+    },
 )
 
 cc_binary(
@@ -339,12 +380,14 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "weighted_tardiness_sat_test",
     size = "medium",
-    args = ["--input $(rootpath :wt40.txt)"],
-    binary = ":weighted_tardiness_sat",
-    data = [":wt40.txt"],
+    srcs = [":weighted_tardiness_sat_test.bintest"],
+    named_data = {
+        "weighted_tardiness_sat": ":weighted_tardiness_sat",
+        "wt40.txt": "testdata/wt40.txt",
+    },
 )
 
 cc_binary(
@@ -363,10 +406,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "magic_square_sat_test",
     size = "medium",
-    binary = ":magic_square_sat",
+    srcs = [":magic_square_sat_test.bintest"],
+    named_data = {"magic_square_sat": ":magic_square_sat"},
 )
 
 cc_binary(
@@ -394,23 +438,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "network_routing_sat_test",
     size = "medium",
-    args = [
-        "--clients=10",
-        "--backbones=5",
-        "--demands=10",
-        "--traffic_min=5",
-        "--traffic_max=10",
-        "--min_client_degree=2",
-        "--max_client_degree=5",
-        "--min_backbone_degree=3",
-        "--max_backbone_degree=5",
-        "--max_capacity=20",
-        "--fixed_charge_cost=10",
-    ],
-    binary = ":network_routing_sat",
+    srcs = [":network_routing_sat_test.bintest"],
+    named_data = {"network_routing_sat": ":network_routing_sat"},
 )
 
 cc_binary(
@@ -426,10 +458,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "nqueens_test",
     size = "small",
-    binary = ":nqueens",
+    srcs = [":nqueens_test.bintest"],
+    named_data = {"nqueens": ":nqueens"},
 )
 
 cc_binary(
@@ -451,10 +484,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "sports_scheduling_sat_test",
     size = "medium",
-    binary = ":sports_scheduling_sat",
+    srcs = [":sports_scheduling_sat_test.bintest"],
+    named_data = {"sports_scheduling_sat": ":sports_scheduling_sat"},
 )
 
 cc_binary(
@@ -478,6 +512,26 @@ cc_binary(
         "@abseil-cpp//absl/strings:str_format",
         "@protobuf",
     ],
+)
+
+bintest(
+    name = "pdptw_test",
+    size = "medium",
+    srcs = [":pdptw_test.bintest"],
+    named_data = {
+        "pdptw": ":pdptw",
+        "lc102.txt": "testdata/lc102.txt",
+    },
+)
+
+bintest(
+    name = "pdptw_non_homogenous_fleet_test",
+    size = "medium",
+    srcs = [":pdptw_non_homogenous_fleet_test.bintest"],
+    named_data = {
+        "pdptw": ":pdptw",
+        "lc102.txt": "testdata/lc102.txt",
+    },
 )
 
 # Routing examples.
@@ -515,10 +569,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "integer_programming_test",
     size = "small",
-    binary = ":integer_programming",
+    srcs = [":integer_programming_test.bintest"],
+    named_data = {"integer_programming": ":integer_programming"},
 )
 
 cc_binary(
@@ -535,10 +590,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "linear_programming_test",
     size = "small",
-    binary = ":linear_programming",
+    srcs = [":linear_programming_test.bintest"],
+    named_data = {"linear_programming": ":linear_programming"},
 )
 
 cc_binary(
@@ -551,10 +607,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "linear_solver_protocol_buffers_test",
     size = "small",
-    binary = ":linear_solver_protocol_buffers",
+    srcs = [":linear_solver_protocol_buffers_test.bintest"],
+    named_data = {"linear_solver_protocol_buffers": ":linear_solver_protocol_buffers"},
 )
 
 cc_binary(
@@ -571,11 +628,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "strawberry_fields_with_column_generation_test",
     size = "large",
-    args = ["--colgen_instance=4"],
-    binary = ":strawberry_fields_with_column_generation",
+    srcs = [":strawberry_fields_with_column_generation_test.bintest"],
+    named_data = {"strawberry_fields_with_column_generation": ":strawberry_fields_with_column_generation"},
 )
 
 # Dimacs assignment problems
@@ -617,8 +674,28 @@ cc_binary(
         "//ortools/graph:linear_assignment",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/flags:flag",
-        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
     ],
+)
+
+bintest(
+    name = "dimacs_assignment_min_cost_test",
+    size = "small",
+    srcs = [":dimacs_assignment_min_cost_test.bintest"],
+    named_data = {
+        "dimacs_assignment": ":dimacs_assignment",
+        "dimacs_example.txt": "testdata/dimacs_example.txt",
+    },
+)
+
+bintest(
+    name = "dimacs_assignment_max_cost_test",
+    size = "small",
+    srcs = [":dimacs_assignment_max_cost_test.bintest"],
+    named_data = {
+        "dimacs_assignment": ":dimacs_assignment",
+        "dimacs_example.txt": "testdata/dimacs_example.txt",
+    },
 )
 
 # MPS driver for LP and MIP.
@@ -650,12 +727,14 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "mps_driver_test",
     size = "small",
-    args = ["--input $(rootpath //ortools/linear_solver/testdata:maximization.mps)"],
-    binary = ":mps_driver",
-    data = ["//ortools/linear_solver/testdata:maximization.mps"],
+    srcs = [":mps_driver_test.bintest"],
+    named_data = {
+        "mps_driver": ":mps_driver",
+        "maximization.mps": "//ortools/linear_solver/testdata:maximization.mps",
+    },
 )
 
 # Linear Assignment C++ Example
@@ -669,10 +748,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "linear_assignment_api_test",
     size = "small",
-    binary = ":linear_assignment_api",
+    srcs = [":linear_assignment_api_test.bintest"],
+    named_data = {"linear_assignment_api": ":linear_assignment_api"},
 )
 
 # Flow C++ Example
@@ -687,10 +767,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "flow_api_test",
     size = "small",
-    binary = ":flow_api",
+    srcs = [":flow_api_test.bintest"],
+    named_data = {"flow_api": ":flow_api"},
 )
 
 cc_binary(
@@ -706,10 +787,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "max_flow_test",
     size = "small",
-    binary = ":max_flow",
+    srcs = [":max_flow_test.bintest"],
+    named_data = {"max_flow": ":max_flow"},
 )
 
 cc_binary(
@@ -724,10 +806,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "min_cost_flow_test",
     size = "small",
-    binary = ":min_cost_flow",
+    srcs = [":min_cost_flow_test.bintest"],
+    named_data = {"min_cost_flow": ":min_cost_flow"},
 )
 
 # Frequency Assignment Problem
@@ -819,10 +902,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "slitherlink_sat_test",
     size = "small",
-    binary = ":slitherlink_sat",
+    srcs = [":slitherlink_sat_test.bintest"],
+    named_data = {"slitherlink_sat": ":slitherlink_sat"},
 )
 
 cc_binary(
@@ -854,10 +938,11 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "variable_intervals_sat_test",
     size = "small",
-    binary = ":variable_intervals_sat",
+    srcs = [":variable_intervals_sat_test.bintest"],
+    named_data = {"variable_intervals_sat": ":variable_intervals_sat"},
 )
 
 cc_binary(

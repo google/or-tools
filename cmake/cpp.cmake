@@ -307,6 +307,126 @@ function(ortools_cxx_library)
   message(STATUS "Configuring library ${LIBRARY_NAME} ...DONE")
 endfunction()
 
+
+# ortools_cxx_binary()
+# CMake function to generate and build C++ library.
+# Parameters:
+# NAME: CMake target name
+# SOURCES: List of source files
+# [COMPILE_DEFINITIONS]: List of private compile definitions
+# [COMPILE_OPTIONS]: List of private compile options
+# [LINK_LIBRARIES]: List of **public** libraries to use when linking
+# note: ortools::ortools is always linked to the target
+# [LINK_OPTIONS]: List of private link options
+# e.g.:
+# ortools_cxx_binary(
+#   NAME
+#     foo_bar_binary
+#   SOURCES
+#     bar_binary.cc
+#     ${PROJECT_SOURCE_DIR}/ortools/foo/bar_binary.cc
+#   LINK_LIBRARIES
+#     GTest::gmock
+#     GTest::gtest_main
+#   TESTING
+# )
+function(ortools_cxx_binary)
+  set(options "TESTING")
+  set(oneValueArgs "NAME")
+  set(multiValueArgs
+    "SOURCES;COMPILE_DEFINITIONS;COMPILE_OPTIONS;LINK_LIBRARIES;LINK_OPTIONS")
+  cmake_parse_arguments(BINARY
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(BINARY_TESTING AND NOT BUILD_TESTING)
+    return()
+  endif()
+
+  if(NOT BINARY_NAME)
+    message(FATAL_ERROR "no NAME provided")
+  endif()
+  if(NOT BINARY_SOURCES)
+    message(FATAL_ERROR "no SOURCES provided")
+  endif()
+  message(STATUS "Configuring binary ${BINARY_NAME} ...")
+
+  add_executable(${BINARY_NAME} ${BINARY_TYPE} "")
+  target_sources(${BINARY_NAME} PRIVATE ${BINARY_SOURCES})
+  target_include_directories(${BINARY_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_definitions(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_DEFINITIONS})
+  target_compile_features(${BINARY_NAME} PRIVATE cxx_std_17)
+  target_compile_options(${BINARY_NAME} PRIVATE ${BINARY_COMPILE_OPTIONS})
+  target_link_libraries(${BINARY_NAME} PRIVATE ${PROJECT_NAMESPACE}::ortools ${BINARY_LINK_LIBRARIES})
+  target_link_options(${BINARY_NAME} PRIVATE ${BINARY_LINK_OPTIONS})
+
+  include(GNUInstallDirs)
+  if(APPLE)
+    set_target_properties(${BINARY_NAME} PROPERTIES
+      INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    cmake_path(RELATIVE_PATH CMAKE_INSTALL_FULL_LIBDIR
+      BASE_DIRECTORY ${CMAKE_INSTALL_FULL_BINDIR}
+      OUTPUT_VARIABLE libdir_relative_path)
+    set_target_properties(${BINARY_NAME} PROPERTIES
+      INSTALL_RPATH "$ORIGIN/${libdir_relative_path}:$ORIGIN")
+  endif()
+  add_executable(${PROJECT_NAMESPACE}::${BINARY_NAME} ALIAS ${BINARY_NAME})
+  message(STATUS "Configuring binary ${BINARY_NAME} ...DONE")
+endfunction()
+
+find_package(Python3 COMPONENTS Interpreter)
+
+# ortools_cxx_bintest()
+# CMake function to generate and build C++ test.
+# Parameters:
+# NAME: CMake target name
+# SCRIPT: The script to run the test.
+# e.g.:
+# ortools_cxx_bintest(
+#   NAME
+#     foo_bar_bintest
+#   SCRIPT
+#     foo_bar.bintest
+#   ENVIRONMENT
+#     "BINTEST_foo_bar=$<TARGET_FILE:foo_bar_binary>"
+#     "BINTEST_foo_bar_data=$(CMAKE_CURRENT_SOURCE_DIR)/foo_bar_data.txt"
+# )
+function(ortools_cxx_bintest)
+  set(options "")
+  set(oneValueArgs "NAME;SCRIPT")
+  set(multiValueArgs "ENVIRONMENT")
+  cmake_parse_arguments(BINTEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}"
+    ${ARGN}
+  )
+  if(NOT BINTEST_NAME)
+    message(FATAL_ERROR "no NAME provided")
+  endif()
+  if(NOT BINTEST_SCRIPT)
+    message(FATAL_ERROR "no SCRIPT provided")
+  endif()
+  if(NOT Python3_Interpreter_FOUND)
+    message(WARNING "No python3 interpreter found, the bintest ${BINTEST_NAME} is disable")
+    return()
+  endif()
+
+  message(STATUS "Configuring bintest ${BINTEST_NAME} ...")
+  add_test(
+    NAME ${BINTEST_NAME}
+    COMMAND ${Python3_EXECUTABLE} -m tools.testing.bintest_script_launcher ${BINTEST_SCRIPT}
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  )
+  set_tests_properties(${BINTEST_NAME} PROPERTIES
+    ENVIRONMENT "${BINTEST_ENVIRONMENT}"
+  )
+  message(STATUS "Configuring bintest ${BINTEST_NAME} ...DONE")
+endfunction()
+
 ##################
 ##  PROTO FILE  ##
 ##################

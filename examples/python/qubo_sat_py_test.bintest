@@ -1,0 +1,1 @@
+RUN: $(qubo_sat_py3)

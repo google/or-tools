@@ -1,0 +1,1 @@
+RUN: $(clustering_sat_py3)

@@ -20,7 +20,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
-#include "absl/strings/str_format.h"
+#include "absl/strings/string_view.h"
 #include "examples/cpp/parse_dimacs_assignment.h"
 #include "examples/cpp/print_dimacs_assignment.h"
 #include "ortools/algorithms/hungarian.h"
@@ -156,25 +156,18 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
 }
 }  // namespace operations_research
 
-static const char* const kUsageTemplate = "usage: %s <filename>";
-
 using ::operations_research::ArcIndex;
 using ::operations_research::NodeIndex;
 using ::operations_research::SolveDimacsAssignment;
 
 int main(int argc, char* argv[]) {
-  std::string usage;
-  if (argc < 1) {
-    usage = absl::StrFormat(kUsageTemplate, "solve_dimacs_assignment");
-  } else {
-    usage = absl::StrFormat(kUsageTemplate, argv[0]);
-  }
-  InitGoogle(usage.c_str(), &argc, &argv, true);
+  InitGoogle(argv[0], &argc, &argv, true);
 
   if (argc < 2) {
-    LOG(FATAL) << usage;
+    LOG(FATAL) << "Missing input file.";
   }
 
+  absl::SetStderrThreshold(absl::LogSeverityAtLeast::kInfo);
   if (absl::GetFlag(FLAGS_assignment_static_graph)) {
     return SolveDimacsAssignment<::util::StaticGraph<NodeIndex, ArcIndex>>(
         argc, argv);

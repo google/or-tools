@@ -1,0 +1,2 @@
+RUN: $(rcpsp_sat_py3) --input=$(ubo_10_psp2.sch)
+CHECK: "objective: 45"

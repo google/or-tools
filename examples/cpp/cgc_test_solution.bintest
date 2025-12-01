@@ -1,0 +1,24 @@
+# Tests the Two-Dimensional Constrained Guillotine Cutting solver
+# by loading example input files from the testdata directory.
+
+# The following tests are too big and don't converge within a second so we don't
+# check for a particular solution. Instead we make sure that the value is
+# greater than zero.
+
+RUN: $(cgc_main) --input_file=$(1.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"
+
+RUN: $(cgc_main) --input_file=$(2.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"
+
+RUN: $(cgc_main) --input_file=$(3.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"
+
+RUN: $(cgc_main) --input_file=$(cgcut1.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"
+
+RUN: $(cgc_main) --input_file=$(cgcut2.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"
+
+RUN: $(cgc_main) --input_file=$(cgcut3.in) --time_limit_in_ms=1000 --print_maximum_value=true
+CHECK: "@num(>0)"

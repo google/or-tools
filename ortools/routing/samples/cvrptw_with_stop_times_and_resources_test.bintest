@@ -1,0 +1,1 @@
+RUN: $(cvrptw_with_stop_times_and_resources) --vrp_use_deterministic_random_seed

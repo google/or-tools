@@ -1,0 +1,1 @@
+RUN: $(wedding_optimal_chart_sat_py3)
