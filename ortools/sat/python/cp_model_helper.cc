@@ -1137,14 +1137,14 @@ bool was_optimized_in_function_call(PyObject* op) {
 
 bool IsOnwedExclusivelyThroughPyBind11(PyObject* op) {
 #if !defined(Py_GIL_DISABLED)
-  return Py_REFCNT(ob) == 3;
+  return Py_REFCNT(op) == 3;
 #else
   // NOTE: the entire ob_ref_shared field must be zero, including flags, to
   // ensure that other threads cannot concurrently create new references to
   // this object.
-  return (_Py_IsOwnedByCurrentThread(ob) &&
-          _Py_atomic_load_uint32_relaxed(&ob->ob_ref_local) == 3 &&
-          _Py_atomic_load_ssize_relaxed(&ob->ob_ref_shared) == 0);
+  return (_Py_IsOwnedByCurrentThread(op) &&
+          _Py_atomic_load_uint32_relaxed(&op->ob_ref_local) == 3 &&
+          _Py_atomic_load_ssize_relaxed(&op->ob_ref_shared) == 0);
 #endif
 }
 
