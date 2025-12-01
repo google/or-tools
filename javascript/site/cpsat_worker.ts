@@ -1,6 +1,6 @@
-import type { MainModule } from '../../build/bin/cp_sat_api.js';
-import createCpSatModule from '../../build/bin/cp_sat_api.js';
-import cpSatWasmUrl from '../../build/bin/cp_sat_api.wasm?url';
+import type { MainModule } from '../../build/bin/cp_sat_runtime.js';
+import createCpSatModule from '../../build/bin/cp_sat_runtime.js';
+import cpSatWasmUrl from '../../build/bin/cp_sat_runtime.wasm?url';
 import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
 
 const workerScope = self as DedicatedWorkerGlobalScope;

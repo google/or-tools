@@ -20,12 +20,12 @@ add_custom_command(
     "${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto")
 
 # WASM CP-SAT API target (kept separate so other targets remain unchanged).
-add_executable(cp_sat_api cp_sat_api.cc "${PROTO_SCHEMA_HEADER}")
-target_link_libraries(cp_sat_api PRIVATE ${PROJECT_NAMESPACE}::ortools)
-target_include_directories(cp_sat_api PRIVATE "${PROJECT_BINARY_DIR}/javascript")
+add_executable(cp_sat_runtime cp_sat_api.cc "${PROTO_SCHEMA_HEADER}")
+target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
+target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
 
-set_target_properties(cp_sat_api PROPERTIES
-  OUTPUT_NAME "cp_sat_api"
+set_target_properties(cp_sat_runtime PROPERTIES
+  OUTPUT_NAME "cp_sat_runtime"
   RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/javascript")
 
 set(JS_OUTPUT_DIR "${PROJECT_BINARY_DIR}/javascript")
@@ -38,7 +38,7 @@ file(MAKE_DIRECTORY "${JS_EXAMPLES_DIR}")
 file(MAKE_DIRECTORY "${WEB_EXAMPLES_DIR}")
 
 # Emscripten link options for a modular JS/WASM bundle exporting the C API.
-target_link_options(cp_sat_api PRIVATE
+target_link_options(cp_sat_runtime PRIVATE
   "-sMODULARIZE=1"
   "-sEXPORT_ES6=1"
   "-sEXPORT_NAME=cpSatModule"
@@ -51,7 +51,7 @@ target_link_options(cp_sat_api PRIVATE
   "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
   "--bind"
   "--emit-tsd"
-  "${JS_OUTPUT_DIR}/cp_sat_api.d.ts"
+  "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
   "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_validate_model','_get_cp_model_schema','_get_sat_parameters_schema']"
   "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,allocateUTF8,HEAPU8"
   "-pthread"
@@ -62,21 +62,21 @@ target_link_options(cp_sat_api PRIVATE
 
 set(SITE_PUBLIC_DIR "${PROJECT_SOURCE_DIR}/javascript/site/public")
 file(MAKE_DIRECTORY "${SITE_PUBLIC_DIR}")
-add_custom_command(TARGET cp_sat_api POST_BUILD
+add_custom_command(TARGET cp_sat_runtime POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${JS_OUTPUT_DIR}/cp_sat_api.wasm"
-          "${SITE_PUBLIC_DIR}/cp_sat_api.wasm"
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.wasm"
+          "${SITE_PUBLIC_DIR}/cp_sat_runtime.wasm"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${JS_OUTPUT_DIR}/cp_sat_api.wasm.map"
-          "${SITE_PUBLIC_DIR}/cp_sat_api.wasm.map"
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.wasm.map"
+          "${SITE_PUBLIC_DIR}/cp_sat_runtime.wasm.map"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-          "${JS_OUTPUT_DIR}/cp_sat_api.js"
-          "${SITE_PUBLIC_DIR}/cp_sat_api.js"
-  COMMENT "Syncing cp_sat_api assets into javascript/site/public")
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.js"
+          "${SITE_PUBLIC_DIR}/cp_sat_runtime.js"
+  COMMENT "Syncing cp_sat_runtime assets into javascript/site/public")
 
 # Static site assets copied to both javascript/ and bin/ for serving.
 set(JS_SITE_ROOT_FILES
-  "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_api.ts"
+  "${PROJECT_SOURCE_DIR}/javascript/site/cp_sat_api.ts"
   "${PROJECT_SOURCE_DIR}/javascript/site/cpsat_worker.ts"
   "${PROJECT_SOURCE_DIR}/javascript/site/globals.d.ts"
   "${PROJECT_SOURCE_DIR}/javascript/site/index.html"
@@ -94,8 +94,8 @@ foreach(site_file IN LISTS JS_SITE_ROOT_FILES)
   endforeach()
 endforeach()
 
-add_custom_target(cp_sat_api_site ALL
+add_custom_target(cp_sat_runtime_site ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${WEB_DEPLOY_DIR}"
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${JS_OUTPUT_DIR}" "${WEB_DEPLOY_DIR}"
-  DEPENDS cp_sat_api
-  COMMENT "Copying cp_sat_api artifacts into ${WEB_DEPLOY_DIR}")
+  DEPENDS cp_sat_runtime
+  COMMENT "Copying cp_sat_runtime artifacts into ${WEB_DEPLOY_DIR}")

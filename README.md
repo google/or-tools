@@ -138,8 +138,9 @@ npm run dev   # or: npm run build && npm run preview
 ```
 
 `npm run build:wasm` bootstraps the emsdk, configures CMake, and rebuilds the
-`cp_sat_api` WebAssembly target (including the generated `cp_sat_api.d.ts`). The
-post-build step mirrors `cp_sat_api.wasm` into `javascript/site/public` so Vite
+`cp_sat_runtime` WebAssembly target (including the generated `cp_sat_runtime.d.ts`). The
+high-level API surface in `javascript/site/cp_sat_api.ts` wraps that runtime, and the
+post-build step mirrors `cp_sat_runtime.wasm` into `javascript/site/public` so Vite
 can serve it during development.
 
 The frontend is bundled via Vite (see `vite.config.ts`). All `.ts` entrypoints
@@ -149,7 +150,7 @@ glue and our handwritten APIs.
 
 ### npm scripts
 
-- `npm run build:wasm` — rebuilds the `cp_sat_api` wasm/js bundle via emsdk + CMake.
+- `npm run build:wasm` — rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake (this is the low-level solver runtime that `cp_sat_api.ts` consumes).
 - `npm run dev` / `npm run start` — launches the Vite dev server (requires a prior `build:wasm` so the wasm artifacts exist).
 - `npm run build` — runs `build:wasm`, builds the Vite site into `build/site`, then runs both TypeScript projects (`ts:check` + `ts:site`) to ensure type safety.
 - `npm run preview` — serves the already-built Vite site from `build/site`.
@@ -160,7 +161,7 @@ glue and our handwritten APIs.
 ### Running the demos
 
 - The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `navigator.hardwareConcurrency` to match the pthread pool size.
-- Each demo exposes a “Use worker bridge” checkbox (enabled by default). When it is checked, solves are routed through `cpsat_worker.ts`, keeping the main thread responsive even though `cp_sat_api` itself uses WebAssembly threads. Clear the checkbox to run solves directly on the main thread when workers are unavailable.
+- Each demo exposes a “Use worker bridge” checkbox (enabled by default). When it is checked, solves are routed through `cpsat_worker.ts`, keeping the main thread responsive even though the `cp_sat_runtime` wasm solver uses WebAssembly threads. Clear the checkbox to run solves directly on the main thread when workers are unavailable via the `cp_sat_api` bridge.
 - The WebAssembly build sets `-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency`, so the pthread pool matches the host CPU at startup and never silently grows beyond the browser’s limits.
 - Schema Viewer now imports the bundled `CpSat` API automatically; no extra `<script>` ordering is required in the HTML.
 
