@@ -50,7 +50,13 @@
 #include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
 #include "scip/cons_or.h"
+#if SCIP_VERSION_MAJOR >= 10
+#include "scip/cons_nonlinear.h"
+#define SCIPcreateConsBasicQuadratic SCIPcreateConsBasicQuadraticNonlinear
+#define SCIPcreateConsQuadratic SCIPcreateConsQuadraticNonlinear
+#else
 #include "scip/cons_quadratic.h"
+#endif  // SCIP_VERSION_MAJOR >= 10
 #include "scip/cons_sos1.h"
 #include "scip/cons_sos2.h"
 #include "scip/def.h"
