@@ -5,13 +5,10 @@ FROM almalinux:latest AS env
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN dnf -y update \
-&& dnf -y install git wget zlib-devel gcc-toolset-13 \
+&& dnf -y install git wget zlib-devel \
 && dnf -y group install "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-
-RUN echo "source /opt/rh/gcc-toolset-13/enable" >> /etc/bashrc
-SHELL ["/bin/bash", "--login", "-c"]
 
 # Install Bazelisk
 ARG TARGETARCH=amd64
@@ -22,7 +19,7 @@ https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-
 
 # Install Java
 RUN dnf -y update \
-&& dnf -y install java-11-openjdk java-11-openjdk-devel maven \
+&& dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all
 ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
