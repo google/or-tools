@@ -42,8 +42,8 @@ def _enclosed(delimiters: str):
 class Re:
     """Regular expression patterns used for parsing."""
 
-    _SQ_STRING = _enclosed('""')
-    _DQ_STRING = _enclosed("''")
+    _SQ_STRING = _enclosed("''")
+    _DQ_STRING = _enclosed('""')
     STRING = f"({_SQ_STRING}|{_DQ_STRING})"
     NUMBER = r"([-+]?[0-9]*(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?)"
 
