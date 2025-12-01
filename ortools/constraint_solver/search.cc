@@ -3217,7 +3217,35 @@ void OptimizeVar::ApplyBound() {
   }
 }
 
-void OptimizeVar::RefuteDecision(Decision*) { ApplyBound(); }
+namespace {
+class ApplyBoundDecisionBuilder : public DecisionBuilder {
+ public:
+  explicit ApplyBoundDecisionBuilder(OptimizeVar* optimize_var)
+      : optimize_var_(optimize_var) {}
+  ~ApplyBoundDecisionBuilder() override = default;
+  Decision* Next(Solver*) override {
+    optimize_var_->ApplyBound();
+    return nullptr;
+  }
+
+ private:
+  OptimizeVar* optimize_var_;
+};
+}  // namespace
+
+void OptimizeVar::RefuteDecision(Decision*) {
+  if (!solver()->SolveAndCommit(
+          solver()->RevAlloc(new ApplyBoundDecisionBuilder(this)))) {
+    if (on_optimal_found_) {
+      // TODO(user): Support multiple objectives.
+      const int64_t value = CurrentInternalValue(0);
+      on_optimal_found_(objective_vars()[0] == minimization_vars()[0]
+                            ? value
+                            : CapOpp(value));
+    }
+    solver()->Fail();
+  }
+}
 
 bool OptimizeVar::AcceptSolution() {
   if (!found_initial_solution_ || !is_active()) {

@@ -4663,6 +4663,15 @@ class OptimizeVar : public ObjectiveMonitor {
   /// Returns the variable that is optimized.
   IntVar* var() const { return Size() == 0 ? nullptr : ObjectiveVar(0); }
 
+#ifndef SWIG
+  /// Sets a callback to be called when the objective value is found to be
+  /// optimal.
+  void SetOnOptimalFoundcallback(
+      std::function<void(int64_t)> on_optimal_found) {
+    on_optimal_found_ = std::move(on_optimal_found);
+  }
+#endif  // SWIG
+
   /// Internal methods.
   void BeginNextDecision(DecisionBuilder* db) override;
   void RefuteDecision(Decision* d) override;
@@ -4672,6 +4681,9 @@ class OptimizeVar : public ObjectiveMonitor {
   std::string DebugString() const override;
 
   void ApplyBound();
+
+ private:
+  std::function<void(int64_t)> on_optimal_found_;
 };
 
 /// Base class of all search limits.

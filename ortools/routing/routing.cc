@@ -6414,7 +6414,12 @@ void RoutingModel::SetupMetaheuristics(
       }
       default:
         limit_too_long = false;
-        optimize = solver_->MakeMinimize(cost_, optimization_step);
+        OptimizeVar* const minimize =
+            solver_->MakeMinimize(cost_, optimization_step);
+        optimize = minimize;
+        minimize->SetOnOptimalFoundcallback([this](int64_t value) {
+          objective_lower_bound_ = std::max(objective_lower_bound_, value);
+        });
     }
     if (limit_too_long) {
       LOG(WARNING) << LocalSearchMetaheuristic::Value_Name(metaheuristic)
