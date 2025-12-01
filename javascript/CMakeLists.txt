@@ -72,6 +72,18 @@ add_custom_command(TARGET cp_sat_runtime POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "${JS_OUTPUT_DIR}/cp_sat_runtime.js"
           "${SITE_PUBLIC_DIR}/cp_sat_runtime.js"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.wasm"
+          "${PROJECT_SOURCE_DIR}/javascript/site/cp_sat_runtime.wasm"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.wasm.map"
+          "${PROJECT_SOURCE_DIR}/javascript/site/cp_sat_runtime.wasm.map"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.js"
+          "${PROJECT_SOURCE_DIR}/javascript/site/cp_sat_runtime.js"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
+          "${PROJECT_SOURCE_DIR}/javascript/site/cp_sat_runtime.d.ts"
   COMMENT "Syncing cp_sat_runtime assets into javascript/site/public")
 
 # Static site assets copied to both javascript/ and bin/ for serving.
