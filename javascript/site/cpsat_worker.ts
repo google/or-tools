@@ -1,27 +1,7 @@
 import type { MainModule } from '../../build/bin/cp_sat_api.js';
 import createCpSatModule from '../../build/bin/cp_sat_api.js';
 import cpSatWasmUrl from '../../build/bin/cp_sat_api.wasm?url';
-
-export type SolveRequest = {
-  type: 'solve';
-  id: number;
-  modelBytes: Uint8Array;
-  paramsBytes?: Uint8Array;
-};
-
-export type ValidateRequest = {
-  type: 'validate';
-  id: number;
-  modelBytes: Uint8Array;
-};
-
-export type WorkerRequest = SolveRequest | ValidateRequest;
-
-export type WorkerResponse =
-  | { type: 'ready' }
-  | { type: 'solveResult'; id: number; bytes: Uint8Array }
-  | { type: 'validateResult'; id: number; ok: boolean; message: string }
-  | { type: 'error'; id: number; error: string };
+import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
 
 const workerScope = self as DedicatedWorkerGlobalScope;
 

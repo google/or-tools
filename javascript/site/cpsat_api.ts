@@ -2,7 +2,7 @@ import type { MainModule } from '../../build/bin/cp_sat_api.js';
 import createCpSatModule from '../../build/bin/cp_sat_api.js';
 import cpSatWasmUrl from '../../build/bin/cp_sat_api.wasm?url';
 import CpSatWorker from './cpsat_worker?worker';
-import type { WorkerRequest, WorkerResponse } from './cpsat_worker';
+import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
 
 type SchemaPair = {
   cp_model: string;
@@ -444,4 +444,5 @@ if (isBrowserMainThread) {
 }
 
 export type { CpSatApi };
+export type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
 export default CpSat;
