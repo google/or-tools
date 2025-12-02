@@ -4,14 +4,14 @@
     @DOTNET_TFM@
     <RuntimeIdentifier>@DOTNET_RID@</RuntimeIdentifier>
     <AssemblyName>google-ortools-native</AssemblyName>
-    <Version>@PROJECT_VERSION@</Version>
+    <Version>@PROJECT_VERSION@@DOTNET_RELEASE@</Version>
 
     <!-- Nuget Properties -->
     <Description>.NET native wrapper for the Operations Research Tools project</Description>
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
     <!-- Pack Option -->
-    <Title>Google.OrTools @DOTNET_RID@ v@PROJECT_VERSION@</Title>
+    <Title>Google.OrTools @DOTNET_RID@ v@PROJECT_VERSION@@DOTNET_RELEASE@</Title>
     <PackageId>@DOTNET_NATIVE_PROJECT@</PackageId>
 
     <!-- Signing -->
