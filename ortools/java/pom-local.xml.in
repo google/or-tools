@@ -7,7 +7,7 @@
 
 <groupId>@JAVA_PACKAGE@</groupId>
 <artifactId>@JAVA_PROJECT@</artifactId>
-<version>@PROJECT_VERSION@</version>
+<version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
 <packaging>jar</packaging>
 
 <name>${project.groupId}:${project.artifactId}</name>
@@ -69,7 +69,7 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>@JAVA_NATIVE_PROJECT@</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
