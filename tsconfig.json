@@ -7,5 +7,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["typescript/**/*.ts", "typescript/**/*.d.ts"]
+  "include": ["javascript/lib/**/*.ts", "javascript/lib/**/*.d.ts"]
 }

@@ -139,12 +139,13 @@ npm run dev   # or: npm run build && npm run preview
 
 `npm run build:wasm` bootstraps the emsdk, configures CMake, and rebuilds the
 `cp_sat_runtime` WebAssembly target (including the generated `cp_sat_runtime.d.ts`). The
-high-level API surface in `javascript/site/cp_sat_api.ts` wraps that runtime, and the
-post-build step mirrors `cp_sat_runtime.wasm` into `javascript/site/public` so Vite
-can serve it during development.
+high-level API surface lives in `javascript/lib/cp_sat_api.ts`, and Vite builds that entry via
+`vite.lib.config.ts`, emitting both the library (`build/javascript/lib/cp_sat_api.js`) and the worker bundle
+while the `cp_sat_runtime.*` artifacts remain under `build/javascript/wasm` so both the dev server
+and downstream consumers point at a single runtime location.
 
-The frontend is bundled via Vite (see `vite.config.ts`). All `.ts` entrypoints
-under `javascript/site` are compiled and emitted into `build/site`, so individual
+The frontend is bundled via Vite (see `vite.site.config.ts`). All `.ts` entrypoints
+under `javascript/site` are compiled and emitted into `build/javascript/site`, so individual
 HTML pages no longer need to include separate `<script>` tags for the Emscripten
 glue and our handwritten APIs.
 
@@ -152,11 +153,11 @@ glue and our handwritten APIs.
 
 - `npm run build:wasm` — rebuilds the `cp_sat_runtime` wasm/js bundle via emsdk + CMake (this is the low-level solver runtime that `cp_sat_api.ts` consumes).
 - `npm run dev` / `npm run start` — launches the Vite dev server (requires a prior `build:wasm` so the wasm artifacts exist).
-- `npm run build` — runs `build:wasm`, builds the Vite site into `build/site`, then runs both TypeScript projects (`ts:check` + `ts:site`) to ensure type safety.
-- `npm run preview` — serves the already-built Vite site from `build/site`.
-- `npm run ts:check` — runs the strict project-wide type check defined by the root `tsconfig.json`.
-- `npm run ts:site` — type-checks the browser sources under `javascript/site` with `tsc --noEmit`.
-- `npm run clean` — removes both the CMake output under `build/` and the bundled site under `build/site`.
+- `npm run build` — runs `build:wasm` followed by `build:vite`, leaving the wasm runtime under `build/javascript/wasm`, the library bundles under `build/javascript/lib`, and the site under `build/javascript/site`.
+- `npm run build:vite` — runs Vite twice: once with the site config (`vite.site.config.ts`) and again with the library config (`vite.lib.config.ts`), so site and library bundles land under `build/javascript/site` and `build/javascript/lib`.
+- `npm run preview` — serves the already-built Vite site from `build/javascript/site`.
+- `npm run clean` — removes the entire `build/` tree, covering both the wasm outputs and the bundled site.
+- `npm run pack:lib` — rebuilds just the `build/javascript/lib` bundle and runs `npm pack`, leaving the `.tgz` in `build/javascript/lib`.
 
 ### Running the demos
 

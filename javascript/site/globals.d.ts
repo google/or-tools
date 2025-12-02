@@ -1,4 +1,4 @@
-import type { CpSatApi } from './cp_sat_api';
+import type { CpSatApi } from '../lib';
 
 declare global {
   interface Window {

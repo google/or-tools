@@ -1,4 +1,4 @@
-import { CpSat } from './cp_sat_api';
+import { CpSat } from '../lib';
 
 const statusEl = document.getElementById('status') as HTMLElement | null;
 const cpEl = document.getElementById('cp-schema') as HTMLTextAreaElement | null;

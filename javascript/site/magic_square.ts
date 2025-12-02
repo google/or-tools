@@ -1,4 +1,4 @@
-import { CpSat, type CpSatModelInstance } from './cp_sat_api';
+import { CpSat, type CpSatModelInstance } from '../lib';
 
 type MagicSquareExpr = {
   vars: number[];

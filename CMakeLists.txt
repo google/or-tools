@@ -173,7 +173,62 @@ message(STATUS "Install doc: ${INSTALL_DOC}")
 
 # WASM JS bindings (optional, Emscripten only)
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-  add_subdirectory(javascript)
+  # Embed proto schemas directly into the WASM binary.
+  set(PROTO_SCHEMA_HEADER "${PROJECT_BINARY_DIR}/javascript/generated_proto_schemas.h")
+  add_custom_command(
+    OUTPUT "${PROTO_SCHEMA_HEADER}"
+    COMMAND "${CMAKE_COMMAND}"
+            -DCP_MODEL_PROTO="${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
+            -DSAT_PARAMETERS_PROTO="${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto"
+            -DTEMPLATE_FILE="${PROJECT_SOURCE_DIR}/javascript/generated_proto_schemas.h.in"
+            -DOUTPUT_FILE="${PROTO_SCHEMA_HEADER}"
+            -P "${PROJECT_SOURCE_DIR}/scripts/embed_proto.cmake"
+    DEPENDS
+      "${PROJECT_SOURCE_DIR}/scripts/embed_proto.cmake"
+      "${PROJECT_SOURCE_DIR}/javascript/generated_proto_schemas.h.in"
+      "${PROJECT_SOURCE_DIR}/ortools/sat/cp_model.proto"
+      "${PROJECT_SOURCE_DIR}/ortools/sat/sat_parameters.proto")
+
+  add_executable(cp_sat_runtime
+    "${PROJECT_SOURCE_DIR}/javascript/cp_sat_api.cc"
+    "${PROTO_SCHEMA_HEADER}")
+  target_link_libraries(cp_sat_runtime PRIVATE ${PROJECT_NAMESPACE}::ortools)
+  target_include_directories(cp_sat_runtime PRIVATE "${PROJECT_BINARY_DIR}/javascript")
+
+  set(JS_OUTPUT_DIR "${PROJECT_BINARY_DIR}/javascript/wasm")
+  set(JS_EXAMPLES_DIR "${JS_OUTPUT_DIR}/examples")
+  file(MAKE_DIRECTORY "${JS_OUTPUT_DIR}")
+  file(MAKE_DIRECTORY "${JS_EXAMPLES_DIR}")
+
+  set_target_properties(cp_sat_runtime PROPERTIES
+    OUTPUT_NAME "cp_sat_runtime"
+    RUNTIME_OUTPUT_DIRECTORY "${JS_OUTPUT_DIR}")
+
+  target_link_options(cp_sat_runtime PRIVATE
+    "-sMODULARIZE=1"
+    "-sEXPORT_ES6=1"
+    "-sEXPORT_NAME=cpSatModule"
+    "-sENVIRONMENT=web,worker,node"
+    "-sASSERTIONS=1"
+    "-sALLOW_MEMORY_GROWTH=1"
+    "-sJSPI=2"
+    "-sJSPI_EXPORTS=['solve_model','validate_model']"
+    "-sUSE_PTHREADS=1"
+    "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
+    "--bind"
+    "--emit-tsd"
+    "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
+    "-sEXPORTED_FUNCTIONS=['_malloc','_free','_solve_model','_free_buffer','_validate_model','_get_cp_model_schema','_get_sat_parameters_schema']"
+    "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,stringToUTF8,allocateUTF8,HEAPU8"
+    "-pthread"
+    "--shared-memory"
+    "--no-entry"
+    "-gsource-map"
+    "--source-map-base=./")
+
+  add_custom_target(cp_sat_runtime_site ALL
+    DEPENDS cp_sat_runtime
+    COMMENT "Building cp_sat_runtime runtime")
 endif()
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
