@@ -431,6 +431,11 @@ file(TOUCH ${PYTHON_PROJECT_DIR}/sat/python/py.typed)
 
 # setup.py.in contains cmake variable e.g. @PYTHON_PROJECT@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
+if(RELEASE)
+  set(PYTHON_RELEASE "")
+else()
+  set(PYTHON_RELEASE "rc1")
+endif()
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
   ${PROJECT_BINARY_DIR}/python/setup.py.in

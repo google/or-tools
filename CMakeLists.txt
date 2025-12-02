@@ -19,11 +19,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 
 include(utils)
-set_version(VERSION)
+set_version(VERSION RELEASE)
 
 project(ortools VERSION ${VERSION} LANGUAGES CXX C)
 set(PROJECT_NAMESPACE ortools)
-message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
+message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION} release: ${RELEASE}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
 #message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
 #message(STATUS "patch: ${PROJECT_VERSION_PATCH}")

@@ -39,7 +39,7 @@ def read(fname):
 
 setup(
     name='@PYTHON_PROJECT@',
-    version='@PROJECT_VERSION@',
+    version='@PROJECT_VERSION@@PYTHON_RELEASE@',
     packages=find_packages(),
     python_requires='>= 3.9',
     install_requires=[
