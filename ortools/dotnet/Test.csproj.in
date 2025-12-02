@@ -9,7 +9,7 @@
     <RollForward>LatestMajor</RollForward>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AssemblyName>@DOTNET_PROJECT@.@TEST_NAME@</AssemblyName>
-    <Version>@PROJECT_VERSION@</Version>
+    <Version>@PROJECT_VERSION@@DOTNET_RELEASE@</Version>
 
     <!-- Pack Option -->
     <IsPackable>false</IsPackable>

@@ -122,6 +122,12 @@ message(STATUS ".Net project: ${DOTNET_PROJECT}")
 set(DOTNET_PROJECT_DIR ${PROJECT_BINARY_DIR}/dotnet/${DOTNET_PROJECT})
 message(STATUS ".Net project build path: ${DOTNET_PROJECT_DIR}")
 
+if(RELEASE)
+  set(DOTNET_RELEASE "")
+else()
+  set(DOTNET_RELEASE "-rc.1")
+endif()
+
 ##################
 ##  PROTO FILE  ##
 ##################

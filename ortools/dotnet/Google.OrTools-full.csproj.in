@@ -6,13 +6,13 @@
     <RuntimeIdentifiers>linux-x64;osx-x64;win-x64;linux-arm64;osx-arm64</RuntimeIdentifiers>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>@DOTNET_PROJECT@</AssemblyName>
-    <Version>@PROJECT_VERSION@</Version>
+    <Version>@PROJECT_VERSION@@DOTNET_RELEASE@</Version>
 
     <!-- Nuget Properties -->
     <Description>.NET wrapper for the Operations Research Tools project</Description>
 
     <!-- Pack Option -->
-    <Title>@DOTNET_PROJECT@ v@PROJECT_VERSION@</Title>
+    <Title>@DOTNET_PROJECT@ v@PROJECT_VERSION@@DOTNET_RELEASE@</Title>
     <PackageId>@DOTNET_PROJECT@</PackageId>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -202,11 +202,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-x64" Version="@PROJECT_VERSION@"/>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-x64"   Version="@PROJECT_VERSION@"/>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.win-x64"   Version="@PROJECT_VERSION@"/>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-arm64" Version="@PROJECT_VERSION@"/>
-    <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-arm64"   Version="@PROJECT_VERSION@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-x64" Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-x64"   Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.win-x64"   Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.linux-arm64" Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
+    <PackageReference Include="@DOTNET_PROJECT@.runtime.osx-arm64"   Version="@PROJECT_VERSION@@DOTNET_RELEASE@"/>
   </ItemGroup>
 </Project>
 
