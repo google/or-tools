@@ -86,6 +86,12 @@ message(STATUS "Java project: ${JAVA_PROJECT}")
 set(JAVA_PROJECT_DIR ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 message(STATUS "Java project build path: ${JAVA_PROJECT_DIR}")
 
+if(RELEASE)
+  set(JAVA_RELEASE "")
+else()
+  set(JAVA_RELEASE "-RC1")
+endif()
+
 ##################
 ##  PROTO FILE  ##
 ##################
