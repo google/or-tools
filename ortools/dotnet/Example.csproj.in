@@ -43,6 +43,6 @@
   <ItemGroup>
     <Compile Include="@EXAMPLE_FILE_NAME@" />
 
-    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
+    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION@@DOTNET_RELEASE@" />
   </ItemGroup>
 </Project>
