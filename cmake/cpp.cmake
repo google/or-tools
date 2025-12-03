@@ -547,6 +547,15 @@ generate_proto_library(
   NAME ortools
   FILES ${OR_TOOLS_PROTO_FILES})
 
+# Routing proto
+file(GLOB_RECURSE ROUTING_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/routing/parsers/*.proto"
+)
+generate_proto_library(
+  NAME routing
+  FILES ${ROUTING_PROTO_FILES}
+  LINK_LIBRARIES ${PROJECT_NAMESPACE}::ortools_proto)
+
 # MathOpt proto
 if(BUILD_MATH_OPT)
   file(GLOB_RECURSE MATH_OPT_PROTO_FILES RELATIVE ${PROJECT_SOURCE_DIR}
@@ -618,6 +627,11 @@ target_sources(${PROJECT_NAME} PRIVATE
   $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::ortools_proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::ortools_proto)
 
+# Add ${PROJECT_NAMESPACE}::routing_proto to libortools
+target_sources(${PROJECT_NAME} PRIVATE
+  $<TARGET_OBJECTS:${PROJECT_NAMESPACE}::routing_proto>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAMESPACE}::routing_proto)
+
 if(BUILD_MATH_OPT)
   # Add ${PROJECT_NAMESPACE}::math_opt_proto to libortools
   target_sources(${PROJECT_NAME} PRIVATE
@@ -669,6 +683,10 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_wrappers)
 add_subdirectory(ortools/linear_solver/proto_solver)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_linear_solver_proto_solver>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_linear_solver_proto_solver)
+
+add_subdirectory(ortools/routing/parsers)
+target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}_routing_parsers>)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_routing_parsers)
 
 # Dependencies
 if(APPLE)
