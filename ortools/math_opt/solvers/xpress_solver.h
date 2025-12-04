@@ -212,6 +212,8 @@ class XpressSolver : public SolverInterface {
 
   /** Whether to force an XPRSpostsolve() after solving. */
   bool force_postsolve_ = false;
+  /** Stop immediately after the initial LP in MIPs. */
+  bool stop_after_lp_ = false;
   /** Whether the model has a non-binary indicator variable.
    * The behavior expected by ortools is that
    * - we can happily create a model with non-binary indicators

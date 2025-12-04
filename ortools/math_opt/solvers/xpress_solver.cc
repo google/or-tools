@@ -345,8 +345,8 @@ class ScopedSolverContext {
   /** Setup model specific parameters. */
   absl::Status ApplyParameters(const SolveParametersProto& parameters,
                                MessageCallback message_callback,
-                               std::string* export_model,
-                               bool* force_postsolve) {
+                               std::string* export_model, bool* force_postsolve,
+                               bool* stop_after_lp) {
     std::vector<std::string> warnings;
     ASSIGN_OR_RETURN(bool const isMIP, shared_ctx.xpress->IsMIP());
     if (parameters.enable_output()) {
@@ -507,6 +507,14 @@ class ScopedSolverContext {
                  << "value " << value << " for FORCE_POSTSOLVE"
                  << " is not an integer";
         if (force_postsolve) *force_postsolve = l != 0;
+        continue;
+      } else if (name == "STOP_AFTER_LP") {
+        if (!absl::SimpleAtoi(value, &l))
+          return util::InvalidArgumentErrorBuilder()
+                 << "value " << value << " for STOP_AFTER_LP"
+                 << " is not an integer";
+        if (stop_after_lp) *stop_after_lp = l != 0;
+        continue;
       }
       RETURN_IF_ERROR(
           shared_ctx.xpress->GetControlInfo(name.c_str(), &id, &type));
@@ -635,9 +643,6 @@ class ScopedSolverContext {
             1000 - prio);  // Smaller prios have higher precedence in Xpress!
       }
 
-      if (colind.size() > 0)
-        return util::InvalidArgumentErrorBuilder()
-               << "more branching priorities than columns";
       RETURN_IF_ERROR(shared_ctx.xpress->LoadDirs(
           absl::MakeSpan(colind), absl::MakeSpan(priority), std::nullopt,
           std::nullopt, std::nullopt));
@@ -1390,8 +1395,9 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
   std::string export_model = "";
-  RETURN_IF_ERROR(solveContext.ApplyParameters(
-      parameters, message_callback, &export_model, &force_postsolve_));
+  RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback,
+                                               &export_model, &force_postsolve_,
+                                               &stop_after_lp_));
   RETURN_IF_ERROR(solveContext.ApplyModelParameters(
       model_parameters, variables_map_, linear_constraints_map_,
       objectives_map_));
@@ -1412,7 +1418,8 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   // the best algorithm. Note that we do not pass flags to the function
   // either. We assume that algorithms are configured via controls like
   // LPFLAGS.
-  RETURN_IF_ERROR(xpress_->Optimize("", &solvestatus_, &solstatus_));
+  RETURN_IF_ERROR(
+      xpress_->Optimize(stop_after_lp_ ? "l" : "", &solvestatus_, &solstatus_));
   // Reraise any exception now. Note that we cannot just limit the scope of
   // solveContext since its destructor will restore controls settings.
   // On the other hand, when fetching results we need to check some controls
@@ -1437,6 +1444,16 @@ absl::StatusOr<SolveResultProto> XpressSolver::Solve(
   ASSIGN_OR_RETURN(
       SolveResultProto solve_result,
       ExtractSolveResultProto(start, model_parameters, parameters));
+
+  // Other solvers reset/clear model_parameters here.
+  // We don't do this. Consider for example branching priorities. These
+  // can only be changed if the model is not in presolved state (see the
+  // reference documentation of XPRSloaddirs()).
+  // If the solve terminated due to a resource limit then the model will still
+  // be in presolved state. In order to clear branching priorities we would
+  // have to XPRSpostsolve() the problem. That would mean that the next call
+  // to Solve() would solve the model from scratch. Since this would make
+  // incremental solves impossible, we don't clear model_parameters here.
 
   return solve_result;
 }
@@ -1852,35 +1869,37 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
         switch (stopStatus) {
           case XPRS_STOP_TIMELIMIT:
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_TIME, std::nullopt, /** TODO: bound? */
-                "Time limit hit");
+                isMax, LIMIT_TIME, best_dual_bound, "Time limit hit");
           case XPRS_STOP_CTRLC:  // fallthrough
           case XPRS_STOP_USER:
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_INTERRUPTED, std::nullopt, /** TODO: bound? */
-                "Interrupted");
+                isMax, LIMIT_INTERRUPTED, best_dual_bound, "Interrupted");
           case XPRS_STOP_NODELIMIT:
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_NODE, std::nullopt, /** TODO: bound? */
-                "Node limit hit");
+                isMax, LIMIT_NODE, best_dual_bound, "Node limit hit");
           case XPRS_STOP_ITERLIMIT:
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_ITERATION, std::nullopt, /** TODO: bound? */
-                "Node limit hit");
+                isMax, LIMIT_ITERATION, best_dual_bound, "Node limit hit");
           case XPRS_STOP_WORKLIMIT:
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_OTHER, std::nullopt, /** TODO: bound? */
-                "Work limit hit");
+                isMax, LIMIT_OTHER, best_dual_bound, "Work limit hit");
           case XPRS_STOP_MEMORYERROR:
             // Despite its name, MEMORYERROR is not actually an error
             // but instead indicates that we hit a user defined memory
             // limit.
             return NoSolutionFoundTerminationProto(
-                isMax, LIMIT_MEMORY, std::nullopt, /** TODO: bound? */
-                "Memory limit hit");
+                isMax, LIMIT_MEMORY, best_dual_bound, "Memory limit hit");
           default:
-            return TerminateForReason(isMax,
-                                      TERMINATION_REASON_NO_SOLUTION_FOUND);
+            if (stop_after_lp_) {
+              // Stopping after the LP relaxation is treated as special
+              // node limit
+              return NoSolutionFoundTerminationProto(
+                  isMax, LIMIT_NODE, best_dual_bound,
+                  "Stopped after LP relaxation");
+            } else {
+              return TerminateForReason(isMax,
+                                        TERMINATION_REASON_NO_SOLUTION_FOUND);
+            }
         }
         break;
       case XPRS_SOLSTATUS_OPTIMAL:
@@ -1917,8 +1936,17 @@ absl::StatusOr<TerminationProto> XpressSolver::ConvertTerminationReason(
                                             best_primal_bound, best_dual_bound,
                                             "Memory limit hit");
           default:
-            return FeasibleTerminationProto(isMax, LIMIT_UNDETERMINED,
-                                            best_primal_bound, best_dual_bound);
+            if (stop_after_lp_) {
+              // Stopping after the LP relaxation is treated as special
+              // node limit
+              return FeasibleTerminationProto(
+                  isMax, LIMIT_NODE, best_primal_bound, best_dual_bound,
+                  "Stopped after LP relaxation");
+            } else {
+              return FeasibleTerminationProto(isMax, LIMIT_UNDETERMINED,
+                                              best_primal_bound,
+                                              best_dual_bound);
+            }
         }
         break;
       case XPRS_SOLSTATUS_INFEASIBLE:
@@ -1948,7 +1976,7 @@ XpressSolver::ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
   ScopedSolverContext solveContext(xpress_.get());
   RETURN_IF_ERROR(solveContext.AddCallbacks(message_callback, interrupter));
   RETURN_IF_ERROR(solveContext.ApplyParameters(parameters, message_callback,
-                                               nullptr, nullptr));
+                                               nullptr, nullptr, nullptr));
 
   return absl::UnimplementedError(
       "XpressSolver does not compute an infeasible subsystem (yet)");

@@ -25,11 +25,13 @@
 #include "ortools/math_opt/solver_tests/generic_tests.h"
 #include "ortools/math_opt/solver_tests/infeasible_subsystem_tests.h"
 #include "ortools/math_opt/solver_tests/invalid_input_tests.h"
+#include "ortools/math_opt/solver_tests/ip_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/logical_constraint_tests.h"
 #include "ortools/math_opt/solver_tests/lp_incomplete_solve_tests.h"
 #include "ortools/math_opt/solver_tests/lp_model_solve_parameters_tests.h"
 #include "ortools/math_opt/solver_tests/lp_parameter_tests.h"
 #include "ortools/math_opt/solver_tests/lp_tests.h"
+#include "ortools/math_opt/solver_tests/mip_tests.h"
 #include "ortools/math_opt/solver_tests/multi_objective_tests.h"
 #include "ortools/math_opt/solver_tests/qc_tests.h"
 #include "ortools/math_opt/solver_tests/qp_tests.h"
@@ -196,11 +198,76 @@ INSTANTIATE_TEST_SUITE_P(XpressInfeasibleSubsystemTest, InfeasibleSubsystemTest,
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IpModelSolveParametersTest);
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IpParameterTest);
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LargeInstanceIpParameterTest);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SimpleMipTest);
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(IncrementalMipTest);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MipSolutionHintTest);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(BranchPrioritiesTest);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(LazyConstraintsTest);
+
+INSTANTIATE_TEST_SUITE_P(XpressSimpleMipTest, SimpleMipTest,
+                         testing::Values(SolverType::kXpress));
+
+SolveParameters GetXpressSingleHintParams() {
+  // Parameters to stop on the first solution that is created from extending
+  // the solution hints.
+  SolveParameters params;
+  params.solution_limit = 1;
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  return params;
+}
+SolveParameters GetXpressTwoHintParams() {
+  // Parameters to stop on the second solution that is created from extending
+  // the solution hints.
+  SolveParameters params;
+  params.solution_limit = 2;
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  return params;
+}
+
+INSTANTIATE_TEST_SUITE_P(XpressMipSolutionHintTest, MipSolutionHintTest,
+                         testing::Values(SolutionHintTestParams(
+                             SolverType::kXpress, GetXpressSingleHintParams(),
+                             GetXpressTwoHintParams(),
+                             "User solution (.*) stored")));
+
+SolveParameters GetXpressLazyConstraintsParams() {
+  SolveParameters params;
+  // Disable heuristics since they may interfere with expected results.
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["CUTSTRATEGY"] = "0";
+  // Without STOP_AFTER_LP Xpress will not stop right after the relaxation
+  // but will start the cut loop and inject the lazy constraints, which is
+  // unexpected in .
+  // On the other hand, these parameters are also used for test
+  // LazyConstraintsTest.AnnotationsAreClearedAfterSolve/0 which then fails
+  // because that test expects to finish of the root node. Therefore that
+  // test is disabled.
+  params.xpress.param_values["STOP_AFTER_LP"] = "1";
+  return params;
+}
+
+INSTANTIATE_TEST_SUITE_P(XpressLazyConstraintsTest, LazyConstraintsTest,
+                         testing::Values(LazyConstraintsTestParams(
+                             SolverType::kXpress,
+                             GetXpressLazyConstraintsParams())));
+
+SolveParameters GetXpressBranchPrioritiesParams() {
+  SolveParameters params;
+  // Disable anything that is different from plain branch & bound
+  params.xpress.param_values["HEUREMPHASIS"] = "0";
+  params.xpress.param_values["PRESOLVE"] = "0";
+  params.xpress.param_values["CUTSTRATEGY"] = "0";
+  params.xpress.param_values["NODEPROBINGEFFORT"] = "0.0";
+  // For BranchPrioritiesTest.PrioritiesClearedAfterIncrementalSolve, otherwise
+  // we attempt to set branching priorities on a problem in presolved state,
+  // which is not allowed.
+  params.xpress.param_values["FORCE_POSTSOLVE"] = "1";
+  return params;
+}
+
+INSTANTIATE_TEST_SUITE_P(XpressBranchPrioritiesTest, BranchPrioritiesTest,
+                         testing::Values(BranchPrioritiesTestParams(
+                             SolverType::kXpress,
+                             GetXpressBranchPrioritiesParams())));
 
 LogicalConstraintTestParameters GetXpressLogicalConstraintTestParameters() {
   return LogicalConstraintTestParameters(
