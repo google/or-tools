@@ -98,15 +98,6 @@ set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
 # By default only build the C++ library which agregate all components.
-option(BUILD_CXX "Build C++ library" ON)
-message(STATUS "Build C++ library: ${BUILD_CXX}")
-
-# If we don't build ortools we could build the GLOP standalone project
-if(NOT BUILD_CXX)
-  OPTION(BUILD_GLOP "Build GLOP standalone" ON)
-  message(STATUS "Build standalone Glop: ${BUILD_GLOP}")
-endif()
-
 option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
 option(BUILD_JAVA "Build Java Library" OFF)
@@ -123,17 +114,17 @@ include(CMakeDependentOption)
 
 # Optional components (enabled by default)
 ## Flatzinc
-CMAKE_DEPENDENT_OPTION(BUILD_FLATZINC "Build flatzinc" ON "BUILD_CXX" OFF)
+option(BUILD_FLATZINC "Build flatzinc" ON)
 message(STATUS "Build Flatzinc: ${BUILD_FLATZINC}")
 
 ## MathOpt
-CMAKE_DEPENDENT_OPTION(BUILD_MATH_OPT "Build the MATH_OPT" ON "BUILD_CXX" OFF)
+option(BUILD_MATH_OPT "Build the MATH_OPT" ON)
 message(STATUS "Build MathOpt: ${BUILD_MATH_OPT}")
 
 ## Samples
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES" OFF)
 message(STATUS "Build C++ samples: ${BUILD_CXX_SAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
 message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
@@ -145,7 +136,7 @@ message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 ## Examples
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES" OFF)
 message(STATUS "Build C++ examples: ${BUILD_CXX_EXAMPLES}")
 CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
 message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
@@ -156,7 +147,7 @@ message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
 option(BUILD_DOC "Build documentation" OFF)
 message(STATUS "Build documentation: ${BUILD_DOC}")
-CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_CXX AND BUILD_DOC" OFF)
+CMAKE_DEPENDENT_OPTION(INSTALL_DOC "Install doc" ON "BUILD_DOC" OFF)
 message(STATUS "Install doc: ${INSTALL_DOC}")
 
 # By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
@@ -207,7 +198,7 @@ if(BUILD_TESTING)
     set(USE_fuzztest OFF)
   else()
     # since no distro provide a fuzztest package disable support by default.
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS} "BUILD_CXX" OFF)
+    option(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS})
   endif()
   if(NOT USE_fuzztest)
     set(BUILD_fuzztest OFF)
@@ -232,11 +223,11 @@ message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
 # Optional third party solvers (enabled by default)
 ## BOP
 # note OFF is currently not supported.
-CMAKE_DEPENDENT_OPTION(USE_BOP "Use the BOP solver" ON "BUILD_CXX" OFF)
+option(USE_BOP "Use the BOP solver" ON)
 message(STATUS "BOP support: ${USE_BOP}")
 
 ## COIN-OR Solvers (Cbc, Clp)
-CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
+option(USE_COINOR "Use the COIN-OR solver" ON)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
 if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
@@ -267,14 +258,14 @@ else()
 endif()
 
 ## GLOP
-# note OFF is currently not supported.
-CMAKE_DEPENDENT_OPTION(USE_GLOP "Use the GLOP solver" ON "BUILD_CXX" OFF)
+# note: -DUSE_GLOP=OFF is currently not supported.
+option(USE_GLOP "Use the GLOP solver" ON)
 message(STATUS "GLOP support: ${USE_GLOP}")
 
 ## GLPK
 # Disable by default since it is GPLv3, user could enable it and release under GPLv3
 # see: https://www.apache.org/licenses/GPL-compatibility.html
-CMAKE_DEPENDENT_OPTION(USE_GLPK "Use the GLPK solver" OFF "BUILD_CXX" OFF)
+option(USE_GLPK "Use the GLPK solver" OFF)
 message(STATUS "GLPK support: ${USE_GLPK}")
 if(USE_GLPK)
   CMAKE_DEPENDENT_OPTION(BUILD_GLPK "Build the GLPK dependency Library" OFF
@@ -286,12 +277,12 @@ message(STATUS "Build GLPK: ${BUILD_GLPK}")
 
 ## GUROBI
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
-CMAKE_DEPENDENT_OPTION(USE_GUROBI "Use the Gurobi solver" ON "BUILD_CXX" OFF)
+option(USE_GUROBI "Use the Gurobi solver" ON)
 message(STATUS "Gurobi support: ${USE_GUROBI}")
 
 ## HiGHS
 # see: https://github.com/ERGO-Code/HiGHS
-CMAKE_DEPENDENT_OPTION(USE_HIGHS "Use the HiGHS solver" ON "BUILD_CXX" OFF)
+option(USE_HIGHS "Use the HiGHS solver" ON)
 message(STATUS "HiGHS support: ${USE_HIGHS}")
 if(USE_HIGHS)
   CMAKE_DEPENDENT_OPTION(BUILD_HIGHS "Build the HiGHS dependency Library" OFF
@@ -302,7 +293,7 @@ endif()
 message(STATUS "Build HiGHS: ${BUILD_HIGHS}")
 
 ## PDLP
-CMAKE_DEPENDENT_OPTION(USE_PDLP "Use the PDLP solver" ON "BUILD_CXX" OFF)
+option(USE_PDLP "Use the PDLP solver" ON)
 message(STATUS "PDLP support: ${USE_PDLP}")
 if(USE_PDLP)
   CMAKE_DEPENDENT_OPTION(BUILD_PDLP "Build the PDLP dependency Library" ON
@@ -314,7 +305,7 @@ message(STATUS "Build PDLP: ${BUILD_PDLP}")
 
 ## SCIP
 # see: https://github.com/scipopt/scip
-CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
+option(USE_SCIP "Use the Scip solver" ON)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_Boost "Build the Boost dependency Library" OFF
@@ -339,14 +330,12 @@ message(STATUS "CPLEX support: ${USE_CPLEX}")
 
 ## XPRESS
 # Since it is dynamicaly loaded upon use, OFF is currently not supported.
-CMAKE_DEPENDENT_OPTION(USE_XPRESS "Use the Xpress solver" ON "BUILD_CXX" OFF)
+option(USE_XPRESS "Use the Xpress solver" ON)
 message(STATUS "Xpress support: ${USE_XPRESS}")
 
 # Language specific options
-if(BUILD_CXX)
-  CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
-  message(STATUS "C++: Build doc: ${BUILD_CXX_DOC}")
-endif()
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_DOC "Build the C++ doc" OFF "NOT BUILD_DOC" ON)
+message(STATUS "C++: Build doc: ${BUILD_CXX_DOC}")
 
 if(BUILD_DOTNET)
   option(UNIVERSAL_DOTNET_PACKAGE "Build a .Net multi OS Package" OFF)
@@ -463,7 +452,6 @@ include(check_deps)
 
 include(cpp)
 include(flatzinc)
-include(glop)
 
 include(python)
 include(java)
