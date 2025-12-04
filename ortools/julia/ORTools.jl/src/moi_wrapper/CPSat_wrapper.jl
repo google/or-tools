@@ -12,6 +12,7 @@ mutable struct CPSATOptimizer <: MOI.AbstractOptimizer
     parameters::Union{Nothing,SatParameters}
     # Set of constraints in variable indices
     variables_constraints::Set{MOI.ConstraintIndex}
+    linear_expressions_constraints::Set{MOI.ConstraintIndex}
     constraint_types_present::Set{Tuple{Type,Type}}
     # This structure is updated by the optimize! function.
     solve_response::Union{Nothing,CpSolverResponse}
@@ -20,6 +21,7 @@ mutable struct CPSATOptimizer <: MOI.AbstractOptimizer
         model = CpModel(name = name)
         parameters = SatParameters()
         variables_constraints = Set{MOI.ConstraintIndex}()
+        linear_expressions_constraints = Set{MOI.ConstraintIndex}()
         constraint_types_present = Set{Tuple{Type,Type}}()
 
         new(model, parameters, nothing)
@@ -38,6 +40,7 @@ end
 function MOI.empty!(optimizer::CPSATOptimizer)
     optimizer.model = CpModel()
     optimizer.variables_constraints = Set{MOI.ConstraintIndex}()
+    optimizer.linear_expressions_constraints = Set{MOI.ConstraintIndex}()
     optimizer.constraint_types_present = Set{Tuple{Type,Type}}()
     optimizer.solve_response = nothing
 
@@ -253,7 +256,7 @@ function MOI.add_constraint(
 
     # retrieve the constraint bounds
     lower_bound, upper_bound = bounds(c)
-    
+
     # TODO: (b/452908268) - Update variable's domain instead of creating a new linear constraint.
     linear_constraint = CPSatLinearConstraintProto()
 
@@ -359,4 +362,193 @@ function MOI.add_constraint(
     )
 
     return MOI.ConstraintIndex{MOI.VariableIndex,MOI.ZeroOne}(index)
+end
+
+function MOI.supports_constraint(
+    ::CPSATOptimizer,
+    ::Type{MOI.VariableIndex},
+    ::Type{MOI.Integer},
+)
+    return true
+end
+
+# TODO: (b/452914572) - Add support for MOI.add_constrained_variable.
+function MOI.add_constraint(
+    optimizer::CPSATOptimizer,
+    vi::MOI.VariableIndex,
+    c::MOI.Integer,
+)
+    # Get the int value of the variable index
+    index = vi.value
+
+    # Internally, the domain of each variable is a vector of integers.
+    # Update the associated metadata.
+    push!(optimizer.constraint_types_present, (MOI.VariableIndex, MOI.Integer))
+    push!(
+        optimizer.variables_constraints,
+        MOI.ConstraintIndex{MOI.VariableIndex,MOI.Integer}(index),
+    )
+
+    return MOI.ConstraintIndex{MOI.VariableIndex,MOI.Integer}(index)
+end
+
+function MOI.add_constraint(
+    optimizer::CPSATOptimizer,
+    f::MOI.ScalarAffineFunction{T},
+    c::SCALAR_SET,
+) where {T<:Real}
+    # Ensure that the constant is zero else throw an error.
+    MOI.throw_if_scalar_and_constant_not_zero(f, typeof(c))
+
+    # Retrieve the terms from `f`
+    terms = f.terms
+
+    constraint_index = length(optimizer.model.constraints) + 1
+    lower_bound, upper_bound = bounds(c)
+
+    linear_constraint = CPSatLinearConstraintProto()
+    # Update the domain
+    push!(linear_constraint.domain, lower_bound)
+    push!(linear_constraint.domain, upper_bound)
+
+    terms_pairs = get_terms_pairs(terms)
+
+    for (variable_index, coefficient) in term_pairs
+        push!(linear_constraint.vars, variable_index)
+        push!(linear_constraint.coeffs, coefficient)
+    end
+
+    constraint = CPSATConstraint()
+    constraint.name = :linear
+    constraint.value = linear_constraint
+
+    push!(optimizer.model.constraints, constraint)
+
+    # Update the associated metadata.
+    push!(optimizer.constraint_types_present, (MOI.ScalarAffineFunction{T}, typeof(c)))
+    push!(
+        optimizer.linear_expressions_constraints,
+        MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},typeof(c)}(constraint_index),
+    )
+
+    return MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},typeof(c)}(constraint_index)
+end
+
+function MOI.supports_constraint(
+    ::CPSATOptimizer,
+    ::Type{MOI.ScalarAffineFunction{T}},
+    ::Type{<:SCALAR_SET},
+) where {T<:Real}
+    return true
+end
+
+function MOI.get(optimizer::CPSATOptimizer, ::MOI.ListOfConstraintTypesPresent)
+    return collect(optimizer.constraint_types_present)
+end
+
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::MOI.ListOfConstraintIndices{MOI.VariableIndex,S},
+) where {S<:Union{MOI.ZeroOne,MOI.Integer,<:SCALAR_SET}}
+    return sort!(optimizer.variables_constraints, by = x -> x.value)
+end
+
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::MOI.ListOfConstraintIndices{MOI.ScalarAffineFunction{T},S},
+) where {T<:Real,S<:SCALAR_SET}
+    return sort!(optimizer.linear_expressions_constraints, by = x -> x.value)
+end
+
+function MOI.get(optimizer::CPSATOptimizer, ::MOI.NumberOfConstraints{F,S}) where {F,S}
+    return length(MOI.get(optimizer, MOI.ListOfConstraintIndices{F,S}()))
+end
+
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::MOI.ConstraintFunction,
+    c::MOI.ConstraintIndex{MOI.VariableIndex,<:Any},
+)
+    if !MOI.is_empty(optimizer)
+        return MOI.VariableIndex(c.value)
+    end
+
+    throw(ArgumentError("ConstraintIndex $(c.value) is not valid for this model."))
+end
+
+function MOI.set(
+    ::CPSATOptimizer,
+    ::MOI.ConstraintFunction,
+    ::MOI.ConstraintIndex{MOI.VariableIndex,<:Any},
+    ::MOI.VariableIndex,
+)
+    throw(MOI.SettingVariableIndexNotAllowed())
+end
+
+function MOI.get(
+    optimizer::CPSATOptimizer,
+    ::MOI.ConstraintFunction,
+    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S},
+) where {T<:Real,S<:SCALAR_SET}
+    if MOI.is_empty(optimizer)
+        return nothing
+    end
+    # Convert the linear constraint to the ScalarAffineFunction
+    # Return all indices that match the constraint index.
+    linear_constraint = optimizer.model.constraints[c.value].value
+
+    terms = MOI.ScalarAffineTerm{T}[]
+
+    for index in linear_constraint.vars
+        push!(
+            terms,
+            MOI.ScalarAffineTerm{T}(
+                linear_constraint.coeffs[index],
+                MOI.VariableIndex(linear_constraint.vars[index]),
+            ),
+        )
+    end
+
+    return MOI.ScalarAffineFunction{T}(terms, zero(Int))
+end
+
+function MOI.set(
+    optimizer::CPSATOptimizer,
+    ::MOI.ConstraintFunction,
+    c::MOI.ConstraintIndex{MOI.ScalarAffineFunction{T},S},
+    f::MOI.ScalarAffineFunction{T},
+) where {T<:Real,S<:SCALAR_SET}
+    MOI.throw_if_scalar_and_constant_not_zero(f, typeof(c))
+
+    # Retrieve the terms from `f`
+    terms = f.terms
+
+    if length(terms) == 0
+        throw(
+            ArgumentError(
+                "ScalarAffineFunction has no terms. You need to specify at least one term.",
+            ),
+        )
+    end
+
+    previous_fn = MOI.get(model, MOI.ConstraintFunction, c)
+
+    if isnothing(previous_fn)
+        throw(ArgumentError("There is no constraint with this index: $(c.value)."))
+    end
+
+    linear_constraint = optimizer.model.constraints[c.value].value
+
+    # Clear the associated indices in the column ids and coefficients.
+    empty!(linear_constraint.vars)
+    empty!(linear_constraint.coeffs)
+
+    terms_pairs = get_terms_pairs(terms)
+
+    for (variable_index, coefficient) in term_pairs
+        push!(linear_constraint.vars, variable_index)
+        push!(linear_constraint.coeffs, coefficient)
+    end
+
+    return nothing
 end
