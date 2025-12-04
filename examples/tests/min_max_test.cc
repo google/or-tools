@@ -12,8 +12,8 @@
 // limitations under the License.
 
 #include "absl/flags/parse.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
