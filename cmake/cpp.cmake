@@ -11,10 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(NOT BUILD_CXX)
-  return()
-endif()
-
 # Check primitive types
 option(CHECK_TYPE "Check primitive type size" OFF)
 if(CHECK_TYPE)
