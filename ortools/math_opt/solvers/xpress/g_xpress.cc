@@ -259,10 +259,6 @@ absl::Status Xpress::PostSolve() {
   return ToStatus(XPRSpostsolve(xpress_model_));
 }
 
-absl::Status Xpress::MipOptimize() {
-  return ToStatus(XPRSmipoptimize(xpress_model_, nullptr));
-}
-
 absl::Status Xpress::Optimize(std::string const& flags, int* p_solvestatus,
                               int* p_solstatus) {
   return ToStatus(

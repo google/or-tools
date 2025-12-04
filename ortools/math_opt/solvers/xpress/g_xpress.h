@@ -103,7 +103,6 @@ class Xpress {
   // size (nVars, nCons, and nVars respectively)
   absl::Status GetLpSol(absl::Span<double> primals, absl::Span<double> duals,
                         absl::Span<double> reducedCosts);
-  absl::Status MipOptimize();
   absl::Status Optimize(std::string const& flags = "",
                         int* p_solvestatus = nullptr,
                         int* p_solstatus = nullptr);
