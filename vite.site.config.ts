@@ -1,10 +1,8 @@
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import path from 'node:path';
 
 const siteRoot = path.resolve(__dirname, 'javascript/site');
 const distDir = path.resolve(__dirname, 'build/javascript/site');
-const libBuildDir = path.resolve(__dirname, 'build/javascript/lib');
-const wasmSourceDir = path.resolve(__dirname, 'build/javascript/wasm');
 
 export default defineConfig({
   root: siteRoot,
@@ -14,9 +12,6 @@ export default defineConfig({
     format: 'es',
   },
   server: {
-    fs: {
-      allow: [siteRoot, wasmSourceDir, libBuildDir],
-    },
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
@@ -31,6 +26,7 @@ export default defineConfig({
   build: {
     outDir: distDir,
     emptyOutDir: true,
+    assetsInlineLimit: 0,
     rollupOptions: {
       input: {
         index: path.resolve(siteRoot, 'index.html'),

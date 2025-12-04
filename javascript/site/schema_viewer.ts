@@ -1,4 +1,4 @@
-import { CpSat } from '../lib';
+import { CpSat } from 'ortools-cpsat-wasm';
 
 const statusEl = document.getElementById('status') as HTMLElement | null;
 const cpEl = document.getElementById('cp-schema') as HTMLTextAreaElement | null;

@@ -1,4 +1,4 @@
-import { CpSat, type CpSatModelInstance } from '../lib';
+import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
 
 type Domain = [number, number] | number[];
 type LinearConstraint = {

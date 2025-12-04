@@ -159,6 +159,12 @@ glue and our handwritten APIs.
 - `npm run clean` — removes the entire `build/` tree, covering both the wasm outputs and the bundled site.
 - `npm run pack:lib` — rebuilds just the `build/javascript/lib` bundle and runs `npm pack`, leaving the `.tgz` in `build/javascript/lib`.
 
+### Linking the demo site to the local package
+
+When you want the Vite site to consume the freshly built `ortools-cpsat-wasm` package exactly like an external project, run `npm run link:site`. That script performs both `npm link` from the repo root and `npm link ortools-cpsat-wasm` inside `javascript/site`, matching what you’d do manually.
+
+`npm run dev`, `npm run start`, and `npm run build:site` already execute `npm run link:site` as part of their flows, so the site automatically resolves `ortools-cpsat-wasm` from `node_modules` before bundling.
+
 ### Running the demos
 
 - The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `navigator.hardwareConcurrency` to match the pthread pool size.

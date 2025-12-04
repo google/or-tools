@@ -1,4 +1,4 @@
-import { CpSat, type CpSatModelInstance } from '../lib';
+import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
 
 type MagicSquareExpr = {
   vars: number[];
@@ -12,9 +12,9 @@ type MagicSquareModel = {
   constraints: Array<
     | { name: string; all_diff: { exprs: MagicSquareExpr[] } }
     | {
-        name: string;
-        linear: { vars: number[]; coeffs: number[]; domain: number[] };
-      }
+      name: string;
+      linear: { vars: number[]; coeffs: number[]; domain: number[] };
+    }
   >;
 };
 

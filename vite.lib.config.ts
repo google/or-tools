@@ -1,26 +1,57 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
-import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 
 const libRoot = path.resolve(__dirname, 'javascript/lib');
+const wasmBuildDir = path.resolve(__dirname, 'build/javascript/wasm');
 const outDir = path.resolve(__dirname, 'build/javascript/lib');
+
+
+// vite.lib.config.ts
+const patchEmscriptenWasmPlugin = () => ({
+  name: 'patch-emscripten-no-inline',
+  transform(code, id) {
+    if (id.includes('cp_sat_runtime.js')) {
+      let modifiedCode = code;
+
+      // 1. WASM Fix: Keep WASM external
+      // Matches: new URL('file.wasm', ...)
+      if (modifiedCode.includes('.wasm')) {
+        console.log('[patch-emscripten] PATCHING .wasm IN', path.basename(id), "with ?no-inline");
+        modifiedCode = modifiedCode.replace(
+          /new\s+URL\s*\(\s*['"]([^'"]+\.wasm)['"]\s*,/g,
+          (match, filename) => `new URL("${filename}?no-inline",`
+        );
+      }
+
+      return {
+        code: modifiedCode,
+        map: null
+      };
+    }
+  }
+});
 
 export default defineConfig({
   root: libRoot,
+  resolve: {
+    alias: {
+      '@internal-wasm': wasmBuildDir
+    }
+  },
   plugins: [
-    wasm(),
-    topLevelAwait()
+    topLevelAwait(),
+    patchEmscriptenWasmPlugin()
   ],
   worker: {
-    format: 'es', // Force worker to be an ES module (allows TLA)
+    format: 'es',
     plugins: () => [
-      wasm(),
-      topLevelAwait()
+      topLevelAwait(),
+      patchEmscriptenWasmPlugin()
     ],
     rollupOptions: {
       output: {
-        sourcemap: true // Explicitly enable for worker
+        sourcemap: true
       }
     }
   },
@@ -31,16 +62,14 @@ export default defineConfig({
       fileName: 'cp_sat_api',
     },
     outDir,
-    emptyOutDir: false,
+    emptyOutDir: true,
+    assetsInlineLimit: 0,
     sourcemap: true,
-    minify: 'esbuild',
     rollupOptions: {
       output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'chunks/[name]-[hash].js',
       },
-      // Silence the "Node-only" warnings since we are in browser
       external: ['module', 'worker_threads', 'fs', 'path', 'url'],
     },
   },

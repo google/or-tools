@@ -1,4 +1,4 @@
-import { CpSat, type CpSatModelInstance } from '../lib';
+import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
 
 type SolverMethod = 'sat' | 'sat_table' | 'sat_column';
 
