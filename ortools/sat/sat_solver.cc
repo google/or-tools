@@ -974,10 +974,16 @@ void SatSolver::ProcessCurrentConflict(
     switch (parameters_->binary_minimization_algorithm()) {
       case SatParameters::NO_BINARY_MINIMIZATION:
         break;
-      case SatParameters::BINARY_MINIMIZATION_FIRST:
+      case SatParameters::BINARY_MINIMIZATION_FROM_UIP:
         binary_implication_graph_->MinimizeConflictFirst(
             *trail_, &learned_conflict_, &is_marked_,
-            clause_ids_for_minimization);
+            clause_ids_for_minimization, /*also_use_decisions=*/false);
+        break;
+      case SatParameters::BINARY_MINIMIZATION_FROM_UIP_AND_DECISIONS:
+        binary_implication_graph_->MinimizeConflictFirst(
+            *trail_, &learned_conflict_, &is_marked_,
+            clause_ids_for_minimization, /*also_use_decisions=*/true);
+        break;
     }
     DCHECK(IsConflictValid(learned_conflict_));
   }
@@ -1060,7 +1066,7 @@ void SatSolver::ProcessCurrentConflict(
     for (const Literal l : clause) {
       if (Assignment().LiteralIsFalse(l)) ++num_false;
     }
-    if (num_false == clause.size()) {
+    if (num_false == clause.size() || clause.size() == 1) {
       int max_level = 0;
       for (const Literal l : clause) {
         const int level = AssignmentLevel(l.Variable());
@@ -1366,6 +1372,8 @@ void SatSolver::AppendLratProofForFailingClause(
   const SatClause* failing_sat_clause = trail_->FailingSatClause();
   if (failing_sat_clause != nullptr) {
     failing_clause_id = clauses_propagator_->GetClauseId(failing_sat_clause);
+  } else if (trail_->FailingClauseId() != kNoClauseId) {
+    failing_clause_id = trail_->FailingClauseId();
   } else {
     absl::Span<const Literal> failing_clause = trail_->FailingClause();
     if (failing_clause.size() == 2) {
@@ -2342,6 +2350,7 @@ std::string SatSolver::RunningStatisticsString() const {
 void SatSolver::ProcessNewlyFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(CurrentDecisionLevel(), 0);
+  if (num_processed_fixed_variables_ == trail_->Index()) return;
   int num_detached_clauses = 0;
   int num_binary = 0;
 

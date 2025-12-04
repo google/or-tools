@@ -512,8 +512,8 @@ void IntegerConflictResolution::ComputeFirstUIPConflict(
       }
 
       if (uip_found) {
-        if (params_.binary_minimization_algorithm() ==
-            SatParameters::BINARY_MINIMIZATION_FIRST) {
+        if (params_.binary_minimization_algorithm() !=
+            SatParameters::NO_BINARY_MINIMIZATION) {
           if (conflict->empty()) {
             // This one will always stay in the conflict, even after
             // minimization. So we can use it to minimize the conflict and avoid

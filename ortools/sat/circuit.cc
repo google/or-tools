@@ -308,7 +308,7 @@ bool CircuitPropagator::Propagate() {
         std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
         enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
-        if (!trail_.EnqueueWithStoredReason(literal.Negated())) {
+        if (!trail_.EnqueueWithStoredReason(kNoClauseId, literal.Negated())) {
           return false;
         }
       }
@@ -357,7 +357,8 @@ bool CircuitPropagator::Propagate() {
         if (extra_reason != kFalseLiteralIndex) {
           reason->push_back(Literal(extra_reason));
         }
-        const bool ok = trail_.EnqueueWithStoredReason(literal.Negated());
+        const bool ok =
+            trail_.EnqueueWithStoredReason(kNoClauseId, literal.Negated());
         if (!ok) return false;
         continue;
       }
@@ -398,7 +399,7 @@ bool CircuitPropagator::Propagate() {
           std::vector<Literal>* reason = trail_.GetEmptyVectorToStoreReason();
           FillReasonForPath(start_node, reason);
           enforcement_helper_.AddEnforcementReason(enforcement_id_, reason);
-          const bool ok = trail_.EnqueueWithStoredReason(literal);
+          const bool ok = trail_.EnqueueWithStoredReason(kNoClauseId, literal);
           if (!ok) return false;
         } else {
           trail_.EnqueueWithSameReasonAs(literal, variable_with_same_reason);
@@ -669,8 +670,8 @@ bool CircuitCoveringPropagator::Propagate() {
         !trail_->Assignment().LiteralIsFalse(graph_[end][start])) {
       auto* reason = trail_->GetEmptyVectorToStoreReason();
       FillFixedPathInReason(start, end, reason);
-      const bool ok =
-          trail_->EnqueueWithStoredReason(graph_[end][start].Negated());
+      const bool ok = trail_->EnqueueWithStoredReason(
+          kNoClauseId, graph_[end][start].Negated());
       if (!ok) return false;
     }
   }

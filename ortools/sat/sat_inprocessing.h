@@ -30,6 +30,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/gate_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
@@ -439,7 +440,8 @@ class BoundedVariableElimination {
 class GateCongruenceClosure {
  public:
   explicit GateCongruenceClosure(Model* model)
-      : sat_solver_(model->GetOrCreate<SatSolver>()),
+      : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        sat_solver_(model->GetOrCreate<SatSolver>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
         clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
@@ -454,23 +456,29 @@ class GateCongruenceClosure {
 
  private:
   struct GateHash {
-    explicit GateHash(CompactVectorVector<int, LiteralIndex>* g)
-        : gates_inputs(g) {}
+    explicit GateHash(std::vector<int>* t,
+                      CompactVectorVector<int, LiteralIndex>* g)
+        : gates_type(t), gates_inputs(g) {}
     std::size_t operator()(int gate_id) const {
-      return absl::HashOf((*gates_inputs)[gate_id]);
+      return absl::HashOf((*gates_type)[gate_id], (*gates_inputs)[gate_id]);
     }
-    CompactVectorVector<int, LiteralIndex>* gates_inputs;
+    const std::vector<int>* gates_type;
+    const CompactVectorVector<int, LiteralIndex>* gates_inputs;
   };
 
   struct GateEq {
-    explicit GateEq(CompactVectorVector<int, LiteralIndex>* g)
-        : gates_inputs(g) {}
+    explicit GateEq(std::vector<int>* t,
+                    CompactVectorVector<int, LiteralIndex>* g)
+        : gates_type(t), gates_inputs(g) {}
     bool operator()(int gate_a, int gate_b) const {
       if (gate_a == gate_b) return true;
+
       // We use absl::span<> comparison.
-      return (*gates_inputs)[gate_a] == (*gates_inputs)[gate_b];
+      return ((*gates_type)[gate_a] == (*gates_type)[gate_b]) &&
+             ((*gates_inputs)[gate_a] == (*gates_inputs)[gate_b]);
     }
-    CompactVectorVector<int, LiteralIndex>* gates_inputs;
+    const std::vector<int>* gates_type;
+    const CompactVectorVector<int, LiteralIndex>* gates_inputs;
   };
 
   // Recovers "target_literal = and(literals)" from the model.
@@ -483,8 +491,20 @@ class GateCongruenceClosure {
   // - for all i, target_literal => literal_i  (direct binary implication)
   // - all literal at true => target_literal, this is a clause:
   //   (not(literal[i]) for all i, target_literal).
-  void ExtractAndGates(PresolveTimer& timer);
+  void ExtractAndGatesAndFillShortTruthTables(PresolveTimer& timer);
 
+  // From possible assignment of "arity" given variables, extract functions.
+  template <int arity>
+  void ExtractShortGates(
+      PresolveTimer& timer,
+      const absl::flat_hash_map<std::array<BooleanVariable, arity>,
+                                SmallBitset>& data);
+  template <int arity>
+  void AddToTruthTable(absl::Span<const Literal> clause,
+                       absl::flat_hash_map<std::array<BooleanVariable, arity>,
+                                           SmallBitset>& data);
+
+  const VariablesAssignment& assignment_;
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
@@ -501,16 +521,32 @@ class GateCongruenceClosure {
   // A Boolean gates correspond to target = f(inputs).
   //
   // Note that the inputs are canonicalized. For and_gates, they are sorted,
-  // since the gate function does not depend on the order.
+  // since the gate function does not depend on the order. The type of an
+  // and_gates is kAndGateType.
   //
-  // TODO(user): for now we have a single gate type. We can easily support more
-  // by creating an extra std::vector<GateType> and adding that to our
-  // GateHash/GateEq hash_set.
+  // Otherwise, we support generic 2 and 3 inputs gates where the type is the
+  // truth table. i.e. target = type[sum value_of_inputs[i] * 2^i]. For such
+  // gate, the target and inputs will always be canonicalized to positive and
+  // sorted literal. We just update the truth table accordingly.
+  static constexpr int kAndGateType = -1;
   std::vector<LiteralIndex> gates_target_;
+  std::vector<int> gates_type_;
   CompactVectorVector<int, LiteralIndex> gates_inputs_;
+
   // For each gate, "the" corresponding clause. For a gate a = and(x,y,...) this
   // is the clause "x and y and ... => a". Only used for LRAT.
   std::vector<const SatClause*> gates_clause_;
+
+  // Map (Xi) (sorted) to a bitmask corresponding to the allowed values.
+  // We loop over all short clauses to fill this.
+  //
+  // TODO(user): Shorter clauses impact larger truth table too and we can
+  // combine two size 3 to construct a size 4 (needed for ITE-gate).
+  // not ideal.
+  absl::flat_hash_map<std::array<BooleanVariable, 3>, SmallBitset>
+      truth_table3_;
+  absl::flat_hash_map<std::array<BooleanVariable, 4>, SmallBitset>
+      truth_table4_;
 
   // For stats.
   double total_dtime_ = 0.0;

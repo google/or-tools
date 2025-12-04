@@ -33,6 +33,7 @@
 #include "ortools/sat/recordio.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -149,6 +150,19 @@ class LratProofHandler {
                          absl::Span<const ClauseId> unit_ids,
                          absl::Span<const LratChecker::RatIds> rat = {});
 
+  // This assumes that the 'new_clause' to prove and all the ones needed for the
+  // proof only touch a small number of variables (<= 6). It will then prove the
+  // new clause by enumerating all possibilities and producing the relevant
+  // intermediate LRAT RUP steps.
+  //
+  // The last two arguments must have the same size and are in one to one
+  // correspondence. Note that we might not need all the given clauses in the
+  // proof.
+  bool AddAndProveInferredClauseByEnumeration(
+      ClauseId new_id, absl::Span<const Literal> new_clause,
+      absl::Span<const ClauseId> ids_for_proof,
+      const CompactVectorVector<int, Literal>& clauses_for_proof);
+
   // Adds a clause which was inferred by another worker. Returns true if
   // successful (the operation can fail if LRAT checks are enabled, and the ID
   // is already used by another clause).
@@ -190,6 +204,7 @@ class LratProofHandler {
   bool LratError() const;
 
   const int id_;
+  ClauseIdGenerator* id_generator_;
   SharedLratProofStatus* proof_status_;
   std::unique_ptr<LratChecker> lrat_checker_;
   std::unique_ptr<LratWriter> lrat_writer_;

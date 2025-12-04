@@ -14,6 +14,7 @@
 #include "ortools/sat/lrat_proof_handler.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
@@ -23,6 +24,7 @@
 #include <string_view>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -40,6 +42,7 @@
 #include "ortools/sat/recordio.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/sat/util.h"
 
 #if defined(_MSC_VER)
 ABSL_FLAG(std::string, cp_model_drat_output, ".\\drat.txt",
@@ -423,6 +426,7 @@ std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(Model* model) {
 
 LratProofHandler::LratProofHandler(Model* model)
     : id_(model->GetOrCreate<SharedLratProofStatus>()->NewSubSolverId()),
+      id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       proof_status_(model->GetOrCreate<SharedLratProofStatus>()) {
   const SatParameters& params = *model->GetOrCreate<SatParameters>();
   if (params.check_lrat_proof()) {
@@ -448,7 +452,7 @@ LratProofHandler::LratProofHandler(Model* model)
 
 bool LratProofHandler::AddProblemClause(ClauseId id,
                                         absl::Span<const Literal> clause) {
-  VLOG(1) << "AddProblemClause: id=" << id
+  VLOG(2) << "AddProblemClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (all_problem_clauses_loaded_ && debug_crash_on_error_) {
     LOG(FATAL) << "LRAT error: problem clauses must not be added after "
@@ -481,7 +485,7 @@ bool LratProofHandler::AddInferredClause(
     ClauseId id, absl::Span<const Literal> clause,
     absl::Span<const ClauseId> unit_ids,
     absl::Span<const LratChecker::RatIds> rat) {
-  VLOG(1) << "AddInferredClause: id=" << id
+  VLOG(2) << "AddInferredClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",")
           << " unit_ids=" << absl::StrJoin(unit_ids, ",") << " rat={"
           << absl::StrJoin(rat, " ") << "}";
@@ -508,7 +512,7 @@ bool LratProofHandler::AddInferredClause(
 
 bool LratProofHandler::AddImportedClause(ClauseId id,
                                          absl::Span<const Literal> clause) {
-  VLOG(1) << "AddImportedClause: id=" << id
+  VLOG(2) << "AddImportedClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddProblemClause(id, clause)) {
@@ -526,7 +530,7 @@ bool LratProofHandler::AddImportedClause(ClauseId id,
 
 bool LratProofHandler::AddAssumedClause(ClauseId id,
                                         absl::Span<const Literal> clause) {
-  VLOG(1) << "AddAssumedClause: id=" << id
+  VLOG(2) << "AddAssumedClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (debug_crash_on_error_) {
     LOG(FATAL) << "LRAT error: assumed clauses are not supposed to happen";
@@ -571,7 +575,7 @@ void LratProofHandler::DeleteClause(ClauseId id,
     delete_pinned_clause_ = true;
     return;
   }
-  VLOG(1) << "DeleteClause: id=" << id
+  VLOG(2) << "DeleteClause: id=" << id
           << " literals=" << absl::StrJoin(clause, ",");
   if (lrat_checker_ != nullptr) {
     lrat_checker_->DeleteClauses({id});
@@ -636,6 +640,178 @@ void LratProofHandler::Close(bool model_is_unsat) {
   if (lrat_writer_ != nullptr) {
     proof_status_->NewProofFile(lrat_writer_->filename());
   }
+}
+
+bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
+    ClauseId new_id, absl::Span<const Literal> new_clause,
+    absl::Span<const ClauseId> ids_for_proof,
+    const CompactVectorVector<int, Literal>& clauses_for_proof) {
+  CHECK_EQ(ids_for_proof.size(), clauses_for_proof.size());
+  CHECK(!clauses_for_proof.empty());
+
+  // First we count the number of variables appearing and have a separate dense
+  // index for them. The first new_clause.size() dense index are exactly the
+  // literal of the new_clause.
+  absl::flat_hash_map<BooleanVariable, int> to_dense_index;
+  std::vector<Literal> dense_index_to_literal;
+  dense_index_to_literal.assign(new_clause.begin(), new_clause.end());
+  for (const Literal lit : new_clause) {
+    const auto [it, inserted] =
+        to_dense_index.insert({lit.Variable(), to_dense_index.size()});
+    if (!inserted) {
+      VLOG(2) << "Duplicate variable in new_clause! " << new_clause;
+      return false;
+    }
+  }
+
+  // Then any new BooleanVariable appearing get the next dense index.
+  std::vector<Literal> relevant_literals;
+  for (int i = 0; i < clauses_for_proof.size(); ++i) {
+    for (const Literal lit : clauses_for_proof[i]) {
+      const auto [it, inserted] =
+          to_dense_index.insert({lit.Variable(), to_dense_index.size()});
+      if (inserted) {
+        relevant_literals.push_back(lit);
+      }
+    }
+  }
+
+  // Too many variables.
+  //
+  // TODO(user): The limit can be increased a bit if needed.
+  if (to_dense_index.size() > 6) {
+    VLOG(2) << "Too many variables";
+    return false;
+  }
+
+  // For the proof we will need all clauses of the form
+  //    {new_clause, l0, ..., lk} for all k in [0, n) and
+  //    li = relevant_literals[i] OR relevant_literals[i].Negated().
+  //
+  // That give us 2^(n + 1) intermediate clauses.
+  // Their ids will be stored in (1 << k) + binary_encoding_of_the_li.
+  const int n = to_dense_index.size() - new_clause.size();
+  CHECK_EQ(n, relevant_literals.size());
+  const int num_intermediates = 1 << (n + 1);
+  std::vector<ClauseId> ids(num_intermediates, kNoClauseId);
+
+  if (n == 0) {
+    VLOG(2) << "Nothing to prove! An existing clause is included inside";
+    return false;
+  }
+
+  VLOG(2) << "Starting proof n= " << n << " " << num_intermediates;
+
+  // Any initial clause can be used to prove all the intermediates that contains
+  // it. Note that this code supports duplicate literals in the clauses.
+  for (int i = 0; i < clauses_for_proof.size(); ++i) {
+    bool skip = false;
+    int base_index = 0;
+    int mask = 0;
+    int k = 0;
+    for (const Literal lit : clauses_for_proof[i]) {
+      const int dense_index = to_dense_index[lit.Variable()];
+      if (dense_index < new_clause.size()) {
+        // Check that the literal is the same as in the new_clause, if
+        // not, this clause will not be needed for the proof.
+        if (lit != new_clause[dense_index]) {
+          skip = true;
+          break;
+        }
+      } else {
+        k = std::max(k, dense_index);
+        mask |= 1 << dense_index;
+        if (lit == relevant_literals[dense_index - new_clause.size()]) {
+          base_index |= 1 << dense_index;
+        }
+      }
+    }
+    if (skip) continue;
+
+    mask >>= new_clause.size();
+    base_index >>= new_clause.size();
+    k = k + 1 - new_clause.size();
+
+    VLOG(2) << k << " " << std::bitset<8>(mask) << " "
+            << std::bitset<8>(base_index);
+
+    // TODO(user): we could be faster here if it become needed.
+    for (int m = 0; m < (1 << n); ++m) {
+      if ((m & mask) != base_index) continue;  // not included.
+      const int index = m | base_index;
+      for (int j = k; j <= n; ++j) {
+        if (index >> j == 0) {
+          VLOG(2) << "Included in " << j << " "
+                  << std::bitset<8>((1 << j) | index);
+          ids[(1 << j) | index] = ids_for_proof[i];
+        }
+      }
+    }
+  }
+
+  // We can prove the others by decreasing k.
+  std::vector<Literal> tmp_clause;
+  tmp_clause.assign(new_clause.begin(), new_clause.end());
+  std::vector<bool> id_need_deletion(num_intermediates, false);
+  for (int k = n; --k >= 0;) {
+    for (int m = 0; m < (1 << k); ++m) {
+      const int index = (1 << k) | m;
+      if (ids[index] != kNoClauseId) continue;  // Already proven.
+
+      // Generate the tmp_clause.
+      tmp_clause.resize(new_clause.size());
+      for (int i = 0; i < k; ++i) {
+        tmp_clause.push_back(relevant_literals[i]);
+        if (((index >> i) & 1) == 0) {
+          tmp_clause.back() = tmp_clause.back().Negated();
+        }
+      }
+
+      // Prove it from the two clauses at k + 1.
+      const int higher1 = index ^ ((0b11) << k);
+      const int higher2 = index ^ ((0b10) << k);
+      const ClauseId id1 = ids[higher1];
+      const ClauseId id2 = ids[higher2];
+      if (id1 == kNoClauseId || id2 == kNoClauseId) {
+        VLOG(2) << "missing higher level clauses in the resolution."
+                << " index: " << std::bitset<8>(index)
+                << " higher1: " << std::bitset<8>(higher1)
+                << " higher2: " << std::bitset<8>(higher2);
+        return false;
+      }
+
+      ids[index] = k == 0 ? new_id : id_generator_->GetNextId();
+      if (k != 0) {
+        VLOG(2) << "temporary !! " << ids[index] << " " << tmp_clause;
+        id_need_deletion[index] = true;  // temporary.
+      }
+      if (!AddInferredClause(ids[index], tmp_clause, {id1, id2})) {
+        VLOG(2) << "Failed resolution step";
+        return false;
+      }
+
+      if (k == 0) {
+        DCHECK_EQ(new_clause, tmp_clause);
+        VLOG(2) << "Proven " << new_clause << "!";
+      }
+
+      // Lets delete the ids if they were temporary.
+      if (id_need_deletion[higher1]) {
+        tmp_clause.push_back(relevant_literals[k].Negated());
+        VLOG(2) << "deleting: " << id1 << " " << tmp_clause;
+        DeleteClause(id1, tmp_clause);
+        tmp_clause.pop_back();
+      }
+      if (id_need_deletion[higher2]) {
+        tmp_clause.push_back(relevant_literals[k]);
+        VLOG(2) << "deleting: " << id2 << " " << tmp_clause;
+        DeleteClause(id2, tmp_clause);
+        tmp_clause.pop_back();
+      }
+    }
+  }
+
+  return true;
 }
 
 }  // namespace sat

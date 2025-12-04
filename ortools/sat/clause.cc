@@ -477,20 +477,7 @@ bool ClauseManager::InprocessingAddUnitClause(ClauseId unit_clause_id,
 
 bool ClauseManager::InprocessingFixLiteral(
     Literal true_literal, absl::Span<const ClauseId> clause_ids) {
-  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
-
-  ClauseId clause_id = kNoClauseId;
-  if (lrat_proof_handler_ != nullptr) {
-    clause_id = clause_id_generator_->GetNextId();
-    lrat_proof_handler_->AddInferredClause(clause_id, {true_literal},
-                                           clause_ids);
-  }
-  trail_->EnqueueWithUnitReason(clause_id, true_literal);
-
-  // Even when all clauses are detached, we can propagate the implication
-  // graph and we do that right away.
-  return implication_graph_->Propagate(trail_);
+  return implication_graph_->FixLiteral(true_literal, clause_ids);
 }
 
 void ClauseManager::ChangeLbdIfBetter(SatClause* clause, int new_lbd) {
@@ -943,21 +930,17 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
     ClauseId id, Literal a, Literal b, bool change_reason,
     bool delete_non_representative_id) {
   SCOPED_TIME_STAT(&stats_);
+  DCHECK_GE(a.Index(), 0);
+  DCHECK_GE(b.Index(), 0);
 
   // Tricky: If this is the first clause, the propagator will be added and
   // assumed to be in a "propagated" state. This makes sure this is the case.
   if (no_constraint_ever_added_) propagation_trail_index_ = trail_->Index();
   no_constraint_ever_added_ = false;
 
-  Literal rep_a = a;
-  Literal rep_b = b;
   ClauseId rep_id = kNoClauseId;
-  if (is_redundant_[a.Index()]) {
-    rep_a = Literal(representative_of_[a.Index()]);
-  }
-  if (is_redundant_[b.Index()]) {
-    rep_b = Literal(representative_of_[b.Index()]);
-  }
+  const Literal rep_a = RepresentativeOf(a);
+  const Literal rep_b = RepresentativeOf(b);
   if (rep_a == rep_b.Negated()) return true;
 
   if (lrat_proof_handler_ != nullptr) {
@@ -1361,15 +1344,50 @@ void BinaryImplicationGraph::Reimply(Trail* trail, int old_trail_index) {
 // can take advantage of that.
 void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked, std::vector<ClauseId>* clause_ids) {
+    SparseBitset<BooleanVariable>* marked, std::vector<ClauseId>* clause_ids,
+    bool also_use_decisions) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!conflict->empty());
   is_marked_.ClearAndResize(LiteralIndex(implications_and_amos_.size()));
+
+  tmp_to_keep_.clear();
+  tmp_to_keep_.push_back(conflict->front().Negated());
   if (lrat_proof_handler_ != nullptr) {
     MarkDescendants</*fill_implied_by=*/true>(conflict->front().Negated());
   } else {
     MarkDescendants(conflict->front().Negated());
   }
+
+  // Because the decision cannot be removed from the conflict, we know they will
+  // stay, so it is okay to see what they propagate in the binary implication
+  // graph. Technically we could do that for any first literal of a decision
+  // level. Improve?
+  std::vector<std::pair<Literal, int>> decisions;
+  if (also_use_decisions) {
+    for (int i = 1; i < conflict->size(); ++i) {
+      const auto& info = trail_->Info((*conflict)[i].Variable());
+      if (info.type == AssignmentType::kSearchDecision) {
+        decisions.push_back({(*conflict)[i].Negated(), info.level});
+      }
+    }
+    absl::c_stable_sort(decisions, [](const std::pair<LiteralIndex, int>& a,
+                                      const std::pair<LiteralIndex, int>& b) {
+      return a.second > b.second;
+    });
+  }
+
+  // Keep marking everything propagated by the decisions, and make sure we
+  // don't remove the one from which we called MarkDescendants().
+  for (const auto [literal, unused_level] : decisions) {
+    if (is_marked_[literal]) continue;
+    tmp_to_keep_.push_back(literal);
+    if (lrat_proof_handler_ != nullptr) {
+      MarkDescendants</*fill_implied_by=*/true>(literal);
+    } else {
+      MarkDescendants(literal);
+    }
+  }
+
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     // TODO(user): if this is false, then we actually have a conflict of size 2.
     // This can only happen if the binary clause was not propagated properly
@@ -1379,6 +1397,9 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
       marked->Set(Literal(i).Variable());
     }
   }
+
+  // Remove all marked literals from the conflict.
+  for (const Literal l : tmp_to_keep_) is_marked_.Clear(l);
   if (lrat_proof_handler_ != nullptr) {
     RemoveRedundantLiterals</*fill_clause_ids=*/true>(conflict, clause_ids);
   } else {

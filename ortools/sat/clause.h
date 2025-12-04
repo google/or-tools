@@ -46,15 +46,6 @@
 namespace operations_research {
 namespace sat {
 
-// A generator for ClauseIds. Not thread-safe.
-class ClauseIdGenerator {
- public:
-  ClauseId GetNextId() { return ClauseId(next_id_++); }
-
- private:
-  ClauseId next_id_ = ClauseId(1);
-};
-
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
 // literals. In many places, we just use vector<literal> to encode one. But in
 // the critical propagation code, we use this class to remove one memory
@@ -709,7 +700,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // details about the different algorithms.
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<BooleanVariable>* marked,
-                             std::vector<ClauseId>* clause_ids);
+                             std::vector<ClauseId>* clause_ids,
+                             bool also_use_decisions);
 
   // Appends the IDs of the unit and binary clauses that imply the given
   // literals to `clause_ids`. Either `MinimizeConflictFirst` or
@@ -985,6 +977,12 @@ class BinaryImplicationGraph : public SatPropagator {
     return implications_and_amos_[lit].offsets();
   }
 
+  // Simple wrapper to not forget to output newly fixed variable to the DRAT
+  // or LRAT proof (with clause_ids as proof) if needed. This will propagate
+  // right away the implications.
+  bool FixLiteral(Literal true_literal,
+                  absl::Span<const ClauseId> clause_ids = {});
+
  private:
   friend class LratEquivalenceHelper;
 
@@ -1004,12 +1002,6 @@ class BinaryImplicationGraph : public SatPropagator {
     if (a.Variable() > b.Variable()) std::swap(a, b);
     clause_id_[{a, b}] = id;
   }
-
-  // Simple wrapper to not forget to output newly fixed variable to the DRAT
-  // or LRAT proof (with clause_ids as proof) if needed. This will propagate
-  // right away the implications.
-  bool FixLiteral(Literal true_literal,
-                  absl::Span<const ClauseId> clause_ids = {});
 
   // Removes any literal whose negation is marked (except the first one). If
   // `fill_clause_ids` is true, fills the LRAT proof for this change in
@@ -1117,12 +1109,14 @@ class BinaryImplicationGraph : public SatPropagator {
   int64_t num_redundant_literals_ = 0;
 
   // Bitset used by MinimizeClause().
+  //
   // TODO(user): use the same one as the one used in the classic minimization
   // because they are already initialized. Moreover they contains more
-  // information.
+  // information?
   SparseBitset<LiteralIndex> is_marked_;
   SparseBitset<LiteralIndex> tmp_bitset_;
   SparseBitset<LiteralIndex> is_simplified_;
+  std::vector<Literal> tmp_to_keep_;
 
   // Used by AppendImplicationChains() to avoid processing a unit clause several
   // times.

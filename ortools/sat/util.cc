@@ -607,33 +607,6 @@ void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   }
 }
 
-int64_t MaxBoundedSubsetSum::MaxIfAdded(int64_t candidate) const {
-  if (candidate > bound_ || current_max_ == bound_) return current_max_;
-
-  int64_t current_max = current_max_;
-  // Mode 1: vector of all possible sums (with duplicates).
-  if (!sums_.empty()) {
-    for (const int64_t v : sums_) {
-      if (v + candidate > bound_) continue;
-      if (v + candidate > current_max) {
-        current_max = v + candidate;
-        if (current_max == bound_) return current_max;
-      }
-    }
-    return current_max;
-  }
-
-  // Mode 2: bitset of all possible sums.
-  if (!expanded_sums_.empty()) {
-    const int64_t min_useful = std::max<int64_t>(0, current_max_ - candidate);
-    const int64_t max_useful = bound_ - candidate;
-    for (int64_t v = max_useful; v >= min_useful; --v) {
-      if (expanded_sums_[v]) return v + candidate;
-    }
-  }
-  return current_max_;
-}
-
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(
     absl::Span<const Domain> domains, absl::Span<const int64_t> coeffs,
     absl::Span<const int64_t> costs, const Domain& rhs) {

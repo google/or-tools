@@ -550,9 +550,6 @@ class MaxBoundedSubsetSum {
   // We look for the maximum sum <= bound.
   void Reset(int64_t bound);
 
-  // Returns the updated max if value was added to the subset-sum.
-  int64_t MaxIfAdded(int64_t candidate) const;
-
   // Add a value to the base set for which subset sums will be taken.
   void Add(int64_t value);
 

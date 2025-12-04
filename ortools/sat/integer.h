@@ -21,6 +21,7 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,7 +35,9 @@
 #include "absl/types/span.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/strong_vector.h"
+#include "ortools/sat/clause.h"
 #include "ortools/sat/integer_base.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -105,6 +108,8 @@ class IntegerEncoder {
   explicit IntegerEncoder(Model* model)
       : sat_solver_(model->GetOrCreate<SatSolver>()),
         trail_(model->GetOrCreate<Trail>()),
+        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         delayed_to_fix_(model->GetOrCreate<DelayedRootLevelDeduction>()),
         domains_(*model->GetOrCreate<IntegerDomains>()),
         num_created_variables_(0) {}
@@ -291,9 +296,15 @@ class IntegerEncoder {
           Literal(sat_solver_->NewBooleanVariable(), true);
       literal_index_true_ = literal_true.Index();
 
-      // This might return false if we are already UNSAT.
-      // TODO(user): Make sure we abort right away on unsat!
-      (void)sat_solver_->AddUnitClause(literal_true);
+      ClauseId clause_id = kNoClauseId;
+      if (lrat_proof_handler_ != nullptr) {
+        clause_id = clause_id_generator_->GetNextId();
+        // We cannot prove `literal_true` by unit propagation, but we can with a
+        // RAT inference (trivial here since there are no clauses containing the
+        // negation of the pivot `literal_true`).
+        lrat_proof_handler_->AddInferredClause(clause_id, {literal_true}, {});
+      }
+      trail_->EnqueueWithUnitReason(clause_id, literal_true);
     }
     return Literal(literal_index_true_);
   }
@@ -328,6 +339,8 @@ class IntegerEncoder {
 
   SatSolver* sat_solver_;
   Trail* trail_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
   DelayedRootLevelDeduction* delayed_to_fix_;
   const IntegerDomains& domains_;
 
@@ -339,7 +352,7 @@ class IntegerEncoder {
   // corresponding to the same variable).
   //
   // Note that we only keep this for positive variable.
-  // The one for the negation can be infered by it.
+  // The one for the negation can be inferred by it.
   //
   // Like                x >= 1     x >= 4     x >= 5
   // Correspond to       x <= 0     x <= 3     x <= 4
