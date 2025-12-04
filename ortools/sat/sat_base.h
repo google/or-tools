@@ -242,8 +242,16 @@ class AssignmentView {
 
 // The ID of a clause.
 DEFINE_STRONG_INT_TYPE(ClauseId, int64_t);
-
 constexpr ClauseId kNoClauseId(0);
+
+// A generator for ClauseIds. Not thread-safe.
+class ClauseIdGenerator {
+ public:
+  ClauseId GetNextId() { return ClauseId(next_id_++); }
+
+ private:
+  ClauseId next_id_ = ClauseId(1);
+};
 
 // Forward declaration.
 class SatClause;
@@ -346,12 +354,12 @@ class Trail {
     EnqueueHelper(
         Literal* trail_ptr, AssignmentInfo* current_info,
         AssignmentInfo* info_ptr, VariablesAssignment* assignment,
-        util_intops::StrongVector<BooleanVariable, ClauseId>* unit_clause_id)
+        util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids)
         : trail_ptr_(trail_ptr),
           current_info_(current_info),
           info_ptr_(info_ptr),
           bitset_(assignment->GetBitsetView()),
-          unit_clause_id_(unit_clause_id) {}
+          clause_ids_(clause_ids) {}
 
     void EnqueueAtLevel(Literal true_literal, int level) {
       bitset_.Set(true_literal);
@@ -364,10 +372,10 @@ class Trail {
     void EnqueueWithUnitReason(Literal true_literal, ClauseId clause_id) {
       DCHECK_NE(clause_id, kNoClauseId);
       const BooleanVariable var = true_literal.Variable();
-      if (var.value() >= unit_clause_id_->size()) {
-        unit_clause_id_->resize(var.value() + 1, kNoClauseId);
+      if (var.value() >= clause_ids_->size()) {
+        clause_ids_->resize(var.value() + 1, kNoClauseId);
       }
-      (*unit_clause_id_)[var] = clause_id;
+      (*clause_ids_)[var] = clause_id;
 
       bitset_.Set(true_literal);
       AssignmentInfo* info = info_ptr_ + true_literal.Variable().value();
@@ -389,12 +397,12 @@ class Trail {
     AssignmentInfo* current_info_;
     AssignmentInfo* info_ptr_;
     Bitset64<LiteralIndex>::View bitset_;
-    util_intops::StrongVector<BooleanVariable, ClauseId>* unit_clause_id_;
+    util_intops::StrongVector<BooleanVariable, ClauseId>* clause_ids_;
   };
   EnqueueHelper GetEnqueueHelper(int propagator_id) {
     current_info_.type = propagator_id;
     return EnqueueHelper(trail_.data(), &current_info_, info_.data(),
-                         &assignment_, &unit_clause_id_);
+                         &assignment_, &clause_ids_);
   }
 
   // Specific Enqueue() for search decisions.
@@ -435,13 +443,7 @@ class Trail {
 
   // Specific Enqueue() version for unit clauses.
   void EnqueueWithUnitReason(ClauseId clause_id, Literal true_literal) {
-    if (clause_id != kNoClauseId) {
-      const BooleanVariable var = true_literal.Variable();
-      if (var.value() >= unit_clause_id_.size()) {
-        unit_clause_id_.resize(var.value() + 1, kNoClauseId);
-      }
-      unit_clause_id_[var] = clause_id;
-    }
+    MaybeSetClauseId(true_literal, clause_id);
     EnqueueAtLevel(true_literal, AssignmentType::kUnitReason, 0);
   }
 
@@ -459,18 +461,21 @@ class Trail {
 
   // Enqueues the given literal using the current content of
   // GetEmptyVectorToStoreReason() as the reason. This API is a bit more
-  // leanient and does not require the literal to be unassigned. If it is
+  // lenient and does not require the literal to be unassigned. If it is
   // already assigned to false, then MutableConflict() will be set appropriately
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
-  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
+  ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(ClauseId clause_id,
+                                                    Literal true_literal) {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
+      failing_clause_id_ = clause_id;
       return false;
     }
 
+    MaybeSetClauseId(true_literal, clause_id);
     Enqueue(true_literal, AssignmentType::kCachedReason);
     const BooleanVariable var = true_literal.Variable();
     reasons_[var] = reasons_repository_[info_[var].trail_index];
@@ -516,8 +521,17 @@ class Trail {
   ClauseId GetUnitClauseId(BooleanVariable var) const {
     DCHECK(AssignmentType(var) == AssignmentType::kUnitReason);
     DCHECK_EQ(Info(var).level, 0);
-    if (var.value() >= unit_clause_id_.size()) return kNoClauseId;
-    return unit_clause_id_[var];
+    if (var.value() >= clause_ids_.size()) return kNoClauseId;
+    return clause_ids_[var];
+  }
+
+  // Returns the ID of the clause which is the reason why the given variable was
+  // enqueued, or kNoClauseId if there is none. The variable must have been
+  // enqueued with EnqueueWithStoredReason().
+  ClauseId GetStoredReasonClauseId(BooleanVariable var) const {
+    DCHECK(AssignmentType(var) == AssignmentType::kCachedReason);
+    if (var.value() >= clause_ids_.size()) return kNoClauseId;
+    return clause_ids_[var];
   }
 
   // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
@@ -583,6 +597,7 @@ class Trail {
   std::vector<Literal>* MutableConflict() {
     ++conflict_timestamp_;
     failing_sat_clause_ = nullptr;
+    failing_clause_id_ = kNoClauseId;
     return &conflict_;
   }
 
@@ -600,8 +615,15 @@ class Trail {
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
   // know whether or not the last conflict was caused by a clause.
-  void SetFailingSatClause(SatClause* clause) { failing_sat_clause_ = clause; }
+  void SetFailingSatClause(SatClause* clause) {
+    failing_sat_clause_ = clause;
+    failing_clause_id_ = kNoClauseId;
+  }
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
+
+  // Returns the LRAT ID of the failing clause. This ID is only set if a
+  // conflict is detected in EnqueueWithStoredReason().
+  ClauseId FailingClauseId() const { return failing_clause_id_; }
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
@@ -664,6 +686,16 @@ class Trail {
  private:
   ConflictResolutionFunction resolution_;
 
+  void MaybeSetClauseId(Literal true_literal, ClauseId clause_id) {
+    if (clause_id != kNoClauseId) {
+      const BooleanVariable var = true_literal.Variable();
+      if (var.value() >= clause_ids_.size()) {
+        clause_ids_.resize(var.value() + 1, kNoClauseId);
+      }
+      clause_ids_[var] = clause_id;
+    }
+  }
+
   // Finds all literals between the current trail index and the given one
   // assigned at the current level or lower, and re-enqueues them with the same
   // reason.
@@ -678,9 +710,11 @@ class Trail {
   int64_t conflict_timestamp_ = 0;
   std::vector<Literal> conflict_;
   util_intops::StrongVector<BooleanVariable, AssignmentInfo> info_;
-  // The ID of unit clauses (literals enqueued at level 0 with a kUnitReason).
-  util_intops::StrongVector<BooleanVariable, ClauseId> unit_clause_id_;
+  // The ID of unit clauses (literals enqueued at level 0 with a kUnitReason)
+  // and of reason clauses for literals enqueued with a stored reason.
+  util_intops::StrongVector<BooleanVariable, ClauseId> clause_ids_;
   SatClause* failing_sat_clause_;
+  ClauseId failing_clause_id_;
 
   // Data used by EnqueueWithSameReasonAs().
   util_intops::StrongVector<BooleanVariable, BooleanVariable>

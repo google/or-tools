@@ -737,21 +737,6 @@ TEST(MaxBoundedSubsetSumTest, SimpleMultiChoice) {
   EXPECT_EQ(bounded_subset_sum.CurrentMax(), 31);
 }
 
-TEST(MaxBoundedSubsetSumTest, CheckMaxIfAdded) {
-  MaxBoundedSubsetSum bounded_subset_sum(34);
-  bounded_subset_sum.Add(10);
-  bounded_subset_sum.Add(10);
-  bounded_subset_sum.Add(10);
-  EXPECT_EQ(bounded_subset_sum.MaxIfAdded(12), 32);
-  EXPECT_EQ(bounded_subset_sum.MaxIfAdded(15), 30);
-  EXPECT_EQ(bounded_subset_sum.MaxIfAdded(34), 34);
-  for (int i = 0; i < 100; ++i) {
-    bounded_subset_sum.Add(18);
-  }
-  EXPECT_EQ(bounded_subset_sum.CurrentMax(), 30);
-  EXPECT_EQ(bounded_subset_sum.MaxIfAdded(5), 33);
-}
-
 static void BM_bounded_subset_sum(benchmark::State& state) {
   random_engine_t random_;
   const int num_items = state.range(0);

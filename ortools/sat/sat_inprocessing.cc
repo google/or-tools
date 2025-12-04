@@ -14,6 +14,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <deque>
@@ -37,6 +38,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/gate_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/probing.h"
@@ -1916,13 +1918,45 @@ GateCongruenceClosure::~GateCongruenceClosure() {
   });
 }
 
+template <int arity>
+void GateCongruenceClosure::AddToTruthTable(
+    absl::Span<const Literal> clause,
+    absl::flat_hash_map<std::array<BooleanVariable, arity>, SmallBitset>&
+        data) {
+  CHECK_EQ(clause.size(), arity);
+  std::array<BooleanVariable, arity> key;
+  SmallBitset bitmask;
+  FillKeyAndBitmask(clause, absl::MakeSpan(key), bitmask);
+  for (const BooleanVariable var : key) {
+    CHECK(!implication_graph_->IsRemoved(Literal(var, true)));
+  }
+  auto [it, inserted] = data.insert({key, bitmask});
+  if (!inserted) {
+    const SmallBitset old = it->second;
+    it->second &= bitmask;  // Remove one value.
+    if (old != it->second) {
+      // TODO(user): keep id for proof.
+    }
+  }
+}
+
 // Note that this is the "hot" part of the algo, once we have the and gates,
 // the congruence closure should be quite fast.
-void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
+void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
+    PresolveTimer& timer) {
+  truth_table3_.clear();
+  truth_table4_.clear();
+
   std::vector<Literal> candidates;
   for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
     if (timer.WorkLimitIsReached()) break;
     if (clause->size() == 0) continue;
+
+    if (clause->size() == 3) {
+      AddToTruthTable<3>(clause->AsSpan(), truth_table3_);
+    } else if (clause->size() == 4) {
+      AddToTruthTable<4>(clause->AsSpan(), truth_table4_);
+    }
 
     // Used for an optimization below.
     int min_num_implications = std::numeric_limits<int>::max();
@@ -2030,6 +2064,8 @@ void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
       // Add the detected gate (its inputs are the negation of each clause
       // literal other than the target).
       gates_target_.push_back(target.Index());
+      gates_type_.push_back(kAndGateType);
+
       const int index = gates_inputs_.Add({});
       for (const Literal l : clause->AsSpan()) {
         if (l == target) continue;
@@ -2048,6 +2084,60 @@ void GateCongruenceClosure::ExtractAndGates(PresolveTimer& timer) {
       // a single base clause of size n will correspond to n and_gates !
     }
   }
+
+  timer.AddCounter("and_gates", gates_inputs_.size());
+}
+
+template <int arity>
+void GateCongruenceClosure::ExtractShortGates(
+    PresolveTimer& timer,
+    const absl::flat_hash_map<std::array<BooleanVariable, arity>, SmallBitset>&
+        data) {
+  // For a table on n variables, we look for function x = f(n - 1) variable.
+  const int num_bits = arity - 1;
+
+  // TODO(user): This is non-deterministic order. We need to fix that or
+  // initially sort the queue of gates to process.
+  int num_functions = 0;
+  for (const auto [key, truth_table] : data) {
+    for (int i = 0; i < arity; ++i) {
+      if (!IsFunction<arity>(i, truth_table)) continue;
+      ++num_functions;
+
+      gates_target_.push_back(Literal(key[i], true));
+      gates_inputs_.Add({});
+      for (int j = 0; j < arity; ++j) {
+        if (i != j) {
+          gates_inputs_.AppendToLastVector(Literal(key[j], true));
+        }
+      }
+
+      // Generate the function truth table as a type.
+      // We will canonicalize it further in the main loop.
+      unsigned int type = 0;
+      for (int p = 0; p < (1 << num_bits); ++p) {
+        // Expand from (arity - 1) bits to (arity) bits.
+        const int bigger_p = AddHoleAtPosition(i, p);
+
+        if ((truth_table >> (bigger_p + (1 << i))) & 1) {
+          // target is 1 at this position.
+          type |= 1 << p;
+          DCHECK_NE((truth_table >> bigger_p) & 1, 1);  // Proper function.
+        } else {
+          // Note that if there is no feasible assignment for a given p, first
+          // we could have learned a smaller clause, but also we don't really
+          // care what is the value of the target at that point p, so we use
+          // zero.
+        }
+      }
+
+      gates_type_.push_back(type);
+      gates_clause_.push_back(nullptr);
+    }
+  }
+
+  timer.AddCounter(absl::StrCat("table", arity), data.size());
+  timer.AddCounter(absl::StrCat("fn", num_bits), num_functions);
 }
 
 namespace {
@@ -2290,17 +2380,27 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
   gates_target_.clear();
   gates_inputs_.clear();
+  gates_type_.clear();
   gates_clause_.clear();
 
-  // TODO(user): Extract more gates, and encode store their type.
-  ExtractAndGates(timer);
-  timer.AddCounter("and_gates", gates_inputs_.size());
+  ExtractAndGatesAndFillShortTruthTables(timer);
+
+  // TODO(user): We currently do not support this with lrat. Fix.
+  if (lrat_proof_handler_ == nullptr) {
+    ExtractShortGates<3>(timer, truth_table3_);
+    ExtractShortGates<4>(timer, truth_table4_);
+  }
+
+  // All vector have the same size.
+  // Except gates_clause_ which is only filled if we need proof.
+  CHECK_EQ(gates_target_.size(), gates_type_.size());
+  CHECK_EQ(gates_target_.size(), gates_inputs_.size());
 
   // If two gates have the same type and the same inputs, their targets are
   // equivalent. We use an hash set to detect that the inputs are the same.
   absl::flat_hash_set<int, GateHash, GateEq> gate_set(
-      /*capacity=*/gates_inputs_.size(), GateHash(&gates_inputs_),
-      GateEq(&gates_inputs_));
+      /*capacity=*/gates_inputs_.size(), GateHash(&gates_type_, &gates_inputs_),
+      GateEq(&gates_type_, &gates_inputs_));
 
   // Used to find representatives as we detect equivalent literal.
   DenseConnectedComponentsFinder union_find;
@@ -2330,6 +2430,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   int num_units = 0;
   int num_processed = 0;
   int num_equivalences = 0;
+  int arity1_equivalences = 0;
   while (!queue.empty()) {
     ++num_processed;
     const int id = queue.back();
@@ -2368,13 +2469,13 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       if (is_equivalent) {
         CHECK_NE(id, other_id);
         CHECK_GE(other_id, 0);
+        CHECK_EQ(gates_type_[id], gates_type_[other_id]);
         CHECK_EQ(absl::Span<const LiteralIndex>(gates_inputs_[id]),
                  absl::Span<const LiteralIndex>(gates_inputs_[other_id]));
 
         // We detected a <=> b (or, equivalently, rep(a) <=> rep(b)).
         const LiteralIndex a = gates_target_[id];
         const LiteralIndex b = gates_target_[other_id];
-
         input_literals_to_gate.RemoveFromFutureOutput(id);
         if (lrat_proof_handler_ != nullptr) {
           lrat_helper.ShortenEquivalencesWithRepresentative(Literal(a));
@@ -2382,6 +2483,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
         }
         const LiteralIndex rep_a(union_find.FindRoot(a.value()));
         const LiteralIndex rep_b(union_find.FindRoot(b.value()));
+
         if (rep_a != rep_b) {
           ++num_equivalences;
           const Literal rep_lit_a(rep_a);
@@ -2401,45 +2503,58 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
             return false;
           }
 
-          union_find.AddEdge(rep_a.value(), rep_b.value());
-          const LiteralIndex rep(union_find.FindRoot(rep_b.value()));
-          const LiteralIndex to_merge = rep == rep_a ? rep_b : rep_a;
-          input_literals_to_gate.MergeInto(to_merge, rep);
-          if (lrat_proof_handler_ != nullptr) {
-            if (rep == rep_a) {
-              lrat_helper.AddGateEquivalenceClauses(
-                  rep_lit_b, rep_b_implies_rep_a, rep_a_implies_rep_b);
-            } else {
-              lrat_helper.AddGateEquivalenceClauses(
-                  rep_lit_a, rep_a_implies_rep_b, rep_b_implies_rep_a);
-            }
-          }
+          for (const bool negate : {false, true}) {
+            const LiteralIndex x =
+                negate ? Literal(rep_a).NegatedIndex() : rep_a;
+            const LiteralIndex y =
+                negate ? Literal(rep_b).NegatedIndex() : rep_b;
 
-          // Re-add to the queue all gates with touched inputs.
-          //
-          // TODO(user): I think we could only add the gates of "to_merge"
-          // before we merge. This part of the code is quite quick in any case.
-          for (const int gate_id : input_literals_to_gate[rep]) {
-            if (in_queue[gate_id]) continue;
-            queue.push_back(gate_id);
-            in_queue[gate_id] = true;
+            union_find.AddEdge(x.value(), y.value());
+            const LiteralIndex rep(union_find.FindRoot(y.value()));
+            const LiteralIndex to_merge = rep == x ? y : x;
+            input_literals_to_gate.MergeInto(to_merge, rep);
+
+            if (lrat_proof_handler_ != nullptr) {
+              if (rep == x) {
+                lrat_helper.AddGateEquivalenceClauses(
+                    Literal(y),
+                    negate ? rep_a_implies_rep_b : rep_b_implies_rep_a,
+                    negate ? rep_b_implies_rep_a : rep_a_implies_rep_b);
+              } else {
+                lrat_helper.AddGateEquivalenceClauses(
+                    Literal(x),
+                    negate ? rep_b_implies_rep_a : rep_a_implies_rep_b,
+                    negate ? rep_a_implies_rep_b : rep_b_implies_rep_a);
+              }
+            }
+
+            // Re-add to the queue all gates with touched inputs.
+            //
+            // TODO(user): I think we could only add the gates of "to_merge"
+            // before we merge. This part of the code is quite quick in any
+            // case.
+            for (const int gate_id : input_literals_to_gate[rep]) {
+              if (in_queue[gate_id]) continue;
+              queue.push_back(gate_id);
+              in_queue[gate_id] = true;
+            }
           }
         }
         break;
       }
 
-      // Canonicalize.
+      // Canonicalize on pass zero, otherwise loop.
+      // Note that even if nothing change, we want to run canonicalize at
+      // least once on the small "truth table" gates.
       //
       // Note that sorting works for and_gate and any gate that does not depend
       // on the order of its inputs. But if we add more fancy functions, we will
       // need to be careful.
-      //
-      // TODO(user): Because we fix literal, we should also deal with fixed
-      // literals here. Right now we defer this to a later step, but it might
-      // reduce the cascading effect of finding more equivalences.
-      if (pass == 0) {
-        marked_.ResetAllToFalse();
+      if (pass > 0) continue;
+
+      if (gates_type_[id] == kAndGateType) {
         absl::Span<LiteralIndex> inputs = gates_inputs_[id];
+        marked_.ResetAllToFalse();
         int new_size = 0;
         bool is_unit = false;
         for (const LiteralIndex l : inputs) {
@@ -2454,13 +2569,16 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
           if (marked_[Literal(rep).Negated()]) {
             is_unit = true;
             const Literal to_fix = Literal(gates_target_[id]).Negated();
-            absl::InlinedVector<ClauseId, 4> clause_ids;
-            if (lrat_proof_handler_ != nullptr) {
-              lrat_helper.AppendFixAndGateTargetClauses(id, Literal(rep),
-                                                        clause_ids);
-            }
-            if (!clause_manager_->InprocessingFixLiteral(to_fix, clause_ids)) {
-              return false;
+            if (!assignment_.LiteralIsTrue(to_fix)) {
+              absl::InlinedVector<ClauseId, 4> clause_ids;
+              if (lrat_proof_handler_ != nullptr) {
+                lrat_helper.AppendFixAndGateTargetClauses(id, Literal(rep),
+                                                          clause_ids);
+              }
+              if (!clause_manager_->InprocessingFixLiteral(to_fix,
+                                                           clause_ids)) {
+                return false;
+              }
             }
             break;
           }
@@ -2480,6 +2598,50 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
         CHECK_GT(new_size, 0);
         std::sort(inputs.begin(), inputs.begin() + new_size);
         gates_inputs_.Shrink(id, new_size);
+
+        // Lets convert to the short "type" if we can. The truth table is simply
+        // a 1 on the last position (where all inputs are ones). We fall back to
+        // the case below to canonicalize further.
+        if (new_size > 4 || lrat_proof_handler_ != nullptr) continue;
+        gates_type_[id] = 1 << ((1 << new_size) - 1);
+      }
+
+      // Generic "short" gates.
+      // We just take the representative and re-canonicalize.
+      absl::Span<LiteralIndex> inputs = gates_inputs_[id];
+      CHECK_GE(gates_type_[id], 0);
+      CHECK_EQ(gates_type_[id] >> (1 << (inputs.size())), 0);
+      for (LiteralIndex& lit_ref : inputs) {
+        lit_ref = LiteralIndex(union_find.FindRoot(lit_ref.value()));
+      }
+
+      const int new_size = CanonicalizeFunctionTruthTable(
+          gates_target_[id], inputs, gates_type_[id]);
+      if (new_size < inputs.size()) {
+        gates_inputs_.Shrink(id, new_size);
+      }
+
+      if (new_size == 1) {
+        // We have a function of size 1! this is an equivalence.
+        //
+        // TODO(user): deal with it.
+        ++arity1_equivalences;
+        input_literals_to_gate.RemoveFromFutureOutput(id);
+        break;
+      } else if (new_size == 0) {
+        // We have a fixed function ! just fix the literal.
+        CHECK(Literal(gates_target_[id]).IsPositive());
+        const Literal to_fix{Literal(gates_target_[id]).Variable(),
+                             (gates_type_[id] & 1) == 1};
+        if (!assignment_.LiteralIsTrue(to_fix)) {
+          absl::InlinedVector<ClauseId, 4> clause_ids;
+          if (!clause_manager_->InprocessingFixLiteral(to_fix, clause_ids)) {
+            return false;
+          }
+          ++num_units;
+        }
+        input_literals_to_gate.RemoveFromFutureOutput(id);
+        break;
       }
     }
   }
@@ -2490,6 +2652,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
   total_equivalences_ += num_equivalences;
   total_num_units_ += num_units;
 
+  timer.AddCounter("arity1_equivalences", arity1_equivalences);
   timer.AddCounter("units", num_units);
   timer.AddCounter("processed", num_processed);
   timer.AddCounter("equivalences", num_equivalences);

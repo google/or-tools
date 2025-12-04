@@ -298,6 +298,29 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "gate_utils",
+    hdrs = ["gate_utils.h"],
+    deps = [
+        ":sat_base",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "gate_utils_test",
+    srcs = ["gate_utils_test.cc"],
+    deps = [
+        ":gate_utils",
+        ":sat_base",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -1585,6 +1608,7 @@ cc_library(
     hdrs = ["sat_inprocessing.h"],
     deps = [
         ":clause",
+        ":gate_utils",
         ":linear_programming_constraint",
         ":lrat_proof_handler",
         ":model",
@@ -1939,7 +1963,9 @@ cc_library(
     hdrs = ["integer.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":clause",
         ":integer_base",
+        ":lrat_proof_handler",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -4279,6 +4305,7 @@ cc_library(
         ":recordio",
         ":sat_base",
         ":synchronization",
+        ":util",
         "//ortools/base:file",
         "//ortools/base:intops",
         "//ortools/base:timer",
@@ -4287,6 +4314,19 @@ cc_library(
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lrat_proof_handler_test",
+    srcs = ["lrat_proof_handler_test.cc"],
+    deps = [
+        ":lrat_proof_handler",
+        ":model",
+        ":sat_base",
+        ":util",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/types:span",
     ],
 )

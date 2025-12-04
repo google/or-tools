@@ -127,10 +127,11 @@ message SatParameters {
   enum BinaryMinizationAlgorithm {
     reserved 2, 3, 4;
     NO_BINARY_MINIMIZATION = 0;
-    BINARY_MINIMIZATION_FIRST = 1;
+    BINARY_MINIMIZATION_FROM_UIP = 1;
+    BINARY_MINIMIZATION_FROM_UIP_AND_DECISIONS = 5;
   }
   optional BinaryMinizationAlgorithm binary_minimization_algorithm = 34
-      [default = BINARY_MINIMIZATION_FIRST];
+      [default = BINARY_MINIMIZATION_FROM_UIP_AND_DECISIONS];
 
   // At a really low cost, during the 1-UIP conflict computation, it is easy to
   // detect if some of the involved reasons are subsumed by the current

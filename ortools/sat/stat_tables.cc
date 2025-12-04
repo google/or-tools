@@ -91,17 +91,19 @@ void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
 void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
   absl::MutexLock mutex_lock(mutex_);
   auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* binary = model->GetOrCreate<BinaryImplicationGraph>();
   SatSolver::Counters counters = sat_solver->counters();
 
   if (clauses_table_.empty()) {
     clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
-                              "LitLearned", "LitForgotten", "Subsumed",
-                              "MClauses", "MDecisions", "MLitTrue", "MSubsumed",
-                              "MLitRemoved", "MReused"});
+                              "LitRemovedBinary", "LitLearned", "LitForgotten",
+                              "Subsumed", "MClauses", "MDecisions", "MLitTrue",
+                              "MSubsumed", "MLitRemoved", "MReused"});
   }
   clauses_table_.push_back(
       {FormatName(name), FormatCounter(counters.num_minimizations),
        FormatCounter(counters.num_literals_removed),
+       FormatCounter(binary->num_literals_removed()),
        FormatCounter(counters.num_literals_learned),
        FormatCounter(counters.num_literals_forgotten),
        FormatCounter(counters.num_subsumed_clauses),
@@ -117,7 +119,6 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
     bool_var_table_.push_back(
         {"Boolean variables", "Fixed", "Equiv", "Total", "Left", "Binary"});
   }
-  auto* binary = model->GetOrCreate<BinaryImplicationGraph>();
   const int64_t num_fixed = sat_solver->NumFixedVariables();
   const int64_t num_equiv = binary->num_redundant_literals() / 2;
   const int64_t num_bools = sat_solver->NumVariables();
