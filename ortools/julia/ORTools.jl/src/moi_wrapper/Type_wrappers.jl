@@ -2568,7 +2568,7 @@ mutable struct CPSATConstraint
         PB.OneOf{
             <:Union{
                 AllDifferentConstraint,
-                LinearConstraintsProto,
+                CPSatLinearConstraintProto,
                 LinearArgument,
                 BoolArgument,
                 InverseConstraintProto,
@@ -2587,11 +2587,15 @@ mutable struct CPSATConstraint
             },
         },
     }
-    function CPSATConstraint()
+    function CPSATConstraint(;
+        name = "",
+        enforcement_literal = Vector{Int32}(),
+        constraint = nothing,
+    )
         new(
-            "", # name
-            Vector{Int32}(), # enforcement_literal
-            nothing, # constraint
+            name, # name
+            enforcement_literal, # enforcement_literal
+            constraint, # constraint
         )
     end
 end
