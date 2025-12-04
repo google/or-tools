@@ -1104,6 +1104,15 @@ absl::Status XpressSolver::AddObjective(
  * Note that in ortools an SOS constraint is made up from expressions and not
  * just variables. Here, we only support SOSs in which each expression is just
  * a single variable with coefficient 1.
+ * If we wanted to support expressions as well we would have to
+ * - for each element in the SOS that is an expression introduce an auxiliary
+ *   variable x_aux = expression
+ * - construct the SOS constraint on the auxiliary variables instead.
+ * These auxiliary variables would have been maintained during model updates,
+ * would need special handling during solution processing etc. At the moment
+ * we do not implement that and instead require the user to create these
+ * auxiliaries at the ortools level.
+ *
  * Also, ortools supports SOSs with identical elements and assumes that
  * something like { x, x } is reduced to just { x }. This is debatable:
  * If you consider { x, x } a set, then clearly it is the same as { x }.
