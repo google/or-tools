@@ -661,6 +661,7 @@ cc_library(
     srcs = ["parse_dimacs_assignment.cc"],
     hdrs = ["parse_dimacs_assignment.h"],
     deps = [
+        "//ortools/base:base_export",
         "//ortools/graph:linear_assignment",
         "//ortools/util:filelineiter",
         "@abseil-cpp//absl/flags:flag",
