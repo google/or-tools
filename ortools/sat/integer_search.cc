@@ -1353,6 +1353,7 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
@@ -1487,6 +1488,15 @@ bool IntegerSearchHelper::GetDecision(
 }
 
 bool IntegerSearchHelper::TakeDecision(Literal decision) {
+  // If we are about to take a decision on a redundant literal, always
+  // prefer to branch on the representative. This should helps learn more
+  // consistent conflict.
+  //
+  // TODO(user): Ideally never learn anything on redundant variable. This is
+  // a bit of work.
+  decision = binary_implication_graph_->RepresentativeOf(decision);
+  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
+
   pseudo_costs_->BeforeTakingDecision(decision);
 
   // Note that kUnsatTrailIndex might also mean ASSUMPTIONS_UNSAT.

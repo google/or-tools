@@ -467,6 +467,14 @@ bool ClauseManager::InprocessingAddUnitClause(ClauseId unit_clause_id,
                                               Literal true_literal) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
+  if (trail_->Assignment().LiteralIsFalse(true_literal)) {
+    if (lrat_proof_handler_ != nullptr) {
+      lrat_proof_handler_->AddInferredClause(
+          clause_id_generator_->GetNextId(), {},
+          {unit_clause_id, trail_->GetUnitClauseId(true_literal.Variable())});
+    }
+    return false;
+  }
 
   trail_->EnqueueWithUnitReason(unit_clause_id, true_literal);
 

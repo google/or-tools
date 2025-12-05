@@ -187,7 +187,7 @@ class MergeableOccurrenceList {
                           int min_transpose_size = 0) {
     rows_.ResetFromTranspose(input, min_transpose_size);
     next_.assign(rows_.size(), K(-1));
-    marked_.ClearAndResize(input.size());
+    marked_.ClearAndResize(V(input.size()));
   }
 
   int size() const { return rows_.size(); }
@@ -1108,7 +1108,7 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
 
   // Compute maximum index.
   int max_key = min_transpose_size;
-  for (V v = 0; v < other.size(); ++v) {
+  for (V v(0); v < other.size(); ++v) {
     for (const K k : other[v]) {
       max_key = std::max(max_key, InternalKey(k) + 1);
     }
@@ -1116,7 +1116,7 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
 
   // Compute sizes_;
   sizes_.assign(max_key, 0);
-  for (V v = 0; v < other.size(); ++v) {
+  for (V v(0); v < other.size(); ++v) {
     for (const K k : other[v]) {
       sizes_[InternalKey(k)]++;
     }
@@ -1130,7 +1130,7 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
 
   // Copy data and uses starts as temporary indices.
   buffer_.resize(other.num_entries());
-  for (V v = 0; v < other.size(); ++v) {
+  for (V v(0); v < other.size(); ++v) {
     for (const K k : other[v]) {
       buffer_[starts_[InternalKey(k)]++] = v;
     }

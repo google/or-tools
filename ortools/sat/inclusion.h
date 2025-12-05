@@ -343,6 +343,7 @@ inline void InclusionDetector<Storage>::DetectInclusions(
       const uint64_t superset_signature = signatures_.back();
       const auto is_in_superset_view = is_in_superset_.const_view();
       for (const int superset_e : superset_elements_) {
+        work_done_ += one_watcher_[superset_e].size();
         for (int i = 0; i < one_watcher_[superset_e].size(); ++i) {
           const int c_index = one_watcher_[superset_e][i];
           const Candidate& subset = candidates_[c_index];
