@@ -312,6 +312,7 @@ class IntegerSearchHelper {
   const SatParameters& parameters_;
   Model* model_;
   SatSolver* sat_solver_;
+  BinaryImplicationGraph* binary_implication_graph_;
   IntegerTrail* integer_trail_;
   IntegerEncoder* encoder_;
   ImpliedBounds* implied_bounds_;

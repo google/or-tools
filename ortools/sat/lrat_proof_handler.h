@@ -158,8 +158,12 @@ class LratProofHandler {
   // The last two arguments must have the same size and are in one to one
   // correspondence. Note that we might not need all the given clauses in the
   // proof.
-  bool AddAndProveInferredClauseByEnumeration(
-      ClauseId new_id, absl::Span<const Literal> new_clause,
+  //
+  // Return the new clause id. Note that in some corner cases, this could be
+  // one of the id passed in ids_for_proof. Return kNoClauseId if the proof
+  // is wrong.
+  ClauseId AddAndProveInferredClauseByEnumeration(
+      absl::Span<const Literal> new_clause,
       absl::Span<const ClauseId> ids_for_proof,
       const CompactVectorVector<int, Literal>& clauses_for_proof);
 

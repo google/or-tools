@@ -222,6 +222,33 @@ class CpModelPresolver {
   // related presolve.
   void DetectDominatedLinearConstraints();
 
+  // Detects encodings of the form:
+  //   b1 => x \in Domain1
+  //  ~b1 => x \in Domain1.Complement()
+  //   b2 => x \in Domain2
+  //  ~b2 => x \in Domain2.Complement()
+  //   b3 => x \in Domain3
+  //  ~b3 => x \in Domain3.Complement()
+  //   ...
+  //   bool_or(b1, b2, ..., bn, y, z, ...)
+
+  // Where the bi do not appear in any other constraints. When we finds this
+  // pattern, we create a new boolean variable `l` and replaces all the
+  // constraints above by three new constraints:
+  //   l => x \in Domain1 U Domain2 U ... U Domainn
+  //  ~l => x \in (Domain1 U Domain2 U ... U Domainn).Complement()
+  //   bool_or(l, y, z, ...),
+  // Note that `l` is equivalent to at least one of the bi to be true, which is
+  // a consequence that it is encoding a domain that is the union of the domains
+  // of the bis.
+  //
+  // It does the same when bool_or is replaced by an at_most_one or exactly_one
+  // but we need to add an extra constraint that
+  //  x \notin (Domain_a U Domain_b) for all a != b.
+  void DetectEncodedComplexDomains(PresolveContext* context);
+  bool DetectEncodedComplexDomain(PresolveContext* context, ConstraintProto* ct,
+                                  const Bitset64<int>& pertinent_bools);
+
   // Precomputes info about at most one, and use it to presolve linear
   // constraints. It can be interesting to know for a given linear constraint
   // that a subset of its variables are in at most one relation.

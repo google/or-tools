@@ -642,12 +642,32 @@ void LratProofHandler::Close(bool model_is_unsat) {
   }
 }
 
-bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
-    ClauseId new_id, absl::Span<const Literal> new_clause,
+ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
+    absl::Span<const Literal> new_clause,
     absl::Span<const ClauseId> ids_for_proof,
     const CompactVectorVector<int, Literal>& clauses_for_proof) {
   CHECK_EQ(ids_for_proof.size(), clauses_for_proof.size());
   CHECK(!clauses_for_proof.empty());
+
+  // helper function to report some info on proof failure.
+  const auto error = [&, this](absl::string_view message) {
+    if (debug_crash_on_error_) {
+      LOG(INFO) << "Proving " << new_clause;
+      for (int i = 0; i < ids_for_proof.size(); ++i) {
+        LOG(INFO) << "input id= " << ids_for_proof[i]
+                  << " clause=" << clauses_for_proof[i];
+      }
+      LOG(FATAL) << message;
+    } else {
+      VLOG(2) << "Proving " << new_clause;
+      for (int i = 0; i < ids_for_proof.size(); ++i) {
+        VLOG(2) << "input id= " << ids_for_proof[i]
+                << " clause=" << clauses_for_proof[i];
+      }
+      VLOG(2) << message;
+    }
+    return kNoClauseId;
+  };
 
   // First we count the number of variables appearing and have a separate dense
   // index for them. The first new_clause.size() dense index are exactly the
@@ -659,20 +679,33 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     const auto [it, inserted] =
         to_dense_index.insert({lit.Variable(), to_dense_index.size()});
     if (!inserted) {
-      VLOG(2) << "Duplicate variable in new_clause! " << new_clause;
-      return false;
+      return error("Duplicate variable in new clause");
     }
   }
 
   // Then any new BooleanVariable appearing get the next dense index.
   std::vector<Literal> relevant_literals;
   for (int i = 0; i < clauses_for_proof.size(); ++i) {
+    int max_index = 0;
     for (const Literal lit : clauses_for_proof[i]) {
       const auto [it, inserted] =
           to_dense_index.insert({lit.Variable(), to_dense_index.size()});
       if (inserted) {
         relevant_literals.push_back(lit);
       }
+      max_index = std::max(max_index, it->second);
+    }
+    if (max_index < new_clause.size()) {
+      VLOG(2) << "The new clause is trivially true since one of the clauses is "
+                 "included inside "
+              << clauses_for_proof[i] << " in " << new_clause;
+      if (clauses_for_proof[i].size() == new_clause.size()) {
+        return ids_for_proof[i];
+      }
+
+      // TODO(user): if this ever happen we can create a new id and prove it
+      // with clauses_for_proof[i], but for now I never saw that.
+      return error("Case not yet supported");
     }
   }
 
@@ -680,8 +713,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
   //
   // TODO(user): The limit can be increased a bit if needed.
   if (to_dense_index.size() > 6) {
-    VLOG(2) << "Too many variables";
-    return false;
+    return error("Too many variables");
   }
 
   // For the proof we will need all clauses of the form
@@ -691,14 +723,10 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
   // That give us 2^(n + 1) intermediate clauses.
   // Their ids will be stored in (1 << k) + binary_encoding_of_the_li.
   const int n = to_dense_index.size() - new_clause.size();
+  CHECK_GT(n, 0);  // We dealt with this above.
   CHECK_EQ(n, relevant_literals.size());
   const int num_intermediates = 1 << (n + 1);
   std::vector<ClauseId> ids(num_intermediates, kNoClauseId);
-
-  if (n == 0) {
-    VLOG(2) << "Nothing to prove! An existing clause is included inside";
-    return false;
-  }
 
   VLOG(2) << "Starting proof n= " << n << " " << num_intermediates;
 
@@ -773,21 +801,20 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
       const ClauseId id1 = ids[higher1];
       const ClauseId id2 = ids[higher2];
       if (id1 == kNoClauseId || id2 == kNoClauseId) {
-        VLOG(2) << "missing higher level clauses in the resolution."
-                << " index: " << std::bitset<8>(index)
-                << " higher1: " << std::bitset<8>(higher1)
-                << " higher2: " << std::bitset<8>(higher2);
-        return false;
+        return error(
+            absl::StrCat("missing higher level clauses in the resolution.",
+                         " index: ", std::bitset<8>(index).to_string(),
+                         " higher1: ", std::bitset<8>(higher1).to_string(),
+                         " higher2: ", std::bitset<8>(higher2).to_string()));
       }
 
-      ids[index] = k == 0 ? new_id : id_generator_->GetNextId();
+      ids[index] = id_generator_->GetNextId();
       if (k != 0) {
         VLOG(2) << "temporary !! " << ids[index] << " " << tmp_clause;
         id_need_deletion[index] = true;  // temporary.
       }
       if (!AddInferredClause(ids[index], tmp_clause, {id1, id2})) {
-        VLOG(2) << "Failed resolution step";
-        return false;
+        return error("Failed resolution step");
       }
 
       if (k == 0) {
@@ -811,7 +838,7 @@ bool LratProofHandler::AddAndProveInferredClauseByEnumeration(
     }
   }
 
-  return true;
+  return ids[1];
 }
 
 }  // namespace sat

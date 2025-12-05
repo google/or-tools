@@ -64,9 +64,9 @@ TEST(FillKeyAndBitmaskTest, BasicBehavior1) {
 }
 
 TEST(IsFunctionTest, ConstantValue) {
-  EXPECT_TRUE(IsFunction<3>(0, 0b10101010));
-  EXPECT_FALSE(IsFunction<3>(1, 0b10101010));
-  EXPECT_FALSE(IsFunction<3>(2, 0b10101010));
+  EXPECT_TRUE(IsFunction(0, 3, 0b10101010));
+  EXPECT_FALSE(IsFunction(1, 3, 0b10101010));
+  EXPECT_FALSE(IsFunction(2, 3, 0b10101010));
 }
 
 TEST(AddHoleAtPositionTest, BasicTest) {

@@ -81,8 +81,7 @@ inline void FillKeyAndBitmask(absl::Span<const Literal> clause,
 
 // Returns true iff the truth table encoded in bitmask encode a function
 // Xi = f(Xj, j != i);
-template <int num_bits>
-bool IsFunction(int i, SmallBitset truth_table) {
+inline bool IsFunction(int i, int num_bits, SmallBitset truth_table) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, num_bits);
 

@@ -62,13 +62,13 @@ TEST(AddAndProveInferredClauseByEnumerationTest, XorEquivalence) {
   // This should be enough to prove equivalence.
   {
     std::vector<Literal> to_prove = {b.Negated(), a};
-    EXPECT_TRUE(lrat->AddAndProveInferredClauseByEnumeration(
-        id_generator->GetNextId(), to_prove, clause_ids, clauses));
+    EXPECT_NE(kNoClauseId, lrat->AddAndProveInferredClauseByEnumeration(
+                               to_prove, clause_ids, clauses));
   }
   {
     std::vector<Literal> to_prove = {a.Negated(), b};
-    EXPECT_TRUE(lrat->AddAndProveInferredClauseByEnumeration(
-        id_generator->GetNextId(), to_prove, clause_ids, clauses));
+    EXPECT_NE(kNoClauseId, lrat->AddAndProveInferredClauseByEnumeration(
+                               to_prove, clause_ids, clauses));
   }
 }
 
