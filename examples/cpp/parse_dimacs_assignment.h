@@ -29,10 +29,11 @@
 #include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+#include "ortools/base/base_export.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/filelineiter.h"
 
-ABSL_DECLARE_FLAG(bool, assignment_maximize_cost);
+OR_DLL ABSL_DECLARE_FLAG(bool, assignment_maximize_cost);
 
 namespace operations_research {
 
