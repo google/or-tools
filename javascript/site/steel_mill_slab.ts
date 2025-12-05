@@ -964,7 +964,11 @@ const runExperiment = async () => {
     appendStatus('Solving…');
     try {
       const result = await CpSat.solve(modelInstance, params);
-      const response = result.response as Record<string, unknown>;
+      const response = result.response;
+      if (!response) {
+        appendStatus('Solver returned no response.');
+        return;
+      }
       appendStatus(`Solver response: ${JSON.stringify(response, null, 2)}`);
 
       const solution = parseSolution(response);

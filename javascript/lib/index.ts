@@ -4,5 +4,5 @@
  */
 export { CpSat } from './cp_sat_api';
 export { default } from './cp_sat_api';
-export type { CpSatApi } from './cp_sat_api';
+export type { CpSatApi, CpSatSolveResult } from './cp_sat_api';
 export type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';

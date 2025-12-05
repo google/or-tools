@@ -209,18 +209,19 @@ async function runMagicSquare() {
     append('Solving…');
     try {
       const result = await CpSat.solve(model, params);
-      if (!result.response || !statusEl) {
+      const response = result.response;
+      if (!response || !statusEl) {
         append('Solver returned no response.');
         showSolutionMessage('Solver returned no response.');
         return;
       }
-      statusEl.textContent = JSON.stringify(result.response, null, 2);
+      statusEl.textContent = JSON.stringify(response, null, 2);
 
-      if (!isRecord(result.response) || !Array.isArray(result.response.solution)) {
+      if (!isRecord(response) || !Array.isArray(response.solution)) {
         showSolutionMessage('No solution entries returned.');
         return;
       }
-      renderSolution(size, result.response.solution as Array<number | string>);
+      renderSolution(size, response.solution as Array<number | string>);
     } catch (err) {
       append(`Solve failed: ${(err as Error).message}`);
       showSolutionMessage('Solve failed.');

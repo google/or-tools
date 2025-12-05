@@ -404,13 +404,14 @@ if (workerBridgeToggle) {
       append('Solving…');
       try {
         const result = await CpSat.solve(model, params);
-        if (!result.response || !statusEl) {
+        const response = result.response;
+        if (!response || !statusEl) {
           append('Solver returned no response.');
           showScheduleMessage('Solver returned no response.');
           return;
         }
-        statusEl.textContent = JSON.stringify(result.response, null, 2);
-        const values = parseSolution((result.response as Record<string, unknown>).solution);
+        statusEl.textContent = JSON.stringify(response, null, 2);
+        const values = parseSolution(response.solution);
         if (!values) {
           showScheduleMessage('Unable to parse solver solution.');
           return;

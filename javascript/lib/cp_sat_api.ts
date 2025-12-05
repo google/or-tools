@@ -8,10 +8,17 @@ type SchemaPair = {
   sat_parameters: string;
 };
 
+type CpSatSolveResult = {
+  response: Record<string, unknown> | null;
+  bytes: Uint8Array;
+};
+
 type CpSatApi = {
-  solve(model: Uint8Array, params?: Uint8Array | null): Promise<Uint8Array>;
+  solve(model: Uint8Array, params?: Uint8Array | null): Promise<CpSatSolveResult>;
+  solveRaw(model: Uint8Array, params?: Uint8Array | null): Promise<Uint8Array>;
   validate(model: Uint8Array): Promise<{ ok: boolean; message: string }>;
   getSchemas(): Promise<SchemaPair>;
+  createModel(model: Record<string, unknown>): Promise<Uint8Array>;
   loadModule(): Promise<MainModule>;
   setWorkerBridgeEnabled(enabled: boolean): void;
   isWorkerBridgeEnabled(): boolean;
@@ -131,6 +138,114 @@ const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module) => {
   };
 });
 
+type ProtobufModule = typeof import('protobufjs');
+type ProtobufRoot = import('protobufjs').Root;
+type CpModelType = import('protobufjs').Type;
+type CpSolverResponseType = import('protobufjs').Type;
+
+let protobufModulePromise: Promise<ProtobufModule> | null = null;
+let protobufRootPromise: Promise<ProtobufRoot> | null = null;
+let cpModelTypePromise: Promise<CpModelType> | null = null;
+let cpSolverResponseTypePromise: Promise<CpSolverResponseType> | null = null;
+
+function createMissingDependencyError(feature: string) {
+  return new Error(
+    `CpSat.${feature} requires the optional dependency "protobufjs". Install it with \`npm install protobufjs\` and rebuild.`,
+  );
+}
+
+async function loadProtobufModule(feature: string): Promise<ProtobufModule> {
+  if (!protobufModulePromise) {
+    protobufModulePromise = import('protobufjs').catch((error) => {
+      protobufModulePromise = null;
+      throw createMissingDependencyError(feature);
+    });
+  }
+  try {
+    return await protobufModulePromise;
+  } catch (error) {
+    protobufModulePromise = null;
+    throw error;
+  }
+}
+
+async function resolveProtobufRoot(feature: string): Promise<ProtobufRoot> {
+  if (!protobufRootPromise) {
+    protobufRootPromise = (async () => {
+      const schemas = await schemaPromise;
+      const protobufModule = await loadProtobufModule(feature);
+      const parsed = protobufModule.parse(schemas.cp_model);
+      return parsed.root;
+    })();
+  }
+  try {
+    return await protobufRootPromise;
+  } catch (error) {
+    protobufRootPromise = null;
+    throw error;
+  }
+}
+
+async function resolveCpModelType(): Promise<CpModelType> {
+  if (!cpModelTypePromise) {
+    cpModelTypePromise = (async () => {
+      const root = await resolveProtobufRoot('createModel');
+      const cpModelType = root.lookupType('operations_research.sat.CpModelProto');
+      if (!cpModelType) {
+        throw new Error('CpSat.createModel: cp_model schema did not expose operations_research.sat.CpModelProto.');
+      }
+      return cpModelType;
+    })();
+  }
+  try {
+    return await cpModelTypePromise;
+  } catch (error) {
+    cpModelTypePromise = null;
+    throw error;
+  }
+}
+
+async function resolveCpSolverResponseType(): Promise<CpSolverResponseType> {
+  if (!cpSolverResponseTypePromise) {
+    cpSolverResponseTypePromise = (async () => {
+      const root = await resolveProtobufRoot('solve');
+      const solverType = root.lookupType('operations_research.sat.CpSolverResponse');
+      if (!solverType) {
+        throw new Error('CpSat.solve: cp_model schema did not expose operations_research.sat.CpSolverResponse.');
+      }
+      return solverType;
+    })();
+  }
+  try {
+    return await cpSolverResponseTypePromise;
+  } catch (error) {
+    cpSolverResponseTypePromise = null;
+    throw error;
+  }
+}
+
+async function decodeSolverResponse(bytes: Uint8Array): Promise<Record<string, unknown>> {
+  const solverType = await resolveCpSolverResponseType();
+  const decoded = solverType.decode(bytes);
+  return solverType.toObject(decoded, {
+    enums: String,
+    longs: Number,
+    defaults: true,
+    arrays: true,
+    objects: true,
+  }) as Record<string, unknown>;
+}
+
+async function createModel(model: Record<string, unknown>): Promise<Uint8Array> {
+  const type = await resolveCpModelType();
+  const validationError = type.verify(model);
+  if (validationError) {
+    throw new Error(`CpSat.createModel: ${validationError}`);
+  }
+  const message = type.create(model);
+  return type.encode(message).finish();
+}
+
 const readUint32LE = (buffer: ArrayBuffer, ptr: number) =>
   new DataView(buffer, ptr, 4).getUint32(0, true);
 
@@ -160,7 +275,7 @@ function setWorkerBridgePreferred(enabled: boolean) {
 type WorkerSolveResponse = Extract<WorkerResponse, { type: 'solveResult' }>;
 type WorkerValidateResponse = Extract<WorkerResponse, { type: 'validateResult' }>;
 
-async function solveViaWorker(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
+async function solveRawViaWorker(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
   const id = nextWorkerRequestId++;
   activeWorkerSolveId = id;
   try {
@@ -170,7 +285,8 @@ async function solveViaWorker(modelBytes: Uint8Array, paramsBytes: Uint8Array | 
       modelBytes,
       paramsBytes: paramsBytes ?? undefined,
     });
-    return new Uint8Array(response.bytes);
+    const bytes = new Uint8Array(response.bytes);
+    return bytes;
   } finally {
     if (activeWorkerSolveId === id) {
       activeWorkerSolveId = null;
@@ -188,7 +304,7 @@ async function validateViaWorker(modelBytes: Uint8Array) {
   return { ok: response.ok, message: response.message };
 }
 
-async function solveDirect(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
+async function solveRawDirect(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
   const Module = await modulePromise;
 
   const lenPtr = Module._malloc(4);
@@ -227,6 +343,21 @@ async function solveDirect(modelBytes: Uint8Array, paramsBytes: Uint8Array | nul
   }
 
   return new Uint8Array(bytes);
+}
+
+async function solveRaw(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null) {
+  return shouldUseWorkerBridge()
+    ? solveRawViaWorker(modelBytes, paramsBytes)
+    : solveRawDirect(modelBytes, paramsBytes);
+}
+
+async function solve(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null): Promise<CpSatSolveResult> {
+  const bytes = await solveRaw(modelBytes, paramsBytes);
+  let response: Record<string, unknown> | null = null;
+  if (bytes.length > 0) {
+    response = await decodeSolverResponse(bytes);
+  }
+  return { bytes, response };
 }
 
 async function validateDirect(model: Uint8Array) {
@@ -273,10 +404,11 @@ async function cancelSolve() {
 }
 
 export const CpSat: CpSatApi = {
-  solve: (model, params = null) =>
-    (shouldUseWorkerBridge() ? solveViaWorker(model, params) : solveDirect(model, params)),
+  solve: (model, params = null) => solve(model, params),
+  solveRaw: (model, params = null) => solveRaw(model, params),
   validate: (model) => (shouldUseWorkerBridge() ? validateViaWorker(model) : validateDirect(model)),
   getSchemas: () => schemaPromise,
+  createModel,
   loadModule: () => modulePromise,
   setWorkerBridgeEnabled: (enabled: boolean) => setWorkerBridgePreferred(enabled),
   isWorkerBridgeEnabled: () => shouldUseWorkerBridge(),
