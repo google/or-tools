@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - v99bugfix
-  pull_request:
   workflow_dispatch:
 
 concurrency:

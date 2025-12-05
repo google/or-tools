@@ -26,9 +26,9 @@
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
-#include "base/types.h"
 #include "base/join.h"
 #include "base/random.h"
+#include "base/types.h"
 #include "base/unique_ptr.h"
 #include "constraint_solver/routing.h"
 
