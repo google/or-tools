@@ -311,17 +311,17 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(GetXpressMultiObjectiveTestParameters()));
 
 std::vector<QpTestParameters> GetXpressQpTestParameters() {
-  std::vector<QpTestParameters> test_parameters;
-  for (int i = 0; i < 2; ++i) {
-    test_parameters.push_back(
-        // TODO: Xpress also supports non-convex QP.
-        QpTestParameters(SolverType::kXpress, SolveParameters(),
-                         /*qp_support=*/QpSupportType::kConvexQp,
-                         /*supports_incrementalism_not_modifying_qp=*/false,
-                         /*supports_qp_incrementalism=*/false,
-                         /*use_integer_variables=*/i != 0));
-  }
-  return test_parameters;
+  // TODO: Xpress also supports non-convex QP.
+  return {QpTestParameters(SolverType::kXpress, SolveParameters(),
+                           /*qp_support=*/QpSupportType::kConvexQp,
+                           /*supports_incrementalism_not_modifying_qp=*/false,
+                           /*supports_qp_incrementalism=*/false,
+                           /*use_integer_variables=*/true),
+          QpTestParameters(SolverType::kXpress, SolveParameters(),
+                           /*qp_support=*/QpSupportType::kConvexQp,
+                           /*supports_incrementalism_not_modifying_qp=*/false,
+                           /*supports_qp_incrementalism=*/false,
+                           /*use_integer_variables=*/false)};
 }
 INSTANTIATE_TEST_SUITE_P(XpressSimpleQpTest, SimpleQpTest,
                          testing::ValuesIn(GetXpressQpTestParameters()));
@@ -331,16 +331,16 @@ INSTANTIATE_TEST_SUITE_P(XpressQpDualsTest, QpDualsTest,
                          testing::ValuesIn(GetXpressQpTestParameters()));
 
 std::vector<QcTestParameters> GetXpressQcTestParameters() {
-  std::vector<QcTestParameters> test_parameters;
-  for (int i = 0; i < 2; ++i) {
-    test_parameters.push_back(
-        QcTestParameters(SolverType::kXpress, SolveParameters(),
-                         /*supports_qc=*/true,
-                         /*supports_incremental_add_and_deletes=*/false,
-                         /*supports_incremental_variable_deletions=*/false,
-                         /*use_integer_variables=*/i != 0));
-  }
-  return test_parameters;
+  return {QcTestParameters(SolverType::kXpress, SolveParameters(),
+                           /*supports_qc=*/true,
+                           /*supports_incremental_add_and_deletes=*/false,
+                           /*supports_incremental_variable_deletions=*/false,
+                           /*use_integer_variables=*/true),
+          QcTestParameters(SolverType::kXpress, SolveParameters(),
+                           /*supports_qc=*/true,
+                           /*supports_incremental_add_and_deletes=*/false,
+                           /*supports_incremental_variable_deletions=*/false,
+                           /*use_integer_variables=*/false)};
 }
 INSTANTIATE_TEST_SUITE_P(XpressSimpleQcTest, SimpleQcTest,
                          testing::ValuesIn(GetXpressQcTestParameters()));
