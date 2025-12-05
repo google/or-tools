@@ -50,8 +50,6 @@ if(BUILD_TESTING)
   file(GLOB _TEST_SRCS "*_test.cc")
   list(FILTER _TEST_SRCS
     EXCLUDE REGEX "elemental_export_model_update_test.cc$")
-  list(FILTER _TEST_SRCS
-    EXCLUDE REGEX "elemental_from_proto_fuzz_test.cc$") # need fuzztest
   foreach(_FULL_FILE_NAME IN LISTS _TEST_SRCS)
     get_filename_component(_NAME ${_FULL_FILE_NAME} NAME_WE)
     get_filename_component(_FILE_NAME ${_FULL_FILE_NAME} NAME)

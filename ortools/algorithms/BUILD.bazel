@@ -435,3 +435,20 @@ cc_library(
         "@abseil-cpp//absl/time",
     ],
 )
+
+cc_test(
+    name = "n_choose_k_test",
+    srcs = ["n_choose_k_test.cc"],
+    deps = [
+        ":n_choose_k",
+        "//ortools/base:dump_vars",
+        "//ortools/base:gmock_main",
+        "//ortools/util:flat_matrix",
+        "@abseil-cpp//absl/numeric:int128",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@google_benchmark//:benchmark",
+    ],
+)
