@@ -69,7 +69,7 @@ typing-extensions==4.13.1
     #   mypy
 tzdata==2023.3
     # via pandas
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 virtualenv==20.28.1
     # via -r ortools_requirements.in
