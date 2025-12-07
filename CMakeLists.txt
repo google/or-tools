@@ -202,32 +202,15 @@ if(BUILD_TESTING)
   CMAKE_DEPENDENT_OPTION(BUILD_benchmark "Build benchmark" OFF
     "NOT BUILD_DEPS" ON)
   set(BUILD_protobuf_matchers ON)
-  # Fuzztest do not support MSVC or toolchain
-  if(APPLE OR MSVC OR CMAKE_CROSSCOMPILING)
-    set(USE_fuzztest OFF)
-  else()
-    # since no distro provide a fuzztest package disable support by default.
-    CMAKE_DEPENDENT_OPTION(USE_fuzztest "Enable fuzztest" ${BUILD_DEPS} "BUILD_CXX" OFF)
-  endif()
-  if(NOT USE_fuzztest)
-    set(BUILD_fuzztest OFF)
-  else()
-    CMAKE_DEPENDENT_OPTION(BUILD_fuzztest "Build fuzztest" OFF
-      "NOT BUILD_DEPS" ON)
-  endif()
 else()
   set(OR_TOOLS_BUILD_TESTING OFF)
   set(BUILD_googletest OFF)
   set(BUILD_protobuf_matchers OFF)
   set(BUILD_benchmark OFF)
-  set(USE_fuzztest OFF)
-  set(BUILD_fuzztest OFF)
 endif()
 message(STATUS "Build googletest: ${BUILD_googletest}")
 message(STATUS "Build protobuf_matchers: ${BUILD_protobuf_matchers}")
 message(STATUS "Build benchmark: ${BUILD_benchmark}")
-message(STATUS "Enable fuzztest: ${USE_fuzztest}")
-message(STATUS "Build fuzztest: ${BUILD_fuzztest}")
 
 # Optional third party solvers (enabled by default)
 ## BOP
