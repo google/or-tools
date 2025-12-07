@@ -112,12 +112,6 @@ if(BUILD_TESTING)
   if(NOT BUILD_benchmark AND NOT TARGET benchmark::benchmark)
     find_package(benchmark REQUIRED)
   endif()
-
-  if(USE_fuzztest)
-    if(NOT BUILD_fuzztest AND NOT TARGET fuzztest::fuzztest)
-      find_package(fuzztest REQUIRED)
-    endif()
-  endif()
 endif()
 
 # Check language Dependencies

@@ -3843,6 +3843,7 @@ cc_test(
         ":integer_base",
         ":util",
         "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
         "//ortools/base:logging",
         "//ortools/graph:connected_components",
         "//ortools/graph:strongly_connected_components",
@@ -3856,7 +3857,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@fuzztest//fuzztest:fuzztest_gtest_main",
         "@google_benchmark//:benchmark",
     ],
 )
