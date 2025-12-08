@@ -41,7 +41,7 @@ pandas==2.3.3
     # via -r bazel/ortools_requirements.in
 pathspec==0.12.1
     # via black
-platformdirs==4.5.0
+platformdirs==4.5.1
     # via
     #   black
     #   virtualenv
@@ -69,7 +69,7 @@ typing-extensions==4.15.0
     #   mypy
 tzdata==2025.2
     # via pandas
-urllib3==2.5.0
+urllib3==2.6.1
     # via requests
 virtualenv==20.28.1
     # via -r bazel/ortools_requirements.in
