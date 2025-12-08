@@ -177,6 +177,7 @@ message StrictnessProto {
 message SolverInitializerProto {
   GurobiInitializerProto gurobi = 1;
   reserved 2;
+  XpressInitializerProto xpress = 3;
 }
 
 // Parameters to control a single solve.

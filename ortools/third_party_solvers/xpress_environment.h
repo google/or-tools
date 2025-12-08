@@ -91,6 +91,7 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath);
 // ***************************************************************************
 #define XPRS_NAMES_ROW 1
 #define XPRS_NAMES_COLUMN 2
+#define XPRS_NAMES_SET 3
 // ***************************************************************************
 // * values related to SOLAVAILABLE                                          *
 // ***************************************************************************

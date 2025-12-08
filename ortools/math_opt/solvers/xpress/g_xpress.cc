@@ -115,6 +115,11 @@ void Xpress::initIntControlDefaults() {
   }
 }
 
+absl::Status Xpress::AddNames(int type, absl::Span<const char> names, int first,
+                              int last) {
+  return ToStatus(XPRSaddnames(xpress_model_, type, names.data(), first, last));
+}
+
 // All span arguments can be missing to indicate "use default values".
 // Default objective value: 0
 // Default lower bound: 0

@@ -15,6 +15,13 @@
 syntax = "proto3";
 
 package operations_research.math_opt;
+
+// Parameters used to initialize the Xpress solver.
+message XpressInitializerProto {
+  optional bool extract_names = 1;
+}
+
+
 // Xpress specific parameters for solving. See
 //   https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter7.html
 // for a list of possible parameters (called "controls" in Xpress).

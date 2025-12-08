@@ -74,6 +74,8 @@ class Xpress {
   absl::Status AddVars(std::size_t count, absl::Span<const double> obj,
                        absl::Span<const double> lb, absl::Span<const double> ub,
                        absl::Span<const char> vtype);
+  absl::Status AddNames(int type, absl::Span<const char> names, int first,
+                        int last);
 
   absl::Status AddConstrs(absl::Span<const char> sense,
                           absl::Span<const double> rhs,

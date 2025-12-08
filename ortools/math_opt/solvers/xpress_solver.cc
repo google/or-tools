@@ -39,6 +39,7 @@
 #include "ortools/math_opt/core/solver_interface.h"
 #include "ortools/math_opt/core/sparse_vector_view.h"
 #include "ortools/math_opt/cpp/message_callback.h"
+#include "ortools/math_opt/cpp/streamable_solver_init_arguments.h"
 #include "ortools/math_opt/solvers/xpress/g_xpress.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
@@ -832,6 +833,56 @@ absl::StatusOr<std::optional<XpressSolver::VarId>> ExtractSingleton(
   }
 }
 
+/** Trait for AddNames() so that we can write it in a generic way.
+ * The default implementation works for columns and rows.
+ */
+template <typename T>
+struct NameResolver {
+  static std::string const& GetName(T const& container, int i) {
+    return container.names(i);
+  }
+};
+
+/** Specialization for NameResolver for SOS. */
+template <typename K, typename V>
+struct NameResolver<google::protobuf::Map<K, V>> {
+  static std::string const& GetName(
+      google::protobuf::Map<K, V> const& container,
+      typename google::protobuf::Map<K, V>::const_iterator const& i) {
+    return i->second.name();
+  }
+};
+
+/** Add names to an Xpress object.
+ * Extracts the first count names from container.
+ * It is assumed that the names are for elements offset, offset+1, offset+2, ...
+ */
+template <typename T, typename I>
+absl::Status AddNames(Xpress* xpress, int type, int offset, I begin, I end,
+                      T const& container) {
+  std::vector<char> buffer;
+  int i = 0, start = 0;
+  while (begin != end) {
+    std::string const& name = NameResolver<T>::GetName(container, begin);
+    char const* c_name = name.c_str();
+    buffer.insert(buffer.end(), c_name, c_name + name.size() + 1);
+    // Add names in chunks of 1MB.
+    if (buffer.size() > 1024 * 1024) {
+      RETURN_IF_ERROR(
+          xpress->AddNames(type, buffer, offset + start, offset + i));
+      start = i + 1;
+      buffer.clear();
+    }
+    ++i;
+    ++begin;
+  }
+  if (buffer.size()) {
+    RETURN_IF_ERROR(
+        xpress->AddNames(type, buffer, offset + start, offset + i - 1));
+  }
+  return absl::OkStatus();
+}
+
 }  // namespace
 
 constexpr SupportedProblemStructures kXpressSupportedStructures = {
@@ -853,7 +904,7 @@ constexpr SupportedProblemStructures kXpressSupportedStructures = {
     .indicator_constraints = SupportType::kSupported};
 
 absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
-    const ModelProto& model, const InitArgs&) {
+    const ModelProto& model, const InitArgs& init_args) {
   if (!XpressIsCorrectlyInstalled()) {
     return absl::InvalidArgumentError("Xpress is not correctly installed.");
   }
@@ -864,7 +915,11 @@ absl::StatusOr<std::unique_ptr<XpressSolver>> XpressSolver::New(
   // (for example, if XPRESS does not support multi-objective with quad terms)
 
   ASSIGN_OR_RETURN(auto xpr, Xpress::New(model.name()));
-  auto xpress_solver = absl::WrapUnique(new XpressSolver(std::move(xpr)));
+  bool extract_names = init_args.streamable.has_xpress() &&
+                       init_args.streamable.xpress().has_extract_names() &&
+                       init_args.streamable.xpress().extract_names();
+  auto xpress_solver =
+      absl::WrapUnique(new XpressSolver(std::move(xpr), extract_names));
   RETURN_IF_ERROR(xpress_solver->LoadModel(model));
   return xpress_solver;
 }
@@ -898,8 +953,11 @@ absl::Status XpressSolver::LoadModel(const ModelProto& input_model) {
       input_model.second_order_cone_constraints()));
   return absl::OkStatus();
 }
+
 absl::Status XpressSolver::AddNewVariables(
     const VariablesProto& new_variables) {
+  ASSIGN_OR_RETURN(const int num_old_variables,
+                   xpress_->GetIntAttr(XPRS_ORIGINALCOLS));
   const int num_new_variables = new_variables.lower_bounds().size();
   std::vector<char> variable_type(num_new_variables);
   ASSIGN_OR_RETURN(int const n_variables,
@@ -926,14 +984,17 @@ absl::Status XpressSolver::AddNewVariables(
       xpress_->AddVars(num_new_variables, {}, new_variables.lower_bounds(),
                        new_variables.upper_bounds(), variable_type));
 
-  // Not adding names for performance (have to call XPRSaddnames)
-  // TODO: keep names in a cache and add them when needed
+  if (extract_names_) {
+    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_COLUMN,
+                             num_old_variables, 0, num_new_variables,
+                             new_variables));
+  }
 
   return absl::OkStatus();
 }
 
-XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress)
-    : xpress_(std::move(g_xpress)) {}
+XpressSolver::XpressSolver(std::unique_ptr<Xpress> g_xpress, bool extract_names)
+    : xpress_(std::move(g_xpress)), extract_names_(extract_names) {}
 
 void XpressSolver::ExtractBounds(double lb, double ub, char& sense, double& rhs,
                                  double& rng) {
@@ -972,6 +1033,8 @@ void XpressSolver::ExtractBounds(double lb, double ub, char& sense, double& rhs,
 absl::Status XpressSolver::AddNewLinearConstraints(
     const LinearConstraintsProto& constraints) {
   // TODO: we might be able to improve performance by setting coefs also
+  ASSIGN_OR_RETURN(int const num_old_constraints,
+                   xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   const int num_new_constraints = constraints.lower_bounds().size();
   std::vector<char> constraint_sense;
   constraint_sense.reserve(num_new_constraints);
@@ -997,7 +1060,13 @@ absl::Status XpressSolver::AddNewLinearConstraints(
     constraint_rng.emplace_back(rng);
   }
   // Add all constraints in one call.
-  return xpress_->AddConstrs(constraint_sense, constraint_rhs, constraint_rng);
+  RETURN_IF_ERROR(
+      xpress_->AddConstrs(constraint_sense, constraint_rhs, constraint_rng));
+  if (extract_names_) {
+    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_ROW, num_old_constraints,
+                             0, num_new_constraints, constraints));
+  }
+  return absl::OkStatus();
 }
 
 absl::Status XpressSolver::AddObjective(
@@ -1134,6 +1203,7 @@ absl::Status XpressSolver::AddSOS(
   std::vector<int> colind;
   std::vector<double> refval;
   ASSIGN_OR_RETURN(int nextId, xpress_->GetIntAttr(XPRS_ORIGINALSETS));
+  int const num_old_sets = nextId;
   auto* sosmap = sos1 ? &sos1_map_ : &sos2_map_;
   for (auto const& [sosId, sos] : sets) {
     start.push_back(colind.size());
@@ -1154,6 +1224,10 @@ absl::Status XpressSolver::AddSOS(
   }
   std::vector<char> settype(start.size(), sos1 ? '1' : '2');
   RETURN_IF_ERROR(xpress_->AddSets(settype, start, colind, refval));
+  if (extract_names_) {
+    RETURN_IF_ERROR(AddNames(xpress_.get(), XPRS_NAMES_SET, num_old_sets,
+                             sets.begin(), sets.end(), sets));
+  }
   return absl::OkStatus();
 }
 

@@ -67,7 +67,7 @@ class XpressSolver : public SolverInterface {
                              const SolveInterrupter* interrupter) override;
 
  private:
-  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress);
+  explicit XpressSolver(std::unique_ptr<Xpress> g_xpress, bool extract_names);
 
  public:
   // For easing reading the code, we declare these types:
@@ -172,6 +172,7 @@ class XpressSolver : public SolverInterface {
       const SparseVectorFilterProto& filter) const;
 
   const std::unique_ptr<Xpress> xpress_;
+  bool const extract_names_;
 
   // Internal correspondence from variable proto IDs to Xpress-numbered
   // variables.
