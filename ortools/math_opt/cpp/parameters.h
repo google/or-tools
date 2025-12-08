@@ -257,6 +257,23 @@ struct GlpkParameters {
 // Xpress specific parameters for solving. See
 //   https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter7.html
 // for a list of possible parameters (called "controls" in Xpress).
+// In addition to all Xpress controls, the following special parameters are
+// also supported:
+//   "EXPORT_MODEL"(string)  If present then the low level Xpress model
+//                           (the XPRSprob instance) is written to that file
+//                           right before XPRSoptimize() is called. This can
+//                           be useful for debugging.
+//   "FORCE_POSTSOLVE"(int)  If set to a non-zero value then the low-level code
+//                           will call XPRSpostsolve() right after calling
+//                           XPRSoptimize(). If not set or set to zero then
+//                           calling XPRSpostsolve() is delayed to the latest
+//                           possible point in time to enable incremental
+//                           solves.
+//    "STOP_AFTER_LP"(int)   If set to a non-zero value then the solve will be
+//                           stopped right after solving the root relaxation.
+//                           This is the same as passing the ' l' (ell) flag
+//                           to XPRSoptimize() and stops the process earlier
+//                           than a limit like MAXNODE=0.
 //
 // Example use:
 //   XpressParameters xpress;
