@@ -36,7 +36,8 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
     const bool supports_incremental_add_and_deletes,
     const bool supports_incremental_variable_deletions,
     const bool supports_deleting_indicator_variables,
-    const bool supports_updating_binary_variables)
+    const bool supports_updating_binary_variables,
+    const bool supports_sos_on_expressions)
     : solver_type(solver_type),
       parameters(std::move(parameters)),
       supports_integer_variables(supports_integer_variables),
@@ -49,7 +50,8 @@ LogicalConstraintTestParameters::LogicalConstraintTestParameters(
           supports_incremental_variable_deletions),
       supports_deleting_indicator_variables(
           supports_deleting_indicator_variables),
-      supports_updating_binary_variables(supports_updating_binary_variables) {}
+      supports_updating_binary_variables(supports_updating_binary_variables),
+      supports_sos_on_expressions(supports_sos_on_expressions) {}
 
 std::ostream& operator<<(std::ostream& out,
                          const LogicalConstraintTestParameters& params) {
@@ -68,7 +70,9 @@ std::ostream& operator<<(std::ostream& out,
       << ", supports_deleting_indicator_variables: "
       << (params.supports_deleting_indicator_variables ? "true" : "false")
       << ", supports_updating_binary_variables: "
-      << (params.supports_updating_binary_variables ? "true" : "false") << " }";
+      << (params.supports_updating_binary_variables ? "true" : "false")
+      << ", supports_sos_on_expressions: "
+      << (params.supports_sos_on_expressions ? "true" : "false") << " }";
   return out;
 }
 
@@ -98,9 +102,8 @@ constexpr absl::string_view no_incremental_add_and_deletes_message =
 
 // We test SOS1 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
-  if (GetParam().solver_type == SolverType::kXpress) {
-    GTEST_SKIP() << "skipped since Xpress only supports SOS on variables (not "
-                    "expressions)";
+  if (!GetParam().supports_sos_on_expressions) {
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -118,9 +121,8 @@ TEST_P(SimpleLogicalConstraintTest, CanBuildSos1Model) {
 
 // We test SOS2 constraints with both explicit weights and default weights.
 TEST_P(SimpleLogicalConstraintTest, CanBuildSos2Model) {
-  if (GetParam().solver_type == SolverType::kXpress) {
-    GTEST_SKIP() << "skipped since Xpress only supports SOS on variables (not "
-                    "expressions)";
+  if (!GetParam().supports_sos_on_expressions) {
+    GTEST_SKIP() << "skipped since SOS on expressions are not supported";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");

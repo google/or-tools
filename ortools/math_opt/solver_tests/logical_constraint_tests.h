@@ -30,7 +30,8 @@ struct LogicalConstraintTestParameters {
       bool supports_incremental_add_and_deletes,
       bool supports_incremental_variable_deletions,
       bool supports_deleting_indicator_variables,
-      bool supports_updating_binary_variables);
+      bool supports_updating_binary_variables,
+      bool supports_sos_on_expressions = true);
 
   // The tested solver.
   SolverType solver_type;
@@ -62,6 +63,10 @@ struct LogicalConstraintTestParameters {
   // True if the solver supports updates (changing bounds or vartype) to binary
   // variables.
   bool supports_updating_binary_variables;
+
+  // True if the solver supports SOS constraints on expressions. False if
+  // SOS constraints are only supported on singleton variables.
+  bool supports_sos_on_expressions;
 };
 
 std::ostream& operator<<(std::ostream& out,
