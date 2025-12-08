@@ -7,13 +7,16 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable", "WebWorker"],
     "paths": {
-      "ortools-cpsat-wasm": ["javascript/lib/index.ts"]
+      "ortools-cpsat-wasm": ["javascript/lib/index.ts"],
+      "@internal-wasm/*": ["build/javascript/wasm/*"]
     }
   },
   "include": [
     "javascript/lib/**/*.ts",
     "javascript/lib/**/*.d.ts",
-    "javascript/site/**/*.ts"
+    "javascript/site/**/*.ts",
+    "build/javascript/wasm/**/*.d.ts"
   ]
 }

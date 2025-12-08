@@ -1,6 +1,8 @@
-import type { MainModule } from './cp_sat_module_loader';
-import { loadCpSat } from './cp_sat_module_loader';
-import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
+/// <reference lib="webworker" />
+
+import type { MainModule } from '@internal-wasm/cp_sat_runtime.js';
+import { loadCpSat } from './cp_sat_module_loader.js';
+import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 
 const workerScope = self as DedicatedWorkerGlobalScope;
 
@@ -9,12 +11,12 @@ let moduleInstance: MainModule | null = null;
 
 // The loader handles locateFile and mainScriptUrlOrBlob automatically now.
 const moduleReady = loadCpSat()
-  .then((module) => {
+  .then((module: MainModule) => {
     moduleInstance = module;
     workerScope.postMessage({ type: 'ready' } satisfies WorkerResponse);
     return module;
   })
-  .catch((error) => {
+  .catch((error: unknown) => {
     console.error('[cpsat_worker] cpSatModule init failed:', error);
     workerScope.postMessage({
       type: 'error',

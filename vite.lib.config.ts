@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
 import topLevelAwait from "vite-plugin-top-level-await";
+import dts from 'vite-plugin-dts';
 
+const rootDir = __dirname;
 const libRoot = path.resolve(__dirname, 'javascript/lib');
 const wasmBuildDir = path.resolve(__dirname, 'build/javascript/wasm');
 const outDir = path.resolve(__dirname, 'build/javascript/lib');
@@ -33,7 +35,8 @@ const patchEmscriptenWasmPlugin = () => ({
 });
 
 export default defineConfig({
-  root: libRoot,
+  root: rootDir,
+  assetsInclude: ['**/*.d.ts'],
   resolve: {
     alias: {
       '@internal-wasm': wasmBuildDir
@@ -41,13 +44,18 @@ export default defineConfig({
   },
   plugins: [
     topLevelAwait(),
-    patchEmscriptenWasmPlugin()
+    patchEmscriptenWasmPlugin(),
+    dts({
+      tsconfigPath: path.resolve(__dirname, 'tsconfig.json'),
+      rollupTypes: true,
+      entryRoot: 'javascript/lib',
+    }),
   ],
   worker: {
     format: 'es',
     plugins: () => [
       topLevelAwait(),
-      patchEmscriptenWasmPlugin()
+      patchEmscriptenWasmPlugin(),
     ],
     rollupOptions: {
       output: {

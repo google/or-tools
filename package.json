@@ -10,12 +10,11 @@
       "types": "./build/javascript/lib/cp_sat_api.d.ts",
       "import": "./build/javascript/lib/cp_sat_api.js",
       "default": "./build/javascript/lib/cp_sat_api.js"
-    },
-    "./wasm-runtime": "./dist/wasm/cp_sat_runtime.js"
+    }
   },
   "scripts": {
     "build:wasm": "bash -lc 'scripts/ensure-emsdk.sh && source ./emsdk/emsdk_env.sh && cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake && cmake --build build --target cp_sat_runtime_site -j'",
-    "build:lib": "vite build --config vite.lib.config.ts",
+    "build:lib": "tsc && vite build --config vite.lib.config.ts",
     "sync:lib-assets-to-site": "mkdir -p javascript/site/public/assets && cp build/javascript/lib/assets/* javascript/site/public/assets/",
     "build:site": "npm run sync:lib-assets-to-site && vite build --config vite.site.config.ts",
     "build": "npm run build:wasm && npm run build:lib && npm run build:site",
@@ -36,6 +35,7 @@
     "@types/node": "^20.14.15",
     "typescript": "^5.9.3",
     "vite": "^7.2.4",
+    "vite-plugin-dts": "^4.5.4",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0"
   }

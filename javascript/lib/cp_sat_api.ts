@@ -1,20 +1,22 @@
-import type { MainModule } from './cp_sat_module_loader';
-import { loadCpSat } from './cp_sat_module_loader';
-import workerScriptUrl from './cpsat_worker?worker&url';
-import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
+import type { MainModule } from '@internal-wasm/cp_sat_runtime.js';
+import { loadCpSat } from './cp_sat_module_loader.js';
+import workerScriptUrl from './cpsat_worker.js?worker&url';
+import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 
 type SchemaPair = {
   cp_model: string;
   sat_parameters: string;
 };
 
-type CpSatSolveResult = {
+export type CpSatSolveResult = {
   response: Record<string, unknown> | null;
   bytes: Uint8Array;
 };
 
-type CpSatApi = {
-  solve(model: Uint8Array, params?: Uint8Array | null): Promise<CpSatSolveResult>;
+type SolverParams = Uint8Array | Record<string, unknown> | null;
+
+export type CpSatApi = {
+  solve(model: Uint8Array, params?: SolverParams): Promise<CpSatSolveResult>;
   solveRaw(model: Uint8Array, params?: Uint8Array | null): Promise<Uint8Array>;
   validate(model: Uint8Array): Promise<{ ok: boolean; message: string }>;
   getSchemas(): Promise<SchemaPair>;
@@ -24,6 +26,8 @@ type CpSatApi = {
   isWorkerBridgeEnabled(): boolean;
   cancelSolve(): Promise<void>;
 };
+
+export type CpSatModelInstance = Uint8Array;
 
 const isBrowserMainThread = typeof window !== 'undefined' && typeof document !== 'undefined';
 const workerCapable = typeof Worker !== 'undefined';
@@ -123,7 +127,7 @@ async function postWorkerRequest<T extends WorkerResponse>(request: WorkerReques
 
 const modulePromise = loadCpSat();
 
-const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module) => {
+const schemaPromise: Promise<SchemaPair> = modulePromise.then((Module: MainModule) => {
   const getCpSchema =
     typeof Module.getCpModelSchema === 'function'
       ? Module.getCpModelSchema.bind(Module)
@@ -147,6 +151,7 @@ let protobufModulePromise: Promise<ProtobufModule> | null = null;
 let protobufRootPromise: Promise<ProtobufRoot> | null = null;
 let cpModelTypePromise: Promise<CpModelType> | null = null;
 let cpSolverResponseTypePromise: Promise<CpSolverResponseType> | null = null;
+let satParametersTypePromise: Promise<import('protobufjs').Type> | null = null;
 
 function createMissingDependencyError(feature: string) {
   return new Error(
@@ -222,6 +227,48 @@ async function resolveCpSolverResponseType(): Promise<CpSolverResponseType> {
     cpSolverResponseTypePromise = null;
     throw error;
   }
+}
+
+async function resolveSatParametersType(): Promise<import('protobufjs').Type> {
+  if (!satParametersTypePromise) {
+    satParametersTypePromise = (async () => {
+      const schemas = await schemaPromise;
+      const protobufModule = await loadProtobufModule('solve');
+      const parsed = protobufModule.parse(schemas.sat_parameters);
+      const root = parsed.root;
+      const paramsType = root.lookupType('operations_research.sat.SatParameters');
+      if (!paramsType) {
+        throw new Error('CpSat.solve: sat_parameters schema did not expose operations_research.sat.SatParameters.');
+      }
+      return paramsType;
+    })();
+  }
+  try {
+    return await satParametersTypePromise;
+  } catch (error) {
+    satParametersTypePromise = null;
+    throw error;
+  }
+}
+
+async function encodeSatParameters(params: Record<string, unknown>): Promise<Uint8Array> {
+  const paramsType = await resolveSatParametersType();
+  const validationError = paramsType.verify(params);
+  if (validationError) {
+    throw new Error(`CpSat.solve: ${validationError}`);
+  }
+  const message = paramsType.create(params);
+  return paramsType.encode(message).finish();
+}
+
+async function resolveParamsBytes(params?: SolverParams): Promise<Uint8Array | null> {
+  if (!params) {
+    return null;
+  }
+  if (params instanceof Uint8Array) {
+    return params;
+  }
+  return encodeSatParameters(params);
 }
 
 async function decodeSolverResponse(bytes: Uint8Array): Promise<Record<string, unknown>> {
@@ -351,7 +398,8 @@ async function solveRaw(modelBytes: Uint8Array, paramsBytes: Uint8Array | null =
     : solveRawDirect(modelBytes, paramsBytes);
 }
 
-async function solve(modelBytes: Uint8Array, paramsBytes: Uint8Array | null = null): Promise<CpSatSolveResult> {
+async function solve(modelBytes: Uint8Array, params: SolverParams = null): Promise<CpSatSolveResult> {
+  const paramsBytes = await resolveParamsBytes(params);
   const bytes = await solveRaw(modelBytes, paramsBytes);
   let response: Record<string, unknown> | null = null;
   if (bytes.length > 0) {
@@ -419,6 +467,5 @@ if (isBrowserMainThread) {
   (window as Window & { CpSat?: CpSatApi }).CpSat = CpSat;
 }
 
-export type { CpSatApi };
-export type { WorkerRequest, WorkerResponse } from './cpsat_worker_types';
+export type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
 export default CpSat;
