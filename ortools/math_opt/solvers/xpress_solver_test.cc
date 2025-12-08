@@ -139,12 +139,13 @@ INSTANTIATE_TEST_SUITE_P(
                             /*all_solutions=*/std::nullopt,
                             /*reaches_cut_callback*/ std::nullopt)}));
 
-INSTANTIATE_TEST_SUITE_P(XpressInvalidInputTest, InvalidInputTest,
-                         testing::Values(InvalidInputTestParameters(
-                             SolverType::kXpress,
-                             // Invalid parameters do not depend on integer
-                             // variables
-                             /*use_integer_variables=*/false)));
+INSTANTIATE_TEST_SUITE_P(
+    XpressInvalidInputTest, InvalidInputTest,
+    testing::ValuesIn(
+        {InvalidInputTestParameters(SolverType::kXpress,
+                                    /*use_integer_variables=*/true),
+         InvalidInputTestParameters(SolverType::kXpress,
+                                    /*use_integer_variables=*/false)}));
 
 InvalidParameterTestParams InvalidObjectiveLimitParameters() {
   SolveParameters params;
@@ -257,9 +258,9 @@ SolveParameters GetXpressBranchPrioritiesParams() {
   params.xpress.param_values["PRESOLVE"] = "0";
   params.xpress.param_values["CUTSTRATEGY"] = "0";
   params.xpress.param_values["NODEPROBINGEFFORT"] = "0.0";
-  // For BranchPrioritiesTest.PrioritiesClearedAfterIncrementalSolve, otherwise
-  // we attempt to set branching priorities on a problem in presolved state,
-  // which is not allowed.
+  // For BranchPrioritiesTest.PrioritiesClearedAfterIncrementalSolve,
+  // otherwise we attempt to set branching priorities on a problem in
+  // presolved state, which is not allowed.
   params.xpress.param_values["FORCE_POSTSOLVE"] = "1";
   return params;
 }
