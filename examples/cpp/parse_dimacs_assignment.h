@@ -25,14 +25,10 @@
 #include <memory>
 #include <string>
 
-#include "absl/flags/declare.h"
-#include "absl/flags/flag.h"
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
 #include "ortools/graph/linear_assignment.h"
 #include "ortools/util/filelineiter.h"
-
-ABSL_DECLARE_FLAG(bool, assignment_maximize_cost);
 
 namespace operations_research {
 
@@ -43,8 +39,12 @@ class DimacsAssignmentParser {
   using ArcIndex = typename GraphType::ArcIndex;
   using CostValue = typename LinearSumAssignment<GraphType>::CostValueT;
 
-  explicit DimacsAssignmentParser(absl::string_view filename)
-      : filename_(filename), graph_(nullptr), assignment_(nullptr) {}
+  explicit DimacsAssignmentParser(absl::string_view filename,
+                                  bool maximize_cost)
+      : filename_(filename),
+        graph_(nullptr),
+        assignment_(nullptr),
+        maximize_cost_(maximize_cost) {}
 
   // Reads an assignment problem description from the given file in
   // DIMACS format and returns a LinearSumAssignment object representing
@@ -90,10 +90,9 @@ class DimacsAssignmentParser {
   };
 
   ErrorTrackingState state_;
-
   std::unique_ptr<GraphType> graph_;
-
   LinearSumAssignment<GraphType>* assignment_;
+  bool maximize_cost_;
 };
 
 // Implementation is below here.
@@ -163,8 +162,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
     state_.bad_line.reset(new std::string(line));
   }
   ArcIndex arc = graph_->AddArc(tail - 1, head - 1);
-  assignment_->SetArcCost(
-      arc, absl::GetFlag(FLAGS_assignment_maximize_cost) ? -cost : cost);
+  assignment_->SetArcCost(arc, maximize_cost_ ? -cost : cost);
 }
 
 // Parameters out of style-guide order because this function is used
