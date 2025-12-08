@@ -2,7 +2,7 @@ if(NOT UNIX)
   execute_process(
     WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
     COMMAND @Python3_EXECUTABLE@ -m pip install
-    --find-links=dist @PYTHON_PROJECT@==@PROJECT_VERSION@
+    --find-links=dist @PYTHON_PROJECT@==@PROJECT_VERSION@@PYTHON_RELEASE@
   )
   return()
 endif()
