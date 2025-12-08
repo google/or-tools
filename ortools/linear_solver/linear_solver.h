@@ -157,7 +157,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "absl/types/optional.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -1231,23 +1230,23 @@ class MPVariable {
   void SetBranchingPriority(int priority);
 
  protected:
-  friend class MPSolver;
-  friend class MPSolverInterface;
+  friend class BopInterface;
   friend class CBCInterface;
   friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GurobiInterface;
   friend class CplexInterface;
-  friend class XpressInterface;
   friend class GLOPInterface;
-  friend class MPVariableSolutionValueTest;
-  friend class BopInterface;
-  friend class SatInterface;
-  friend class PdlpInterface;
+  friend class GLPKInterface;
+  friend class GurobiInterface;
   friend class HighsInterface;
   friend class KnapsackInterface;
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class MPVariableSolutionValueTest;
+  friend class PdlpInterface;
+  friend class SatInterface;
+  friend class SCIPInterface;
+  friend class SLMInterface;
+  friend class XpressInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to

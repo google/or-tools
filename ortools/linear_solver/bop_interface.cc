@@ -21,11 +21,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/integral_solver.h"

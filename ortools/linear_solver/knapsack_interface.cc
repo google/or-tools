@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/memory/memory.h"
 #include "ortools/algorithms/knapsack_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/fp_utils.h"
