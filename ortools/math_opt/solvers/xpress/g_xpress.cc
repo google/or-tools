@@ -568,22 +568,6 @@ absl::Status Xpress::AddRows(absl::Span<char const> rowtype,
                                 rowcoef.data()));
 }
 
-absl::StatusOr<bool> Xpress::IsBinary(int colidx) {
-  char ctype = '\0';
-  RETURN_IF_ERROR(
-      ToStatus(XPRSgetcoltype(xpress_model_, &ctype, colidx, colidx)));
-  if (ctype == XPRS_BINARY)
-    return true;
-  else if (ctype != XPRS_INTEGER)
-    return false;
-  double bnd = 0.0;
-  RETURN_IF_ERROR(ToStatus(XPRSgetlb(xpress_model_, &bnd, colidx, colidx)));
-  if (bnd < 0.0 || bnd > 1.0) return false;
-  RETURN_IF_ERROR(ToStatus(XPRSgetub(xpress_model_, &bnd, colidx, colidx)));
-  if (bnd < 0.0 || bnd > 1.0) return false;
-  return true;
-}
-
 absl::Status Xpress::AddQRow(char sense, double rhs, double rng,
                              absl::Span<int const> colind,
                              absl::Span<double const> rowcoef,
@@ -617,6 +601,38 @@ absl::Status Xpress::WriteProb(std::string const& filename,
 
 absl::Status Xpress::SaveAs(std::string const& filename) {
   return ToStatus(XPRSsaveas(xpress_model_, filename.c_str()));
+}
+
+absl::Status Xpress::GetLB(absl::Span<double> lb, int first, int last) {
+  return ToStatus(XPRSgetlb(xpress_model_, lb.data(), first, last));
+}
+absl::Status Xpress::GetUB(absl::Span<double> ub, int first, int last) {
+  return ToStatus(XPRSgetub(xpress_model_, ub.data(), first, last));
+}
+absl::Status Xpress::GetColType(absl::Span<char> ctype, int first, int last) {
+  return ToStatus(XPRSgetcoltype(xpress_model_, ctype.data(), first, last));
+}
+
+absl::Status Xpress::ChgBounds(absl::Span<int const> colind,
+                               absl::Span<char const> bndtype,
+                               absl::Span<double const> bndval) {
+  if (colind.size() != bndtype.size() || colind.size() != bndval.size())
+    return absl::InvalidArgumentError("inconsitent data to ChgBounds()");
+  if (checkInt32Overflow(colind.size()))
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 bound changes");
+  return ToStatus(XPRSchgbounds(xpress_model_, colind.size(), colind.data(),
+                                bndtype.data(), bndval.data()));
+}
+absl::Status Xpress::ChgColType(absl::Span<int const> colind,
+                                absl::Span<char const> coltype) {
+  if (colind.size() != coltype.size())
+    return absl::InvalidArgumentError("inconsitent data to ChgColType()");
+  if (checkInt32Overflow(colind.size()))
+    return absl::InvalidArgumentError(
+        "XPRESS cannot handle more than 2^31 type changes");
+  return ToStatus(XPRSchgcoltype(xpress_model_, colind.size(), colind.data(),
+                                 coltype.data()));
 }
 
 }  // namespace operations_research::math_opt

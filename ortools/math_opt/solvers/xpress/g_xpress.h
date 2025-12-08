@@ -110,6 +110,16 @@ class Xpress {
                         int* p_solstatus = nullptr);
   absl::Status PostSolve();
 
+  absl::Status GetLB(absl::Span<double> lb, int first, int last);
+  absl::Status GetUB(absl::Span<double> ub, int first, int last);
+  absl::Status GetColType(absl::Span<char> ctype, int first, int last);
+
+  absl::Status ChgBounds(absl::Span<int const> colind,
+                         absl::Span<char const> bndtype,
+                         absl::Span<double const> bndval);
+  absl::Status ChgColType(absl::Span<int const> colind,
+                          absl::Span<char const> coltype);
+
   void Terminate();
 
   absl::StatusOr<int> GetDualStatus() const;
@@ -181,7 +191,6 @@ class Xpress {
                        absl::Span<double const> rowcoef,
                        absl::Span<int const> qcol1, absl::Span<int const> qcol2,
                        absl::Span<double const> qcoef);
-  absl::StatusOr<bool> IsBinary(int colidx);
   absl::Status WriteProb(std::string const& filename,
                          std::string const& flags = "");
   absl::Status SaveAs(std::string const& filename);

@@ -1297,6 +1297,9 @@ absl::Status XpressSolver::AddIndicators(
   std::vector<int> i_colind(count);
   std::vector<int> i_complement(count);
   ASSIGN_OR_RETURN(int const oldRows, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
+  int min_icol = std::numeric_limits<int>::max();
+  int max_icol = std::numeric_limits<int>::min();
+  bool check_types = false;
   int next = 0;
   for (auto const& [ortoolsId, indicator] : indicators) {
     start[next] = colind.size();
@@ -1314,14 +1317,10 @@ absl::Status XpressSolver::AddIndicators(
     i_rowind[next] = oldRows + next;
     if (indicator.has_indicator_id()) {
       i_colind[next] = variables_map_.at(indicator.indicator_id());
+      if (i_colind[next] < min_icol) min_icol = i_colind[next];
+      if (i_colind[next] > max_icol) max_icol = i_colind[next];
       i_complement[next] = indicator.activate_on_zero() ? -1 : 1;
-      /** TODO: Can we do a faster check? Directly in ortools? */
-      ASSIGN_OR_RETURN(bool const isBin, xpress_->IsBinary(i_colind[next]));
-      if (!isBin) {
-        // See the definition of nonbinary_indicator_ why we cannot raise
-        // an error right here.
-        nonbinary_indicator_ = true;
-      }
+      check_types = true;
     } else {
       // By definition, this is an inactive constraint, see
       // indicator_constraint.h
@@ -1335,6 +1334,74 @@ absl::Status XpressSolver::AddIndicators(
     data.lower_bound = indicator.lower_bound();
     data.upper_bound = indicator.upper_bound();
     ++next;
+  }
+  if (check_types) {
+    // We have at least one active indicator constraint. We must check types
+    // of variables. If they are integer but within the range of a binary
+    // then we must convert them to a binary, otherwise Xpress will reject
+    // them.
+    std::vector<double> orig_lb(1 + max_icol - min_icol);
+    std::vector<double> orig_ub(1 + max_icol - min_icol);
+    std::vector<char> orig_type(1 + max_icol - min_icol);
+    RETURN_IF_ERROR(
+        xpress_->GetLB(absl::MakeSpan(orig_lb), min_icol, max_icol));
+    RETURN_IF_ERROR(
+        xpress_->GetUB(absl::MakeSpan(orig_ub), min_icol, max_icol));
+    RETURN_IF_ERROR(
+        xpress_->GetColType(absl::MakeSpan(orig_type), min_icol, max_icol));
+    std::vector<int> colind_bnd;
+    std::vector<double> new_bds;
+    std::vector<char> new_bdtype;
+    std::vector<int> colind_type;
+    std::vector<char> new_type;
+    for (auto i : i_colind) {
+      if (i < 0) continue;
+      int const idx = i - min_icol;
+      switch (orig_type[idx]) {
+        case XPRS_BINARY:
+          // Ok, nothing to do.
+          break;
+        case XPRS_INTEGER:
+          // Convert to binary if within range.
+          if (orig_lb[idx] >= 0.0 && orig_lb[idx] <= 1.0 &&
+              orig_ub[idx] >= 0.0 && orig_ub[idx] <= 1.0) {
+            double const l = ceil(orig_lb[idx]);
+            double const u = floor(orig_ub[idx]);
+            orig_lb[idx] = l;  // In case variable is indicator more than once
+            orig_ub[idx] = u;
+            // It would require less storage if we performed two calls to
+            // XPRSchgbounds(): one for changing all lower bounds and one for
+            // changing all upper bounds. However, this may temporarily result
+            // in conflicting bounds, which Xpress does not support. So we must
+            // change all bounds in one single call and collect appropriate data
+            // for that.
+            colind_bnd.push_back(i);
+            colind_bnd.push_back(i);
+            new_bds.push_back(l);
+            new_bds.push_back(u);
+            new_bdtype.push_back('L');
+            new_bdtype.push_back('U');
+            colind_type.push_back(i);
+            new_type.push_back(XPRS_BINARY);
+          } else {
+            nonbinary_indicator_ = true;
+          }
+          break;
+        default:
+          // Anything else cannot be used as indicator variable.
+          nonbinary_indicator_ = true;
+          break;
+      }
+    }
+    // Change column type and bounds. Note that we must first change the type
+    // since changing the type to 'B' will automatically change bounds to [0,1].
+    // After that we can fix up the bounds.
+    if (colind_type.size()) {
+      RETURN_IF_ERROR(xpress_->ChgColType(colind_type, new_type));
+    }
+    if (colind_bnd.size()) {
+      RETURN_IF_ERROR(xpress_->ChgBounds(colind_bnd, new_bdtype, new_bds));
+    }
   }
   RETURN_IF_ERROR(xpress_->AddRows(sense, rhs, rng, start, colind, rowcoef));
   RETURN_IF_ERROR(xpress_->SetIndicators(i_rowind, i_colind, i_complement));
