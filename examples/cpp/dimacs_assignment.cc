@@ -42,6 +42,8 @@ ABSL_FLAG(bool, assignment_static_graph, true,
           "Use the StaticGraph representation, "
           "otherwise ListGraph or ReverseArcListGraph according "
           "to --assignment_reverse_arcs.");
+ABSL_FLAG(bool, assignment_maximize_cost, false,
+          "Negate costs so a max-cost assignment is found.");
 
 namespace operations_research {
 
@@ -117,7 +119,8 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
   GraphType* graph = nullptr;
-  DimacsAssignmentParser<GraphType> parser(argv[1]);
+  DimacsAssignmentParser<GraphType> parser(
+      argv[1], absl::GetFlag(FLAGS_assignment_maximize_cost));
   LinearSumAssignment<GraphType>* assignment =
       parser.Parse(&error_message, &graph);
   if (assignment == nullptr) {
