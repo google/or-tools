@@ -3,7 +3,6 @@
 # You can update this file by running:
 #   python3 tools/build/bazel2cmake.py examples/cpp/BUILD.bazel
 
-
 ortools_cxx_binary(
   NAME bzl_cc_example_binpacking_2d_sat
   SOURCES binpacking_2d_sat.cc
@@ -12,12 +11,17 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_binpacking_2d_sat_class01_instance2_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/binpacking_2d_sat_class01_instance2_test.bintest
-  ENVIRONMENT BINTEST_binpacking_2d_sat=$<TARGET_FILE:bzl_cc_example_binpacking_2d_sat> BINTEST_Class_01.2bp=${CMAKE_SOURCE_DIR}/ortools/packing/testdata/Class_01.2bp
+  ENVIRONMENT
+    BINTEST_binpacking_2d_sat=$<TARGET_FILE:bzl_cc_example_binpacking_2d_sat>
+    BINTEST_Class_01.2bp=${CMAKE_SOURCE_DIR}/ortools/packing/testdata/Class_01.2bp
 )
 
 ortools_cxx_library(
   NAME bzl_cc_example_cgc
-  SOURCES cgc.cc cgc.h cgc_data.h
+  SOURCES
+    cgc.cc
+    cgc.h
+    cgc_data.h
   TYPE SHARED
 )
 
@@ -30,7 +34,14 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_cgc_test_solution
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/cgc_test_solution.bintest
-  ENVIRONMENT BINTEST_cgc_main=$<TARGET_FILE:bzl_cc_example_cgc_main> BINTEST_1.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/1.in BINTEST_2.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/2.in BINTEST_3.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/3.in BINTEST_cgcut1.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut1.in BINTEST_cgcut2.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut2.in BINTEST_cgcut3.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut3.in
+  ENVIRONMENT
+    BINTEST_cgc_main=$<TARGET_FILE:bzl_cc_example_cgc_main>
+    BINTEST_1.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/1.in
+    BINTEST_2.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/2.in
+    BINTEST_3.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/3.in
+    BINTEST_cgcut1.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut1.in
+    BINTEST_cgcut2.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut2.in
+    BINTEST_cgcut3.in=${CMAKE_CURRENT_SOURCE_DIR}/testdata/cgc/cgcut3.in
 )
 
 ortools_cxx_binary(
@@ -108,7 +119,9 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_knapsack_2d_sat_class01_instance2_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/knapsack_2d_sat_class01_instance2_test.bintest
-  ENVIRONMENT BINTEST_knapsack_2d_sat=$<TARGET_FILE:bzl_cc_example_knapsack_2d_sat> BINTEST_Class_01.2bp=${CMAKE_SOURCE_DIR}/ortools/packing/testdata/Class_01.2bp
+  ENVIRONMENT
+    BINTEST_knapsack_2d_sat=$<TARGET_FILE:bzl_cc_example_knapsack_2d_sat>
+    BINTEST_Class_01.2bp=${CMAKE_SOURCE_DIR}/ortools/packing/testdata/Class_01.2bp
 )
 
 ortools_cxx_binary(
@@ -119,7 +132,9 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_jobshop_sat_ft06
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/jobshop_sat_ft06.bintest
-  ENVIRONMENT BINTEST_jobshop_sat=$<TARGET_FILE:bzl_cc_example_jobshop_sat> BINTEST_ft06=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/ft06
+  ENVIRONMENT
+    BINTEST_jobshop_sat=$<TARGET_FILE:bzl_cc_example_jobshop_sat>
+    BINTEST_ft06=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/ft06
 )
 
 ortools_cxx_binary(
@@ -152,7 +167,9 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_shift_minimization_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/shift_minimization_sat_test.bintest
-  ENVIRONMENT BINTEST_shift_minimization_sat=$<TARGET_FILE:bzl_cc_example_shift_minimization_sat> BINTEST_shift_minimization.dat=${CMAKE_CURRENT_SOURCE_DIR}/testdata/shift_minimization.dat
+  ENVIRONMENT
+    BINTEST_shift_minimization_sat=$<TARGET_FILE:bzl_cc_example_shift_minimization_sat>
+    BINTEST_shift_minimization.dat=${CMAKE_CURRENT_SOURCE_DIR}/testdata/shift_minimization.dat
 )
 
 ortools_cxx_binary(
@@ -163,7 +180,9 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_weighted_tardiness_sat_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/weighted_tardiness_sat_test.bintest
-  ENVIRONMENT BINTEST_weighted_tardiness_sat=$<TARGET_FILE:bzl_cc_example_weighted_tardiness_sat> BINTEST_wt40.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/wt40.txt
+  ENVIRONMENT
+    BINTEST_weighted_tardiness_sat=$<TARGET_FILE:bzl_cc_example_weighted_tardiness_sat>
+    BINTEST_wt40.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/wt40.txt
 )
 
 ortools_cxx_binary(
@@ -218,13 +237,17 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_pdptw_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/pdptw_test.bintest
-  ENVIRONMENT BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw> BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
+  ENVIRONMENT
+    BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw>
+    BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
 )
 
 ortools_cxx_bintest(
   NAME bzl_cc_example_pdptw_non_homogenous_fleet_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/pdptw_non_homogenous_fleet_test.bintest
-  ENVIRONMENT BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw> BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
+  ENVIRONMENT
+    BINTEST_pdptw=$<TARGET_FILE:bzl_cc_example_pdptw>
+    BINTEST_lc102.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/lc102.txt
 )
 
 ortools_cxx_binary(
@@ -284,26 +307,32 @@ ortools_cxx_library(
 
 ortools_cxx_library(
   NAME bzl_cc_example_parse_dimacs_assignment
-  SOURCES parse_dimacs_assignment.cc parse_dimacs_assignment.h
-  TYPE SHARED
+  SOURCES parse_dimacs_assignment.h
+  TYPE INTERFACE
 )
 
 ortools_cxx_binary(
   NAME bzl_cc_example_dimacs_assignment
   SOURCES dimacs_assignment.cc
-  LINK_LIBRARIES bzl_cc_example_parse_dimacs_assignment bzl_cc_example_print_dimacs_assignment
+  LINK_LIBRARIES
+    bzl_cc_example_parse_dimacs_assignment
+    bzl_cc_example_print_dimacs_assignment
 )
 
 ortools_cxx_bintest(
   NAME bzl_cc_example_dimacs_assignment_min_cost_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/dimacs_assignment_min_cost_test.bintest
-  ENVIRONMENT BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment> BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
+  ENVIRONMENT
+    BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment>
+    BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
 )
 
 ortools_cxx_bintest(
   NAME bzl_cc_example_dimacs_assignment_max_cost_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/dimacs_assignment_max_cost_test.bintest
-  ENVIRONMENT BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment> BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
+  ENVIRONMENT
+    BINTEST_dimacs_assignment=$<TARGET_FILE:bzl_cc_example_dimacs_assignment>
+    BINTEST_dimacs_example.txt=${CMAKE_CURRENT_SOURCE_DIR}/testdata/dimacs_example.txt
 )
 
 ortools_cxx_binary(
@@ -314,7 +343,9 @@ ortools_cxx_binary(
 ortools_cxx_bintest(
   NAME bzl_cc_example_mps_driver_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/mps_driver_test.bintest
-  ENVIRONMENT BINTEST_mps_driver=$<TARGET_FILE:bzl_cc_example_mps_driver> BINTEST_maximization.mps=${CMAKE_SOURCE_DIR}/ortools/linear_solver/testdata/maximization.mps
+  ENVIRONMENT
+    BINTEST_mps_driver=$<TARGET_FILE:bzl_cc_example_mps_driver>
+    BINTEST_maximization.mps=${CMAKE_SOURCE_DIR}/ortools/linear_solver/testdata/maximization.mps
 )
 
 ortools_cxx_binary(
@@ -363,20 +394,26 @@ ortools_cxx_bintest(
 
 ortools_cxx_library(
   NAME bzl_cc_example_fap_parser
-  SOURCES fap_parser.cc fap_parser.h
+  SOURCES
+    fap_parser.cc
+    fap_parser.h
   TYPE SHARED
 )
 
 ortools_cxx_library(
   NAME bzl_cc_example_fap_model_printer
-  SOURCES fap_model_printer.cc fap_model_printer.h
+  SOURCES
+    fap_model_printer.cc
+    fap_model_printer.h
   LINK_LIBRARIES bzl_cc_example_fap_parser
   TYPE SHARED
 )
 
 ortools_cxx_library(
   NAME bzl_cc_example_fap_utilities
-  SOURCES fap_utilities.cc fap_utilities.h
+  SOURCES
+    fap_utilities.cc
+    fap_utilities.h
   LINK_LIBRARIES bzl_cc_example_fap_parser
   TYPE SHARED
 )
@@ -384,7 +421,10 @@ ortools_cxx_library(
 ortools_cxx_binary(
   NAME bzl_cc_example_frequency_assignment_problem
   SOURCES frequency_assignment_problem.cc
-  LINK_LIBRARIES bzl_cc_example_fap_model_printer bzl_cc_example_fap_parser bzl_cc_example_fap_utilities
+  LINK_LIBRARIES
+    bzl_cc_example_fap_model_printer
+    bzl_cc_example_fap_parser
+    bzl_cc_example_fap_utilities
 )
 
 ortools_cxx_binary(
