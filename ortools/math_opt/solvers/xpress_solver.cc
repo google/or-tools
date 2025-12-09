@@ -1418,7 +1418,7 @@ absl::Status XpressSolver::AddQuadraticConstraints(
   std::vector<double> quad_coef;
   ASSIGN_OR_RETURN(int next, xpress_->GetIntAttr(XPRS_ORIGINALROWS));
   for (const auto& [ortoolsId, quad] : constraints) {
-    // Xpress has no function to multiple quadratic rows in one shot, so we
+    // Xpress has no function to add multiple quadratic rows in one shot, so we
     // add the linear part one by one as well.
     char sense;
     double rhs;
