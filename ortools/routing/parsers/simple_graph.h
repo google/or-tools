@@ -13,8 +13,8 @@
 
 // Common utilities for parsing routing instances.
 
-#ifndef OR_TOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_
-#define OR_TOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_
+#ifndef ORTOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_
+#define ORTOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_
 
 #include <algorithm>
 #include <functional>
@@ -152,4 +152,4 @@ struct SimpleTimeWindow {
 
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_
+#endif  // ORTOOLS_ROUTING_PARSERS_SIMPLE_GRAPH_H_

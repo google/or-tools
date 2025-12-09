@@ -120,7 +120,11 @@ if(BUILD_absl)
   set(ABSL_USE_SYSTEM_INCLUDES ON)
   # We want Abseil to declare what C++ standard it was compiled with.
   set(ABSL_PROPAGATE_CXX_STD ON)
-  set(ABSL_BUILD_TEST_HELPERS ON)
+  if(OR_TOOLS_BUILD_TESTING)
+    set(ABSL_BUILD_TEST_HELPERS ON)
+  else()
+    set(ABSL_BUILD_TEST_HELPERS OFF)
+  endif()
   set(ABSL_USE_EXTERNAL_GOOGLETEST ON)
   set(ABSL_FIND_GOOGLETEST OFF)
   # We want Abseil to keep the INSTALL rules enabled, even though it is a
@@ -141,12 +145,12 @@ if(BUILD_Protobuf)
   FetchContent_Declare(
     Protobuf
     GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
-    GIT_TAG "v32.0"
+    GIT_TAG "v33.1"
     GIT_SHALLOW TRUE
     GIT_SUBMODULES ""
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v32.0.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v33.1.patch"
     OVERRIDE_FIND_PACKAGE # Make package visible for "protobuf-matchers" below
   )
   set(protobuf_BUILD_TESTS OFF)
@@ -303,11 +307,9 @@ if(BUILD_HIGHS)
   FetchContent_Declare(
     highs
     GIT_REPOSITORY "https://github.com/ERGO-Code/HiGHS.git"
-    GIT_TAG        "v1.11.0"
+    GIT_TAG        "v1.12.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/highs-v1.11.0.patch"
   )
   set(CI OFF) # disable CI tests
   set(BUILD_EXAMPLES OFF)
@@ -351,11 +353,11 @@ if(BUILD_soplex)
   FetchContent_Declare(
     soplex
     GIT_REPOSITORY "https://github.com/scipopt/soplex.git"
-    GIT_TAG        "release-713"
+    GIT_TAG        "v8.0.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v7.1.3.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/soplex-v8.0.0.patch"
   )
   set(SHARED ON CACHE BOOL "Soplex param" FORCE)
   set(ZLIB ON CACHE BOOL "Soplex param" FORCE)
@@ -381,11 +383,11 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     GIT_REPOSITORY "https://github.com/scipopt/scip.git"
-    GIT_TAG        "v923"
+    GIT_TAG        "v10.0.0"
     GIT_SHALLOW TRUE
     UPDATE_COMMAND git reset --hard
     PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v923.patch"
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-v10.0.0.patch"
   )
   set(SHARED ON CACHE BOOL "Scip param" FORCE)
   set(ZLIB ON CACHE BOOL "Scip param" FORCE)
@@ -568,23 +570,6 @@ if(BUILD_benchmark)
   set(BENCHMARK_ENABLE_WERROR OFF)
   set(BENCHMARK_ENABLE_INSTALL OFF)
   FetchContent_MakeAvailable(benchmark)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
-
-if(BUILD_fuzztest)
-  message(CHECK_START "Fetching fuzztest")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    fuzztest
-    GIT_REPOSITORY https://github.com/google/fuzztest.git
-    GIT_TAG 2025-08-05
-    GIT_SHALLOW TRUE
-    UPDATE_COMMAND git reset --hard
-    PATCH_COMMAND git apply --ignore-whitespace
-    "${CMAKE_CURRENT_LIST_DIR}/../../patches/fuzztest-2025-08-05.patch"
-  )
-  FetchContent_MakeAvailable(fuzztest)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()

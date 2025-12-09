@@ -1,11 +1,11 @@
 # OR-Tools code dependencies
-absl-py==2.2.2
-immutabledict==4.2.1
-numpy==2.2.0
+absl-py==2.3.1
+immutabledict==4.2.2
+numpy==2.3.5
 protobuf==6.32.0
 requests==2.32.4
-scipy==1.14.1
-typing-extensions==4.13.1
+scipy==1.16.3
+typing-extensions==4.15.0
 
 # OR-Tools build dependencies
 mypy==1.6.1
@@ -14,7 +14,7 @@ virtualenv==20.28.1
 black==24.8.0
 
 # Example dependencies
-pandas==2.2.3
+pandas==2.3.3
 
 # Visualization dependencies
 svgwrite==1.4.3

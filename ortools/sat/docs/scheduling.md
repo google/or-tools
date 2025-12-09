@@ -14,8 +14,8 @@ exclusivity between tasks, and temporal relations between tasks.
 ## Interval variables
 
 Intervals are constraints containing three constant of affine expressions
-(start, size, and end). Creating an interval constraint will enforce that
-`start + size == end`.
+(start, size, and end). Creating an interval constraint will enforce that `start
++ size == end`.
 
 The more general API uses three expressions to define the interval. If the size
 is fixed, a simpler API uses the start expression and the fixed size.
@@ -2266,13 +2266,15 @@ of the start of the task. This is implemented using channeling constraints.
 
 The following code displays:
 
-    start=8 duration=3 across=0
-    start=9 duration=3 across=0
-    start=10 duration=3 across=0
-    start=11 duration=4 across=1
-    start=12 duration=4 across=1
-    start=14 duration=3 across=0
-    start=15 duration=3 across=0
+```
+start=8 duration=3 across=0
+start=9 duration=3 across=0
+start=10 duration=3 across=0
+start=11 duration=4 across=1
+start=12 duration=4 across=1
+start=14 duration=3 across=0
+start=15 duration=3 across=0
+```
 
 ### Python code
 

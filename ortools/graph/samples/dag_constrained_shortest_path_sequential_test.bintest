@@ -1,0 +1,5 @@
+RUN: $(dag_constrained_shortest_path_sequential)
+CHECK: "Initial distance: 200"
+CHECK: "Distance_2_3: 1"
+CHECK: "Distance_8_1: 100"
+CHECK: "Distance_3_7: 100"

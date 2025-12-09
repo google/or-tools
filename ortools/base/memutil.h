@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_MEMUTIL_H_
-#define OR_TOOLS_BASE_MEMUTIL_H_
+#ifndef ORTOOLS_BASE_MEMUTIL_H_
+#define ORTOOLS_BASE_MEMUTIL_H_
 
 #include <cstdlib>
 #include <cstring>
@@ -26,4 +26,4 @@ inline char* memdup(const char* s, size_t slen) {
 }
 }  // namespace strings
 
-#endif  // OR_TOOLS_BASE_MEMUTIL_H_
+#endif  // ORTOOLS_BASE_MEMUTIL_H_

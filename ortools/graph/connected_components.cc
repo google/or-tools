@@ -20,6 +20,7 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/log/check.h"
 #include "ortools/base/stl_util.h"
 
 void DenseConnectedComponentsFinder::SetNumberOfNodes(int num_nodes) {
@@ -27,6 +28,7 @@ void DenseConnectedComponentsFinder::SetNumberOfNodes(int num_nodes) {
   if (num_nodes == old_num_nodes) {
     return;
   }
+  CHECK_GE(num_nodes, 0) << "Number of nodes overflowed the `int` type.";
   CHECK_GT(num_nodes, old_num_nodes);
   // Each new node starts as an isolated component:
   // It has itself as root.

@@ -23,8 +23,8 @@
 // number of edges of the subgraph induced by odd-degree nodes of the minimum
 // spanning tree.
 
-#ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
-#define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
+#ifndef ORTOOLS_GRAPH_CHRISTOFIDES_H_
+#define ORTOOLS_GRAPH_CHRISTOFIDES_H_
 
 #include <cstdint>
 #include <functional>
@@ -389,4 +389,4 @@ ChristofidesPathSolver<CostType, ArcIndex, NodeIndex, CostFunction>::Solve() {
 }
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_CHRISTOFIDES_H_
+#endif  // ORTOOLS_GRAPH_CHRISTOFIDES_H_

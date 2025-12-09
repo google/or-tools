@@ -27,8 +27,8 @@
 // code is responsible for using this class properly. A few DCHECKs() will help
 // catch bugs, though.
 
-#ifndef OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
-#define OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
+#ifndef ORTOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
+#define ORTOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
 
 #include <cstdint>
 #include <string>
@@ -401,4 +401,4 @@ inline std::vector<absl::Span<const T>> SimpleDynamicPartition::GetParts(
 }
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
+#endif  // ORTOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_

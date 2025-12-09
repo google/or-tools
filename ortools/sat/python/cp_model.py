@@ -1845,9 +1845,9 @@ class CpSolver:
         return self._checked_response.num_branches
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
-        return self._checked_response.num_boolean_propagations
+        return self._checked_response.num_binary_propagations
 
     @property
     def num_integer_propagations(self) -> int:
@@ -1868,6 +1868,19 @@ class CpSolver:
     def user_time(self) -> float:
         """Returns the user time in seconds since the creation of the solver."""
         return self._checked_response.user_time
+
+    @property
+    def solve_log(self) -> str:
+        """Returns the solve log.
+
+        To enable this, the parameter log_to_response must be set to True.
+        """
+        return self._checked_response.solve_log
+
+    @property
+    def solve_info(self) -> str:
+        """Returns the information about the solve."""
+        return self._checked_response.solve_info
 
     @property
     def response_proto(self) -> cmh.CpSolverResponse:
@@ -1947,17 +1960,6 @@ class CpSolver:
 
     def WallTime(self) -> float:
         return self.wall_time
-
-    def SolveWithSolutionCallback(
-        self, model: CpModel, callback: "CpSolverSolutionCallback"
-    ) -> cmh.CpSolverStatus:
-        """DEPRECATED Use solve() with the callback argument."""
-        warnings.warn(
-            "solve_with_solution_callback is deprecated; use solve() with"
-            + "the callback argument.",
-            DeprecationWarning,
-        )
-        return self.solve(model, callback)
 
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
@@ -2131,11 +2133,11 @@ class CpSolverSolutionCallback(cmh.SolutionCallback):
         return self.NumIntegerPropagations()
 
     @property
-    def num_boolean_propagations(self) -> int:
+    def num_binary_propagations(self) -> int:
         """Returns the number of Boolean propagations done by the solver."""
         if not self.has_response():
             raise RuntimeError("solve() has not been called.")
-        return self.NumBooleanPropagations()
+        return self.NumBinaryPropagations()
 
     @property
     def deterministic_time(self) -> float:

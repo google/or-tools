@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_
+#define ORTOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_
 
 #include "gtest/gtest.h"
 #include "ortools/math_opt/cpp/math_opt.h"
@@ -38,4 +38,4 @@ bool ActivateDualRay(SolverType solver_type, SolveParameters& params);
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_BASE_SOLVER_TEST_H_

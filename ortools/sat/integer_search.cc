@@ -1353,6 +1353,7 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
     : parameters_(*model->GetOrCreate<SatParameters>()),
       model_(model),
       sat_solver_(model->GetOrCreate<SatSolver>()),
+      binary_implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       encoder_(model->GetOrCreate<IntegerEncoder>()),
       implied_bounds_(model->GetOrCreate<ImpliedBounds>()),
@@ -1363,12 +1364,20 @@ IntegerSearchHelper::IntegerSearchHelper(Model* model)
       inprocessing_(model->GetOrCreate<Inprocessing>()) {}
 
 bool IntegerSearchHelper::BeforeTakingDecision() {
-  // If we pushed root level deductions, we restart to incorporate them.
-  // Note that in the present of assumptions, it is important to return to
-  // the level zero first ! otherwise, the new deductions will not be
-  // incorporated and the solver will loop forever.
+  DCHECK(sat_solver_->PropagationIsDone());
+
+  // If we pushed root level deductions, we go back to level zero and call
+  // Propagate() to incorporate them. Note that the propagation is not strictly
+  // needed, but it is nicer to be at fixed point when we call the level zero
+  // callbacks.
   if (integer_trail_->HasPendingRootLevelDeduction()) {
     sat_solver_->Backtrack(0);
+    if (!sat_solver_->Propagate()) {
+      // This adds the UNSAT proof to the LRAT handler, if any.
+      sat_solver_->ProcessCurrentConflict();
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
 
   // The rest only trigger at level zero.
@@ -1391,16 +1400,29 @@ bool IntegerSearchHelper::BeforeTakingDecision() {
   if (sat_solver_->LiteralTrail().Index() > saved_bool_index ||
       integer_trail_->num_enqueues() > saved_integer_index ||
       integer_trail_->HasPendingRootLevelDeduction()) {
-    if (!sat_solver_->ResetToLevelZero()) return false;
+    if (!sat_solver_->Propagate()) {
+      // This adds the UNSAT proof to the LRAT handler, if any.
+      sat_solver_->ProcessCurrentConflict();
+      sat_solver_->NotifyThatModelIsUnsat();
+      return false;
+    }
   }
+  DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0)
+      << "Level zero callback left decisions on the trail ?";
 
+  // We apply inprocessing if we have budget.
   if (parameters_.use_sat_inprocessing() &&
       !inprocessing_->InprocessingRound()) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }
+  DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0)
+      << "Inprocessing left decisions on the trail ?";
 
-  return true;
+  // Finally, once all the root-level work has been done, if we have
+  // assumptions, we re-add them on the first decision level and continue
+  // from there.
+  return sat_solver_->ReapplyAssumptionsIfNeeded();
 }
 
 LiteralIndex IntegerSearchHelper::GetDecisionLiteral(
@@ -1466,6 +1488,15 @@ bool IntegerSearchHelper::GetDecision(
 }
 
 bool IntegerSearchHelper::TakeDecision(Literal decision) {
+  // If we are about to take a decision on a redundant literal, always
+  // prefer to branch on the representative. This should helps learn more
+  // consistent conflict.
+  //
+  // TODO(user): Ideally never learn anything on redundant variable. This is
+  // a bit of work.
+  decision = binary_implication_graph_->RepresentativeOf(decision);
+  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
+
   pseudo_costs_->BeforeTakingDecision(decision);
 
   // Note that kUnsatTrailIndex might also mean ASSUMPTIONS_UNSAT.
@@ -1519,9 +1550,15 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
          (sat_solver_->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (heuristics.restart_policies[heuristics.policy_index]()) {
-      if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+      // Note that in the presence of assumptions, BeforeTakingDecision()
+      // will make sure to restore them. On restart, we always call Propagate()
+      // as we might want to spent more effort on the root level LP relaxation
+      // for instance.
+      sat_solver_->Backtrack(0);
+      if (!sat_solver_->FinishPropagation()) {
         return sat_solver_->UnsatStatus();
       }
+
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
@@ -1611,17 +1648,23 @@ SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model) {
   // Backtrack to level zero.
   auto* sat_solver = model->GetOrCreate<SatSolver>();
-  if (!sat_solver->ResetToLevelZero()) return sat_solver->UnsatStatus();
+  if (!sat_solver->ResetToLevelZero()) {
+    return sat_solver->UnsatStatus();
+  }
 
   // Sync bounds and maybe do some inprocessing.
   // We reuse the BeforeTakingDecision() code
   auto* helper = model->GetOrCreate<IntegerSearchHelper>();
-  if (!helper->BeforeTakingDecision()) return sat_solver->UnsatStatus();
+  DCHECK(sat_solver->PropagationIsDone());
+  if (!helper->BeforeTakingDecision()) {
+    return sat_solver->UnsatStatus();
+  }
 
   // Add the assumptions if any and solve.
   if (!sat_solver->ResetWithGivenAssumptions(assumptions)) {
     return sat_solver->UnsatStatus();
   }
+
   return helper->SolveIntegerProblem();
 }
 
@@ -1810,7 +1853,8 @@ SatSolver::Status ContinuousProber::Probe() {
           tmp_dnf_.push_back({literal});
         }
         ++num_at_least_one_probed_;
-        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("at_least_one", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOne, clause)) {
           return SatSolver::INFEASIBLE;
         }
 
@@ -1833,7 +1877,8 @@ SatSolver::Status ContinuousProber::Probe() {
         }
         tmp_dnf_.push_back(tmp_literals_);
         ++num_at_most_one_probed_;
-        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("at_most_one", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOneOrZero)) {
           return SatSolver::INFEASIBLE;
         }
 
@@ -1854,12 +1899,12 @@ SatSolver::Status ContinuousProber::Probe() {
           for (; current_bv2_ < bool_vars_.size(); ++current_bv2_) {
             const BooleanVariable& bv2 = bool_vars_[current_bv2_];
             if (assignment.VariableIsAssigned(bv2)) continue;
-            if (!prober_->ProbeDnf(
-                    "pair_of_bool_vars",
-                    {{Literal(bv1, true), Literal(bv2, true)},
-                     {Literal(bv1, true), Literal(bv2, false)},
-                     {Literal(bv1, false), Literal(bv2, true)},
-                     {Literal(bv1, false), Literal(bv2, false)}})) {
+            if (!prober_->ProbeDnf("pair_of_bool_vars",
+                                   {{Literal(bv1, false), Literal(bv2, false)},
+                                    {Literal(bv1, false), Literal(bv2, true)},
+                                    {Literal(bv1, true), Literal(bv2, false)},
+                                    {Literal(bv1, true), Literal(bv2, true)}},
+                                   Prober::DnfType::kAtLeastOneCombination)) {
               return SatSolver::INFEASIBLE;
             }
             RETURN_IF_NOT_FEASIBLE(PeriodicSyncAndCheck());
@@ -1877,12 +1922,12 @@ SatSolver::Status ContinuousProber::Probe() {
           if (assignment.VariableIsAssigned(bv2) || bv1 == bv2) {
             continue;
           }
-          if (!prober_->ProbeDnf(
-                  "rnd_pair_of_bool_vars",
-                  {{Literal(bv1, true), Literal(bv2, true)},
-                   {Literal(bv1, true), Literal(bv2, false)},
-                   {Literal(bv1, false), Literal(bv2, true)},
-                   {Literal(bv1, false), Literal(bv2, false)}})) {
+          if (!prober_->ProbeDnf("rnd_pair_of_bool_vars",
+                                 {{Literal(bv1, false), Literal(bv2, false)},
+                                  {Literal(bv1, false), Literal(bv2, true)},
+                                  {Literal(bv1, true), Literal(bv2, false)},
+                                  {Literal(bv1, true), Literal(bv2, true)}},
+                                 Prober::DnfType::kAtLeastOneCombination)) {
             return SatSolver::INFEASIBLE;
           }
 
@@ -1915,12 +1960,13 @@ SatSolver::Status ContinuousProber::Probe() {
         }
         tmp_dnf_.clear();
         for (int i = 0; i < 8; ++i) {
-          tmp_dnf_.push_back({Literal(bv1, (i & 1) > 0),
+          tmp_dnf_.push_back({Literal(bv1, (i & 4) > 0),
                               Literal(bv2, (i & 2) > 0),
-                              Literal(bv3, (i & 4) > 0)});
+                              Literal(bv3, (i & 1) > 0)});
         }
 
-        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_)) {
+        if (!prober_->ProbeDnf("rnd_triplet_of_bool_vars", tmp_dnf_,
+                               Prober::DnfType::kAtLeastOneCombination)) {
           return SatSolver::INFEASIBLE;
         }
 

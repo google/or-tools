@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_
-#define OR_TOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_
+#ifndef ORTOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_
+#define ORTOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_
 
 #include <ostream>
 #include <utility>
@@ -42,4 +42,4 @@ class IpMultipleSolutionsTest
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_
+#endif  // ORTOOLS_MATH_OPT_SOLVER_TESTS_IP_MULTIPLE_SOLUTIONS_TESTS_H_

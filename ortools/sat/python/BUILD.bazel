@@ -138,7 +138,7 @@ py_library(
 
 py_test(
     name = "cp_model_test",
-    size = "small",
+    size = "medium",
     srcs = ["cp_model_test.py"],
     deps = [
         ":cp_model",

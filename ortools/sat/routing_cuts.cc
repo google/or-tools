@@ -121,7 +121,7 @@ MinOutgoingFlowHelper::MinOutgoingFlowHelper(
       heads_(heads),
       literals_(literals),
       binary_relation_repository_(
-          *model->GetOrCreate<BinaryRelationRepository>()),
+          *model->GetOrCreate<ConditionalLinear2Bounds>()),
       implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
       trail_(*model->GetOrCreate<Trail>()),
       integer_trail_(*model->GetOrCreate<IntegerTrail>()),
@@ -1085,24 +1085,16 @@ struct LocalRelation {
 
 IntegerVariable UniqueSharedVariable(const sat::Relation& r1,
                                      const sat::Relation& r2) {
-  DCHECK_NE(r1.expr.vars[0], r1.expr.vars[1]);
-  DCHECK_NE(r2.expr.vars[0], r2.expr.vars[1]);
-  if (r1.expr.vars[0] == r2.expr.vars[0] &&
-      r1.expr.vars[1] != r2.expr.vars[1]) {
-    return r1.expr.vars[0];
-  }
-  if (r1.expr.vars[0] == r2.expr.vars[1] &&
-      r1.expr.vars[1] != r2.expr.vars[0]) {
-    return r1.expr.vars[0];
-  }
-  if (r1.expr.vars[1] == r2.expr.vars[0] &&
-      r1.expr.vars[0] != r2.expr.vars[1]) {
-    return r1.expr.vars[1];
-  }
-  if (r1.expr.vars[1] == r2.expr.vars[1] &&
-      r1.expr.vars[0] != r2.expr.vars[0]) {
-    return r1.expr.vars[1];
-  }
+  const IntegerVariable X[2] = {PositiveVariable(r1.expr.vars[0]),
+                                PositiveVariable(r1.expr.vars[1])};
+  const IntegerVariable Y[2] = {PositiveVariable(r2.expr.vars[0]),
+                                PositiveVariable(r2.expr.vars[1])};
+  DCHECK_NE(X[0], X[1]);
+  DCHECK_NE(Y[0], Y[1]);
+  if (X[0] == Y[0] && X[1] != Y[1]) return X[0];
+  if (X[0] == Y[1] && X[1] != Y[0]) return X[0];
+  if (X[1] == Y[0] && X[0] != Y[1]) return X[1];
+  if (X[1] == Y[1] && X[0] != Y[0]) return X[1];
   return kNoIntegerVariable;
 }
 
@@ -1114,7 +1106,7 @@ class RouteRelationsBuilder {
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
       absl::Span<const AffineExpression> flat_node_dim_expressions,
-      const BinaryRelationRepository& binary_relation_repository)
+      const ConditionalLinear2Bounds& binary_relation_repository)
       : num_nodes_(num_nodes),
         num_arcs_(tails.size()),
         tails_(tails),
@@ -1282,18 +1274,17 @@ class RouteRelationsBuilder {
            binary_relation_repository_.IndicesOfRelationsEnforcedBy(
                literals_[i])) {
         const auto& r = binary_relation_repository_.relation(relation_index);
-        if (r.expr.vars[0] == kNoIntegerVariable ||
-            r.expr.vars[1] == kNoIntegerVariable) {
-          continue;
-        }
-        cc_finder.AddEdge(r.expr.vars[0], r.expr.vars[1]);
+        DCHECK_NE(r.expr.vars[0], kNoIntegerVariable);
+        DCHECK_NE(r.expr.vars[1], kNoIntegerVariable);
+        cc_finder.AddEdge(PositiveVariable(r.expr.vars[0]),
+                          PositiveVariable(r.expr.vars[1]));
       }
     }
     const std::vector<std::vector<IntegerVariable>> connected_components =
         cc_finder.FindConnectedComponents();
     for (int i = 0; i < connected_components.size(); ++i) {
       for (const IntegerVariable var : connected_components[i]) {
-        dimension_by_var_[var] = i;
+        dimension_by_var_[GetPositiveOnlyIndex(var)] = i;
       }
     }
     num_dimensions_ = connected_components.size();
@@ -1312,11 +1303,10 @@ class RouteRelationsBuilder {
            binary_relation_repository_.IndicesOfRelationsEnforcedBy(
                literals_[i])) {
         const auto& r = binary_relation_repository_.relation(relation_index);
-        if (r.expr.vars[0] == kNoIntegerVariable ||
-            r.expr.vars[1] == kNoIntegerVariable) {
-          continue;
-        }
-        const int dimension = dimension_by_var_[r.expr.vars[0]];
+        DCHECK_NE(r.expr.vars[0], kNoIntegerVariable);
+        DCHECK_NE(r.expr.vars[1], kNoIntegerVariable);
+        const int dimension = dimension_by_var_[GetPositiveOnlyIndex(
+            PositiveVariable(r.expr.vars[0]))];
         adjacent_relation_indices_[dimension][tails_[i]].push_back(
             relation_index);
         adjacent_relation_indices_[dimension][heads_[i]].push_back(
@@ -1346,7 +1336,7 @@ class RouteRelationsBuilder {
             const auto& r2 = binary_relation_repository_.relation(r2_index);
             const IntegerVariable shared_var = UniqueSharedVariable(r1, r2);
             if (shared_var == kNoIntegerVariable) continue;
-            DCHECK_EQ(dimension_by_var_[shared_var], d);
+            DCHECK_EQ(dimension_by_var_[GetPositiveOnlyIndex(shared_var)], d);
             AffineExpression& node_expr = node_expression(n, d);
             if (node_expr.IsConstant()) {
               result.push({n, d});
@@ -1390,25 +1380,23 @@ class RouteRelationsBuilder {
              binary_relation_repository_.IndicesOfRelationsEnforcedBy(
                  literals_[arc_index])) {
           const auto& r = binary_relation_repository_.relation(relation_index);
-          if (r.expr.vars[0] == kNoIntegerVariable ||
-              r.expr.vars[1] == kNoIntegerVariable) {
-            continue;
-          }
-          if (r.expr.vars[0] == node_expr.var) {
-            if (candidate_var != kNoIntegerVariable &&
-                candidate_var != r.expr.vars[1]) {
+          DCHECK_NE(r.expr.vars[0], kNoIntegerVariable);
+          DCHECK_NE(r.expr.vars[1], kNoIntegerVariable);
+          const IntegerVariable var0 = PositiveVariable(r.expr.vars[0]);
+          const IntegerVariable var1 = PositiveVariable(r.expr.vars[1]);
+          if (var0 == node_expr.var) {
+            if (candidate_var != kNoIntegerVariable && candidate_var != var1) {
               candidate_var_is_unique = false;
               break;
             }
-            candidate_var = r.expr.vars[1];
+            candidate_var = var1;
           }
-          if (r.expr.vars[1] == node_expr.var) {
-            if (candidate_var != kNoIntegerVariable &&
-                candidate_var != r.expr.vars[0]) {
+          if (var1 == node_expr.var) {
+            if (candidate_var != kNoIntegerVariable && candidate_var != var0) {
               candidate_var_is_unique = false;
               break;
             }
-            candidate_var = r.expr.vars[0];
+            candidate_var = var0;
           }
         }
         if (candidate_var != kNoIntegerVariable && candidate_var_is_unique) {
@@ -1551,7 +1539,8 @@ class RouteRelationsBuilder {
             for (const int relation_index :
                  binary_relation_repository_.IndicesOfRelationsEnforcedBy(
                      implied_lit)) {
-              auto r = binary_relation_repository_.relation(relation_index);
+              Relation r = binary_relation_repository_.relation(relation_index);
+              r.expr.MakeVariablesPositive();
               // Try to match the relation variables with the node expression
               // variables. First swap the relation terms if needed (this does
               // not change the relation bounds).
@@ -1579,6 +1568,8 @@ class RouteRelationsBuilder {
           for (const auto& [expr, lb, ub] :
                root_level_bounds.GetAllBoundsContainingVariables(
                    tail_expr.var, head_expr.var)) {
+            DCHECK_EQ(expr.vars[0], tail_expr.var);
+            DCHECK_EQ(expr.vars[1], head_expr.var);
             ComputeArcRelation(i, dimension, tail_expr, head_expr,
                                Relation{Literal(kNoLiteralIndex), expr, lb, ub},
                                integer_trail);
@@ -1692,10 +1683,10 @@ class RouteRelationsBuilder {
   absl::Span<const int> tails_;
   absl::Span<const int> heads_;
   absl::Span<const Literal> literals_;
-  const BinaryRelationRepository& binary_relation_repository_;
+  const ConditionalLinear2Bounds& binary_relation_repository_;
 
   int num_dimensions_;
-  absl::flat_hash_map<IntegerVariable, int> dimension_by_var_;
+  absl::flat_hash_map<PositiveOnlyIndex, int> dimension_by_var_;
   absl::flat_hash_map<Literal, int> num_arcs_per_literal_;
 
   // The indices of the binary relations associated with the incoming and
@@ -1714,7 +1705,7 @@ class RouteRelationsBuilder {
 RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
-    const BinaryRelationRepository& binary_relation_repository) {
+    const ConditionalLinear2Bounds& binary_relation_repository) {
   RoutingCumulExpressions result;
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals, {},
                                 binary_relation_repository);
@@ -1798,7 +1789,7 @@ std::unique_ptr<RouteRelationsHelper> RouteRelationsHelper::Create(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
     absl::Span<const AffineExpression> flat_node_dim_expressions,
-    const BinaryRelationRepository& binary_relation_repository, Model* model) {
+    const ConditionalLinear2Bounds& binary_relation_repository, Model* model) {
   CHECK(model != nullptr);
   if (flat_node_dim_expressions.empty()) return nullptr;
   RouteRelationsBuilder builder(num_nodes, tails, heads, literals,
@@ -1895,10 +1886,10 @@ int ToNodeVariableIndex(IntegerVariable var) {
 // domains) of the enforced linear constraints (of size 2 only) in `model`. This
 // is the only information needed to infer the mapping from variables to nodes
 // in routes constraints.
-BinaryRelationRepository ComputePartialBinaryRelationRepository(
+ConditionalLinear2Bounds ComputePartialConditionalLinear2Bounds(
     const CpModelProto& model) {
   Model empty_model;
-  BinaryRelationRepository repository(&empty_model);
+  ConditionalLinear2Bounds repository(&empty_model);
   for (const ConstraintProto& ct : model.constraints()) {
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     const absl::Span<const int> vars = ct.linear().vars();
@@ -1914,7 +1905,7 @@ BinaryRelationRepository ComputePartialBinaryRelationRepository(
 
 // Returns the number of dimensions added to the constraint.
 int MaybeFillRoutesConstraintNodeExpressions(
-    RoutesConstraintProto& routes, const BinaryRelationRepository& repository) {
+    RoutesConstraintProto& routes, const ConditionalLinear2Bounds& repository) {
   int max_node = 0;
   for (const int node : routes.tails()) {
     max_node = std::max(max_node, node);
@@ -1966,8 +1957,8 @@ std::pair<int, int> MaybeFillMissingRoutesConstraintNodeExpressions(
   if (routes_to_fill.empty()) return {0, 0};
 
   int total_num_dimensions = 0;
-  const BinaryRelationRepository partial_repository =
-      ComputePartialBinaryRelationRepository(input_model);
+  const ConditionalLinear2Bounds partial_repository =
+      ComputePartialConditionalLinear2Bounds(input_model);
   for (RoutesConstraintProto* routes : routes_to_fill) {
     total_num_dimensions +=
         MaybeFillRoutesConstraintNodeExpressions(*routes, partial_repository);
@@ -1992,7 +1983,7 @@ class RoutingCutHelper {
         trail_(*model->GetOrCreate<Trail>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         binary_relation_repository_(
-            *model->GetOrCreate<BinaryRelationRepository>()),
+            *model->GetOrCreate<ConditionalLinear2Bounds>()),
         implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
@@ -2005,7 +1996,7 @@ class RoutingCutHelper {
         min_outgoing_flow_helper_(num_nodes, tails_, heads_, literals_, model),
         route_relations_helper_(RouteRelationsHelper::Create(
             num_nodes, tails_, heads_, literals_, flat_node_dim_expressions,
-            *model->GetOrCreate<BinaryRelationRepository>(), model)) {}
+            *model->GetOrCreate<ConditionalLinear2Bounds>(), model)) {}
 
   int num_nodes() const { return num_nodes_; }
 
@@ -2127,7 +2118,7 @@ class RoutingCutHelper {
   const SatParameters& params_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
-  const BinaryRelationRepository& binary_relation_repository_;
+  const ConditionalLinear2Bounds& binary_relation_repository_;
   const ImpliedBounds& implied_bounds_;
   ModelRandomGenerator* random_;
   IntegerEncoder* encoder_;

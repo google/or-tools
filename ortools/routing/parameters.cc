@@ -78,14 +78,28 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   rr->set_route_selection_min_neighbors(10);
   rr->set_route_selection_max_neighbors(100);
   ils.set_improve_perturbed_solution(true);
-  ils.set_acceptance_strategy(AcceptanceStrategy::GREEDY_DESCENT);
-  SimulatedAnnealingParameters* sa =
-      ils.mutable_simulated_annealing_parameters();
+  ils.mutable_best_solution_acceptance_strategy()->mutable_greedy_descent();
+  SimulatedAnnealingAcceptanceStrategy* sa =
+      ils.mutable_reference_solution_acceptance_strategy()
+          ->mutable_simulated_annealing();
   sa->set_cooling_schedule_strategy(CoolingScheduleStrategy::EXPONENTIAL);
   sa->set_initial_temperature(100.0);
   sa->set_final_temperature(0.01);
   sa->set_automatic_temperatures(false);
   return ils;
+}
+
+GlobalCheapestInsertionParameters
+CreateDefaultGlobalCheapestInsertionParameters(
+    bool use_neighbors_ratio_for_initialization) {
+  GlobalCheapestInsertionParameters gci;
+  gci.set_farthest_seeds_ratio(0);
+  gci.set_neighbors_ratio(1.0);
+  gci.set_min_neighbors(1);
+  gci.set_use_neighbors_ratio_for_initialization(
+      use_neighbors_ratio_for_initialization);
+  gci.set_add_unperformed_entries(false);
+  return gci;
 }
 
 RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
@@ -96,14 +110,12 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.mutable_savings_parameters()->set_max_memory_usage_bytes(6e9);
   p.mutable_savings_parameters()->set_add_reverse_arcs(false);
   p.mutable_savings_parameters()->set_arc_coefficient(1);
-  p.set_cheapest_insertion_farthest_seeds_ratio(0);
-  p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
-  p.set_cheapest_insertion_first_solution_min_neighbors(1);
-  p.set_cheapest_insertion_ls_operator_neighbors_ratio(1);
-  p.set_cheapest_insertion_ls_operator_min_neighbors(1);
-  p.set_cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization(  // NOLINT
-      false);
-  p.set_cheapest_insertion_add_unperformed_entries(false);
+  *p.mutable_global_cheapest_insertion_first_solution_parameters() =
+      CreateDefaultGlobalCheapestInsertionParameters(
+          /*use_neighbors_ratio_for_initialization=*/false);
+  *p.mutable_global_cheapest_insertion_ls_operator_parameters() =
+      CreateDefaultGlobalCheapestInsertionParameters(
+          /*use_neighbors_ratio_for_initialization=*/true);
   p.mutable_local_cheapest_insertion_parameters()->set_pickup_delivery_strategy(
       LocalCheapestInsertionParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
   p.mutable_local_cheapest_cost_insertion_parameters()
@@ -331,6 +343,36 @@ void FindErrorsInSavingsParameters(const absl::string_view prefix,
   }
 }
 
+void FindErrorsInGlobalCheapestInsertionParameters(
+    absl::string_view prefix,
+    const GlobalCheapestInsertionParameters& gci_parameters,
+    std::vector<std::string>& errors) {
+  using absl::StrCat;
+
+  if (const double ratio = gci_parameters.farthest_seeds_ratio();
+      std::isnan(ratio) || ratio < 0 || ratio > 1) {
+    errors.emplace_back(
+        StrCat(prefix,
+               " - Invalid "
+               "global_cheapest_insertion_parameters.farthest_seeds_ratio: ",
+               ratio));
+  }
+  if (const double ratio = gci_parameters.neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat(
+        prefix,
+        " - Invalid global_cheapest_insertion_parameters.neighbors_ratio: ",
+        ratio));
+  }
+  if (const int32_t min_neighbors = gci_parameters.min_neighbors();
+      min_neighbors < 1) {
+    errors.emplace_back(StrCat(
+        prefix,
+        " - Invalid global_cheapest_insertion_parameters.min_neighbors: ",
+        min_neighbors, ". Must be greater or equal to 1."));
+  }
+}
+
 void FindErrorsInRecreateParameters(
     const FirstSolutionStrategy::Value heuristic,
     const RecreateParameters& parameters, std::vector<std::string>& errors) {
@@ -347,6 +389,11 @@ void FindErrorsInRecreateParameters(
     case RecreateParameters::kSavings:
       FindErrorsInSavingsParameters("Savings (recreate heuristic)",
                                     parameters.savings(), errors);
+      break;
+    case RecreateParameters::kGlobalCheapestInsertion:
+      FindErrorsInGlobalCheapestInsertionParameters(
+          "Global cheapest insertion (recreate heuristic)",
+          parameters.global_cheapest_insertion(), errors);
       break;
     default:
       LOG(DFATAL) << "Unsupported unset recreate parameters.";
@@ -506,55 +553,70 @@ void FindErrorsInIteratedLocalSearchParameters(
     }
   }
 
-  if (ils.acceptance_strategy() == AcceptanceStrategy::UNSET) {
+  struct NamedAcceptanceStrategy {
+    std::string name;
+    AcceptanceStrategy acceptance_strategy;
+  };
+  std::vector<NamedAcceptanceStrategy> named_acceptance_strategies;
+
+  if (!ils.has_reference_solution_acceptance_strategy()) {
     errors.emplace_back(
-        StrCat("Invalid value for "
-               "iterated_local_search_parameters.acceptance_strategy: ",
-               ils.acceptance_strategy()));
+        StrCat("Unset value for "
+               "iterated_local_search_parameters.reference_solution_acceptance_"
+               "strategy."));
+  } else {
+    named_acceptance_strategies.push_back(
+        {"reference_solution", ils.reference_solution_acceptance_strategy()});
   }
 
-  if (ils.acceptance_strategy() == AcceptanceStrategy::SIMULATED_ANNEALING) {
-    if (!ils.has_simulated_annealing_parameters()) {
-      errors.emplace_back(
-          StrCat("iterated_local_search_parameters.acceptance_strategy is ",
-                 AcceptanceStrategy::SIMULATED_ANNEALING,
-                 " but "
-                 "iterated_local_search_parameters.simulated_annealing_"
-                 "parameters are missing."));
-      return;
-    }
+  if (!ils.has_best_solution_acceptance_strategy()) {
+    errors.emplace_back(StrCat(
+        "Unset value for "
+        "iterated_local_search_parameters.best_solution_acceptance_strategy."));
+  } else {
+    named_acceptance_strategies.push_back(
+        {"best_solution", ils.best_solution_acceptance_strategy()});
+  }
 
-    const SimulatedAnnealingParameters& sa_params =
-        ils.simulated_annealing_parameters();
+  for (const auto& [name, acceptance_strategy] : named_acceptance_strategies) {
+    if (acceptance_strategy.has_simulated_annealing()) {
+      const SimulatedAnnealingAcceptanceStrategy& sa_params =
+          acceptance_strategy.simulated_annealing();
 
-    if (sa_params.cooling_schedule_strategy() ==
-        CoolingScheduleStrategy::UNSET) {
-      errors.emplace_back(
-          StrCat("Invalid value for "
-                 "iterated_local_search_parameters.simulated_annealing_"
-                 "parameters.cooling_schedule_strategy: ",
-                 sa_params.cooling_schedule_strategy()));
-    }
-
-    if (!sa_params.automatic_temperatures()) {
-      if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+      if (sa_params.cooling_schedule_strategy() ==
+          CoolingScheduleStrategy::UNSET) {
         errors.emplace_back(
-            "iterated_local_search_parameters.simulated_annealing_parameters."
-            "initial_temperature cannot be lower than "
-            "iterated_local_search_parameters.simulated_annealing_parameters."
-            "final_temperature.");
+            StrCat("Invalid value for "
+                   "iterated_local_search_parameters.",
+                   name,
+                   "_acceptance_strategy.simulated_annealing.cooling_schedule_"
+                   "strategy: ",
+                   sa_params.cooling_schedule_strategy()));
       }
 
-      if (sa_params.initial_temperature() < 1e-9) {
-        errors.emplace_back(
-            "iterated_local_search_parameters.simulated_annealing_parameters."
-            "initial_temperature cannot be lower than 1e-9.");
-      }
+      if (!sa_params.automatic_temperatures()) {
+        if (sa_params.initial_temperature() < sa_params.final_temperature()) {
+          errors.emplace_back(StrCat(
+              "iterated_local_search_parameters.", name,
+              "_acceptance_strategy.simulated_annealing."
+              "initial_temperature cannot be lower than "
+              "iterated_local_search_parameters.simulated_annealing_parameters."
+              "final_temperature."));
+        }
 
-      if (sa_params.final_temperature() < 1e-9) {
-        errors.emplace_back(
-            "iterated_local_search_parameters.simulated_annealing_parameters."
-            "final_temperature cannot be lower than 1e-9.");
+        if (sa_params.initial_temperature() < 1e-9) {
+          errors.emplace_back(
+              StrCat("iterated_local_search_parameters.", name,
+                     "_acceptance_strategy.simulated_annealing."
+                     "initial_temperature cannot be lower than 1e-9."));
+        }
+
+        if (sa_params.final_temperature() < 1e-9) {
+          errors.emplace_back(
+              StrCat("iterated_local_search_parameters.", name,
+                     "_acceptance_strategy.simulated_annealing."
+                     "final_temperature cannot be lower than 1e-9."));
+        }
       }
     }
   }
@@ -610,39 +672,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
 #endif  // !__ANDROID__ && !__wasm__
   FindErrorsInSavingsParameters("Savings (first solution heuristic)",
                                 search_parameters.savings_parameters(), errors);
-  if (const double ratio =
-          search_parameters.cheapest_insertion_farthest_seeds_ratio();
-      std::isnan(ratio) || ratio < 0 || ratio > 1) {
-    errors.emplace_back(
-        StrCat("Invalid cheapest_insertion_farthest_seeds_ratio: ", ratio));
-  }
-  if (const double ratio =
-          search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
-      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_first_solution_neighbors_ratio: ", ratio));
-  }
-  if (const int32_t min_neighbors =
-          search_parameters.cheapest_insertion_first_solution_min_neighbors();
-      min_neighbors < 1) {
-    errors.emplace_back(
-        StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
-               min_neighbors, ". Must be greater or equal to 1."));
-  }
-  if (const double ratio =
-          search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
-      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_ls_operator_neighbors_ratio: ", ratio));
-  }
-  if (const int32_t min_neighbors =
-          search_parameters.cheapest_insertion_ls_operator_min_neighbors();
-      min_neighbors < 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
-        ". Must be greater or equal to 1."));
-  }
-
+  FindErrorsInGlobalCheapestInsertionParameters(
+      "Global cheapest insertion (first solution heuristic)",
+      search_parameters.global_cheapest_insertion_first_solution_parameters(),
+      errors);
+  FindErrorsInGlobalCheapestInsertionParameters(
+      "Global cheapest insertion (ls operator)",
+      search_parameters.global_cheapest_insertion_ls_operator_parameters(),
+      errors);
   FindErrorsInLocalCheapestInsertionParameters(
       "Local cheapest insertion (first solution heuristic)",
       search_parameters.local_cheapest_insertion_parameters(), errors);

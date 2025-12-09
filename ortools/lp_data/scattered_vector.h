@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
-#define OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
+#ifndef ORTOOLS_LP_DATA_SCATTERED_VECTOR_H_
+#define ORTOOLS_LP_DATA_SCATTERED_VECTOR_H_
 
 #include <cstddef>
 #include <vector>
@@ -208,4 +208,4 @@ inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
+#endif  // ORTOOLS_LP_DATA_SCATTERED_VECTOR_H_

@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_MODEL_H_
-#define OR_TOOLS_MATH_OPT_CPP_MODEL_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_MODEL_H_
+#define ORTOOLS_MATH_OPT_CPP_MODEL_H_
 
 #include <cstdint>
 #include <memory>
@@ -1643,4 +1643,4 @@ void Model::CheckModel(const ModelStorageCPtr other_storage) const {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_MODEL_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_MODEL_H_

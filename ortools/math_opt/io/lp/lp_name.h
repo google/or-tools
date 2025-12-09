@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_IO_LP_LP_NAME_H_
-#define OR_TOOLS_MATH_OPT_IO_LP_LP_NAME_H_
+#ifndef ORTOOLS_MATH_OPT_IO_LP_LP_NAME_H_
+#define ORTOOLS_MATH_OPT_IO_LP_LP_NAME_H_
 
 #include "absl/status/status.h"
 
@@ -28,4 +28,4 @@ absl::Status ValidateName(absl::string_view name);
 
 }  // namespace operations_research::lp_format
 
-#endif  // OR_TOOLS_MATH_OPT_IO_LP_LP_NAME_H_
+#endif  // ORTOOLS_MATH_OPT_IO_LP_LP_NAME_H_

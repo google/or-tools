@@ -1,0 +1,1 @@
+RUN: $(weighted_tardiness_sat) --input $(wt40.txt)

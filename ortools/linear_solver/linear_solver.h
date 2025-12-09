@@ -131,8 +131,8 @@
  *   depends on the modification applied and on the underlying solver.
  */
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
-#define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#define ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 #include <atomic>
 #include <cstdint>
@@ -166,9 +166,11 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
+#ifndef SWIG
 OR_DLL ABSL_DECLARE_FLAG(bool, linear_solver_enable_verbose_output);
 OR_DLL ABSL_DECLARE_FLAG(bool, log_verification_errors);
 OR_DLL ABSL_DECLARE_FLAG(bool, verify_solution);
+#endif
 
 namespace operations_research {
 
@@ -863,9 +865,10 @@ class MPSolver {
   static int64_t global_num_variables();
   static int64_t global_num_constraints();
 
-  // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
-  // NOTE: These deprecated functions used the convention time_limit = 0 to mean
-  // "no limit", which now corresponds to time_limit_ = InfiniteDuration().
+  /// @deprecated Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
+  /// @note These deprecated functions used the convention `time_limit = 0` to
+  /// mean "no limit", which now corresponds to
+  /// `time_limit_ = InfiniteDuration()`.
   int64_t time_limit() const {
     return time_limit_ == absl::InfiniteDuration()
                ? 0
@@ -880,7 +883,7 @@ class MPSolver {
     return static_cast<double>(time_limit()) / 1000.0;
   }
 
-  // DEPRECATED: Use DurationSinceConstruction() instead.
+  /// @deprecated Use DurationSinceConstruction() instead.
   int64_t wall_time() const {
     return absl::ToInt64Milliseconds(DurationSinceConstruction());
   }
@@ -1470,7 +1473,11 @@ class MPConstraint {
  * instead. We need to figure out how to deal with the subtleties of
  * the default values.
  */
-class OR_DLL MPSolverParameters {
+class
+#ifndef SWIG
+    OR_DLL
+#endif
+    MPSolverParameters {
  public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
@@ -1924,4 +1931,4 @@ class MPSolverInterface {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_

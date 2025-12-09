@@ -173,7 +173,9 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":lrat_proof_handler",
         ":presolve_context",
+        ":sat_base",
         ":sat_parameters_cc_proto",
         "//ortools/base:logging",
         "//ortools/base:protobuf_util",
@@ -279,6 +281,46 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "cp_model_solver_logging",
+    srcs = ["cp_model_solver_logging.cc"],
+    hdrs = ["cp_model_solver_logging.h"],
+    deps = [
+        ":model",
+        ":synchronization",
+        ":util",
+        "//ortools/base:timer",
+        "//ortools/util:logging",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_library(
+    name = "gate_utils",
+    hdrs = ["gate_utils.h"],
+    deps = [
+        ":sat_base",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "gate_utils_test",
+    srcs = ["gate_utils_test.cc"],
+    deps = [
+        ":gate_utils",
+        ":sat_base",
+        "//ortools/base:gmock_main",
+        "//ortools/base:logging",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -311,8 +353,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":drat_proof_handler",
         ":sat_base",
+        "//ortools/base:base_export",
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:stl_util",
@@ -322,6 +364,7 @@ cc_library(
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
@@ -353,6 +396,7 @@ cc_library(
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_utils",
+        ":drat_checker",
         ":integer_base",
         ":model",
         ":sat_base",
@@ -662,6 +706,7 @@ cc_library(
         ":cp_model_postsolve",
         ":cp_model_presolve",
         ":cp_model_search",
+        ":cp_model_solver_logging",
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cuts",
@@ -681,6 +726,7 @@ cc_library(
         ":linear_programming_constraint",
         ":linear_relaxation",
         ":lp_utils",
+        ":lrat_proof_handler",
         ":max_hs",
         ":model",
         ":optimization",
@@ -791,12 +837,12 @@ cc_library(
         ":cp_model_presolve",
         ":cp_model_search",
         ":cp_model_solver_helpers",
+        ":cp_model_solver_logging",
         ":cp_model_symmetries",
         ":cp_model_utils",
         ":cuts",
         ":diffn_util",
         ":drat_checker",
-        ":drat_proof_handler",
         ":feasibility_jump",
         ":feasibility_pump",
         ":implied_bounds",
@@ -835,6 +881,7 @@ cc_library(
         ":util",
         ":work_assignment",
         "//ortools/base",
+        "//ortools/base:base_export",
         "//ortools/base:file",
         "//ortools/base:status_macros",
         "//ortools/base:strong_vector",
@@ -882,24 +929,16 @@ cc_test(
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_solver",
-        ":cp_model_solver_helpers",
         ":cp_model_test_utils",
-        ":cp_model_utils",
-        ":drat_checker",
-        ":drat_proof_handler",
         ":lp_utils",
         ":model",
-        ":sat_base",
         ":sat_parameters_cc_proto",
-        ":sat_solver",
-        ":synchronization",
         "//ortools/base:gmock_main",
         "//ortools/base:parse_test_proto",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/port:os",
         "//ortools/util:logging",
         "@abseil-cpp//absl/container:flat_hash_set",
-        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/strings",
     ],
@@ -1016,21 +1055,16 @@ cc_library(
         ":cp_model_utils",
         ":util",
         "//ortools/base:strong_vector",
-        "//ortools/base:timer",
         "//ortools/util:bitset",
-        "//ortools/util:logging",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
-        "//ortools/util:time_limit",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/meta:type_traits",
         "@abseil-cpp//absl/random:bit_gen_ref",
         "@abseil-cpp//absl/random:distributions",
-        "@abseil-cpp//absl/strings",
-        "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -1074,6 +1108,7 @@ cc_library(
         ":sat_solver",
         ":solution_crush",
         ":util",
+        "//ortools/base:base_export",
         "//ortools/base:logging",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
@@ -1130,6 +1165,8 @@ cc_library(
         ":util",
         "//ortools/algorithms:sparse_permutation",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
@@ -1174,6 +1211,27 @@ cc_test(
 )
 
 cc_library(
+    name = "variable_expand",
+    srcs = ["variable_expand.cc"],
+    hdrs = ["variable_expand.h"],
+    deps = [
+        ":cp_model_utils",
+        ":presolve_context",
+        ":solution_crush",
+        "//ortools/base:stl_util",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:log_severity",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/strings",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = [
         "cp_model_presolve.cc",
@@ -1208,6 +1266,7 @@ cc_library(
         ":solution_crush",
         ":util",
         ":var_domination",
+        ":variable_expand",
         "//ortools/base",
         "//ortools/base:mathutil",
         "//ortools/base:protobuf_util",
@@ -1229,6 +1288,7 @@ cc_library(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
@@ -1425,7 +1485,6 @@ cc_library(
     hdrs = ["sat_solver.h"],
     deps = [
         ":clause",
-        ":drat_proof_handler",
         ":enforcement",
         ":lrat_proof_handler",
         ":model",
@@ -1451,6 +1510,7 @@ cc_library(
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/functional:function_ref",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -1500,6 +1560,7 @@ cc_library(
         ":implied_bounds",
         ":integer",
         ":integer_base",
+        ":lrat_proof_handler",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -1513,7 +1574,9 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -1546,19 +1609,22 @@ cc_library(
     hdrs = ["sat_inprocessing.h"],
     deps = [
         ":clause",
-        ":drat_checker",
+        ":gate_utils",
         ":linear_programming_constraint",
+        ":lrat_proof_handler",
         ":model",
         ":probing",
         ":sat_base",
         ":sat_decision",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":synchronization",
         ":util",
         "//ortools/base",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
         "//ortools/base:timer",
+        "//ortools/graph:connected_components",
         "//ortools/util:bitset",
         "//ortools/util:integer_pq",
         "//ortools/util:logging",
@@ -1566,7 +1632,11 @@ cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/cleanup",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/container:inlined_vector",
+        "@abseil-cpp//absl/functional:function_ref",
+        "@abseil-cpp//absl/hash",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/log:vlog_is_on",
@@ -1633,7 +1703,6 @@ cc_library(
     hdrs = ["clause.h"],
     deps = [
         ":container",
-        ":drat_proof_handler",
         ":inclusion",
         ":lrat_proof_handler",
         ":model",
@@ -1655,6 +1724,7 @@ cc_library(
         "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -1686,7 +1756,6 @@ cc_library(
     srcs = ["simplification.cc"],
     hdrs = ["simplification.h"],
     deps = [
-        ":drat_proof_handler",
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
@@ -1882,7 +1951,10 @@ cc_test(
     deps = [
         ":integer_base",
         "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/random:distributions",
     ],
 )
 
@@ -1892,7 +1964,9 @@ cc_library(
     hdrs = ["integer.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":clause",
         ":integer_base",
+        ":lrat_proof_handler",
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -2138,6 +2212,7 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
+        ":util",
         "//ortools/base:logging",
         "//ortools/util:bitset",
         "//ortools/util:sort",
@@ -2483,6 +2558,7 @@ cc_test(
         ":precedences",
         ":sat_base",
         ":sat_solver",
+        ":util",
         "//ortools/base",
         "//ortools/base:gmock_main",
         "//ortools/util:strong_integers",
@@ -2846,6 +2922,7 @@ cc_library(
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
@@ -3371,6 +3448,7 @@ cc_test(
         "//ortools/base:logging",
         "//ortools/base:mathutil",
         "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "//ortools/util:random_engine",
         "//ortools/util:sorted_interval_list",
         "@abseil-cpp//absl/container:btree",
@@ -3390,6 +3468,7 @@ cc_library(
     srcs = ["stat_tables.cc"],
     hdrs = ["stat_tables.h"],
     deps = [
+        ":clause",
         ":cp_model_cc_proto",
         ":linear_programming_constraint",
         ":model",
@@ -3404,6 +3483,7 @@ cc_library(
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/synchronization",
+        "@abseil-cpp//absl/types:span",
     ],
 )
 
@@ -3763,6 +3843,7 @@ cc_test(
         ":integer_base",
         ":util",
         "//ortools/base:gmock",
+        "//ortools/base:gmock_main",
         "//ortools/base:logging",
         "//ortools/graph:connected_components",
         "//ortools/graph:strongly_connected_components",
@@ -3776,7 +3857,6 @@ cc_test(
         "@abseil-cpp//absl/random:distributions",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
-        "@fuzztest//fuzztest:fuzztest_gtest_main",
         "@google_benchmark//:benchmark",
     ],
 )
@@ -4134,23 +4214,6 @@ cc_test(
 )
 
 cc_library(
-    name = "drat_proof_handler",
-    srcs = ["drat_proof_handler.cc"],
-    hdrs = ["drat_proof_handler.h"],
-    deps = [
-        ":drat_checker",
-        ":drat_writer",
-        ":sat_base",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:strong_vector",
-        "//ortools/util:strong_integers",
-        "@abseil-cpp//absl/log:check",
-        "@abseil-cpp//absl/types:span",
-    ],
-)
-
-cc_library(
     name = "drat_checker",
     srcs = ["drat_checker.cc"],
     hdrs = ["drat_checker.h"],
@@ -4203,15 +4266,31 @@ cc_library(
     srcs = ["lrat_checker.cc"],
     hdrs = ["lrat_checker.h"],
     deps = [
+        ":model",
         ":sat_base",
+        ":synchronization",
         ":util",
+        "//ortools/util:bitset",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/types:span",
     ],
+)
+
+proto_library(
+    name = "lrat_proto",
+    srcs = ["lrat.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "lrat_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":lrat_proto"],
 )
 
 cc_library(
@@ -4219,11 +4298,36 @@ cc_library(
     srcs = ["lrat_proof_handler.cc"],
     hdrs = ["lrat_proof_handler.h"],
     deps = [
+        ":drat_checker",
+        ":drat_writer",
+        ":lrat_cc_proto",
         ":lrat_checker",
+        ":model",
+        ":recordio",
         ":sat_base",
+        ":synchronization",
+        ":util",
+        "//ortools/base:file",
+        "//ortools/base:intops",
+        "//ortools/base:timer",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "lrat_proof_handler_test",
+    srcs = ["lrat_proof_handler_test.cc"],
+    deps = [
+        ":lrat_proof_handler",
+        ":model",
+        ":sat_base",
+        ":util",
+        "//ortools/base:gmock_main",
         "@abseil-cpp//absl/types:span",
     ],
 )
@@ -4233,6 +4337,7 @@ cc_test(
     srcs = ["lrat_checker_test.cc"],
     deps = [
         ":lrat_checker",
+        ":model",
         ":sat_base",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/types:span",
@@ -4283,6 +4388,24 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "recordio",
+    srcs = ["recordio.cc"],
+    hdrs = ["recordio.h"],
+    deps = ["@protobuf"],
+)
+
+cc_test(
+    name = "recordio_test",
+    srcs = ["recordio_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":recordio",
+        "//ortools/base:gmock_main",
+        "//ortools/base:path",
+    ],
+)
+
 cc_binary(
     name = "sat_runner",
     srcs = [
@@ -4300,6 +4423,7 @@ cc_binary(
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:path",
+        "//ortools/base:zipfile",
         "//ortools/util:file_util",
         "//ortools/util:logging",
         "//ortools/util:sigint",

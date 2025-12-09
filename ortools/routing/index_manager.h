@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ROUTING_INDEX_MANAGER_H_
-#define OR_TOOLS_ROUTING_INDEX_MANAGER_H_
+#ifndef ORTOOLS_ROUTING_INDEX_MANAGER_H_
+#define ORTOOLS_ROUTING_INDEX_MANAGER_H_
 
 #include <cstdint>
 #include <utility>
@@ -23,14 +23,17 @@
 #include "ortools/base/base_export.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/routing/types.h"
+
 namespace operations_research::routing {
 
-/// Manager for any NodeIndex <-> variable index conversion. The routing solver
-/// uses variable indices internally and through its API. These variable indices
-/// are tricky to manage directly because one Node can correspond to a multitude
-/// of variables, depending on the number of times they appear in the model, and
-/// if they're used as start and/or end points. This class aims to simplify
-/// variable index usage, allowing users to use NodeIndex instead.
+/// @brief Manager for any NodeIndex <-> variable index conversion.
+/// @details The routing solver uses variable indices internally and through
+/// its API.
+/// These variable indices are tricky to manage directly because one Node can
+/// correspond to a multitude of variables, depending on the number of times
+/// they appear in the model, and if they're used as start and/or end points.
+/// This class aims to simplify variable index usage, allowing users to use
+/// NodeIndex instead.
 ///
 /// Usage:
 ///   \code{.cpp}
@@ -52,14 +55,32 @@ class OR_DLL RoutingIndexManager {
   typedef RoutingNodeIndex NodeIndex;
   static const int64_t kUnassigned;
 
-  /// Creates a NodeIndex to variable index mapping for a problem containing
-  /// 'num_nodes', 'num_vehicles' and the given starts and ends for each
-  /// vehicle. If used, any start/end arrays have to have exactly 'num_vehicles'
-  /// elements.
+  /// @brief Creates a NodeIndex to variable index mapping for a problem
+  /// containing 'num_nodes', 'num_vehicles' and the given starts and ends for
+  /// each vehicle. If used, any start/end arrays have to have exactly
+  /// 'num_vehicles' elements.
+  /// @param num_nodes Number of nodes in the problem.
+  /// @param num_vehicles Number of vehicles in the problem.
+  /// @param depot @ref GetStartIndex "start" and @ref GetEndIndex "end"
+  /// NodeIndex for all vehicles.
   RoutingIndexManager(int num_nodes, int num_vehicles, NodeIndex depot);
+  /// @brief Creates a NodeIndex to variable index mapping.
+  /// @param num_nodes Number of nodes in the problem.
+  /// @param num_vehicles Number of vehicles in the problem.
+  /// @param starts Array containing the start NodeIndex for each vehicle.
+  /// @param ends Array containing the end NodeIndex for each vehicle.
+  /// @note @b starts and @b ends arrays must have @b exactly @ref num_vehicles
+  /// elements.
   RoutingIndexManager(int num_nodes, int num_vehicles,
                       const std::vector<NodeIndex>& starts,
                       const std::vector<NodeIndex>& ends);
+  /// @brief Creates a NodeIndex to variable index mapping.
+  /// @param num_nodes Number of nodes in the problem.
+  /// @param num_vehicles Number of vehicles in the problem.
+  /// @param starts_ends Array containing a pair [start,end] NodeIndex for each
+  /// vehicle.
+  /// @note @b starts_ends arrays must have @b exactly @ref num_vehicles
+  /// elements.
   RoutingIndexManager(
       int num_nodes, int num_vehicles,
       const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
@@ -99,7 +120,7 @@ class OR_DLL RoutingIndexManager {
       absl::Span<const int64_t> indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
-  /// complete.
+  // complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
 
@@ -119,4 +140,4 @@ class OR_DLL RoutingIndexManager {
 
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_INDEX_MANAGER_H_
+#endif  // ORTOOLS_ROUTING_INDEX_MANAGER_H_

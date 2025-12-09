@@ -38,6 +38,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/strong_integers.h"
 
 namespace operations_research {
@@ -52,7 +53,9 @@ namespace {
 #define MIN_DURATION(v) IntegerValue(v)
 
 TEST(TaskSetTest, AddEntry) {
-  TaskSet tasks(1000);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(1000);
+  TaskSet tasks(storage);
   std::mt19937 random(12345);
   for (int i = 0; i < 1000; ++i) {
     tasks.AddEntry({i, MIN_START(absl::Uniform(random, 0, 1000)),
@@ -63,7 +66,9 @@ TEST(TaskSetTest, AddEntry) {
 }
 
 TEST(TaskSetTest, EndMinOnEmptySet) {
-  TaskSet tasks(0);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(1000);
+  TaskSet tasks(storage);
   int critical_index;
   EXPECT_EQ(kMinIntegerValue,
             tasks.ComputeEndMin(/*task_to_ignore=*/-1, &critical_index));
@@ -71,7 +76,9 @@ TEST(TaskSetTest, EndMinOnEmptySet) {
 }
 
 TEST(TaskSetTest, EndMinBasicTest) {
-  TaskSet tasks(3);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(3);
+  TaskSet tasks(storage);
   int critical_index;
   tasks.AddEntry({0, MIN_START(2), MIN_DURATION(3)});
   tasks.AddEntry({1, MIN_START(2), MIN_DURATION(3)});
@@ -82,7 +89,9 @@ TEST(TaskSetTest, EndMinBasicTest) {
 }
 
 TEST(TaskSetTest, EndMinWithNegativeValue) {
-  TaskSet tasks(3);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(3);
+  TaskSet tasks(storage);
   int critical_index;
   tasks.AddEntry({0, MIN_START(-5), MIN_DURATION(1)});
   tasks.AddEntry({1, MIN_START(-6), MIN_DURATION(2)});
@@ -93,7 +102,9 @@ TEST(TaskSetTest, EndMinWithNegativeValue) {
 }
 
 TEST(TaskSetTest, EndMinLimitCase) {
-  TaskSet tasks(3);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(3);
+  TaskSet tasks(storage);
   int critical_index;
   tasks.AddEntry({0, MIN_START(2), MIN_DURATION(3)});
   tasks.AddEntry({1, MIN_START(2), MIN_DURATION(3)});
@@ -105,7 +116,9 @@ TEST(TaskSetTest, EndMinLimitCase) {
 }
 
 TEST(TaskSetTest, IgnoringTheLastEntry) {
-  TaskSet tasks(3);
+  FixedCapacityVector<TaskSet::Entry> storage;
+  storage.ClearAndReserve(3);
+  TaskSet tasks(storage);
   int critical_index;
   tasks.AddEntry({0, MIN_START(2), MIN_DURATION(3)});
   tasks.AddEntry({1, MIN_START(7), MIN_DURATION(3)});

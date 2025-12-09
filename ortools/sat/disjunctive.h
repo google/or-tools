@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_DISJUNCTIVE_H_
-#define OR_TOOLS_SAT_DISJUNCTIVE_H_
+#ifndef ORTOOLS_SAT_DISJUNCTIVE_H_
+#define ORTOOLS_SAT_DISJUNCTIVE_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -62,16 +62,9 @@ void AddDisjunctiveWithBooleanPrecedencesOnly(
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
  public:
-  explicit TaskSet(int num_tasks) { sorted_tasks_.ClearAndReserve(num_tasks); }
-
-  struct Entry {
-    int task;
-    IntegerValue start_min;
-    IntegerValue size_min;
-
-    // Note that the tie-breaking is not important here.
-    bool operator<(Entry other) const { return start_min < other.start_min; }
-  };
+  using Entry = SchedulingConstraintHelper::TaskInfo;
+  explicit TaskSet(FixedCapacityVector<Entry>& storage)
+      : sorted_tasks_(storage) {}
 
   // Insertion and modification. These leave sorted_tasks_ sorted.
   void Clear() {
@@ -125,7 +118,7 @@ class TaskSet {
   absl::Span<const Entry> SortedTasks() const { return sorted_tasks_; }
 
  private:
-  FixedCapacityVector<Entry> sorted_tasks_;
+  FixedCapacityVector<Entry>& sorted_tasks_;
   mutable int optimized_restart_ = 0;
 };
 
@@ -187,7 +180,6 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   explicit DisjunctiveOverloadChecker(SchedulingConstraintHelper* helper,
                                       Model* model = nullptr)
       : helper_(helper),
-        window_(new TaskTime[helper->NumTasks()]),
         task_to_event_(new int[helper->NumTasks()]),
         stats_("DisjunctiveOverloadChecker", model) {
     // This is just needed to prevent use of uninitialized values.
@@ -199,14 +191,14 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(int relevant_size, IntegerValue global_window_end,
+  bool PropagateSubwindow(absl::Span<TaskTime> sub_window,
+                          IntegerValue global_window_end,
                           absl::Span<const CachedTaskBounds>*
                               task_by_increasing_negated_shifted_end_max);
 
   SchedulingConstraintHelper* helper_;
 
   // Size assigned at construction, stay fixed afterwards.
-  std::unique_ptr<TaskTime[]> window_;
   std::unique_ptr<int[]> task_to_event_;
 
   ThetaLambdaTree<IntegerValue> theta_tree_;
@@ -243,7 +235,6 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
                                    Model* model = nullptr)
       : time_direction_(time_direction),
         helper_(helper),
-        task_set_(helper->NumTasks()),
         stats_("DisjunctiveDetectablePrecedences", model) {
     ranks_.resize(helper->NumTasks());
     to_add_.ClearAndReserve(helper->NumTasks());
@@ -253,14 +244,13 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
 
  private:
   bool PropagateWithRanks();
-  bool Push(IntegerValue task_set_end_min, int t);
+  bool Push(IntegerValue task_set_end_min, int t, TaskSet& task_set);
 
   FixedCapacityVector<int> to_add_;
   std::vector<int> ranks_;
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
-  TaskSet task_set_;
   PropagationStatistics stats_;
 };
 
@@ -283,6 +273,7 @@ class CombinedDisjunctive : public PropagatorInterface {
   std::vector<std::vector<int>> task_to_disjunctives_;
   std::vector<bool> task_is_added_;
   std::vector<TaskSet> task_sets_;
+  std::vector<FixedCapacityVector<TaskSet::Entry>> task_set_storage_;
   std::vector<IntegerValue> end_mins_;
 };
 
@@ -292,23 +283,17 @@ class DisjunctiveNotLast : public PropagatorInterface {
                      Model* model = nullptr)
       : time_direction_(time_direction),
         helper_(helper),
-        task_set_(helper->NumTasks()),
-        stats_("DisjunctiveNotLast", model) {
-    start_min_window_.ClearAndReserve(helper->NumTasks());
-    start_max_window_.ClearAndReserve(helper->NumTasks());
-  }
+        stats_("DisjunctiveNotLast", model) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow();
-
-  FixedCapacityVector<TaskTime> start_min_window_;
-  FixedCapacityVector<TaskTime> start_max_window_;
+  bool PropagateSubwindow(TaskSet& task_set,
+                          absl::Span<TaskTime> task_by_increasing_start_max,
+                          absl::Span<TaskTime> task_by_increasing_end_max);
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
-  TaskSet task_set_;
   PropagationStatistics stats_;
 };
 
@@ -320,24 +305,20 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         stats_("DisjunctiveEdgeFinding", model) {
-    task_by_increasing_end_max_.ClearAndReserve(helper->NumTasks());
-    window_.ClearAndReserve(helper->NumTasks());
     event_size_.ClearAndReserve(helper->NumTasks());
   }
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue window_end_min);
+  bool PropagateSubwindow(
+      IntegerValue window_end_min, absl::Span<const TaskTime> window,
+      FixedCapacityVector<TaskTime>& task_by_increasing_end_max);
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
 
-  // This only contains non-gray tasks.
-  FixedCapacityVector<TaskTime> task_by_increasing_end_max_;
-
   // All these member are indexed in the same way.
-  FixedCapacityVector<TaskTime> window_;
   ThetaLambdaTree<IntegerValue> theta_tree_;
   FixedCapacityVector<IntegerValue> event_size_;
 
@@ -362,7 +343,6 @@ class DisjunctivePrecedences : public PropagatorInterface {
         linear2_bounds_(model->GetOrCreate<Linear2Bounds>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         stats_("DisjunctivePrecedences", model) {
-    window_.ClearAndReserve(helper->NumTasks());
     index_to_end_vars_.ClearAndReserve(helper->NumTasks());
     indices_before_.ClearAndReserve(helper->NumTasks());
   }
@@ -371,7 +351,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow();
+  bool PropagateSubwindow(absl::Span<TaskTime> window);
 
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
@@ -380,7 +360,6 @@ class DisjunctivePrecedences : public PropagatorInterface {
   Linear2Bounds* linear2_bounds_;
   TimeLimit* time_limit_;
 
-  FixedCapacityVector<TaskTime> window_;
   FixedCapacityVector<IntegerVariable> index_to_end_vars_;
 
   FixedCapacityVector<std::pair<int, LinearExpression2Index>> indices_before_;
@@ -408,4 +387,4 @@ class DisjunctiveWithTwoItems : public PropagatorInterface {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DISJUNCTIVE_H_
+#endif  // ORTOOLS_SAT_DISJUNCTIVE_H_

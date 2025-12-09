@@ -26,13 +26,14 @@ jobs:
           #{version: '3.11'},
           {version: '3.12'},
           #{version: '3.13'},
+          #{version: '3.14'},
         ]
       fail-fast: false
     env:
       cache-name: ${{github.job}}-${{matrix.python.version}}
     runs-on: macos-latest # macos arm64 based runner
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set Java to OpenJDK 17 (Temurin)
         uses: actions/setup-java@v5
         with:
@@ -78,4 +79,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: arm64-MacOS-Bazel-Python
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6

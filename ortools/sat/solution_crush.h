@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SOLUTION_CRUSH_H_
-#define OR_TOOLS_SAT_SOLUTION_CRUSH_H_
+#ifndef ORTOOLS_SAT_SOLUTION_CRUSH_H_
+#define ORTOOLS_SAT_SOLUTION_CRUSH_H_
 
 #include <cstdint>
 #include <memory>
@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
@@ -80,6 +81,11 @@ class SolutionCrush {
   // Sets the value of `literal` to "`var`'s value == `value`". Does nothing if
   // `literal` already has a value.
   void MaybeSetLiteralToValueEncoding(int literal, int var, int64_t value);
+
+  // Sets the value of `literal` to "`var`'s value >=/<= `value`". Does nothing
+  // if `literal` already has a value.
+  void MaybeSetLiteralToOrderEncoding(int literal, int var, int64_t value,
+                                      bool is_le);
 
   // Sets the value of `var` to the value of the given linear expression, if all
   // the variables in this expression have a value. `linear` must be a list of
@@ -144,6 +150,15 @@ class SolutionCrush {
   // Otherwise, if the domain is fixed, sets the value of `var` to this fixed
   // value. Otherwise does nothing.
   void SetOrUpdateVarToDomain(int var, const Domain& domain);
+
+  // If `var` already has a value, updates it to be within the given domain
+  // following the given encoding and the status of the variable w.r.t. the
+  // objective. Otherwise, if the domain is fixed, sets the value of `var` to
+  // this fixed value. Otherwise does nothing. In the process, update the
+  // encoding literals to reflect the new value of `var`.
+  void SetOrUpdateVarToDomain(int var, const Domain& domain,
+                              const absl::btree_map<int64_t, int>& encoding,
+                              bool push_down_when_repairing_hints);
 
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).
@@ -354,4 +369,4 @@ class SolutionCrush {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SOLUTION_CRUSH_H_
+#endif  // ORTOOLS_SAT_SOLUTION_CRUSH_H_

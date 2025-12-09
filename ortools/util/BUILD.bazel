@@ -183,6 +183,7 @@ cc_library(
     hdrs = ["time_limit.h"],
     deps = [
         ":running_stat",
+        "//ortools/base:base_export",
         "//ortools/base:timer",
         "//ortools/base:types",
         "@abseil-cpp//absl/base:core_headers",
@@ -412,8 +413,10 @@ cc_library(
     hdrs = ["logging.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":time_limit",
         "//ortools/base:timer",
         "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/strings:str_format",
     ],
 )
 
@@ -513,6 +516,8 @@ cc_library(
         "//ortools/base:linked_hash_map",
         "//ortools/base:logging",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:nullability",
+        "@abseil-cpp//absl/functional:any_invocable",
         "@abseil-cpp//absl/synchronization",
     ],
 )

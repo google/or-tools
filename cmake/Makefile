@@ -148,17 +148,13 @@ help:
 	@echo -e "\t\t${BOLD}openbsd${RESET} (OpenBSD 7)"
 	@echo -e "\te.g. 'make freebsd_cpp'"
 	@echo
-	@echo -e "\t${BOLD}glop_<stage>${RESET}: Build Glop <stage> using an Ubuntu:rolling docker image."
-	@echo -e "\t${BOLD}save_glop_<stage>${RESET}: Save Glop <stage> using an Ubuntu:rolling docker image."
-	@echo -e "\t${BOLD}sh_glop_<stage>${RESET}: Run a Glop <stage> container using an Ubuntu:rolling docker image (debug purpose)."
-	@echo -e "\t${BOLD}clean_glop_<stage>${RESET}: Remove the Glop <stage> docker image (and the save archive if any) for a specific distro."
-	@echo
 	@echo -e "\tGlobal targets."
 	@echo -e "\t${BOLD}clean${RESET}: Remove ALL caches and docker images."
 	@echo -e "\t${BOLD}distclean${RESET}: Remove everything."
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo -e "\t${BOLD}VERBOSE=1${RESET}: use 'docker build --progress=plain' when building container."
+	@echo -e "\t${BOLD}CMAKE_BUILD_PARALLEL_LEVEL=4${RESET}: number of concurrent processes to use when building."
 	@echo
 	@echo -e "branch: $(BRANCH)"
 	@echo -e "sha1: $(SHA1)"
@@ -189,6 +185,10 @@ endif
 ifdef VERBOSE
 DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --progress=plain
 DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --progress=plain
+endif
+ifdef CMAKE_BUILD_PARALLEL_LEVEL
+DOCKER_BUILD_CMD := ${DOCKER_BUILD_CMD} --build-arg CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}
+DOCKER_BUILDX_CMD := ${DOCKER_BUILDX_CMD} --build-arg CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL}
 endif
 DOCKER_RUN_CMD := docker run --rm --init --net=host
 
@@ -757,44 +757,11 @@ $(foreach vms,$(VAGRANT_VMS),$(eval $(call make-vagrant-target,$(vms))))
 .PHONY: clean_vagrant
 clean_vagrant: $(addprefix clean_, $(VAGRANT_VMS))
 
-##########
-## GLOP ##
-##########
-glop_targets = $(addprefix glop_, $(STAGES))
-.PHONY: $(glop_targets)
-$(glop_targets): glop_%: docker/glop/Dockerfile
-	#@docker image rm -f ${IMAGE}:$@ 2>/dev/null
-	${DOCKER_BUILD_CMD} --target=$* --tag ${IMAGE}:$@ -f $< ..
-
-save_glop_targets = $(addprefix save_glop_, $(STAGES))
-.PHONY: $(save_glop_targets)
-$(save_glop_targets): save_glop_%: cache/glop/docker_%.tar
-cache/glop/docker_%.tar: glop_%
-	@rm -f $@
-	mkdir -p cache/$*
-	docker save ${IMAGE}:$< -o $@
-
-sh_glop_targets = $(addprefix sh_glop_, $(STAGES))
-.PHONY: $(sh_glop_targets)
-$(sh_glop_targets): sh_glop_%: glop_%
-	${DOCKER_RUN_CMD} -it --name ${PROJECT}_${BUILD_SYSTEM}_$< ${IMAGE}:$<
-
-clean_glop_targets = $(addprefix clean_glop_, $(STAGES))
-.PHONY: $(clean_glop_targets)
-$(clean_glop_targets): clean_glop_%
-	docker image rm -f ${IMAGE}:glop_$* 2>/dev/null
-	rm -f cache/glop/docker_$*.tar
-
-## MERGE ##
-.PHONY: clean_glop
-clean_glop: $(addprefix clean_glop_, $(STAGES))
-	rm -f cache/glop
-
 ###########
 ## CLEAN ##
 ###########
 .PHONY: clean
-clean: clean_all clean_platforms clean_toolchains clean_web clean_vagrant clean_glop
+clean: clean_all clean_platforms clean_toolchains clean_web clean_vagrant
 	docker container prune -f
 	docker image prune -f
 	-rmdir cache

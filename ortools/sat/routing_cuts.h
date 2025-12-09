@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_ROUTING_CUTS_H_
-#define OR_TOOLS_SAT_ROUTING_CUTS_H_
+#ifndef ORTOOLS_SAT_ROUTING_CUTS_H_
+#define ORTOOLS_SAT_ROUTING_CUTS_H_
 
 #include <stdint.h>
 
@@ -61,7 +61,7 @@ struct RoutingCumulExpressions {
 RoutingCumulExpressions DetectDimensionsAndCumulExpressions(
     int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
     absl::Span<const Literal> literals,
-    const BinaryRelationRepository& binary_relation_repository);
+    const ConditionalLinear2Bounds& binary_relation_repository);
 
 // A coeff * var + offset affine expression, where `var` is always a positive
 // reference (contrary to AffineExpression, where the coefficient is always
@@ -130,7 +130,7 @@ class RouteRelationsHelper {
       int num_nodes, absl::Span<const int> tails, absl::Span<const int> heads,
       absl::Span<const Literal> literals,
       absl::Span<const AffineExpression> flat_node_dim_expressions,
-      const BinaryRelationRepository& binary_relation_repository, Model* model);
+      const ConditionalLinear2Bounds& binary_relation_repository, Model* model);
 
   // Returns the number of "dimensions", such as time or vehicle load.
   int num_dimensions() const { return num_dimensions_; }
@@ -541,7 +541,7 @@ class MinOutgoingFlowHelper {
   const std::vector<int>& tails_;
   const std::vector<int>& heads_;
   const std::vector<Literal>& literals_;
-  const BinaryRelationRepository& binary_relation_repository_;
+  const ConditionalLinear2Bounds& binary_relation_repository_;
   const ImpliedBounds& implied_bounds_;
   const Trail& trail_;
   const IntegerTrail& integer_trail_;
@@ -754,4 +754,4 @@ CutGenerator CreateFlowCutGenerator(
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_ROUTING_CUTS_H_
+#endif  // ORTOOLS_SAT_ROUTING_CUTS_H_

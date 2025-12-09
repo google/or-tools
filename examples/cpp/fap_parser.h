@@ -14,8 +14,8 @@
 // Reading and parsing the data of Frequency Assignment Problem
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
 
-#ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
-#define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
+#ifndef ORTOOLS_EXAMPLES_FAP_PARSER_H_
+#define ORTOOLS_EXAMPLES_FAP_PARSER_H_
 
 #include <string>
 #include <vector>
@@ -23,6 +23,7 @@
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 
 namespace operations_research {
 
@@ -214,7 +215,7 @@ class ParametersParser {
 };
 
 // Function that finds the disjoint sub-graphs of the graph of the instance.
-void FindComponents(const std::vector<FapConstraint>& constraints,
+void FindComponents(absl::Span<const FapConstraint> constraints,
                     const absl::btree_map<int, FapVariable>& variables,
                     int maximum_variable_id,
                     absl::flat_hash_map<int, FapComponent>* components);
@@ -230,4 +231,4 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::string* objective, std::vector<int>* frequencies,
                    absl::flat_hash_map<int, FapComponent>* components);
 }  // namespace operations_research
-#endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_
+#endif  // ORTOOLS_EXAMPLES_FAP_PARSER_H_

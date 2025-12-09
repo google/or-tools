@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
-#define OR_TOOLS_SAT_SYNCHRONIZATION_H_
+#ifndef ORTOOLS_SAT_SYNCHRONIZATION_H_
+#define ORTOOLS_SAT_SYNCHRONIZATION_H_
 
 #include <algorithm>
 #include <array>
@@ -23,6 +23,7 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,6 +43,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -52,6 +54,27 @@
 
 namespace operations_research {
 namespace sat {
+
+struct SolverStatusChangeInfo {
+  double best_objective_value;
+  double cur_objective_value_lb;
+  double cur_objective_value_ub;
+
+  std::string change_info;
+
+  // Set to true if the solver found a new solution with a improved objective
+  // value.
+  bool new_best_solution = false;
+
+  // Set to true if the solver found a new lower or upper bound for the
+  // objective.
+  bool new_lower_bound = false;
+  bool new_upper_bound = false;
+
+  // Whether the solver finished the search. The callback will not be called
+  // again after this is true.
+  bool solved = false;
+};
 
 // Thread-safe. Keeps a set of n unique best solution found so far.
 //
@@ -399,6 +422,13 @@ class SharedResponseManager {
       std::function<void(const CpSolverResponse&)> callback);
   void UnregisterCallback(int callback_id);
 
+  // Adds a callback that will be called on each update to the objective (either
+  // when a new improving solution is found, or when the bounds are updated).
+  // This callback does not provide the postsolved solution, so it is relatively
+  // cheap.
+  void AddStatusChangeCallback(
+      std::function<void(const SolverStatusChangeInfo&)> callback);
+
   // Adds an inline callback that will be called on each new solution (for
   // satisfiability problem) or each improving new solution (for an optimization
   // problem). Returns its id so it can be unregistered if needed.
@@ -515,9 +545,6 @@ class SharedResponseManager {
     dump_prefix_ = dump_prefix;
   }
 
-  // Display improvement stats.
-  void DisplayImprovementStatistics();
-
   // Wrapper around our SolverLogger, but protected by mutex.
   void LogMessage(absl::string_view prefix, absl::string_view message);
   void LogMessageWithThrottling(absl::string_view prefix,
@@ -543,11 +570,9 @@ class SharedResponseManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void UpdateGapIntegralInternal() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  void RegisterSolutionFound(const std::string& improvement_info,
-                             int solution_rank)
+  SolverStatusChangeInfo GetSolverStatusChangeInfo()
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void RegisterObjectiveBoundImprovement(const std::string& improvement_info)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   void UpdateBestStatus(const CpSolverStatus& status)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
@@ -614,20 +639,11 @@ class SharedResponseManager {
       ABSL_GUARDED_BY(mutex_);
   std::vector<std::function<void(Model*, CpSolverResponse*)>>
       statistics_postprocessors_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::function<void(const SolverStatusChangeInfo&)>>
+      status_change_callbacks_ ABSL_GUARDED_BY(mutex_);
 
   // Dump prefix.
   std::string dump_prefix_;
-
-  // Used for statistics of the improvements found by workers.
-  absl::btree_map<std::string, int> primal_improvements_count_
-      ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> primal_improvements_min_rank_
-      ABSL_GUARDED_BY(mutex_);
-  absl::btree_map<std::string, int> primal_improvements_max_rank_
-      ABSL_GUARDED_BY(mutex_);
-
-  absl::btree_map<std::string, int> dual_improvements_count_
-      ABSL_GUARDED_BY(mutex_);
 
   SolverLogger* logger_ ABSL_GUARDED_BY(mutex_);
   absl::flat_hash_map<std::string, int> throttling_ids_ ABSL_GUARDED_BY(mutex_);
@@ -856,12 +872,16 @@ class SharedClausesManager {
   // Ids are used to identify which worker is exporting/importing clauses.
   int RegisterNewId(absl::string_view worker_name, bool may_terminate_early);
 
-  // Search statistics.
-  void LogStatistics(SolverLogger* logger);
-
   // Unlocks waiting binary clauses for workers if always_synchronize is false.
   // Periodically starts a new sharing round, making glue clauses visible.
   void Synchronize();
+
+  // For statistics, notify how many clauses where imported in that worker id
+  // database.
+  void NotifyNumImported(int id, int64_t num_imported);
+
+  // Search statistics.
+  void LogStatistics(SolverLogger* logger);
 
  private:
   // Returns true if `reader_id` should read batches produced by `writer_id`.
@@ -899,6 +919,7 @@ class SharedClausesManager {
 
   // Stats:
   std::vector<int64_t> id_to_num_exported_ ABSL_GUARDED_BY(mutex_);
+  std::vector<int64_t> id_to_num_imported_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64_t> id_to_num_updated_ ABSL_GUARDED_BY(mutex_);
   std::vector<std::string> id_to_worker_name_ ABSL_GUARDED_BY(mutex_);
 };
@@ -1272,7 +1293,38 @@ void SharedSolutionRepository<ValueType>::Synchronize(
   num_queried_at_last_sync_ = num_queried_;
 }
 
+// Thread-safe.
+class SharedLratProofStatus {
+ public:
+  SharedLratProofStatus();
+
+  // Each LratProofHandler should call this to get a unique "worker ID".
+  int NewSubSolverId();
+
+  void NewSubsolverProofStatus(DratChecker::Status status,
+                               bool lrat_check_enabled, bool drat_check_enabled,
+                               int num_assumed_clauses,
+                               double walltime_in_seconds);
+
+  void NewProofFile(absl::string_view filename);
+  std::vector<std::string> GetProofFilenames();
+
+  void Log(SolverLogger* logger);
+
+ private:
+  absl::Mutex mutex_;
+  int num_subsolvers_ ABSL_GUARDED_BY(mutex_);
+  int num_valid_proofs_ ABSL_GUARDED_BY(mutex_);
+  int num_invalid_proofs_ ABSL_GUARDED_BY(mutex_);
+  int num_unknown_proofs_ ABSL_GUARDED_BY(mutex_);
+  bool lrat_check_enabled_ ABSL_GUARDED_BY(mutex_);
+  bool drat_check_enabled_ ABSL_GUARDED_BY(mutex_);
+  int num_assumed_clauses_ ABSL_GUARDED_BY(mutex_);
+  double walltime_in_seconds_ ABSL_GUARDED_BY(mutex_);
+  std::vector<std::string> proof_filenames_ ABSL_GUARDED_BY(mutex_);
+};
+
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SYNCHRONIZATION_H_
+#endif  // ORTOOLS_SAT_SYNCHRONIZATION_H_

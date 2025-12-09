@@ -269,7 +269,7 @@ set PATH=%userprofile%\AppData\Roaming\Python\Python3%1\Scripts;%PATH%
 ::echo "python path: %PATH%"
 GOTO :eof
 
-REM PYTHON 3.9, 3.10, 3.11, 3.12, 3.13
+REM PYTHON 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
 :BUILD_PYTHON
 title Build Python
 set HASH=
@@ -279,7 +279,7 @@ echo Python build seems up to date, skipping
 exit /B 0
 )
 
-FOR %%v IN (9 10 11 12 13) DO (
+FOR %%v IN (9 10 11 12 13 14) DO (
   title Build Python 3.%%v
   echo Check python3.%%v... | tee.exe -a build.log
   which.exe "C:\python3%%v-64\python.exe" || exit 1
@@ -342,7 +342,7 @@ del /s /f /q temp_dotnet
 rmdir /s /q temp_dotnet
 del /s /f /q temp_java
 rmdir /s /q temp_java
-FOR %%v IN (9 10 11 12 13) do (
+FOR %%v IN (9 10 11 12 13 14) do (
   del /s /f /q temp_python3%%v
   rmdir /s /q temp_python3%%v
 )

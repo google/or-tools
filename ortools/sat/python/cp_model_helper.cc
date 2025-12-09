@@ -13,6 +13,13 @@
 
 #include <Python.h>
 
+#if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
+#define Py_BUILD_CORE
+#include "internal/pycore_frame.h"
+#include "internal/pycore_interpframe.h"
+#undef Py_BUILD_CORE
+#endif
+
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -1107,6 +1114,53 @@ std::shared_ptr<Constraint> CpBaseModel::AddRoutesInternal(
   return std::make_shared<Constraint>(shared_from_this(), ct_index);
 }
 
+#if PY_VERSION_HEX >= 0x030E00A7 && !defined(PYPY_VERSION)
+bool was_optimized_in_function_call(PyObject* op) {
+  PyFrameObject* frame = PyEval_GetFrame();
+  if (frame == NULL) {
+    return false;
+  }
+  _PyInterpreterFrame* f = frame->f_frame;
+  _PyStackRef* base = _PyFrame_Stackbase(f);
+  _PyStackRef* stackpointer = f->stackpointer;
+
+  while (stackpointer > base) {
+    stackpointer--;
+    if (op == PyStackRef_AsPyObjectBorrow(*stackpointer)) {
+      // We want detect if the object is a temporary and borrowed. If so, it
+      // should be only referenced once in the stack, but it should not be safe.
+      return !PyStackRef_IsHeapSafe(*stackpointer);
+    }
+  }
+  return false;
+}
+
+bool IsOnwedExclusivelyThroughPyBind11(PyObject* op) {
+#if !defined(Py_GIL_DISABLED)
+  return Py_REFCNT(op) == 3;
+#else
+  // NOTE: the entire ob_ref_shared field must be zero, including flags, to
+  // ensure that other threads cannot concurrently create new references to
+  // this object.
+  return (_Py_IsOwnedByCurrentThread(op) &&
+          _Py_atomic_load_uint32_relaxed(&op->ob_ref_local) == 3 &&
+          _Py_atomic_load_ssize_relaxed(&op->ob_ref_shared) == 0);
+#endif
+}
+
+template <class T>
+bool IsFree(std::shared_ptr<T> expr) {
+  PyObject* op = py::cast(expr).ptr();
+  return IsOnwedExclusivelyThroughPyBind11(op) &&
+         !was_optimized_in_function_call(op);
+}
+#else
+template <class T>
+bool IsFree(std::shared_ptr<T> expr) {
+  return Py_REFCNT(py::cast(expr).ptr()) == 4;
+}
+#endif
+
 PYBIND11_MODULE(cp_model_helper, m) {
   py::module::import("ortools.util.python.sorted_interval_list");
 
@@ -1536,8 +1590,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__add__",
           [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+            return IsFree(expr) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
@@ -1545,18 +1598,15 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__add__",
           [](std::shared_ptr<SumArray> expr,
              int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddIntInPlace(cst)
-                                   : expr->AddInt(cst);
+            return IsFree(expr) ? expr->AddIntInPlace(cst) : expr->AddInt(cst);
           },
           DOC(operations_research, sat, python, LinearExpr, AddInt))
       .def(
           "__add__",
           [](std::shared_ptr<SumArray> expr,
              double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
-                                   : expr->AddFloat(cst);
+            return IsFree(expr) ? expr->AddFloatInPlace(cst)
+                                : expr->AddFloat(cst);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
@@ -1564,8 +1614,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__radd__",
           [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddInPlace(other) : expr->Add(other);
+            return IsFree(expr) ? expr->AddInPlace(other) : expr->Add(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Add))
@@ -1573,9 +1622,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__radd__",
           [](std::shared_ptr<SumArray> expr,
              int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddIntInPlace(cst)
-                                   : expr->AddInt(cst);
+            return IsFree(expr) ? expr->AddIntInPlace(cst) : expr->AddInt(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddInt))
@@ -1583,9 +1630,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__radd__",
           [](std::shared_ptr<SumArray> expr,
              double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddFloatInPlace(cst)
-                                   : expr->AddFloat(cst);
+            return IsFree(expr) ? expr->AddFloatInPlace(cst)
+                                : expr->AddFloat(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, AddFloat))
@@ -1616,9 +1662,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__sub__",
           [](std::shared_ptr<SumArray> expr,
              std::shared_ptr<LinearExpr> other) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddInPlace(other->Neg())
-                                   : expr->Sub(other);
+            return IsFree(expr) ? expr->AddInPlace(other->Neg())
+                                : expr->Sub(other);
           },
           py::arg("other").none(false),
           DOC(operations_research, sat, python, LinearExpr, Sub))
@@ -1626,9 +1671,7 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__sub__",
           [](std::shared_ptr<SumArray> expr,
              int64_t cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddIntInPlace(-cst)
-                                   : expr->SubInt(cst);
+            return IsFree(expr) ? expr->AddIntInPlace(-cst) : expr->SubInt(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubInt))
@@ -1636,9 +1679,8 @@ PYBIND11_MODULE(cp_model_helper, m) {
           "__sub__",
           [](std::shared_ptr<SumArray> expr,
              double cst) -> std::shared_ptr<LinearExpr> {
-            const int num_uses = Py_REFCNT(py::cast(expr).ptr());
-            return (num_uses == 4) ? expr->AddFloatInPlace(-cst)
-                                   : expr->SubFloat(cst);
+            return IsFree(expr) ? expr->AddFloatInPlace(-cst)
+                                : expr->SubFloat(cst);
           },
           py::arg("cst"),
           DOC(operations_research, sat, python, LinearExpr, SubFloat))

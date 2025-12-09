@@ -14,8 +14,8 @@
 // A reader for files in the SOL format.
 // see https://en.wikipedia.org/wiki/Sol_(format)
 
-#ifndef OR_TOOLS_LP_DATA_SOL_READER_H_
-#define OR_TOOLS_LP_DATA_SOL_READER_H_
+#ifndef ORTOOLS_LP_DATA_SOL_READER_H_
+#define ORTOOLS_LP_DATA_SOL_READER_H_
 
 #include <string>
 
@@ -41,4 +41,4 @@ absl::StatusOr<MPSolutionResponse> ParseSolString(const std::string& solution,
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SOL_READER_H_
+#endif  // ORTOOLS_LP_DATA_SOL_READER_H_

@@ -328,15 +328,16 @@ SolveParameters AllSolutions() {
   return result;
 }
 
-INSTANTIATE_TEST_SUITE_P(CpSatCallbackTest, CallbackTest,
-                         Values(CallbackTestParams(
-                             SolverType::kCpSat,
-                             /*integer_variables=*/true,
-                             /*add_lazy_constraints=*/false,
-                             /*add_cuts=*/false,
-                             /*supported_events=*/{CallbackEvent::kMipSolution},
-                             /*all_solutions=*/AllSolutions(),
-                             /*reaches_cut_callback=*/std::nullopt)));
+INSTANTIATE_TEST_SUITE_P(
+    CpSatCallbackTest, CallbackTest,
+    Values(CallbackTestParams(
+        SolverType::kCpSat,
+        /*integer_variables=*/true,
+        /*add_lazy_constraints=*/false,
+        /*add_cuts=*/false,
+        /*supported_events=*/{CallbackEvent::kMipSolution, CallbackEvent::kMip},
+        /*all_solutions=*/AllSolutions(),
+        /*reaches_cut_callback=*/std::nullopt)));
 
 TEST(CpSatInvalidCallbackTest, RequestLazyConstraints) {
   Model model("model");

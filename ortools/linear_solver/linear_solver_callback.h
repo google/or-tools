@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
-#define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
+#define ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
 
 #include <cstdint>
 #include <string>
@@ -175,4 +175,4 @@ class MPCallbackList : public MPCallback {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_

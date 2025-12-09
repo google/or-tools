@@ -11,22 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CP_MODEL_UTILS_H_
-#define OR_TOOLS_SAT_CP_MODEL_UTILS_H_
+#ifndef ORTOOLS_SAT_CP_MODEL_UTILS_H_
+#define ORTOOLS_SAT_CP_MODEL_UTILS_H_
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "ortools/sat/drat_proof_handler.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #endif  // !defined(__PORTABLE_PLATFORM__)
 #include "absl/flags/declare.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/match.h"
@@ -34,16 +32,19 @@
 #include "absl/types/span.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/base_export.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/options.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
-ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
-ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
-ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
+#ifndef SWIG
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_models);
+OR_DLL ABSL_DECLARE_FLAG(std::string, cp_model_dump_prefix);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_problematic_lns);
+OR_DLL ABSL_DECLARE_FLAG(bool, cp_model_dump_submodels);
+#endif
 
 namespace operations_research {
 namespace sat {
@@ -89,11 +90,11 @@ void GetReferencesUsedByConstraint(const ConstraintProto& ct,
 // Applies the given function to all variables/literals/intervals indices of the
 // constraint. This function is used in a few places to have a "generic" code
 // dealing with constraints.
-void ApplyToAllVariableIndices(const std::function<void(int*)>& function,
+void ApplyToAllVariableIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
-void ApplyToAllLiteralIndices(const std::function<void(int*)>& function,
+void ApplyToAllLiteralIndices(absl::FunctionRef<void(int*)> function,
                               ConstraintProto* ct);
-void ApplyToAllIntervalIndices(const std::function<void(int*)>& function,
+void ApplyToAllIntervalIndices(absl::FunctionRef<void(int*)> function,
                                ConstraintProto* ct);
 
 // Returns the name of the ConstraintProto::ConstraintCase oneof enum.
@@ -431,15 +432,10 @@ bool ConvertCpModelProtoToCnf(const CpModelProto& cp_model, std::string* out);
 //     https://maxsat-evaluations.github.io/2022/rules.html
 bool ConvertCpModelProtoToWCnf(const CpModelProto& cp_model, std::string* out);
 
-// Loads the model in the DratProofHandler and returns true if successful.
-// Returns false if the model is not pure SAT.
-bool LoadCpModelInDratProofHandler(const CpModelProto& cp_model,
-                                   DratProofHandler* drat_proof_handler);
-
 // We assume delta >= 0 and we only use the low bit of delta.
 int CombineSeed(int base_seed, int64_t delta);
 
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_UTILS_H_
+#endif  // ORTOOLS_SAT_CP_MODEL_UTILS_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_
 
 namespace operations_research {
 // This class is visible in the API.
@@ -24,4 +24,4 @@ class LocalSearchPhaseParameters {
 };
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_JAVA_JAVAWRAPCP_UTIL_H_

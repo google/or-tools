@@ -1105,27 +1105,6 @@ TEST(FindPartialIntersections, Random) {
   }
 }
 
-void CheckFuzzedRectangles(
-    absl::Span<const std::tuple<int64_t, int64_t, int64_t, int64_t>> tuples) {
-  std::vector<Rectangle> rectangles;
-  rectangles.reserve(tuples.size());
-  for (const auto& [x_min, x_size, y_min, y_size] : tuples) {
-    rectangles.push_back({.x_min = x_min,
-                          .x_max = CapAdd(x_min, x_size),
-                          .y_min = y_min,
-                          .y_max = CapAdd(y_min, y_size)});
-  }
-  const std::vector<std::pair<int, int>> result =
-      FindPartialRectangleIntersections(rectangles);
-  for (const auto& [i, j] : result) {
-    CHECK(!rectangles[i].IsDisjoint(rectangles[j])) << i << " " << j;
-  }
-  const std::vector<std::pair<int, int>> naive_result =
-      GetAllIntersections(rectangles);
-  CHECK(GraphsDefineSameConnectedComponents(naive_result, result))
-      << RenderRectGraph(std::nullopt, rectangles, result);
-}
-
 void BM_FindRectangles(benchmark::State& state) {
   absl::BitGen random;
   std::vector<std::vector<RectangleInRange>> problems;

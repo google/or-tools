@@ -18,24 +18,30 @@
 // is avoid doing work that is not useful because nothing changed or exploring
 // parts that were not done during the last round.
 
-#ifndef OR_TOOLS_SAT_SAT_INPROCESSING_H_
-#define OR_TOOLS_SAT_SAT_INPROCESSING_H_
+#ifndef ORTOOLS_SAT_SAT_INPROCESSING_H_
+#define ORTOOLS_SAT_SAT_INPROCESSING_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <vector>
 
+#include "absl/hash/hash.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
-#include "ortools/sat/drat_checker.h"
+#include "ortools/sat/gate_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/strong_integers.h"
@@ -60,6 +66,7 @@ struct PostsolveClauses {
 class BlockedClauseSimplifier;
 class BoundedVariableElimination;
 class StampingSimplifier;
+class GateCongruenceClosure;
 
 struct SatPresolveOptions {
   // The time budget to spend.
@@ -101,6 +108,7 @@ class Inprocessing {
         params_(*model->GetOrCreate<SatParameters>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         trail_(model->GetOrCreate<Trail>()),
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
@@ -112,9 +120,10 @@ class Inprocessing {
             model->GetOrCreate<BlockedClauseSimplifier>()),
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
+        congruence_closure_(model->GetOrCreate<GateCongruenceClosure>()),
+        failed_literal_probing_(model->GetOrCreate<FailedLiteralProbing>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
-        logger_(model->GetOrCreate<SolverLogger>()),
-        model_(model) {}
+        logger_(model->GetOrCreate<SolverLogger>()) {}
 
   // Does some simplifications until a fix point is reached or the given
   // deterministic time is passed.
@@ -154,6 +163,7 @@ class Inprocessing {
   const SatParameters& params_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
+  LratProofHandler* lrat_proof_handler_;
   Trail* trail_;
   SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
@@ -162,6 +172,8 @@ class Inprocessing {
   StampingSimplifier* stamping_simplifier_;
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
+  GateCongruenceClosure* congruence_closure_;
+  FailedLiteralProbing* failed_literal_probing_;
   PostsolveClauses* postsolve_;
   SolverLogger* logger_;
 
@@ -170,15 +182,12 @@ class Inprocessing {
   double reference_dtime_ = 0.0;
   double total_dtime_ = 0.0;
 
-  // TODO(user): This is only used for calling probing. We should probably
-  // create a Probing class to wraps its data. This will also be needed to not
-  // always probe the same variables in each round if the deterministic time
-  // limit is low.
-  Model* model_;
-
   // Last since clause database was cleaned up.
   int64_t last_num_redundant_literals_ = 0;
   int64_t last_num_fixed_variables_ = 0;
+
+  // Temporary data for LRAT proofs.
+  std::vector<ClauseId> clause_ids_;
 };
 
 // Implements "stamping" as described in "Efficient CNF Simplification based on
@@ -196,8 +205,10 @@ class StampingSimplifier {
  public:
   explicit StampingSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        trail_(model->GetOrCreate<Trail>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
 
@@ -228,9 +239,19 @@ class StampingSimplifier {
   bool ProcessClauses();
 
  private:
+  // Appends the chain of implications from `a` to `b` to `chain`, in order
+  // (a => x => y => ... z => b) if `reversed` is false, or in reverse order
+  // (not(b) => not(z) => ... not(y) => not(x) => not(a)) otherwise. b must be a
+  // descendant of a.
+  void AppendImplicationChain(Literal a, Literal b,
+                              std::vector<ClauseId>& chain,
+                              bool reversed = false);
+
   const VariablesAssignment& assignment_;
+  Trail* trail_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
+  LratProofHandler* lrat_proof_handler_;
   ModelRandomGenerator* random_;
   TimeLimit* time_limit_;
 
@@ -254,6 +275,8 @@ class StampingSimplifier {
   // Temporary data for the DFS.
   util_intops::StrongVector<LiteralIndex, bool> marked_;
   std::vector<LiteralIndex> dfs_stack_;
+  // Temporary data for LRAT proofs.
+  std::vector<ClauseId> clause_ids_;
 
   // First/Last visited index in a DFS of the tree above.
   util_intops::StrongVector<LiteralIndex, int> first_stamps_;
@@ -398,7 +421,152 @@ class BoundedVariableElimination {
   util_intops::StrongVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 
+// If we have a = f(literals) and b = f(same_literals), then a and b are
+// equivalent.
+//
+// This class first detects such relationships, then reaches the "equivalence"
+// fixed point (i.e. closure) by detecting equivalences, then updating the RHS
+// of the relations which might lead to more equivalences and so on.
+//
+// This mostly follows the paper "Clausal Congruence closure", Armin Biere,
+// Katalin Fazekas, Mathias Fleury, Nils Froleyks, 2024.
+//
+// TODO(user): For now we only deal with f() being an and_gate with an arbitrary
+// number of inputs, or equivalently target = product/and(literals). The next
+// most important one is xor().
+//
+// TODO(user): What is the relation with symmetry ? It feel like all the
+// equivalences found here should be in the same symmetry orbit ?
+DEFINE_STRONG_INDEX_TYPE(GateId);
+class GateCongruenceClosure {
+ public:
+  explicit GateCongruenceClosure(Model* model)
+      : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        sat_solver_(model->GetOrCreate<SatSolver>()),
+        implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+        clause_manager_(model->GetOrCreate<ClauseManager>()),
+        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
+        lrat_proof_handler_(model->Mutable<LratProofHandler>()),
+        shared_stats_(model->GetOrCreate<SharedStatistics>()),
+        logger_(model->GetOrCreate<SolverLogger>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+
+  ~GateCongruenceClosure();
+
+  bool DoOneRound(bool log_info);
+
+ private:
+  DEFINE_STRONG_INDEX_TYPE(TruthTableId);
+
+  struct GateHash {
+    explicit GateHash(util_intops::StrongVector<GateId, int>* t,
+                      CompactVectorVector<GateId, LiteralIndex>* g)
+        : gates_type(t), gates_inputs(g) {}
+    std::size_t operator()(GateId gate_id) const {
+      return absl::HashOf((*gates_type)[gate_id], (*gates_inputs)[gate_id]);
+    }
+    const util_intops::StrongVector<GateId, int>* gates_type;
+    const CompactVectorVector<GateId, LiteralIndex>* gates_inputs;
+  };
+
+  struct GateEq {
+    explicit GateEq(util_intops::StrongVector<GateId, int>* t,
+                    CompactVectorVector<GateId, LiteralIndex>* g)
+        : gates_type(t), gates_inputs(g) {}
+    bool operator()(GateId gate_a, GateId gate_b) const {
+      if (gate_a == gate_b) return true;
+
+      // We use absl::span<> comparison.
+      return ((*gates_type)[gate_a] == (*gates_type)[gate_b]) &&
+             ((*gates_inputs)[gate_a] == (*gates_inputs)[gate_b]);
+    }
+    const util_intops::StrongVector<GateId, int>* gates_type;
+    const CompactVectorVector<GateId, LiteralIndex>* gates_inputs;
+  };
+
+  // Recovers "target_literal = and(literals)" from the model.
+  //
+  // The current algo is pretty basic: For all clauses, look for literals that
+  // imply all the others to false. We only look at direct implications to be
+  // fast.
+  //
+  // This is because such an and_gate is encoded as:
+  // - for all i, target_literal => literal_i  (direct binary implication)
+  // - all literal at true => target_literal, this is a clause:
+  //   (not(literal[i]) for all i, target_literal).
+  void ExtractAndGatesAndFillShortTruthTables(PresolveTimer& timer);
+
+  // From possible assignment of small set of variables (truth_tables), extract
+  // functions of the form one_var = f(other_vars).
+  void ExtractShortGates(PresolveTimer& timer);
+
+  // Add a small clause to the corresponding truth table.
+  template <int arity>
+  void AddToTruthTable(SatClause* clause,
+                       absl::flat_hash_map<std::array<BooleanVariable, arity>,
+                                           TruthTableId>& ids);
+
+  const VariablesAssignment& assignment_;
+  SatSolver* sat_solver_;
+  BinaryImplicationGraph* implication_graph_;
+  ClauseManager* clause_manager_;
+  ClauseIdGenerator* clause_id_generator_;
+  LratProofHandler* lrat_proof_handler_;
+  SharedStatistics* shared_stats_;
+  SolverLogger* logger_;
+  TimeLimit* time_limit_;
+
+  SparseBitset<LiteralIndex> marked_;
+  SparseBitset<LiteralIndex> seen_;
+  SparseBitset<LiteralIndex> next_seen_;
+
+  // A Boolean gates correspond to target = f(inputs).
+  //
+  // Note that the inputs are canonicalized. For and_gates, they are sorted,
+  // since the gate function does not depend on the order. The type of an
+  // and_gates is kAndGateType.
+  //
+  // Otherwise, we support generic 2 and 3 inputs gates where the type is the
+  // truth table. i.e. target = type[sum value_of_inputs[i] * 2^i]. For such
+  // gate, the target and inputs will always be canonicalized to positive and
+  // sorted literal. We just update the truth table accordingly.
+  //
+  // If lrat_proof_handler_ != nullptr, we also store all the SatClause* needed
+  // to infer such gate from the clause database. The case of kAndGateType is
+  // special, because we don't have SatClause for the binary clauses used to
+  // infer it. We will thus only store the base clause used, if we have a =
+  // and(x,y,...) we only store the clause "x and y and ... => a".
+  static constexpr int kAndGateType = -1;
+  util_intops::StrongVector<GateId, LiteralIndex> gates_target_;
+  util_intops::StrongVector<GateId, int> gates_type_;
+  CompactVectorVector<GateId, LiteralIndex> gates_inputs_;
+  CompactVectorVector<GateId, const SatClause*> gates_clauses_;
+
+  // Map (Xi) (sorted) to a bitmask corresponding to the allowed values.
+  // We loop over all short clauses to fill this. We actually store an "id"
+  // pointing in the vectors below.
+  //
+  // TruthTableIds are assigned in insertion order. We copy the map key in
+  // truth_tables_inputs_, this is a bit wasted but simplify the code.
+  absl::flat_hash_map<std::array<BooleanVariable, 3>, TruthTableId> ids3_;
+  absl::flat_hash_map<std::array<BooleanVariable, 4>, TruthTableId> ids4_;
+  CompactVectorVector<TruthTableId, BooleanVariable> truth_tables_inputs_;
+  util_intops::StrongVector<TruthTableId, SmallBitset> truth_tables_bitset_;
+  CompactVectorVector<TruthTableId, SatClause*> truth_tables_clauses_;
+
+  // Temporary vector used to construct truth_tables_clauses_.
+  std::vector<TruthTableId> tmp_ids_;
+  std::vector<SatClause*> tmp_clauses_;
+
+  // For stats.
+  double total_dtime_ = 0.0;
+  double total_wtime_ = 0.0;
+  int64_t total_num_units_ = 0;
+  int64_t total_gates_ = 0;
+  int64_t total_equivalences_ = 0;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_INPROCESSING_H_
+#endif  // ORTOOLS_SAT_SAT_INPROCESSING_H_

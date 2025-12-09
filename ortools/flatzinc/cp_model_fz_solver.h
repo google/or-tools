@@ -17,6 +17,9 @@
 #include <string>
 
 #include "ortools/flatzinc/model.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research {
@@ -49,11 +52,11 @@ namespace sat {
 void ProcessFloatingPointOVariablesAndObjective(fz::Model* fz_model);
 
 // Solves the given flatzinc model using the CP-SAT solver.
-void SolveFzWithCpModelProto(const fz::Model& model,
-                             const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params,
-                             SolverLogger* logger,
-                             SolverLogger* solution_logger);
+CpSolverResponse SolveFzWithCpModelProto(const fz::Model& model,
+                                         const fz::FlatzincSatParameters& p,
+                                         const SatParameters& sat_params,
+                                         Model* sat_model,
+                                         SolverLogger* solution_logger);
 
 }  // namespace sat
 }  // namespace operations_research

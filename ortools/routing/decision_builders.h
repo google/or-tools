@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ROUTING_DECISION_BUILDERS_H_
-#define OR_TOOLS_ROUTING_DECISION_BUILDERS_H_
+#ifndef ORTOOLS_ROUTING_DECISION_BUILDERS_H_
+#define ORTOOLS_ROUTING_DECISION_BUILDERS_H_
 
 #include <cstdint>
 #include <utility>
@@ -100,4 +100,4 @@ class FinalizerVariables {
 };
 
 }  // namespace operations_research::routing
-#endif  // OR_TOOLS_ROUTING_DECISION_BUILDERS_H_
+#endif  // ORTOOLS_ROUTING_DECISION_BUILDERS_H_

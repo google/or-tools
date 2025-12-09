@@ -635,18 +635,21 @@ const std::vector<Literal>& SharedTreeWorker::DecisionReason(int level) {
 }
 
 bool SharedTreeWorker::AddDecisionImplication(Literal lit, int level) {
+  CHECK_GT(level, 0);
   CHECK_NE(lit.Index(), kNoLiteralIndex);
   CHECK(!sat_solver_->Assignment().LiteralIsTrue(lit));
+  absl::Span<const Literal> reason = DecisionReason(level);
   if (sat_solver_->Assignment().LiteralIsFalse(lit)) {
     VLOG(2) << "Closing subtree via impl at " << level + 1
             << " assigned=" << assigned_tree_.MaxLevel();
-    integer_trail_->ReportConflict(DecisionReason(level), {});
+    trail_->MutableConflict()->assign(reason.begin(), reason.end());
     manager_->CloseTree(assigned_tree_, level);
     assigned_tree_literals_.clear();
     return false;
   }
   VLOG(2) << "Learned shared clause";
-  return integer_trail_->EnqueueLiteral(lit, DecisionReason(level), {});
+  trail_->GetEmptyVectorToStoreReason()->assign(reason.begin(), reason.end());
+  return trail_->EnqueueWithStoredReason(kNoClauseId, lit);
 }
 
 bool SharedTreeWorker::AddImplications() {
@@ -770,7 +773,7 @@ void SharedTreeWorker::MaybeProposeSplits() {
   const int max_split_level =
       std::min<int>(trail_->CurrentDecisionLevel(), manager_->MaxPathDepth());
   for (int i = assigned_tree_.MaxLevel(); i < max_split_level; ++i) {
-    const Literal split_decision = sat_solver_->Decisions()[i].literal;
+    const Literal split_decision = trail_->Decisions()[i].literal;
     const std::optional<ProtoLiteral> encoded = EncodeDecision(split_decision);
     if (!encoded.has_value()) break;
     tmp_splits_.push_back(*encoded);

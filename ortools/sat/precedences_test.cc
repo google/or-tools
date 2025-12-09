@@ -372,7 +372,7 @@ TEST(PrecedencesPropagatorTest, Cycles) {
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // Cycle of weight zero is fine.
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+7));  // dummy
   EXPECT_TRUE(integer_trail->Propagate(trail));
   trail->Enqueue(Literal(+1), AssignmentType::kUnitReason);
   trail->Enqueue(Literal(+2), AssignmentType::kUnitReason);
@@ -386,16 +386,15 @@ TEST(PrecedencesPropagatorTest, Cycles) {
               UnorderedElementsAre(Literal(-1), Literal(-3)));
 
   // Test the untrail.
-  trail->SetDecisionLevel(0);
+  trail->PrepareBacktrack(0);
   integer_trail->Untrail(*trail, 0);
   propagator->Untrail(*trail, 0);
   trail->Untrail(0);
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // Still fine here.
-  trail->SetDecisionLevel(1);
+  trail->EnqueueSearchDecision(Literal(+5));
   EXPECT_TRUE(integer_trail->Propagate(trail));
-  trail->Enqueue(Literal(+5), AssignmentType::kUnitReason);
   EXPECT_TRUE(propagator->Propagate(trail));
 
   // But fail there with a different and longer reason.
@@ -416,7 +415,8 @@ TEST(PrecedencesPropagatorTest, TrickyCycle) {
   IntegerTrail* integer_trail = model.GetOrCreate<IntegerTrail>();
   PrecedencesPropagator* propagator =
       model.GetOrCreate<PrecedencesPropagator>();
-  trail->Resize(10);
+  const Literal a(model.Add(NewBooleanVariable()), true);
+  const Literal b(model.Add(NewBooleanVariable()), true);
 
   std::vector<IntegerVariable> vars = AddVariables(integer_trail);
   propagator->AddPrecedenceWithVariableOffset(vars[0], vars[1], vars[2]);
@@ -424,17 +424,17 @@ TEST(PrecedencesPropagatorTest, TrickyCycle) {
 
   // This will cause an infinite cycle.
   propagator->AddConditionalPrecedenceWithOffset(vars[3], vars[0],
-                                                 IntegerValue(1), Literal(+1));
+                                                 IntegerValue(1), a);
 
   // So far so good.
+  trail->EnqueueSearchDecision(b);
   EXPECT_TRUE(propagator->Propagate(trail));
-  trail->SetDecisionLevel(1);
   EXPECT_TRUE(integer_trail->Propagate(trail));
 
   // Conflict.
-  trail->Enqueue(Literal(+1), AssignmentType::kUnitReason);
+  trail->Enqueue(a, AssignmentType::kUnitReason);
   EXPECT_FALSE(propagator->Propagate(trail));
-  EXPECT_THAT(trail->FailingClause(), ElementsAre(Literal(-1)));
+  EXPECT_THAT(trail->FailingClause(), ElementsAre(a.Negated()));
 
   // Test that the code detected properly a positive cycle in the dependency
   // graph instead of just pushing the bounds until the upper bound is reached.
@@ -526,14 +526,14 @@ TEST(EnforcedLinear2BoundsTest, CollectPrecedences) {
   EXPECT_TRUE(p.empty());
 }
 
-TEST(BinaryRelationRepositoryTest, Build) {
+TEST(ConditionalLinear2BoundsTest, Build) {
   Model model;
   const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
   const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
   const IntegerVariable z = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2(NegationOf(x), y, 1, 1), 2, 8);
@@ -557,21 +557,17 @@ TEST(BinaryRelationRepositoryTest, Build) {
   EXPECT_THAT(
       get_rel(all),
       UnorderedElementsAre(
-          Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
           Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1},
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
           Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
-  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
-              UnorderedElementsAre(
-                  Relation{lit_a, LinearExpression2(x, y, 1, -1), -8, -2},
-                  Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
   EXPECT_THAT(
-      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+      get_rel(repository.IndicesOfRelationsEnforcedBy(lit_a)),
       UnorderedElementsAre(
-          Relation{lit_b, LinearExpression2(kNoIntegerVariable, x, 0, -3), 3,
-                   5},
-          Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
+          Relation{lit_a, LinearExpression2(x, NegationOf(y), 1, 1), -8, -2},
+          Relation{lit_a, LinearExpression2(x, y, 3, 2), -15, -1}));
+  EXPECT_THAT(get_rel(repository.IndicesOfRelationsEnforcedBy(lit_b)),
+              UnorderedElementsAre(
+                  Relation{lit_b, LinearExpression2(x, z, 1, 1), 0, 0}));
   EXPECT_THAT(root_level_bounds->GetAllBoundsContainingVariable(x),
               UnorderedElementsAre(
                   FieldsAre(LinearExpression2(x, NegationOf(y), 1, 1), 0, 5),
@@ -601,8 +597,8 @@ TEST(BinaryRelationRepositoryTest, Build) {
 }
 
 std::vector<Relation> GetRelations(Model& model) {
-  const BinaryRelationRepository& repository =
-      *model.GetOrCreate<BinaryRelationRepository>();
+  const ConditionalLinear2Bounds& repository =
+      *model.GetOrCreate<ConditionalLinear2Bounds>();
   std::vector<Relation> relations;
   for (int i = 0; i < repository.size(); ++i) {
     Relation r = repository.relation(i);
@@ -617,7 +613,7 @@ std::vector<Relation> GetRelations(Model& model) {
   return relations;
 }
 
-TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
+TEST(ConditionalLinear2BoundsTest, LoadCpModelAddUnaryAndBinaryRelations) {
   const CpModelProto model_proto = ParseTestProto(R"pb(
     variables { domain: [ 0, 1 ] }
     variables { domain: [ 0, 1 ] }
@@ -668,19 +664,15 @@ TEST(BinaryRelationRepositoryTest, LoadCpModelAddUnaryAndBinaryRelations) {
   LoadCpModel(model_proto, &model);
 
   const CpModelMapping& mapping = *model.GetOrCreate<CpModelMapping>();
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(Relation{mapping.Literal(0),
-                                    LinearExpression2::Difference(
-                                        mapping.Integer(2), mapping.Integer(3)),
-                                    0, 10},
-                           Relation{mapping.Literal(1),
-                                    LinearExpression2(kNoIntegerVariable,
-                                                      mapping.Integer(2), 0, 1),
-                                    5, 10}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(Relation{
+                  mapping.Literal(0),
+                  LinearExpression2(mapping.Integer(2),
+                                    NegationOf(mapping.Integer(3)), 1, 1),
+                  0, 10}));
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case1) {
   // x in [10, 90] and "a and b => x in [20, 90]".
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -710,15 +702,16 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [10, 90]
   // - b => x - 10.a in [10, 90]
-  EXPECT_THAT(GetRelations(model),
-              UnorderedElementsAre(
-                  Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1),
-                           -90, -10},
-                  Relation{mapping.Literal(1), LinearExpression2(a, x, 10, -1),
-                           -90, -10}));
+  EXPECT_THAT(
+      GetRelations(model),
+      UnorderedElementsAre(
+          Relation{mapping.Literal(0),
+                   LinearExpression2(b, NegationOf(x), 10, 1), -90, -10},
+          Relation{mapping.Literal(1),
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case2) {
   // x in [10, 90] and "a and b => x in [10, 80]".
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -756,7 +749,7 @@ TEST(BinaryRelationRepositoryTest,
                    90}));
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case3) {
   // x in [10, 90] and "a and not(b) => x in [20, 90]".
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -791,10 +784,10 @@ TEST(BinaryRelationRepositoryTest,
       UnorderedElementsAre(
           Relation{mapping.Literal(0), LinearExpression2(b, x, 10, 1), 20, 100},
           Relation{mapping.Literal(1).Negated(),
-                   LinearExpression2(a, x, 10, -1), -90, -10}));
+                   LinearExpression2(a, NegationOf(x), 10, 1), -90, -10}));
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      LoadCpModelAddsUnaryRelationsEnforcedByTwoLiterals_Case4) {
   // x in [10, 90] and "a and not(b) => x in [10, 80]".
   const CpModelProto model_proto = ParseTestProto(R"pb(
@@ -824,20 +817,20 @@ TEST(BinaryRelationRepositoryTest,
   // Two binary relations enforced by only one literal should be added:
   // - a => x - 10.b in [0, 80]  (<=> a => x + (10-10.b) in [10, 90])
   // - b => x + 10.a in [10, 90]
-  EXPECT_THAT(
-      GetRelations(model),
-      UnorderedElementsAre(
-          Relation{mapping.Literal(0), LinearExpression2(b, x, 10, -1), -80, 0},
-          Relation{mapping.Literal(1).Negated(), LinearExpression2(a, x, 10, 1),
-                   10, 90}));
+  EXPECT_THAT(GetRelations(model),
+              UnorderedElementsAre(
+                  Relation{mapping.Literal(0),
+                           LinearExpression2(b, NegationOf(x), 10, 1), -80, 0},
+                  Relation{mapping.Literal(1).Negated(),
+                           LinearExpression2(a, x, 10, 1), 10, 90}));
 }
 
-TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
+TEST(ConditionalLinear2BoundsTest, PropagateLocalBounds_EnforcedRelation) {
   Model model;
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
@@ -856,14 +849,14 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_EnforcedRelation) {
                                            std::make_pair(y, 5)));
 }
 
-TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
+TEST(ConditionalLinear2BoundsTest, PropagateLocalBounds_UnenforcedRelation) {
   Model model;
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   const IntegerVariable x = model.Add(NewIntegerVariable(-100, 100));
   const IntegerVariable y = model.Add(NewIntegerVariable(-100, 100));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(lit_a, LinearExpression2(x, y, -1, 1), -5,
                  10);  // lit_a => y => x - 5
   root_level_bounds->Add(LinearExpression2(x, y, -1, 1), 2,
@@ -882,7 +875,7 @@ TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_UnenforcedRelation) {
                                            std::make_pair(y, 5)));
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      PropagateLocalBounds_EnforcedBoundSmallerThanLevelZeroBound) {
   Model model;
   RootLevelLinear2Bounds* root_level_bounds =
@@ -891,7 +884,7 @@ TEST(BinaryRelationRepositoryTest,
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
   const Literal lit_b = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   repository.Add(lit_a, LinearExpression2::Difference(y, x), -5,
                  10);  // lit_a => y => x - 5
   repository.Add(lit_b, LinearExpression2::Difference(y, x), 2,
@@ -909,13 +902,13 @@ TEST(BinaryRelationRepositoryTest,
   EXPECT_THAT(output, IsEmpty());
 }
 
-TEST(BinaryRelationRepositoryTest,
+TEST(ConditionalLinear2BoundsTest,
      PropagateLocalBounds_EnforcedBoundSmallerThanOutputBound) {
   Model model;
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 2,
@@ -934,12 +927,12 @@ TEST(BinaryRelationRepositoryTest,
                                            std::make_pair(y, 8)));
 }
 
-TEST(BinaryRelationRepositoryTest, PropagateLocalBounds_Infeasible) {
+TEST(ConditionalLinear2BoundsTest, PropagateLocalBounds_Infeasible) {
   Model model;
   const IntegerVariable x = model.Add(NewIntegerVariable(0, 10));
   const IntegerVariable y = model.Add(NewIntegerVariable(0, 10));
   const Literal lit_a = Literal(model.Add(NewBooleanVariable()), true);
-  BinaryRelationRepository repository(&model);
+  ConditionalLinear2Bounds repository(&model);
   RootLevelLinear2Bounds* root_level_bounds =
       model.GetOrCreate<RootLevelLinear2Bounds>();
   repository.Add(lit_a, LinearExpression2::Difference(y, x), 8,
@@ -969,7 +962,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest, AddGreaterThanAtLeastOneOf) {
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   repository->Add(lit_a, LinearExpression2::Difference(d, a), 2,
                   1000);  // d >= a + 2
   repository->Add(lit_b, LinearExpression2::Difference(d, b), -1,
@@ -1000,7 +993,7 @@ TEST(GreaterThanAtLeastOneOfDetectorTest,
   const Literal lit_c = Literal(model.Add(NewBooleanVariable()), true);
   model.Add(ClauseConstraint({lit_a, lit_b, lit_c}));
 
-  auto* repository = model.GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model.GetOrCreate<ConditionalLinear2Bounds>();
   repository->Add(lit_a, LinearExpression2(a, d, -1, 1), 2,
                   1000);  // d >= a + 2
   repository->Add(lit_b, LinearExpression2(b, d, -1, 1), -1,

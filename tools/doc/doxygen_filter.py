@@ -97,7 +97,7 @@ class DoxygenFormatter:
             # Replace pipe-delimited parameter names with backtick-delimiters
             (re.compile(r"\|(\w+)\|"), r"`\1`", self.COMMENT),
             # Convert standalone comment lines to Doxygen style.
-            (re.compile(r"(^\s*)//(?=[^/])"), r"\1///", self.ANYWHERE),
+            # (re.compile(r"(^\s*)//(?=[^/])"), r"\1///", self.ANYWHERE),
             # Strip trailing comments from preprocessor directives.
             (re.compile(r"(^#.*)//.*"), r"\1", self.ANYWHERE),
             # Convert remaining trailing comments to doxygen style, unless they are

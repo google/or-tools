@@ -404,7 +404,7 @@ bool AllDifferentConstraint::Propagate() {
           }
         }
 
-        return trail_->EnqueueWithStoredReason(x_lit.Negated());
+        return trail_->EnqueueWithStoredReason(kNoClauseId, x_lit.Negated());
       }
     }
   }

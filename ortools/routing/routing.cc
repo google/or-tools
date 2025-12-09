@@ -813,14 +813,14 @@ bool RoutingModel::InitializeDimensionInternal(
     const std::vector<int>& state_dependent_evaluator_indices,
     int64_t slack_max, bool fix_start_cumul_to_zero,
     RoutingDimension* dimension) {
-  CHECK(dimension != nullptr);
-  CHECK_EQ(vehicles_, evaluator_indices.size());
-  CHECK((dimension->base_dimension_ == nullptr &&
-         state_dependent_evaluator_indices.empty()) ||
-        vehicles_ == state_dependent_evaluator_indices.size());
+  DCHECK(dimension != nullptr);
+  DCHECK_EQ(vehicles_, evaluator_indices.size());
+  DCHECK((dimension->base_dimension_ == nullptr &&
+          state_dependent_evaluator_indices.empty()) ||
+         vehicles_ == state_dependent_evaluator_indices.size());
   if (!HasDimension(dimension->name())) {
-    const DimensionIndex dimension_index(dimensions_.size());
-    dimension_name_to_index_[dimension->name()] = dimension_index;
+    DCHECK_EQ(dimensions_.size(), dimension->index().value());
+    dimension_name_to_index_[dimension->name()] = dimension->index();
     dimensions_.push_back(dimension);
     dimension->Initialize(evaluator_indices, cumul_dependent_evaluator_indices,
                           state_dependent_evaluator_indices, slack_max);
@@ -1041,7 +1041,7 @@ GlobalDimensionCumulOptimizer* RoutingModel::GetMutableGlobalCumulMPOptimizer(
 int RoutingModel::GetGlobalCumulOptimizerIndex(
     const RoutingDimension& dimension) const {
   DCHECK(closed_);
-  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  const DimensionIndex dim_index = dimension.index();
   if (dim_index < 0 || dim_index >= global_optimizer_index_.size() ||
       global_optimizer_index_[dim_index] < 0) {
     return -1;
@@ -1070,7 +1070,7 @@ LocalDimensionCumulOptimizer* RoutingModel::GetMutableLocalCumulMPOptimizer(
 int RoutingModel::GetLocalCumulOptimizerIndex(
     const RoutingDimension& dimension) const {
   DCHECK(closed_);
-  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  const DimensionIndex dim_index = dimension.index();
   if (dim_index < 0 || dim_index >= local_optimizer_index_.size() ||
       local_optimizer_index_[dim_index] < 0) {
     return -1;
@@ -1118,25 +1118,20 @@ ResourceGroup::Attributes::Attributes(Domain start_domain, Domain end_domain)
     : start_domain_(std::move(start_domain)),
       end_domain_(std::move(end_domain)) {}
 
-const ResourceGroup::Attributes&
-ResourceGroup::Resource::GetDimensionAttributes(
-    const RoutingDimension* dimension) const {
-  DimensionIndex dimension_index = model_->GetDimensionIndex(dimension->name());
-  DCHECK_NE(dimension_index, kNoDimension);
-  return gtl::FindWithDefault(dimension_attributes_, dimension_index,
-                              GetDefaultAttributes());
-}
-
 void ResourceGroup::Resource::SetDimensionAttributes(
     Attributes attributes, const RoutingDimension* dimension) {
-  DCHECK(dimension_attributes_.empty())
+  DCHECK(attributes_.empty())
       << "As of 2021/07, each resource can only constrain a single dimension.";
 
-  const DimensionIndex dimension_index =
-      model_->GetDimensionIndex(dimension->name());
-  DCHECK_NE(dimension_index, kNoDimension);
+  const DimensionIndex dimension_index = dimension->index();
   DCHECK(!dimension_attributes_.contains(dimension_index));
-  dimension_attributes_[dimension_index] = std::move(attributes);
+  const int attribute_index = attributes_.size();
+  dimension_attributes_[dimension_index] = attribute_index;
+  if (dimension_index >= dimension_attributes_per_index_.size()) {
+    dimension_attributes_per_index_.resize(dimension_index.value() + 1);
+  }
+  dimension_attributes_per_index_[dimension_index] = attribute_index;
+  attributes_.push_back(std::move(attributes));
 }
 
 const ResourceGroup::Attributes& ResourceGroup::Resource::GetDefaultAttributes()
@@ -1168,10 +1163,7 @@ int ResourceGroup::AddResource(Attributes attributes,
   resources_.push_back(Resource(model_));
   resources_.back().SetDimensionAttributes(std::move(attributes), dimension);
 
-  const DimensionIndex dimension_index =
-      model_->GetDimensionIndex(dimension->name());
-  DCHECK_NE(dimension_index, kNoDimension);
-  affected_dimension_indices_.insert(dimension_index);
+  affected_dimension_indices_.insert(dimension->index());
 
   DCHECK_EQ(affected_dimension_indices_.size(), 1)
       << "As of 2021/07, each ResourceGroup can only affect a single "
@@ -1222,7 +1214,7 @@ void ResourceGroup::ComputeResourceClasses() {
     dim_attributes.resize(model_->dimensions_.size(), Attributes());
     for (const auto& [dim_index, attributes] :
          resources_[r].dimension_attributes_) {
-      dim_attributes[dim_index] = attributes;
+      dim_attributes[dim_index] = resources_[r].attributes_[attributes];
     }
 
     std::vector<bool>& assignable_to_v = resource_class.assignable_to_vehicle;
@@ -1248,9 +1240,7 @@ void ResourceGroup::ComputeResourceClasses() {
 const std::vector<int>& RoutingModel::GetDimensionResourceGroupIndices(
     const RoutingDimension* dimension) const {
   DCHECK(closed_);
-  const DimensionIndex dim = GetDimensionIndex(dimension->name());
-  DCHECK_NE(dim, kNoDimension);
-  return dimension_resource_group_indices_[dim];
+  return dimension_resource_group_indices_[dimension->index()];
 }
 
 RoutingModel::SecondaryOptimizer::SecondaryOptimizer(
@@ -1401,50 +1391,71 @@ void RoutingModel::AddRouteConstraint(
 void RoutingModel::FinalizeAllowedVehicles() {
   const std::vector<RoutingDimension*> unary_dimensions = GetUnaryDimensions();
 
-  // Pre-process the node transit values to find the maximum transit for each
-  // unary dimension to avoid unnecessary computations below.
-  std::vector<int64_t> dimension_max_node_transit(unary_dimensions.size(), 0);
-  for (int i = 0; i < unary_dimensions.size(); ++i) {
-    int64_t& max_node_transit = dimension_max_node_transit[i];
-    const RoutingDimension* dimension = unary_dimensions[i];
-    for (int node = 0; node < Size(); ++node) {
-      if (IsStart(node)) continue;
-      for (int callback_index : dimension->class_evaluators_) {
-        max_node_transit = std::max(
-            max_node_transit,
-            std::abs(UnaryTransitCallbackOrNull(callback_index)(node)));
+  // For each dimension, find the range of possible total transits.
+  // This is precomputed to heuristically avoid a linear test on all vehicles.
+  struct TransitBounds {
+    int64_t min = std::numeric_limits<int64_t>::max();
+    int64_t max = std::numeric_limits<int64_t>::min();
+  };
+  std::vector<TransitBounds> dimension_bounds(unary_dimensions.size());
+  for (int d = 0; d < unary_dimensions.size(); ++d) {
+    TransitBounds transit_bounds;
+    const RoutingDimension* dimension = unary_dimensions[d];
+    for (const int e : dimension->class_evaluators_) {
+      const TransitCallback1& evaluator = UnaryTransitCallbackOrNull(e);
+      DCHECK(evaluator != nullptr);
+      for (int node = 0; node < Size(); ++node) {
+        if (IsStart(node)) continue;
+        const int64_t transit = evaluator(node);
+        const IntVar* slack = dimension->SlackVar(node);
+        transit_bounds = {
+            .min = std::min(transit_bounds.min, CapAdd(transit, slack->Min())),
+            .max = std::max(transit_bounds.max, CapAdd(transit, slack->Max()))};
       }
     }
+    dimension_bounds[d] = transit_bounds;
   }
 
+  // For each vehicle-node pair, find whether a dimension constraint forbids
+  // assigning the pair.
   for (int vehicle = 0; vehicle < vehicles_; ++vehicle) {
-    if (CheckLimit()) {
-      return;
-    }
-    for (int i = 0; i < unary_dimensions.size(); ++i) {
-      const RoutingDimension* const dim = unary_dimensions[i];
+    if (CheckLimit()) return;
+    for (int d = 0; d < unary_dimensions.size(); ++d) {
+      const RoutingDimension* const dim = unary_dimensions[d];
       const TransitCallback1& transit_evaluator =
           dim->GetUnaryTransitEvaluator(vehicle);
       DCHECK(transit_evaluator != nullptr);
-      const int64_t capacity = dim->vehicle_capacities()[vehicle];
-      if (capacity >= dimension_max_node_transit[i]) continue;
-
+      const TransitBounds allowed_transits = {
+          .min = CapOpp(dim->vehicle_capacities()[vehicle]),
+          .max = dim->vehicle_capacities()[vehicle],
+      };
+      // If the transit range over all nodes is within the vehicle's max
+      // allowed variation, no need to scan all nodes: always keep the vehicle.
+      if (allowed_transits.min <= dimension_bounds[d].min &&
+          dimension_bounds[d].max <= allowed_transits.max) {
+        continue;
+      }
       for (int node = 0; node < Size(); ++node) {
         if (IsStart(node)) continue;
         absl::flat_hash_set<int>& allowed_vehicles = allowed_vehicles_[node];
+        // NOTE: An empty set of "allowed_vehicles" actually means all
+        // vehicles are allowed for this node, so we lazily fill
+        // "allowed_vehicles" to [-1, num_vehicles) when removing a vehicle.
+
+        // The vehicle is already forbidden for this node.
         if (!allowed_vehicles.empty() && !allowed_vehicles.contains(vehicle)) {
-          // The vehicle is already forbidden for this node.
           continue;
         }
-        if (std::abs(transit_evaluator(node)) <= capacity) continue;
-
-        // 'node' can't be served by 'vehicle', so we remove the 'vehicle'
-        // from the node's set of allowed_vehicles_.
+        // If the transit is within the allowed range, we can keep the vehicle.
+        const int64_t transit = transit_evaluator(node);
+        const IntVar* slack_var = dim->SlackVar(node);
+        if (allowed_transits.min <= CapAdd(transit, slack_var->Max()) &&
+            CapAdd(transit, slack_var->Min()) <= allowed_transits.max) {
+          continue;
+        }
+        // We will remove the vehicle, lazy fill.
         if (allowed_vehicles.empty()) {
-          // NOTE: An empty set of "allowed_vehicles" actually means all
-          // vehicles are allowed for this node, so we lazily fill
-          // "allowed_vehicles" with all vehicles here to then remove the
-          // 'vehicle' from the set.
+          allowed_vehicles.reserve(vehicles_);
           for (int v = 0; v < vehicles_; ++v) allowed_vehicles.insert(v);
         }
         allowed_vehicles.erase(vehicle);
@@ -2981,11 +2992,26 @@ void RoutingModel::CloseModelWithParameters(
       nexts_, pickup_delivery_precedences, lifo_vehicles, fifo_vehicles));
 
   // Add ordered activity group constraints.
-  for (const auto& nodes : ordered_activity_groups_) {
-    if (nodes.size() <= 1) continue;
-    for (int i = 1; i < nodes.size(); ++i) {
-      solver_->AddConstraint(solver_->MakeLessOrEqual(ActiveVar(nodes[i]),
-                                                      ActiveVar(nodes[i - 1])));
+  for (const auto& disjunctions : ordered_activity_groups_) {
+    if (disjunctions.size() <= 1) continue;
+    IntVar* prev_active_var = nullptr;
+    for (const DisjunctionIndex disjunction_index : disjunctions) {
+      const std::vector<int64_t>& node_indices =
+          GetDisjunctionNodeIndices(disjunction_index);
+      std::vector<IntVar*> active_vars;
+      active_vars.reserve(node_indices.size());
+      for (const int node : node_indices) {
+        active_vars.push_back(ActiveVar(node));
+      }
+      IntVar* const sum = solver_->MakeSum(active_vars)->Var();
+      IntVar* active_var = solver_->MakeBoolVar();
+      solver_->AddConstraint(solver_->MakeIsGreaterOrEqualCstCt(
+          sum, GetDisjunctionMaxCardinality(disjunction_index), active_var));
+      if (prev_active_var != nullptr) {
+        solver_->AddConstraint(
+            solver_->MakeLessOrEqual(active_var, prev_active_var));
+      }
+      prev_active_var = active_var;
     }
   }
 
@@ -3579,12 +3605,29 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
     return true;
   };
 
-  std::unique_ptr<NeighborAcceptanceCriterion> acceptance_criterion =
-      MakeNeighborAcceptanceCriterion(*this, parameters, &rnd);
+  const IteratedLocalSearchParameters& ils_parameters =
+      parameters.iterated_local_search_parameters();
+
+  const absl::Duration final_duration =
+      !parameters.has_time_limit()
+          ? absl::InfiniteDuration()
+          : util_time::DecodeGoogleApiProto(parameters.time_limit()).value();
+
+  NeighborAcceptanceCriterion::SearchState final_search_state = {
+      final_duration, parameters.solution_limit()};
+
+  std::unique_ptr<NeighborAcceptanceCriterion> reference_acceptance_criterion =
+      MakeNeighborAcceptanceCriterion(
+          *this, ils_parameters.reference_solution_acceptance_strategy(),
+          final_search_state, &rnd);
+
+  std::unique_ptr<NeighborAcceptanceCriterion> best_acceptance_criterion =
+      MakeNeighborAcceptanceCriterion(
+          *this, ils_parameters.best_solution_acceptance_strategy(),
+          final_search_state, &rnd);
 
   const bool improve_perturbed_solution =
-      parameters.iterated_local_search_parameters()
-          .improve_perturbed_solution();
+      ils_parameters.improve_perturbed_solution();
 
   while (update_time_limits() &&
          explored_solutions < parameters.solution_limit()) {
@@ -3609,15 +3652,17 @@ const Assignment* RoutingModel::SolveWithIteratedLocalSearch(
       }
     }
 
-    if (neighbor_solution->ObjectiveValue() < best_solution->ObjectiveValue()) {
+    absl::Duration elapsed_time =
+        absl::Milliseconds(solver_->wall_time() - start_time_ms);
+
+    if (best_acceptance_criterion->Accept({elapsed_time, explored_solutions},
+                                          neighbor_solution, best_solution)) {
       best_solution->CopyIntersection(neighbor_solution);
     }
 
-    absl::Duration elapsed_time =
-        absl::Milliseconds(solver_->wall_time() - start_time_ms);
-    if (acceptance_criterion->Accept({elapsed_time, explored_solutions},
-                                     neighbor_solution,
-                                     last_accepted_solution)) {
+    if (reference_acceptance_criterion->Accept(
+            {elapsed_time, explored_solutions}, neighbor_solution,
+            last_accepted_solution)) {
       // Note that the perturbation_db is using last_accepted_solution as
       // reference assignment. By updating last_accepted_solution here we thus
       // also keep the perturbation_db reference assignment up to date.
@@ -3912,7 +3957,7 @@ int RoutingModel::FindNextActive(int index,
   return index;
 }
 
-IntVar* RoutingModel::ApplyLocks(const std::vector<int64_t>& locks) {
+IntVar* RoutingModel::ApplyLocks(absl::Span<const int64_t> locks) {
   // TODO(user): Replace calls to this method with calls to
   // ApplyLocksToAllVehicles and remove this method?
   CHECK_EQ(vehicles_, 1);
@@ -5008,25 +5053,15 @@ void RoutingModel::CreateNeighborhoodOperators(
   // Insertion-based LNS neighborhoods.
   const auto make_global_cheapest_insertion_filtered_heuristic =
       [this, &parameters]() {
-        using Heuristic = GlobalCheapestInsertionFilteredHeuristic;
-        Heuristic::GlobalCheapestInsertionParameters ls_gci_parameters;
-        ls_gci_parameters.is_sequential = false;
-        ls_gci_parameters.farthest_seeds_ratio = 0.0;
-        ls_gci_parameters.neighbors_ratio =
-            parameters.cheapest_insertion_ls_operator_neighbors_ratio();
-        ls_gci_parameters.min_neighbors =
-            parameters.cheapest_insertion_ls_operator_min_neighbors();
-        ls_gci_parameters.use_neighbors_ratio_for_initialization = true;
-        ls_gci_parameters.add_unperformed_entries =
-            parameters.cheapest_insertion_add_unperformed_entries();
-        return std::make_unique<Heuristic>(
+        return std::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
             this, [this]() { return CheckLimit(time_buffer_); },
             GetLocalSearchArcCostCallback(parameters),
             absl::bind_front(&RoutingModel::UnperformedPenaltyOrValue, this, 0),
             GetOrCreateLocalSearchFilterManager(
                 parameters,
                 {/*filter_objective=*/false, /*filter_with_cp_solver=*/false}),
-            ls_gci_parameters);
+            parameters.global_cheapest_insertion_ls_operator_parameters(),
+            /*is_sequential=*/false);
       };
   const auto make_local_cheapest_insertion_filtered_heuristic =
       [this, &parameters]() {
@@ -5960,25 +5995,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                        finalize);
 
   // Parallel/Sequential Global cheapest insertion
-  GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
-      gci_parameters;
-  gci_parameters.is_sequential = false;
-  gci_parameters.farthest_seeds_ratio =
-      search_parameters.cheapest_insertion_farthest_seeds_ratio();
-  gci_parameters.neighbors_ratio =
-      search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
-  gci_parameters.min_neighbors =
-      search_parameters.cheapest_insertion_first_solution_min_neighbors();
-  gci_parameters.use_neighbors_ratio_for_initialization =
-      search_parameters
-          .cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization();  // NOLINT
-  gci_parameters.add_unperformed_entries =
-      search_parameters.cheapest_insertion_add_unperformed_entries();
   for (bool is_sequential : {false, true}) {
     FirstSolutionStrategy::Value first_solution_strategy =
         is_sequential ? FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION
                       : FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION;
-    gci_parameters.is_sequential = is_sequential;
 
     first_solution_filtered_decision_builders_[first_solution_strategy] =
         CreateIntVarFilteredDecisionBuilder<
@@ -5990,7 +6010,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
             GetOrCreateLocalSearchFilterManager(
                 search_parameters, {/*filter_objective=*/false,
                                     /*filter_with_cp_solver=*/false}),
-            gci_parameters);
+            search_parameters
+                .global_cheapest_insertion_first_solution_parameters(),
+            is_sequential);
     IntVarFilteredDecisionBuilder* const strong_gci =
         CreateIntVarFilteredDecisionBuilder<
             GlobalCheapestInsertionFilteredHeuristic>(
@@ -6001,7 +6023,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
             GetOrCreateLocalSearchFilterManager(
                 search_parameters, {/*filter_objective=*/false,
                                     /*filter_with_cp_solver=*/true}),
-            gci_parameters);
+            search_parameters
+                .global_cheapest_insertion_first_solution_parameters(),
+            is_sequential);
     first_solution_decision_builders_[first_solution_strategy] = solver_->Try(
         first_solution_filtered_decision_builders_[first_solution_strategy],
         solver_->Try(strong_gci, first_solution_decision_builders_
@@ -6390,7 +6414,12 @@ void RoutingModel::SetupMetaheuristics(
       }
       default:
         limit_too_long = false;
-        optimize = solver_->MakeMinimize(cost_, optimization_step);
+        OptimizeVar* const minimize =
+            solver_->MakeMinimize(cost_, optimization_step);
+        optimize = minimize;
+        minimize->SetOnOptimalFoundcallback([this](int64_t value) {
+          objective_lower_bound_ = std::max(objective_lower_bound_, value);
+        });
     }
     if (limit_too_long) {
       LOG(WARNING) << LocalSearchMetaheuristic::Value_Name(metaheuristic)
@@ -6649,6 +6678,7 @@ RoutingDimension::RoutingDimension(RoutingModel* model,
       base_dimension_(base_dimension),
       global_span_cost_coefficient_(0),
       model_(model),
+      index_(model->dimensions_.size()),
       name_(name),
       global_optimizer_offset_(0) {
   CHECK(model != nullptr);

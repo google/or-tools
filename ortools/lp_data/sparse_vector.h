@@ -27,8 +27,8 @@
 //
 // Both books also contain a wealth of references.
 
-#ifndef OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
-#define OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
+#ifndef ORTOOLS_LP_DATA_SPARSE_VECTOR_H_
+#define ORTOOLS_LP_DATA_SPARSE_VECTOR_H_
 
 #include <algorithm>
 #include <cstdlib>
@@ -1031,4 +1031,4 @@ std::string SparseVector<IndexType, IteratorType>::DebugString() const {
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
+#endif  // ORTOOLS_LP_DATA_SPARSE_VECTOR_H_

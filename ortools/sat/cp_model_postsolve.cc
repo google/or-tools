@@ -97,7 +97,7 @@ void PostsolveExactlyOne(const ConstraintProto& ct,
 // There must be one.
 void SetEnforcementLiteralToFalse(const ConstraintProto& ct,
                                   std::vector<Domain>* domains) {
-  CHECK(!ct.enforcement_literal().empty());
+  CHECK(!ct.enforcement_literal().empty()) << ProtobufShortDebugString(ct);
   bool has_free_enforcement_literal = false;
   for (const int enf : ct.enforcement_literal()) {
     if ((*domains)[PositiveRef(enf)].IsFixed()) continue;

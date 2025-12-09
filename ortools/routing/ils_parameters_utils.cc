@@ -32,6 +32,10 @@ RecreateParameters::ParametersCase GetParameterCaseForRecreateHeuristic(
       return RecreateParameters::kSavings;
     case FirstSolutionStrategy::PARALLEL_SAVINGS:
       return RecreateParameters::kSavings;
+    case FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION:
+      return RecreateParameters::kGlobalCheapestInsertion;
+    case FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION:
+      return RecreateParameters::kGlobalCheapestInsertion;
     default:
       return RecreateParameters::PARAMETERS_NOT_SET;
   }
@@ -40,7 +44,8 @@ RecreateParameters::ParametersCase GetParameterCaseForRecreateHeuristic(
 std::vector<RecreateParameters::ParametersCase>
 GetSupportedRecreateParametersCases() {
   return {RecreateParameters::kLocalCheapestInsertion,
-          RecreateParameters::kSavings};
+          RecreateParameters::kSavings,
+          RecreateParameters::kGlobalCheapestInsertion};
 }
 
 std::string GetRecreateParametersName(
@@ -50,6 +55,8 @@ std::string GetRecreateParametersName(
       return "local_cheapest_insertion";
     case RecreateParameters::kSavings:
       return "savings";
+    case RecreateParameters::kGlobalCheapestInsertion:
+      return "global_cheapest_insertion";
     case RecreateParameters::PARAMETERS_NOT_SET:
       return "PARAMETERS_NOT_SET";
   }

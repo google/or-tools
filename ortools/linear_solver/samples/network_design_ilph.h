@@ -11,15 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
-#define OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#ifndef ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#define ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
 
 #include <memory>
 #include <vector>
 
 #include "ortools/graph/graph.h"
 #include "ortools/linear_solver/linear_solver.h"
-#include "ortools/linear_solver/samples/network_design_ilph.h"
 #include "ortools/routing/parsers/capacity_planning.pb.h"
 
 // An implementation of the algorithm described in "An Efficient Matheuristic
@@ -51,7 +50,7 @@ struct CapacityPlanningProblem {
 
 // Converts a CapacityPlanningInstance to a CapacityPlanningProblem, which is
 // easier to use for modeling using MIPs.
-::absl::Status Convert(const CapacityPlanningInstance& request,
+::absl::Status Convert(const routing::CapacityPlanningInstance& request,
                        CapacityPlanningProblem* problem);
 
 struct CapacityPlanningParameters {
@@ -136,4 +135,4 @@ class CapacityPlanningILPH {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_
+#endif  // ORTOOLS_LINEAR_SOLVER_SAMPLES_NETWORK_DESIGN_ILPH_H_

@@ -57,8 +57,12 @@ ImpliedBounds::~ImpliedBounds() {
   std::vector<std::pair<std::string, int64_t>> stats;
   stats.push_back({"implied_bound/num_deductions", num_deductions_});
   stats.push_back({"implied_bound/num_stored", bounds_.size()});
+  stats.push_back({"implied_bound/num_promoted_to_equivalence",
+                   num_promoted_to_equivalence_});
   stats.push_back(
       {"implied_bound/num_stored_with_view", num_enqueued_in_var_to_bounds_});
+  stats.push_back({"implied_bound/max_changed_domain_complexity",
+                   max_changed_domain_complexity_});
   shared_stats_->AddStats(stats);
 }
 
@@ -70,6 +74,12 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // TODO(user): Check that this never happen? it shouldn't.
   const IntegerValue root_lb = integer_trail_->LevelZeroLowerBound(var);
   if (integer_literal.bound <= root_lb) return true;
+
+  if (integer_literal.bound > integer_trail_->LevelZeroUpperBound(var)) {
+    // The literal being true is incompatible with the root level bounds.
+    sat_solver_->AddClauseDuringSearch({literal.Negated()});
+    return true;
+  }
 
   // We skip any IntegerLiteral referring to a variable with only two
   // consecutive possible values. This is because, once shifted this will
@@ -103,10 +113,6 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // Check if we have any deduction. Since at least one of (literal,
   // literal.Negated()) must be true, we can take the min bound as valid at
   // level zero.
-  //
-  // TODO(user): Like in probing, we can also create hole in the domain if there
-  // is some implied bounds for (literal.NegatedIndex, NegagtionOf(var)) that
-  // crosses integer_literal.bound.
   const auto it = bounds_.find(std::make_pair(literal.NegatedIndex(), var));
   if (it != bounds_.end()) {
     if (it->second <= root_lb) {
@@ -139,6 +145,60 @@ bool ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
 
         // No need to update var_to_bounds_ in this case.
         return true;
+      }
+      // We already tested this, but enqueueing at root level can make this true
+      // again if there are holes in the domain.
+      if (integer_literal.bound <= integer_trail_->LevelZeroLowerBound(var)) {
+        return true;
+      }
+    }
+  }
+
+  const auto it2 =
+      bounds_.find(std::make_pair(literal.NegatedIndex(), NegationOf(var)));
+  // If we have "l => (x >= 9)" and "~l => (x <= 6)" we can push
+  // "l <=> (x <= 6)" to the encoded integer literals and deduce that [7, 8] is
+  // a hole in the domain. More generally, if we have:
+  //
+  //    l => (x >= a)
+  //   ~l => (x <= b)
+  //
+  // And if moreover b < a, we have the following truth table:
+  //
+  //   l |   x <= b  |   b < x < a   |   x >= a
+  //   --+-----------+---------------+----------
+  //   0 |    true   |     false     |   false   (from "~l => (x <= b)")
+  //   1 |    false  |     false     |   true    (from " l => (x >= a)")
+  //
+  //  So we can generalize the expressions to equivalences:
+  //    l <=> (x >= a)
+  //   ~l <=> (x <= b)
+  //    (b < x < a) is impossible (a hole in the domain).
+  //
+  // TODO(user): understand why we need to restrict to level zero.
+  if (it2 != bounds_.end() && -it2->second < integer_literal.bound &&
+      sat_solver_->CurrentDecisionLevel() == 0) {
+    const IntegerLiteral other_integer_literal =
+        IntegerLiteral::GreaterOrEqual(NegationOf(var), it2->second);
+    if (integer_encoder_->GetAssociatedLiteral(integer_literal) !=
+            literal.Index() ||
+        integer_encoder_->GetAssociatedLiteral(other_integer_literal) !=
+            literal.NegatedIndex()) {
+      ++num_promoted_to_equivalence_;
+      integer_encoder_->AssociateToIntegerLiteral(literal, integer_literal);
+      integer_encoder_->AssociateToIntegerLiteral(literal.Negated(),
+                                                  other_integer_literal);
+      const IntegerValue other_bound = -it2->second;
+      if (integer_literal.bound - other_bound > 1) {
+        const Domain old_domain = integer_trail_->InitialVariableDomain(var);
+        const Domain new_domain = old_domain.IntersectionWith(
+            Domain(other_bound.value() + 1, integer_literal.bound.value() - 1)
+                .Complement());
+        max_changed_domain_complexity_ =
+            std::max(max_changed_domain_complexity_, new_domain.NumIntervals());
+        if (!integer_trail_->UpdateInitialDomain(var, new_domain)) {
+          return false;
+        }
       }
     }
   }
@@ -626,7 +686,7 @@ void ProductDetector::ProcessTrailAtLevelOne() {
   if (trail_->CurrentDecisionLevel() != 1) return;
   ++num_trail_updates_;
 
-  const SatSolver::Decision decision = sat_solver_->Decisions()[0];
+  const LiteralWithTrailIndex decision = trail_->Decisions()[0];
   if (decision.literal.Index() >= seen_.size() ||
       !seen_[decision.literal.Index()]) {
     return;

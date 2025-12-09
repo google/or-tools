@@ -27,6 +27,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/lrat_proof_handler.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
@@ -54,6 +55,7 @@
 #include "ortools/sat/cp_model_mapping.h"
 #include "ortools/sat/cp_model_postsolve.h"
 #include "ortools/sat/cp_model_search.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/feasibility_pump.h"
@@ -819,73 +821,87 @@ void RegisterVariableBoundsLevelZeroImport(
   auto* trail = model->GetOrCreate<Trail>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* lrat_proof_handler = model->Mutable<LratProofHandler>();
+  auto* clause_id_generator = model->GetOrCreate<ClauseIdGenerator>();
   const int id = shared_bounds_manager->RegisterNewId();
 
-  const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          name = name, sat_solver,
-                                          integer_trail, trail, id, mapping]() {
-    std::vector<int> model_variables;
-    std::vector<int64_t> new_lower_bounds;
-    std::vector<int64_t> new_upper_bounds;
-    shared_bounds_manager->GetChangedBounds(
-        id, &model_variables, &new_lower_bounds, &new_upper_bounds);
-    for (int i = 0; i < model_variables.size(); ++i) {
-      const int model_var = model_variables[i];
+  const auto& import_level_zero_bounds =
+      [&model_proto, shared_bounds_manager, name = name, sat_solver,
+       integer_trail, trail, lrat_proof_handler, clause_id_generator, id,
+       mapping]() {
+        std::vector<int> model_variables;
+        std::vector<int64_t> new_lower_bounds;
+        std::vector<int64_t> new_upper_bounds;
+        shared_bounds_manager->GetChangedBounds(
+            id, &model_variables, &new_lower_bounds, &new_upper_bounds);
+        for (int i = 0; i < model_variables.size(); ++i) {
+          const int model_var = model_variables[i];
 
-      // If this is a Boolean, fix it if not already done.
-      // Note that it is important not to use AddUnitClause() as we do not
-      // want to propagate after each addition.
-      if (mapping->IsBoolean(model_var)) {
-        Literal lit = mapping->Literal(model_var);
-        if (new_upper_bounds[i] == 0) lit = lit.Negated();
-        if (trail->Assignment().LiteralIsTrue(lit)) continue;
-        if (trail->Assignment().LiteralIsFalse(lit)) {
-          sat_solver->NotifyThatModelIsUnsat();
-          return false;
+          // If this is a Boolean, fix it if not already done.
+          // Note that it is important not to use AddUnitClause() as we do not
+          // want to propagate after each addition.
+          if (mapping->IsBoolean(model_var)) {
+            Literal lit = mapping->Literal(model_var);
+            if (new_upper_bounds[i] == 0) lit = lit.Negated();
+            if (trail->Assignment().LiteralIsTrue(lit)) continue;
+            ClauseId clause_id = kNoClauseId;
+            if (lrat_proof_handler != nullptr) {
+              clause_id = clause_id_generator->GetNextId();
+              lrat_proof_handler->AddImportedClause(clause_id, {lit});
+            }
+            if (trail->Assignment().LiteralIsFalse(lit)) {
+              if (lrat_proof_handler != nullptr) {
+                // Add the UNSAT proof.
+                lrat_proof_handler->AddInferredClause(
+                    clause_id_generator->GetNextId(), {},
+                    {clause_id, trail->GetUnitClauseId(lit.Variable())});
+              }
+              sat_solver->NotifyThatModelIsUnsat();
+              return false;
+            }
+            trail->EnqueueWithUnitReason(clause_id, lit);
+            continue;
+          }
+
+          // Deal with integer.
+          if (!mapping->IsInteger(model_var)) continue;
+          const IntegerVariable var = mapping->Integer(model_var);
+          const IntegerValue new_lb(new_lower_bounds[i]);
+          const IntegerValue new_ub(new_upper_bounds[i]);
+          const IntegerValue old_lb = integer_trail->LowerBound(var);
+          const IntegerValue old_ub = integer_trail->UpperBound(var);
+          const bool changed_lb = new_lb > old_lb;
+          const bool changed_ub = new_ub < old_ub;
+          if (!changed_lb && !changed_ub) continue;
+
+          if (VLOG_IS_ON(3)) {
+            const IntegerVariableProto& var_proto =
+                model_proto.variables(model_var);
+            const std::string& var_name =
+                var_proto.name().empty()
+                    ? absl::StrCat("anonymous_var(", model_var, ")")
+                    : var_proto.name();
+            LOG(INFO) << "  '" << name << "' imports new bounds for "
+                      << var_name << ": from [" << old_lb << ", " << old_ub
+                      << "] to [" << new_lb << ", " << new_ub << "]";
+          }
+
+          if (changed_lb &&
+              !integer_trail->Enqueue(
+                  IntegerLiteral::GreaterOrEqual(var, new_lb), {}, {})) {
+            return false;
+          }
+          if (changed_ub &&
+              !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
+                                      {}, {})) {
+            return false;
+          }
         }
-        trail->EnqueueWithUnitReason(lit);
-        continue;
-      }
 
-      // Deal with integer.
-      if (!mapping->IsInteger(model_var)) continue;
-      const IntegerVariable var = mapping->Integer(model_var);
-      const IntegerValue new_lb(new_lower_bounds[i]);
-      const IntegerValue new_ub(new_upper_bounds[i]);
-      const IntegerValue old_lb = integer_trail->LowerBound(var);
-      const IntegerValue old_ub = integer_trail->UpperBound(var);
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      if (!changed_lb && !changed_ub) continue;
-
-      if (VLOG_IS_ON(3)) {
-        const IntegerVariableProto& var_proto =
-            model_proto.variables(model_var);
-        const std::string& var_name =
-            var_proto.name().empty()
-                ? absl::StrCat("anonymous_var(", model_var, ")")
-                : var_proto.name();
-        LOG(INFO) << "  '" << name << "' imports new bounds for " << var_name
-                  << ": from [" << old_lb << ", " << old_ub << "] to ["
-                  << new_lb << ", " << new_ub << "]";
-      }
-
-      if (changed_lb &&
-          !integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
-                                  {}, {})) {
-        return false;
-      }
-      if (changed_ub &&
-          !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
-                                  {})) {
-        return false;
-      }
-    }
-
-    // Note that we will propagate if they are new bounds separately.
-    // See BeforeTakingDecision().
-    return true;
-  };
+        // Note that we will propagate if they are new bounds separately.
+        // See BeforeTakingDecision().
+        return true;
+      };
   model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
       import_level_zero_bounds);
 }
@@ -1121,7 +1137,7 @@ int RegisterClausesLevelZeroImport(int id,
     for (const auto& [ref1, ref2] : new_binary_clauses) {
       const Literal l1 = mapping->Literal(ref1);
       const Literal l2 = mapping->Literal(ref2);
-      if (!sat_solver->AddProblemClause({l1, l2})) {
+      if (!sat_solver->AddProblemClause({l1, l2}, /*shared=*/true)) {
         return false;
       }
     }
@@ -1145,13 +1161,17 @@ int RegisterClausesLevelZeroImport(int id,
           local_clause[i] = mapping->Literal(shared_clause[i]);
         }
         if (!sat_solver->AddProblemClause(
-                absl::MakeSpan(local_clause)
-                    .subspan(0, shared_clause.size()))) {
+                absl::MakeSpan(local_clause).subspan(0, shared_clause.size()),
+                /*shared=*/true)) {
           return false;
         }
       }
     }
     clause_manager->SetAddClauseCallback(std::move(callback));
+    if (new_clauses > 0) {
+      shared_clauses_manager->NotifyNumImported(id, new_clauses);
+    }
+
     if (new_clauses > 0 && !sat_solver->FinishPropagation()) return false;
     if (minimize_shared_clauses && new_clauses > 0) {
       // The new clauses may be subsumed, so try to minimize them to reduce
@@ -1172,16 +1192,17 @@ int RegisterClausesLevelZeroImport(int id,
 
 namespace {
 
-// Fills the BinaryRelationRepository with the enforced linear constraints of
-// size 1 or 2 in the model, and with the non-enforced linear constraints of
-// size 2. Also expands linear constraints of size 1 enforced by two literals
+// Fills several repositories of bounds of linear2 (RootLevelLinear2Bounds,
+// ConditionalLinear2Bounds and ReifiedLinear2Bounds) using the linear
+// constraints of size 2 and the linear constraints of size 3 with domain of
+// size 1. Also expands linear constraints of size 1 enforced by two literals
 // into (up to) 4 binary relations enforced by only one literal.
-void FillBinaryRelationRepository(const CpModelProto& model_proto,
+void FillConditionalLinear2Bounds(const CpModelProto& model_proto,
                                   Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  auto* repository = model->GetOrCreate<BinaryRelationRepository>();
+  auto* repository = model->GetOrCreate<ConditionalLinear2Bounds>();
   auto* root_level_lin2_bounds = model->GetOrCreate<RootLevelLinear2Bounds>();
   auto* reified_lin2_bounds = model->GetOrCreate<ReifiedLinear2Bounds>();
 
@@ -1255,12 +1276,8 @@ void FillBinaryRelationRepository(const CpModelProto& model_proto,
         reified_lin2_bounds->AddLinear3(vars, coeffs, rhs_min);
       }
     } else {
-      const Literal lit = mapping->Literal(ct.enforcement_literal(0));
-      if (vars.size() == 1) {
-        repository->Add(
-            lit, LinearExpression2(vars[0], kNoIntegerVariable, coeffs[0], 0),
-            rhs_min, rhs_max);
-      } else if (vars.size() == 2) {
+      if (vars.size() == 2) {
+        const Literal lit = mapping->Literal(ct.enforcement_literal(0));
         repository->Add(
             lit, LinearExpression2(vars[0], vars[1], coeffs[0], coeffs[1]),
             rhs_min, rhs_max);
@@ -1326,7 +1343,7 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
   AddFullEncodingFromSearchBranching(model_proto, model);
   if (sat_solver->ModelIsUnsat()) return unsat();
 
-  FillBinaryRelationRepository(model_proto, model);
+  FillConditionalLinear2Bounds(model_proto, model);
 
   if (time_limit->LimitReached()) return;
 
@@ -1390,6 +1407,9 @@ void LoadBaseModel(const CpModelProto& model_proto, Model* model) {
     // in the SharedResponseManager.
     SOLVER_LOG(logger, "BUG: We will wrongly report INFEASIBLE now.");
     return unsat();
+  }
+  if (model->Mutable<LratProofHandler>() != nullptr) {
+    model->Mutable<LratProofHandler>()->EndProblemClauses();
   }
 
   model->GetOrCreate<IntegerEncoder>()
@@ -2224,7 +2244,9 @@ SharedClasses::SharedClasses(const CpModelProto* proto, Model* global_model)
       stat_tables(global_model->GetOrCreate<SharedStatTables>()),
       response(global_model->GetOrCreate<SharedResponseManager>()),
       shared_tree_manager(global_model->GetOrCreate<SharedTreeManager>()),
-      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()) {
+      ls_hints(global_model->GetOrCreate<SharedLsSolutionRepository>()),
+      progress_logger(global_model->GetOrCreate<SolverProgressLogger>()),
+      lrat_proof_status(global_model->GetOrCreate<SharedLratProofStatus>()) {
   const SatParameters& params = *global_model->GetOrCreate<SatParameters>();
 
   if (params.share_level_zero_bounds()) {
@@ -2269,6 +2291,7 @@ void SharedClasses::RegisterSharedClassesInLocalModel(Model* local_model) {
   local_model->Register<SharedTreeManager>(shared_tree_manager);
   local_model->Register<SharedStatistics>(stats);
   local_model->Register<SharedStatTables>(stat_tables);
+  local_model->Register<SharedLratProofStatus>(lrat_proof_status);
 
   // TODO(user): Use parameters and not the presence/absence of these class
   // to decide when to use them? this is not clear.
@@ -2307,7 +2330,7 @@ void SharedClasses::LogFinalStatistics() {
   SOLVER_LOG(logger, "");
 
   stat_tables->Display(logger);
-  response->DisplayImprovementStatistics();
+  progress_logger->DisplayImprovementStatistics(logger);
 
   std::vector<std::vector<std::string>> table;
   table.push_back({"Solution repositories", "Added", "Queried", "Synchro"});
@@ -2330,6 +2353,8 @@ void SharedClasses::LogFinalStatistics() {
   // Extra logging if needed. Note that these are mainly activated on
   // --vmodule *some_file*=1 and are here for development.
   stats->Log(logger);
+
+  lrat_proof_status->Log(logger);
 }
 
 }  // namespace sat

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_DRAT_CHECKER_H_
-#define OR_TOOLS_SAT_DRAT_CHECKER_H_
+#ifndef ORTOOLS_SAT_DRAT_CHECKER_H_
+#define ORTOOLS_SAT_DRAT_CHECKER_H_
 
 #include <stddef.h>
 
@@ -57,7 +57,7 @@ class DratChecker {
   void AddProblemClause(absl::Span<const Literal> clause);
 
   // Adds a clause which is inferred from the problem clauses and the previously
-  // inferred clauses (that are have not been deleted). inferred clauses must be
+  // inferred clauses (that are have not been deleted). Inferred clauses must be
   // added after the problem clauses. Clauses with the Reverse Asymmetric
   // Tautology (RAT) property for literal l must start with this literal. The
   // given clause must not contain a literal and its negation. Must not be
@@ -343,4 +343,4 @@ bool PrintClauses(const std::string& file_path, SatFormat format,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DRAT_CHECKER_H_
+#endif  // ORTOOLS_SAT_DRAT_CHECKER_H_

@@ -11,43 +11,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Collection of objects used to extend the Constraint Solver library.
-///
-/// This file contains a set of objects that simplifies writing extensions
-/// of the library.
-///
-/// The main objects that define extensions are:
-///   - BaseIntExpr, the base class of all expressions that are not variables.
-///   - SimpleRevFIFO, a reversible FIFO list with templatized values.
-///     A reversible data structure is a data structure that reverts its
-///     modifications when the search is going up in the search tree, usually
-///     after a failure occurs.
-///   - RevImmutableMultiMap, a reversible immutable multimap.
-///   - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
-///     of a constraint as a demon.
-///   - RevSwitch, a reversible flip-once switch.
-///   - SmallRevBitSet, RevBitSet, and RevBitMatrix: reversible 1D or 2D
-///     bitsets.
-///   - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
-///     PathOperator, to create new local search operators.
-///   - LocalSearchFilter and IntVarLocalSearchFilter, to create new local
-///     search filters.
-///   - BaseLns, to write Large Neighborhood Search operators.
-///   - SymmetryBreaker, to describe model symmetries that will be broken during
-///     search using the 'Symmetry Breaking During Search' framework
-///     see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
-///     Groups and Constraints: Symmetry Breaking During Search.
-///     Principles and Practice of Constraint Programming CP2002
-///     (Vol. 2470, pp. 415-430). Springer. Retrieved from
-///     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442.
-///
-/// Then, there are some internal classes that are used throughout the solver
-/// and exposed in this file:
-///   - SearchLog, the root class of all periodic outputs during search.
-///   - ModelCache, A caching layer to avoid creating twice the same object.
+/** @file constraint_solveri.h
+Collection of objects used to extend the Constraint Solver library.
 
-#ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
-#define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+This file contains a set of objects that simplifies writing extensions
+of the library.
+
+The main objects that define extensions are:
+  - BaseIntExpr, the base class of all expressions that are not variables.
+  - SimpleRevFIFO, a reversible FIFO list with templatized values.
+    A reversible data structure is a data structure that reverts its
+    modifications when the search is going up in the search tree, usually
+    after a failure occurs.
+  - RevImmutableMultiMap, a reversible immutable multimap.
+  - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
+    of a constraint as a demon.
+  - RevSwitch, a reversible flip-once switch.
+  - SmallRevBitSet, RevBitSet, and RevBitMatrix: reversible 1D or 2D
+    bitsets.
+  - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
+    PathOperator, to create new local search operators.
+  - LocalSearchFilter and IntVarLocalSearchFilter, to create new local
+    search filters.
+  - BaseLns, to write Large Neighborhood Search operators.
+  - SymmetryBreaker, to describe model symmetries that will be broken during
+    search using the 'Symmetry Breaking During Search' framework
+    see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
+    Groups and Constraints: Symmetry Breaking During Search.
+    Principles and Practice of Constraint Programming CP2002
+    (Vol. 2470, pp. 415-430). Springer. Retrieved from
+    http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442.
+
+Then, there are some internal classes that are used throughout the solver
+and exposed in this file:
+  - SearchLog, the root class of all periodic outputs during search.
+  - ModelCache, A caching layer to avoid creating twice the same object.
+*/
+
+#ifndef ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#define ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 
 #include <stdint.h>
 #include <string.h>
@@ -4361,4 +4363,4 @@ std::vector<int64_t> ToInt64Vector(const std::vector<int>& input);
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
+#endif  // ORTOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

@@ -29,37 +29,6 @@
 namespace operations_research {
 namespace glop {
 
-void ComputeSlackVariablesValues(const LinearProgram& linear_program,
-                                 DenseRow* values) {
-  DCHECK(values);
-  DCHECK_EQ(linear_program.num_variables(), values->size());
-
-  // If there are no slack variable, we can give up.
-  if (linear_program.GetFirstSlackVariable() == kInvalidCol) return;
-
-  const auto& transposed_matrix = linear_program.GetTransposeSparseMatrix();
-  for (RowIndex row(0); row < linear_program.num_constraints(); row++) {
-    const ColIndex slack_variable = linear_program.GetSlackVariable(row);
-
-    if (slack_variable == kInvalidCol) continue;
-
-    DCHECK_EQ(0.0, linear_program.constraint_lower_bounds()[row]);
-    DCHECK_EQ(0.0, linear_program.constraint_upper_bounds()[row]);
-
-    const RowIndex transposed_slack = ColToRowIndex(slack_variable);
-    Fractional activation = 0.0;
-    // Row in the initial matrix (column in the transposed).
-    const SparseColumn& sparse_row =
-        transposed_matrix.column(RowToColIndex(row));
-    for (const auto& entry : sparse_row) {
-      if (transposed_slack == entry.index()) continue;
-      activation +=
-          (*values)[RowToColIndex(entry.index())] * entry.coefficient();
-    }
-    (*values)[slack_variable] = -activation;
-  }
-}
-
 // This is separated from the LinearProgram class because of a cyclic dependency
 // when scaling as an LP.
 void Scale(LinearProgram* lp, SparseMatrixScaler* scaler) {

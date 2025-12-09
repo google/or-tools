@@ -70,7 +70,7 @@ TEST(FailedLiteralProbingRoundTest, TrivialExample) {
   EXPECT_TRUE(sat_soler->Propagate());
   EXPECT_FALSE(sat_soler->Assignment().LiteralIsAssigned(a));
 
-  EXPECT_TRUE(FailedLiteralProbingRound(ProbingOptions(), &model));
+  EXPECT_TRUE(FailedLiteralProbing(&model).DoOneRound(ProbingOptions()));
   EXPECT_TRUE(sat_soler->Assignment().LiteralIsTrue(a));
 }
 

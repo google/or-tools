@@ -504,26 +504,19 @@ bool PresolveContext::VariableIsOnlyUsedInLinear1AndOneExtraConstraint(
   return var_to_num_linear1_[var] + 1 == var_to_constraints_[var].size();
 }
 
-Domain PresolveContext::DomainOf(int ref) const {
-  Domain result;
-  if (RefIsPositive(ref)) {
-    result = domains_[ref];
-  } else {
-    result = domains_[PositiveRef(ref)].Negation();
-  }
-  return result;
+const Domain& PresolveContext::DomainOf(int var) const {
+  DCHECK(RefIsPositive(var));
+  return domains_[var];
 }
 
 int64_t PresolveContext::DomainSize(int ref) const {
   return domains_[PositiveRef(ref)].Size();
 }
 
-bool PresolveContext::DomainContains(int ref, int64_t value) const {
-  if (!CanonicalizeEncoding(&ref, &value)) return false;
-  if (!RefIsPositive(ref)) {
-    return domains_[PositiveRef(ref)].Contains(-value);
-  }
-  return domains_[ref].Contains(value);
+bool PresolveContext::VarCanTakeValue(int var, int64_t value) const {
+  DCHECK(RefIsPositive(var));
+  if (!CanonicalizeEncoding(&var, &value)) return false;
+  return domains_[var].Contains(value);
 }
 
 bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
@@ -538,7 +531,8 @@ bool PresolveContext::DomainContains(const LinearExpressionProto& expr,
   // We assume expression is validated for overflow initially, and the code
   // below should be overflow safe.
   if ((value - expr.offset()) % expr.coeffs(0) != 0) return false;
-  return DomainContains(expr.vars(0), (value - expr.offset()) / expr.coeffs(0));
+  return DomainOf(expr.vars(0))
+      .Contains((value - expr.offset()) / expr.coeffs(0));
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
@@ -1301,8 +1295,8 @@ ABSL_MUST_USE_RESULT bool PresolveContext::StoreBooleanEqualityRelation(
 
   CHECK(!VariableWasRemoved(ref_a));
   CHECK(!VariableWasRemoved(ref_b));
-  CHECK(!DomainOf(ref_a).IsEmpty());
-  CHECK(!DomainOf(ref_b).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_a)).IsEmpty());
+  CHECK(!DomainOf(PositiveRef(ref_b)).IsEmpty());
   CHECK(CanBeUsedAsLiteral(ref_a));
   CHECK(CanBeUsedAsLiteral(ref_b));
 
@@ -1349,6 +1343,10 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
   } else {
     return positive_possible ? NegatedRef(r.representative) : r.representative;
   }
+}
+
+bool PresolveContext::VariableIsAffineRepresentative(int var) const {
+  return GetAffineRelation(var).representative == var;
 }
 
 // This makes sure that the affine relation only uses one of the
@@ -1732,9 +1730,10 @@ bool PresolveContext::StoreLiteralImpliesVarNeValue(int literal, int var,
 bool PresolveContext::HasVarValueEncoding(int ref, int64_t value,
                                           int* literal) {
   CHECK(!VariableWasRemoved(ref));
+  // TODO(user): do instead a DCHECK(VariableIsAffineRepresentative(ref))
   if (!CanonicalizeEncoding(&ref, &value)) return false;
   DCHECK(RefIsPositive(ref));
-  DCHECK(DomainContains(ref, value));
+  DCHECK(DomainOf(ref).Contains(value));
 
   if (CanBeUsedAsLiteral(ref)) {
     if (literal != nullptr) {
@@ -2020,6 +2019,7 @@ bool PresolveContext::CanonicalizeOneObjectiveVariable(int var) {
 }
 
 bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
+  if (ModelIsUnsat()) return false;
   objective_proto_is_up_to_date_ = false;
 
   // We replace each entry by its affine representative.
@@ -2112,6 +2112,12 @@ bool PresolveContext::CanonicalizeObjective(bool simplify_domain) {
            .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
                                     objective_domain_.Max()))
            .IsIncludedIn(objective_domain_);
+  if (objective_domain_is_constraining_) {
+    VLOG(3) << "objective domain is constraining: size: "
+            << objective_map_.size()
+            << ", implied: " << implied_domain.ToString()
+            << " objective: " << objective_domain_.ToString();
+  }
   return true;
 }
 
@@ -2248,14 +2254,53 @@ bool PresolveContext::SubstituteVariableInObjective(
 
   RemoveVariableFromObjective(var_in_equality);
 
-  // Because we can assume that the constraint we used was constraining
-  // (otherwise it would have been removed), the objective domain should be now
-  // constraining.
-  objective_domain_is_constraining_ = true;
+  // If the objective is small enough,  recompute the value of
+  // objective_domain_is_constrainting_, otherwise, we just assume it to be
+  // true. This uses the updated objective_map_.
+  if (objective_map_.size() < 256) {
+    Domain implied_domain(0);
 
-  if (objective_domain_.IsEmpty()) {
-    return NotifyThatModelIsUnsat();
+    // We need to sort the entries to be deterministic.
+    tmp_entries_.clear();
+    for (const auto& entry : objective_map_) {
+      tmp_entries_.push_back(entry);
+    }
+    std::sort(tmp_entries_.begin(), tmp_entries_.end());
+    for (const auto& entry : tmp_entries_) {
+      const int var = entry.first;
+      const int64_t coeff = entry.second;
+      implied_domain =
+          implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+    }
+
+    // This is the new domain.
+    // Note that the domain never include the offset.
+    objective_domain_ = objective_domain_.IntersectionWith(implied_domain)
+                            .SimplifyUsingImpliedDomain(implied_domain);
+
+    if (objective_domain_.IsEmpty()) {
+      return NotifyThatModelIsUnsat("empty objective domain");
+    }
+
+    // Detect if the objective domain do not limit the "optimal" objective
+    // value. If this is true, then we can apply any reduction that reduce the
+    // objective value without any issues.
+    objective_domain_is_constraining_ =
+        !implied_domain
+             .IntersectionWith(Domain(std::numeric_limits<int64_t>::min(),
+                                      objective_domain_.Max()))
+             .IsIncludedIn(objective_domain_);
+    if (objective_domain_is_constraining_) {
+      VLOG(3) << "objective domain is constraining: size: "
+              << objective_map_.size()
+              << ", implied: " << implied_domain.ToString()
+              << " objective: " << objective_domain_.ToString();
+    }
+  } else {
+    objective_domain_is_constraining_ = true;
   }
+
   return true;
 }
 
@@ -2716,8 +2761,10 @@ bool CanonicalizeLinearExpressionNoContext(absl::Span<const int> enforcements,
 }
 }  // namespace
 
-bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
+bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct,
+                                                   bool* is_impossible) {
   int64_t offset = 0;
+  if (is_impossible) *is_impossible = false;
   const bool result = CanonicalizeLinearExpressionInternal(
       ct->enforcement_literal(), ct->mutable_linear(), &offset, &tmp_terms_,
       this);
@@ -2727,6 +2774,7 @@ bool PresolveContext::CanonicalizeLinearConstraint(ConstraintProto* ct) {
       ReadDomainFromProto(ct->linear()).AdditionWith(Domain(-offset));
   const Domain tight_domain = implied.IntersectionWith(original_domain);
   if (tight_domain.IsEmpty()) {
+    if (is_impossible) *is_impossible = true;
     // Canonicalization is not the right place to handle unsat constraints.
     // Let's just replace the domain by one that is overflow-safe.
     const Domain bad_domain = Domain(implied.Max() + 1, implied.Max() + 2);

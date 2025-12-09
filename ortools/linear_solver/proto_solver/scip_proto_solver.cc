@@ -38,19 +38,25 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/model_validator.h"
-#include "ortools/linear_solver/proto_solver/scip_params.h"
-#include "ortools/linear_solver/scip_helper_macros.h"
-#include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_and.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
 #include "scip/cons_or.h"
+#if SCIP_VERSION_MAJOR >= 10
+#include "scip/cons_nonlinear.h"
+#define SCIPcreateConsBasicQuadratic SCIPcreateConsBasicQuadraticNonlinear
+#define SCIPcreateConsQuadratic SCIPcreateConsQuadraticNonlinear
+#else
 #include "scip/cons_quadratic.h"
+#endif  // SCIP_VERSION_MAJOR >= 10
+#include "ortools/base/status_macros.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/model_validator.h"
+#include "ortools/linear_solver/proto_solver/scip_params.h"
+#include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_sos1.h"
 #include "scip/cons_sos2.h"
 #include "scip/def.h"

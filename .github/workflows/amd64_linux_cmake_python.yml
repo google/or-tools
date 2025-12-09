@@ -28,6 +28,7 @@ jobs:
           #{version: "3.11"},
           #{version: "3.12"},
           {version: "3.13"},
+          {version: "3.14"},
          ]
       fail-fast: false
     name: amd64•Linux•CMake•Python${{matrix.python.version}}
@@ -37,7 +38,7 @@ jobs:
       deps_build_key: amd64_linux_python_deps_build_${{matrix.python.version}}
       ccache_key: amd64_linux_python_ccache_${{matrix.python.version}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install Dependencies
         run: |
           sudo apt update
@@ -133,4 +134,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6

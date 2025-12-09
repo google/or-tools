@@ -57,6 +57,7 @@ if(BUILD_TESTING)
       SOURCES
         ${_FILE_NAME}
       LINK_LIBRARIES
+        absl::status_matchers
         benchmark::benchmark
         GTest::gtest
         GTest::gtest_main

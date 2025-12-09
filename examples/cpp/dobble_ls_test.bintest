@@ -1,0 +1,1 @@
+RUN: $(dobble_ls) --time_limit_in_ms=10000

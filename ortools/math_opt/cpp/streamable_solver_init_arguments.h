@@ -20,8 +20,8 @@
 // Parameters that can't be streamed (for example instances of C/C++ types that
 // only exist in the process memory) are dealt with implementations of
 // the NonStreamableSolverInitArguments.
-#ifndef OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
-#define OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#define ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
 
 #include <cstdint>
 #include <optional>
@@ -118,4 +118,4 @@ struct StreamableSolverInitArguments {
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_STREAMABLE_SOLVER_INIT_ARGUMENTS_H_

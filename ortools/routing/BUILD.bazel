@@ -138,9 +138,7 @@ cc_library(
     hdrs = ["parameters_utils.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":enums_cc_proto",
         ":heuristic_parameters_cc_proto",
-        ":ils_cc_proto",
         ":parameters_cc_proto",
         "//ortools/util:optional_boolean_cc_proto",
         "@abseil-cpp//absl/types:span",

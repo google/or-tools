@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_PSEUDO_COSTS_H_
-#define OR_TOOLS_SAT_PSEUDO_COSTS_H_
+#ifndef ORTOOLS_SAT_PSEUDO_COSTS_H_
+#define ORTOOLS_SAT_PSEUDO_COSTS_H_
 
 #include <limits>
 #include <string>
@@ -148,4 +148,4 @@ class PseudoCosts {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PSEUDO_COSTS_H_
+#endif  // ORTOOLS_SAT_PSEUDO_COSTS_H_

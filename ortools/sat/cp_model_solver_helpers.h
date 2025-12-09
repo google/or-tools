@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
-#define OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#ifndef ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#define ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
 
 #include <cstdint>
 #include <memory>
@@ -22,6 +22,7 @@
 #include "absl/types/span.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver_logging.h"
 #include "ortools/sat/integer_base.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -54,6 +55,8 @@ struct SharedClasses {
   SharedResponseManager* const response;
   SharedTreeManager* const shared_tree_manager;
   SharedLsSolutionRepository* const ls_hints;
+  SolverProgressLogger* const progress_logger;
+  SharedLratProofStatus* const lrat_proof_status;
 
   // These can be nullptr depending on the options.
   std::unique_ptr<SharedBoundsManager> bounds;
@@ -154,4 +157,4 @@ void LoadDebugSolution(const CpModelProto& model_proto, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_
+#endif  // ORTOOLS_SAT_CP_MODEL_SOLVER_HELPERS_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_ROUTING_CONSTRAINTS_H_
-#define OR_TOOLS_ROUTING_CONSTRAINTS_H_
+#ifndef ORTOOLS_ROUTING_CONSTRAINTS_H_
+#define ORTOOLS_ROUTING_CONSTRAINTS_H_
 
 #include <cstdint>
 #include <functional>
@@ -63,4 +63,4 @@ Constraint* MakeNumActiveVehiclesCapacityConstraint(
 
 }  // namespace operations_research::routing
 
-#endif  // OR_TOOLS_ROUTING_CONSTRAINTS_H_
+#endif  // ORTOOLS_ROUTING_CONSTRAINTS_H_

@@ -1,0 +1,2 @@
+RUN: $(root_a_tree)
+CHECK: "Depths:" "0 -> 2"

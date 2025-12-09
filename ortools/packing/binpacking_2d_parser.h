@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_PACKING_BINPACKING_2D_PARSER_H_
-#define OR_TOOLS_PACKING_BINPACKING_2D_PARSER_H_
+#ifndef ORTOOLS_PACKING_BINPACKING_2D_PARSER_H_
+#define ORTOOLS_PACKING_BINPACKING_2D_PARSER_H_
 
 #include <string>
 #include <vector>
@@ -71,4 +71,4 @@ class BinPacking2dParser {
 }  // namespace packing
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_PACKING_BINPACKING_2D_PARSER_H_
+#endif  // ORTOOLS_PACKING_BINPACKING_2D_PARSER_H_

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
-#define OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#ifndef ORTOOLS_SAT_IMPLIED_BOUNDS_H_
+#define ORTOOLS_SAT_IMPLIED_BOUNDS_H_
 
 #include <algorithm>
 #include <array>
@@ -200,6 +200,8 @@ class ImpliedBounds {
   // Stats.
   int64_t num_deductions_ = 0;
   int64_t num_enqueued_in_var_to_bounds_ = 0;
+  int64_t num_promoted_to_equivalence_ = 0;
+  int max_changed_domain_complexity_ = 0;
 };
 
 class ElementEncodings {
@@ -423,4 +425,4 @@ class ProductDetector {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#endif  // ORTOOLS_SAT_IMPLIED_BOUNDS_H_

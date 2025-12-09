@@ -154,6 +154,12 @@ Domain::Domain(int64_t left, int64_t right)
 
 Domain Domain::AllValues() { return Domain(kint64min, kint64max); }
 
+Domain Domain::LowerOrEqual(int64_t value) { return Domain(kint64min, value); }
+
+Domain Domain::GreaterOrEqual(int64_t value) {
+  return Domain(value, kint64max);
+}
+
 Domain Domain::FromValues(std::vector<int64_t> values) {
   std::sort(values.begin(), values.end());
   Domain result;
@@ -347,6 +353,29 @@ bool Domain::IsIncludedIn(const Domain& domain) const {
     if (interval.start < others[i].start) return false;
   }
   return true;
+}
+
+bool Domain::OverlapsWith(const Domain& domain) const {
+  const auto& a = intervals_;
+  const auto& b = domain.intervals_;
+  for (int i = 0, j = 0; i < a.size() && j < b.size();) {
+    if (a[i].start <= b[j].start) {
+      if (a[i].end < b[j].start) {
+        // Empty intersection. We advance past the first interval.
+        ++i;
+      } else {  // a[i].end >= b[j].start
+        return true;
+      }
+    } else {  // a[i].start > b[i].start.
+      // We do the exact same thing as above, but swapping a and b.
+      if (b[j].end < a[i].start) {
+        ++j;
+      } else {  // b[j].end >= a[i].start
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 Domain Domain::Complement() const {
@@ -918,48 +947,6 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   const_cast<ClosedInterval*>(&(*it))->start = new_start;
   const_cast<ClosedInterval*>(&(*it))->end = new_end;
   return it;
-}
-
-SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
-    int64_t value, int64_t* newly_covered) {
-  auto it = intervals_.upper_bound({value, kint64max});
-  auto it_prev = it;
-
-  // No interval containing or adjacent to "value" on the left (i.e. below).
-  if (it != begin()) {
-    --it_prev;
-  }
-  if (it == begin() || ((value != kint64min) && it_prev->end < value - 1)) {
-    *newly_covered = value;
-    if (it == end() || it->start != value + 1) {
-      // No interval adjacent to "value" on the right: insert a singleton.
-      return intervals_.insert(it, {value, value});
-    } else {
-      // There is an interval adjacent to "value" on the right. Extend it by
-      // one. Note that we already know that there won't be a merge with another
-      // interval on the left, since there were no interval adjacent to "value"
-      // on the left.
-      DCHECK_EQ(it->start, value + 1);
-      const_cast<ClosedInterval*>(&(*it))->start = value;
-      return it;
-    }
-  }
-
-  // At this point, "it_prev" points to an interval containing or adjacent to
-  // "value" on the left: grow it by one, and if it now touches the next
-  // interval, merge with it.
-  CHECK_NE(kint64max, it_prev->end) << "Cannot grow right by one: the interval "
-                                       "that would grow already ends at "
-                                       "kint64max";
-  *newly_covered = it_prev->end + 1;
-  if (it != end() && it_prev->end + 2 == it->start) {
-    // We need to merge it_prev with 'it'.
-    const_cast<ClosedInterval*>(&(*it_prev))->end = it->end;
-    intervals_.erase(it);
-  } else {
-    const_cast<ClosedInterval*>(&(*it_prev))->end = it_prev->end + 1;
-  }
-  return it_prev;
 }
 
 template <class T>

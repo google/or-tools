@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
-#define OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#define ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
 
 #include <memory>
 
@@ -81,11 +81,6 @@ class IncrementalSolverImpl : public IncrementalSolver {
       BaseSolverFactory solver_factory, Model* model, SolverType solver_type,
       const SolveInterrupter* user_canceller, bool remove_names);
 
-  absl::StatusOr<SolveResult> Solve(const SolveArguments& arguments) override;
-
-  absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystem(
-      const ComputeInfeasibleSubsystemArguments& arguments) override;
-
   absl::StatusOr<UpdateResult> Update() override;
 
   absl::StatusOr<SolveResult> SolveWithoutUpdate(
@@ -121,4 +116,4 @@ class IncrementalSolverImpl : public IncrementalSolver {
 
 }  // namespace operations_research::math_opt::internal
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_SOLVE_IMPL_H_

@@ -16,7 +16,7 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_java//java:java_binary.bzl", "java_binary")
 load("@rules_python//python:py_test.bzl", "py_test")
-load("//bazel:run_binary_test.bzl", "run_binary_test")
+load("//tools/testing:bintest.bzl", "bintest")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -52,9 +52,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentLinearSumAssignmentTest",
-    binary = ":AssignmentLinearSumAssignment",
+    srcs = [":AssignmentLinearSumAssignmentTest.bintest"],
+    named_data = {"AssignmentLinearSumAssignment": ":AssignmentLinearSumAssignment"},
 )
 
 cc_test(
@@ -86,9 +87,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "AssignmentMinFlowTest",
-    binary = ":AssignmentMinFlow",
+    srcs = [":AssignmentMinFlowTest.bintest"],
+    named_data = {"AssignmentMinFlow": ":AssignmentMinFlow"},
 )
 
 cc_test(
@@ -120,9 +122,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "BalanceMinFlowTest",
-    binary = ":BalanceMinFlow",
+    srcs = [":BalanceMinFlowTest.bintest"],
+    named_data = {"BalanceMinFlow": ":BalanceMinFlow"},
 )
 
 cc_test(
@@ -157,9 +160,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SimpleMaxFlowProgramTest",
-    binary = ":SimpleMaxFlowProgram",
+    srcs = [":SimpleMaxFlowProgramTest.bintest"],
+    named_data = {"SimpleMaxFlowProgram": ":SimpleMaxFlowProgram"},
 )
 
 cc_test(
@@ -194,9 +198,10 @@ java_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "SimpleMinCostFlowProgramTest",
-    binary = ":SimpleMinCostFlowProgram",
+    srcs = [":SimpleMinCostFlowProgramTest.bintest"],
+    named_data = {"SimpleMinCostFlowProgram": ":SimpleMinCostFlowProgram"},
 )
 
 cc_binary(
@@ -209,10 +214,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dijkstra_directed_test",
-    binary = ":dijkstra_directed",
-    grep_lines = ["Shortest path length: 8"],
+    srcs = [":dijkstra_directed_test.bintest"],
+    named_data = {"dijkstra_directed": ":dijkstra_directed"},
 )
 
 cc_binary(
@@ -225,10 +230,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dijkstra_undirected_test",
-    binary = ":dijkstra_undirected",
-    grep_lines = ["Shortest path length: 4"],
+    srcs = [":dijkstra_undirected_test.bintest"],
+    named_data = {"dijkstra_undirected": ":dijkstra_undirected"},
 )
 
 cc_binary(
@@ -242,14 +247,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dijkstra_one_to_all_test",
-    binary = ":dijkstra_one_to_all",
-    grep_lines = [
-        "Distance to 1: 2",
-        "Distance to 2: 6",
-        "Distance to 3: 2",
-    ],
+    srcs = [":dijkstra_one_to_all_test.bintest"],
+    named_data = {"dijkstra_one_to_all": ":dijkstra_one_to_all"},
 )
 
 cc_binary(
@@ -264,15 +265,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dijkstra_sequential_test",
-    binary = ":dijkstra_sequential",
-    grep_lines = [
-        "Initial distance: 200",
-        "Distance_2_4: 2",
-        "Distance_8_1: 3",
-        "Distance_3_7: 4",
-    ],
+    srcs = [":dijkstra_sequential_test.bintest"],
+    named_data = {"dijkstra_sequential": ":dijkstra_sequential"},
 )
 
 cc_binary(
@@ -290,9 +286,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dijkstra_all_pairs_shortest_paths_test",
-    binary = ":dijkstra_all_pairs_shortest_paths",
+    srcs = [":dijkstra_all_pairs_shortest_paths_test.bintest"],
+    named_data = {"dijkstra_all_pairs_shortest_paths": ":dijkstra_all_pairs_shortest_paths"},
 )
 
 cc_binary(
@@ -305,10 +302,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_simple_shortest_path_test",
-    binary = ":dag_simple_shortest_path",
-    grep_lines = ["Shortest path length: 2"],
+    srcs = [":dag_simple_shortest_path_test.bintest"],
+    named_data = {"dag_simple_shortest_path": ":dag_simple_shortest_path"},
 )
 
 cc_binary(
@@ -326,10 +323,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_shortest_path_one_to_all_test",
-    binary = ":dag_shortest_path_one_to_all",
-    grep_lines = ["Length of shortest path to node 4: 2"],
+    srcs = [":dag_shortest_path_one_to_all_test.bintest"],
+    named_data = {"dag_shortest_path_one_to_all": ":dag_shortest_path_one_to_all"},
 )
 
 cc_binary(
@@ -343,15 +340,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_shortest_path_sequential_test",
-    binary = ":dag_shortest_path_sequential",
-    grep_lines = [
-        "Initial distance: 200",
-        "Distance_2_4: 2",
-        "Distance_8_1: 100",
-        "Distance_3_7: 4",
-    ],
+    srcs = [":dag_shortest_path_sequential_test.bintest"],
+    named_data = {"dag_shortest_path_sequential": ":dag_shortest_path_sequential"},
 )
 
 cc_binary(
@@ -367,10 +359,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "bfs_directed_test",
-    binary = ":bfs_directed",
-    grep_lines = ["Shortest path length (in arcs): 2"],
+    srcs = [":bfs_directed_test.bintest"],
+    named_data = {"bfs_directed": ":bfs_directed"},
 )
 
 cc_binary(
@@ -386,10 +378,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "bfs_undirected_test",
-    binary = ":bfs_undirected",
-    grep_lines = ["Shortest path length (in arcs): 2"],
+    srcs = [":bfs_undirected_test.bintest"],
+    named_data = {"bfs_undirected": ":bfs_undirected"},
 )
 
 cc_binary(
@@ -405,10 +397,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "bfs_one_to_all_test",
-    binary = ":bfs_one_to_all",
-    grep_lines = ["Shortest path from 0 to 2 has length: 2"],
+    srcs = [":bfs_one_to_all_test.bintest"],
+    named_data = {"bfs_one_to_all": ":bfs_one_to_all"},
 )
 
 cc_binary(
@@ -425,10 +417,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "root_a_tree_test",
-    binary = ":root_a_tree",
-    grep_lines = ["Depths:\n  0 -> 2"],
+    srcs = [":root_a_tree_test.bintest"],
+    named_data = {"root_a_tree": ":root_a_tree"},
 )
 
 cc_binary(
@@ -444,10 +436,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "rooted_tree_paths_test",
-    binary = ":rooted_tree_paths",
-    grep_lines = ["0 -> 4 [0, 1, 4]"],
+    srcs = [":rooted_tree_paths_test.bintest"],
+    named_data = {"rooted_tree_paths": ":rooted_tree_paths"},
 )
 
 cc_binary(
@@ -460,13 +452,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_simple_multiple_shortest_paths_test",
-    binary = ":dag_simple_multiple_shortest_paths",
-    grep_lines = [
-        "#1 shortest path has length: 2",
-        "#2 shortest path has length: 3",
-    ],
+    srcs = [":dag_simple_multiple_shortest_paths_test.bintest"],
+    named_data = {"dag_simple_multiple_shortest_paths": ":dag_simple_multiple_shortest_paths"},
 )
 
 cc_binary(
@@ -484,13 +473,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_multiple_shortest_paths_one_to_all_test",
-    binary = ":dag_multiple_shortest_paths_one_to_all",
-    grep_lines = [
-        "\t#1 shortest path to node 4 has length: 2",
-        "\t#2 shortest path to node 4 has length: 3",
-    ],
+    srcs = [":dag_multiple_shortest_paths_one_to_all_test.bintest"],
+    named_data = {"dag_multiple_shortest_paths_one_to_all": ":dag_multiple_shortest_paths_one_to_all"},
 )
 
 cc_binary(
@@ -504,21 +490,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_multiple_shortest_paths_sequential_test",
-    binary = ":dag_multiple_shortest_paths_sequential",
-    grep_lines = [
-        "\t#1 shortest path has length: 200",
-        "\t#2 shortest path has length: 202",
-        "\t#1 shortest path (2, 4) has length: 20",
-        "\t#2 shortest path (2, 4) has length: 102",
-        "\t#1 shortest path (8, 1) has length: 101",
-        "\t#2 shortest path (8, 1) has length: 108",
-        "\t#1 shortest path (3, 3) has length: 0",
-        "\t#2 shortest path (3, 3) has length: 112",
-        "\t#1 shortest path (0, 0) has length: 0",
-        "\t#2 shortest path (0, 0) has length: 111",
-    ],
+    srcs = [":dag_multiple_shortest_paths_sequential_test.bintest"],
+    named_data = {"dag_multiple_shortest_paths_sequential": ":dag_multiple_shortest_paths_sequential"},
 )
 
 cc_binary(
@@ -532,10 +507,10 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_simple_constrained_shortest_path_test",
-    binary = ":dag_simple_constrained_shortest_path",
-    grep_lines = ["Constrained shortest path length: 4"],
+    srcs = [":dag_simple_constrained_shortest_path_test.bintest"],
+    named_data = {"dag_simple_constrained_shortest_path": ":dag_simple_constrained_shortest_path"},
 )
 
 cc_binary(
@@ -549,13 +524,8 @@ cc_binary(
     ],
 )
 
-run_binary_test(
+bintest(
     name = "dag_constrained_shortest_path_sequential_test",
-    binary = ":dag_constrained_shortest_path_sequential",
-    grep_lines = [
-        "Initial distance: 200",
-        "Distance_2_3: 1",
-        "Distance_8_1: 100",
-        "Distance_3_7: 100",
-    ],
+    srcs = [":dag_constrained_shortest_path_sequential_test.bintest"],
+    named_data = {"dag_constrained_shortest_path_sequential": ":dag_constrained_shortest_path_sequential"},
 )

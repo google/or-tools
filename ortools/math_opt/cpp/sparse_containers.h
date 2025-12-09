@@ -14,8 +14,8 @@
 // IWYU pragma: private, include "ortools/math_opt/cpp/math_opt.h"
 // IWYU pragma: friend "ortools/math_opt/cpp/.*"
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
-#define OR_TOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
+#define ORTOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
 
 #include <cstdint>
 
@@ -146,4 +146,4 @@ SparseBasisStatusVector LinearConstraintBasisToProto(
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_SPARSE_CONTAINERS_H_

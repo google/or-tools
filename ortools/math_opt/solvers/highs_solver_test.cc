@@ -233,7 +233,7 @@ INSTANTIATE_TEST_SUITE_P(
                                      /*support_message_callback=*/true,
                                      /*support_interrupter=*/false,
                                      /*integer_variables=*/true,
-                                     /*ending_substring=*/"(heuristics)")));
+                                     /*ending_substring=*/"LP iterations     0")));
 
 // HiGHS does not support callbacks other than message callback.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CallbackTest);

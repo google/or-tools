@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_GZIPSTRING_H_
-#define OR_TOOLS_BASE_GZIPSTRING_H_
+#ifndef ORTOOLS_BASE_GZIPSTRING_H_
+#define ORTOOLS_BASE_GZIPSTRING_H_
 
 #include <zconf.h>
 #include <zlib.h>
@@ -106,4 +106,4 @@ inline bool GzipString(absl::string_view uncompressed,
   return true;
 }
 
-#endif  // OR_TOOLS_BASE_GZIPSTRING_H_
+#endif  // ORTOOLS_BASE_GZIPSTRING_H_

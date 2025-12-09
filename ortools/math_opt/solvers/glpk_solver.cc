@@ -42,8 +42,6 @@
 #include "absl/types/span.h"
 #include "ortools/base/protoutil.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/glpk/glpk_env_deleter.h"
-#include "ortools/glpk/glpk_formatters.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/empty_bounds.h"
 #include "ortools/math_opt/core/inverted_bounds.h"
@@ -66,6 +64,8 @@
 #include "ortools/math_opt/sparse_containers.pb.h"
 #include "ortools/math_opt/validators/callback_validator.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/third_party_solvers/glpk/glpk_env_deleter.h"
+#include "ortools/third_party_solvers/glpk/glpk_formatters.h"
 #include "ortools/util/solve_interrupter.h"
 
 namespace operations_research {

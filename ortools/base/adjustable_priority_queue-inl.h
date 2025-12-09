@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
-#define OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
+#ifndef ORTOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
+#define ORTOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
 
 #include "ortools/base/adjustable_priority_queue.h"  // IWYU pragma: export
 
-#endif  // OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_
+#endif  // ORTOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_INL_H_

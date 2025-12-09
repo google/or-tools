@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_PRECEDENCES_H_
-#define OR_TOOLS_SAT_PRECEDENCES_H_
+#ifndef ORTOOLS_SAT_PRECEDENCES_H_
+#define ORTOOLS_SAT_PRECEDENCES_H_
 
 #include <algorithm>
 #include <cstdint>
@@ -42,6 +42,45 @@
 
 namespace operations_research {
 namespace sat {
+
+// This file defines several classes to manage bounds of expressions of the form
+// `a*x + b*y <= upper_bound`. The `a*x + b*y` expressions are stored in a
+// `LinearExpression2` object, which is often canonicalized and GCD-reduced,
+// with the bound being divided by the GCD.
+//
+// To efficiently store and query such bounds in different contexts, we map each
+// `LinearExpression2` expressions for which we have a non-trivial bound
+// to a `LinearExpression2Index`, managed by the `Linear2Indices` class.
+//
+// Most callers of this class should use the `Linear2Bounds` class, which hides
+// the complexity of the different ways such bounds are deduced and allow:
+// - knowing the bound of a given expression at current level;
+// - getting the literals and integer literals that can be used to explain that
+//   bound;
+// - pushing a new bound to an expression.
+//
+// Other classes in this file dealing with the current level bounds:
+// - `EnforcedLinear2Bounds`: Store the best relation of the form
+//   `{lits} => a*x + b*y <= ub` that is non-trivial at the current level.
+// - `Linear2BoundsFromLinear3`: Class that keeps the best upper bound at the
+//    current level for `a*x + b*y` from all the linear3 relations of the
+//    form `a*x + b*y + c*z <= d`.
+//
+// Classes in this file dealing with root-level bounds or implications:
+// - `RootLevelLinear2Bounds`: Holds all the non-trivial bounds of the form
+//    `a*x + b*y <= ub` at root level.
+// - `ConditionalLinear2Bounds`: Holds all the relations of the form
+//   `{lits} => a*x + b*y <= ub` that are defined in the model.
+// - `ReifiedLinear2Bounds`: Store all the relations of the form
+//   `{lits} <=> a*x + b*y <= ub` that are defined in the model. Also stores all
+//    the relations of the form `a*x + b*y + c*z == d`.
+//
+// Other classes in this file:
+// - `Linear2Watcher`: Allow a propagator to be called back when a bound on a
+//   given linear2 changed.
+// - `TransitivePrecedencesEvaluator`: Computes the transitive closure of a
+//   DAG of `a*x + b*y <= expr` relations that are stored in
+//   `RootLevelLinear2Bounds`.
 
 DEFINE_STRONG_INDEX_TYPE(LinearExpression2Index);
 const LinearExpression2Index kNoLinearExpression2Index(-1);
@@ -352,8 +391,8 @@ class TransitivePrecedencesEvaluator {
   std::vector<IntegerVariable> topological_order_;
 };
 
-// Stores all the precedences relation of the form "{lits} => a*x + b*y <= ub"
-// that we could extract from the model.
+// Store the best non-trivial relation of the form "{lits} => a*x + b*y <= ub"
+// for which `{lits}` are assigned tp true at the current level.
 class EnforcedLinear2Bounds : public ReversibleInterface {
  public:
   explicit EnforcedLinear2Bounds(Model* model)
@@ -506,20 +545,22 @@ struct Relation {
 
 class ReifiedLinear2Bounds;
 
-// A repository of all the enforced linear constraints of size 1 or 2.
+// A repository of all root-level relations of the type l => (a*x + b*y <= ub).
 //
 // TODO(user): This is not always needed, find a way to clean this once we
 // don't need it.
-class BinaryRelationRepository {
+class ConditionalLinear2Bounds {
  public:
-  explicit BinaryRelationRepository(Model* model)
+  explicit ConditionalLinear2Bounds(Model* model)
       : reified_linear2_bounds_(model->GetOrCreate<ReifiedLinear2Bounds>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
-  ~BinaryRelationRepository();
+  ~ConditionalLinear2Bounds();
 
   int size() const { return relations_.size(); }
 
-  // The returned relation is guaranteed to only have positive variables.
+  // The linear2 expression in the returned relation is guaranteed to be
+  // normalized (ie., SimpleCanonicalization() has been called on it and it's
+  // GCD-reduced).
   const Relation& relation(int index) const { return relations_[index]; }
 
   // Returns the indices of the relations that are enforced by the given
@@ -612,7 +653,7 @@ class Linear2BoundsFromLinear3 {
       best_affine_ub_;
 };
 
-// TODO(user): Merge with BinaryRelationRepository. Note that this one provides
+// TODO(user): Merge with ConditionalLinear2Bounds. Note that this one provides
 // different indexing though, so it could be kept separate.
 class ReifiedLinear2Bounds {
  public:
@@ -752,7 +793,7 @@ class Linear2Bounds : public LazyReasonInterface {
 bool PropagateLocalBounds(
     const IntegerTrail& integer_trail,
     const RootLevelLinear2Bounds& root_level_bounds,
-    const BinaryRelationRepository& repository,
+    const ConditionalLinear2Bounds& repository,
     const ImpliedBounds& implied_bounds, Literal lit,
     const absl::flat_hash_map<IntegerVariable, IntegerValue>& input,
     absl::flat_hash_map<IntegerVariable, IntegerValue>* output);
@@ -766,7 +807,7 @@ bool PropagateLocalBounds(
 class GreaterThanAtLeastOneOfDetector {
  public:
   explicit GreaterThanAtLeastOneOfDetector(Model* model)
-      : repository_(*model->GetOrCreate<BinaryRelationRepository>()),
+      : repository_(*model->GetOrCreate<ConditionalLinear2Bounds>()),
         implied_bounds_(*model->GetOrCreate<ImpliedBounds>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         shared_stats_(model->GetOrCreate<SharedStatistics>()) {}
@@ -814,7 +855,7 @@ class GreaterThanAtLeastOneOfDetector {
       IntegerVariable var, absl::Span<const Literal> clause,
       absl::Span<const VariableConditionalAffineBound> bounds, Model* model);
 
-  BinaryRelationRepository& repository_;
+  ConditionalLinear2Bounds& repository_;
   const ImpliedBounds& implied_bounds_;
   IntegerTrail& integer_trail_;
   SharedStatistics* shared_stats_;
@@ -890,4 +931,4 @@ Linear2Indices::GetAllLinear2ContainingVariables(IntegerVariable var1,
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PRECEDENCES_H_
+#endif  // ORTOOLS_SAT_PRECEDENCES_H_

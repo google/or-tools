@@ -858,9 +858,6 @@ std::vector<SatParameters> GetFullWorkerParameters(
                                   ModelHasSchedulingConstraints(cp_model);
 
   // Our current set of strategies
-  //
-  // TODO(user): Avoid launching two strategies if they are the same,
-  // like if there is no lp, or everything is already linearized at level 1.
   std::vector<std::string> names;
 
   // Starts by adding user specified ones.
@@ -932,6 +929,13 @@ std::vector<SatParameters> GetFullWorkerParameters(
     // Do some filtering.
     if (!use_fixed_strategy &&
         params.search_branching() == SatParameters::FIXED_SEARCH) {
+      continue;
+    }
+    // As of November 2025, we don't support any LP reasoning when producing an
+    // UNSAT proof.
+    if ((params.check_lrat_proof() || params.output_lrat_proof() ||
+         params.check_drat_proof() || params.output_drat_proof()) &&
+        params.linearization_level() > 1) {
       continue;
     }
 
@@ -1014,7 +1018,15 @@ std::vector<SatParameters> GetFullWorkerParameters(
 
   if (result.size() > num_to_keep) {
     result.resize(std::max(0, num_to_keep));
+  } else if (!result.empty() && num_to_keep >= 0) {
+    // If we have less parameters, duplicate the first one until we have enough.
+    // This is a bit hacky but easily allow to do experiment with n times the
+    // same subsolver.
+    while (result.size() < num_to_keep) {
+      result.push_back(result[0]);
+    }
   }
+
   return result;
 }
 

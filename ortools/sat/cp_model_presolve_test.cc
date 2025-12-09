@@ -8155,6 +8155,7 @@ TEST(PresolveCpModelTest, SolveDiophantine) {
 
   SatParameters params;
   params.set_cp_model_presolve(true);
+  params.set_num_workers(1);
   // Should solve in < .01 second. Note that deterministic time is not
   // completely accurate.
   params.set_max_deterministic_time(.001);

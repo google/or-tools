@@ -14,8 +14,8 @@
 // Classes and function to convert floating point numbers to string so that no
 // information is lost (i.e. that we can make a round trip from double to string
 // and back to double without losing data).
-#ifndef OR_TOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
-#define OR_TOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
+#ifndef ORTOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
+#define ORTOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
 
 #include <ostream>
 #include <string>
@@ -99,4 +99,4 @@ class RoundTripDoubleFormat {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_FP_ROUNDTRIP_CONV_H_
+#endif  // ORTOOLS_UTIL_FP_ROUNDTRIP_CONV_H_

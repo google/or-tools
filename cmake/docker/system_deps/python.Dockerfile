@@ -12,6 +12,9 @@ FROM env AS devel
 WORKDIR /home/project
 COPY . .
 
+ARG CMAKE_BUILD_PARALLEL_LEVEL
+ENV CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
+
 FROM devel AS build
 # Archlinux do not provide pybind11 protobuf package
 RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
@@ -23,7 +26,8 @@ RUN cmake -S. -Bbuild -DBUILD_DEPS=OFF \
  -DUSE_HIGHS=OFF \
  -DUSE_SCIP=ON \
  -DBUILD_PYTHON=ON \
- -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+ -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF \
+ -DBUILD_googletest=ON
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 

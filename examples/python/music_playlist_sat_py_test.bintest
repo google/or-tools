@@ -1,0 +1,1 @@
+RUN: $(music_playlist_sat_py3)

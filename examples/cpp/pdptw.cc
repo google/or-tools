@@ -127,17 +127,18 @@ double ComputeScalingFactorFromCallback(const C& callback, int size) {
   return max_scaled_distance / max_value;
 }
 
-void SetupModel(const LiLimParser& parser, const RoutingIndexManager& manager,
-                RoutingModel* model,
+void SetupModel(const routing::LiLimParser& parser,
+                const RoutingIndexManager& manager, RoutingModel* model,
                 RoutingSearchParameters* search_parameters) {
   const int64_t kPenalty = 100000000;
   const int64_t kFixedCost = 100000;
   const int num_nodes = parser.NumberOfNodes();
   const int64_t horizon =
-      absl::c_max_element(
-          parser.time_windows(),
-          [](const SimpleTimeWindow<int64_t>& a,
-             const SimpleTimeWindow<int64_t>& b) { return a.end < b.end; })
+      absl::c_max_element(parser.time_windows(),
+                          [](const routing::SimpleTimeWindow<int64_t>& a,
+                             const routing::SimpleTimeWindow<int64_t>& b) {
+                            return a.end < b.end;
+                          })
           ->end;
   const double scaling_factor = ComputeScalingFactorFromCallback(
       [&parser](int64_t i, int64_t j) -> double {
@@ -199,7 +200,8 @@ void SetupModel(const LiLimParser& parser, const RoutingIndexManager& manager,
       model->AddPickupAndDelivery(index, delivery_index);
     }
     IntVar* const cumul = time_dimension.CumulVar(index);
-    const SimpleTimeWindow<int64_t>& window = parser.time_windows()[node];
+    const routing::SimpleTimeWindow<int64_t>& window =
+        parser.time_windows()[node];
     cumul->SetMin(MathUtil::Round<int64_t>(scaling_factor * window.start));
     cumul->SetMax(MathUtil::Round<int64_t>(scaling_factor * window.end));
   }
@@ -244,7 +246,8 @@ void SetupModel(const LiLimParser& parser, const RoutingIndexManager& manager,
 std::string VerboseOutput(const RoutingModel& model,
                           const RoutingIndexManager& manager,
                           const Assignment& assignment,
-                          const LiLimParser& parser, double scaling_factor) {
+                          const routing::LiLimParser& parser,
+                          double scaling_factor) {
   std::string output;
   const RoutingDimension& time_dimension = model.GetDimensionOrDie("time");
   const RoutingDimension& load_dimension = model.GetDimensionOrDie("demand");
@@ -298,7 +301,7 @@ std::string VerboseOutput(const RoutingModel& model,
 bool LoadAndSolve(absl::string_view pdp_file,
                   const RoutingModelParameters& model_parameters,
                   RoutingSearchParameters& search_parameters) {
-  LiLimParser parser;
+  routing::LiLimParser parser;
   if (!parser.LoadFile(pdp_file)) {
     return false;
   }

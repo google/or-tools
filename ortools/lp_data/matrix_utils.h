@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_LP_DATA_MATRIX_UTILS_H_
-#define OR_TOOLS_LP_DATA_MATRIX_UTILS_H_
+#ifndef ORTOOLS_LP_DATA_MATRIX_UTILS_H_
+#define ORTOOLS_LP_DATA_MATRIX_UTILS_H_
 
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -55,4 +55,4 @@ bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix);
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MATRIX_UTILS_H_
+#endif  // ORTOOLS_LP_DATA_MATRIX_UTILS_H_

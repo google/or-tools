@@ -7,7 +7,7 @@
 
 <groupId>@JAVA_PACKAGE@</groupId>
 <artifactId>@JAVA_PROJECT@</artifactId>
-<version>@PROJECT_VERSION@</version>
+<version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
 <packaging>jar</packaging>
 
 <name>${project.groupId}:${project.artifactId}</name>
@@ -69,35 +69,35 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>ortools-linux-x86-64</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>ortools-darwin-x86-64</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>ortools-win32-x86-64</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>ortools-linux-aarch64</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>ortools-darwin-aarch64</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>@PROJECT_VERSION@@JAVA_RELEASE@</version>
     <type>jar</type>
     <scope>runtime</scope>
   </dependency>
@@ -109,7 +109,7 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>4.32.0</version>
+    <version>4.33.1</version>
   </dependency>
 </dependencies>
 

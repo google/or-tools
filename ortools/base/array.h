@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_ARRAY_H_
-#define OR_TOOLS_BASE_ARRAY_H_
+#ifndef ORTOOLS_BASE_ARRAY_H_
+#define ORTOOLS_BASE_ARRAY_H_
 
 //! @todo(corentinl) std::to_array available in C++20.
 
@@ -53,4 +53,4 @@ constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&&ts)[N]) {
 
 }  // namespace gtl
 
-#endif  // OR_TOOLS_BASE_ARRAY_H_
+#endif  // ORTOOLS_BASE_ARRAY_H_

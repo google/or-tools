@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_DENSE_SET_H_
-#define OR_TOOLS_UTIL_DENSE_SET_H_
+#ifndef ORTOOLS_UTIL_DENSE_SET_H_
+#define ORTOOLS_UTIL_DENSE_SET_H_
 
 #include <cstddef>
 #include <utility>
@@ -148,4 +148,4 @@ inline int DenseSet<int, false>::ToInt(int value) {
 }
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_DENSE_SET_H_
+#endif  // ORTOOLS_UTIL_DENSE_SET_H_

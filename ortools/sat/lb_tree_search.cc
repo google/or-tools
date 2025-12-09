@@ -117,7 +117,7 @@ void LbTreeSearch::EnableLpAndLoadBestBasis() {
   DCHECK(lp_constraint_ != nullptr);
   lp_constraint_->EnablePropagation(true);
 
-  const int level = sat_solver_->CurrentDecisionLevel();
+  const int level = trail_->CurrentDecisionLevel();
   if (current_branch_.empty()) return;
 
   NodeIndex n = current_branch_[0];  // Root.
@@ -129,7 +129,7 @@ void LbTreeSearch::EnableLpAndLoadBestBasis() {
       basis_level = i;
       last_node_with_basis = n;
     }
-    const Literal decision = sat_solver_->Decisions()[i].literal;
+    const Literal decision = trail_->Decisions()[i].literal;
     if (nodes_[n].literal_index == decision.Index()) {
       n = nodes_[n].true_child;
     } else {
@@ -283,7 +283,7 @@ bool LbTreeSearch::FullRestart() {
   num_nodes_in_tree_ = 0;
   nodes_.clear();
   current_branch_.clear();
-  return sat_solver_->RestoreSolverToAssumptionLevel();
+  return sat_solver_->ResetToLevelZero();
 }
 
 void LbTreeSearch::MarkAsDeletedNodeAndUnreachableSubtree(Node& node) {
@@ -412,7 +412,7 @@ bool LbTreeSearch::LevelZeroLogic() {
 
 SatSolver::Status LbTreeSearch::Search(
     const std::function<void()>& feasible_solution_observer) {
-  if (!sat_solver_->RestoreSolverToAssumptionLevel()) {
+  if (!sat_solver_->ResetToLevelZero()) {
     return sat_solver_->UnsatStatus();
   }
 
@@ -603,7 +603,9 @@ SatSolver::Status LbTreeSearch::Search(
       if (!sat_solver_->FinishPropagation()) {
         return sat_solver_->UnsatStatus();
       }
-      if (sat_solver_->CurrentDecisionLevel() < backtrack_level) continue;
+      if (sat_solver_->CurrentDecisionLevel() < backtrack_level) {
+        continue;
+      }
     }
 
     if (sat_solver_->CurrentDecisionLevel() == 0) {
@@ -925,7 +927,7 @@ SatSolver::Status LbTreeSearch::Search(
       if (!search_helper_->TakeDecision(Literal(decision))) {
         return sat_solver_->UnsatStatus();
       }
-      if (sat_solver_->CurrentDecisionLevel() < base_level) {
+      if (trail_->CurrentDecisionLevel() < base_level) {
         // TODO(user): it would be nice to mark some node as infeasible if
         // this is the case. However this could happen after many decision and
         // we realize with the lp that one of them should have been fixed
@@ -937,7 +939,9 @@ SatSolver::Status LbTreeSearch::Search(
       }
     }
 
-    if (sat_solver_->CurrentDecisionLevel() <= base_level) continue;
+    if (trail_->CurrentDecisionLevel() <= base_level) {
+      continue;
+    }
 
     // Analyse the reason for objective increase. Deduce a set of new nodes to
     // append to the tree.
@@ -981,13 +985,13 @@ SatSolver::Status LbTreeSearch::Search(
     // The decision level is the number of decision taken.
     // Decision()[level] is the decision at that level.
     int backtrack_level = base_level;
-    DCHECK_LE(current_branch_.size(), sat_solver_->CurrentDecisionLevel());
+    DCHECK_LE(current_branch_.size(), trail_->CurrentDecisionLevel());
     while (backtrack_level < current_branch_.size() &&
-           sat_solver_->Decisions()[backtrack_level].literal.Index() ==
+           trail_->Decisions()[backtrack_level].literal.Index() ==
                nodes_[current_branch_[backtrack_level]].literal_index) {
       ++backtrack_level;
     }
-    sat_solver_->Backtrack(backtrack_level);
+    sat_solver_->BacktrackAndPropagateReimplications(backtrack_level);
 
     // Update bounds with reduced costs info.
     //
@@ -1157,7 +1161,10 @@ void LbTreeSearch::ExploitReducedCosts(NodeIndex n) {
   Node& node = nodes_[n];
   DCHECK(!node.is_deleted);
   const Literal node_literal = node.Decision();
-  DCHECK(!assignment_.LiteralIsAssigned(node_literal));
+
+  // This can happen if we have re-implication and propagation...
+  if (assignment_.LiteralIsAssigned(node_literal)) return;
+
   for (const IntegerLiteral integer_literal :
        integer_encoder_->GetIntegerLiterals(node_literal)) {
     // To avoid bad corner case. Not sure it ever triggers.

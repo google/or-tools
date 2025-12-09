@@ -1,0 +1,1 @@
+RUN: $(magic_sequence_distribute_py3)

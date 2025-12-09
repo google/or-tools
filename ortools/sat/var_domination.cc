@@ -959,7 +959,7 @@ bool DualBoundStrengthening::Strengthen(PresolveContext* context) {
 
           int encoding_lit;
           bool has_encoding = false;
-          if (!context->DomainContains(var, value)) {
+          if (!context->VarCanTakeValue(var, value)) {
             encoding_lit = context->GetFalseLiteral();
             has_encoding = true;
           } else {
@@ -1462,6 +1462,11 @@ void ScanModelForDualBoundStrengthening(
 }
 
 namespace {
+Domain DomainOfRef(const PresolveContext& context, int ref) {
+  return RefIsPositive(ref) ? context.DomainOf(ref)
+                            : context.DomainOf(PositiveRef(ref)).Negation();
+}
+
 // Decrements the solution hint of `ref` by the minimum amount necessary to be
 // in `domain`, and increments the solution hint of one or more
 // `dominating_variables` by the same total amount (or less if it is not
@@ -1473,14 +1478,14 @@ void MaybeUpdateRefHintFromDominance(
     PresolveContext& context, int ref, const Domain& domain,
     absl::Span<const IntegerVariable> dominating_variables) {
   DCHECK_EQ(domain.NumIntervals(), 1);
-  DCHECK_EQ(domain.Min(), context.DomainOf(ref).Min());
-  DCHECK(context.DomainOf(ref).Contains(domain.Max()));
+  DCHECK_EQ(domain.Min(), DomainOfRef(context, ref).Min());
+  DCHECK(DomainOfRef(context, ref).Contains(domain.Max()));
   std::vector<std::pair<int, Domain>> dominating_refs;
   dominating_refs.reserve(dominating_variables.size());
   for (const IntegerVariable var : dominating_variables) {
     const int dominating_ref = VarDomination::IntegerVariableToRef(var);
     dominating_refs.push_back(
-        {dominating_ref, context.DomainOf(dominating_ref)});
+        {dominating_ref, DomainOfRef(context, dominating_ref)});
   }
   context.solution_crush().UpdateRefsWithDominance(
       ref, domain.Min(), domain.Max(), dominating_refs);
@@ -1684,7 +1689,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
       for (const IntegerVariable var : vars) {
         // Tricky: For now we skip complex domain as we are not sure they
         // can be moved correctly.
-        if (context->DomainOf(VarDomination::IntegerVariableToRef(var))
+        if (DomainOfRef(*context, VarDomination::IntegerVariableToRef(var))
                 .NumIntervals() != 1) {
           continue;
         }
@@ -1790,7 +1795,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           // Tricky: If there are holes, we can't just reduce the domain to
           // new_ub if it is not a valid value, so we need to compute the
           // Min() of the intersection.
-          new_ub = context->DomainOf(current_ref).ValueAtOrAfter(new_ub);
+          new_ub = DomainOfRef(*context, current_ref).ValueAtOrAfter(new_ub);
         }
         if (new_ub < context->MaxOf(current_ref)) {
           context->UpdateRuleStats("domination: reduced ub.");
@@ -1875,7 +1880,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
           context->VarToConstraints(positive_ref).size()) {
         // We need to account for domain with hole, hence the ValueAtOrAfter().
         int64_t lb = can_freely_decrease_until[var];
-        lb = context->DomainOf(ref).ValueAtOrAfter(lb);
+        lb = DomainOfRef(*context, ref).ValueAtOrAfter(lb);
         if (lb < context->MaxOf(ref)) {
           // We have a candidate, however, we need to make sure the dominating
           // variable upper bound didn't change.

@@ -18,8 +18,8 @@
 // anything, would be used widely. The function also makes many assumptions on
 // the input that are not easy to verify and can lead to confusing errors,
 // it is worth seeing if the API can be hardened a bit.
-#ifndef OR_TOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_
-#define OR_TOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_
+#ifndef ORTOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_
+#define ORTOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_
 
 #include "ortools/math_opt/cpp/math_opt.h"
 
@@ -58,4 +58,4 @@ double UpperBound(const LinearExpression& linear_expression);
 
 }  // namespace operations_research::math_opt
 
-#endif  // OR_TOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_
+#endif  // ORTOOLS_MATH_OPT_LABS_LINEAR_EXPR_UTIL_H_

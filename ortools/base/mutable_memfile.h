@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_MUTABLE_MEMFILE_H_
-#define OR_TOOLS_BASE_MUTABLE_MEMFILE_H_
+#ifndef ORTOOLS_BASE_MUTABLE_MEMFILE_H_
+#define ORTOOLS_BASE_MUTABLE_MEMFILE_H_
 
 #include <string>
 #include <string_view>
@@ -27,4 +27,4 @@ class RegisteredMutableMemFile {
   const std::string filename_;
 };
 
-#endif  // OR_TOOLS_BASE_MUTABLE_MEMFILE_H_
+#endif  // ORTOOLS_BASE_MUTABLE_MEMFILE_H_

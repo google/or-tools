@@ -43,19 +43,6 @@
 namespace operations_research {
 namespace sat {
 
-std::string FormatCounter(int64_t num) {
-  std::string s = absl::StrCat(num);
-  std::string out;
-  const int size = s.size();
-  for (int i = 0; i < size; ++i) {
-    if (i > 0 && (size - i) % 3 == 0) {
-      out.push_back('\'');
-    }
-    out.push_back(s[i]);
-  }
-  return out;
-}
-
 namespace {
 
 inline std::string LeftAlign(std::string s, int size = 16) {
@@ -618,33 +605,6 @@ void MaxBoundedSubsetSum::AddChoicesInternal(absl::Span<const int64_t> values) {
   } else {
     current_max_ = MathUtil::FloorOfRatio(bound_, gcd_) * gcd_;
   }
-}
-
-int64_t MaxBoundedSubsetSum::MaxIfAdded(int64_t candidate) const {
-  if (candidate > bound_ || current_max_ == bound_) return current_max_;
-
-  int64_t current_max = current_max_;
-  // Mode 1: vector of all possible sums (with duplicates).
-  if (!sums_.empty()) {
-    for (const int64_t v : sums_) {
-      if (v + candidate > bound_) continue;
-      if (v + candidate > current_max) {
-        current_max = v + candidate;
-        if (current_max == bound_) return current_max;
-      }
-    }
-    return current_max;
-  }
-
-  // Mode 2: bitset of all possible sums.
-  if (!expanded_sums_.empty()) {
-    const int64_t min_useful = std::max<int64_t>(0, current_max_ - candidate);
-    const int64_t max_useful = bound_ - candidate;
-    for (int64_t v = max_useful; v >= min_useful; --v) {
-      if (expanded_sums_[v]) return v + candidate;
-    }
-  }
-  return current_max_;
 }
 
 BasicKnapsackSolver::Result BasicKnapsackSolver::Solve(

@@ -19,8 +19,8 @@
 //            value type. That said, the precision is inferior to precise sum
 //            algorithm such as ::AccurateSum.
 
-#ifndef OR_TOOLS_UTIL_VECTOR_SUM_H_
-#define OR_TOOLS_UTIL_VECTOR_SUM_H_
+#ifndef ORTOOLS_UTIL_VECTOR_SUM_H_
+#define ORTOOLS_UTIL_VECTOR_SUM_H_
 
 #include "absl/types/span.h"
 #include "ortools/util/vector_sum_internal.h"
@@ -40,4 +40,4 @@ inline float VectorSum(absl::Span<const float> values) {
 
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_VECTOR_SUM_H_
+#endif  // ORTOOLS_UTIL_VECTOR_SUM_H_

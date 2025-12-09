@@ -21,8 +21,8 @@
 // For users that need incremental solving, there is the IncrementalSolver
 // class.
 
-#ifndef OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
-#define OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
+#ifndef ORTOOLS_MATH_OPT_CPP_SOLVE_H_
+#define ORTOOLS_MATH_OPT_CPP_SOLVE_H_
 
 #include <functional>
 #include <memory>
@@ -122,4 +122,4 @@ absl::StatusOr<std::unique_ptr<IncrementalSolver>> NewIncrementalSolver(
 }  // namespace math_opt
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_MATH_OPT_CPP_SOLVE_H_
+#endif  // ORTOOLS_MATH_OPT_CPP_SOLVE_H_

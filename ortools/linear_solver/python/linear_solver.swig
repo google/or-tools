@@ -36,6 +36,15 @@
 
 %import "ortools/util/python/vector.swig"
 
+// Ignore warnings for operators like: Unreferenced %newobject *::operator -=
+#pragma SWIG nowarn=551
+
+// In some parts of the generated code, SWIG 4 decides to use vector instead of
+// std::vector.
+%insert(header) %{
+using std::vector;
+%}
+
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
 // needs to be before the %{ #include ".../linear_solver.h" %}.
