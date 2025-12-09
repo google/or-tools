@@ -414,8 +414,11 @@ absl::Status Xpress::Interrupt(int reason) {
 }
 
 absl::StatusOr<bool> Xpress::IsMIP() const {
-  ASSIGN_OR_RETURN(auto ents, GetIntAttr(XPRS_MIPENTS));
-  return ents != 0; /** TODO: Check for preintsol callback? */
+  ASSIGN_OR_RETURN(int ents, GetIntAttr(XPRS_ORIGINALMIPENTS));
+  if (ents != 0) return true;
+  ASSIGN_OR_RETURN(int sets, GetIntAttr(XPRS_ORIGINALSETS));
+  if (sets != 0) return true;
+  return false;
 }
 
 absl::Status Xpress::GetDuals(int* p_status,
