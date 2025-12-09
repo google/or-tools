@@ -26,6 +26,11 @@ namespace operations_research::sat {
 
 using SmallBitset = uint32_t;
 
+// This works for num_bits == 32 too.
+inline SmallBitset GetNumBitsAtOne(int num_bits) {
+  return ~SmallBitset(0) >> (32 - (1 << num_bits));
+}
+
 // Sort the key and modify the truth table accordingly.
 //
 // Note that we don't deal with identical key here, but the function
@@ -35,7 +40,6 @@ template <typename VarOrLiteral>
 void CanonicalizeTruthTable(absl::Span<VarOrLiteral> key,
                             SmallBitset& bitmask) {
   const int num_bits = key.size();
-  CHECK_EQ(bitmask >> (1 << num_bits), 0);
   for (int i = 0; i < num_bits; ++i) {
     for (int j = i + 1; j < num_bits; ++j) {
       if (key[i] <= key[j]) continue;
@@ -53,11 +57,9 @@ void CanonicalizeTruthTable(absl::Span<VarOrLiteral> key,
         new_bitmask |= ((bitmask >> p) & 1) << new_p;
       }
       bitmask = new_bitmask;
-      CHECK_EQ(bitmask >> (1 << num_bits), 0)
-          << i << " " << j << " " << num_bits;
     }
   }
-  CHECK(std::is_sorted(key.begin(), key.end()));
+  DCHECK(std::is_sorted(key.begin(), key.end()));
 }
 
 // Given a clause, return the truth table corresponding to it.
@@ -67,15 +69,14 @@ inline void FillKeyAndBitmask(absl::Span<const Literal> clause,
                               SmallBitset& bitmask) {
   CHECK_EQ(clause.size(), key.size());
   const int num_bits = clause.size();
-  bitmask = ~SmallBitset(0) >> (32 - (1 << num_bits));  // All allowed;
-  CHECK_EQ(bitmask >> (1 << num_bits), 0) << num_bits;
   SmallBitset bit_to_remove = 0;
   for (int i = 0; i < num_bits; ++i) {
     key[i] = clause[i].Variable();
     bit_to_remove |= (clause[i].IsPositive() ? 0 : 1) << i;
   }
-  bitmask ^= (SmallBitset(1) << bit_to_remove);
-  CHECK_EQ(bitmask >> (1 << num_bits), 0) << bit_to_remove << " " << num_bits;
+  CHECK_LT(bit_to_remove, (1 << num_bits));
+  bitmask = GetNumBitsAtOne(num_bits);
+  bitmask ^= SmallBitset(1) << bit_to_remove;
   CanonicalizeTruthTable<BooleanVariable>(key, bitmask);
 }
 
@@ -111,15 +112,6 @@ inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
 
   const int num_bits = inputs.size();
   CHECK_LE(num_bits, 4);  // Truth table must fit on an int.
-  const SmallBitset all_one = (1 << (1 << num_bits)) - 1;
-  CHECK_EQ(function_values & ~all_one, 0);
-
-  // Make sure target is positive.
-  if (!Literal(target).IsPositive()) {
-    target = Literal(target).Negated();
-    function_values = function_values ^ all_one;
-    CHECK_EQ(function_values >> (1 << num_bits), 0);
-  }
 
   // Make sure all inputs are positive.
   for (int i = 0; i < num_bits; ++i) {
@@ -188,6 +180,17 @@ inline int CanonicalizeFunctionTruthTable(LiteralIndex& target,
       ++i;
     }
   }
+
+  // If we have x = f(a,b,c) and not(y) = f(a,b,c) with the same f, we have an
+  // equivalence, so we need to canonicallize both f() and not(f()) to the same
+  // function. For that we just always choose to have the lowest bit at zero.
+  if (function_values & 1) {
+    target = Literal(target).Negated();
+    const SmallBitset all_one = GetNumBitsAtOne(inputs.size());
+    function_values = function_values ^ all_one;
+    DCHECK_EQ(function_values >> (1 << inputs.size()), 0);
+  }
+  DCHECK_EQ(function_values & 1, 0);
 
   int_function_values = function_values;
   return inputs.size();

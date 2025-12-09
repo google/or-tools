@@ -2767,9 +2767,12 @@ TRFM"""
         model = cp_model.CpModel()
         x = [model.NewBoolVar(f"x{i}") for i in range(5)]
         model.AddBoolOr(x)
+        model.Maximize(sum(x))
         self.assertLen(model.proto.variables, 5)
         self.assertLen(model.proto.constraints, 1)
         self.assertLen(model.proto.constraints[0].bool_or.literals, 5)
+
+        self.assertTrue(hasattr(model, "Proto"))
 
         model_copy = copy.copy(model)
         self.assertTrue(hasattr(model_copy, "AddBoolOr"))

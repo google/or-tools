@@ -122,7 +122,10 @@ void MinimizeCoreWithSearch(TimeLimit* limit, SatSolver* solver,
   const int old_size = core->size();
   std::vector<Literal> assumptions;
   absl::flat_hash_set<LiteralIndex> removed_once;
-  while (true) {
+
+  // We stop as soon as the core size is one since there is nothing more
+  // to minimize then.
+  while (core->size() > 1) {
     if (limit->LimitReached()) break;
 
     // Find a not yet removed literal to remove.

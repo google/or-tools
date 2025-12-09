@@ -134,6 +134,7 @@ class CompactVectorVector {
   // Returns the previous size() as this is convenient for how we use it.
   int Add(absl::Span<const V> values);
   void AppendToLastVector(const V& value);
+  void AppendToLastVector(absl::Span<const V> values);
 
   // Hacky: same as Add() but for sat::Literal or any type from which we can get
   // a value type V via L.Index().value().
@@ -917,6 +918,13 @@ template <typename K, typename V>
 inline void CompactVectorVector<K, V>::AppendToLastVector(const V& value) {
   sizes_.back()++;
   buffer_.push_back(value);
+}
+
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::AppendToLastVector(
+    absl::Span<const V> values) {
+  sizes_.back() += values.size();
+  buffer_.insert(buffer_.end(), values.begin(), values.end());
 }
 
 template <typename K, typename V>
