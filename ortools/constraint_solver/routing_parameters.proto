@@ -37,9 +37,9 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 71
+// Next ID: 73
 message RoutingSearchParameters {
-  reserved 14, 15, 18, 19, 23, 49, 55, 65, 67;
+  reserved 14, 15, 16, 18, 19, 21, 23, 31, 40, 44, 45, 46, 49, 55, 65, 67;
 
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -53,43 +53,17 @@ message RoutingSearchParameters {
   // Parameters for the Savings heuristic.
   SavingsParameters savings_parameters = 70;
 
-  // Ratio (between 0 and 1) of available vehicles in the model on which
-  // farthest nodes of the model are inserted as seeds in the
-  // GlobalCheapestInsertion first solution heuristic.
-  double cheapest_insertion_farthest_seeds_ratio = 16;
+  // Parameters for the global cheapest insertion heuristic when used as first
+  // solution heuristic.
+  GlobalCheapestInsertionParameters
+      global_cheapest_insertion_first_solution_parameters = 71;
 
-  // Ratio (in ]0, 1]) of closest non start/end nodes to consider as neighbors
-  // for each node when creating new insertions in the parallel/sequential
-  // cheapest insertion heuristic.
-  // If not overridden, its default value is 1, meaning all neighbors will be
-  // considered.
-  // The neighborhood ratio is coupled with the corresponding min_neighbors
-  // integer, indicating the minimum number of neighbors to consider for each
-  // node:
-  // num_closest_neighbors =
-  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
-  // This minimum number of neighbors must be greater or equal to 1, its
-  // default value.
-  //
-  // Neighbors ratio and minimum number of neighbors for the first solution
-  // heuristic.
-  double cheapest_insertion_first_solution_neighbors_ratio = 21;
-  int32 cheapest_insertion_first_solution_min_neighbors = 44;
-  // Neighbors ratio and minimum number of neighbors for the heuristic when used
-  // in a local search operator (see
+  // Parameters for the global cheapest insertion heuristic when
+  // used in a local search operator (see
   // local_search_operators.use_global_cheapest_insertion_path_lns and
   // local_search_operators.use_global_cheapest_insertion_chain_lns below).
-  double cheapest_insertion_ls_operator_neighbors_ratio = 31;
-  int32 cheapest_insertion_ls_operator_min_neighbors = 45;
-
-  // Whether or not to only consider closest neighbors when initializing the
-  // assignment for the first solution.
-  bool
-      cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization =
-          46;
-  // Whether or not to consider entries making the nodes/pairs unperformed in
-  // the GlobalCheapestInsertion heuristic.
-  bool cheapest_insertion_add_unperformed_entries = 40;
+  GlobalCheapestInsertionParameters
+      global_cheapest_insertion_ls_operator_parameters = 72;
 
   // Parameters for the local cheapest insertion heuristic.
   LocalCheapestInsertionParameters local_cheapest_insertion_parameters = 68;
@@ -412,8 +386,10 @@ message RoutingSearchParameters {
   LocalSearchNeighborhoodOperators local_search_operators = 3;
 
   // Neighbors ratio and minimum number of neighbors considered in local
-  // search operators (see cheapest_insertion_first_solution_neighbors_ratio
-  // and cheapest_insertion_first_solution_min_neighbors for more information).
+  // search operators (see
+  // GlobalCheapestInsertionParameters.neighbors_ratio and
+  // GlobalCheapestInsertionParameters.min_neighbors for more
+  // information).
   double ls_operator_neighbors_ratio = 53;
   int32 ls_operator_min_neighbors = 54;
 

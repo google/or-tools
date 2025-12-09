@@ -150,6 +150,7 @@ message RecreateParameters {
   oneof parameters {
     LocalCheapestInsertionParameters local_cheapest_insertion = 1;
     SavingsParameters savings = 2;
+    GlobalCheapestInsertionParameters global_cheapest_insertion = 3;
   }
 }
 

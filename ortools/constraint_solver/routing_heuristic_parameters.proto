@@ -103,3 +103,39 @@ message SavingsParameters {
   // This parameter must be greater than 0, and its default value is 1.
   double arc_coefficient = 4;
 }
+
+// Parameters used to configure global cheapest insertion heuristics.
+message GlobalCheapestInsertionParameters {
+  // Ratio (between 0 and 1) of available vehicles in the model on which
+  // farthest nodes of the model are inserted as seeds.
+  double farthest_seeds_ratio = 1;
+
+  // Ratio (in ]0, 1]) of closest non start/end nodes to consider as neighbors
+  // for each node when creating new insertions in the parallel/sequential
+  // cheapest insertion heuristic.
+  // If not overridden, its default value is 1, meaning all neighbors will be
+  // considered.
+  // The neighborhood ratio is coupled with the corresponding min_neighbors
+  // integer, indicating the minimum number of neighbors to consider for each
+  // node:
+  // num_closest_neighbors =
+  //        max(min_neighbors, neighbors_ratio * NUM_NON_START_END_NODES)
+  // This minimum number of neighbors must be greater or equal to 1, its
+  // default value.
+  double neighbors_ratio = 2;
+  int32 min_neighbors = 3;
+
+  // Whether or not to only consider closest neighbors when initializing the
+  // assignment. More precisely, if true, only closest neighbors (see
+  // neighbors_ratio and min_neighbors) are considered as insertion positions
+  // during initialization. Otherwise, all possible insertion positions are
+  // considered.
+  bool use_neighbors_ratio_for_initialization = 6;
+
+  // Whether or not to consider entries making the nodes/pairs unperformed.
+  // More precisely, if true, entries are created for making the nodes/pairs
+  // unperformed, and when the cost of making a node unperformed is lower than
+  // all insertions, the node/pair will be made unperformed. If false, only
+  // entries making a node/pair performed are considered.
+  bool add_unperformed_entries = 7;
+}

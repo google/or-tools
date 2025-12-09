@@ -40,95 +40,114 @@ config_setting(
 proto_library(
     name = "assignment_proto",
     srcs = ["assignment.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "assignment_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":assignment_proto"],
 )
 
 proto_library(
     name = "search_limit_proto",
     srcs = ["search_limit.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "search_limit_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 java_proto_library(
     name = "search_limit_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 proto_library(
     name = "demon_profiler_proto",
     srcs = ["demon_profiler.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "demon_profiler_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":demon_profiler_proto"],
 )
 
 proto_library(
     name = "search_stats_proto",
     srcs = ["search_stats.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "search_stats_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 java_proto_library(
     name = "search_stats_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 proto_library(
     name = "solver_parameters_proto",
     srcs = ["solver_parameters.proto"],
+    visibility = ["//visibility:public"],
 )
 
 cc_proto_library(
     name = "solver_parameters_cc_proto",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 java_proto_library(
     name = "solver_parameters_java_proto",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 py_proto_library(
     name = "assignment_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":assignment_proto"],
 )
 
 py_proto_library(
     name = "search_limit_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":search_limit_proto"],
 )
 
 py_proto_library(
     name = "demon_profiler_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":demon_profiler_proto"],
 )
 
 py_proto_library(
     name = "search_stats_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":search_stats_proto"],
 )
 
 py_proto_library(
     name = "solver_parameters_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [":solver_parameters_proto"],
 )
 
 py_library(
     name = "constraint_solver_py_pb2",
+    visibility = ["//visibility:public"],
     deps = [
         ":assignment_py_pb2",
         ":demon_profiler_py_pb2",
@@ -180,6 +199,7 @@ cc_library(
         "constraint_solver.h",
         "constraint_solveri.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
@@ -195,6 +215,7 @@ cc_library(
         "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",
+        "//ortools/base:numbers",
         "//ortools/base:recordio",
         "//ortools/base:stl_util",
         "//ortools/base:strong_vector",
@@ -334,6 +355,7 @@ cc_library(
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",
         "@protobuf",
+        "@protobuf//:duration_cc_proto",
     ],
 )
 
@@ -363,6 +385,7 @@ cc_library(
 cc_library(
     name = "routing_types",
     hdrs = ["routing_types.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//ortools/util:piecewise_linear_function",
         "//ortools/util:strong_integers",
@@ -402,6 +425,7 @@ cc_library(
     name = "routing_index_manager",
     srcs = ["routing_index_manager.cc"],
     hdrs = ["routing_index_manager.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":routing_types",
         "//ortools/base",
@@ -457,6 +481,7 @@ cc_library(
         "on_windows": ["/Zc:preprocessor"],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":cp",
         ":routing_breaks",
@@ -473,6 +498,7 @@ cc_library(
         ":routing_utils",
         ":solver_parameters_cc_proto",
         "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
         "//ortools/base:dump_vars",
         "//ortools/base:map_util",
         "//ortools/base:mathutil",

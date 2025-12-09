@@ -1616,8 +1616,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         bsize_(BitLength64(size_.Value())) {
     CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
         << "Bitset too large: [" << vmin << ", " << vmax << "]";
-    bits_ = new uint64_t[bsize_];
-    stamps_ = new uint64_t[bsize_];
+    bits_ = std::unique_ptr<uint64_t[]>(new uint64_t[bsize_]);
+    stamps_ = std::unique_ptr<uint64_t[]>(new uint64_t[bsize_]);
     for (int i = 0; i < bsize_; ++i) {
       const int bs =
           (i == size_.Value() - 1) ? 63 - BitPos64(size_.Value()) : 0;
@@ -1637,8 +1637,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
         bsize_(BitLength64(vmax - vmin + 1)) {
     CHECK(ClosedIntervalNoLargerThan(vmin, vmax, 0xFFFFFFFF))
         << "Bitset too large: [" << vmin << ", " << vmax << "]";
-    bits_ = new uint64_t[bsize_];
-    stamps_ = new uint64_t[bsize_];
+    bits_ = std::unique_ptr<uint64_t[]>(new uint64_t[bsize_]);
+    stamps_ = std::unique_ptr<uint64_t[]>(new uint64_t[bsize_]);
     for (int i = 0; i < bsize_; ++i) {
       bits_[i] = uint64_t{0};
       stamps_[i] = s->stamp() - 1;
@@ -1652,12 +1652,9 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  ~SimpleBitSet() override {
-    delete[] bits_;
-    delete[] stamps_;
-  }
+  ~SimpleBitSet() override = default;
 
-  bool bit(int64_t val) const { return IsBitSet64(bits_, val - omin_); }
+  bool bit(int64_t val) const { return IsBitSet64(bits_.get(), val - omin_); }
 
   int64_t ComputeNewMin(int64_t nmin, int64_t cmin, int64_t cmax) override {
     DCHECK_GE(nmin, cmin);
@@ -1665,11 +1662,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64_t new_min =
-        UnsafeLeastSignificantBitPosition64(bits_, nmin - omin_, cmax - omin_) +
-        omin_;
+    const int64_t new_min = UnsafeLeastSignificantBitPosition64(
+                                bits_.get(), nmin - omin_, cmax - omin_) +
+                            omin_;
     const uint64_t removed_bits =
-        BitCountRange64(bits_, cmin - omin_, new_min - omin_ - 1);
+        BitCountRange64(bits_.get(), cmin - omin_, new_min - omin_ - 1);
     size_.Add(solver_, -removed_bits);
     return new_min;
   }
@@ -1680,11 +1677,11 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     DCHECK_LE(cmin, cmax);
     DCHECK_GE(cmin, omin_);
     DCHECK_LE(cmax, omax_);
-    const int64_t new_max =
-        UnsafeMostSignificantBitPosition64(bits_, cmin - omin_, nmax - omin_) +
-        omin_;
+    const int64_t new_max = UnsafeMostSignificantBitPosition64(
+                                bits_.get(), cmin - omin_, nmax - omin_) +
+                            omin_;
     const uint64_t removed_bits =
-        BitCountRange64(bits_, new_max - omin_ + 1, cmax - omin_);
+        BitCountRange64(bits_.get(), new_max - omin_ + 1, cmax - omin_);
     size_.Add(solver_, -removed_bits);
     return new_max;
   }
@@ -1792,12 +1789,12 @@ class SimpleBitSet : public DomainIntVar::BitSet {
   }
 
   DomainIntVar::BitSetIterator* MakeIterator() override {
-    return new DomainIntVar::BitSetIterator(bits_, omin_);
+    return new DomainIntVar::BitSetIterator(bits_.get(), omin_);
   }
 
  private:
-  uint64_t* bits_;
-  uint64_t* stamps_;
+  std::unique_ptr<uint64_t[]> bits_;
+  std::unique_ptr<uint64_t[]> stamps_;
   const int64_t omin_;
   const int64_t omax_;
   NumericalRev<int64_t> size_;
@@ -7412,9 +7409,6 @@ void IntVar::SetValues(const std::vector<int64_t>& values) {
     default: {
       // TODO(user): use a clean and safe SortedUniqueCopy() class
       // that uses a global, static shared (and locked) storage.
-      // TODO(user): [optional] consider porting
-      // STLSortAndRemoveDuplicates from ortools/base/stl_util.h to the
-      // existing base/stl_util.h and using it here.
       // TODO(user): We could filter out values not in the var.
       std::vector<int64_t>& tmp = solver()->tmp_vector_;
       tmp.clear();

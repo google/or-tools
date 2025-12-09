@@ -89,6 +89,19 @@ IteratedLocalSearchParameters CreateDefaultIteratedLocalSearchParameters() {
   return ils;
 }
 
+GlobalCheapestInsertionParameters
+CreateDefaultGlobalCheapestInsertionParameters(
+    bool use_neighbors_ratio_for_initialization) {
+  GlobalCheapestInsertionParameters gci;
+  gci.set_farthest_seeds_ratio(0);
+  gci.set_neighbors_ratio(1.0);
+  gci.set_min_neighbors(1);
+  gci.set_use_neighbors_ratio_for_initialization(
+      use_neighbors_ratio_for_initialization);
+  gci.set_add_unperformed_entries(false);
+  return gci;
+}
+
 RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   RoutingSearchParameters p;
   p.set_first_solution_strategy(FirstSolutionStrategy::AUTOMATIC);
@@ -97,14 +110,12 @@ RoutingSearchParameters CreateDefaultRoutingSearchParameters() {
   p.mutable_savings_parameters()->set_max_memory_usage_bytes(6e9);
   p.mutable_savings_parameters()->set_add_reverse_arcs(false);
   p.mutable_savings_parameters()->set_arc_coefficient(1);
-  p.set_cheapest_insertion_farthest_seeds_ratio(0);
-  p.set_cheapest_insertion_first_solution_neighbors_ratio(1);
-  p.set_cheapest_insertion_first_solution_min_neighbors(1);
-  p.set_cheapest_insertion_ls_operator_neighbors_ratio(1);
-  p.set_cheapest_insertion_ls_operator_min_neighbors(1);
-  p.set_cheapest_insertion_first_solution_use_neighbors_ratio_for_initialization(  // NOLINT
-      false);
-  p.set_cheapest_insertion_add_unperformed_entries(false);
+  *p.mutable_global_cheapest_insertion_first_solution_parameters() =
+      CreateDefaultGlobalCheapestInsertionParameters(
+          /*use_neighbors_ratio_for_initialization=*/false);
+  *p.mutable_global_cheapest_insertion_ls_operator_parameters() =
+      CreateDefaultGlobalCheapestInsertionParameters(
+          /*use_neighbors_ratio_for_initialization=*/true);
   p.mutable_local_cheapest_insertion_parameters()->set_pickup_delivery_strategy(
       LocalCheapestInsertionParameters::BEST_PICKUP_THEN_BEST_DELIVERY);
   p.mutable_local_cheapest_cost_insertion_parameters()
@@ -332,6 +343,36 @@ void FindErrorsInSavingsParameters(const absl::string_view prefix,
   }
 }
 
+void FindErrorsInGlobalCheapestInsertionParameters(
+    absl::string_view prefix,
+    const GlobalCheapestInsertionParameters& gci_parameters,
+    std::vector<std::string>& errors) {
+  using absl::StrCat;
+
+  if (const double ratio = gci_parameters.farthest_seeds_ratio();
+      std::isnan(ratio) || ratio < 0 || ratio > 1) {
+    errors.emplace_back(
+        StrCat(prefix,
+               " - Invalid "
+               "global_cheapest_insertion_parameters.farthest_seeds_ratio: ",
+               ratio));
+  }
+  if (const double ratio = gci_parameters.neighbors_ratio();
+      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+    errors.emplace_back(StrCat(
+        prefix,
+        " - Invalid global_cheapest_insertion_parameters.neighbors_ratio: ",
+        ratio));
+  }
+  if (const int32_t min_neighbors = gci_parameters.min_neighbors();
+      min_neighbors < 1) {
+    errors.emplace_back(StrCat(
+        prefix,
+        " - Invalid global_cheapest_insertion_parameters.min_neighbors: ",
+        min_neighbors, ". Must be greater or equal to 1."));
+  }
+}
+
 void FindErrorsInRecreateParameters(
     const FirstSolutionStrategy::Value heuristic,
     const RecreateParameters& parameters, std::vector<std::string>& errors) {
@@ -348,6 +389,11 @@ void FindErrorsInRecreateParameters(
     case RecreateParameters::kSavings:
       FindErrorsInSavingsParameters("Savings (recreate heuristic)",
                                     parameters.savings(), errors);
+      break;
+    case RecreateParameters::kGlobalCheapestInsertion:
+      FindErrorsInGlobalCheapestInsertionParameters(
+          "Global cheapest insertion (recreate heuristic)",
+          parameters.global_cheapest_insertion(), errors);
       break;
     default:
       LOG(DFATAL) << "Unsupported unset recreate parameters.";
@@ -626,39 +672,14 @@ std::vector<std::string> FindErrorsInRoutingSearchParameters(
 #endif  // !__ANDROID__ && !__wasm__
   FindErrorsInSavingsParameters("Savings (first solution heuristic)",
                                 search_parameters.savings_parameters(), errors);
-  if (const double ratio =
-          search_parameters.cheapest_insertion_farthest_seeds_ratio();
-      std::isnan(ratio) || ratio < 0 || ratio > 1) {
-    errors.emplace_back(
-        StrCat("Invalid cheapest_insertion_farthest_seeds_ratio: ", ratio));
-  }
-  if (const double ratio =
-          search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
-      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_first_solution_neighbors_ratio: ", ratio));
-  }
-  if (const int32_t min_neighbors =
-          search_parameters.cheapest_insertion_first_solution_min_neighbors();
-      min_neighbors < 1) {
-    errors.emplace_back(
-        StrCat("Invalid cheapest_insertion_first_solution_min_neighbors: ",
-               min_neighbors, ". Must be greater or equal to 1."));
-  }
-  if (const double ratio =
-          search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
-      std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_ls_operator_neighbors_ratio: ", ratio));
-  }
-  if (const int32_t min_neighbors =
-          search_parameters.cheapest_insertion_ls_operator_min_neighbors();
-      min_neighbors < 1) {
-    errors.emplace_back(StrCat(
-        "Invalid cheapest_insertion_ls_operator_min_neighbors: ", min_neighbors,
-        ". Must be greater or equal to 1."));
-  }
-
+  FindErrorsInGlobalCheapestInsertionParameters(
+      "Global cheapest insertion (first solution heuristic)",
+      search_parameters.global_cheapest_insertion_first_solution_parameters(),
+      errors);
+  FindErrorsInGlobalCheapestInsertionParameters(
+      "Global cheapest insertion (ls operator)",
+      search_parameters.global_cheapest_insertion_ls_operator_parameters(),
+      errors);
   FindErrorsInLocalCheapestInsertionParameters(
       "Local cheapest insertion (first solution heuristic)",
       search_parameters.local_cheapest_insertion_parameters(), errors);

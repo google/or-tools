@@ -264,12 +264,31 @@ class SameActivityGroupManager {
 class OrderedActivityGroupManager {
  public:
   explicit OrderedActivityGroupManager(const RoutingModel& routing_model)
-      : groups_(routing_model.GetOrderedActivityGroups()),
-        group_bounds_(routing_model.GetOrderedActivityGroups().size(), {0, 0}) {
+      : routing_model_(routing_model),
+        groups_(routing_model.GetOrderedActivityGroups()),
+        group_bounds_(routing_model.GetOrderedActivityGroups().size(), {0, 0}),
+        disjunction_is_active_(routing_model.GetNumberOfDisjunctions(), false),
+        disjunction_is_inactive_(routing_model.GetNumberOfDisjunctions(),
+                                 false) {
+    group_nodes_.resize(groups_.size());
     node_groups_.resize(routing_model.Size());
+    disjunction_groups_.resize(routing_model.GetNumberOfDisjunctions());
     for (int group = 0; group < groups_.size(); ++group) {
-      for (int node : groups_[group]) {
-        node_groups_[node].push_back(group);
+      absl::flat_hash_map<RoutingModel::DisjunctionIndex, std::vector<int>>
+          disjunction_to_ranks;
+      for (int rank = 0; rank < groups_[group].size(); ++rank) {
+        disjunction_to_ranks[groups_[group][rank]].push_back(rank);
+      }
+      for (RoutingModel::DisjunctionIndex disjunction_index : groups_[group]) {
+        for (int node :
+             routing_model.GetDisjunctionNodeIndices(disjunction_index)) {
+          node_groups_[node].push_back(group);
+          group_nodes_[group].push_back(node);
+        }
+        disjunction_groups_[disjunction_index].push_back({
+            .group = group,
+            .sorted_ranks = disjunction_to_ranks[disjunction_index],
+        });
       }
       group_bounds_.Set(group, std::make_pair(0, groups_[group].size() - 1));
     }
@@ -280,11 +299,13 @@ class OrderedActivityGroupManager {
     return node_groups_[node];
   }
   const std::vector<int>& GetGroupNodes(int group) const {
-    return groups_[group];
+    return group_nodes_[group];
   }
   void Revert() {
     group_bounds_.Revert();
-    touched_nodes_.clear();
+    disjunction_is_active_.Revert();
+    disjunction_is_inactive_.Revert();
+    touched_disjunctions_.clear();
   }
   bool CheckGroup(int group, int active, int unknown,
                   CommittableArray<bool>& node_is_active,
@@ -292,65 +313,76 @@ class OrderedActivityGroupManager {
     if (active == 0) return true;
     auto& [min_rank, max_rank] = group_bounds_.GetMutable(group);
     for (int rank = min_rank; rank <= max_rank; ++rank) {
-      const int node = groups_[group][rank];
-      if (node_is_unknown.Get(node)) continue;
-      if (!node_is_active.Get(node)) {
-        touched_nodes_.push_back(node);
+      const RoutingModel::DisjunctionIndex disjunction_index =
+          groups_[group][rank];
+      if (IsInactive(disjunction_index, node_is_active, node_is_unknown)) {
+        disjunction_is_inactive_.Set(disjunction_index.value(), true);
+        touched_disjunctions_.push_back(disjunction_index);
         break;
       }
     }
     for (int rank = max_rank; rank >= min_rank; --rank) {
-      const int node = groups_[group][rank];
-      if (node_is_unknown.Get(node)) continue;
-      if (node_is_active.Get(node)) {
-        touched_nodes_.push_back(node);
+      const RoutingModel::DisjunctionIndex disjunction_index =
+          groups_[group][rank];
+      if (IsActive(disjunction_index, node_is_active, node_is_unknown)) {
+        disjunction_is_active_.Set(disjunction_index.value(), true);
+        touched_disjunctions_.push_back(disjunction_index);
         break;
       }
     }
-    while (!touched_nodes_.empty()) {
-      const int node = touched_nodes_.back();
-      touched_nodes_.pop_back();
-      if (!Propagate(node, node_is_active, node_is_unknown)) {
+    while (!touched_disjunctions_.empty()) {
+      const RoutingModel::DisjunctionIndex disjunction_index =
+          touched_disjunctions_.back();
+      touched_disjunctions_.pop_back();
+      if (!Propagate(disjunction_index, node_is_active, node_is_unknown)) {
         return false;
       }
-#ifndef NDEBUG
-      for (int n : touched_nodes_) DCHECK_NE(n, node);
-#endif  // NDEBUG
     }
     return true;
   }
-  bool Propagate(int node, CommittableArray<bool>& node_is_active,
+  bool Propagate(RoutingModel::DisjunctionIndex disjunction_index,
+                 CommittableArray<bool>& node_is_active,
                  CommittableArray<bool>& node_is_unknown) {
-    for (int group_index : node_groups_[node]) {
-      const std::vector<int>& group = groups_[group_index];
+    for (const auto& [group_index, ranks] :
+         disjunction_groups_[disjunction_index]) {
+      const std::vector<RoutingModel::DisjunctionIndex>& group =
+          groups_[group_index];
       auto& [min_rank, max_rank] = group_bounds_.GetMutable(group_index);
       if (max_rank < min_rank) continue;
-      if (node_is_active.Get(node)) {
-        // Make all active between min_rank and node.
+      if (IsActive(disjunction_index, node_is_active, node_is_unknown)) {
+        // Make all active between min_rank and the last appearance of the
+        // disjunction.
+        int i = ranks.size() - 1;
+        while (i >= 0 && ranks[i] > max_rank) --i;
+        if (i < 0 || ranks[i] < min_rank) continue;
         int rank = min_rank;
-        while (group[rank] != node) {
-          const int current_node = group[rank];
-          if (node_is_unknown.Get(current_node)) {
-            node_is_active.Set(current_node, true);
-            node_is_unknown.Set(current_node, false);
-            touched_nodes_.push_back(current_node);
-          } else if (!node_is_active.Get(current_node)) {
+        while (rank != ranks[i]) {
+          const RoutingModel::DisjunctionIndex current = group[rank];
+          if (IsInactive(current, node_is_active, node_is_unknown)) {
             return false;
+          }
+          if (!IsActive(current, node_is_active, node_is_unknown)) {
+            disjunction_is_active_.Set(current.value(), true);
+            touched_disjunctions_.push_back(current);
           }
           rank++;
         }
         min_rank = rank + 1;
       } else {
-        // Make all inactive between node and max_rank.
+        // Make all inactive between the first appearance of the disjunction and
+        // max_rank.
+        int i = 0;
+        while (i < ranks.size() && ranks[i] < min_rank) ++i;
+        if (i >= ranks.size() || ranks[i] > max_rank) continue;
         int rank = max_rank;
-        while (group[rank] != node) {
-          const int current_node = group[rank];
-          if (node_is_unknown.Get(current_node)) {
-            node_is_active.Set(current_node, false);
-            node_is_unknown.Set(current_node, false);
-            touched_nodes_.push_back(current_node);
-          } else if (node_is_active.Get(current_node)) {
+        while (rank != ranks[i]) {
+          const RoutingModel::DisjunctionIndex current = group[rank];
+          if (IsActive(current, node_is_active, node_is_unknown)) {
             return false;
+          }
+          if (!IsInactive(current, node_is_active, node_is_unknown)) {
+            disjunction_is_inactive_.Set(current.value(), true);
+            touched_disjunctions_.push_back(current);
           }
           rank--;
         }
@@ -361,10 +393,54 @@ class OrderedActivityGroupManager {
   }
 
  private:
-  const std::vector<std::vector<int>>& groups_;
+  bool IsInactive(RoutingModel::DisjunctionIndex disjunction_index,
+                  const CommittableArray<bool>& node_is_active,
+                  const CommittableArray<bool>& node_is_unknown) const {
+    if (disjunction_is_inactive_.Get(disjunction_index.value())) return true;
+    int num_unknown = 0;
+    int num_active = 0;
+    for (int node :
+         routing_model_.GetDisjunctionNodeIndices(disjunction_index)) {
+      if (node_is_unknown.Get(node)) {
+        ++num_unknown;
+      } else if (node_is_active.Get(node)) {
+        ++num_active;
+      }
+    }
+    return num_unknown <
+           routing_model_.GetDisjunctionMaxCardinality(disjunction_index) -
+               num_active;
+  }
+  bool IsActive(RoutingModel::DisjunctionIndex disjunction_index,
+                const CommittableArray<bool>& node_is_active,
+                const CommittableArray<bool>& node_is_unknown) const {
+    if (disjunction_is_active_.Get(disjunction_index.value())) return true;
+    int num_active = 0;
+    for (int node :
+         routing_model_.GetDisjunctionNodeIndices(disjunction_index)) {
+      if (!node_is_unknown.Get(node) && node_is_active.Get(node)) {
+        ++num_active;
+      }
+    }
+    return num_active >=
+           routing_model_.GetDisjunctionMaxCardinality(disjunction_index);
+  }
+
+  const RoutingModel& routing_model_;
+  const std::vector<std::vector<RoutingModel::DisjunctionIndex>>& groups_;
+  std::vector<std::vector<int>> group_nodes_;
   std::vector<std::vector<int>> node_groups_;
+  struct DisjunctionGroupInfo {
+    int group;
+    std::vector<int> sorted_ranks;
+  };
+  util_intops::StrongVector<RoutingModel::DisjunctionIndex,
+                            std::vector<DisjunctionGroupInfo>>
+      disjunction_groups_;
   CommittableArray<std::pair<int, int>> group_bounds_;
-  std::vector<int> touched_nodes_;
+  std::vector<RoutingModel::DisjunctionIndex> touched_disjunctions_;
+  CommittableArray<bool> disjunction_is_active_;
+  CommittableArray<bool> disjunction_is_inactive_;
 };
 
 template <typename GroupAccessor>
@@ -5168,5 +5244,65 @@ LocalSearchFilter* MakePathEnergyCostFilter(
 
 // TODO(user): Implement same-vehicle filter. Could be merged with node
 // precedence filter.
+
+MaxLinearExpressionEvaluator::MaxLinearExpressionEvaluator(
+    const std::vector<std::vector<double>>& rows)
+    : num_variables_(rows.empty() ? 0 : rows[0].size()),
+      num_rows_(rows.size()) {
+  if (num_variables_ == 0) return;
+  // Map rows to blocks, see class documentation.
+  const int64_t num_block_rows = (num_rows_ + kBlockSize - 1) / kBlockSize;
+  blocks_.resize(num_block_rows * num_variables_);
+  const int64_t num_full_block_rows = num_rows_ / kBlockSize;
+  for (int64_t br = 0; br < num_full_block_rows; ++br) {
+    for (int64_t v = 0; v < num_variables_; ++v) {
+      Block& block = blocks_[br * num_variables_ + v];
+      for (int c = 0; c < kBlockSize; ++c) {
+        block.coefficients[c] = rows[br * kBlockSize + c][v];
+      }
+    }
+  }
+  // If the block representation represents more rows than the original matrix,
+  // i.e. if num_rows_ % kBlockSize != 0, we need to initialize it and to pad
+  // non-existent rows.
+  if (num_full_block_rows == num_block_rows) return;  // No padding needed.
+  DCHECK_EQ(num_full_block_rows + 1, num_block_rows);
+  Block* last_block_row = &blocks_[num_full_block_rows * num_variables_];
+  const int first_coefficient_to_pad =
+      num_rows_ - num_full_block_rows * kBlockSize;
+  for (int64_t v = 0; v < num_variables_; ++v) {
+    Block& block = last_block_row[v];
+    // Copy original coefficients.
+    for (int c = 0; c < first_coefficient_to_pad; ++c) {
+      const int64_t r = num_full_block_rows * kBlockSize + c;
+      block.coefficients[c] = rows[r][v];
+    }
+    // Pad coefficients with a copy of the first coefficient.
+    for (int c = first_coefficient_to_pad; c < kBlockSize; ++c) {
+      block.coefficients[c] = block.coefficients[0];
+    }
+  }
+}
+
+double MaxLinearExpressionEvaluator::Evaluate(
+    absl::Span<const double> values) const {
+  DCHECK_EQ(values.size(), num_variables_);
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  if (num_rows_ == 0) return -kInfinity;
+  if (num_variables_ == 0) return 0.0;
+  DCHECK_EQ(blocks_.size() % num_variables_, 0);
+  Block maximums;
+  absl::c_fill(maximums.coefficients, -kInfinity);
+  for (auto row = blocks_.begin(); row != blocks_.end();
+       row += num_variables_) {
+    Block evaluations;
+    absl::c_fill(evaluations.coefficients, 0.0);
+    for (int64_t v = 0; v < num_variables_; ++v) {
+      evaluations.BlockMultiplyAdd(row[v], values[v]);
+    }
+    maximums.MaximumWith(evaluations);
+  }
+  return maximums.Maximum();
+}
 
 }  // namespace operations_research
