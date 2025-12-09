@@ -254,6 +254,44 @@ struct GlpkParameters {
   static GlpkParameters FromProto(const GlpkParametersProto& proto);
 };
 
+// Xpress specific parameters for solving. See
+//   https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter7.html
+// for a list of possible parameters (called "controls" in Xpress).
+// In addition to all Xpress controls, the following special parameters are
+// also supported:
+//   "EXPORT_MODEL"(string)  If present then the low level Xpress model
+//                           (the XPRSprob instance) is written to that file
+//                           right before XPRSoptimize() is called. This can
+//                           be useful for debugging.
+//   "FORCE_POSTSOLVE"(int)  If set to a non-zero value then the low-level code
+//                           will call XPRSpostsolve() right after calling
+//                           XPRSoptimize(). If not set or set to zero then
+//                           calling XPRSpostsolve() is delayed to the latest
+//                           possible point in time to enable incremental
+//                           solves.
+//    "STOP_AFTER_LP"(int)   If set to a non-zero value then the solve will be
+//                           stopped right after solving the root relaxation.
+//                           This is the same as passing the ' l' (ell) flag
+//                           to XPRSoptimize() and stops the process earlier
+//                           than a limit like MAXNODE=0.
+//
+// Example use:
+//   XpressParameters xpress;
+//   xpress.param_values["BarIterLimit"] = "10";
+//
+// Parameters are applied in the following order:
+//  * Any parameters derived from ortools parameters (like LP algorithm).
+//  * param_values in iteration order (insertion order).
+struct XpressParameters {
+  // Parameter name-value pairs to set in insertion order.
+  gtl::linked_hash_map<std::string, std::string> param_values;
+
+  XpressParametersProto Proto() const;
+  static XpressParameters FromProto(const XpressParametersProto& proto);
+
+  bool empty() const { return param_values.empty(); }
+};
+
 // Parameters to control a single solve.
 //
 // Contains both parameters common to all solvers, e.g. time_limit, and
@@ -330,7 +368,8 @@ struct SolveParameters {
   // Solvers will typically not return more solutions than the solution limit,
   // but this is not enforced by MathOpt, see also b/214041169.
   //
-  // Currently supported for Gurobi and SCIP, and for CP-SAT only with value 1.
+  // Currently supported for Gurobi, Xpress and SCIP, and for CP-SAT only with
+  // value 1.
   std::optional<int32_t> solution_limit;
 
   // If unset, use the solver default. If set, it must be >= 1.
@@ -347,6 +386,7 @@ struct SolveParameters {
   // - Gurobi: [0:GRB_MAXINT] (which as of Gurobi 9.0 is 2x10^9).
   // - GSCIP:  [0:2147483647] (which is MAX_INT or kint32max or 2^31-1).
   // - GLOP:   [0:2147483647] (same as above)
+  // - Xpress: Any 32bit signed integer is allowed
   // In all cases, the solver will receive a value equal to:
   // MAX(0, MIN(MAX_VALID_VALUE_FOR_SOLVER, random_seed)).
   std::optional<int32_t> random_seed;
@@ -425,6 +465,7 @@ struct SolveParameters {
 
   GlpkParameters glpk;
   HighsOptionsProto highs;
+  XpressParameters xpress;
 
   SolveParametersProto Proto() const;
   static absl::StatusOr<SolveParameters> FromProto(

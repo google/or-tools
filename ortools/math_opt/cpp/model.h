@@ -481,6 +481,8 @@ class Model {
   // The `weights` are an implementation detail in the solver used to order the
   // `expressions`; see the Gurobi documentation for more detail:
   // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  // For Xpress see
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddsets.html
   //
   // These `weights` must either be empty or the same length as `expressions`.
   // If it is empty, default weights of 1, 2, ... will be used.
@@ -540,6 +542,8 @@ class Model {
   // The `weights` are an implementation detail in the solver used to order the
   // `expressions`; see the Gurobi documentation for more detail:
   // https://www.gurobi.com/documentation/9.5/refman/constraints.html#subsubsection:SOSConstraints
+  // For Xpress see
+  // https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/XPRSaddsets.html
   //
   // These `weights` must either be empty or the same length as `expressions`.
   // If it is empty, default weights of 1, 2, ... will be used.

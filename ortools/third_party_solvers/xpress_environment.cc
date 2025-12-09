@@ -29,6 +29,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/status_builder.h"
 #include "ortools/third_party_solvers/dynamic_library.h"
 
 namespace operations_research {
@@ -52,6 +53,7 @@ std::function<int(char* buffer, int maxbytes)> XPRSgetlicerrmsg = nullptr;
 std::function<int(int* p_i, char* p_c)> XPRSlicense = nullptr;
 std::function<int(char* banner)> XPRSgetbanner = nullptr;
 std::function<int(char* version)> XPRSgetversion = nullptr;
+std::function<int(int *p_major, int *p_minor, int *p_build)> XPRSgetversionnumbers = nullptr;
 std::function<int(XPRSprob prob, const char* probname)> XPRSsetprobname = nullptr;
 std::function<int(XPRSprob prob, int control)> XPRSsetdefaultcontrol = nullptr;
 std::function<int(XPRSprob prob, int reason)> XPRSinterrupt = nullptr;
@@ -59,6 +61,8 @@ std::function<int(XPRSprob prob, int control, int value)> XPRSsetintcontrol = nu
 std::function<int(XPRSprob prob, int control, XPRSint64 value)> XPRSsetintcontrol64 = nullptr;
 std::function<int(XPRSprob prob, int control, double value)> XPRSsetdblcontrol = nullptr;
 std::function<int(XPRSprob prob, int control, const char* value)> XPRSsetstrcontrol = nullptr;
+std::function<int(XPRSprob prob, int objidx, int control, int value)> XPRSsetobjintcontrol = nullptr;
+std::function<int(XPRSprob prob, int objidx, int control, double value)> XPRSsetobjdblcontrol = nullptr;
 std::function<int(XPRSprob prob, int control, int* p_value)> XPRSgetintcontrol = nullptr;
 std::function<int(XPRSprob prob, int control, XPRSint64* p_value)> XPRSgetintcontrol64 = nullptr;
 std::function<int(XPRSprob prob, int control, double* p_value)> XPRSgetdblcontrol = nullptr;
@@ -66,6 +70,8 @@ std::function<int(XPRSprob prob, int control, char* value, int maxbytes, int* p_
 std::function<int(XPRSprob prob, int attrib, int* p_value)> XPRSgetintattrib = nullptr;
 std::function<int(XPRSprob prob, int attrib, char* value, int maxbytes, int* p_nbytes)> XPRSgetstringattrib = nullptr;
 std::function<int(XPRSprob prob, int attrib, double* p_value)> XPRSgetdblattrib = nullptr;
+std::function<int(XPRSprob prob, int objidx, int attrib, double* p_value)> XPRSgetobjdblattrib = nullptr;
+std::function<int(XPRSprob prob, int objidx, const double solution[], double* p_objval)> XPRScalcobjn = nullptr;
 std::function<int(XPRSprob prob, const char* name, int* p_id, int* p_type)> XPRSgetcontrolinfo = nullptr;
 std::function<int(XPRSprob prob, double objcoef[], int first, int last)> XPRSgetobj = nullptr;
 std::function<int(XPRSprob prob, double rhs[], int first, int last)> XPRSgetrhs = nullptr;
@@ -73,13 +79,18 @@ std::function<int(XPRSprob prob, double rng[], int first, int last)> XPRSgetrhsr
 std::function<int(XPRSprob prob, double lb[], int first, int last)> XPRSgetlb = nullptr;
 std::function<int(XPRSprob prob, double ub[], int first, int last)> XPRSgetub = nullptr;
 std::function<int(XPRSprob prob, int row, int col, double* p_coef)> XPRSgetcoef = nullptr;
+std::function<int(XPRSprob prob, int* status, double x[], int first, int last)> XPRSgetsolution = nullptr;
 std::function<int(XPRSprob prob, int* status, double duals[], int first, int last)> XPRSgetduals = nullptr;
 std::function<int(XPRSprob prob, int* status, double djs[], int first, int last)> XPRSgetredcosts = nullptr;
 std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const int start[], const int colind[], const double rowcoef[])> XPRSaddrows = nullptr;
+std::function<int(XPRSprob prob, int nrows, int ncoefs, const char rowtype[], const double rhs[], const double rng[], const XPRSint64 start[], const int colind[], const double rowcoef[])> XPRSaddrows64 = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSdelrows = nullptr;
 std::function<int(XPRSprob prob, int ncols, int ncoefs, const double objcoef[], const int start[], const int rowind[], const double rowcoef[], const double lb[], const double ub[])> XPRSaddcols = nullptr;
+std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[], int priority, double weight)> XPRSaddobj = nullptr;
+std::function<int(XPRSprob prob, int row, int ncoefs, const int rowqcol1[], int const rowqcol2[], const double rowqcoef[])> XPRSaddqmatrix64 = nullptr;
 std::function<int(XPRSprob prob, int type, const char names[], int first, int last)> XPRSaddnames = nullptr;
 std::function<int(XPRSprob prob, int type, char names[], int first, int last)> XPRSgetnames = nullptr;
+std::function<int(XPRSprob prob, int nsets, XPRSint64 nelems, const char settype[], const XPRSint64 start[], const int colind[], const double refval[])> XPRSaddsets64 = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[])> XPRSdelcols = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[], const char coltype[])> XPRSchgcoltype = nullptr;
 std::function<int(XPRSprob prob, const int rowstat[], const int colstat[])> XPRSloadbasis = nullptr;
@@ -88,11 +99,14 @@ std::function<int(XPRSprob prob, int objsense)> XPRSchgobjsense = nullptr;
 std::function<int(XPRSprob prob, char* errmsg)> XPRSgetlasterror = nullptr;
 std::function<int(XPRSprob prob, int rowstat[], int colstat[])> XPRSgetbasis = nullptr;
 std::function<int(XPRSprob prob, const char* filename, const char* flags)> XPRSwriteprob = nullptr;
+std::function<int(XPRSprob prob, const char* filename)> XPRSsaveas = nullptr;
 std::function<int(XPRSprob prob, char rowtype[], int first, int last)> XPRSgetrowtype = nullptr;
 std::function<int(XPRSprob prob, char coltype[], int first, int last)> XPRSgetcoltype = nullptr;
 std::function<int(XPRSprob prob, int nbounds, const int colind[], const char bndtype[], const double bndval[])> XPRSchgbounds = nullptr;
 std::function<int(XPRSprob prob, int length, const double solval[], const int colind[], const char* name)> XPRSaddmipsol = nullptr;
 std::function<int(XPRSprob prob, int nrows, const int rowind[])> XPRSloaddelayedrows = nullptr;
+std::function<int(XPRSprob prob, int nrows, const int rowind[], const int colind[], const int complement[])> XPRSsetindicators = nullptr;
+std::function<int(XPRSprob prob, int ndirs, const int colind[], const int priority[], const char dir[], const double uppseudo[], const double downpseudo[])> XPRSloaddirs;
 std::function<int(XPRSprob prob, double x[], double slack[], double duals[], double djs[])> XPRSgetlpsol = nullptr;
 std::function<int(XPRSprob prob, double x[], double slack[])> XPRSgetmipsol = nullptr;
 std::function<int(XPRSprob prob, int ncols, const int colind[], const double objcoef[])> XPRSchgobj = nullptr;
@@ -107,6 +121,9 @@ std::function<int(XPRSprob prob, int objidx)> XPRSdelobj = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p, int priority)> XPRSaddcbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_intsol)(XPRSprob cbprob, void* cbdata), void* p)> XPRSremovecbintsol = nullptr;
 std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p, int priority)> XPRSaddcbmessage = nullptr;
+std::function<int(XPRSprob prob, void (XPRS_CC *f_message)(XPRSprob cbprob, void* cbdata, const char* msg, int msglen, int msgtype), void* p)> XPRSremovecbmessage = nullptr;
+std::function<int(XPRSprob prob, int (XPRS_CC *f_checktime)(XPRSprob cbprob, void* cbdata), void* p, int priority)> XPRSaddcbchecktime = nullptr;
+std::function<int(XPRSprob prob, int (XPRS_CC *f_checktime)(XPRSprob cbprob, void* cbdata), void* p)> XPRSremovecbchecktime = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSlpoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags)> XPRSmipoptimize = nullptr;
 std::function<int(XPRSprob prob, const char* flags, int* solvestatus, int* solstatus)> XPRSoptimize = nullptr;
@@ -129,6 +146,7 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSlicense, "XPRSlicense");
   xpress_dynamic_library->GetFunction(&XPRSgetbanner, "XPRSgetbanner");
   xpress_dynamic_library->GetFunction(&XPRSgetversion, "XPRSgetversion");
+  xpress_dynamic_library->GetFunction(&XPRSgetversionnumbers, "XPRSgetversionnumbers");
   xpress_dynamic_library->GetFunction(&XPRSsetprobname, "XPRSsetprobname");
   xpress_dynamic_library->GetFunction(&XPRSsetdefaultcontrol, "XPRSsetdefaultcontrol");
   xpress_dynamic_library->GetFunction(&XPRSinterrupt, "XPRSinterrupt");
@@ -136,6 +154,8 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSsetintcontrol64, "XPRSsetintcontrol64");
   xpress_dynamic_library->GetFunction(&XPRSsetdblcontrol, "XPRSsetdblcontrol");
   xpress_dynamic_library->GetFunction(&XPRSsetstrcontrol, "XPRSsetstrcontrol");
+  xpress_dynamic_library->GetFunction(&XPRSsetobjintcontrol, "XPRSsetobjintcontrol");
+  xpress_dynamic_library->GetFunction(&XPRSsetobjdblcontrol, "XPRSsetobjdblcontrol");
   xpress_dynamic_library->GetFunction(&XPRSgetintcontrol, "XPRSgetintcontrol");
   xpress_dynamic_library->GetFunction(&XPRSgetintcontrol64, "XPRSgetintcontrol64");
   xpress_dynamic_library->GetFunction(&XPRSgetdblcontrol, "XPRSgetdblcontrol");
@@ -143,19 +163,28 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetintattrib, "XPRSgetintattrib");
   xpress_dynamic_library->GetFunction(&XPRSgetstringattrib, "XPRSgetstringattrib");
   xpress_dynamic_library->GetFunction(&XPRSgetdblattrib, "XPRSgetdblattrib");
+  xpress_dynamic_library->GetFunction(&XPRSgetobjdblattrib, "XPRSgetobjdblattrib");
+  xpress_dynamic_library->GetFunction(&XPRScalcobjn, "XPRScalcobjn");
+  xpress_dynamic_library->GetFunction(&XPRSgetcontrolinfo, "XPRSgetcontrolinfo");
   xpress_dynamic_library->GetFunction(&XPRSgetobj, "XPRSgetobj");
   xpress_dynamic_library->GetFunction(&XPRSgetrhs, "XPRSgetrhs");
   xpress_dynamic_library->GetFunction(&XPRSgetrhsrange, "XPRSgetrhsrange");
   xpress_dynamic_library->GetFunction(&XPRSgetlb, "XPRSgetlb");
   xpress_dynamic_library->GetFunction(&XPRSgetub, "XPRSgetub");
   xpress_dynamic_library->GetFunction(&XPRSgetcoef, "XPRSgetcoef");
+  xpress_dynamic_library->GetFunction(&XPRSgetsolution, "XPRSgetsolution");
   xpress_dynamic_library->GetFunction(&XPRSgetduals, "XPRSgetduals");
   xpress_dynamic_library->GetFunction(&XPRSgetredcosts, "XPRSgetredcosts");
   xpress_dynamic_library->GetFunction(&XPRSaddrows, "XPRSaddrows");
+  xpress_dynamic_library->GetFunction(&XPRSaddrows64, "XPRSaddrows64");
   xpress_dynamic_library->GetFunction(&XPRSdelrows, "XPRSdelrows");
+  xpress_dynamic_library->GetFunction(&XPRSdelobj, "XPRSdelobj");
   xpress_dynamic_library->GetFunction(&XPRSaddcols, "XPRSaddcols");
+  xpress_dynamic_library->GetFunction(&XPRSaddobj, "XPRSaddobj");
+  xpress_dynamic_library->GetFunction(&XPRSaddqmatrix64, "XPRSaddqmatrix64");
   xpress_dynamic_library->GetFunction(&XPRSaddnames, "XPRSaddnames");
   xpress_dynamic_library->GetFunction(&XPRSgetnames, "XPRSgetnames");
+  xpress_dynamic_library->GetFunction(&XPRSaddsets64, "XPRSaddsets64");
   xpress_dynamic_library->GetFunction(&XPRSdelcols, "XPRSdelcols");
   xpress_dynamic_library->GetFunction(&XPRSchgcoltype, "XPRSchgcoltype");
   xpress_dynamic_library->GetFunction(&XPRSloadbasis, "XPRSloadbasis");
@@ -164,11 +193,14 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSgetlasterror, "XPRSgetlasterror");
   xpress_dynamic_library->GetFunction(&XPRSgetbasis, "XPRSgetbasis");
   xpress_dynamic_library->GetFunction(&XPRSwriteprob, "XPRSwriteprob");
+  xpress_dynamic_library->GetFunction(&XPRSsaveas, "XPRSsaveas");
   xpress_dynamic_library->GetFunction(&XPRSgetrowtype, "XPRSgetrowtype");
   xpress_dynamic_library->GetFunction(&XPRSgetcoltype, "XPRSgetcoltype");
   xpress_dynamic_library->GetFunction(&XPRSchgbounds, "XPRSchgbounds");
   xpress_dynamic_library->GetFunction(&XPRSaddmipsol, "XPRSaddmipsol");
   xpress_dynamic_library->GetFunction(&XPRSloaddelayedrows, "XPRSloaddelayedrows");
+  xpress_dynamic_library->GetFunction(&XPRSsetindicators, "XPRSsetindicators");
+  xpress_dynamic_library->GetFunction(&XPRSloaddirs, "XPRSloaddirs");
   xpress_dynamic_library->GetFunction(&XPRSgetlpsol, "XPRSgetlpsol");
   xpress_dynamic_library->GetFunction(&XPRSgetmipsol, "XPRSgetmipsol");
   xpress_dynamic_library->GetFunction(&XPRSchgobj, "XPRSchgobj");
@@ -183,6 +215,9 @@ void LoadXpressFunctions(DynamicLibrary* xpress_dynamic_library) {
   xpress_dynamic_library->GetFunction(&XPRSaddcbintsol, "XPRSaddcbintsol");
   xpress_dynamic_library->GetFunction(&XPRSremovecbintsol, "XPRSremovecbintsol");
   xpress_dynamic_library->GetFunction(&XPRSaddcbmessage, "XPRSaddcbmessage");
+  xpress_dynamic_library->GetFunction(&XPRSremovecbmessage, "XPRSremovecbmessage");
+  xpress_dynamic_library->GetFunction(&XPRSaddcbchecktime, "XPRSaddcbchecktime");
+  xpress_dynamic_library->GetFunction(&XPRSremovecbchecktime, "XPRSremovecbchecktime");
   xpress_dynamic_library->GetFunction(&XPRSlpoptimize, "XPRSlpoptimize");
   xpress_dynamic_library->GetFunction(&XPRSmipoptimize, "XPRSmipoptimize");
   xpress_dynamic_library->GetFunction(&XPRSoptimize, "XPRSoptimize");
@@ -268,7 +303,21 @@ absl::Status LoadXpressDynamicLibrary(std::string& xpresspath) {
     if (xpress_library->LibraryIsLoaded()) {
       LOG(INFO) << "Loading all Xpress functions";
       LoadXpressFunctions(xpress_library);
-      *xpress_load_status = absl::OkStatus();
+      // Make sure the library we just loaded is recent enough.
+      int major = -1, minor = -1, build = -1;
+      if (!XPRSgetversionnumbers ||
+          XPRSgetversionnumbers(&major, &minor, &build) != 0)
+        *xpress_load_status =
+            util::StatusBuilder(absl::StatusCode::kNotFound)
+            << "Xpress optimizer library too old, need at least version "
+            << XPVERSION;
+      else if (major < XPVERSION)
+        *xpress_load_status = util::StatusBuilder(absl::StatusCode::kNotFound)
+                              << "Xpress optimizer library version " << major
+                              << " too old, need at least version "
+                              << XPVERSION;
+      else
+        *xpress_load_status = absl::OkStatus();
     } else {
       *xpress_load_status = absl::NotFoundError(
           absl::StrCat("Could not find the Xpress shared library. Looked in: [",
