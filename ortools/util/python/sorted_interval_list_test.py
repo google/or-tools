@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import copy
 from absl.testing import absltest
 from ortools.util.python import sorted_interval_list as sil
 
@@ -110,6 +112,18 @@ class SortedIntervalListTest(absltest.TestCase):
         d1 = sil.Domain(0, 5)
         self.assertEqual(str(d1), "[0,5]")
         self.assertEqual(repr(d1), "Domain([0,5])")
+
+    def testCopy(self):
+        d1 = sil.Domain(-3, 5)
+        d2 = copy.copy(d1)
+        self.assertIsNot(d1, d2)
+        self.assertEqual(d1.flattened_intervals(), d2.flattened_intervals())
+
+    def testDeepCopy(self):
+        d1 = sil.Domain(-3, 5)
+        d2 = copy.deepcopy(d1)
+        self.assertIsNot(d1, d2)
+        self.assertEqual(d1.flattened_intervals(), d2.flattened_intervals())
 
 
 if __name__ == "__main__":

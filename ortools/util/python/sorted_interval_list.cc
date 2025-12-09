@@ -70,6 +70,9 @@ PYBIND11_MODULE(sorted_interval_list, m) {
            [](const Domain& domain) {
              return absl::StrCat("Domain(", domain.ToString(), ")");
            })
+      .def("__copy__", [](const Domain& self) { return Domain(self); })
+      .def("__deepcopy__",
+           [](const Domain& self, pybind11::dict) { return Domain(self); })
       // Compatibility with pre PEP8 APIs.
       .def_static("AllValues", &Domain::AllValues,
                   DOC(operations_research, Domain, AllValues))
