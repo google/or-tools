@@ -977,7 +977,7 @@ absl::Status XpressSolver::AddNewVariables(
   }
   if (!have_integers) {
     // There are no integer variables, so we clear variable_type to
-    // safe the call to XPRSchgcoltype() in AddVars()
+    // save the call to XPRSchgcoltype() in AddVars()
     variable_type.clear();
   }
   RETURN_IF_ERROR(
