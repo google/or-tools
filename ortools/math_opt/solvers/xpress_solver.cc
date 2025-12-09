@@ -1100,7 +1100,7 @@ absl::Status XpressSolver::AddObjective(
   } else {
     // Auxiliary objective in multi-objective. Xpress does not support
     // different objective senses for different objectives. So if the sense
-    // does not match we set the weight to -1.0 to inver the objective
+    // does not match we set the weight to -1.0 to invert the objective
     // coefficients.
     ASSIGN_OR_RETURN(double const objsen,
                      xpress_->GetDoubleAttr(XPRS_OBJSENSE));
