@@ -13,7 +13,10 @@
 
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = [
+    "//third_party/ortools/examples/cpp:__pkg__",
+    "//visibility:public",
+])
 
 cc_library(
     name = "os",
