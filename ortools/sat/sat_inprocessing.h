@@ -500,6 +500,12 @@ class GateCongruenceClosure {
   // functions of the form one_var = f(other_vars).
   void ExtractShortGates(PresolveTimer& timer);
 
+  // Detects gates encoded in the given truth table, and add them to the set
+  // of gates. Returns the number of gate detected.
+  int ProcessTruthTable(absl::Span<const BooleanVariable> inputs,
+                        SmallBitset truth_table,
+                        absl::Span<const TruthTableId> ids_for_proof = {});
+
   // Add a small clause to the corresponding truth table.
   template <int arity>
   void AddToTruthTable(SatClause* clause,
@@ -550,6 +556,7 @@ class GateCongruenceClosure {
   // truth_tables_inputs_, this is a bit wasted but simplify the code.
   absl::flat_hash_map<std::array<BooleanVariable, 3>, TruthTableId> ids3_;
   absl::flat_hash_map<std::array<BooleanVariable, 4>, TruthTableId> ids4_;
+  absl::flat_hash_map<std::array<BooleanVariable, 5>, TruthTableId> ids5_;
   CompactVectorVector<TruthTableId, BooleanVariable> truth_tables_inputs_;
   util_intops::StrongVector<TruthTableId, SmallBitset> truth_tables_bitset_;
   CompactVectorVector<TruthTableId, SatClause*> truth_tables_clauses_;

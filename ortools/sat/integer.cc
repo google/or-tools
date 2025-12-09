@@ -1667,10 +1667,6 @@ ReasonIndex IntegerTrail::AppendReasonToInternalBuffers(
   return reason_index;
 }
 
-int64_t IntegerTrail::NextConflictId() {
-  return sat_solver_->num_failures() + 1;
-}
-
 bool IntegerTrail::EnqueueInternal(
     IntegerLiteral i_lit, bool use_lazy_reason,
     absl::Span<const Literal> literal_reason,
@@ -1721,7 +1717,8 @@ bool IntegerTrail::EnqueueInternal(
       return false;
     }
 
-    MergeReasonIntoInternal(conflict, NextConflictId());
+    // TODO(user): fix or remove the conflict_id optimization.
+    MergeReasonIntoInternal(conflict, -1);
     return false;
   }
 
@@ -1793,7 +1790,8 @@ bool IntegerTrail::EnqueueInternal(
         return false;
       }
 
-      MergeReasonIntoInternal(conflict, NextConflictId());
+      // TODO(user): fix or remove the conflict_id optimization.
+      MergeReasonIntoInternal(conflict, -1);
       return false;
     }
 
@@ -2348,7 +2346,10 @@ absl::Span<const Literal> IntegerTrail::Reason(
 
     tmp_queue_.push_back(prev_trail_index);
   }
+
   // TODO(user): fix or remove the conflict_id optimization.
+  // It is probably superseded by the new integer resolution in any case,
+  // so I fill we could just remove it.
   MergeReasonIntoInternal(reason, -1);
 
   if (DEBUG_MODE && debug_checker_ != nullptr) {

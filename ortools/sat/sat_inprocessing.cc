@@ -89,6 +89,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
 
   // Mainly useful for development.
   double probing_time = 0.0;
+  const bool log_info = VLOG_IS_ON(2);
   const bool log_round_info = VLOG_IS_ON(2);
 
   // We currently do the transformations in a given order and restart each time
@@ -140,18 +141,18 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
       continue;
     }
 
+    // TODO(user): Think about the right order in this function.
+    if (params_.inprocessing_use_congruence_closure()) {
+      RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+      RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
+      RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_info));
+    }
+
     // TODO(user): Combine the two? this way we don't create a full literal <->
     // clause graph twice. It might make sense to reach the BCE fix point which
     // is unique before each variable elimination.
     if (!params_.fill_tightened_domains_in_response()) {
       blocked_clause_simplifier_->DoOneRound(log_round_info);
-    }
-
-    // TODO(user): Think about the right order in this function.
-    if (params_.inprocessing_use_congruence_closure()) {
-      RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
-      RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
-      RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
     }
 
     // TODO(user): this break some binary graph invariant. Fix!
@@ -298,7 +299,7 @@ bool Inprocessing::InprocessingRound() {
   if (params_.inprocessing_use_congruence_closure()) {
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
     RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
-    RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
+    RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_info));
   }
 
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -1956,6 +1957,7 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
     PresolveTimer& timer) {
   ids3_.clear();
   ids4_.clear();
+  ids5_.clear();
   truth_tables_inputs_.clear();
   truth_tables_bitset_.clear();
   truth_tables_clauses_.clear();
@@ -1971,6 +1973,8 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
       AddToTruthTable<3>(clause, ids3_);
     } else if (clause->size() == 4) {
       AddToTruthTable<4>(clause, ids4_);
+    } else if (clause->size() == 5) {
+      AddToTruthTable<5>(clause, ids5_);
     }
 
     // Used for an optimization below.
@@ -2103,68 +2107,235 @@ void GateCongruenceClosure::ExtractAndGatesAndFillShortTruthTables(
   timer.AddCounter("and_gates", gates_inputs_.size());
 }
 
+int GateCongruenceClosure::ProcessTruthTable(
+    absl::Span<const BooleanVariable> inputs, SmallBitset truth_table,
+    absl::Span<const TruthTableId> ids_for_proof) {
+  int num_detected = 0;
+  for (int i = 0; i < inputs.size(); ++i) {
+    if (!IsFunction(i, inputs.size(), truth_table)) continue;
+    const int num_bits = inputs.size() - 1;
+    ++num_detected;
+
+    gates_target_.push_back(Literal(inputs[i], true));
+    gates_inputs_.Add({});
+    for (int j = 0; j < inputs.size(); ++j) {
+      if (i != j) {
+        gates_inputs_.AppendToLastVector(Literal(inputs[j], true));
+      }
+    }
+
+    // Generate the function truth table as a type.
+    // We will canonicalize it further in the main loop.
+    unsigned int type = 0;
+    for (int p = 0; p < (1 << num_bits); ++p) {
+      // Expand from (num_bits == inputs.size() - 1) bits to (inputs.size())
+      // bits.
+      const int bigger_p = AddHoleAtPosition(i, p);
+
+      if ((truth_table >> (bigger_p + (1 << i))) & 1) {
+        // target is 1 at this position.
+        type |= 1 << p;
+        DCHECK_NE((truth_table >> bigger_p) & 1, 1);  // Proper function.
+      } else {
+        // Note that if there is no feasible assignment for a given p if
+        // [(truth_table >> bigger_p) & 1] is not 1.
+        //
+        // Here we could learn smaller clause, but also we don't really care
+        // what is the value of the target at that point p, so we use zero.
+        //
+        // TODO(user): This is not ideal if another function has a value of 1 at
+        // point p, we could still merge it with this one. Shall we create two
+        // gate type? or change the algo?
+      }
+    }
+
+    gates_type_.push_back(type);
+    if (lrat_proof_handler_ != nullptr) {
+      gates_clauses_.Add({});
+      for (const TruthTableId id : ids_for_proof) {
+        gates_clauses_.AppendToLastVector(truth_tables_clauses_[id]);
+      }
+    }
+  }
+  return num_detected;
+}
+
+namespace {
+
+// Return a BooleanVariable from b that is not in a or kNoBooleanVariable;
+BooleanVariable FindMissing(absl::Span<const BooleanVariable> vars_a,
+                            absl::Span<const BooleanVariable> vars_b) {
+  for (const BooleanVariable b : vars_b) {
+    bool found = false;
+    for (const BooleanVariable a : vars_a) {
+      if (a == b) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) return b;
+  }
+  return kNoBooleanVariable;
+}
+
+}  // namespace
+
+// TODO(user): It should be possible to extract ALL possible short gate, but
+// we are not there yet.
 void GateCongruenceClosure::ExtractShortGates(PresolveTimer& timer) {
   if (lrat_proof_handler_ != nullptr) {
-    truth_tables_clauses_.ResetFromFlatMapping(tmp_ids_, tmp_clauses_);
+    truth_tables_clauses_.ResetFromFlatMapping(
+        tmp_ids_, tmp_clauses_,
+        /*minimum_num_nodes=*/truth_tables_bitset_.size());
     CHECK_EQ(truth_tables_bitset_.size(), truth_tables_clauses_.size());
   }
 
+  // This is used to combine two 3 arity table into one 4 arity one if
+  // they share two variables.
+  absl::flat_hash_map<std::array<BooleanVariable, 2>, int> binary_index_map;
+  std::vector<int> flat_binary_index;
+  std::vector<TruthTableId> flat_table_id;
+
   // Counters.
-  // We only fill a subset of the entries, but that makes the code shorter.
-  std::vector<int> num_tables(5);
-  std::vector<int> num_functions(5);
+  // We only fill a subset of the entries, but that make the code shorter.
+  std::vector<int> num_tables(6);
+  std::vector<int> num_functions(6);
 
   // Note that using the indirection via TruthTableId allow this code to
   // be deterministic.
   CHECK_EQ(truth_tables_bitset_.size(), truth_tables_inputs_.size());
-  for (TruthTableId id(0); id < truth_tables_inputs_.size(); ++id) {
-    const absl::Span<const BooleanVariable> inputs = truth_tables_inputs_[id];
-    const SmallBitset truth_table = truth_tables_bitset_[id];
-    ++num_tables[inputs.size()];
 
-    for (int i = 0; i < inputs.size(); ++i) {
-      if (!IsFunction(i, inputs.size(), truth_table)) continue;
-
-      const int num_bits = inputs.size() - 1;
-      ++num_functions[num_bits];
-      gates_target_.push_back(Literal(inputs[i], true));
-      gates_inputs_.Add({});
-      for (int j = 0; j < inputs.size(); ++j) {
-        if (i != j) {
-          gates_inputs_.AppendToLastVector(Literal(inputs[j], true));
-        }
+  // Given a table of arity 4, this merges all the information from the tables
+  // of arity 3 included in it.
+  int num_merges = 0;
+  const auto merge3_into_4 = [this, &num_merges](
+                                 absl::Span<const BooleanVariable> inputs,
+                                 SmallBitset& truth_table,
+                                 std::vector<TruthTableId>& ids_for_proof) {
+    DCHECK_EQ(inputs.size(), 4);
+    for (int i_to_remove = 0; i_to_remove < inputs.size(); ++i_to_remove) {
+      int pos = 0;
+      std::array<BooleanVariable, 3> key3;
+      for (int i = 0; i < inputs.size(); ++i) {
+        if (i == i_to_remove) continue;
+        key3[pos++] = inputs[i];
       }
+      const auto it = ids3_.find(key3);
+      if (it == ids3_.end()) continue;
+      ++num_merges;
 
-      // Generate the function truth table as a type.
-      // We will canonicalize it further in the main loop.
-      unsigned int type = 0;
-      for (int p = 0; p < (1 << num_bits); ++p) {
-        // Expand from (num_bits == inputs.size() - 1) bits to (inputs.size())
-        // bits.
-        const int bigger_p = AddHoleAtPosition(i, p);
+      // Extend the bitset from the table3 so that it is expressed correctly
+      // for the given inputs.
+      const TruthTableId id3 = it->second;
+      std::array<BooleanVariable, 4> key4;
+      for (int i = 0; i < 3; ++i) key4[i] = key3[i];
+      key4[3] = FindMissing(key3, inputs);
+      SmallBitset bitset = truth_tables_bitset_[id3];
+      bitset |= bitset << (1 << 3);  // Extend for a new variable.
+      CanonicalizeTruthTable<BooleanVariable>(absl::MakeSpan(key4), bitset);
+      CHECK_EQ(inputs, absl::MakeSpan(key4));
+      truth_table &= bitset;
 
-        if ((truth_table >> (bigger_p + (1 << i))) & 1) {
-          // target is 1 at this position.
-          type |= 1 << p;
-          DCHECK_NE((truth_table >> bigger_p) & 1, 1);  // Proper function.
-        } else {
-          // Note that if there is no feasible assignment for a given p, first
-          // we could have learned a smaller clause, but also we don't really
-          // care what is the value of the target at that point p, so we use
-          // zero.
-        }
-      }
-
-      gates_type_.push_back(type);
+      // We need to add the corresponding clause!
       if (lrat_proof_handler_ != nullptr) {
-        gates_clauses_.Add(truth_tables_clauses_[id]);
+        ids_for_proof.push_back(id3);
+      }
+    }
+  };
+
+  // Starts by processing all existing tables.
+  //
+  // TODO(user): Since we deal with and_gates differently, do we need to look at
+  // binary clauses here ? or that is not needed ? I think there is only two
+  // kind of Boolean function on two inputs (and_gates, with any possible
+  // negation) and xor_gate.
+  std::vector<TruthTableId> ids_for_proof;
+  for (TruthTableId t_id(0); t_id < truth_tables_inputs_.size(); ++t_id) {
+    ids_for_proof.clear();
+    ids_for_proof.push_back(t_id);
+    const absl::Span<const BooleanVariable> inputs = truth_tables_inputs_[t_id];
+    SmallBitset truth_table = truth_tables_bitset_[t_id];
+
+    // Merge any size-3 table included inside a size-4 gate.
+    // TODO(user): do it for larger gate too ?
+    if (inputs.size() == 4) {
+      merge3_into_4(inputs, truth_table, ids_for_proof);
+    }
+
+    ++num_tables[inputs.size()];
+    const int num_detected =
+        ProcessTruthTable(inputs, truth_table, ids_for_proof);
+    num_functions[inputs.size() - 1] += num_detected;
+
+    // If this is not a function and of size 3, lets try to combine it with
+    // another truth table of size 3 to get a table of size 4.
+    if (inputs.size() == 3 && num_detected == 0) {
+      for (int i = 0; i < 3; ++i) {
+        std::array<BooleanVariable, 2> key{inputs[i != 0 ? 0 : 1],
+                                           inputs[i != 2 ? 2 : 1]};
+        DCHECK(std::is_sorted(key.begin(), key.end()));
+        const auto [it, inserted] =
+            binary_index_map.insert({key, binary_index_map.size()});
+        flat_binary_index.push_back(it->second);
+        flat_table_id.push_back(t_id);
+      }
+    }
+  }
+  gtl::STLClearObject(&binary_index_map);
+
+  // Detects ITE gates and potentially other 3-gates from a truth table of
+  // 4-entries formed by two 3-entries table. This just create a 4-entries
+  // table that will be processed below.
+  CompactVectorVector<int, TruthTableId> candidates;
+  candidates.ResetFromFlatMapping(flat_binary_index, flat_table_id);
+  gtl::STLClearObject(&flat_binary_index);
+  gtl::STLClearObject(&flat_table_id);
+  int num_combinations = 0;
+  for (int c = 0; c < candidates.size(); ++c) {
+    if (candidates[c].size() < 2) continue;
+    if (candidates[c].size() > 10) continue;  // Too many? use heuristic.
+
+    for (int a = 0; a < candidates[c].size(); ++a) {
+      for (int b = a + 1; b < candidates[c].size(); ++b) {
+        const absl::Span<const BooleanVariable> inputs_a =
+            truth_tables_inputs_[candidates[c][a]];
+        const absl::Span<const BooleanVariable> inputs_b =
+            truth_tables_inputs_[candidates[c][b]];
+
+        std::array<BooleanVariable, 4> key;
+        for (int i = 0; i < 3; ++i) key[i] = inputs_a[i];
+        key[3] = FindMissing(inputs_a, inputs_b);
+        CHECK_NE(key[3], kNoBooleanVariable);
+
+        // Add an all allowed entry.
+        SmallBitset bitmask = GetNumBitsAtOne(4);
+        CanonicalizeTruthTable<BooleanVariable>(absl::MakeSpan(key), bitmask);
+
+        // If the key was not processed before, process it now.
+        // Note that an old version created a TruthTableId for it, but that
+        // waste a lot of space.
+        //
+        // On another hand, it is possible we process the same key up to
+        // 4_choose_2 times, but this is rare...
+        if (!ids4_.contains(key)) {
+          ++num_combinations;
+          ++num_tables[4];
+          ids_for_proof.clear();
+          merge3_into_4(key, bitmask, ids_for_proof);
+          num_functions[3] += ProcessTruthTable(key, bitmask, ids_for_proof);
+        }
       }
     }
   }
 
+  timer.AddCounter("combine3", num_combinations);
+  timer.AddCounter("merges", num_merges);
+
   // Note that we only display non-zero counters.
-  for (int i = 2; i < 5; ++i) {
-    timer.AddCounter(absl::StrCat("table", i), num_tables[i]);
+  for (int i = 2; i < num_tables.size(); ++i) {
+    timer.AddCounter(absl::StrCat("t", i), num_tables[i]);
+  }
+  for (int i = 2; i < num_functions.size(); ++i) {
     timer.AddCounter(absl::StrCat("fn", i), num_functions[i]);
   }
 }
@@ -2583,8 +2754,9 @@ class LratGateCongruenceHelper {
 }  // namespace
 
 bool GateCongruenceClosure::DoOneRound(bool log_info) {
+  // TODO(user): Remove this condition, it is possible there are no binary
+  // and still gates!
   if (implication_graph_->IsEmpty()) return true;
-  clause_manager_->DetachAllClauses();
 
   PresolveTimer timer("GateCongruenceClosure", logger_, time_limit_);
   timer.OverrideLogging(log_info);
@@ -2725,9 +2897,9 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
             const LiteralIndex y =
                 negate ? rep_b.NegatedIndex() : rep_b.Index();
 
-            // TODO(user): We need to change the union_find algo used to be sure
-            // the that if rep(x) = y then rep(not(x)) = not(y), otherwise we
-            // might miss some reductions.
+            // Because x always refer to a and y to b, this should maintain
+            // the invariant root(lit) = root(lit.Negated()).Negated().
+            // This is checked below.
             union_find.AddEdge(x.value(), y.value());
             const LiteralIndex rep(union_find.FindRoot(y.value()));
             const LiteralIndex to_merge = rep == x ? y : x;
@@ -2758,6 +2930,12 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
               in_queue[gate_id.value()] = true;
             }
           }
+
+          // Invariant.
+          CHECK_EQ(
+              lrat_helper.GetRepresentativeWithProofSupport(rep_a),
+              lrat_helper.GetRepresentativeWithProofSupport(rep_a.Negated())
+                  .Negated());
         }
         break;
       }
@@ -2840,8 +3018,8 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       // Generic "short" gates.
       // We just take the representative and re-canonicalize.
       absl::Span<LiteralIndex> inputs = gates_inputs_[id];
-      CHECK_GE(gates_type_[id], 0);
-      CHECK_EQ(gates_type_[id] >> (1 << (inputs.size())), 0);
+      DCHECK_GE(gates_type_[id], 0);
+      DCHECK_EQ(gates_type_[id] >> (1 << (inputs.size())), 0);
       for (LiteralIndex& lit_ref : inputs) {
         lit_ref =
             lrat_helper.GetRepresentativeWithProofSupport(Literal(lit_ref))
@@ -2853,6 +3031,7 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
       if (new_size < inputs.size()) {
         gates_inputs_.Shrink(id, new_size);
       }
+      DCHECK_EQ(gates_type_[id] >> (1 << (inputs.size())), 0);
 
       if (new_size == 1) {
         // We have a function of size 1! This is an equivalence.
@@ -2863,7 +3042,6 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
         break;
       } else if (new_size == 0) {
         // We have a fixed function! Just fix the literal.
-        CHECK(Literal(gates_target_[id]).IsPositive());
         const Literal initial_to_fix =
             (gates_type_[id] & 1) == 1 ? Literal(gates_target_[id])
                                        : Literal(gates_target_[id]).Negated();

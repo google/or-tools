@@ -184,6 +184,46 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
 # Helper functions.
+
+
+# warnings.deprecated is python3.13+. Not compatible with Open Source (3.10+).
+# pylint: disable=g-bare-generic
+def deprecated(message: str) -> Callable[[Callable], Callable]:
+    """Decorator that warns about a deprecated function."""
+
+    def deprecated_decorator(func) -> Callable:
+        def deprecated_func(*args, **kwargs):
+            warnings.warn(
+                f"{func.__name__} is a deprecated function. {message}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", DeprecationWarning)
+            return func(*args, **kwargs)
+
+        return deprecated_func
+
+    return deprecated_decorator
+
+
+def deprecated_method(func, old_name: str) -> Callable:
+    """Wrapper that warns about a deprecated method."""
+
+    def deprecated_func(*args, **kwargs) -> Any:
+        warnings.warn(
+            f"{old_name} is a deprecated function. Use {func.__name__} instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        warnings.simplefilter("default", DeprecationWarning)
+        return func(*args, **kwargs)
+
+    return deprecated_func
+
+
+# pylint: enable=g-bare-generic
+
+
 def snake_case_to_camel_case(name: str) -> str:
     """Converts a snake_case name to CamelCase."""
     words = name.split("_")
@@ -273,16 +313,6 @@ class CpModel(cmh.CpBaseModel):
     def __init__(self, model_proto: Optional[cmh.CpModelProto] = None) -> None:
         cmh.CpBaseModel.__init__(self, model_proto)
         self._add_pre_pep8_methods()
-
-    def _add_pre_pep8_methods(self) -> None:
-        for method_name in dir(self):
-            if callable(getattr(self, method_name)) and (
-                method_name.startswith("add_")
-                or method_name.startswith("new_")
-                or method_name.startswith("clear_")
-            ):
-                pre_pep8_name = snake_case_to_camel_case(method_name)
-                setattr(self, pre_pep8_name, getattr(self, method_name))
 
     # Naming.
     @property
@@ -1649,29 +1679,51 @@ class CpModel(cmh.CpBaseModel):
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
 
+    def _add_pre_pep8_methods(self) -> None:
+        for method_name in dir(self):
+            if callable(getattr(self, method_name)) and (
+                method_name.startswith("add_")
+                or method_name.startswith("new_")
+                or method_name.startswith("clear_")
+            ):
+                pre_pep8_name = snake_case_to_camel_case(method_name)
+                setattr(
+                    self,
+                    pre_pep8_name,
+                    deprecated_method(getattr(self, method_name), pre_pep8_name),
+                )
+
+        for other_method_name in [
+            "add",
+            "clone",
+            "get_bool_var_from_proto_index",
+            "get_int_var_from_proto_index",
+            "get_interval_var_from_proto_index",
+            "minimize",
+            "maximize",
+            "has_objective",
+            "model_stats",
+            "validate",
+            "export_to_file",
+        ]:
+            pre_pep8_name = snake_case_to_camel_case(other_method_name)
+            setattr(
+                self,
+                pre_pep8_name,
+                deprecated_method(getattr(self, other_method_name), pre_pep8_name),
+            )
+
+    @deprecated("Use name property instead.")
     def Name(self) -> str:
         return self.name
 
+    @deprecated("Use name property instead.")
     def SetName(self, name: str) -> None:
         self.name = name
 
+    @deprecated("Use proto property instead.")
     def Proto(self) -> cmh.CpModelProto:
         return self.proto
-
-    Add = add
-    Clone = clone
-    GetBoolVarFromProtoIndex = get_bool_var_from_proto_index
-    GetIntVarFromProtoIndex = get_int_var_from_proto_index
-    GetIntervalVarFromProtoIndex = get_interval_var_from_proto_index
-    Minimize = minimize
-    Maximize = maximize
-    HasObjective = has_objective
-    ModelStats = model_stats
-    Validate = validate
-    ExportToFile = export_to_file
-
-    # add_XXX, new_XXX, and clear_XXX methods are already duplicated
-    # automatically.
 
     # pylint: enable=invalid-name
 
@@ -1924,49 +1976,85 @@ class CpSolver:
     # Compatibility with pre PEP8
     # pylint: disable=invalid-name
 
+    @deprecated("Use best_objective_bound property instead.")
     def BestObjectiveBound(self) -> float:
         return self.best_objective_bound
 
-    BooleanValue = boolean_value
-    BooleanValues = boolean_values
+    @deprecated("Use boolean_value() method instead.")
+    def BooleanValue(self, lit: LiteralT) -> bool:
+        return self.boolean_value(lit)
 
+    @deprecated("Use boolean_values() method instead.")
+    def BooleanValues(self, variables: _IndexOrSeries) -> pd.Series:
+        return self.boolean_values(variables)
+
+    @deprecated("Use num_booleans property instead.")
     def NumBooleans(self) -> int:
         return self.num_booleans
 
+    @deprecated("Use num_conflicts property instead.")
     def NumConflicts(self) -> int:
         return self.num_conflicts
 
+    @deprecated("Use num_branches property instead.")
     def NumBranches(self) -> int:
         return self.num_branches
 
+    @deprecated("Use objective_value property instead.")
     def ObjectiveValue(self) -> float:
         return self.objective_value
 
+    @deprecated("Use response_proto property instead.")
     def ResponseProto(self) -> cmh.CpSolverResponse:
         return self.response_proto
 
-    ResponseStats = response_stats
-    Solve = solve
-    SolutionInfo = solution_info
-    StatusName = status_name
-    StopSearch = stop_search
-    SufficientAssumptionsForInfeasibility = sufficient_assumptions_for_infeasibility
+    @deprecated("Use response_stats() method instead.")
+    def ResponseStats(self) -> str:
+        return self.response_stats()
 
+    @deprecated("Use solve() method instead.")
+    def Solve(
+        self, model: CpModel, callback: "CpSolverSolutionCallback" = None
+    ) -> cmh.CpSolverStatus:
+        return self.solve(model, callback)
+
+    @deprecated("Use solution_info() method instead.")
+    def SolutionInfo(self) -> str:
+        return self.solution_info()
+
+    @deprecated("Use status_name() method instead.")
+    def StatusName(self, status: Optional[Any] = None) -> str:
+        return self.status_name(status)
+
+    @deprecated("Use stop_search() method instead.")
+    def StopSearch(self) -> None:
+        self.stop_search()
+
+    @deprecated("Use sufficient_assumptions_for_infeasibility() method instead.")
+    def SufficientAssumptionsForInfeasibility(self) -> Sequence[int]:
+        return self.sufficient_assumptions_for_infeasibility()
+
+    @deprecated("Use user_time property instead.")
     def UserTime(self) -> float:
         return self.user_time
 
-    Value = value
-    Values = values
+    @deprecated("Use value() method instead.")
+    def Value(self, expression: LinearExprT) -> int:
+        return self.value(expression)
 
+    @deprecated("Use values() method instead.")
+    def Values(self, expressions: _IndexOrSeries) -> pd.Series:
+        return self.values(expressions)
+
+    @deprecated("Use wall_time property instead.")
     def WallTime(self) -> float:
         return self.wall_time
 
+    @deprecated("Use solve() with enumerate_all_solutions = True.")
     def SearchForAllSolutions(
         self, model: CpModel, callback: "CpSolverSolutionCallback"
     ) -> cmh.CpSolverStatus:
-        """DEPRECATED Use solve() with the right parameter.
-
-        Search for all solutions of a satisfiability problem.
+        """Search for all solutions of a satisfiability problem.
 
         This method searches for all feasible solutions of a given model.
         Then it feeds the solution to the callback.
@@ -1984,11 +2072,6 @@ class CpSolver:
           * *INFEASIBLE* if the solver has proved there are no solution
           * *OPTIMAL* if all solutions have been found
         """
-        warnings.warn(
-            "search_for_all_solutions is deprecated; use solve() with"
-            + "enumerate_all_solutions = True.",
-            DeprecationWarning,
-        )
         if model.has_objective():
             raise TypeError(
                 "Search for all solutions is only defined on satisfiability problems"

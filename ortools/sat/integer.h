@@ -1090,9 +1090,6 @@ class IntegerTrail final : public SatPropagator {
   // Returns some debugging info.
   std::string DebugString();
 
-  // Used internally to return the next conflict number.
-  int64_t NextConflictId();
-
   // Information for each integer variable about its current lower bound and
   // position of the last TrailEntry in the trail referring to this var.
   util_intops::StrongVector<IntegerVariable, IntegerValue> var_lbs_;
