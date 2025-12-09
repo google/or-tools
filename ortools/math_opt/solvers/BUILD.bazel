@@ -658,6 +658,23 @@ py_proto_library(
     deps = [":highs_proto"],
 )
 
+proto_library(
+    name = "xpress_proto",
+    srcs = ["xpress.proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "xpress_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":xpress_proto"],
+)
+
+py_proto_library(
+    name = "xpress_py_pb2",
+    deps = [":xpress_proto"],
+)
+
 cc_library(
     name = "xpress_solver",
     srcs = [
@@ -683,6 +700,7 @@ cc_library(
         "//ortools/math_opt/core:math_opt_proto_utils",
         "//ortools/math_opt/core:solver_interface",
         "//ortools/math_opt/core:sparse_vector_view",
+	"//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/solvers/xpress:g_xpress",
         "//ortools/math_opt/validators:callback_validator",
         "//ortools/port:proto_utils",
@@ -710,11 +728,13 @@ cc_test(
         "//ortools/math_opt/solver_tests:generic_tests",
         "//ortools/math_opt/solver_tests:infeasible_subsystem_tests",
         "//ortools/math_opt/solver_tests:invalid_input_tests",
+        "//ortools/math_opt/solver_tests:ip_model_solve_parameters_tests",
         "//ortools/math_opt/solver_tests:logical_constraint_tests",
         "//ortools/math_opt/solver_tests:lp_incomplete_solve_tests",
         "//ortools/math_opt/solver_tests:lp_model_solve_parameters_tests",
         "//ortools/math_opt/solver_tests:lp_parameter_tests",
         "//ortools/math_opt/solver_tests:lp_tests",
+        "//ortools/math_opt/solver_tests:mip_tests",
         "//ortools/math_opt/solver_tests:multi_objective_tests",
         "//ortools/math_opt/solver_tests:qc_tests",
         "//ortools/math_opt/solver_tests:qp_tests",

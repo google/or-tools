@@ -143,6 +143,12 @@ TEST_P(SimpleMipTest, FractionalBoundsContainNoInteger) {
     // TODO(b/272298816): Gurobi bindings are broken here.
     GTEST_SKIP() << "TODO(b/272298816): Gurobi bindings are broken here.";
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress rounds bounds of integer variables on input, so the bounds
+    // specified here result in [1,0]. Xpress also checks that bounds are
+    // not contradicting, so it rejects creation of such a variable.
+    GTEST_SKIP() << "Xpress does not support contradictory bounds.";
+  }
   Model model;
   const Variable x = model.AddIntegerVariable(0.5, 0.6, "x");
   model.Maximize(x);

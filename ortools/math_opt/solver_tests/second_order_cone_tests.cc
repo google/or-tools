@@ -62,6 +62,9 @@ constexpr double kTolerance = 1.0e-3;
 constexpr absl::string_view kNoSocSupportMessage =
     "This test is disabled as the solver does not support second-order cone "
     "constraints";
+constexpr absl::string_view kNoIncrementalAddAndDeletes =
+    "This test is disabled as the solver does not support incremental add and "
+    "deletes";
 
 // Builds the simple (and uninteresting) SOC model:
 //
@@ -69,6 +72,14 @@ constexpr absl::string_view kNoSocSupportMessage =
 // s.t. ||x||_2 <= 2x
 //      0 <= x <= 1.
 TEST_P(SimpleSecondOrderConeTest, CanBuildSecondOrderConeModel) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // For Xpress the second order cone constraint results in
+    //     x^2 - 4x^2 <= 0
+    // This has two entries for x and will thus be rejected by the library.
+    // Hence we have to skip the test.
+    GTEST_SKIP()
+        << "This test is disabled as Xpress rejects duplicate Q entries";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   model.AddSecondOrderConeConstraint({x}, 2 * x);
@@ -94,6 +105,10 @@ TEST_P(SimpleSecondOrderConeTest, SolveSimpleSocModel) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "This test is disabled as Xpress only supports second "
+                    "order cone constraints on singletons";
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -116,6 +131,10 @@ TEST_P(SimpleSecondOrderConeTest, SolveSimpleSocModel) {
 TEST_P(SimpleSecondOrderConeTest, SolveMultipleSocConstraintModel) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
+  }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    GTEST_SKIP() << "This test is disabled as Xpress only supports second "
+                    "order cone constraints on singletons";
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -169,6 +188,9 @@ TEST_P(SimpleSecondOrderConeTest, SolveModelWithSocAndLinearConstraints) {
 // The unique optimal solution is then (x*, y*) = (0.5, 0.5) with objective
 // value 1.
 TEST_P(IncrementalSecondOrderConeTest, LinearToSecondOrderConeUpdate) {
+  if (!GetParam().supports_incremental_add_and_deletes) {
+    GTEST_SKIP() << kNoIncrementalAddAndDeletes;
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -231,6 +253,9 @@ TEST_P(IncrementalSecondOrderConeTest, LinearToSecondOrderConeUpdate) {
 TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesSecondOrderConeConstraint) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
+  }
+  if (!GetParam().supports_incremental_add_and_deletes) {
+    GTEST_SKIP() << kNoIncrementalAddAndDeletes;
   }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 1.0, "x");
@@ -319,6 +344,9 @@ TEST_P(IncrementalSecondOrderConeTest,
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
   }
+  if (!GetParam().supports_incremental_add_and_deletes) {
+    GTEST_SKIP() << kNoIncrementalAddAndDeletes;
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(0.0, 2.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -361,6 +389,9 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableThatIsAnArgument) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
   }
+  if (!GetParam().supports_incremental_add_and_deletes) {
+    GTEST_SKIP() << kNoIncrementalAddAndDeletes;
+  }
   Model model;
   const Variable x = model.AddContinuousVariable(1.0, 1.0, "x");
   const Variable y = model.AddContinuousVariable(0.0, 1.0, "y");
@@ -402,6 +433,9 @@ TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableThatIsAnArgument) {
 TEST_P(IncrementalSecondOrderConeTest, UpdateDeletesVariableInAnArgument) {
   if (!GetParam().supports_soc_constraints) {
     GTEST_SKIP() << kNoSocSupportMessage;
+  }
+  if (!GetParam().supports_incremental_add_and_deletes) {
+    GTEST_SKIP() << kNoIncrementalAddAndDeletes;
   }
   Model model;
   const Variable x = model.AddContinuousVariable(1.0, 1.0, "x");

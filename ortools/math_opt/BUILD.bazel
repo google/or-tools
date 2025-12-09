@@ -111,6 +111,7 @@ proto_library(
         "//ortools/math_opt/solvers:highs_proto",
         "//ortools/math_opt/solvers:osqp_proto",
         "//ortools/math_opt/solvers/gscip:gscip_proto",
+        "//ortools/math_opt/solvers:xpress_proto",
         "//ortools/pdlp:solvers_proto",
         "//ortools/sat:sat_parameters_proto",
         "@protobuf//:duration_proto",

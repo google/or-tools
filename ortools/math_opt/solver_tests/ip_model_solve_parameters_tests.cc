@@ -151,6 +151,17 @@ TEST_P(MipSolutionHintTest, TwoHintTest) {
   if (!TwoHintParams().has_value()) {
     GTEST_SKIP() << "Multiple hints not supported. Ignoring this test.";
   }
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // Xpress has no configuration options to "just complete" a partial
+    // solution hint. For an incomplete solution it will always run simple
+    // heuristics to find a solution. The effort of this heuristic can be
+    // controlled via the USERSOLHEURISTIC control, but both values
+    // 0 (off) and 1 (light) make the test fail: with off no heuristic
+    // is applied on the provided solution and hence the expected solutions
+    // are not found. With light the heuristic finds the optimal solution
+    // from the solution hint.
+    GTEST_SKIP() << "Xpress cannot be forced to only complete a solution.";
+  }
 
   ModelSolveParameters model_parameters;
 
@@ -281,6 +292,12 @@ TEST_P(BranchPrioritiesTest, PrioritiesAreSetProperly) {
 
 // See PrioritiesAreSetProperly for details on the model and solve parameters.
 TEST_P(BranchPrioritiesTest, PrioritiesClearedAfterIncrementalSolve) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // This test does not work with Xpress since Xpress does not clear/reset
+    // model parameters after a solve. See the comment in XpressSolver::Solve
+    // in xpress_solver.cc.
+    GTEST_SKIP() << "Xpress does not clear model parameters in Solve().";
+  }
   Model model;
   Variable x = model.AddContinuousVariable(-3.0, 1.0, "x");
   Variable y = model.AddContinuousVariable(0.0, 3.0, "y");
@@ -400,6 +417,12 @@ TEST_P(LazyConstraintsTest, AnnotationsAreSetProperly) {
 // without. If the annotations are cleared after the first, then we expect the
 // second to solve the entire LP (including c and d), giving a dual bound of 0.
 TEST_P(LazyConstraintsTest, AnnotationsAreClearedAfterSolve) {
+  if (GetParam().solver_type == SolverType::kXpress) {
+    // For the AnnotationsAreSetProperly we set STOP_AFTER_LP=1 which stops
+    // Xpress right after the relaxation. Since the same parameters are
+    // also used for the test here, this settings kills the test.
+    GTEST_SKIP() << "Xpress stops too early with shared parameter settings.";
+  }
   Model model;
   Variable x = model.AddIntegerVariable(-1, 1, "x");
   Variable y = model.AddIntegerVariable(-1, 1, "y");

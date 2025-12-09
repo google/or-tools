@@ -18,6 +18,7 @@
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/parameters.pb.h"
 #include "ortools/math_opt/solvers/gurobi.pb.h"
+#include "ortools/math_opt/solvers/xpress.pb.h"
 
 namespace operations_research {
 namespace math_opt {
@@ -60,11 +61,33 @@ StreamableGurobiInitArguments StreamableGurobiInitArguments::FromProto(
   return args;
 }
 
+XpressInitializerProto StreamableXpressInitArguments::Proto() const {
+  XpressInitializerProto params_proto;
+
+  if (extract_names.has_value()) {
+    params_proto.set_extract_names(extract_names.value());
+  }
+
+  return params_proto;
+}
+
+StreamableXpressInitArguments StreamableXpressInitArguments::FromProto(
+    const XpressInitializerProto& args_proto) {
+  StreamableXpressInitArguments args;
+  if (args_proto.has_extract_names()) {
+    args.extract_names = args_proto.extract_names();
+  }
+  return args;
+}
+
 SolverInitializerProto StreamableSolverInitArguments::Proto() const {
   SolverInitializerProto params_proto;
 
   if (gurobi) {
     *params_proto.mutable_gurobi() = gurobi->Proto();
+  }
+  if (xpress) {
+    *params_proto.mutable_xpress() = xpress->Proto();
   }
 
   return params_proto;
@@ -76,6 +99,9 @@ StreamableSolverInitArguments::FromProto(
   StreamableSolverInitArguments args;
   if (args_proto.has_gurobi()) {
     args.gurobi = StreamableGurobiInitArguments::FromProto(args_proto.gurobi());
+  }
+  if (args_proto.has_xpress()) {
+    args.xpress = StreamableXpressInitArguments::FromProto(args_proto.xpress());
   }
   return args;
 }
