@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <random>
@@ -30,7 +31,6 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "google/protobuf/repeated_ptr_field.h"
-#include "ortools/base/protoutil.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_ils.pb.h"
@@ -466,6 +466,121 @@ class AllNodesPerformedAcceptanceCriterion
 
  private:
   const RoutingModel& model_;
+};
+
+// Returns the number of performed non-start/end nodes in the given assignment.
+int CountPerformedNodes(const RoutingModel& model,
+                        const Assignment& assignment) {
+  int count = 0;
+  for (int v = 0; v < model.vehicles(); ++v) {
+    int64_t current_node_index = model.Start(v);
+    while (true) {
+      current_node_index = assignment.Value(model.NextVar(current_node_index));
+      if (model.IsEnd(current_node_index)) {
+        break;
+      }
+      count++;
+    }
+  }
+  return count;
+}
+
+// Acceptance criterion in which a candidate assignment is accepted when it
+// performs at least one more node than the reference assignment.
+class MoreNodesPerformedAcceptanceCriterion
+    : public NeighborAcceptanceCriterion {
+ public:
+  explicit MoreNodesPerformedAcceptanceCriterion(const RoutingModel& model)
+      : model_(model) {}
+
+  bool Accept([[maybe_unused]] const SearchState& search_state,
+              const Assignment* candidate,
+              const Assignment* reference) override {
+    return CountPerformedNodes(model_, *candidate) >
+           CountPerformedNodes(model_, *reference);
+  }
+
+ private:
+  const RoutingModel& model_;
+};
+
+class AbsencesBasedAcceptanceCriterion : public NeighborAcceptanceCriterion {
+ public:
+  explicit AbsencesBasedAcceptanceCriterion(
+      const RoutingModel& model, bool remove_route_with_lowest_absences)
+      : model_(model),
+        remove_route_with_lowest_absences_(remove_route_with_lowest_absences),
+        absences_(model.Size(), 0) {}
+
+  bool Accept([[maybe_unused]] const SearchState& search_state,
+              const Assignment* candidate,
+              const Assignment* reference) override {
+    int sum_candidate_absences = 0;
+    int sum_reference_absences = 0;
+    for (int node = 0; node < model_.Size(); ++node) {
+      if (model_.IsStart(node) || model_.IsEnd(node)) continue;
+      if (candidate->Value(model_.NextVar(node)) == node) {
+        sum_candidate_absences += absences_[node];
+      }
+      if (reference->Value(model_.NextVar(node)) == node) {
+        sum_reference_absences += absences_[node];
+      }
+    }
+    return sum_candidate_absences < sum_reference_absences;
+  }
+
+  void OnIterationEnd(const Assignment* reference) override {
+    for (int node = 0; node < model_.Size(); ++node) {
+      if (model_.IsStart(node) || model_.IsEnd(node)) continue;
+      if (reference->Value(model_.NextVar(node)) == node) {
+        ++absences_[node];
+      }
+    }
+  }
+
+  void OnBestSolutionFound(Assignment* reference) override {
+    if (!remove_route_with_lowest_absences_) return;
+
+    int candidate_route = -1;
+    int min_sum_absences = std::numeric_limits<int>::max();
+
+    for (int route = 0; route < model_.vehicles(); ++route) {
+      if (model_.Next(*reference, model_.Start(route)) == model_.End(route))
+        continue;
+      int sum_absences = 0;
+      for (int64_t node = reference->Value(model_.NextVar(model_.Start(route)));
+           node != model_.End(route);
+           node = reference->Value(model_.NextVar(node))) {
+        sum_absences += absences_[node];
+      }
+
+      if (sum_absences < min_sum_absences) {
+        candidate_route = route;
+        min_sum_absences = sum_absences;
+      }
+    }
+
+    // Remove the route with the lowest sum of absences.
+    if (candidate_route != -1) {
+      // Set next pointers for inner nodes.
+      int64_t node =
+          reference->Value(model_.NextVar(model_.Start(candidate_route)));
+      while (node != model_.End(candidate_route)) {
+        const int64_t next_node = reference->Value(model_.NextVar(node));
+        reference->SetValue(model_.NextVar(node), node);
+        reference->SetValue(model_.VehicleVar(node), -1);
+        node = next_node;
+      }
+      // Set next pointer for start node.
+      reference->SetValue(model_.NextVar(model_.Start(candidate_route)),
+                          model_.End(candidate_route));
+    }
+  }
+
+ private:
+  const RoutingModel& model_;
+  bool remove_route_with_lowest_absences_;
+  std::vector<int> absences_;
 };
 
 // Returns whether the given assignment has at least one performed node.
@@ -1166,6 +1281,12 @@ std::unique_ptr<NeighborAcceptanceCriterion> MakeNeighborAcceptanceCriterion(
           rnd);
     case AcceptanceStrategy::kAllNodesPerformed:
       return std::make_unique<AllNodesPerformedAcceptanceCriterion>(model);
+    case AcceptanceStrategy::kMoreNodesPerformed:
+      return std::make_unique<MoreNodesPerformedAcceptanceCriterion>(model);
+    case AcceptanceStrategy::kAbsencesBased:
+      return std::make_unique<AbsencesBasedAcceptanceCriterion>(
+          model, acceptance_strategy.absences_based()
+                     .remove_route_with_lowest_absences());
     default:
       LOG(DFATAL) << "Unsupported acceptance strategy.";
       return nullptr;

@@ -265,6 +265,12 @@ class NeighborAcceptanceCriterion {
   virtual bool Accept(const SearchState& search_state,
                       const Assignment* candidate,
                       const Assignment* reference) = 0;
+
+  // Called at the end of an ILS iteration.
+  virtual void OnIterationEnd([[maybe_unused]] const Assignment* reference) {}
+
+  // Called when a new best solution found is found.
+  virtual void OnBestSolutionFound([[maybe_unused]] Assignment* reference) {}
 };
 
 // Returns a neighbor acceptance criterion based on the given parameters.

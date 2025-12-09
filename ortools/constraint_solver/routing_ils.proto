@@ -54,8 +54,6 @@ message RandomWalkRuinStrategy {
 // Ruin strategy based on the "Slack Induction by String Removals for Vehicle
 // Routing Problems" by Jan Christiaens and Greet Vanden Berghe, Transportation
 // Science 2020.
-// Link to paper:
-// https://kuleuven.limo.libis.be/discovery/fulldisplay?docid=lirias1988666&context=SearchWebhook&vid=32KUL_KUL:Lirias&lang=en&search_scope=lirias_profile&adaptor=SearchWebhook&tab=LIRIAS&query=any,contains,LIRIAS1988666&offset=0
 //
 // Note that, in this implementation, the notion of "string" is replaced by
 // "sequence".
@@ -296,12 +294,42 @@ message SimulatedAnnealingAcceptanceStrategy {
 // performed.
 message AllNodesPerformedAcceptanceStrategy {}
 
+// Acceptance strategy in which a solution is accepted only if it performs at
+// least one more node than the reference solution.
+message MoreNodesPerformedAcceptanceStrategy {}
+
+// Acceptance strategy in which a solution is accepted only if it has less
+// absences than the reference solution (see Slack Induction by String Removals
+// for Vehicle Routing Problems" Christiaens and Vanden Berghe, Transportation
+// Science 2020).
+//
+// In particular, for each node n, the number of solutions where n was not
+// performed by any route is tracked by a counter absences[n]. A candidate is
+// accepted if
+//          sum(absences[n]) < sum(absences[m])
+// with
+//          n in unperformed(candidate)
+//          m in unperformed(reference)
+//
+// The counter absences is increased after every ILS iteration for the
+// unperformed nodes in the reference solution. In addition, when
+// remove_route_with_lowest_absences is true and a new best found solution is
+// found, the route with the lowest sum of absences is removed from the
+// reference solution.
+message AbsencesBasedAcceptanceStrategy {
+  // If true, when a new best solution is found, the route with the lowest sum
+  // of absences is removed from the reference solution.
+  optional bool remove_route_with_lowest_absences = 1;
+}
+
 // Determines when a candidate solution replaces another one.
 message AcceptanceStrategy {
   oneof strategy {
     GreedyDescentAcceptanceStrategy greedy_descent = 1;
     SimulatedAnnealingAcceptanceStrategy simulated_annealing = 2;
     AllNodesPerformedAcceptanceStrategy all_nodes_performed = 3;
+    MoreNodesPerformedAcceptanceStrategy more_nodes_performed = 4;
+    AbsencesBasedAcceptanceStrategy absences_based = 5;
   }
 }
 
