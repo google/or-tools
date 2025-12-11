@@ -448,13 +448,15 @@ class OR_DLL RoutingModel {
       }
 
      private:
-      explicit Resource(const RoutingModel* model) : model_(model) {}
+      Resource(ResourceGroup::Attributes attributes,
+               const RoutingDimension* dimension) {
+        SetDimensionAttributes(std::move(attributes), dimension);
+      }
 
       void SetDimensionAttributes(ResourceGroup::Attributes attributes,
                                   const RoutingDimension* dimension);
       const ResourceGroup::Attributes& GetDefaultAttributes() const;
 
-      const RoutingModel* const model_;
       absl::flat_hash_map<DimensionIndex, int> dimension_attributes_;
       util_intops::StrongVector<DimensionIndex, int>
           dimension_attributes_per_index_;
