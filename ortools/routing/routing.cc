@@ -1160,8 +1160,7 @@ ResourceGroup* RoutingModel::AddResourceGroup() {
 
 int ResourceGroup::AddResource(Attributes attributes,
                                const RoutingDimension* dimension) {
-  resources_.push_back(Resource(model_));
-  resources_.back().SetDimensionAttributes(std::move(attributes), dimension);
+  resources_.push_back({std::move(attributes), dimension});
 
   affected_dimension_indices_.insert(dimension->index());
 
