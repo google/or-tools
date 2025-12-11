@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
 #include "ortools/base/stl_util.h"
@@ -1071,7 +1072,7 @@ class KnapsackDivideAndConquerSolver : public BaseKnapsackSolver {
   }
 
  private:
-  // 'DP 2' computes solution 'z' for 0 up to capacitiy
+  // 'DP 2' computes solution 'z' for 0 up to capacity
   void SolveSubProblem(bool first_storage, int64_t capacity, int start_item,
                        int end_item);
 
@@ -1411,30 +1412,22 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
     case KNAPSACK_DIVIDE_AND_CONQUER_SOLVER:
       solver_ = std::make_unique<KnapsackDivideAndConquerSolver>(solver_name);
       break;
-#if defined(USE_CBC)
     case KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER:
       solver_ = std::make_unique<KnapsackMIPSolver>(
           MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
-#endif  // USE_CBC
-#if defined(USE_SCIP)
     case KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER:
       solver_ = std::make_unique<KnapsackMIPSolver>(
           MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
-#endif  // USE_SCIP
-#if defined(USE_XPRESS)
     case KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER:
       solver_ = std::make_unique<KnapsackMIPSolver>(
           MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
-#endif
-#if defined(USE_CPLEX)
     case KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER:
       solver_ = std::make_unique<KnapsackMIPSolver>(
           MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
-#endif
     case KNAPSACK_MULTIDIMENSION_CP_SAT_SOLVER:
       solver_ = std::make_unique<KnapsackCpSat>(solver_name);
       break;

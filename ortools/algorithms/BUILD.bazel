@@ -11,35 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(default_visibility = ["//visibility:public"])
-
-# Description:
-# Home of algorithms used in OR solvers
-
-# OSS solvers
-bool_flag(
-    name = "with_cbc",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "use_cbc",
-    flag_values = {":with_cbc": "true"},
-)
-
-bool_flag(
-    name = "with_scip",
-    build_setting_default = True,
-)
-
-config_setting(
-    name = "use_scip",
-    flag_values = {":with_scip": "true"},
-)
 
 cc_library(
     name = "binary_search",
@@ -190,14 +165,8 @@ cc_library(
     name = "knapsack_solver_lib",
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
-    copts = [] + select({
-        ":use_cbc": ["-DUSE_CBC"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_scip": ["-DUSE_SCIP"],
-        "//conditions:default": [],
-    }),
     deps = [
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/time",

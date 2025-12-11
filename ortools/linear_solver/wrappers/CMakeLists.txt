@@ -15,11 +15,8 @@ file(GLOB _SRCS "*.h" "*.cc")
 set(NAME ${PROJECT_NAME}_linear_solver_wrappers)
 
 # Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
@@ -27,4 +24,3 @@ target_link_libraries(${NAME} PRIVATE
   absl::status
   $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   ${PROJECT_NAMESPACE}::ortools_proto)
-#add_library(${PROJECT_NAMESPACE}::linear_solver_wrappers ALIAS ${NAME})

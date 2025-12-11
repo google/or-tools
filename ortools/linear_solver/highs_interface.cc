@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_HIGHS)
-
 #include <atomic>
 #include <cstdint>
 #include <optional>
@@ -288,10 +286,24 @@ void HighsInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register PDLP in the global linear solver factory.
-MPSolverInterface* BuildHighsInterface(bool mip, MPSolver* const solver) {
-  return new HighsInterface(solver, mip);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterHighsLp ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new HighsInterface(solver, false); },
+      MPSolver::HIGHS_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterHighsMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new HighsInterface(solver, true); },
+      MPSolver::HIGHS_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_HIGHS)

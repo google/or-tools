@@ -15,19 +15,36 @@ if(NOT USE_PDLP)
   return()
 endif()
 
-file(GLOB _SRCS "*.h" "*.cc")
-list(FILTER _SRCS EXCLUDE REGEX "/[^/]*_test\\.cc$")
-list(FILTER _SRCS EXCLUDE REGEX "/gtest[^/]*$")
-list(FILTER _SRCS EXCLUDE REGEX "/test[^/]*$")
+list(APPEND _SRCS
+  iteration_stats.cc
+  iteration_stats.h
+  primal_dual_hybrid_gradient.cc
+  primal_dual_hybrid_gradient.h
+  quadratic_program_io.cc
+  quadratic_program_io.h
+  quadratic_program.cc
+  quadratic_program.h
+  scheduler.cc
+  scheduler.h
+  sharded_optimization_utils.cc
+  sharded_optimization_utils.h
+  sharded_quadratic_program.cc
+  sharded_quadratic_program.h
+  sharder.cc
+  sharder.h
+  solvers_proto_validation.cc
+  solvers_proto_validation.h
+  termination.cc
+  termination.h
+  trust_region.cc
+  trust_region.h
+)
 
 set(NAME ${PROJECT_NAME}_pdlp)
 
 # Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>)
@@ -37,4 +54,3 @@ target_link_libraries(${NAME} PRIVATE
   absl::str_format
   Eigen3::Eigen
   ${PROJECT_NAMESPACE}::ortools_proto)
-#add_library(${PROJECT_NAMESPACE}::pdlp ALIAS ${NAME})

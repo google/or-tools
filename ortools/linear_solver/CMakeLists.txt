@@ -11,24 +11,73 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
-list(REMOVE_ITEM _SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/solve.cc
+list(APPEND _SRCS
+  linear_expr.cc
+  linear_expr.h
+  linear_solver_callback.cc
+  linear_solver_callback.h
+  linear_solver.cc
+  linear_solver.h
+  model_exporter_swig_helper.h
+  model_exporter.cc
+  model_exporter.h
+  model_validator.cc
+  model_validator.h
+  solve_mp_model.cc
+  solve_mp_model.h
+  sat_interface.cc
 )
-list(FILTER _SRCS EXCLUDE REGEX "/model_exporter_main\\.cc")
-list(FILTER _SRCS EXCLUDE REGEX ".*/.*_test.cc")
+
+if(USE_BOP)
+  list(APPEND _SRCS bop_interface.cc)
+endif()
+
+if(USE_COINOR)
+  list(APPEND _SRCS cbc_interface.cc clp_interface.cc)
+endif()
+
+if(USE_CPLEX)
+  list(APPEND _SRCS cplex_interface.cc)
+endif()
+
+if(USE_GLOP)
+  list(APPEND _SRCS glop_interface.cc glop_utils.cc glop_utils.h)
+endif()
+
+if(USE_GUROBI)
+  list(APPEND _SRCS gurobi_util.h gurobi_interface.cc gurobi_util.cc)
+endif()
+
+if(USE_GLPK)
+  list(APPEND _SRCS glpk_interface.cc)
+endif()
+
+if(USE_HIGHS)
+  list(APPEND _SRCS highs_interface.cc)
+endif()
+
+if(USE_PDLP)
+  list(APPEND _SRCS pdlp_interface.cc)
+endif()
+
 if(USE_SCIP)
-  list(APPEND _SRCS ${LPI_GLOP_SRC})
+  list(APPEND _SRCS
+    scip_callback.cc
+    scip_callback.h
+    scip_helper_macros.h
+    scip_interface.cc
+    ${LPI_GLOP_SRC})
+endif()
+
+if(USE_XPRESS)
+  list(APPEND _SRCS xpress_interface.cc)
 endif()
 
 set(NAME ${PROJECT_NAME}_linear_solver)
 
 # Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if(MSVC AND BUILD_SHARED_LIBS)
   target_compile_definitions(${NAME} PUBLIC "OR_BUILD_DLL")
   target_compile_definitions(${NAME} PRIVATE "OR_EXPORT")
@@ -50,7 +99,6 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_PDLP}>:Eigen3::Eigen>
   $<$<BOOL:${USE_SCIP}>:SCIP::libscip>
   ${PROJECT_NAMESPACE}::ortools_proto)
-#add_library(${PROJECT_NAMESPACE}::linear_solver ALIAS ${NAME})
 
 # solve
 add_executable(solve)
