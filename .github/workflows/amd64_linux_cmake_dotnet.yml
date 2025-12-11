@@ -20,7 +20,14 @@ env:
 
 jobs:
   native:
-    name: amd64•Linux•CMake•.Net
+    strategy:
+      matrix:
+        config: [
+          {name: "examples", flags: "-DBUILD_DOTNET_EXAMPLES=ON -DBUILD_DOTNET_SAMPLES=OFF"},
+          {name: "samples", flags: "-DBUILD_DOTNET_EXAMPLES=OFF -DBUILD_DOTNET_SAMPLES=ON"},
+        ]
+      fail-fast: false
+    name: amd64•Linux•CMake•.Net(${{matrix.config.name}})
     runs-on: ubuntu-latest
     env:
       deps_src_key: amd64_linux_dotnet_deps_src
@@ -71,6 +78,7 @@ jobs:
           -G "Ninja"
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
+          ${{matrix.config.flags}}
           -DBUILD_DOTNET=ON
           -DCMAKE_INSTALL_PREFIX=install
       - name: Build
