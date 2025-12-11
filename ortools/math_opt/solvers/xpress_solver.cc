@@ -389,7 +389,9 @@ class ScopedSolverContext {
       // values depending on what is set. Since we cannot easily make this
       // distinction, we do not support objective_limit. Users should just
       // use cutoff_limit with LPs as well.
-      warnings.emplace_back("XpressSolver does not support objective_limit; use cutoff_limit instead");
+      warnings.emplace_back(
+          "XpressSolver does not support objective_limit; use cutoff_limit "
+          "instead");
     }
     if (parameters.has_best_bound_limit()) {
       warnings.emplace_back("XpressSolver does not support best_bound_limit");
