@@ -74,8 +74,8 @@ def main(argv: Sequence[str]):
                         line_number,
                         line,
                         f"Binary failed to run with return code: {e.returncode}.\n"
-                        f"The standard error was: {e.stderr!r}.\n"
-                        f"The standard output was: {e.stdout!r}.\n",
+                        f"The standard error was:\n'{e.stderr}'\n"
+                        f"The standard output was:\n'{e.stdout}'\n",
                     ) from None
                 continue
             if line.startswith("CHECK:"):
@@ -92,8 +92,8 @@ def main(argv: Sequence[str]):
                         )
                     except bintest_matchers.MatchError as e:
                         message = (
-                            f"command : {last_cmd_line!r}\n"  #
-                            f"output  : {last_run_output!r}\n"  #
+                            f"command : '{last_cmd_line}'\n"  #
+                            f"output  :\n'{last_run_output}'\n"  #
                             f"error   : {e}"
                         )
                         raise line_error(line_number, line, message) from None
