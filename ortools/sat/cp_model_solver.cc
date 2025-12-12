@@ -843,6 +843,7 @@ void LaunchSubsolvers(Model* global_model, SharedClasses* shared,
     subsolvers[i].reset();
   }
 
+  shared->shared_tree_manager->CloseLratProof();
   if (params.check_merged_lrat_proof() && shared->response->ProblemIsSolved() &&
       !shared->response->HasFeasibleSolution()) {
     LratMerger(global_model)

@@ -130,6 +130,15 @@ class CompactVectorVector {
   void ResetFromTranspose(const CompactVectorVector<V, K>& other,
                           int min_transpose_size = 0);
 
+  // Same as above, but more generic:
+  // - `other` can be anything that accepts `other.size()` and `other[i]`, with
+  //   `other[i]` returning something we can iterate over in a for-loop.
+  // - The mapper type `ValueMapper` is a functor that takes an element that we
+  //   get by iterating over `other[i]` and returns a value of type `K`.
+  template <typename ValueMapper, typename Container>
+  void ResetFromTransposeMap(const Container& other,
+                             int min_transpose_size = 0);
+
   // Append a new entry.
   // Returns the previous size() as this is convenient for how we use it.
   int Add(absl::Span<const V> values);
@@ -1103,9 +1112,11 @@ inline void CompactVectorVector<K, V>::ResetFromPairs(const Collection& pairs,
 
 // Similar to ResetFromFlatMapping().
 template <typename K, typename V>
-inline void CompactVectorVector<K, V>::ResetFromTranspose(
-    const CompactVectorVector<V, K>& other, int min_transpose_size) {
-  if (other.empty()) {
+template <typename ValueMapper, typename Container>
+void CompactVectorVector<K, V>::ResetFromTransposeMap(const Container& other,
+                                                      int min_transpose_size) {
+  ValueMapper mapper;
+  if (other.size() == 0) {
     clear();
     if (min_transpose_size > 0) {
       starts_.assign(min_transpose_size, 0);
@@ -1116,17 +1127,19 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
 
   // Compute maximum index.
   int max_key = min_transpose_size;
+  int num_entries = 0;
   for (V v(0); v < other.size(); ++v) {
-    for (const K k : other[v]) {
-      max_key = std::max(max_key, InternalKey(k) + 1);
+    num_entries += other[v].size();
+    for (const auto k : other[v]) {
+      max_key = std::max(max_key, InternalKey(mapper(k)) + 1);
     }
   }
 
   // Compute sizes_;
   sizes_.assign(max_key, 0);
   for (V v(0); v < other.size(); ++v) {
-    for (const K k : other[v]) {
-      sizes_[InternalKey(k)]++;
+    for (const auto k : other[v]) {
+      sizes_[InternalKey(mapper(k))]++;
     }
   }
 
@@ -1137,10 +1150,10 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
   }
 
   // Copy data and uses starts as temporary indices.
-  buffer_.resize(other.num_entries());
+  buffer_.resize(num_entries);
   for (V v(0); v < other.size(); ++v) {
-    for (const K k : other[v]) {
-      buffer_[starts_[InternalKey(k)]++] = v;
+    for (const auto k : other[v]) {
+      buffer_[starts_[InternalKey(mapper(k))]++] = v;
     }
   }
 
@@ -1149,6 +1162,17 @@ inline void CompactVectorVector<K, V>::ResetFromTranspose(
     starts_[k] = starts_[k - 1];
   }
   starts_[0] = 0;
+}
+
+// Similar to ResetFromFlatMapping().
+template <typename K, typename V>
+inline void CompactVectorVector<K, V>::ResetFromTranspose(
+    const CompactVectorVector<V, K>& other, int min_transpose_size) {
+  struct NoOpMapper {
+    K operator()(K k) const { return k; }
+  };
+  ResetFromTransposeMap<NoOpMapper, CompactVectorVector<V, K>>(
+      other, min_transpose_size);
 }
 
 // A class to generate all possible topological sorting of a dag.

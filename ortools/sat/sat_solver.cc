@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
-#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -112,6 +111,9 @@ int64_t SatSolver::num_propagations() const {
 int64_t SatSolver::num_backtracks() const { return counters_.num_backtracks; }
 
 int64_t SatSolver::num_restarts() const { return counters_.num_restarts; }
+int64_t SatSolver::num_backtracks_to_root() const {
+  return counters_.num_backtracks_to_root;
+}
 
 double SatSolver::deterministic_time() const {
   // Each of these counters mesure really basic operations. The weight are just
@@ -1062,6 +1064,15 @@ void SatSolver::ProcessCurrentConflict(
   for (const auto& [id, is_redundant, min_lbd, clause] : delayed_to_add_) {
     if (clause.empty()) return (void)SetModelUnsat();
 
+    // TODO(user): just remove redundant literal from learned clauses. This
+    // should just be better. We just have to deal with the proof correctly.
+    if (clause.size() == 2 &&
+        binary_implication_graph_->RepresentativeOf(clause[0]) ==
+            binary_implication_graph_->RepresentativeOf(clause[1])) {
+      Backtrack(0);
+      break;
+    }
+
     int num_false = 0;
     for (const Literal l : clause) {
       if (Assignment().LiteralIsFalse(l)) ++num_false;
@@ -1509,7 +1520,9 @@ void SatSolver::Backtrack(int target_level) {
 
   // Any backtrack to the root from a positive one is counted as a restart.
   counters_.num_backtracks++;
-  if (target_level == 0) counters_.num_restarts++;
+  if (target_level == 0) {
+    counters_.num_backtracks_to_root++;
+  }
 
   // Per the SatPropagator interface, this is needed before calling Untrail.
   const int target_trail_index = trail_->PrepareBacktrack(target_level);
@@ -1585,331 +1598,6 @@ SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
 
 SatSolver::Status SatSolver::Solve() {
   return SolveInternal(time_limit_, parameters_->max_number_of_conflicts());
-}
-
-void SatSolver::KeepAllClausesUsedToInfer(BooleanVariable variable) {
-  CHECK(Assignment().VariableIsAssigned(variable));
-  if (trail_->Info(variable).level == 0) return;
-  int trail_index = trail_->Info(variable).trail_index;
-  std::vector<bool> is_marked(trail_index + 1, false);  // move to local member.
-  is_marked[trail_index] = true;
-  int num = 1;
-  for (; num > 0 && trail_index >= 0; --trail_index) {
-    if (!is_marked[trail_index]) continue;
-    is_marked[trail_index] = false;
-    --num;
-
-    const BooleanVariable var = (*trail_)[trail_index].Variable();
-    SatClause* clause = clauses_propagator_->ReasonClauseOrNull(var);
-    if (clause != nullptr) {
-      clauses_propagator_->KeepClauseForever(clause);
-    }
-    if (trail_->AssignmentType(var) == AssignmentType::kSearchDecision) {
-      continue;
-    }
-    for (const Literal l : trail_->Reason(var)) {
-      const AssignmentInfo& info = trail_->Info(l.Variable());
-      if (info.level == 0) continue;
-      if (!is_marked[info.trail_index]) {
-        is_marked[info.trail_index] = true;
-        ++num;
-      }
-    }
-  }
-}
-
-bool SatSolver::SubsumptionIsInteresting(BooleanVariable variable,
-                                         int max_size) {
-  // TODO(user): other id should probably be safe as long as we do not delete
-  // the propagators. Note that symmetry is tricky since we would need to keep
-  // the symmetric clause around in KeepAllClauseUsedToInfer().
-  const int binary_id = binary_implication_graph_->PropagatorId();
-  const int clause_id = clauses_propagator_->PropagatorId();
-
-  CHECK(Assignment().VariableIsAssigned(variable));
-  if (trail_->Info(variable).level == 0) return true;
-  int trail_index = trail_->Info(variable).trail_index;
-  std::vector<bool> is_marked(trail_index + 1, false);  // move to local member.
-  is_marked[trail_index] = true;
-  int num = 1;
-  int num_clause_to_mark_as_non_deletable = 0;
-  for (; num > 0 && trail_index >= 0; --trail_index) {
-    if (!is_marked[trail_index]) continue;
-    is_marked[trail_index] = false;
-    --num;
-
-    const BooleanVariable var = (*trail_)[trail_index].Variable();
-    const int type = trail_->AssignmentType(var);
-    if (type == AssignmentType::kSearchDecision) continue;
-    if (type != binary_id && type != clause_id) return false;
-    SatClause* clause = clauses_propagator_->ReasonClauseOrNull(var);
-    if (clause != nullptr && clauses_propagator_->IsRemovable(clause)) {
-      if (clause->size() > max_size) {
-        return false;
-      }
-      if (++num_clause_to_mark_as_non_deletable > 1) return false;
-    }
-    for (const Literal l : trail_->Reason(var)) {
-      const AssignmentInfo& info = trail_->Info(l.Variable());
-      if (info.level == 0) continue;
-      if (!is_marked[info.trail_index]) {
-        is_marked[info.trail_index] = true;
-        ++num;
-      }
-    }
-  }
-  return num_clause_to_mark_as_non_deletable <= 1;
-}
-
-// TODO(user): this is really an in-processing stuff and should be moved out
-// of here. Ideally this should be scheduled after other faster in-processing
-// techniques. This implements "vivification" as described in
-// https://doi.org/10.1016/j.artint.2019.103197, with one significant tweak:
-// we sort each clause by current trail index before trying to minimize it so
-// that we can reuse the trail from previous calls in case there are overlaps.
-bool SatSolver::TryToMinimizeClause(SatClause* clause) {
-  CHECK(clause != nullptr);
-  ++counters_.minimization_num_clauses;
-
-  // TODO(user): Make sure clause do not contain any redundant literal before
-  // we try to minimize it.
-  std::vector<Literal> candidate;
-  candidate.reserve(clause->size());
-
-  // Some literals of the clause which are fixed to false or true when
-  // propagating some other literals of the clause. Only used if
-  // lrat_proof_handler_ is not null.
-  std::vector<Literal> fixed_false_literals;
-  LiteralIndex fixed_true_literal = kNoLiteralIndex;
-
-  // Note that CP-SAT presolve detects clauses that share n-1 literals and
-  // transforms them into (n-1 enforcement) => (1 literal per clause). We
-  // currently do not support that internally, but these clauses will still
-  // likely be loaded one after the other, so there is a high chance that if we
-  // call TryToMinimizeClause() on consecutive clauses, there will be a long
-  // prefix in common!
-  //
-  // TODO(user): Exploit this more by choosing a good minimization order?
-  int longest_valid_prefix = 0;
-  if (CurrentDecisionLevel() > 0) {
-    candidate.resize(clause->size());
-
-    // Insert any compatible decisions into their correct place in candidate
-    const auto& decisions = trail_->Decisions();
-    for (Literal lit : *clause) {
-      if (!Assignment().LiteralIsFalse(lit)) continue;
-      const AssignmentInfo& info = trail_->Info(lit.Variable());
-      if (info.level <= 0 || info.level > clause->size()) continue;
-      if (decisions[info.level - 1].literal == lit.Negated()) {
-        candidate[info.level - 1] = lit;
-      }
-    }
-    // Then compute the matching prefix and discard the rest
-    for (int i = 0; i < candidate.size(); ++i) {
-      if (candidate[i] != Literal()) {
-        ++longest_valid_prefix;
-      } else {
-        break;
-      }
-    }
-    counters_.minimization_num_reused += longest_valid_prefix;
-    candidate.resize(longest_valid_prefix);
-  }
-  // Then do a second pass to add the remaining literals in order.
-  for (Literal lit : *clause) {
-    const AssignmentInfo& info = trail_->Info(lit.Variable());
-    // Skip if this literal is already in the prefix.
-    if (info.level >= 1 && info.level <= longest_valid_prefix &&
-        candidate[info.level - 1] == lit) {
-      continue;
-    }
-    candidate.push_back(lit);
-  }
-  CHECK_EQ(candidate.size(), clause->size());
-
-  if (!BacktrackAndPropagateReimplications(longest_valid_prefix)) return false;
-  absl::btree_set<LiteralIndex> moved_last;
-  while (!model_is_unsat_) {
-    // We want each literal in candidate to appear last once in our propagation
-    // order. We want to do that while maximizing the reutilization of the
-    // current assignment prefix, that is minimizing the number of
-    // decision/progagation we need to perform.
-    const int target_level = MoveOneUnprocessedLiteralLast(
-        moved_last, CurrentDecisionLevel(), &candidate);
-    if (target_level == -1) break;
-    if (!BacktrackAndPropagateReimplications(target_level)) return false;
-    fixed_false_literals.clear();
-    fixed_true_literal = kNoLiteralIndex;
-
-    while (CurrentDecisionLevel() < candidate.size()) {
-      if (time_limit_->LimitReached()) return true;
-      const int level = CurrentDecisionLevel();
-      const Literal literal = candidate[level];
-      // Remove false literals
-      if (Assignment().LiteralIsFalse(literal)) {
-        if (lrat_proof_handler_ != nullptr) {
-          fixed_false_literals.push_back(literal);
-        }
-        candidate[level] = candidate.back();
-        candidate.pop_back();
-        continue;
-      } else if (Assignment().LiteralIsTrue(literal)) {
-        const int variable_level =
-            LiteralTrail().Info(literal.Variable()).level;
-        if (variable_level == 0) {
-          DCHECK(lrat_proof_handler_ == nullptr ||
-                 trail_->GetUnitClauseId(literal.Variable()) != kNoClauseId);
-          counters_.minimization_num_true++;
-          counters_.minimization_num_removed_literals += clause->size();
-          clauses_propagator_->LazyDelete(clause,
-                                          DeletionSourceForStat::FIXED_AT_TRUE);
-          return true;
-        }
-
-        if (parameters_->inprocessing_minimization_use_conflict_analysis()) {
-          // Replace the clause with the reason for the literal being true, plus
-          // the literal itself.
-          candidate.clear();
-          for (Literal lit :
-               GetDecisionsFixing(trail_->Reason(literal.Variable()))) {
-            candidate.push_back(lit.Negated());
-          }
-        } else {
-          candidate.resize(variable_level);
-        }
-        fixed_true_literal = literal.Index();
-        candidate.push_back(literal);
-
-        // If a (true) literal wasn't propagated by this clause, then we know
-        // that this clause is subsumed by other clauses in the database, so we
-        // can remove it so long as the subsumption is due to non-removable
-        // clauses. If we can subsume this clause by making only 1 additional
-        // clause permanent and that clause is no longer than this one, we will
-        // do so.
-        if (clauses_propagator_->ReasonClauseOrNull(literal.Variable()) !=
-                clause &&
-            SubsumptionIsInteresting(literal.Variable(), candidate.size())) {
-          counters_.minimization_num_subsumed++;
-          counters_.minimization_num_removed_literals += clause->size();
-          KeepAllClausesUsedToInfer(literal.Variable());
-          clauses_propagator_->LazyDelete(
-              clause, DeletionSourceForStat::SUBSUMPTION_VIVIFY);
-          return true;
-        }
-
-        break;
-      } else {
-        ++counters_.minimization_num_decisions;
-        EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
-        if (model_is_unsat_) return false;
-        if (clause->IsRemoved()) return true;
-        if (CurrentDecisionLevel() < level) {
-          // There was a conflict, consider the conflicting literal next so we
-          // should be able to exploit the conflict in the next iteration.
-          // TODO(user): I *think* this is sufficient to ensure pushing
-          // the same literal to the new trail fails, immediately on the next
-          // iteration, if not we may be able to analyse the last failure and
-          // skip some propagation steps?
-          std::swap(candidate[level], candidate[CurrentDecisionLevel()]);
-        }
-      }
-    }
-    if (candidate.empty()) {
-      model_is_unsat_ = true;
-      return false;
-    }
-    if (!parameters_->inprocessing_minimization_use_all_orderings()) break;
-    moved_last.insert(candidate.back().Index());
-  }
-
-  // Returns if we don't have any minimization.
-  if (candidate.size() == clause->size()) return true;
-
-  std::vector<ClauseId> clause_ids;
-  if (lrat_proof_handler_ != nullptr) {
-    DCHECK(fixed_true_literal != kNoLiteralIndex ||
-           !fixed_false_literals.empty());
-    clause_ids.clear();
-    if (fixed_true_literal != kNoLiteralIndex) {
-      // If some literals of the minimized clause fix another to true, we just
-      // need the propagating clauses to prove this (assuming that all the
-      // minimized clause literals are false will lead to a conflict on this
-      // 'fixed to true' literal).
-      clauses_propagator_->AppendClauseIdsFixing({Literal(fixed_true_literal)},
-                                                 &clause_ids);
-    } else {
-      // If some literals of the minimized clause fix those that have been
-      // removed to false, the propagating clauses and the original one prove
-      // this (assuming that all the minimized clause literals are false will
-      // lead to all the literals of the original clause fixed to false, which
-      // is a conflict with the original clause).
-      clauses_propagator_->AppendClauseIdsFixing(fixed_false_literals,
-                                                 &clause_ids);
-      clause_ids.push_back(clauses_propagator_->GetClauseId(clause));
-    }
-  }
-
-  // Reverse the candidate so that the first two literals are appropriate
-  // watchers.
-  absl::c_reverse(candidate);
-  // All but the first literal of the new clause should be false.
-  DCHECK(absl::c_all_of(absl::MakeSpan(candidate).subspan(1), [&](Literal l) {
-    return trail_->Assignment().LiteralIsFalse(l);
-  }));
-  if (candidate.size() == 1) {
-    BacktrackAndPropagateReimplications(0);
-  } else if (trail_->Assignment().LiteralIsFalse(candidate[1]) &&
-             (!trail_->Assignment().LiteralIsTrue(candidate[0]) ||
-              trail_->AssignmentLevel(candidate[1]) <
-                  trail_->AssignmentLevel(candidate[0]))) {
-    // Backtrack if the new clause would propagate earlier than the current
-    // reason. This should be a very rare edge case, but it can happen if both
-    // conflicts and clause cleanup occur during minimization: some literal in
-    // the clause that was propagated false by some decisions might no longer be
-    // propagated by the same decisions after backjumping because the clause
-    // that propagated it was removed.
-    // Note we backtrack to 1 level before this would propagate because we don't
-    // actually support propagating the new clause during rewrite, and the
-    // propagation would probably be useless.
-    BacktrackAndPropagateReimplications(
-        std::max(0, trail_->AssignmentLevel(candidate[1])));
-  }
-  if (CurrentDecisionLevel() == 0) {
-    // Ensure nothing is fixed at level 0 in case more propagation happened
-    // after backtracking.
-    OpenSourceEraseIf(candidate, [&](Literal l) {
-      return trail_->Assignment().LiteralIsFalse(l);
-    });
-    if (absl::c_any_of(clause->AsSpan(), [&](Literal l) {
-          return trail_->Assignment().LiteralIsTrue(l);
-        })) {
-      counters_.minimization_num_removed_literals += clause->size();
-      clauses_propagator_->LazyDelete(clause,
-                                      DeletionSourceForStat::FIXED_AT_TRUE);
-      return true;
-    }
-  }
-  if (candidate.size() == 2 && track_binary_clauses_) {
-    binary_clauses_.Add(BinaryClause(candidate[0], candidate[1]));
-  }
-
-  counters_.minimization_num_removed_literals +=
-      clause->size() - candidate.size();
-
-  if (!clauses_propagator_->InprocessingRewriteClause(clause, candidate,
-                                                      clause_ids)) {
-    model_is_unsat_ = true;
-    return false;
-  }
-  // Adding a unit clause can cause additional propagation, but there is also an
-  // edge case where binary_implication_graph_->PropagationIsDone() may return
-  // false after we add the first binary clause, even if nothing has been added
-  // to the trail. Either way, we can just check if the implication graph thinks
-  // it is done to propagate only when required.
-  if (!binary_implication_graph_->PropagationIsDone(*trail_)) {
-    return FinishPropagation();
-  }
-  return true;
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
@@ -2010,6 +1698,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
       }
 
       if (restart_->ShouldRestart()) {
+        ++counters_.num_restarts;
         if (!BacktrackAndPropagateReimplications(assumption_level_)) {
           return StatusWithLog(INFEASIBLE);
         }
@@ -2019,52 +1708,6 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit,
       EnqueueNewDecision(decision_policy_->NextBranch());
     }
   }
-}
-
-bool SatSolver::MinimizeByPropagation(double dtime,
-                                      bool minimize_new_clauses_only) {
-  CHECK(time_limit_ != nullptr);
-  AdvanceDeterministicTime(time_limit_);
-  const double threshold = time_limit_->GetElapsedDeterministicTime() + dtime;
-
-  // TODO(user): Fix that. For now the solver cannot be used properly to
-  // minimize clauses if assumption_level_ is not zero.
-  if (assumption_level_ > 0) return true;
-
-  // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
-  // while we are processing it.
-  block_clause_deletion_ = true;
-
-  int num_resets = 0;
-  while (!time_limit_->LimitReached() &&
-         time_limit_->GetElapsedDeterministicTime() < threshold) {
-    SatClause* to_minimize = clauses_propagator_->NextNewClauseToMinimize();
-    if (!minimize_new_clauses_only && to_minimize == nullptr) {
-      to_minimize = clauses_propagator_->NextClauseToMinimize();
-    }
-
-    if (to_minimize != nullptr) {
-      if (!TryToMinimizeClause(to_minimize)) return false;
-    } else if (minimize_new_clauses_only) {
-      break;
-    } else {
-      ++num_resets;
-      VLOG(1) << "Minimized all clauses, restarting from first one.";
-      clauses_propagator_->ResetToMinimizeIndex();
-      if (num_resets > 1) break;
-    }
-
-    AdvanceDeterministicTime(time_limit_);
-  }
-
-  // Note(user): In some corner cases, the function above might find a
-  // feasible assignment. I think it is okay to ignore this special case
-  // that should only happen on trivial problems and just reset the solver.
-  const bool result = ResetToLevelZero();
-
-  block_clause_deletion_ = false;
-  clauses_propagator_->DeleteRemovedClauses();
-  return result;
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -2313,16 +1956,6 @@ std::string SatSolver::StatusString(Status status) const {
              1.0 * counters_.num_learned_pb_literals / counters_.num_failures) +
          absl::StrFormat("  num subsumed clauses: %d\n",
                          counters_.num_subsumed_clauses) +
-         absl::StrFormat("  minimization_num_clauses: %d\n",
-                         counters_.minimization_num_clauses) +
-         absl::StrFormat("  minimization_num_decisions: %d\n",
-                         counters_.minimization_num_decisions) +
-         absl::StrFormat("  minimization_num_true: %d\n",
-                         counters_.minimization_num_true) +
-         absl::StrFormat("  minimization_num_subsumed: %d\n",
-                         counters_.minimization_num_subsumed) +
-         absl::StrFormat("  minimization_num_removed_literals: %d\n",
-                         counters_.minimization_num_removed_literals) +
          absl::StrFormat("  pb num threshold updates: %d\n",
                          pb_constraints_->num_threshold_updates()) +
          absl::StrFormat("  pb num constraint lookups: %d\n",

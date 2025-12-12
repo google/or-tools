@@ -83,6 +83,7 @@
 #include "ortools/sat/symmetry_util.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/vivification.h"
 #include "ortools/sat/work_assignment.h"
 #include "ortools/util/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
@@ -1118,6 +1119,7 @@ int RegisterClausesLevelZeroImport(int id,
   CHECK(shared_clauses_manager != nullptr);
   CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
   auto* sat_solver = model->GetOrCreate<SatSolver>();
+  auto* vivifier = model->GetOrCreate<Vivifier>();
   auto* implications = model->GetOrCreate<BinaryImplicationGraph>();
   const bool share_glue_clauses =
       model->GetOrCreate<SatParameters>()->share_glue_clauses();
@@ -1127,7 +1129,7 @@ int RegisterClausesLevelZeroImport(int id,
       model->GetOrCreate<SatParameters>()->minimize_shared_clauses();
   auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const auto& import_level_zero_clauses = [shared_clauses_manager, id, mapping,
-                                           sat_solver, implications,
+                                           sat_solver, vivifier, implications,
                                            minimize_shared_clauses,
                                            clause_stream,
                                            clause_manager]() mutable {
@@ -1180,8 +1182,9 @@ int RegisterClausesLevelZeroImport(int id,
       // at most 1024 decisions to vivify all new clauses, so this should be
       // relatively cheap, *if* regular vivification is keeping up with new
       // clauses. Use a tight dtime limit in case it isn't.
-      return sat_solver->MinimizeByPropagation(
-          /*dtime=*/0.01, /*minimize_new_clauses_only=*/true);
+      return vivifier->MinimizeByPropagation(
+          /*log_info=*/false, /*dtime_budget=*/0.01,
+          /*minimize_new_clauses_only=*/true);
     }
     return true;
   };

@@ -34,6 +34,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/vivification.h"
 #include "ortools/util/logging.h"
 
 namespace operations_research::sat {
@@ -44,9 +45,6 @@ SharedStatTables::SharedStatTables() {
   timing_table_.push_back(
       {"Task timing", "n [     min,      max]      avg      dev     time",
        "n [     min,      max]      avg      dev    dtime"});
-
-  search_table_.push_back({"Search stats", "Bools", "Conflicts", "Branches",
-                           "Restarts", "BoolPropag", "IntegerPropag"});
 
   lp_table_.push_back({"Lp stats", "Component", "Iterations", "AddedCuts",
                        "OPTIMAL", "DUAL_F.", "DUAL_U."});
@@ -77,13 +75,24 @@ void SharedStatTables::AddTimingStat(const SubSolver& subsolver) {
 
 void SharedStatTables::AddSearchStat(absl::string_view name, Model* model) {
   absl::MutexLock mutex_lock(mutex_);
+
+  // TODO(user): remove this step.
   CpSolverResponse r;
   model->GetOrCreate<SharedResponseManager>()->FillSolveStatsInResponse(model,
                                                                         &r);
+  if (search_table_.empty()) {
+    search_table_.push_back({"Search stats", "Bools", "Conflicts", "Branches",
+                             "Restarts", "BacktrackToRoot", "Backtrack",
+                             "BoolPropag", "IntegerPropag"});
+  }
+
+  SatSolver::Counters counters = model->GetOrCreate<SatSolver>()->counters();
   search_table_.push_back({FormatName(name), FormatCounter(r.num_booleans()),
                            FormatCounter(r.num_conflicts()),
                            FormatCounter(r.num_branches()),
-                           FormatCounter(r.num_restarts()),
+                           FormatCounter(counters.num_restarts),
+                           FormatCounter(counters.num_backtracks_to_root),
+                           FormatCounter(counters.num_backtracks),
                            FormatCounter(r.num_binary_propagations()),
                            FormatCounter(r.num_integer_propagations())});
 }
@@ -93,40 +102,52 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   auto* binary = model->GetOrCreate<BinaryImplicationGraph>();
   SatSolver::Counters counters = sat_solver->counters();
+  Vivifier::Counters vivify_counters =
+      model->GetOrCreate<Vivifier>()->counters();
 
   if (clauses_table_.empty()) {
     clauses_table_.push_back({"SAT stats", "ClassicMinim", "LitRemoved",
                               "LitRemovedBinary", "LitLearned", "LitForgotten",
-                              "Subsumed", "MClauses", "MDecisions", "MLitTrue",
-                              "MSubsumed", "MLitRemoved", "MReused"});
+                              "Subsumed"});
   }
-  clauses_table_.push_back(
-      {FormatName(name), FormatCounter(counters.num_minimizations),
-       FormatCounter(counters.num_literals_removed),
-       FormatCounter(binary->num_literals_removed()),
-       FormatCounter(counters.num_literals_learned),
-       FormatCounter(counters.num_literals_forgotten),
-       FormatCounter(counters.num_subsumed_clauses),
-       FormatCounter(counters.minimization_num_clauses),
-       FormatCounter(counters.minimization_num_decisions),
-       FormatCounter(counters.minimization_num_true),
-       FormatCounter(counters.minimization_num_subsumed),
-       FormatCounter(counters.minimization_num_removed_literals),
-       FormatCounter(counters.minimization_num_reused)});
+  clauses_table_.push_back({FormatName(name),
+                            FormatCounter(counters.num_minimizations),
+                            FormatCounter(counters.num_literals_removed),
+                            FormatCounter(binary->num_literals_removed()),
+                            FormatCounter(counters.num_literals_learned),
+                            FormatCounter(counters.num_literals_forgotten),
+                            FormatCounter(counters.num_subsumed_clauses)});
+
+  if (vivify_table_.empty()) {
+    vivify_table_.push_back({"Vivification", "Clauses", "Decisions", "LitTrue",
+                             "Subsumed", "LitRemoved", "DecisionReused"});
+  }
+  vivify_table_.push_back({FormatName(name),
+                           FormatCounter(vivify_counters.num_clauses_vivified),
+                           FormatCounter(vivify_counters.num_decisions),
+                           FormatCounter(vivify_counters.num_true),
+                           FormatCounter(vivify_counters.num_subsumed),
+                           FormatCounter(vivify_counters.num_removed_literals),
+                           FormatCounter(vivify_counters.num_reused)});
 
   // Track reductions of Boolean variables.
   if (bool_var_table_.empty()) {
-    bool_var_table_.push_back(
-        {"Boolean variables", "Fixed", "Equiv", "Total", "Left", "Binary"});
+    bool_var_table_.push_back({"SAT formula", "Fixed", "Equiv", "Total",
+                               "VarLeft", "BinaryClauses", "PermanentClauses",
+                               "TemporaryClauses"});
   }
+  auto* clause_manager = model->GetOrCreate<ClauseManager>();
   const int64_t num_fixed = sat_solver->NumFixedVariables();
-  const int64_t num_equiv = binary->num_redundant_literals() / 2;
+  const int64_t num_equiv = binary->num_current_equivalences() / 2;
   const int64_t num_bools = sat_solver->NumVariables();
   bool_var_table_.push_back(
       {FormatName(name), FormatCounter(num_fixed), FormatCounter(num_equiv),
        FormatCounter(num_bools),
        FormatCounter(num_bools - num_equiv - num_fixed),
-       FormatCounter(binary->ComputeNumImplicationsForLog())});
+       FormatCounter(binary->ComputeNumImplicationsForLog()),
+       FormatCounter(clause_manager->num_watched_clauses() -
+                     clause_manager->num_removable_clauses()),
+       FormatCounter(clause_manager->num_removable_clauses())});
 
   // Track the "life of a non-binary clause".
   CpSolverResponse r;
@@ -337,6 +358,9 @@ void SharedStatTables::Display(SolverLogger* logger) {
   }
   if (clauses_table_.size() > 1) {
     SOLVER_LOG(logger, FormatTable(clauses_table_));
+  }
+  if (vivify_table_.size() > 1) {
+    SOLVER_LOG(logger, FormatTable(vivify_table_));
   }
   if (clauses_deletion_table_.size() > 1) {
     SOLVER_LOG(logger, FormatTable(clauses_deletion_table_));

@@ -14558,10 +14558,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
       ShiftObjectiveWithExactlyOnes();
       if (context_->ModelIsUnsat()) return InfeasibleStatus();
     }
-
-    // We re-do a canonicalization with the final linear expression.
-    if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
-    context_->WriteObjectiveToProto();
   }
 
   // Now that everything that could possibly be fixed was fixed, make sure we
@@ -14713,6 +14709,12 @@ CpSolverStatus CpModelPresolver::Presolve() {
       new_postsolve_mapping[perm[i]] = (*postsolve_mapping_)[i];
     }
     *postsolve_mapping_ = std::move(new_postsolve_mapping);
+  }
+
+  if (context_->working_model->has_objective()) {
+    // We re-do a canonicalization with the final linear expression.
+    if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
+    context_->WriteObjectiveToProto();
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());

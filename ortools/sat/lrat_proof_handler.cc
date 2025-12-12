@@ -416,21 +416,31 @@ std::vector<Literal> SortClauseForDrat(absl::Span<const Literal> clause) {
 }  // namespace
 
 std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(Model* model) {
-  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  return MaybeCreate(*model->GetOrCreate<SatParameters>(),
+                     model->GetOrCreate<ClauseIdGenerator>(),
+                     model->GetOrCreate<SharedLratProofStatus>(),
+                     model->GetOrCreate<SharedStatistics>());
+}
+
+std::unique_ptr<LratProofHandler> LratProofHandler::MaybeCreate(
+    const SatParameters& params, ClauseIdGenerator* id_generator,
+    SharedLratProofStatus* proof_status, SharedStatistics* stats) {
   if (!params.check_lrat_proof() && !params.output_lrat_proof() &&
       !params.check_drat_proof() && !params.output_drat_proof()) {
     return nullptr;
   }
-  return std::unique_ptr<LratProofHandler>(new LratProofHandler(model));
+  return std::unique_ptr<LratProofHandler>(
+      new LratProofHandler(params, id_generator, proof_status, stats));
 }
 
-LratProofHandler::LratProofHandler(Model* model)
-    : id_(model->GetOrCreate<SharedLratProofStatus>()->NewSubSolverId()),
-      id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
-      proof_status_(model->GetOrCreate<SharedLratProofStatus>()) {
-  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+LratProofHandler::LratProofHandler(
+    const SatParameters& params, ClauseIdGenerator* id_generator,
+    SharedLratProofStatus* shared_lrat_proof_status, SharedStatistics* stats)
+    : id_(shared_lrat_proof_status->NewSubSolverId()),
+      id_generator_(id_generator),
+      proof_status_(shared_lrat_proof_status) {
   if (params.check_lrat_proof()) {
-    lrat_checker_ = std::make_unique<LratChecker>(model);
+    lrat_checker_ = std::make_unique<LratChecker>(stats);
   }
   if (params.output_lrat_proof()) {
     lrat_writer_ = std::make_unique<LratWriter>(absl::StrCat(
@@ -460,7 +470,7 @@ bool LratProofHandler::AddProblemClause(ClauseId id,
   }
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddProblemClause(id, clause)) {
-    return LratError();
+    return LratError("In AddProblemClause.");
   }
   if (drat_checker_ != nullptr) {
     drat_checker_->AddProblemClause(SortClauseForDrat(clause));
@@ -491,7 +501,10 @@ bool LratProofHandler::AddInferredClause(
           << absl::StrJoin(rat, " ") << "}";
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddInferredClause(id, clause, unit_ids, rat)) {
-    return LratError();
+    return LratError(absl::StrCat("AddInferredClause: id=", id,
+                                  "\nliterals=", absl::StrJoin(clause, ","),
+                                  "\nunit_ids=", absl::StrJoin(unit_ids, ","),
+                                  "\nrat={", absl::StrJoin(rat, " "), "}"));
   }
   if (drat_checker_ != nullptr) {
     if (all_problem_clauses_loaded_) {
@@ -516,7 +529,7 @@ bool LratProofHandler::AddImportedClause(ClauseId id,
           << " literals=" << absl::StrJoin(clause, ",");
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddProblemClause(id, clause)) {
-    return LratError();
+    return LratError("In AddImportedClause");
   }
   if (drat_checker_ != nullptr) {
     LOG(ERROR) << "Imported clauses are not supported by the DRAT checker.";
@@ -538,7 +551,7 @@ bool LratProofHandler::AddAssumedClause(ClauseId id,
   ++num_assumed_clauses_;
   if (lrat_checker_ != nullptr &&
       !lrat_checker_->AddProblemClause(id, clause)) {
-    return LratError();
+    return LratError("In AddAssumedClause");
   }
   if (drat_checker_ != nullptr) {
     // The DRAT checker requires all problem clauses first, followed by inferred
@@ -619,9 +632,10 @@ DratChecker::Status LratProofHandler::Check() {
   return status;
 }
 
-bool LratProofHandler::LratError() const {
+bool LratProofHandler::LratError(absl::string_view message) const {
   if (debug_crash_on_error_) {
-    LOG(FATAL) << "LRAT error: " << lrat_checker_->error_message();
+    LOG(FATAL) << "LRAT error: " << message
+               << "\nChecker_error:" << lrat_checker_->error_message();
   }
   return false;
 }
@@ -686,26 +700,12 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
   // Then any new BooleanVariable appearing get the next dense index.
   std::vector<Literal> relevant_literals;
   for (int i = 0; i < clauses_for_proof.size(); ++i) {
-    int max_index = 0;
     for (const Literal lit : clauses_for_proof[i]) {
       const auto [it, inserted] =
           to_dense_index.insert({lit.Variable(), to_dense_index.size()});
       if (inserted) {
         relevant_literals.push_back(lit);
       }
-      max_index = std::max(max_index, it->second);
-    }
-    if (max_index < new_clause.size()) {
-      VLOG(2) << "The new clause is trivially true since one of the clauses is "
-                 "included inside "
-              << clauses_for_proof[i] << " in " << new_clause;
-      if (clauses_for_proof[i].size() == new_clause.size()) {
-        return ids_for_proof[i];
-      }
-
-      // TODO(user): if this ever happen we can create a new id and prove it
-      // with clauses_for_proof[i], but for now I never saw that.
-      return error("Case not yet supported");
     }
   }
 
@@ -755,6 +755,16 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
       }
     }
     if (skip) continue;
+    if (k == 0) {
+      // The clause is the same as the one we try to prove! or smaller.
+      if (clauses_for_proof[i].size() == new_clause.size()) {
+        return ids_for_proof[i];
+      }
+
+      // TODO(user): if this ever happen we can create a new id and prove it
+      // with clauses_for_proof[i], but for now I never saw that.
+      return error("Case not yet supported");
+    }
 
     mask >>= new_clause.size();
     base_index >>= new_clause.size();

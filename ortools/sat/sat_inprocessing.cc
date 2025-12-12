@@ -38,9 +38,11 @@
 #include "ortools/base/timer.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
+#include "ortools/sat/model.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
@@ -189,8 +191,8 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   // TODO(user): Maintain the total number of literals in the watched clauses.
   SOLVER_LOG(
       logger_, "[Pure SAT presolve]",
-      " num_fixed: ", FormatCounter(trail_->Index()), " num_redundant: ",
-      FormatCounter(implication_graph_->num_redundant_literals() / 2), "/",
+      " num_fixed: ", FormatCounter(trail_->Index()), " num_equiv: ",
+      FormatCounter(implication_graph_->num_current_equivalences() / 2), "/",
       FormatCounter(sat_solver_->NumVariables()), " num_implications: ",
       FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
       " num_watched_clauses: ",
@@ -282,24 +284,16 @@ bool Inprocessing::InprocessingRound() {
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
   RETURN_IF_FALSE(LevelZeroPropagate());
 
-  // TODO(user): Add a small wrapper function to time this.
-  const auto old_counter = sat_solver_->counters();
   if (params_.inprocessing_minimization_dtime() > 0.0) {
-    RETURN_IF_FALSE(sat_solver_->MinimizeByPropagation(
-        params_.inprocessing_minimization_dtime()));
+    RETURN_IF_FALSE(vivifier_->MinimizeByPropagation(
+        log_round_info, params_.inprocessing_minimization_dtime()));
   }
-  const int64_t mini_num_clause =
-      sat_solver_->counters().minimization_num_clauses -
-      old_counter.minimization_num_clauses;
-  const int64_t mini_num_removed =
-      sat_solver_->counters().minimization_num_removed_literals -
-      old_counter.minimization_num_removed_literals;
 
   // TODO(user): Think about the right order in this function.
   if (params_.inprocessing_use_congruence_closure()) {
     RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
     RETURN_IF_FALSE(implication_graph_->RemoveDuplicatesAndFixedVariables());
-    RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_info));
+    RETURN_IF_FALSE(congruence_closure_->DoOneRound(log_round_info));
   }
 
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -314,17 +308,25 @@ bool Inprocessing::InprocessingRound() {
   }
   RETURN_IF_FALSE(LevelZeroPropagate());
 
+  if (params_.inprocessing_use_sat_sweeping()) {
+    auto inner_model_inprocessing = [&](Model* inner_model) {
+      inner_model->GetOrCreate<SatParameters>()
+          ->set_inprocessing_use_sat_sweeping(false);
+      inner_model->GetOrCreate<Inprocessing>()->InprocessingRound();
+    };
+    RETURN_IF_FALSE(
+        equivalence_sat_sweeping_->DoOneRound(inner_model_inprocessing));
+    RETURN_IF_FALSE(LevelZeroPropagate());
+  }
   sat_solver_->AdvanceDeterministicTime(time_limit_);
   total_dtime_ += time_limit_->GetElapsedDeterministicTime() - start_dtime;
   if (log_info) {
     const int num_fixed = trail_->Index();
-    const int num_equiv = implication_graph_->num_redundant_literals() / 2;
+    const int num_equiv = implication_graph_->num_current_equivalences() / 2;
 
-    SOLVER_LOG(
+    FORCED_SOLVER_LOG(
         logger_, "Inprocessing.", " fixed:", FormatCounter(trail_->Index()),
-        " equiv:",
-        FormatCounter(implication_graph_->num_redundant_literals() / 2),
-        " left:",
+        " equiv:", FormatCounter(num_equiv), " left:",
         FormatCounter(sat_solver_->NumVariables() - num_fixed - num_equiv),
         " binary:",
         FormatCounter(implication_graph_->ComputeNumImplicationsForLog()),
@@ -334,8 +336,8 @@ bool Inprocessing::InprocessingRound() {
         "|", FormatCounter(clause_manager_->num_removable_clauses()), "|",
         FormatCounter(sat_solver_->counters().num_deleted_clauses), "|",
         FormatCounter(sat_solver_->num_failures()),
-        " minimization:", FormatCounter(mini_num_clause), "|",
-        FormatCounter(mini_num_removed),
+        " minimization:", FormatCounter(vivifier_->last_num_vivified()), "|",
+        FormatCounter(vivifier_->last_num_literals_removed()),
         " dtime:", time_limit_->GetElapsedDeterministicTime() - start_dtime,
         " wtime:", wall_timer.Get(),
         " np_wtime:", (wall_timer.Get() - probing_time));
@@ -2433,20 +2435,19 @@ class LratGateCongruenceHelper {
   }
 
   // Returns an LRAT clause rep(gates_target[gate_a_id]) =>
-  // rep(gates_target[gate_b_id]). ShortenEquivalencesWithRepresentative() must
-  // be called first on the two gate target literals.
+  // rep(gates_target[gate_b_id]).
   ClauseId AddAndGateTargetImplication(GateId gate_a_id, GateId gate_b_id) {
     const Literal a = Literal(gates_target_[gate_a_id]);
     const Literal b = Literal(gates_target_[gate_b_id]);
-    const Literal rep_a = GetParent(a);
-    const Literal rep_b = GetParent(b);
+    const Literal rep_a = GetRepresentativeWithProofSupport(a);
+    const Literal rep_b = GetRepresentativeWithProofSupport(b);
     DCHECK(IsRepresentative(rep_a));
     DCHECK(IsRepresentative(rep_b));
     // Compute a sequence of clause IDs proving that rep(a) => rep(b).
     // The following only works for and gates.
     std::vector<ClauseId> clause_ids;
     // rep(a) => a:
-    Append(clause_ids, GetRepresentativeImpliesLiteralClause(a));
+    Append(clause_ids, GetRepresentativeImpliesLiteralClauseId(a));
     // For each original input l of gate_a_id, a => l => rep(l). The original
     // inputs are the negation of each clause literal other than the target.
     // TODO(user): this can add redundant clauses if two original inputs
@@ -2455,22 +2456,20 @@ class LratGateCongruenceHelper {
       if (lit == a) continue;
       const Literal l = lit.Negated();
       clause_ids.push_back(implication_graph_->GetClauseId(a.Negated(), l));
-      ShortenEquivalencesWithRepresentative(l);
-      Append(clause_ids, GetLiteralImpliesRepresentativeClause(l));
+      Append(clause_ids, GetLiteralImpliesRepresentativeClauseId(l));
     }
     // For each original input l of b, rep(l) => l. The original inputs are
     // the negation of each gate clause literal other than its target b.
     for (const Literal lit : gates_clauses_[gate_b_id][0]->AsSpan()) {
       if (lit == b) continue;
       const Literal l = lit.Negated();
-      ShortenEquivalencesWithRepresentative(l);
-      Append(clause_ids, GetRepresentativeImpliesLiteralClause(l));
+      Append(clause_ids, GetRepresentativeImpliesLiteralClauseId(l));
     }
     // The original inputs of gate_b_id imply its target b:
     clause_ids.push_back(
         clause_manager_->GetClauseId(gates_clauses_[gate_b_id][0]));
     // b => rep(b):
-    Append(clause_ids, GetLiteralImpliesRepresentativeClause(b));
+    Append(clause_ids, GetLiteralImpliesRepresentativeClauseId(b));
 
     const ClauseId clause_id = clause_id_generator_->GetNextId();
     lrat_proof_handler_->AddInferredClause(clause_id, {rep_a.Negated(), rep_b},
@@ -2510,7 +2509,10 @@ class LratGateCongruenceHelper {
         const Literal rep = GetRepresentativeWithProofSupport(lit);
         if (rep != lit) {
           some_change = true;
-          tmp_clause_ids_.push_back(GetLiteralImpliesRepresentativeClause(lit));
+          // We need not(rep) => not(lit). This should be equivalent to
+          // getting lit => rep. Both should work.
+          tmp_clause_ids_.push_back(
+              GetLiteralImpliesRepresentativeClauseId(lit));
         }
         if (marked_[rep]) continue;
         if (marked_[rep.Negated()]) {
@@ -2563,7 +2565,10 @@ class LratGateCongruenceHelper {
       for (const Literal lit : gates_clauses_[id][0]->AsSpan()) {
         const Literal neg_lit = lit.Negated();
         if (neg_lit == neg_target) continue;
+
+        // Skip trivial clause after rewrite.
         const Literal neg_lit_rep = GetRepresentativeWithProofSupport(neg_lit);
+        if (neg_lit_rep == neg_target_rep.Negated()) continue;
 
         ClauseId new_id = implication_graph_->GetClauseId(neg_target, neg_lit);
         if (new_id == kNoClauseId) {
@@ -2577,11 +2582,11 @@ class LratGateCongruenceHelper {
           tmp_index_to_delete_.push_back(tmp_proof_clauses_.size());
           if (neg_lit != neg_lit_rep) {
             tmp_clause_ids_.push_back(
-                GetLiteralImpliesRepresentativeClause(neg_lit));
+                GetLiteralImpliesRepresentativeClauseId(neg_lit));
           }
           if (neg_target != neg_target_rep) {
             tmp_clause_ids_.push_back(
-                GetLiteralImpliesRepresentativeClause(neg_target));
+                GetLiteralImpliesRepresentativeClauseId(neg_target));
           }
           tmp_clause_ids_.push_back(new_id);
 
@@ -2591,6 +2596,7 @@ class LratGateCongruenceHelper {
         }
 
         tmp_proof_clauses_id_.push_back(new_id);
+        CHECK_NE(neg_target_rep, neg_lit_rep);
         tmp_proof_clauses_.Add({neg_target_rep, neg_lit_rep});
       }
     }
@@ -2609,10 +2615,26 @@ class LratGateCongruenceHelper {
     // We can add both implications with proof.
     const Literal a = Literal(gates_target_[gate_a_id]);
     const Literal b = Literal(gates_target_[gate_b_id]);
-    const Literal rep_a = GetParent(a);
-    const Literal rep_b = GetParent(b);
+    const Literal rep_a = GetRepresentativeWithProofSupport(a);
+    const Literal rep_b = GetRepresentativeWithProofSupport(b);
     DCHECK(IsRepresentative(rep_a));
     DCHECK(IsRepresentative(rep_b));
+    CHECK_NE(rep_a, rep_b);
+
+    if (rep_a.Negated() == rep_b) {
+      // The model is UNSAT.
+      //
+      // TODO(user): AddAndProveInferredClauseByEnumeration() do not like
+      // duplicates, but maybe we should just handle the case to have
+      // less code here?
+      const ClauseId not_rep_a_id =
+          lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+              {rep_a.Negated()}, tmp_proof_clauses_id_, tmp_proof_clauses_);
+      const ClauseId rep_a_id =
+          lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
+              {rep_a}, tmp_proof_clauses_id_, tmp_proof_clauses_);
+      return {not_rep_a_id, rep_a_id};
+    }
 
     const ClauseId rep_a_implies_rep_b =
         lrat_proof_handler_->AddAndProveInferredClauseByEnumeration(
@@ -2675,17 +2697,18 @@ class LratGateCongruenceHelper {
     for (const Literal lit : gates_clauses_[gate_id][0]->AsSpan()) {
       if (l_index != kNoLiteralIndex && m_index != kNoLiteralIndex) break;
       const Literal l = lit.Negated();
-      ShortenEquivalencesWithRepresentative(l);
-      const Literal rep_l = GetParent(l);
+      const Literal rep_l = GetRepresentativeWithProofSupport(l);
       if (rep_l == rep) l_index = l.Index();
       if (rep_l == rep.Negated()) m_index = l.Index();
     }
     clause_ids.push_back(
         implication_graph_->GetClauseId(target.Negated(), Literal(l_index)));
-    Append(clause_ids, GetLiteralImpliesRepresentativeClause(Literal(l_index)));
+    Append(clause_ids,
+           GetLiteralImpliesRepresentativeClauseId(Literal(l_index)));
     clause_ids.push_back(
         implication_graph_->GetClauseId(target.Negated(), Literal(m_index)));
-    Append(clause_ids, GetLiteralImpliesRepresentativeClause(Literal(m_index)));
+    Append(clause_ids,
+           GetLiteralImpliesRepresentativeClauseId(Literal(m_index)));
   }
 
  private:
@@ -2701,15 +2724,15 @@ class LratGateCongruenceHelper {
     return Literal(LiteralIndex(union_find_.GetParent(l.Index().value())));
   }
 
-  // ShortenEquivalencesWithRepresentative(l) must be called first.
-  ClauseId GetLiteralImpliesRepresentativeClause(Literal l) const {
+  ClauseId GetLiteralImpliesRepresentativeClauseId(Literal l) {
+    ShortenEquivalencesWithRepresentative(l);
     const auto it = parent_equivalence_.find(l);
     if (it == parent_equivalence_.end()) return kNoClauseId;
     return it->second.child_implies_parent;
   }
 
-  // ShortenEquivalencesWithRepresentative(l) must be called first.
-  ClauseId GetRepresentativeImpliesLiteralClause(Literal l) const {
+  ClauseId GetRepresentativeImpliesLiteralClauseId(Literal l) {
+    ShortenEquivalencesWithRepresentative(l);
     const auto it = parent_equivalence_.find(l);
     if (it == parent_equivalence_.end()) return kNoClauseId;
     return it->second.parent_implies_child;
@@ -2884,6 +2907,9 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
               rep_b_implies_rep_a = y;
             }
           }
+
+          DCHECK(!implication_graph_->IsRedundant(rep_a));
+          DCHECK(!implication_graph_->IsRedundant(rep_b));
           if (!implication_graph_->AddBinaryClause(rep_a_implies_rep_b,
                                                    rep_a.Negated(), rep_b) ||
               !implication_graph_->AddBinaryClause(rep_b_implies_rep_a,
@@ -2896,6 +2922,10 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
                 negate ? rep_a.NegatedIndex() : rep_a.Index();
             const LiteralIndex y =
                 negate ? rep_b.NegatedIndex() : rep_b.Index();
+            const ClauseId x_implies_y =
+                negate ? rep_b_implies_rep_a : rep_a_implies_rep_b;
+            const ClauseId y_implies_x =
+                negate ? rep_a_implies_rep_b : rep_b_implies_rep_a;
 
             // Because x always refer to a and y to b, this should maintain
             // the invariant root(lit) = root(lit.Negated()).Negated().
@@ -2907,15 +2937,11 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
 
             if (lrat_proof_handler_ != nullptr) {
               if (rep == x) {
-                lrat_helper.AddGateEquivalenceClauses(
-                    Literal(y),
-                    negate ? rep_a_implies_rep_b : rep_b_implies_rep_a,
-                    negate ? rep_b_implies_rep_a : rep_a_implies_rep_b);
+                lrat_helper.AddGateEquivalenceClauses(Literal(y), y_implies_x,
+                                                      x_implies_y);
               } else {
-                lrat_helper.AddGateEquivalenceClauses(
-                    Literal(x),
-                    negate ? rep_b_implies_rep_a : rep_a_implies_rep_b,
-                    negate ? rep_a_implies_rep_b : rep_b_implies_rep_a);
+                lrat_helper.AddGateEquivalenceClauses(Literal(x), x_implies_y,
+                                                      y_implies_x);
               }
             }
 
@@ -2935,6 +2961,10 @@ bool GateCongruenceClosure::DoOneRound(bool log_info) {
           CHECK_EQ(
               lrat_helper.GetRepresentativeWithProofSupport(rep_a),
               lrat_helper.GetRepresentativeWithProofSupport(rep_a.Negated())
+                  .Negated());
+          CHECK_EQ(
+              lrat_helper.GetRepresentativeWithProofSupport(rep_b),
+              lrat_helper.GetRepresentativeWithProofSupport(rep_b.Negated())
                   .Negated());
         }
         break;
