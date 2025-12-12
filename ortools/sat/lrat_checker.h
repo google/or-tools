@@ -37,7 +37,8 @@ namespace sat {
 class LratChecker {
  public:
   explicit LratChecker(Model* model)
-      : stats_(model->GetOrCreate<SharedStatistics>()) {}
+      : LratChecker(model->GetOrCreate<SharedStatistics>()) {}
+  explicit LratChecker(SharedStatistics* stats) : stats_(stats) {}
 
   // The clause IDs used in a proof that a clause has a Resolution Asymmetric
   // Tautology (RAT) property. See AddInferredClause() for more details.
@@ -111,6 +112,11 @@ class LratChecker {
   // Returns the reason of the first failed operation, or an empty string if all
   // operations were successful.
   std::string_view error_message() const { return error_message_; }
+
+  // This can help debugging wrong proof.
+  absl::Span<const Literal> GetClauseForDebug(ClauseId id) {
+    return clauses_[id];
+  }
 
  private:
   bool AddClauseInternal(ClauseId id, absl::Span<const Literal> clause,

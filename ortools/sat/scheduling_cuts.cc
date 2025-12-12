@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -226,45 +227,45 @@ namespace {
 // add it to the cut. It returns false if it tried to generate the cut, and
 // failed.
 ABSL_MUST_USE_RESULT bool AddOneEvent(
-    const EnergyEvent* event, IntegerValue window_start,
+    const EnergyEvent& event, IntegerValue window_start,
     IntegerValue window_end, LinearConstraintBuilder& cut,
     bool* add_energy_to_name = nullptr, bool* add_quadratic_to_name = nullptr,
     bool* add_opt_to_name = nullptr, bool* add_lifted_to_name = nullptr) {
-  if (event->end_min <= window_start || event->start_max >= window_end) {
+  if (event.end_min <= window_start || event.start_max >= window_end) {
     return true;  // Event can move outside the time window.
   }
 
-  if (event->start_min >= window_start && event->end_max <= window_end) {
+  if (event.start_min >= window_start && event.end_max <= window_end) {
     // Event is always contained by the time window.
-    cut.AddLinearExpression(event->linearized_energy);
+    cut.AddLinearExpression(event.linearized_energy);
 
-    if (event->energy_is_quadratic && add_quadratic_to_name != nullptr) {
+    if (event.energy_is_quadratic && add_quadratic_to_name != nullptr) {
       *add_quadratic_to_name = true;
     }
     if (add_energy_to_name != nullptr &&
-        event->energy_min > event->size_min * event->demand_min) {
+        event.energy_min > event.size_min * event.demand_min) {
       *add_energy_to_name = true;
     }
-    if (!event->IsPresent() && add_opt_to_name != nullptr) {
+    if (!event.IsPresent() && add_opt_to_name != nullptr) {
       *add_opt_to_name = true;
     }
   } else {  // The event has a mandatory overlap with the time window.
     const IntegerValue min_overlap =
-        event->GetMinOverlap(window_start, window_end);
+        event.GetMinOverlap(window_start, window_end);
     if (min_overlap <= 0) return true;
     if (add_lifted_to_name != nullptr) *add_lifted_to_name = true;
 
-    if (event->IsPresent()) {
-      const std::vector<LiteralValueValue>& energy = event->decomposed_energy;
+    if (event.IsPresent()) {
+      const std::vector<LiteralValueValue>& energy = event.decomposed_energy;
       if (energy.empty()) {
-        cut.AddTerm(event->demand, min_overlap);
+        cut.AddTerm(event.demand, min_overlap);
       } else {
         const IntegerValue window_size = window_end - window_start;
         for (const auto [lit, fixed_size, fixed_demand] : energy) {
           const IntegerValue alt_end_min =
-              std::max(event->end_min, event->start_min + fixed_size);
+              std::max(event.end_min, event.start_min + fixed_size);
           const IntegerValue alt_start_max =
-              std::min(event->start_max, event->end_max - fixed_size);
+              std::min(event.start_max, event.end_max - fixed_size);
           const IntegerValue energy_min =
               fixed_demand *
               std::min({alt_end_min - window_start, window_end - alt_start_max,
@@ -277,14 +278,14 @@ ABSL_MUST_USE_RESULT bool AddOneEvent(
     } else {
       if (add_opt_to_name != nullptr) *add_opt_to_name = true;
       const IntegerValue min_energy = ComputeEnergyMinInWindow(
-          event->start_min, event->start_max, event->end_min, event->end_max,
-          event->size_min, event->demand_min, event->decomposed_energy,
+          event.start_min, event.start_max, event.end_min, event.end_max,
+          event.size_min, event.demand_min, event.decomposed_energy,
           window_start, window_end);
-      if (min_energy > event->size_min * event->demand_min &&
+      if (min_energy > event.size_min * event.demand_min &&
           add_energy_to_name != nullptr) {
         *add_energy_to_name = true;
       }
-      if (!cut.AddLiteralTerm(Literal(event->presence_literal_index),
+      if (!cut.AddLiteralTerm(Literal(event.presence_literal_index),
                               min_energy)) {
         return false;
       }
@@ -295,27 +296,26 @@ ABSL_MUST_USE_RESULT bool AddOneEvent(
 
 // Returns the list of all possible demand values for the given event.
 // It returns an empty vector is the number of values is too large.
-std::vector<int64_t> FindPossibleDemands(const EnergyEvent* event,
+std::vector<int64_t> FindPossibleDemands(const EnergyEvent& event,
                                          const VariablesAssignment& assignment,
                                          IntegerTrail* integer_trail) {
   std::vector<int64_t> possible_demands;
-  if (event->decomposed_energy.empty()) {
-    if (integer_trail->IsFixed(event->demand)) {
+  if (event.decomposed_energy.empty()) {
+    if (integer_trail->IsFixed(event.demand)) {
       possible_demands.push_back(
-          integer_trail->FixedValue(event->demand).value());
+          integer_trail->FixedValue(event.demand).value());
     } else {
-      if (integer_trail->InitialVariableDomain(event->demand.var).Size() >
+      if (integer_trail->InitialVariableDomain(event.demand.var).Size() >
           1000000) {
         return {};
       }
       for (const int64_t var_value :
-           integer_trail->InitialVariableDomain(event->demand.var).Values()) {
-        possible_demands.push_back(event->demand.ValueAt(var_value).value());
+           integer_trail->InitialVariableDomain(event.demand.var).Values()) {
+        possible_demands.push_back(event.demand.ValueAt(var_value).value());
       }
     }
   } else {
-    for (const auto [lit, fixed_size, fixed_demand] :
-         event->decomposed_energy) {
+    for (const auto [lit, fixed_size, fixed_demand] : event.decomposed_energy) {
       if (assignment.LiteralIsFalse(lit)) continue;
       possible_demands.push_back(fixed_demand.value());
     }
@@ -340,7 +340,7 @@ std::vector<int64_t> FindPossibleDemands(const EnergyEvent* event,
 void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<EnergyEvent*> events, IntegerValue capacity,
+    absl::Span<std::unique_ptr<EnergyEvent>> events, IntegerValue capacity,
     AffineExpression makespan, TimeLimit* time_limit, Model* model,
     TopNCuts& top_n_cuts) {
   // Checks the precondition of the code.
@@ -360,21 +360,21 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
   IntegerValue max_end_min = kMinIntegerValue;  // Used to abort early.
   IntegerValue max_end_max = kMinIntegerValue;  // Used as a sentinel.
   for (int i = 0; i < events.size(); ++i) {
-    const EnergyEvent* event = events[i];
-    if (event->start_min < makespan_min) {
-      time_points.push_back(event->start_min);
+    const EnergyEvent& event = *events[i];
+    if (event.start_min < makespan_min) {
+      time_points.push_back(event.start_min);
     }
-    if (event->start_max < makespan_min) {
-      time_points.push_back(event->start_max);
+    if (event.start_max < makespan_min) {
+      time_points.push_back(event.start_max);
     }
-    if (event->end_min < makespan_min) {
-      time_points.push_back(event->end_min);
+    if (event.end_min < makespan_min) {
+      time_points.push_back(event.end_min);
     }
-    if (event->end_max < makespan_min) {
-      time_points.push_back(event->end_max);
+    if (event.end_max < makespan_min) {
+      time_points.push_back(event.end_max);
     }
-    max_end_min = std::max(max_end_min, event->end_min);
-    max_end_max = std::max(max_end_max, event->end_max);
+    max_end_min = std::max(max_end_min, event.end_min);
+    max_end_max = std::max(max_end_max, event.end_max);
     possible_demands[i] = FindPossibleDemands(event, assignment, integer_trail);
   }
   time_points.push_back(makespan_min);
@@ -390,8 +390,8 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
     const IntegerValue window_end = time_points[i];
     reachable_capacity_subset_sum.Reset(capacity.value());
     for (int i = 0; i < events.size(); ++i) {
-      const EnergyEvent* event = events[i];
-      if (event->start_min >= window_end || event->end_max <= window_start) {
+      const EnergyEvent& event = *events[i];
+      if (event.start_min >= window_end || event.end_max <= window_start) {
         continue;
       }
       if (possible_demands[i].empty()) {  // Number of values was too large.
@@ -479,8 +479,8 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
       }
 
       // Add contributions from all events.
-      for (const EnergyEvent* event : events) {
-        if (!AddOneEvent(event, window_start, window_end, temp_builder,
+      for (const std::unique_ptr<EnergyEvent>& event : events) {
+        if (!AddOneEvent(*event, window_start, window_end, temp_builder,
                          &add_energy_to_name, &add_quadratic_to_name,
                          &add_opt_to_name, &add_lifted_to_name)) {
           cut_generated = false;
@@ -516,10 +516,11 @@ void GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
 void GenerateCumulativeEnergeticCuts(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<EnergyEvent*> events, const AffineExpression& capacity,
-    TimeLimit* time_limit, Model* model, TopNCuts& top_n_cuts) {
+    absl::Span<std::unique_ptr<EnergyEvent>> events,
+    const AffineExpression& capacity, TimeLimit* time_limit, Model* model,
+    TopNCuts& top_n_cuts) {
   double max_possible_energy_lp = 0.0;
-  for (const EnergyEvent* event : events) {
+  for (const std::unique_ptr<EnergyEvent>& event : events) {
     max_possible_energy_lp += event->linearized_energy_lp_value;
   }
 
@@ -536,7 +537,7 @@ void GenerateCumulativeEnergeticCuts(
   // TODO(user): We could reduce this set.
   absl::btree_set<IntegerValue> time_points_set;
   IntegerValue max_end_min = kMinIntegerValue;
-  for (const EnergyEvent* event : events) {
+  for (const std::unique_ptr<EnergyEvent>& event : events) {
     time_points_set.insert(event->start_min);
     time_points_set.insert(event->start_max);
     time_points_set.insert(event->end_min);
@@ -573,8 +574,8 @@ void GenerateCumulativeEnergeticCuts(
       temp_builder.AddTerm(capacity, window_start - window_end);
 
       // Add all contributions.
-      for (const EnergyEvent* event : events) {
-        if (!AddOneEvent(event, window_start, window_end, temp_builder,
+      for (const std::unique_ptr<EnergyEvent>& event : events) {
+        if (!AddOneEvent(*event, window_start, window_end, temp_builder,
                          &add_energy_to_name, &add_quadratic_to_name,
                          &add_opt_to_name, &add_lifted_to_name)) {
           cut_generated = false;
@@ -630,7 +631,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
     const auto& lp_values = manager->LpValues();
     const VariablesAssignment& assignment = sat_solver->Assignment();
 
-    std::vector<EnergyEvent*> events;
+    std::vector<std::unique_ptr<EnergyEvent>> events;
     for (int i = 0; i < helper->NumTasks(); ++i) {
       if (helper->IsAbsent(i)) continue;
       // TODO(user): use level 0 bounds ?
@@ -642,7 +643,7 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
         return true;  // Propagation did not reach a fixed point. Abort.
       }
 
-      EnergyEvent* e = new EnergyEvent(i, helper);
+      auto e = std::make_unique<EnergyEvent>(i, helper);
       e->demand = demands_helper->Demands()[i];
       e->demand_min = demands_helper->DemandMin(i);
       e->decomposed_energy = demands_helper->DecomposedEnergies()[i];
@@ -657,14 +658,15 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       }
       // We can always skip events.
       if (!e->FillEnergyLp(helper->Sizes()[i], lp_values, model)) continue;
-      events.push_back(e);
+      events.push_back(std::move(e));
     }
 
     TopNCuts top_n_cuts(5);
-    std::vector<absl::Span<EnergyEvent*>> disjoint_events =
+    std::vector<absl::Span<std::unique_ptr<EnergyEvent>>> disjoint_events =
         SplitEventsInIndendentSets(events);
     // Can we pass cluster as const. It would mean sorting before.
-    for (const absl::Span<EnergyEvent*> cluster : disjoint_events) {
+    for (const absl::Span<std::unique_ptr<EnergyEvent>> cluster :
+         disjoint_events) {
       if (makespan.has_value() && integer_trail->IsFixed(capacity)) {
         GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
             "CumulativeEnergyM", lp_values, cluster,
@@ -678,7 +680,6 @@ CutGenerator CreateCumulativeEnergyCutGenerator(
       }
     }
     top_n_cuts.TransferToManager(manager);
-    gtl::STLDeleteElements(&events);
     return true;
   };
 
@@ -704,12 +705,12 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
 
     const auto& lp_values = manager->LpValues();
-    std::vector<EnergyEvent*> events;
+    std::vector<std::unique_ptr<EnergyEvent>> events;
     for (int i = 0; i < helper->NumTasks(); ++i) {
       if (helper->IsAbsent(i)) continue;
       if (helper->SizeMin(i) == 0) continue;
 
-      EnergyEvent* e = new EnergyEvent(i, helper);
+      auto e = std::make_unique<EnergyEvent>(i, helper);
       e->demand = IntegerValue(1);
       e->demand_min = IntegerValue(1);
       e->energy_min = e->size_min;
@@ -718,13 +719,14 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
       }
       // We can always skip events.
       if (!e->FillEnergyLp(helper->Sizes()[i], lp_values, model)) continue;
-      events.push_back(e);
+      events.push_back(std::move(e));
     }
 
     TopNCuts top_n_cuts(5);
-    std::vector<absl::Span<EnergyEvent*>> disjoint_events =
+    std::vector<absl::Span<std::unique_ptr<EnergyEvent>>> disjoint_events =
         SplitEventsInIndendentSets(events);
-    for (const absl::Span<EnergyEvent*> cluster : disjoint_events) {
+    for (const absl::Span<std::unique_ptr<EnergyEvent>> cluster :
+         disjoint_events) {
       if (makespan.has_value()) {
         GenerateCumulativeEnergeticCutsWithMakespanAndFixedCapacity(
             "NoOverlapEnergyM", lp_values, cluster,
@@ -737,7 +739,6 @@ CutGenerator CreateNoOverlapEnergyCutGenerator(
       }
     }
     top_n_cuts.TransferToManager(manager);
-    gtl::STLDeleteElements(&events);
     return true;
   };
   return result;
@@ -770,7 +771,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
     if (!demands_helper->CacheAllEnergyValues()) return true;
 
     TopNCuts top_n_cuts(5);
-    std::vector<TimeTableEvent*> events;
+    std::vector<std::unique_ptr<TimeTableEvent>> events;
     const auto& lp_values = manager->LpValues();
     if (lp_values.empty()) return true;  // No linear relaxation.
     const double capacity_lp = capacity.LpValue(lp_values);
@@ -785,7 +786,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
 
       if (start_max >= end_min) continue;
 
-      TimeTableEvent* e1 = new TimeTableEvent();
+      auto e1 = std::make_unique<TimeTableEvent>();
       e1->interval_index = i;
       e1->time = start_max;
       {
@@ -800,27 +801,27 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           !demands_helper->DecomposedEnergies()[i].empty();
       e1->is_optional = !helper->IsPresent(i);
 
-      TimeTableEvent* e2 = new TimeTableEvent(*e1);
+      auto e2 = std::make_unique<TimeTableEvent>(*e1);
       e2->time = end_min;
       e2->is_positive = false;
 
-      events.push_back(e1);
-      events.push_back(e2);
+      events.push_back(std::move(e1));
+      events.push_back(std::move(e2));
     }
 
     // Sort events by time.
     // It is also important that all positive event with the same time as
     // negative events appear after for the correctness of the algo below.
-    absl::c_stable_sort(events,
-                        [](const TimeTableEvent* i, const TimeTableEvent* j) {
-                          return std::tie(i->time, i->is_positive) <
-                                 std::tie(j->time, j->is_positive);
-                        });
+    absl::c_stable_sort(events, [](const std::unique_ptr<TimeTableEvent>& i,
+                                   const std::unique_ptr<TimeTableEvent>& j) {
+      return std::tie(i->time, i->is_positive) <
+             std::tie(j->time, j->is_positive);
+    });
 
     double sum_of_demand_lp = 0.0;
     bool positive_event_added_since_last_check = false;
     for (int i = 0; i < events.size(); ++i) {
-      const TimeTableEvent* e = events[i];
+      const TimeTableEvent* e = events[i].get();
       if (e->is_positive) {
         positive_event_added_since_last_check = true;
         sum_of_demand_lp += e->demand_lp;
@@ -844,7 +845,7 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
           const IntegerValue time_point = events[i - 1]->time;
 
           for (int j = 0; j < i; ++j) {
-            const TimeTableEvent* cut_event = events[j];
+            const TimeTableEvent* cut_event = events[j].get();
             const int t = cut_event->interval_index;
             DCHECK_LE(helper->StartMax(t), time_point);
             if (!cut_event->is_positive || helper->EndMin(t) <= time_point) {
@@ -868,7 +869,6 @@ CutGenerator CreateCumulativeTimeTableCutGenerator(
       sum_of_demand_lp -= e->demand_lp;
     }
     top_n_cuts.TransferToManager(manager);
-    gtl::STLDeleteElements(&events);
     return true;
   };
   return result;
@@ -902,16 +902,17 @@ struct CachedIntervalData {
 void GenerateCutsBetweenPairOfNonOverlappingTasks(
     absl::string_view cut_name, bool ignore_zero_size_intervals,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<CachedIntervalData*> events, IntegerValue capacity_max,
-    Model* model, TopNCuts& top_n_cuts) {
+    absl::Span<std::unique_ptr<CachedIntervalData>> events,
+    IntegerValue capacity_max, Model* model, TopNCuts& top_n_cuts) {
   const int num_events = events.size();
   if (num_events <= 1) return;
 
-  absl::c_stable_sort(
-      events, [](const CachedIntervalData* e1, const CachedIntervalData* e2) {
-        return std::tie(e1->start_min, e1->end_max) <
-               std::tie(e2->start_min, e2->end_max);
-      });
+  absl::c_stable_sort(events,
+                      [](const std::unique_ptr<CachedIntervalData>& e1,
+                         const std::unique_ptr<CachedIntervalData>& e2) {
+                        return std::tie(e1->start_min, e1->end_max) <
+                               std::tie(e2->start_min, e2->end_max);
+                      });
 
   // Balas disjunctive cuts on 2 tasks a and b:
   //   start_1 * (duration_1 + start_min_1 - start_min_2) +
@@ -949,9 +950,9 @@ void GenerateCutsBetweenPairOfNonOverlappingTasks(
       };
 
   for (int i = 0; i + 1 < num_events; ++i) {
-    const CachedIntervalData* e1 = events[i];
+    const CachedIntervalData* e1 = events[i].get();
     for (int j = i + 1; j < num_events; ++j) {
-      const CachedIntervalData* e2 = events[j];
+      const CachedIntervalData* e2 = events[j].get();
       if (e2->start_min >= e1->end_max) break;  // Break out of the index2 loop.
 
       // Encode only the interesting pairs.
@@ -1015,26 +1016,26 @@ CutGenerator CreateCumulativePrecedenceCutGenerator(
                           model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
 
-    std::vector<CachedIntervalData*> events;
+    std::vector<std::unique_ptr<CachedIntervalData>> events;
     for (int t = 0; t < helper->NumTasks(); ++t) {
       if (!helper->IsPresent(t)) continue;
-      CachedIntervalData* event = new CachedIntervalData(t, helper);
+      auto event = std::make_unique<CachedIntervalData>(t, helper);
       event->demand_min = demands_helper->DemandMin(t);
-      events.push_back(event);
+      events.push_back(std::move(event));
     }
 
     const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
 
     TopNCuts top_n_cuts(5);
-    std::vector<absl::Span<CachedIntervalData*>> disjoint_events =
-        SplitEventsInIndendentSets(events);
-    for (const absl::Span<CachedIntervalData*> cluster : disjoint_events) {
+    std::vector<absl::Span<std::unique_ptr<CachedIntervalData>>>
+        disjoint_events = SplitEventsInIndendentSets(events);
+    for (absl::Span<std::unique_ptr<CachedIntervalData>> cluster :
+         disjoint_events) {
       GenerateCutsBetweenPairOfNonOverlappingTasks(
           "Cumulative", /* ignore_zero_size_intervals= */ true,
           manager->LpValues(), cluster, capacity_max, model, top_n_cuts);
     }
     top_n_cuts.TransferToManager(manager);
-    gtl::STLDeleteElements(&events);
     return true;
   };
   return result;
@@ -1052,24 +1053,24 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
   result.generate_cuts = [helper, model](LinearConstraintManager* manager) {
     if (!helper->SynchronizeAndSetTimeDirection(true)) return false;
 
-    std::vector<CachedIntervalData*> events;
+    std::vector<std::unique_ptr<CachedIntervalData>> events;
     for (int t = 0; t < helper->NumTasks(); ++t) {
       if (!helper->IsPresent(t)) continue;
-      CachedIntervalData* event = new CachedIntervalData(t, helper);
+      auto event = std::make_unique<CachedIntervalData>(t, helper);
       event->demand_min = IntegerValue(1);
-      events.push_back(event);
+      events.push_back(std::move(event));
     }
 
     TopNCuts top_n_cuts(5);
-    std::vector<absl::Span<CachedIntervalData*>> disjoint_events =
-        SplitEventsInIndendentSets(events);
-    for (const absl::Span<CachedIntervalData*> cluster : disjoint_events) {
+    std::vector<absl::Span<std::unique_ptr<CachedIntervalData>>>
+        disjoint_events = SplitEventsInIndendentSets(events);
+    for (absl::Span<std::unique_ptr<CachedIntervalData>> cluster :
+         disjoint_events) {
       GenerateCutsBetweenPairOfNonOverlappingTasks(
           "NoOverlap", /* ignore_zero_size_intervals= */ false,
           manager->LpValues(), cluster, IntegerValue(1), model, top_n_cuts);
     }
     top_n_cuts.TransferToManager(manager);
-    gtl::STLDeleteElements(&events);
     return true;
   };
 
@@ -1123,8 +1124,8 @@ std::string CompletionTimeEvent::DebugString() const {
       "]");
 }
 
-void CtExhaustiveHelper::Init(absl::Span<CompletionTimeEvent*> events,
-                              Model* model) {
+void CtExhaustiveHelper::Init(
+    absl::Span<std::unique_ptr<CompletionTimeEvent>> events, Model* model) {
   max_task_index_ = 0;
   if (events.empty()) return;
 
@@ -1140,15 +1141,18 @@ void CtExhaustiveHelper::Init(absl::Span<CompletionTimeEvent*> events,
 }
 
 void CtExhaustiveHelper::BuildPredecessors(
-    absl::Span<CompletionTimeEvent*> events, Model* model) {
+    absl::Span<std::unique_ptr<CompletionTimeEvent>> events, Model* model) {
   predecessors_.clear();
   if (events.size() > 100) return;
 
   RootLevelLinear2Bounds* root_level_bounds =
       model->GetOrCreate<RootLevelLinear2Bounds>();
 
-  std::vector<const CompletionTimeEvent*> sorted_events(events.begin(),
-                                                        events.end());
+  std::vector<const CompletionTimeEvent*> sorted_events;
+  sorted_events.reserve(events.size());
+  for (const auto& event : events) {
+    sorted_events.push_back(event.get());
+  }
   std::sort(sorted_events.begin(), sorted_events.end(),
             [](const CompletionTimeEvent* a, const CompletionTimeEvent* b) {
               return a->task_index < b->task_index;
@@ -1169,12 +1173,12 @@ void CtExhaustiveHelper::BuildPredecessors(
 }
 
 bool CtExhaustiveHelper::PermutationIsCompatibleWithPrecedences(
-    absl::Span<CompletionTimeEvent*> events,
+    absl::Span<std::unique_ptr<CompletionTimeEvent>> events,
     absl::Span<const int> permutation) {
   if (predecessors_.num_entries() == 0) return true;
   visited_.assign(max_task_index_ + 1, false);
   for (int i = permutation.size() - 1; i >= 0; --i) {
-    const CompletionTimeEvent* event = events[permutation[i]];
+    const CompletionTimeEvent* event = events[permutation[i]].get();
     if (event->task_index >= predecessors_.size()) continue;
     for (const int predecessor : predecessors_[event->task_index]) {
       if (visited_[predecessor]) return false;
@@ -1425,12 +1429,14 @@ CompletionTimeExplorationStatus ComputeMinSumOfWeightedEndMins(
 ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<CompletionTimeEvent*> events, IntegerValue capacity_max,
-    CtExhaustiveHelper& helper, Model* model, TopNCuts& top_n_cuts,
+    absl::Span<std::unique_ptr<CompletionTimeEvent>> events,
+    IntegerValue capacity_max, CtExhaustiveHelper& helper, Model* model,
+    TopNCuts& top_n_cuts,
     std::vector<CompletionTimeEvent>& residual_event_storage) {
   // Sort by start min to bucketize by start_min.
   std::sort(events.begin(), events.end(),
-            [](const CompletionTimeEvent* e1, const CompletionTimeEvent* e2) {
+            [](const std::unique_ptr<CompletionTimeEvent>& e1,
+               const std::unique_ptr<CompletionTimeEvent>& e2) {
               return std::tie(e1->start_min, e1->energy_min, e1->lp_end,
                               e1->task_index) <
                      std::tie(e2->start_min, e2->energy_min, e2->lp_end,
@@ -1462,7 +1468,7 @@ ABSL_MUST_USE_RESULT bool GenerateShortCompletionTimeCutsWithExactBound(
 
     // Then we add the event after sequence_start_min.
     for (int i = start; i < events.size(); ++i) {
-      helper.residual_events_.push_back(events[i]);
+      helper.residual_events_.push_back(events[i].get());
     }
 
     std::sort(helper.residual_events_.begin(), helper.residual_events_.end(),
@@ -1672,8 +1678,8 @@ void AddEventDemandsToCapacitySubsetSum(
 void GenerateCompletionTimeCutsWithEnergy(
     absl::string_view cut_name,
     const util_intops::StrongVector<IntegerVariable, double>& lp_values,
-    absl::Span<CompletionTimeEvent*> events, IntegerValue capacity_max,
-    Model* model, TopNCuts& top_n_cuts,
+    absl::Span<std::unique_ptr<CompletionTimeEvent>> events,
+    IntegerValue capacity_max, Model* model, TopNCuts& top_n_cuts,
     std::vector<CompletionTimeEvent>& residual_event_storage) {
   const VariablesAssignment& assignment =
       model->GetOrCreate<Trail>()->Assignment();
@@ -1681,7 +1687,8 @@ void GenerateCompletionTimeCutsWithEnergy(
 
   // Sort by start min to bucketize by start_min.
   absl::c_stable_sort(
-      events, [](const CompletionTimeEvent* e1, const CompletionTimeEvent* e2) {
+      events, [](const std::unique_ptr<CompletionTimeEvent>& e1,
+                 const std::unique_ptr<CompletionTimeEvent>& e2) {
         return std::tie(e1->start_min, e1->demand_min, e1->lp_end) <
                std::tie(e2->start_min, e2->demand_min, e2->lp_end);
       });
@@ -1696,7 +1703,10 @@ void GenerateCompletionTimeCutsWithEnergy(
     }
 
     const IntegerValue sequence_start_min = events[start]->start_min;
-    residual_tasks.assign(events.begin() + start, events.end());
+    residual_tasks.clear();
+    for (int i = start; i < events.size(); ++i) {
+      residual_tasks.push_back(events[i].get());
+    }
 
     // We look at events that start before sequence_start_min, but are forced
     // to cross this time point. In that case, we replace this event by a
@@ -1708,7 +1718,7 @@ void GenerateCompletionTimeCutsWithEnergy(
       if (events[before]->start_min + events[before]->size_min >
           sequence_start_min) {
         CopyAndTrimEventAfterAndAppendIfPositiveEnergy(
-            events[before], sequence_start_min, residual_event_storage);
+            events[before].get(), sequence_start_min, residual_event_storage);
       }
     }
     for (int i = 0; i < residual_event_storage.size(); ++i) {
@@ -1847,16 +1857,16 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
       if (!helper->SynchronizeAndSetTimeDirection(time_is_forward)) {
         return false;
       }
-      std::vector<CompletionTimeEvent*> events;
+      std::vector<std::unique_ptr<CompletionTimeEvent>> events;
       const auto& lp_values = manager->LpValues();
       for (int index = 0; index < helper->NumTasks(); ++index) {
         if (!helper->IsPresent(index)) continue;
         const IntegerValue size_min = helper->SizeMin(index);
         if (size_min > 0) {
-          CompletionTimeEvent* event =
-              new CompletionTimeEvent(index, helper, nullptr);
+          auto event =
+              std::make_unique<CompletionTimeEvent>(index, helper, nullptr);
           event->lp_end = event->end.LpValue(lp_values);
-          events.push_back(event);
+          events.push_back(std::move(event));
         }
       }
 
@@ -1865,9 +1875,10 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
 
       TopNCuts top_n_cuts(5);
       std::vector<CompletionTimeEvent> residual_event_storage;
-      std::vector<absl::Span<CompletionTimeEvent*>> disjoint_events =
-          SplitEventsInIndendentSets(events);
-      for (const absl::Span<CompletionTimeEvent*> cluster : disjoint_events) {
+      std::vector<absl::Span<std::unique_ptr<CompletionTimeEvent>>>
+          disjoint_events = SplitEventsInIndendentSets(events);
+      for (const absl::Span<std::unique_ptr<CompletionTimeEvent>>& cluster :
+           disjoint_events) {
         if (!GenerateShortCompletionTimeCutsWithExactBound(
                 "NoOverlapCompletionTimeExhaustive", lp_values, cluster,
                 /*capacity_max=*/IntegerValue(1), helper, model, top_n_cuts,
@@ -1881,7 +1892,6 @@ CutGenerator CreateNoOverlapCompletionTimeCutGenerator(
             residual_event_storage);
       }
       top_n_cuts.TransferToManager(manager);
-      gtl::STLDeleteElements(&events);
       return true;
     };
     if (!generate_cuts(/*time_is_forward=*/true)) return false;
@@ -1916,7 +1926,7 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
       }
       if (!demands_helper->CacheAllEnergyValues()) return true;
 
-      std::vector<CompletionTimeEvent*> events;
+      std::vector<std::unique_ptr<CompletionTimeEvent>> events;
       const auto& lp_values = manager->LpValues();
       const VariablesAssignment& assignment = sat_solver->Assignment();
       for (int index = 0; index < helper->NumTasks(); ++index) {
@@ -1927,10 +1937,10 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
         }
         if (helper->SizeMin(index) > 0 &&
             demands_helper->DemandMin(index) > 0) {
-          CompletionTimeEvent* event =
-              new CompletionTimeEvent(index, helper, demands_helper);
+          auto event = std::make_unique<CompletionTimeEvent>(index, helper,
+                                                             demands_helper);
           event->lp_end = event->end.LpValue(lp_values);
-          events.push_back(event);
+          events.push_back(std::move(event));
         }
       }
 
@@ -1939,10 +1949,11 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
 
       const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
       TopNCuts top_n_cuts(5);
-      std::vector<absl::Span<CompletionTimeEvent*>> disjoint_events =
-          SplitEventsInIndendentSets(events);
+      std::vector<absl::Span<std::unique_ptr<CompletionTimeEvent>>>
+          disjoint_events = SplitEventsInIndendentSets(events);
       std::vector<CompletionTimeEvent> residual_event_storage;
-      for (absl::Span<CompletionTimeEvent*> cluster : disjoint_events) {
+      for (absl::Span<std::unique_ptr<CompletionTimeEvent>> cluster :
+           disjoint_events) {
         if (!GenerateShortCompletionTimeCutsWithExactBound(
                 "CumulativeCompletionTimeExhaustive", lp_values, cluster,
                 capacity_max, helper, model, top_n_cuts,
@@ -1955,7 +1966,6 @@ CutGenerator CreateCumulativeCompletionTimeCutGenerator(
             capacity_max, model, top_n_cuts, residual_event_storage);
       }
       top_n_cuts.TransferToManager(manager);
-      gtl::STLDeleteElements(&events);
       return true;
     };
 

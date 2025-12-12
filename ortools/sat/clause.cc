@@ -703,7 +703,9 @@ ClauseId ClauseManager::ReasonClauseId(Literal literal) const {
   DCHECK(trail_->Assignment().VariableIsAssigned(var));
   const int assignment_type = trail_->AssignmentType(var);
   const int trail_index = trail_->Info(var).trail_index;
-  if (assignment_type == AssignmentType::kUnitReason) {
+  if (assignment_type == AssignmentType::kCachedReason) {
+    return trail_->GetStoredReasonClauseId(var);
+  } else if (assignment_type == AssignmentType::kUnitReason) {
     return trail_->GetUnitClauseId(var);
   } else if (assignment_type == implication_graph_->PropagatorId()) {
     absl::Span<const Literal> reason =
@@ -1948,9 +1950,10 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   is_redundant_.resize(size);
 
   int num_equivalences = 0;
+  int num_new_redundant_literals = 0;
+
   // We increment num_redundant_literals_ only at the end, to avoid breaking the
   // invariant "num_redundant_literals_ % 2 == 0" in case of early return.
-  int num_new_redundant_literals = 0;
   reverse_topological_order_.clear();
   for (int index = 0; index < scc.size(); ++index) {
     const absl::Span<int32_t> component = scc[index];
@@ -2135,7 +2138,10 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     }
   }
 
+  // Note that all fixed variables should be excluded from here after a
+  // call to RemoveFixedVariables().
   num_redundant_literals_ += num_new_redundant_literals;
+  num_current_equivalences_ = num_equivalences;
   time_limit_->AdvanceDeterministicTime(dtime);
   const int num_fixed_during_scc =
       trail_->Index() - num_processed_fixed_variables_;

@@ -22,6 +22,7 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "absl/types/span.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/util.h"
@@ -148,7 +149,9 @@ bool LratChecker::AddClauseInternal(ClauseId id,
       num_processed_rup_literals_ += it->second.size();
       last_propagation_status = Propagate(it->second, tmp_false_literals_set_);
       if (last_propagation_status == kError) {
-        return Error(id, absl::StrCat("unit_id ", unit_id, " is not unit"));
+        return Error(
+            id, absl::StrCat("unit_id ", unit_id, " is not unit. literals=[",
+                             absl::StrJoin(it->second, ","), "]"));
       } else if (last_propagation_status == kWarning) {
         last_propagation_status = kUnit;
         ++num_unneeded_rup_literals_;

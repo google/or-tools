@@ -1487,15 +1487,18 @@ bool IntegerSearchHelper::GetDecision(
   return true;
 }
 
-bool IntegerSearchHelper::TakeDecision(Literal decision) {
+bool IntegerSearchHelper::TakeDecision(Literal decision,
+                                       bool use_representative) {
   // If we are about to take a decision on a redundant literal, always
   // prefer to branch on the representative. This should helps learn more
   // consistent conflict.
   //
   // TODO(user): Ideally never learn anything on redundant variable. This is
   // a bit of work.
-  decision = binary_implication_graph_->RepresentativeOf(decision);
-  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
+  if (use_representative) {
+    decision = binary_implication_graph_->RepresentativeOf(decision);
+    CHECK(!sat_solver_->Assignment().LiteralIsAssigned(decision));
+  }
 
   pseudo_costs_->BeforeTakingDecision(decision);
 
@@ -1554,6 +1557,7 @@ SatSolver::Status IntegerSearchHelper::SolveIntegerProblem() {
       // will make sure to restore them. On restart, we always call Propagate()
       // as we might want to spent more effort on the root level LP relaxation
       // for instance.
+      sat_solver_->IncreaseNumRestarts();
       sat_solver_->Backtrack(0);
       if (!sat_solver_->FinishPropagation()) {
         return sat_solver_->UnsatStatus();

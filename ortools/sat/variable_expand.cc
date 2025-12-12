@@ -149,32 +149,42 @@ void AbslStringify(Sink& sink, const EncodingLinear1& lin) {
 ValueEncoding::ValueEncoding(int var, PresolveContext* context)
     : var_(var), var_domain_(context->DomainOf(var)), context_(context) {}
 
-void ValueEncoding::AddValueToEncode(int64_t value) {
+void ValueEncoding::AddReferencedValueToEncode(int64_t value) {
+  DCHECK(!is_closed_);
+  encoded_values_.push_back(value);
+  referenced_encoded_values_.push_back(value);
+}
+
+void ValueEncoding::AddOptionalValueToEncode(int64_t value) {
   DCHECK(!is_closed_);
   encoded_values_.push_back(value);
 }
 
 void ValueEncoding::CanonicalizeEncodedValuesAndAddEscapeValue(
-    bool var_in_objective, bool var_has_positive_objective_coefficient) {
+    bool push_down_when_unconstrained, bool has_le_ge_linear1) {
   if (!is_closed_) {
+    // Note: is_closed is true if we have forced the full encoding.
+    if (!has_le_ge_linear1) {
+      // We forget all optional encoded values as we just need one escape value.
+      encoded_values_ = referenced_encoded_values_;
+    }
+
     gtl::STLSortAndRemoveDuplicates(&encoded_values_);
     // Add an escape value to the existing encoded values when the encoding is
-    // not complete. This depends on the presence of an objective and its
-    // direction.
-    //
-    // TODO(user): actually if the encoding is not mandatory (lit => var ==
-    // value instead of lit <=> var == value), then the escape value can be the
-    // the min of var_domain instead of the min of the residual domain (in case
-    // we are minimizing var in the objective).
+    // not complete. The choice of the escape value depends on the presence of
+    // an objective and its direction. An encoded value not actually referenced
+    // by a linear1 constraint can be used as an escape value.
     if (encoded_values_.size() < var_domain_.Size()) {
       const Domain residual = var_domain_.IntersectionWith(
-          Domain::FromValues(encoded_values_).Complement());
+          Domain::FromValues(referenced_encoded_values_).Complement());
       const int64_t escape_value =
-          !var_in_objective
-              ? residual.SmallestValue()
-              : (var_has_positive_objective_coefficient ? residual.Min()
-                                                        : residual.Max());
+          push_down_when_unconstrained ? residual.Min() : residual.Max();
+      // NOTE: escape_value can already be in all_encoded_values_.
       encoded_values_.push_back(escape_value);
+      gtl::STLSortAndRemoveDuplicates(&encoded_values_);
+      if (!has_le_ge_linear1) {
+        unique_escape_value_ = escape_value;
+      }
     }
     is_closed_ = true;
     is_fully_encoded_ = encoded_values_.size() == var_domain_.Size();
@@ -196,8 +206,14 @@ bool ValueEncoding::is_fully_encoded() const {
   return is_fully_encoded_;
 }
 
+std::optional<int64_t> ValueEncoding::unique_escape_value() const {
+  DCHECK(is_closed_);
+  return unique_escape_value_;
+}
+
 void ValueEncoding::ForceFullEncoding() {
   encoded_values_.clear();
+  referenced_encoded_values_.clear();
   encoded_values_.reserve(var_domain_.Size());
   for (const int64_t v : var_domain_.Values()) {
     encoded_values_.push_back(v);
@@ -451,6 +467,9 @@ bool ProcessEncodingConstraints(
   // TODO(user): Pick a single value for each equivalence class, not one
   // per contiguous interval.
   // TODO(user): Supports more domains, for now only <= and >= are supported.
+  //
+  // TODO(user): At the expense of a more complex hint manipulation, we could
+  // only use one optional value per variable.
   const Domain& var_domain = context->DomainOf(var);
   constraint_indices.clear();
   var_in_objective = false;
@@ -500,38 +519,44 @@ bool ProcessEncodingConstraints(
 
     switch (lin.type) {
       case EncodingLinear1Type::kVarEqValue:
-        values.AddValueToEncode(lin.value);
+        values.AddReferencedValueToEncode(lin.value);
         if (push_down_when_unconstrained) {
           if (lin.value < var_domain.Max()) {
-            values.AddValueToEncode(var_domain.ValueAtOrAfter(lin.value + 1));
+            values.AddOptionalValueToEncode(
+                var_domain.ValueAtOrAfter(lin.value + 1));
           }
         } else {
           if (lin.value > var_domain.Min()) {
-            values.AddValueToEncode(var_domain.ValueAtOrBefore(lin.value - 1));
+            values.AddOptionalValueToEncode(
+                var_domain.ValueAtOrBefore(lin.value - 1));
           }
         }
         break;
       case EncodingLinear1Type::kVarNeValue:
-        values.AddValueToEncode(lin.value);
+        values.AddReferencedValueToEncode(lin.value);
         if (push_down_when_unconstrained) {
           if (lin.value < var_domain.Max()) {
-            values.AddValueToEncode(var_domain.ValueAtOrAfter(lin.value + 1));
+            values.AddOptionalValueToEncode(
+                var_domain.ValueAtOrAfter(lin.value + 1));
           }
         } else {
           if (lin.value > var_domain.Min()) {
-            values.AddValueToEncode(var_domain.ValueAtOrBefore(lin.value - 1));
+            values.AddOptionalValueToEncode(
+                var_domain.ValueAtOrBefore(lin.value - 1));
           }
         }
         break;
       case EncodingLinear1Type::kVarGeValue: {
-        values.AddValueToEncode(lin.value);
-        values.AddValueToEncode(var_domain.ValueAtOrBefore(lin.value - 1));
+        values.AddReferencedValueToEncode(lin.value);
+        values.AddReferencedValueToEncode(
+            var_domain.ValueAtOrBefore(lin.value - 1));
         order.InsertGeLiteral(lin.value, lin.enforcement_literal);
         break;
       }
       case EncodingLinear1Type::kVarLeValue: {
-        values.AddValueToEncode(lin.value);
-        values.AddValueToEncode(var_domain.ValueAtOrAfter(lin.value + 1));
+        values.AddReferencedValueToEncode(lin.value);
+        values.AddReferencedValueToEncode(
+            var_domain.ValueAtOrAfter(lin.value + 1));
         order.InsertLeLiteral(lin.value, lin.enforcement_literal);
         break;
       }
@@ -541,16 +566,15 @@ bool ProcessEncodingConstraints(
       }
     }
 
-    if (push_down_when_unconstrained) {
-      values.AddValueToEncode(var_domain.Min());
-    } else {
-      values.AddValueToEncode(var_domain.Max());
-    }
-
     linear_ones_by_type[static_cast<int>(lin.type)].push_back(lin);
   }
+  const bool has_le_ge_linear1 =
+      !linear_ones_by_type[static_cast<int>(EncodingLinear1Type::kVarGeValue)]
+           .empty() ||
+      !linear_ones_by_type[static_cast<int>(EncodingLinear1Type::kVarLeValue)]
+           .empty();
   values.CanonicalizeEncodedValuesAndAddEscapeValue(
-      var_in_objective, var_has_positive_objective_coefficient);
+      push_down_when_unconstrained, has_le_ge_linear1);
   return true;
 }
 
@@ -638,7 +662,7 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
       !var_in_objective || var_has_positive_objective_coefficient;
   solution_crush.SetOrUpdateVarToDomain(
       var, Domain::FromValues(values.encoded_values()), values.encoding(),
-      push_down_when_unconstrained);
+      values.unique_escape_value(), push_down_when_unconstrained);
   order.CreateAllOrderEncodingLiterals(values);
 
   // Link all Boolean in our linear1 to the encoding literals.

@@ -130,6 +130,9 @@ class LratMerger {
 class LratProofHandler {
  public:
   static std::unique_ptr<LratProofHandler> MaybeCreate(Model* model);
+  static std::unique_ptr<LratProofHandler> MaybeCreate(
+      const SatParameters& params, ClauseIdGenerator* id_generator,
+      SharedLratProofStatus* proof_status, SharedStatistics* stats);
 
   bool lrat_check_enabled() const { return lrat_checker_ != nullptr; }
   bool lrat_output_enabled() const { return lrat_writer_ != nullptr; }
@@ -202,10 +205,18 @@ class LratProofHandler {
 
   void Close(bool model_is_unsat);
 
- private:
-  explicit LratProofHandler(Model* model);
+  // This can be helpful to debug wrong proof, but shouldn't be used otherwise.
+  absl::Span<const Literal> GetLratClauseForDebug(ClauseId id) {
+    CHECK(lrat_checker_ != nullptr);
+    return lrat_checker_->GetClauseForDebug(id);
+  }
 
-  bool LratError() const;
+ private:
+  LratProofHandler(const SatParameters& params, ClauseIdGenerator* id_generator,
+                   SharedLratProofStatus* proof_status,
+                   SharedStatistics* stats);
+
+  bool LratError(absl::string_view message) const;
 
   const int id_;
   ClauseIdGenerator* id_generator_;

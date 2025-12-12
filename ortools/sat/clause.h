@@ -841,6 +841,13 @@ class BinaryImplicationGraph : public SatPropagator {
     return num_redundant_literals_;
   }
 
+  // Contrary to "num_redundant_literals_" this does not count equivalences for
+  // fixed variables or variables that where deleted.
+  int64_t num_current_equivalences() const {
+    CHECK_EQ(num_current_equivalences_ % 2, 0);
+    return num_current_equivalences_;
+  }
+
   // Number of implications removed by transitive reduction.
   int64_t num_redundant_implications() const {
     return num_redundant_implications_;
@@ -1107,6 +1114,7 @@ class BinaryImplicationGraph : public SatPropagator {
   int64_t num_literals_removed_ = 0;
   int64_t num_redundant_implications_ = 0;
   int64_t num_redundant_literals_ = 0;
+  int64_t num_current_equivalences_ = 0;
 
   // Bitset used by MinimizeClause().
   //

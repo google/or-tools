@@ -1419,20 +1419,24 @@ void SharedClausesManager::NotifyNumImported(int id, int64_t num_imported) {
 
 void SharedClausesManager::LogStatistics(SolverLogger* logger) {
   absl::MutexLock mutex_lock(mutex_);
-  std::vector<std::tuple<std::string, int64_t, int64_t>> name_to_table_line;
+  std::vector<std::tuple<std::string, int64_t, int64_t, int64_t, int64_t>>
+      name_to_table_line;
   for (int id = 0; id < id_to_num_exported_.size(); ++id) {
-    if (id_to_num_exported_[id] == 0 && id_to_num_imported_[id] == 0) continue;
-    name_to_table_line.push_back({id_to_worker_name_[id],
-                                  id_to_num_exported_[id],
-                                  id_to_num_imported_[id]});
+    name_to_table_line.push_back(
+        {id_to_worker_name_[id], id_to_num_exported_[id],
+         id_to_num_imported_[id], id_to_last_processed_binary_clause_[id],
+         last_visible_binary_clause_});
   }
   if (!name_to_table_line.empty()) {
     absl::c_sort(name_to_table_line);
     std::vector<std::vector<std::string>> table;
-    table.push_back({"Clauses shared", "#Exported", "#Imported"});
-    for (const auto& [name, exported, imported] : name_to_table_line) {
-      table.push_back(
-          {FormatName(name), FormatCounter(exported), FormatCounter(imported)});
+    table.push_back({"Clauses shared", "#Exported", "#Imported", "#BinaryRead",
+                     "#BinaryTotal"});
+    for (const auto& [name, exported, imported, binary_read, binary_total] :
+         name_to_table_line) {
+      table.push_back({FormatName(name), FormatCounter(exported),
+                       FormatCounter(imported), FormatCounter(binary_read),
+                       FormatCounter(binary_total)});
     }
     SOLVER_LOG(logger, FormatTable(table));
   }

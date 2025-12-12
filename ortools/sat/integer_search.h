@@ -292,9 +292,10 @@ class IntegerSearchHelper {
     must_process_conflict_ = true;
   }
 
-  // Tries to take the current decision, this might backjump.
-  // Returns false if the model is UNSAT.
-  bool TakeDecision(Literal decision);
+  // Tries to take the current decision, this might backjump. If
+  // use_representative is true, the representative of the decision is taken
+  // instead. Returns false if the model is UNSAT.
+  bool TakeDecision(Literal decision, bool use_representative = true);
 
   // Tries to find a feasible solution to the current model.
   //

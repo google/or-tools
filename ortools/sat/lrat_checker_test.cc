@@ -15,6 +15,7 @@
 
 #include "absl/types/span.h"
 #include "gtest/gtest.h"
+#include "ortools/base/gmock.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
@@ -209,7 +210,8 @@ TEST(LratCheckerTest, UnitClauseIdIsNotUnit) {
 
   EXPECT_FALSE(
       checker.AddInferredClause(ClauseId(2), Literals({+1}), {ClauseId(1)}));
-  EXPECT_EQ(checker.error_message(), "In clause 2: unit_id 1 is not unit");
+  EXPECT_THAT(checker.error_message(),
+              ::testing::HasSubstr("In clause 2: unit_id 1 is not unit"));
 }
 
 TEST(LratCheckerTest, MissingPivotForRatProof) {

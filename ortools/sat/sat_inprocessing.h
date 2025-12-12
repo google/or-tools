@@ -21,15 +21,18 @@
 #ifndef ORTOOLS_SAT_SAT_INPROCESSING_H_
 #define ORTOOLS_SAT_SAT_INPROCESSING_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/hash/hash.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/drat_checker.h"
 #include "ortools/sat/gate_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/lrat_proof_handler.h"
@@ -39,8 +42,10 @@
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/sat_sweeping.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/vivification.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/integer_pq.h"
 #include "ortools/util/logging.h"
@@ -121,6 +126,8 @@ class Inprocessing {
         bounded_variable_elimination_(
             model->GetOrCreate<BoundedVariableElimination>()),
         congruence_closure_(model->GetOrCreate<GateCongruenceClosure>()),
+        vivifier_(model->GetOrCreate<Vivifier>()),
+        equivalence_sat_sweeping_(model->GetOrCreate<EquivalenceSatSweeping>()),
         failed_literal_probing_(model->GetOrCreate<FailedLiteralProbing>()),
         postsolve_(model->GetOrCreate<PostsolveClauses>()),
         logger_(model->GetOrCreate<SolverLogger>()) {}
@@ -173,6 +180,8 @@ class Inprocessing {
   BlockedClauseSimplifier* blocked_clause_simplifier_;
   BoundedVariableElimination* bounded_variable_elimination_;
   GateCongruenceClosure* congruence_closure_;
+  Vivifier* vivifier_;
+  EquivalenceSatSweeping* equivalence_sat_sweeping_;
   FailedLiteralProbing* failed_literal_probing_;
   PostsolveClauses* postsolve_;
   SolverLogger* logger_;

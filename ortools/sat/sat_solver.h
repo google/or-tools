@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
@@ -46,6 +45,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/logging.h"
 #include "ortools/util/stats.h"
@@ -376,7 +376,10 @@ class SatSolver {
   // functions:
   //  - void AddBinaryClause(Literal a, Literal b);
   //  - void AddClause(absl::Span<const Literal> clause);
+  //  - void SetNumVariables(int num_variables);
   //
+  // Importantly, the `absl::Span<const Literal>` remain valid after the call,
+  // so it's safe to do a shallow copy of it.
   // TODO(user): also copy the removable clauses?
   template <typename Output>
   bool ExtractClauses(Output* out) {
@@ -426,6 +429,11 @@ class SatSolver {
   // level. Those can corresponds to actual restarts, or conflicts that learn
   // unit clauses or any other reason that trigger such backtrack.
   int64_t num_restarts() const;
+  int64_t num_backtracks_to_root() const;
+
+  // This allow to keep track of restart when the solver is controlled from
+  // outside.
+  void IncreaseNumRestarts() { ++counters_.num_restarts; }
 
   // Access to all counters.
   // Tracks various information about the solver progress.
@@ -433,6 +441,7 @@ class SatSolver {
     int64_t num_branches = 0;
     int64_t num_failures = 0;
     int64_t num_restarts = 0;
+    int64_t num_backtracks_to_root = 0;
     int64_t num_backtracks = 0;
 
     // Minimization stats.
@@ -448,14 +457,6 @@ class SatSolver {
     int64_t num_subsumed_clauses = 0;
     int64_t num_cleanup_rounds = 0;
     int64_t num_deleted_clauses = 0;
-
-    // TryToMinimizeClause() stats.
-    int64_t minimization_num_clauses = 0;
-    int64_t minimization_num_decisions = 0;
-    int64_t minimization_num_true = 0;
-    int64_t minimization_num_subsumed = 0;
-    int64_t minimization_num_removed_literals = 0;
-    int64_t minimization_num_reused = 0;
   };
   Counters counters() const { return counters_; }
 
@@ -545,6 +546,12 @@ class SatSolver {
   // TODO(user): This test is fast but not exhaustive, especially regarding the
   // integer propagators. Fix.
   bool PropagationIsDone() const;
+
+  // Hack for clause vivification to disable deletion.
+  // It is important to set it back to false !!
+  //
+  // TODO(user): Allow deletion while we minimize and remove this.
+  void BlockClauseDeletion(bool value) { block_clause_deletion_ = value; }
 
  private:
   // All Solve() functions end up calling this one.
@@ -763,18 +770,6 @@ class SatSolver {
   std::string DebugString(const SatClause& clause) const;
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
-
-  // Returns true if variable is fixed in the current assignment due to
-  // non-removable clauses, plus at most one removable clause with size <=
-  // max_size.
-  bool SubsumptionIsInteresting(BooleanVariable variable, int max_size);
-  void KeepAllClausesUsedToInfer(BooleanVariable variable);
-
-  // Use propagation to try to minimize the given clause. This is really similar
-  // to MinimizeCoreWithPropagation(). Note that because this does a small tree
-  // search, it will impact the variable/clause activities and may add new
-  // conflicts.
-  ABSL_MUST_USE_RESULT bool TryToMinimizeClause(SatClause* clause);
 
   // This is used by the old non-model constructor.
   Model* model_;

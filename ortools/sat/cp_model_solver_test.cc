@@ -5455,6 +5455,7 @@ TEST(CpModelSolverTest, DratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(1);
   params.set_cp_model_presolve(false);
+  params.set_inprocessing_use_sat_sweeping(false);
   params.set_symmetry_level(1);
   params.set_linearization_level(1);
   params.set_check_drat_proof(true);
@@ -5479,6 +5480,7 @@ TEST(CpModelSolverTest, LratProofIsValidForRandom3Sat) {
   SatParameters params;
   params.set_num_workers(8);
   params.set_cp_model_presolve(false);
+  params.set_inprocessing_use_sat_sweeping(false);
   params.set_symmetry_level(1);
   params.set_linearization_level(1);
   params.set_check_lrat_proof(true);

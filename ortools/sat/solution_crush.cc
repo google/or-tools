@@ -239,13 +239,19 @@ void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
 void SolutionCrush::SetOrUpdateVarToDomain(
     int var, const Domain& domain,
     const absl::btree_map<int64_t, int>& encoding,
+    std::optional<int64_t> unique_escape_value,
     bool push_down_when_repairing_hints) {
+  DCHECK_EQ(domain.Size(), encoding.size());
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     const int64_t old_value = GetVarValue(var);
     if (domain.Contains(old_value)) return;
+
     int64_t new_value = old_value;
-    if (push_down_when_repairing_hints && old_value >= domain.Min()) {
+    if (unique_escape_value.has_value()) {  // Only one escape value.
+      new_value = unique_escape_value.value();
+    } else if (push_down_when_repairing_hints) {
+      DCHECK_GT(old_value, domain.Min());
       new_value = domain.ValueAtOrBefore(old_value);
     } else {
       new_value = domain.ValueAtOrAfter(old_value);
