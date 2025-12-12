@@ -74,6 +74,16 @@ config_setting(
 )
 
 bool_flag(
+    name = "with_gurobi",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "use_gurobi",
+    flag_values = {":with_gurobi": "true"},
+)
+
+bool_flag(
     name = "with_glpk",
     build_setting_default = False,
 )
@@ -124,6 +134,16 @@ config_setting(
     flag_values = {":with_cplex": "true"},
 )
 
+bool_flag(
+    name = "with_xpress",
+    build_setting_default = True,
+)
+
+config_setting(
+    name = "use_xpress",
+    flag_values = {":with_xpress": "true"},
+)
+
 # Linear solver proto, used for (efficient!) model storage.
 proto_library(
     name = "linear_solver_proto",
@@ -150,13 +170,10 @@ py_proto_library(
 cc_library(
     name = "linear_solver",
     srcs = [
-        "gurobi_interface.cc",
-        "gurobi_util.cc",
         "linear_expr.cc",
         "linear_solver.cc",
         "linear_solver_callback.cc",
         "sat_interface.cc",
-        "xpress_interface.cc",
     ] + select({
         ":use_bop": ["bop_interface.cc"],
         "//conditions:default": [],
@@ -176,6 +193,12 @@ cc_library(
         ":use_glpk": ["glpk_interface.cc"],
         "//conditions:default": [],
     }) + select({
+        ":use_gurobi": [
+            "gurobi_interface.cc",
+            "gurobi_util.cc",
+        ],
+        "//conditions:default": [],
+    }) + select({
         ":use_highs": ["highs_interface.cc"],
         "//conditions:default": [],
     }) + select({
@@ -190,9 +213,11 @@ cc_library(
     }) + select({
         ":use_cplex": ["cplex_interface.cc"],
         "//conditions:default": [],
+    }) + select({
+        ":use_xpress": ["xpress_interface.cc"],
+        "//conditions:default": [],
     }),
     hdrs = [
-        "gurobi_util.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
@@ -200,38 +225,13 @@ cc_library(
         ":use_glop": ["glop_utils.h"],
         "//conditions:default": [],
     }) + select({
+        ":use_gurobi": ["gurobi_util.h"],
+        "//conditions:default": [],
+    }) + select({
         ":use_scip": [
             "scip_callback.h",
             "scip_helper_macros.h",
         ],
-        "//conditions:default": [],
-    }),
-    copts = [] + select({
-        ":use_bop": ["-DUSE_BOP"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_cbc": ["-DUSE_CBC"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_clp": ["-DUSE_CLP"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_glop": ["-DUSE_GLOP"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_glpk": ["-DUSE_GLPK"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_highs": ["-DUSE_HIGHS"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_pdlp": ["-DUSE_PDLP"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_scip": ["-DUSE_SCIP"],
-        "//conditions:default": [],
-    }) + select({
-        ":use_cplex": ["-DUSE_CPLEX"],
         "//conditions:default": [],
     }),
     deps = [
@@ -246,15 +246,12 @@ cc_library(
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",
         "//ortools/base:timer",
-        "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
         "//ortools/linear_solver/proto_solver:sat_proto_solver",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:lp_utils",
-        "//ortools/third_party_solvers:gurobi_environment",
-        "//ortools/third_party_solvers:xpress_environment",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
         "@abseil-cpp//absl/status",
@@ -282,6 +279,12 @@ cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        ":use_gurobi": [
+            "//ortools/linear_solver/proto_solver:gurobi_proto_solver",
+            "//ortools/third_party_solvers:gurobi_environment",
+        ],
+        "//conditions:default": [],
+    }) + select({
         ":use_pdlp": [
             "//ortools/linear_solver/proto_solver:pdlp_proto_solver",
             "//ortools/pdlp:primal_dual_hybrid_gradient",
@@ -302,7 +305,11 @@ cc_library(
             "@highs",
         ],
         "//conditions:default": [],
+    }) + select({
+        ":use_xpress": ["//ortools/third_party_solvers:xpress_environment"],
+        "//conditions:default": [],
     }),
+    alwayslink = 1,  # Important! Library is used via dependency injection.
 )
 
 cc_library(

@@ -1,4 +1,4 @@
-// Copyright 2014 IBM Corporation
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,8 +12,6 @@
 // limitations under the License.
 
 // Initial version of this code was written by Daniel Junglas (IBM)
-#if defined(USE_CPLEX)
-
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -1282,11 +1280,6 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
 }
-
-MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver) {
-  return new CplexInterface(solver, mip);
-}
-
 bool CplexInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
   if (parameters.empty()) return true;
@@ -1329,5 +1322,24 @@ bool CplexInterface::SetSolverSpecificParametersAsString(
   return true;
 }
 
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterCplex ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new CplexInterface(solver, false); },
+      MPSolver::CPLEX_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterCplexMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new CplexInterface(solver, true); },
+      MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
+
 }  // namespace operations_research
-#endif  // #if defined(USE_CPLEX)

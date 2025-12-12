@@ -14,6 +14,7 @@
 // Linear programming example that shows how to use the API.
 
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -22,71 +23,64 @@
 #include "absl/log/log.h"
 #include "absl/strings/match.h"
 #include "absl/strings/string_view.h"
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/init_google.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-void RunLinearProgrammingExample(absl::string_view solver_id) {
+void RunLinearProgrammingExample(const std::string& solver_id) {
   LOG(INFO) << "---- Linear programming example with " << solver_id << " ----";
-  MPSolver::OptimizationProblemType problem_type;
-  if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
-    LOG(INFO) << "Solver id " << solver_id << " not recognized";
+
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver(solver_id));
+  if (!solver) {
+    LOG(INFO) << "Unable to create solver : " << solver_id;
     return;
   }
 
-  if (!MPSolver::SupportsProblemType(problem_type)) {
-    LOG(INFO) << "Supports for solver " << solver_id << " not linked in.";
-    return;
-  }
-
-  MPSolver solver("IntegerProgrammingExample", problem_type);
-
-  const double infinity = solver.infinity();
+  const double infinity = solver->infinity();
   // x1, x2 and x3 are continuous non-negative variables.
-  MPVariable* const x1 = solver.MakeNumVar(0.0, infinity, "x1");
-  MPVariable* const x2 = solver.MakeNumVar(0.0, infinity, "x2");
-  MPVariable* const x3 = solver.MakeNumVar(0.0, infinity, "x3");
+  MPVariable* const x1 = solver->MakeNumVar(0.0, infinity, "x1");
+  MPVariable* const x2 = solver->MakeNumVar(0.0, infinity, "x2");
+  MPVariable* const x3 = solver->MakeNumVar(0.0, infinity, "x3");
 
   // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective* const objective = solver->MutableObjective();
   objective->SetCoefficient(x1, 10);
   objective->SetCoefficient(x2, 6);
   objective->SetCoefficient(x3, 4);
   objective->SetMaximization();
 
   // x1 + x2 + x3 <= 100.
-  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 100.0);
+  MPConstraint* const c0 = solver->MakeRowConstraint(-infinity, 100.0);
   c0->SetCoefficient(x1, 1);
   c0->SetCoefficient(x2, 1);
   c0->SetCoefficient(x3, 1);
 
   // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
-  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 600.0);
+  MPConstraint* const c1 = solver->MakeRowConstraint(-infinity, 600.0);
   c1->SetCoefficient(x1, 10);
   c1->SetCoefficient(x2, 4);
   c1->SetCoefficient(x3, 5);
 
   // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
-  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 300.0);
+  MPConstraint* const c2 = solver->MakeRowConstraint(-infinity, 300.0);
   c2->SetCoefficient(x1, 2);
   c2->SetCoefficient(x2, 2);
   c2->SetCoefficient(x3, 6);
 
   // TODO(user): Change example to show = and >= constraints.
 
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
+  LOG(INFO) << "Number of variables = " << solver->NumVariables();
+  LOG(INFO) << "Number of constraints = " << solver->NumConstraints();
 
-  const MPSolver::ResultStatus result_status = solver.Solve();
+  const MPSolver::ResultStatus result_status = solver->Solve();
 
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
   }
 
-  LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
 
   // The objective value of the solution.
   LOG(INFO) << "Optimal objective value = " << objective->Value();
@@ -97,11 +91,11 @@ void RunLinearProgrammingExample(absl::string_view solver_id) {
   LOG(INFO) << "x3 = " << x3->solution_value();
 
   LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
   LOG(INFO) << "x1: reduced cost = " << x1->reduced_cost();
   LOG(INFO) << "x2: reduced cost = " << x2->reduced_cost();
   LOG(INFO) << "x3: reduced cost = " << x3->reduced_cost();
-  const std::vector<double> activities = solver.ComputeConstraintActivities();
+  const std::vector<double> activities = solver->ComputeConstraintActivities();
   LOG(INFO) << "c0: dual value = " << c0->dual_value()
             << " activity = " << activities[c0->index()];
   LOG(INFO) << "c1: dual value = " << c1->dual_value()
@@ -111,14 +105,16 @@ void RunLinearProgrammingExample(absl::string_view solver_id) {
 }
 
 void RunAllExamples() {
-  RunLinearProgrammingExample("GLOP");
-  RunLinearProgrammingExample("CLP");
-  RunLinearProgrammingExample("GUROBI_LP");
-  RunLinearProgrammingExample("CPLEX_LP");
-  RunLinearProgrammingExample("GLPK_LP");
-  RunLinearProgrammingExample("XPRESS_LP");
-  RunLinearProgrammingExample("PDLP");
-  RunLinearProgrammingExample("HIGHS_LP");
+  std::vector<MPSolver::OptimizationProblemType> supported_problem_types =
+      MPSolverInterfaceFactoryRepository::GetInstance()
+          ->ListAllRegisteredProblemTypes();
+  for (MPSolver::OptimizationProblemType type : supported_problem_types) {
+    const std::string type_name = MPModelRequest::SolverType_Name(
+        static_cast<MPModelRequest::SolverType>(type));
+    if (!absl::StrContains(type_name, "LINEAR_PROGRAMMING")) continue;
+    if (absl::StrContains(type_name, "HIGHS")) continue;
+    RunLinearProgrammingExample(type_name);
+  }
 }
 }  // namespace operations_research
 

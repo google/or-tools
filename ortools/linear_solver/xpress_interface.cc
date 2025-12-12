@@ -1,4 +1,4 @@
-// Copyright 2019-2023 RTE
+// Copyright 2010-2025 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -2098,10 +2098,6 @@ void XpressInterface::Write(const std::string& filename) {
     LOG(ERROR) << "Xpress: Failed to write MPS!";
   }
 }
-
-MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
-  return new XpressInterface(solver, mip);
-}
 // TODO useless ?
 template <class Container>
 void splitMyString(const std::string& str, Container& cont, char delim = ' ') {
@@ -2286,5 +2282,25 @@ double XpressMPCallbackContext::SuggestSolution(
   // So we return NaN because we can't know the actual objective value.
   return NAN;
 }
+
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new XpressInterface(solver, false); },
+      MPSolver::XPRESS_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterXpressMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new XpressInterface(solver, true); },
+      MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research

@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_SCIP)
-
 #include <stddef.h>
 
 #include <algorithm>
@@ -1165,12 +1163,19 @@ void SCIPInterface::SetCallback(MPCallback* mp_callback) {
   callback_ = mp_callback;
 }
 
-MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
-  return new SCIPInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterSCIP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new SCIPInterface(solver); },
+      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_SCIP)
 
 #undef RETURN_AND_STORE_IF_SCIP_ERROR
 #undef RETURN_IF_ALREADY_IN_ERROR_STATE

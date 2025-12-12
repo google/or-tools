@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_SCIP)
-
 #include "ortools/linear_solver/proto_solver/scip_proto_solver.h"
 
 #include <algorithm>
@@ -1011,5 +1009,3 @@ absl::StatusOr<MPSolutionResponse> ScipSolveProto(
 }
 
 }  // namespace operations_research
-
-#endif  //  #if defined(USE_SCIP)

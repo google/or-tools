@@ -157,7 +157,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "absl/types/optional.h"
 #include "ortools/base/base_export.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_expr.h"
@@ -1231,23 +1230,23 @@ class MPVariable {
   void SetBranchingPriority(int priority);
 
  protected:
-  friend class MPSolver;
-  friend class MPSolverInterface;
+  friend class BopInterface;
   friend class CBCInterface;
   friend class CLPInterface;
-  friend class GLPKInterface;
-  friend class SCIPInterface;
-  friend class SLMInterface;
-  friend class GurobiInterface;
   friend class CplexInterface;
-  friend class XpressInterface;
   friend class GLOPInterface;
-  friend class MPVariableSolutionValueTest;
-  friend class BopInterface;
-  friend class SatInterface;
-  friend class PdlpInterface;
+  friend class GLPKInterface;
+  friend class GurobiInterface;
   friend class HighsInterface;
   friend class KnapsackInterface;
+  friend class MPSolver;
+  friend class MPSolverInterface;
+  friend class MPVariableSolutionValueTest;
+  friend class PdlpInterface;
+  friend class SatInterface;
+  friend class SCIPInterface;
+  friend class SLMInterface;
+  friend class XpressInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -1927,6 +1926,72 @@ class MPSolverInterface {
   // Sets the scaling mode.
   virtual void SetScalingMode(int value) = 0;
   virtual void SetLpAlgorithm(int value) = 0;
+};
+
+// Handy type name for callbacks that create a fresh MPSolverInterface tied
+// to the given MPSolver. The underlying callback should *always* be permanent.
+typedef std::function<MPSolverInterface*(MPSolver*)> MPSolverInterfaceFactory;
+
+// This class must be instantiated only once, through GetInstance(). It is
+// thread-safe.
+//
+// - To register an existing MPSolverInterface in the global repository:
+//
+//    MPSolverInterfaceFactory cbc_solver_interface_factory =
+//        CreateCBCInterface;
+//    MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+//        cbc_solver_interface_factory, CBC_MIXED_INTEGER_PROGRAMMING);
+//
+// - To get the MPSolverInterfaceFactory associated to a given problem type:
+//
+//    MPSolverInterface* my_solver_interface =
+//        MPSolverInterfaceFactoryRepository::GetInstance()->Create(
+//            CBC_MIXED_INTEGER_PROGRAMMING);
+//    CHECK(my_solver_interface != NULL) << "CBC not supported.";
+//
+// The implementations of MPSolverInterface defined here (e.g. ScipInterface)
+// are registered at with the MPSolverInterfaceFactoryRepository Singleton
+// automatically at link time, as long as the cc file where they are defined
+// (e.g. scip_interface.cc) is included in your binary (i.e. you have a
+// transitive dependency on the build rule ":linear_solver_scip", which sets
+// alwayslink=1).
+class MPSolverInterfaceFactoryRepository {
+ public:
+  static MPSolverInterfaceFactoryRepository* GetInstance();
+
+  // Maps the given factory to the given problem type. If a factory was already
+  // assigned to this problem type, it will be replaced.
+  void Register(MPSolverInterfaceFactory factory,
+                MPSolver::OptimizationProblemType problem_type);
+
+  // Invokes the factory associated to the given solver's problem type,
+  // or return NULL if no factory was found for it.
+  MPSolverInterface* Create(MPSolver* solver) const;
+
+  // Whether the implementation associated to the given problem type is
+  // available.
+  bool Supports(MPSolver::OptimizationProblemType problem_type) const;
+
+  // List all the problem types.
+  std::vector<MPSolver::OptimizationProblemType> ListAllRegisteredProblemTypes()
+      const;
+
+  // Returns a human-readable list of supported OptimizationProblemType.
+  std::string PrettyPrintAllRegisteredProblemTypes() const;
+
+  // FOR TESTING ONLY.
+  bool Unregister(MPSolver::OptimizationProblemType problem_type);
+
+ private:
+  // The constructor / destructor are private to prevent this class from ever
+  // being instantiated outside GetInstance().
+  // TODO(user): consider adding the GLOP factory by default, and then expose
+  // it via a CreateDefault() method.
+  MPSolverInterfaceFactoryRepository() = default;
+  ~MPSolverInterfaceFactoryRepository();
+
+  mutable absl::Mutex mutex_;
+  std::map<MPSolver::OptimizationProblemType, MPSolverInterfaceFactory> map_;
 };
 
 }  // namespace operations_research
