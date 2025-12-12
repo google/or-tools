@@ -1,0 +1,127 @@
+# ref: https://github.com/actions/runner-images
+name: Presubmit
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ortools-presubmit
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+  JAVA_DISTRIBUTION: 'temurin'
+  JAVA_VERSION: '17'
+
+jobs:
+###############################################################################
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: jidicula/clang-format-action@v4.16.0
+      with:
+        exclude-regex: '\.tab\.hh$'
+###############################################################################
+  Bazel:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-java@v5
+      with:
+        distribution: ${{env.JAVA_DISTRIBUTION}}
+        java-version: ${{env.JAVA_VERSION}}
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{env.PYTHON_VERSION}}
+    - uses: bazel-contrib/setup-bazel@0.15.0
+    - name: Build
+      run: bazel test --config=ci //ortools/...
+      shell: bash
+###############################################################################
+  CMake:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15-intel, macos-latest, windows-2022]
+        build: [cpp, java, dotnet, python]
+        include:
+          # Map build to CMake
+          - build: cpp
+            cmake: ''
+          - build: java
+            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_JAVA=ON -DSKIP_GPG=ON'
+          - build: dotnet
+            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_DOTNET=ON'
+          - build: python
+            cmake: '-DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF -DBUILD_PYTHON=ON'
+          # Map os to platform / generator
+          - os: ubuntu-latest
+            platform: linux
+            generator: Ninja
+          - os: macos-15-intel
+            platform: macos
+            generator: Xcode
+          - os: macos-latest
+            platform: macos
+            generator: Xcode
+          - os: windows-2022
+            platform: windows
+            generator: 'Visual Studio 17 2022'
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-java@v5
+      if: ${{ matrix.build == 'java' }}
+      with:
+        distribution: ${{env.JAVA_DISTRIBUTION}}
+        java-version: ${{env.JAVA_VERSION}}
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{env.PYTHON_VERSION}}
+    - name: Setup linux
+      if: ${{ matrix.platform == 'linux' }}
+      run: sudo apt install -y ninja-build ccache swig
+    - name: Setup macos
+      if: ${{ matrix.platform == 'macos' }}
+      run: brew install ccache swig
+    - name: Setup Linux Python Env
+      if: ${{ matrix.build == 'python' && matrix.platform == 'linux' }}
+      run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup MacOs Python Env
+      if: ${{ matrix.build == 'python' && matrix.platform == 'macos' }}
+      run: |
+        echo "$HOME/Library/Python/${{env.PYTHON_VERSION}}/bin" >> $GITHUB_PATH
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Setup Windows Python Env
+      if: ${{ matrix.build == 'python' && matrix.platform == 'windows' }}
+      run: |
+        python3 -m pip install --user mypy-protobuf absl-py setuptools wheel numpy pandas
+        echo "$((Get-Item ~).FullName)/AppData/Roaming/Python/Python312/Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Config
+      run: >
+        cmake
+        -S.
+        -Bbuild
+        -G "${{matrix.generator}}"
+        -DBUILD_DEPS=ON
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_C_FLAGS_RELEASE="-O1 -DNDEBUG"
+        -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG"
+        -DCMAKE_INSTALL_PREFIX=install
+        -DUSE_COINOR=OFF
+        -DUSE_HIGHS=OFF
+        -DUSE_SCIP=OFF
+        ${{matrix.cmake}}
+    - name: Build
+      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'all' || 'ALL_BUILD'}}
+    - name: Test
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+      run: cmake --build build --config Release -j --target ${{ matrix.generator == 'Ninja' && 'test' || 'RUN_TESTS'}}

@@ -25,7 +25,8 @@ using namespace operations_research;
 /**
  * This method shows two ways to initialize a Xpress solver instance.
  * Two environment variables are used to specify the Xpress installation paths:
- *  * XPRESSDIR : Path to the Xpress root directory (containing bin and lib folders)
+ *  * XPRESSDIR : Path to the Xpress root directory containing bin and lib
+ *                folders
  *  * XPRESS : Path to the directory containing Xpress license
  */
 void useXpressSolver(bool solveAsMip, bool useFactory) {
@@ -36,9 +37,9 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
     std::string xpressName = (solveAsMip ? "XPRESS" : "XPRESS_LP");
     solver.reset(MPSolver::CreateSolver(xpressName));
   } else {
-    MPSolver::OptimizationProblemType problemType = (solveAsMip ?
-                                            MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING
-                                            : MPSolver::XPRESS_LINEAR_PROGRAMMING);
+    MPSolver::OptimizationProblemType problemType =
+        (solveAsMip ? MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING
+                    : MPSolver::XPRESS_LINEAR_PROGRAMMING);
     /* MPSolver::SupportsProblemType(problem_type) will test if Xpress is
        correctly loaded and has a valid license. This check is important to keep
        the program running if Xpress is not correctly installed. With the
@@ -46,12 +47,12 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
        with the license, the program will abort (SIGABRT)
     */
     if (MPSolver::SupportsProblemType(problemType)) {
-        solver.reset(new MPSolver("IntegerProgrammingExample", problemType));
+      solver.reset(new MPSolver("IntegerProgrammingExample", problemType));
     }
   }
   if (solver == nullptr) {
-       LOG(WARNING) << "Xpress solver is not available";
-       return;
+    LOG(WARNING) << "Xpress solver is not available";
+    return;
   }
   // Use the solver
   /*
@@ -78,7 +79,6 @@ void useXpressSolver(bool solveAsMip, bool useFactory) {
   c1->SetCoefficient(x1, 30.0);
   c1->SetCoefficient(x2, 3.5);
 
-
   const MPSolver::ResultStatus result_status = solver->Solve();
 
   // Check that the problem has an optimal solution.
@@ -94,9 +94,9 @@ int main(int argc, char** argv) {
   InitGoogle(argv[0], &argc, &argv, true);
   std::cout << "start\n";
   LOG(WARNING) << "start";
-  for (bool solveAsMip: {true, false}) {
-    for (bool useFactory: {true, false}) {
-        useXpressSolver(solveAsMip, useFactory);
+  for (bool solveAsMip : {true, false}) {
+    for (bool useFactory : {true, false}) {
+      useXpressSolver(solveAsMip, useFactory);
     }
   }
   return EXIT_SUCCESS;
