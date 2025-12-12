@@ -184,7 +184,7 @@ ComputeShortestPath(const GraphType& graph,
   }
 
   if (std::vector<typename GraphType::NodeIndex> path =
-          std::move(dijkstra.NodePathTo(destination));
+          dijkstra.NodePathTo(destination);
       !path.empty()) {
     return {std::move(path), path_length};
   } else {

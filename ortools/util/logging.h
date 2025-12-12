@@ -115,6 +115,9 @@ class SolverLogger {
   if ((logger)->LoggingIsEnabled()) \
   (logger)->LogInfo(__FILE__, __LINE__, absl::StrCat(__VA_ARGS__))
 
+#define FORCED_SOLVER_LOG(logger, ...) \
+  (logger)->LogInfo(__FILE__, __LINE__, absl::StrCat(__VA_ARGS__))
+
 // Simple helper class to:
 // - log in an uniform way a "time-consuming" presolve operation.
 // - track a deterministic work limit.
