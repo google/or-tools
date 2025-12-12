@@ -440,6 +440,7 @@ cc_test(
         ":test_util",
         ":trust_region",
         "//ortools/base:gmock_main",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/strings",
         "@eigen",
     ],
