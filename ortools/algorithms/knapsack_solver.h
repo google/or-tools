@@ -130,14 +130,12 @@ class KnapsackSolver {
      */
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = 2,
 
-#if defined(USE_CBC)
     /** CBC Based Solver
      *
      *  This solver can deal with both large number of items and several
      * dimensions. This solver is based on Integer Programming solver CBC.
      */
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
-#endif  // USE_CBC
 
     /** Generic Solver.
      *
@@ -146,32 +144,27 @@ class KnapsackSolver {
      */
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5,
 
-#if defined(USE_SCIP)
     /** SCIP based solver
      *
      * This solver can deal with both large number of items and several
      * dimensions. This solver is based on Integer Programming solver SCIP.
      */
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
-#endif  // USE_SCIP
 
-#if defined(USE_XPRESS)
     /** XPRESS based solver
      *
      * This solver can deal with both large number of items and several
      * dimensions. This solver is based on Integer Programming solver XPRESS.
      */
     KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER = 7,
-#endif
 
-#if defined(USE_CPLEX)
     /** CPLEX based solver
      *
      * This solver can deal with both large number of items and several
      * dimensions. This solver is based on Integer Programming solver CPLEX.
      */
     KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER = 8,
-#endif
+
     /** Divide and Conquer approach for single dimension problems
      *
      * Limited to one dimension, this solver is based on a divide and conquer
@@ -180,6 +173,7 @@ class KnapsackSolver {
      * space complexity is O(capacity + number_of_items).
      */
     KNAPSACK_DIVIDE_AND_CONQUER_SOLVER = 9,
+
     /** CP-SAT based solver
      *
      * This solver can deal with both large number of items and several

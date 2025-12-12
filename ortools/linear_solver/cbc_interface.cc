@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_CBC)
-
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -23,8 +21,6 @@
 #include "absl/base/attributes.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -529,9 +525,16 @@ void CBCInterface::SetLpAlgorithm(int value) {
   SetUnsupportedIntegerParam(MPSolverParameters::LP_ALGORITHM);
 }
 
-MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
-  return new CBCInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterCBC ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new CBCInterface(solver); },
+      MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  // #if defined(USE_CBC)

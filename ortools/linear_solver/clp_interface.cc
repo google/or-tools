@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_CLP) || defined(USE_CBC)
-
 #include <algorithm>
 #include <cstdint>
 #include <memory>
@@ -617,9 +615,16 @@ void CLPInterface::SetLpAlgorithm(int value) {
   }
 }
 
-MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
-  return new CLPInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterCLP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new CLPInterface(solver); },
+      MPSolver::CLP_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  // #if defined(USE_CBC) || defined(USE_CLP)

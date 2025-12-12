@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_BOP)
-
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -21,11 +19,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "google/protobuf/text_format.h"
-#include "ortools/base/commandlineflags.h"
-#include "ortools/base/file.h"
-#include "ortools/base/hash.h"
-#include "ortools/base/helpers.h"
 #include "ortools/base/logging.h"
 #include "ortools/bop/bop_parameters.pb.h"
 #include "ortools/bop/integral_solver.h"
@@ -387,10 +380,16 @@ void BopInterface::NonIncrementalChange() {
   sync_status_ = MUST_RELOAD;
 }
 
-// Register BOP in the global linear solver factory.
-MPSolverInterface* BuildBopInterface(MPSolver* const solver) {
-  return new BopInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterBop ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new BopInterface(solver); },
+      MPSolver::BOP_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_BOP)

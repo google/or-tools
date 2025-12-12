@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_GLPK)
-
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -957,9 +955,24 @@ void GLPKInterface::SetLpAlgorithm(int value) {
   }
 }
 
-MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver) {
-  return new GLPKInterface(solver, mip);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGLPKLP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GLPKInterface(solver, false); },
+      MPSolver::GLPK_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGLPKMIP ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GLPKInterface(solver, true); },
+      MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_GLPK)

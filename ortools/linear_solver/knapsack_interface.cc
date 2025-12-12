@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "absl/base/attributes.h"
-#include "absl/memory/memory.h"
 #include "ortools/algorithms/knapsack_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/util/fp_utils.h"
@@ -358,9 +357,16 @@ double KnapsackInterface::GetVariableValueFromSolution(
              : 0.0;
 }
 
-// Register Knapsack solver in the global linear solver factory.
-MPSolverInterface* BuildKnapsackInterface(MPSolver* const solver) {
-  return new KnapsackInterface(solver);
-}
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterKnapsack ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* const solver) { return new KnapsackInterface(solver); },
+      MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research

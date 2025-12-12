@@ -1407,12 +1407,28 @@ void GurobiInterface::Write(const std::string& filename) {
   }
 }
 
-MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
-  return new GurobiInterface(solver, mip);
-}
-
 void GurobiInterface::SetCallback(MPCallback* mp_callback) {
   callback_ = mp_callback;
 }
+
+namespace {
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GurobiInterface(solver, false); },
+      MPSolver::GUROBI_LINEAR_PROGRAMMING);
+  return nullptr;
+}();
+
+// See MpSolverInterfaceFactoryRepository for details.
+const void* const kRegisterGurobiMip ABSL_ATTRIBUTE_UNUSED = [] {
+  MPSolverInterfaceFactoryRepository::GetInstance()->Register(
+      [](MPSolver* solver) { return new GurobiInterface(solver, true); },
+      MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+  return nullptr;
+}();
+
+}  // namespace
 
 }  // namespace operations_research
