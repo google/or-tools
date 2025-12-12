@@ -214,7 +214,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "-sJSPI=2"
     "-sJSPI_EXPORTS=['solve_model','validate_model']"
     "-sUSE_PTHREADS=1"
-    "-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency"
+    "-sPTHREAD_POOL_SIZE=(typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? Math.min(navigator.hardwareConcurrency, 8) : 8)"
     "--bind"
     "--emit-tsd"
     "${JS_OUTPUT_DIR}/cp_sat_runtime.d.ts"
