@@ -1,4 +1,5 @@
-import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
+import { CpSat, type CpSatModelInstance, type SatParameters } from 'ortools-cpsat-wasm';
+import { getMaxWorkerCount } from './worker_limits.js';
 
 type MagicSquareExpr = {
   vars: number[];
@@ -22,7 +23,7 @@ const statusEl = document.getElementById('status') as HTMLPreElement | null;
 const solutionGrid = document.getElementById('solution-grid') as HTMLElement | null;
 const sizeInput = document.getElementById('size') as HTMLInputElement | null;
 const workerInput = document.getElementById('workers') as HTMLInputElement | null;
-const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+const maxWorkerCount = getMaxWorkerCount();
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
 const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
@@ -197,13 +198,15 @@ async function runMagicSquare() {
       return;
     }
 
-    const params: Record<string, unknown> = {};
+    const params: SatParameters = {
+      logSearchProgress: true,
+    };
     if (workers > 0) {
-      params.num_search_workers = workers;
+      params.numWorkers = workers;
     }
     console.debug(
       '[MagicSquare] solve params',
-      JSON.stringify({ ...params, num_search_workers: params.num_search_workers ?? 'default' }),
+      JSON.stringify({ ...params, numWorkers: params.numWorkers ?? 'default' }),
     );
 
     append('Solving…');

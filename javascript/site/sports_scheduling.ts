@@ -1,4 +1,5 @@
-import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
+import { CpSat, type CpSatModelInstance, type SatParameters } from 'ortools-cpsat-wasm';
+import { getMaxWorkerCount } from './worker_limits.js';
 
 type Domain = [number, number] | number[];
 type LinearConstraint = {
@@ -35,7 +36,7 @@ const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLI
 const runButton = document.getElementById('run') as HTMLButtonElement | null;
 const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
 const readyIndicator = document.getElementById('ready-indicator') as HTMLElement | null;
-const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+const maxWorkerCount = getMaxWorkerCount();
 if (workerInput) {
   workerInput.max = String(maxWorkerCount);
   workerInput.min = '1';
@@ -393,12 +394,14 @@ if (workerBridgeToggle) {
         return;
       }
 
-      const params: Record<string, unknown> = {};
+      const params: SatParameters = {
+        logSearchProgress: true,
+      };
       if (workers > 0) {
-        params.num_search_workers = workers;
+        params.numWorkers = workers;
       }
       console.debug('[SportsScheduling] solve params', {
-        num_search_workers: params.num_search_workers ?? 'default',
+        numWorkers: params.numWorkers ?? 'default',
       });
 
       append('Solving…');

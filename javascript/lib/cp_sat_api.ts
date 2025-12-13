@@ -2,6 +2,7 @@ import type { MainModule } from '@internal-wasm/cp_sat_runtime.js';
 import { loadCpSat } from './cp_sat_module_loader.js';
 import workerScriptUrl from './cpsat_worker.js?worker&url';
 import type { WorkerRequest, WorkerResponse } from './cpsat_worker_types.js';
+import type { SatParameters } from './generated/sat_parameters.js';
 
 type SchemaPair = {
   cp_model: string;
@@ -13,7 +14,7 @@ export type CpSatSolveResult = {
   bytes: Uint8Array;
 };
 
-type SolverParams = Uint8Array | Record<string, unknown> | null;
+type SolverParams = Uint8Array | SatParameters | null;
 
 export type CpSatApi = {
   solve(model: Uint8Array, params?: SolverParams): Promise<CpSatSolveResult>;

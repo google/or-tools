@@ -1,4 +1,5 @@
 import { CpSat, type CpSatModelInstance } from 'ortools-cpsat-wasm';
+import { getMaxWorkerCount } from './worker_limits.js';
 
 type SolverMethod = 'sat' | 'sat_table' | 'sat_column';
 
@@ -290,7 +291,7 @@ const runButton = document.getElementById('run') as HTMLButtonElement | null;
 const stopButton = document.getElementById('stop') as HTMLButtonElement | null;
 const paramsInput = document.getElementById('params') as HTMLInputElement | null;
 const workerBridgeToggle = document.getElementById('use-worker-bridge') as HTMLInputElement | null;
-const maxWorkerCount = Math.max(1, navigator.hardwareConcurrency || 1);
+const maxWorkerCount = getMaxWorkerCount();
 
 const appendStatus = (text: string) => {
   if (!statusEl) return;
@@ -935,6 +936,7 @@ const runExperiment = async () => {
     maxWorkerCount,
   );
   const params = parseParamsInput(paramsInput?.value ?? '') ?? {};
+  params.logSearchProgress = true;
   params.numSearchWorkers = workerCount;
   delete params.numWorkers;
 

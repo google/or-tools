@@ -167,9 +167,9 @@ When you want the Vite site to consume the freshly built `ortools-cpsat-wasm` pa
 
 ### Running the demos
 
-- The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `navigator.hardwareConcurrency` to match the pthread pool size.
+- The Magic Square and Sports Scheduling pages let you pick a worker count; that value becomes `SatParameters.num_search_workers`, but the UI clamps it to `min(navigator.hardwareConcurrency, 8)` so it never exceeds the pthread pool size baked into the wasm build.
 - Each demo exposes a “Use worker bridge” checkbox (enabled by default). When it is checked, solves are routed through `cpsat_worker.ts`, keeping the main thread responsive even though the `cp_sat_runtime` wasm solver uses WebAssembly threads. Clear the checkbox to run solves directly on the main thread when workers are unavailable via the `cp_sat_api` bridge.
-- The WebAssembly build sets `-sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency`, so the pthread pool matches the host CPU at startup and never silently grows beyond the browser’s limits.
+- The WebAssembly build caps the pthread pool at 8 and scales down on low-core devices (`-sPTHREAD_POOL_SIZE=Math.max(1, Math.min(8, navigator.hardwareConcurrency || 8))`).
 - Schema Viewer now imports the bundled `CpSat` API automatically; no extra `<script>` ordering is required in the HTML.
 
 ## Documentation
