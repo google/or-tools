@@ -190,7 +190,7 @@ bool ProbeLiteral(Literal assumption, SatSolver* solver) {
   }
 
   solver->mutable_logger()->EnableLogging(old_log_state);
-  return solver->Assignment().LiteralIsAssigned(assumption);
+  return true;
 }
 
 // A core cannot be all true.
@@ -775,9 +775,12 @@ SatSolver::Status CoreBasedOptimizer::OptimizeWithSatEncoding(
     }
 
     if (parameters_->cover_optimization() && encoder.nodes().size() > 1) {
-      if (ProbeLiteral(
-              encoder.mutable_nodes()->back()->GetAssumption(sat_solver_),
-              sat_solver_)) {
+      const Literal last_assumption =
+          encoder.mutable_nodes()->back()->GetAssumption(sat_solver_);
+      if (!ProbeLiteral(last_assumption, sat_solver_)) {
+        return SatSolver::INFEASIBLE;
+      }
+      if (sat_solver_->Assignment().LiteralIsAssigned(last_assumption)) {
         previous_core_info = "cover";
         continue;
       }
