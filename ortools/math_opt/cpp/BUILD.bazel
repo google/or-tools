@@ -927,7 +927,10 @@ cc_library(
     name = "remote_streaming_mode",
     srcs = ["remote_streaming_mode.cc"],
     hdrs = ["remote_streaming_mode.h"],
-    deps = ["@abseil-cpp//absl/strings:string_view"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/strings:string_view",
+    ],
 )
 
 cc_test(

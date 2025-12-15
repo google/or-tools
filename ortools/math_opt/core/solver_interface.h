@@ -62,7 +62,8 @@ class SolverInterface {
 
     // All parameters that can't be exchanged with another process. The caller
     // keeps ownership of non_streamable.
-    const NonStreamableSolverInitArguments* non_streamable = nullptr;
+    const NonStreamableSolverInitArguments* absl_nullable non_streamable =
+        nullptr;
   };
 
   // A callback function (if non null) for messages emitted by the solver.
