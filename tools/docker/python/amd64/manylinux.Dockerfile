@@ -47,5 +47,5 @@ RUN chmod a+x "build-manylinux.sh"
 FROM devel AS build
 RUN ./build-manylinux.sh build
 
-FROM build as test
+FROM build AS test
 RUN ./build-manylinux.sh test
