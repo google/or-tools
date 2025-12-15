@@ -16,6 +16,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
@@ -60,6 +61,7 @@ absl::string_view GetCTypeName(
     case CodegenAttrTypeDescriptor::ValueType::kDouble:
       return "double";
   }
+  ABSL_UNREACHABLE();
 }
 
 // Turns an element/attribute name (e.g. "some_name") into a camel case name

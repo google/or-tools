@@ -34,6 +34,7 @@ cc_library(
     hdrs = ["gen_c.h"],
     deps = [
         ":gen",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
@@ -54,6 +55,7 @@ cc_library(
     hdrs = ["gen_python.h"],
     deps = [
         ":gen",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/strings:string_view",
