@@ -36,7 +36,7 @@ build --enable_platform_specific_config
 
 build:linux --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
 build:linux --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
-
+build:linux --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 
 ###############################################################################
 # Options for macOS.
@@ -48,6 +48,7 @@ build:macos --features=-supports_dynamic_linker
 build:macos --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
 build:macos --cxxopt=-Wno-sign-compare --host_cxxopt=-Wno-sign-compare
 build:macos --cxxopt=-Wno-dangling-field --host_cxxopt=-Wno-dangling-field
+build:macos --cxxopt=-Wno-range-loop-construct --host_cxxopt=-Wno-range-loop-construct
 build:macos --cxxopt=-mmacos-version-min=10.15 --host_cxxopt=-mmacos-version-min=10.15
 
 ###############################################################################
