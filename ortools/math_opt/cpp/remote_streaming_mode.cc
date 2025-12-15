@@ -16,6 +16,7 @@
 #include <ostream>
 #include <string>
 
+#include "absl/base/optimization.h"
 #include "absl/strings/string_view.h"
 
 namespace operations_research::math_opt {
@@ -29,6 +30,7 @@ std::string AbslUnparseFlag(const RemoteStreamingSolveMode value) {
     case RemoteStreamingSolveMode::kInProcess:
       return "inprocess";
   }
+  ABSL_UNREACHABLE();
 }
 
 bool AbslParseFlag(const absl::string_view text,
