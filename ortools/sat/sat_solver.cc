@@ -1059,20 +1059,58 @@ void SatSolver::ProcessCurrentConflict(
   Backtrack(backtrack_level);
   DCHECK(ClauseIsValidUnderDebugAssignment(learned_conflict_));
 
-  // Tricky: in case of propagation not at the right level we might need to
-  // backjump further.
-  for (const auto& [id, is_redundant, min_lbd, clause] : delayed_to_add_) {
+  // Add the conflict here, so we process all "newly learned" clause in the
+  // same way.
+  learned_clauses_.push_back({learned_conflict_clause_id, is_redundant,
+                              min_lbd_of_subsumed_clauses,
+                              std::move(learned_conflict_)});
+
+  // Preprocess the new clauses.
+  // We might need to backtrack further !
+  for (auto& [id, is_redundant, min_lbd, clause] : learned_clauses_) {
     if (clause.empty()) return (void)SetModelUnsat();
 
-    // TODO(user): just remove redundant literal from learned clauses. This
-    // should just be better. We just have to deal with the proof correctly.
-    if (clause.size() == 2 &&
-        binary_implication_graph_->RepresentativeOf(clause[0]) ==
-            binary_implication_graph_->RepresentativeOf(clause[1])) {
-      Backtrack(0);
-      break;
+    // Make sure each clause is "canonicalized" with respect to equivalent
+    // literals.
+    //
+    // TODO(user): Maybe we should do that on each reason before we use them in
+    // conflict analysis/minimization, but it might be a bit costly.
+    bool some_change = false;
+    tmp_clause_ids_.clear();
+    for (Literal& lit : clause) {
+      const Literal rep = binary_implication_graph_->RepresentativeOf(lit);
+      if (rep != lit) {
+        some_change = true;
+        if (lrat_proof_handler_ != nullptr) {
+          // We need not(rep) => not(lit) for the proof.
+          tmp_clause_ids_.push_back(
+              binary_implication_graph_->GetClauseId(lit.Negated(), rep));
+          CHECK_NE(tmp_clause_ids_.back(), kNoClauseId) << lit << " " << rep;
+        }
+        lit = rep;
+      }
+    }
+    if (some_change) {
+      gtl::STLSortAndRemoveDuplicates(&clause);
+
+      // This shouldn't happen since it is a new learned clause, otherwise
+      // something is wrong.
+      for (int i = 1; i < clause.size(); ++i) {
+        CHECK_NE(clause[i], clause[i - 1].Negated()) << "trivial new clause?";
+      }
+
+      if (lrat_proof_handler_ != nullptr) {
+        // We need a new clause id for the canonicalized version, and the proof
+        // for how we derived that canonicalization.
+        const ClauseId new_id = clause_id_generator_->GetNextId();
+        tmp_clause_ids_.push_back(id);
+        lrat_proof_handler_->AddInferredClause(new_id, clause, tmp_clause_ids_);
+        id = new_id;
+      }
     }
 
+    // Tricky: in case of propagation not at the right level we might need to
+    // backjump further.
     int num_false = 0;
     for (const Literal l : clause) {
       if (Assignment().LiteralIsFalse(l)) ++num_false;
@@ -1094,19 +1132,15 @@ void SatSolver::ProcessCurrentConflict(
     }
   }
 
-  // Add any delayed clause before the final conflict.
-  for (const auto& [id, is_redundant, min_lbd, clause] : delayed_to_add_) {
+  // Learn the new clauses.
+  int best_lbd = std::numeric_limits<int>::max();
+  for (const auto& [id, is_redundant, min_lbd, clause] : learned_clauses_) {
     DCHECK((lrat_proof_handler_ == nullptr) || (id != kNoClauseId));
-    AddLearnedClauseAndEnqueueUnitPropagation(id, clause, is_redundant,
-                                              min_lbd);
+    const int lbd = AddLearnedClauseAndEnqueueUnitPropagation(
+        id, clause, is_redundant, min_lbd);
+    best_lbd = std::min(best_lbd, lbd);
   }
-
-  // Create and attach the new learned clause.
-  const int conflict_lbd = AddLearnedClauseAndEnqueueUnitPropagation(
-      learned_conflict_clause_id, learned_conflict_, is_redundant,
-      min_lbd_of_subsumed_clauses);
-
-  restart_->OnConflict(conflict_trail_index, conflict_level, conflict_lbd);
+  restart_->OnConflict(conflict_trail_index, conflict_level, best_lbd);
 }
 
 namespace {
@@ -1128,7 +1162,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
     ClauseId learned_conflict_id, absl::Span<const Literal> conflict,
     absl::Span<const Literal> reason_used) {
   CHECK_NE(CurrentDecisionLevel(), 0);
-  delayed_to_add_.clear();
+  learned_clauses_.clear();
 
   // This is used to see if the learned conflict subsumes some clauses.
   // Note that conflict is not yet in the clauses_propagator_.
@@ -1249,7 +1283,7 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
 
     // We can only add them after backtracking, since these are currently
     // conflict.
-    delayed_to_add_.push_back(
+    learned_clauses_.push_back(
         {new_id, new_clause_is_redundant, new_clause_min_lbd,
          std::vector<Literal>(subsuming_clauses_[i].begin(),
                               subsuming_clauses_[i].end())});
@@ -1345,8 +1379,8 @@ std::pair<bool, int> SatSolver::SubsumptionsInConflictResolution(
     }
 
     // Also learn the "decision" conflict.
-    delayed_to_add_.push_back({new_clause_id, decision_is_redundant,
-                               decision_min_lbd, decision_clause});
+    learned_clauses_.push_back({new_clause_id, decision_is_redundant,
+                                decision_min_lbd, decision_clause});
   }
 
   // Sparse clear.

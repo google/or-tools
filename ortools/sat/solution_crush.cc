@@ -236,38 +236,29 @@ void SolutionCrush::SetOrUpdateVarToDomain(int var, const Domain& domain) {
   }
 }
 
-void SolutionCrush::SetOrUpdateVarToDomain(
-    int var, const Domain& domain,
-    const absl::btree_map<int64_t, int>& encoding,
+void SolutionCrush::SetOrUpdateVarToDomainWithOptionalEscapeValue(
+    int var, const Domain& reduced_var_domain,
     std::optional<int64_t> unique_escape_value,
-    bool push_down_when_repairing_hints) {
-  DCHECK_EQ(domain.Size(), encoding.size());
+    bool push_down_when_not_in_domain,
+    const absl::btree_map<int64_t, int>& encoding) {
   if (!solution_is_loaded_) return;
   if (HasValue(var)) {
     const int64_t old_value = GetVarValue(var);
-    if (domain.Contains(old_value)) return;
-
     int64_t new_value = old_value;
-    if (unique_escape_value.has_value()) {  // Only one escape value.
+    if (reduced_var_domain.Contains(old_value)) return;
+    if (unique_escape_value.has_value()) {
       new_value = unique_escape_value.value();
-    } else if (push_down_when_repairing_hints) {
-      DCHECK_GT(old_value, domain.Min());
-      new_value = domain.ValueAtOrBefore(old_value);
+    } else if (push_down_when_not_in_domain) {
+      DCHECK_GT(old_value, reduced_var_domain.Min());
+      new_value = reduced_var_domain.ValueAtOrBefore(old_value);
     } else {
-      new_value = domain.ValueAtOrAfter(old_value);
+      DCHECK_LT(old_value, reduced_var_domain.Max());
+      new_value = reduced_var_domain.ValueAtOrAfter(old_value);
     }
-    for (const auto [value, lit] : encoding) {
-      SetLiteralValue(lit, value == new_value);
-    }
+
+    SetLiteralValue(encoding.at(new_value), true);
+    CHECK(!encoding.contains(old_value));
     SetVarValue(var, new_value);
-    VLOG(3) << "SetOrUpdateVarToDomain: " << var << ", old_value: " << old_value
-            << ", new_value: " << new_value
-            << ", domain: " << domain.ToString();
-    DCHECK(encoding.contains(new_value))
-        << "domain: " << domain.ToString() << "old_value: " << old_value
-        << " new_value: " << new_value;
-  } else if (domain.IsFixed()) {
-    SetVarValue(var, domain.FixedValue());
   }
 }
 

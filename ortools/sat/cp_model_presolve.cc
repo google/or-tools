@@ -14634,6 +14634,16 @@ CpSolverStatus CpModelPresolver::Presolve() {
 
   // Sync the domains and initialize the mapping model variables.
   context_->WriteVariableDomainsToProto();
+
+  // Some vars may have been fixed by the affine relations. This may can impact
+  // the objective. Let's re-do the canonicalization.
+  if (context_->working_model->has_objective()) {
+    // We re-do a canonicalization with the final linear expression.
+    if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
+    context_->WriteObjectiveToProto();
+  }
+
+  // Starts the postsolve mapping model.
   InitializeMappingModelVariables(context_->AllDomains(),
                                   &fixed_postsolve_mapping,
                                   context_->mapping_model);
@@ -14709,12 +14719,6 @@ CpSolverStatus CpModelPresolver::Presolve() {
       new_postsolve_mapping[perm[i]] = (*postsolve_mapping_)[i];
     }
     *postsolve_mapping_ = std::move(new_postsolve_mapping);
-  }
-
-  if (context_->working_model->has_objective()) {
-    // We re-do a canonicalization with the final linear expression.
-    if (!context_->CanonicalizeObjective()) return InfeasibleStatus();
-    context_->WriteObjectiveToProto();
   }
 
   DCHECK(context_->ConstraintVariableUsageIsConsistent());

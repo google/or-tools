@@ -658,11 +658,32 @@ void TryToReplaceVariableByItsEncoding(int var, PresolveContext* context,
 
   values.CreateAllValueEncodingLiterals();
   // Fix the hinted value if needed.
+  //
+  // The logic follows the classes of equivalence induced by the value of the
+  // literals from the enforced linear1 constraining this variable.
+  // Two values are in the same class if all the literals have the same value.
+  //
+  // We have a heuristic method here:
+  // - If the variable is in the domain, we do nothing.
+  // - If the variable has only var==value and var!=value encodings. All values
+  //   not touched by these linear1 are equivalent. We will reassign them to the
+  //   unique escape value.
+  // - If the variable also has var>=value and var<=value encodings, we will
+  //   push the value of the variable to the closest value in the domain in the
+  //   direction of the objective. To this effect, for every contiguous set of
+  //   values not in the set of referenced values. the min of the max of that
+  //   set has been added to the encoded domain, such that the push up or down
+  //   always falls back on an encoded value.
+  //
+  // TODO(user): we could optimize this as, for instance, we only need to
+  // look at values from the order encodings, and not all values when creating
+  // the equivalence class in the last case.
   const bool push_down_when_unconstrained =
       !var_in_objective || var_has_positive_objective_coefficient;
-  solution_crush.SetOrUpdateVarToDomain(
-      var, Domain::FromValues(values.encoded_values()), values.encoding(),
-      values.unique_escape_value(), push_down_when_unconstrained);
+  solution_crush.SetOrUpdateVarToDomainWithOptionalEscapeValue(
+      var, Domain::FromValues(values.encoded_values()),
+      values.unique_escape_value(), push_down_when_unconstrained,
+      values.encoding());
   order.CreateAllOrderEncodingLiterals(values);
 
   // Link all Boolean in our linear1 to the encoding literals.

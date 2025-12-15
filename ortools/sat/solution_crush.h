@@ -151,15 +151,20 @@ class SolutionCrush {
   // value. Otherwise does nothing.
   void SetOrUpdateVarToDomain(int var, const Domain& domain);
 
-  // If `var` already has a value, updates it to be within the given domain
-  // following the given encoding and the status of the variable w.r.t. the
-  // escape value, and the objective. Otherwise, if the domain is fixed, sets
-  // the value of `var` to this fixed value. Otherwise does nothing. In the
-  // process, update the encoding literals to reflect the new value of `var`.
-  void SetOrUpdateVarToDomain(int var, const Domain& domain,
-                              const absl::btree_map<int64_t, int>& encoding,
-                              std::optional<int64_t> unique_escape_value,
-                              bool push_down_when_repairing_hints);
+  // If `var` already has a value, updates it to be within the given domain.
+  // There are 3 cases to consider:
+  // 1/ The hinted value is in reduced_var_domain. Nothing to do.
+  // 2/ The hinted value is not in the domain, and there is an escape value.
+  //    Update the hinted value to the escape value, and update the encoding
+  //    literals to reflect the new value of `var`.
+  // 3/ The hinted value is not in the domain, and there is no escape value.
+  //    Update the hinted value to be in the domain by pushing it in the given
+  //    direction, and update the encoding literals to reflect the new value
+  void SetOrUpdateVarToDomainWithOptionalEscapeValue(
+      int var, const Domain& reduced_var_domain,
+      std::optional<int64_t> unique_escape_value,
+      bool push_down_when_not_in_domain,
+      const absl::btree_map<int64_t, int>& encoding);
 
   // Updates the value of the given literals to false if their current values
   // are different (or does nothing otherwise).

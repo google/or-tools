@@ -250,7 +250,6 @@ void DumpNoOverlap2dProblem(const ConstraintProto& ct,
   std::vector<Rectangle> sizes_to_render;
   IntegerValue x = bounding_box.x_min;
   IntegerValue y = 0;
-  int i = 0;
   for (const auto& r : non_fixed_boxes) {
     sizes_to_render.push_back(Rectangle{
         .x_min = x, .x_max = x + r.x_size, .y_min = y, .y_max = y + r.y_size});
@@ -259,7 +258,6 @@ void DumpNoOverlap2dProblem(const ConstraintProto& ct,
       x = 0;
       y += r.y_size;
     }
-    ++i;
   }
   VLOG(3) << "Sizes: " << RenderDot(bounding_box, sizes_to_render);
 }
