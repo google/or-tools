@@ -102,8 +102,7 @@ class ScopedCallback {
       if constexpr (std::is_convertible_v<R, int>) return static_cast<int>(1);
     }
   };
-  static constexpr proto_type low_level_cb =
-      ExWrapper<proto_type>::low_level_cb;
+  const proto_type low_level_cb = ExWrapper<proto_type>::low_level_cb;
 
  public:
   CbT or_tools_cb;
