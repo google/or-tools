@@ -90,6 +90,7 @@ python.defaults(python_version = DEFAULT_PYTHON)
 python.toolchain(python_version = DEFAULT_PYTHON)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
 [
     pip.parse(
         envsubst = ["PIP_INDEX_URL"],

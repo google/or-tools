@@ -137,7 +137,11 @@ if(MSVC)
     "/wd4996" # The compiler encountered a deprecated declaration.
     )
 else()
-  list(APPEND OR_TOOLS_COMPILE_OPTIONS "-fwrapv")
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
+    "-fwrapv"
+    "-Wno-range-loop-construct"
+    "-Wno-sign-compare"
+  )
 endif()
 
 # Link option
