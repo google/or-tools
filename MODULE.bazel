@@ -80,49 +80,34 @@ git_override(
     remote = "https://github.com/pybind/pybind11_protobuf.git",
 )
 
-SUPPORTED_PYTHON_VERSIONS = [
-    "3.9",
-    "3.10",
-    "3.11",
-    "3.12",
-    "3.13",
-]
+# Python
+# https://rules-python.readthedocs.io/en/latest/toolchains.html#library-modules-with-dev-only-python-usage
 
 DEFAULT_PYTHON = "3.12"
-
 python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 
-[
-    python.toolchain(
-        ignore_root_user_error = True,  # needed for CI
-        is_default = version == DEFAULT_PYTHON,
-        python_version = version,
-    )
-    for version in SUPPORTED_PYTHON_VERSIONS
-]
+python.defaults(python_version = DEFAULT_PYTHON)
+python.toolchain(python_version = DEFAULT_PYTHON)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-
 [
     pip.parse(
-        hub_name = "ortools_pip_deps",
-        python_version = python_version,
-        requirements_lock = "//bazel:ortools_requirements.txt",
+        envsubst = ["PIP_INDEX_URL"],
+        experimental_index_url = "${PIP_INDEX_URL}",
+        hub_name = hub_name,
+        python_version = DEFAULT_PYTHON,
+        requirements_lock = requirements_lock,
     )
-    for python_version in SUPPORTED_PYTHON_VERSIONS
-]
-
-[
-    pip.parse(
-        hub_name = "ortools_notebook_deps",
-        python_version = python_version,
-        requirements_lock = "//bazel:notebook_requirements.txt",
-    )
-    for python_version in SUPPORTED_PYTHON_VERSIONS
+    for hub_name, requirements_lock in [
+        ("ortools_pip_deps", "//bazel:ortools_requirements.txt"),
+        ("ortools_notebook_deps", "//bazel:notebook_requirements.txt"),
+    ]
 ]
 
 use_repo(pip, pip_deps = "ortools_pip_deps")
 use_repo(pip, "ortools_notebook_deps")
+
+# Java
 
 JUNIT_PLATFORM_VERSION = "1.9.2"
 

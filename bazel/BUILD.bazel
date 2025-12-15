@@ -13,25 +13,26 @@
 
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
+extra_args = [
+    "--no-emit-index-url",
+    "--reuse-hashes",
+    "--verbose",
+]
+
 compile_pip_requirements(
     name = "ortools_requirements",
-    extra_args = [
-        "--allow-unsafe",  # Pin packages considered unsafe
-        "--resolver=backtracking",  # Avoid warning, new default
-    ],
-    generate_hashes = False,
-    requirements_in = "ortools_requirements.in",
+    src = "ortools_requirements.in",
+    extra_args = extra_args,
+    generate_hashes = True,
     requirements_txt = "ortools_requirements.txt",
 )
 
 compile_pip_requirements(
     name = "notebook_requirements",
-    extra_args = [
-        "--allow-unsafe",  # Pin packages considered unsafe
-        "--resolver=backtracking",  # Avoid warning, new default
-    ],
-    generate_hashes = False,
-    requirements_in = "notebook_requirements.in",
+    src = "notebook_requirements.in",
+    data = ["ortools_requirements.in"],
+    extra_args = extra_args,
+    generate_hashes = True,
     requirements_txt = "notebook_requirements.txt",
 )
 
