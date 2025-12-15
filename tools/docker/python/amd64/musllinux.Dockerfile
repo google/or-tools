@@ -42,5 +42,5 @@ RUN chmod a+x "build-musllinux.sh"
 FROM devel AS build
 RUN ./build-musllinux.sh build
 
-FROM build as test
+FROM build AS test
 RUN ./build-musllinux.sh test
