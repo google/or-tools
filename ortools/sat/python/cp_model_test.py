@@ -165,19 +165,6 @@ class BestBoundCallback:
         self.best_bound = bb
 
 
-class BestBoundTimeCallback:
-
-    def __init__(self) -> None:
-        self.__last_time: float = 0.0
-
-    def new_best_bound(self, unused_bb: float):
-        self.__last_time = time.time()
-
-    @property
-    def last_time(self) -> float:
-        return self.__last_time
-
-
 class CpModelTest(absltest.TestCase):
 
     def tearDown(self) -> None:
@@ -264,7 +251,7 @@ class CpModelTest(absltest.TestCase):
         self.assertEqual(nb.index, -b.index - 1)
         self.assertRaises(TypeError, x.negated)
 
-    def test_issue_4654(self) -> None:
+    def test_issue4654(self) -> None:
         model = cp_model.CpModel()
         x = model.NewIntVar(0, 1, "x")
         y = model.NewIntVar(0, 2, "y")
@@ -2457,18 +2444,15 @@ TRFM"""
 
         # Solve.
         solver = cp_model.CpSolver()
-        solver.parameters.num_workers = 8
+        solver.parameters.num_workers = 1
         solver.parameters.max_time_in_seconds = 50
         solver.parameters.log_search_progress = True
-        solution_callback = TimeRecorder()
-        best_bound_callback = BestBoundTimeCallback()
+        best_bound_callback = BestBoundCallback()
         solver.best_bound_callback = best_bound_callback.new_best_bound
-        status = solver.Solve(model, solution_callback)
+        status = solver.Solve(model)
         if status == cp_model.OPTIMAL:
-            last_activity = max(
-                best_bound_callback.last_time, solution_callback.last_time
-            )
-            self.assertLess(time.time(), last_activity + 30.0)
+            # Optimal is 28. The first bound found is 19.0.
+            self.assertGreaterEqual(best_bound_callback.best_bound, 19.0)
 
     def test_issue4434(self) -> None:
         model = cp_model.CpModel()

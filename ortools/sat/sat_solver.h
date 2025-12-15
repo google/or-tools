@@ -879,13 +879,15 @@ class SatSolver {
   CompactVectorVector<int, Literal> subsuming_clauses_;
   CompactVectorVector<int, SatClause*> subsuming_groups_;
 
-  struct DelayedNewClause {
+  // On each conflict, we learn at least one clause, but depending on the cases,
+  // we can learn more than one.
+  struct NewClauses {
     ClauseId id;
     bool is_redundant;
     int min_lbd_of_subsumed_clauses;
     std::vector<Literal> clause;
   };
-  std::vector<DelayedNewClause> delayed_to_add_;
+  std::vector<NewClauses> learned_clauses_;
 
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use
