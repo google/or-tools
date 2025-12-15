@@ -93,7 +93,7 @@ pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 [
     pip.parse(
         envsubst = ["PIP_INDEX_URL"],
-        experimental_index_url = "${PIP_INDEX_URL}",
+        experimental_index_url = "${PIP_INDEX_URL:-https://pypi.org/simple}",
         hub_name = hub_name,
         python_version = DEFAULT_PYTHON,
         requirements_lock = requirements_lock,
