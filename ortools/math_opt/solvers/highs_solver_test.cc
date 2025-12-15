@@ -224,16 +224,17 @@ INSTANTIATE_TEST_SUITE_P(HighsStatusTest, StatusTest,
 
 INSTANTIATE_TEST_SUITE_P(
     HighsMessageCallbackTest, MessageCallbackTest,
-    Values(MessageCallbackTestParams(SolverType::kHighs,
-                                     /*support_message_callback=*/true,
-                                     /*support_interrupter=*/false,
-                                     /*integer_variables=*/false,
-                                     /*ending_substring=*/"HiGHS run time"),
-           MessageCallbackTestParams(SolverType::kHighs,
-                                     /*support_message_callback=*/true,
-                                     /*support_interrupter=*/false,
-                                     /*integer_variables=*/true,
-                                     /*ending_substring=*/"LP iterations     0")));
+    Values(
+        MessageCallbackTestParams(SolverType::kHighs,
+                                  /*support_message_callback=*/true,
+                                  /*support_interrupter=*/false,
+                                  /*integer_variables=*/false,
+                                  /*ending_substring=*/"HiGHS run time"),
+        MessageCallbackTestParams(SolverType::kHighs,
+                                  /*support_message_callback=*/true,
+                                  /*support_interrupter=*/false,
+                                  /*integer_variables=*/true,
+                                  /*ending_substring=*/"LP iterations     0")));
 
 // HiGHS does not support callbacks other than message callback.
 GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CallbackTest);
