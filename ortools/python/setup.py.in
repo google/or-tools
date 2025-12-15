@@ -140,7 +140,7 @@ setup(
         '@PYTHON_PROJECT@.util.python':[
             '$<TARGET_FILE_NAME:sorted_interval_list_pybind11>',
             '$<TARGET_FILE_NAME:solve_interrupter_pybind11>',
-            '$<TARGET_FILE_NAME:solve_interrupter_testing_pybind11>',
+            $<$<TARGET_EXISTS:solve_interrupter_testing_pybind11>:'$<TARGET_FILE_NAME:solve_interrupter_testing_pybind11>',>
             '*.pyi'
         ],
     },
