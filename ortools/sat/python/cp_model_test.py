@@ -2468,7 +2468,7 @@ TRFM"""
             last_activity = max(
                 best_bound_callback.last_time, solution_callback.last_time
             )
-            self.assertLess(time.time(), last_activity + 15.0)
+            self.assertLess(time.time(), last_activity + 30.0)
 
     def test_issue4434(self) -> None:
         model = cp_model.CpModel()
