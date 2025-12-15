@@ -84,8 +84,8 @@ git_override(
 # https://rules-python.readthedocs.io/en/latest/toolchains.html#library-modules-with-dev-only-python-usage
 
 DEFAULT_PYTHON = "3.12"
-python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 
+python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 python.defaults(python_version = DEFAULT_PYTHON)
 python.toolchain(python_version = DEFAULT_PYTHON)
 
