@@ -33,7 +33,6 @@ jobs:
       CC:  gcc-12
       CXX: g++-12
       cache-name: ${{github.job}}-${{matrix.python.version}}
-      PIP_INDEX_URL: ""
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -71,8 +70,12 @@ jobs:
           key: ${{env.cache-name}}
           path: ${{env.cache-root}}
       - name: Build
+        env:
+          PIP_INDEX_URL: ""
         run: bazel --output_user_root=${{env.cache-root}} build --config=ci //ortools/... //examples/...
       - name: Test
+        env:
+          PIP_INDEX_URL: ""
         run: bazel --output_user_root=${{env.cache-root}} test --config=ci //ortools/... //examples/...
       - name: Save Bazel cache for branch main even when Build and Test fail.
         uses: actions/cache/save@v4
