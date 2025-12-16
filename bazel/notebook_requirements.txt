@@ -57,7 +57,7 @@ executing==2.2.0
     # via stack-data
 fastjsonschema==2.21.1
     # via nbformat
-filelock==3.18.0
+filelock==3.20.1
     # via virtualenv
 fqdn==1.5.1
     # via jsonschema
