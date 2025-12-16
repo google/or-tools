@@ -133,7 +133,9 @@ int64_t SolveKnapsackProblem(
     return kInvalidSolution;
   }
 #else  // !defined(USE_SCIP)
+#if !defined(_MSC_VER)
 #warning SCIP support disable
+#endif  // !defined(_MSC_VER)
 #endif  // !defined(USE_SCIP)
 
   const int64_t cpsat_profit = SolveKnapsackProblemUsingSpecificSolver(
