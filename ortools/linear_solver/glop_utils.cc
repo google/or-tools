@@ -13,6 +13,10 @@
 
 #include "ortools/linear_solver/glop_utils.h"
 
+#include "absl/log/log.h"
+#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/lp_data/lp_types.h"
+
 namespace operations_research {
 
 MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s) {
