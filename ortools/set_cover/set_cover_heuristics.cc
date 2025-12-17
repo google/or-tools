@@ -240,18 +240,21 @@ namespace {
 // - improve performance.
 // - use vectorized code.
 namespace internal {
-uint32_t RawBits(uint32_t x) { return x; }                           // NOLINT
-uint32_t RawBits(int x) { return absl::bit_cast<uint32_t>(x); }      // NOLINT
-uint32_t RawBits(float x) { return absl::bit_cast<uint32_t>(x); }    // NOLINT
-uint64_t RawBits(uint64_t x) { return x; }                           // NOLINT
-uint64_t RawBits(int64_t x) { return absl::bit_cast<uint64_t>(x); }  // NOLINT
-uint64_t RawBits(double x) { return absl::bit_cast<uint64_t>(x); }   // NOLINT
+template <typename T>
+auto RawBits(T x) {
+  if constexpr (sizeof(T) == sizeof(uint32_t)) {
+    return absl::bit_cast<uint32_t>(x);
+  } else {
+    static_assert(sizeof(T) == sizeof(uint64_t));
+    return absl::bit_cast<uint64_t>(x);
+  }
+}
 
 inline uint32_t Bucket(uint32_t x, uint32_t shift, uint32_t radix) {
   DCHECK_EQ(0, radix & (radix - 1));  // Must be a power of two.
   // NOMUTANTS -- a way to compute the remainder of a division when radix is a
   // power of two.
-  return (RawBits(x) >> shift) & (radix - 1);
+  return (x >> shift) & (radix - 1);
 }
 
 template <typename T>
