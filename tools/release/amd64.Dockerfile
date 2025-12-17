@@ -36,10 +36,11 @@ RUN dnf -y update \
 ENV JAVA_HOME=/usr/lib/jvm/java
 
 # Update maven
-ADD https://dlcdn.apache.org/maven/maven-3/3.9.11/binaries/apache-maven-3.9.11-bin.tar.gz /usr/local
+ARG MAVEN_VERSION=3.9.12
+ADD https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz /usr/local
 RUN mkdir -p /usr/local/maven \
- && tar xzvf /usr/local/apache-maven-3.9.11-bin.tar.gz --strip-components=1 -C /usr/local/maven \
- && rm /usr/local/apache-maven-3.9.11-bin.tar.gz
+ && tar xzvf /usr/local/apache-maven-${MAVEN_VERSION}-bin.tar.gz --strip-components=1 -C /usr/local/maven \
+ && rm /usr/local/apache-maven-${MAVEN_VERSION}-bin.tar.gz
 ENV PATH=/usr/local/maven/bin:$PATH
 
 ENV TZ=America/Los_Angeles
