@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 
+#include "absl/log/die_if_null.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "ortools/base/logging.h"

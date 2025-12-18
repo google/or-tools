@@ -24,17 +24,12 @@
 
 namespace operations_research::math_opt {
 
-absl::Status SolveArguments::CheckModelStorageAndCallback(
+absl::Status SolveArguments::CheckModelStorage(
     const ModelStorageCPtr expected_storage) const {
   RETURN_IF_ERROR(model_parameters.CheckModelStorage(expected_storage))
       << "invalid model_parameters";
   RETURN_IF_ERROR(callback_registration.CheckModelStorage(expected_storage))
       << "invalid callback_registration";
-
-  if (callback == nullptr && !callback_registration.events.empty()) {
-    return absl::InvalidArgumentError(
-        "no callback was provided to run, but callback events were registered");
-  }
   return absl::OkStatus();
 }
 
