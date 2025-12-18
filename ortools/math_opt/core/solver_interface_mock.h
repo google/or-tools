@@ -71,6 +71,8 @@
 #include <memory>
 #include <utility>
 
+#include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/log/die_if_null.h"
 #include "absl/status/statusor.h"
@@ -98,7 +100,7 @@ class SolverInterfaceMock : public SolverInterface {
                const ModelSolveParametersProto& model_parameters,
                MessageCallback message_cb,
                const CallbackRegistrationProto& callback_registration,
-               Callback cb, const SolveInterrupter* interrupter),
+               Callback cb, const SolveInterrupter* absl_nullable interrupter),
               (override));
 
   MOCK_METHOD(absl::StatusOr<bool>, Update,
@@ -107,7 +109,8 @@ class SolverInterfaceMock : public SolverInterface {
   MOCK_METHOD(absl::StatusOr<ComputeInfeasibleSubsystemResultProto>,
               ComputeInfeasibleSubsystem,
               (const SolveParametersProto& parameters,
-               MessageCallback message_cb, const SolveInterrupter* interrupter),
+               MessageCallback message_cb,
+               const SolveInterrupter* absl_nullable interrupter),
               (override));
 };
 
@@ -136,7 +139,7 @@ class DelegatingSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* const interrupter) override {
+      const SolveInterrupter* absl_nullable const interrupter) override {
     return solver_->Solve(parameters, model_parameters, std::move(message_cb),
                           callback_registration, std::move(cb), interrupter);
   };
@@ -148,7 +151,7 @@ class DelegatingSolver : public SolverInterface {
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
   ComputeInfeasibleSubsystem(
       const SolveParametersProto& parameters, MessageCallback message_cb,
-      const SolveInterrupter* const interrupter) override {
+      const SolveInterrupter* absl_nullable const interrupter) override {
     return solver_->ComputeInfeasibleSubsystem(
         parameters, std::move(message_cb), interrupter);
   }

@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -87,7 +88,8 @@ absl::string_view SafeName(const LinearConstraintsProto& linear_constraints,
 }
 
 absl::StatusOr<TerminationProto> BuildTermination(
-    const glop::ProblemStatus status, const SolveInterrupter* const interrupter,
+    const glop::ProblemStatus status,
+    const SolveInterrupter* absl_nullable const interrupter,
     const bool is_maximize, const double objective_value) {
   switch (status) {
     case glop::ProblemStatus::OPTIMAL:
@@ -730,7 +732,7 @@ absl::Status GlopSolver::FillSolveStats(const absl::Duration solve_time,
 absl::StatusOr<SolveResultProto> GlopSolver::MakeSolveResult(
     const glop::ProblemStatus status,
     const ModelSolveParametersProto& model_parameters,
-    const SolveInterrupter* const interrupter,
+    const SolveInterrupter* absl_nullable const interrupter,
     const absl::Duration solve_time) {
   SolveResultProto solve_result;
   ASSIGN_OR_RETURN(*solve_result.mutable_termination(),
@@ -765,7 +767,7 @@ absl::StatusOr<SolveResultProto> GlopSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGlopSupportedStructures, "Glop"));
   RETURN_IF_ERROR(CheckRegisteredCallbackEvents(callback_registration,
@@ -886,7 +888,7 @@ absl::StatusOr<bool> GlopSolver::Update(const ModelUpdateProto& model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GlopSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                        MessageCallback,
-                                       const SolveInterrupter*) {
+                                       const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "GLOP does not implement a method to compute an infeasible subsystem");
 }

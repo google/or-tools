@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
@@ -60,17 +61,18 @@ class GurobiSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
  private:
   struct GurobiCallbackData {
-    explicit GurobiCallbackData(GurobiCallbackInput callback_input,
-                                SolveInterrupter* const local_interrupter)
+    explicit GurobiCallbackData(
+        GurobiCallbackInput callback_input,
+        SolveInterrupter* absl_nullable const local_interrupter)
         : callback_input(std::move(callback_input)),
           local_interrupter(local_interrupter) {}
     const GurobiCallbackInput callback_input;
@@ -83,7 +85,7 @@ class GurobiSolver : public SolverInterface {
     //
     // It is optional; it is not null when either we have a LP/MIP callback or a
     // user interrupter. But it can be null if we only have a message callback.
-    SolveInterrupter* const local_interrupter;
+    SolveInterrupter* absl_nullable const local_interrupter;
 
     MessageCallbackData message_callback_data;
 
@@ -305,11 +307,11 @@ class GurobiSolver : public SolverInterface {
       const SparseDoubleMatrixProto& terms);
   absl::Status LoadModel(const ModelProto& input_model);
 
-  absl::Status UpdateDoubleListAttribute(const SparseDoubleVectorProto& update,
-                                         const char* attribute_name,
-                                         const IdHashMap& id_hash_map);
+  absl::Status UpdateDoubleListAttribute(
+      const SparseDoubleVectorProto& update,
+      const char* absl_nonnull attribute_name, const IdHashMap& id_hash_map);
   absl::Status UpdateInt32ListAttribute(const SparseInt32VectorProto& update,
-                                        const char* attribute_name,
+                                        const char* absl_nonnull attribute_name,
                                         const IdHashMap& id_hash_map);
 
   struct DeletedIndices {
@@ -354,7 +356,7 @@ class GurobiSolver : public SolverInterface {
   absl::StatusOr<std::unique_ptr<GurobiCallbackData>> RegisterCallback(
       const CallbackRegistrationProto& registration, Callback cb,
       MessageCallback message_cb, absl::Time start,
-      SolveInterrupter* local_interrupter);
+      SolveInterrupter* absl_nullable local_interrupter);
 
   // Returns the ids of variables and linear constraints with inverted bounds.
   absl::StatusOr<InvertedBounds> ListInvertedBounds() const;

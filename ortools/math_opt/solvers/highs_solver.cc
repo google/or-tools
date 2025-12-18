@@ -31,6 +31,7 @@
 
 #include "Highs.h"
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -912,7 +913,7 @@ absl::StatusOr<SolveResultProto> HighsSolver::Solve(
     const SolveParametersProto& parameters,
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb, const CallbackRegistrationProto&, Callback,
-    const SolveInterrupter* const) {
+    const SolveInterrupter* absl_nullable const) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kHighsSupportedStructures, "Highs"));
   const absl::Time start = absl::Now();
@@ -1031,7 +1032,7 @@ absl::StatusOr<bool> HighsSolver::Update(const ModelUpdateProto&) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 HighsSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "HiGHS does not provide a method to compute an infeasible subsystem");
 }

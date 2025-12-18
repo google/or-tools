@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
@@ -2145,8 +2146,8 @@ absl::Status GurobiSolver::ChangeCoefficients(
 }
 
 absl::Status GurobiSolver::UpdateDoubleListAttribute(
-    const SparseDoubleVectorProto& update, const char* attribute_name,
-    const IdHashMap& id_hash_map) {
+    const SparseDoubleVectorProto& update,
+    const char* absl_nonnull attribute_name, const IdHashMap& id_hash_map) {
   if (update.ids_size() == 0) {
     return absl::OkStatus();
   }
@@ -2159,8 +2160,8 @@ absl::Status GurobiSolver::UpdateDoubleListAttribute(
 }
 
 absl::Status GurobiSolver::UpdateInt32ListAttribute(
-    const SparseInt32VectorProto& update, const char* attribute_name,
-    const IdHashMap& id_hash_map) {
+    const SparseInt32VectorProto& update,
+    const char* absl_nonnull attribute_name, const IdHashMap& id_hash_map) {
   if (update.ids_size() == 0) {
     return absl::OkStatus();
   }
@@ -2782,11 +2783,10 @@ absl::StatusOr<std::unique_ptr<GurobiSolver>> GurobiSolver::New(
 }
 
 absl::StatusOr<std::unique_ptr<GurobiSolver::GurobiCallbackData>>
-GurobiSolver::RegisterCallback(const CallbackRegistrationProto& registration,
-                               const Callback cb,
-                               const MessageCallback message_cb,
-                               const absl::Time start,
-                               SolveInterrupter* const local_interrupter) {
+GurobiSolver::RegisterCallback(
+    const CallbackRegistrationProto& registration, const Callback cb,
+    const MessageCallback message_cb, const absl::Time start,
+    SolveInterrupter* absl_nullable const local_interrupter) {
   const absl::flat_hash_set<CallbackEventProto> events = EventSet(registration);
 
   // Note that IS_MIP does not necessarily mean the problem has integer
@@ -2971,7 +2971,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGurobiSupportedStructures, "Gurobi"));
   const absl::Time start = absl::Now();
@@ -3102,7 +3102,7 @@ absl::StatusOr<SolveResultProto> GurobiSolver::Solve(
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GurobiSolver::ComputeInfeasibleSubsystem(
     const SolveParametersProto& parameters, MessageCallback message_cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   const absl::Time start = absl::Now();
 
   // Need to run GRBupdatemodel before:

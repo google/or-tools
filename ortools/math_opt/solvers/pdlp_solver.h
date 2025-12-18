@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/core/solver_interface.h"
@@ -43,12 +44,12 @@ class PdlpSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
   // Returns the merged parameters and a list of warnings.
   static absl::StatusOr<pdlp::PrimalDualHybridGradientParams> MergeParameters(
