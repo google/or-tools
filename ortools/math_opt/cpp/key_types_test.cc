@@ -33,8 +33,10 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::status::StatusIs;
 
-TEST(CheckModelStorageTest, NullExpected)
-__attribute__((no_sanitize("nullability"))) {
+// We disable this check under asan because asan helpfully detects the error of
+// passing null to a function expecting a non-nullable pointer.
+#if !defined(ABSL_HAVE_ADDRESS_SANITIZER)
+TEST(CheckModelStorageTest, NullExpected) {
   ModelStorage model;
   // The compiler will prevent us from passing nullptr to a function expecting
   // a `ModelStorageCPtr`. So we launder the `nullptr` to test the behavior of
@@ -50,6 +52,7 @@ __attribute__((no_sanitize("nullability"))) {
                         /*expected_storage=*/laundered_nullptr),
       StatusIs(absl::StatusCode::kInternal, HasSubstr("expected_storage")));
 }
+#endif  // !defined(ABSL_HAVE_ADDRESS_SANITIZER)
 
 TEST(CheckModelStorageTest, SingleModel) {
   ModelStorage model;
