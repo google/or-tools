@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -615,7 +616,7 @@ std::string Argument::DebugString() const {
       return absl::StrFormat("[%s]", absl::StrJoin(floats, ", "));
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-  return "";
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::IsVariable() const { return type == VAR_REF; }
@@ -634,14 +635,12 @@ int64_t Argument::Value() const {
     case INT_INTERVAL:
     case INT_LIST:
       return values[0];
-    case VAR_REF: {
+    case VAR_REF:
       return variables[0]->domain.values[0];
-    }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::IsArrayOfValues() const {
@@ -679,24 +678,22 @@ bool Argument::IsArrayOfValues() const {
     case FLOAT_LIST:
       return false;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::Contains(int64_t value) const {
   switch (type) {
-    case Argument::INT_LIST: {
+    case Argument::INT_LIST:
       return std::find(values.begin(), values.end(), value) != values.end();
-    }
-    case Argument::INT_INTERVAL: {
+    case Argument::INT_INTERVAL:
       return value >= values.front() && value <= values.back();
-    }
-    case Argument::INT_VALUE: {
+    case Argument::INT_VALUE:
       return value == values.front();
-    }
-    default: {
-      LOG(FATAL) << "Cannot call Contains() on " << DebugString();
-      return false;
-    }
+    default:
+      break;
   }
+
+  ABSL_UNREACHABLE();
 }
 
 int64_t Argument::ValueAt(int pos) const {
@@ -715,11 +712,10 @@ int64_t Argument::ValueAt(int pos) const {
       CHECK_LT(pos, variables.size());
       return variables[pos]->domain.Value();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 bool Argument::HasOneValueAt(int pos) const {
@@ -738,11 +734,10 @@ bool Argument::HasOneValueAt(int pos) const {
       CHECK_LT(pos, variables.size());
       return variables[pos]->domain.HasOneValue();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return false;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 Variable* Argument::Var() const {
@@ -769,11 +764,10 @@ int Argument::Size() const {
     case FLOAT_LIST: {
       return floats.size();
     }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return 0;
-    }
+    default:
+      break;
   }
+  ABSL_UNREACHABLE();
 }
 
 // ----- Variable -----
@@ -943,27 +937,20 @@ void Annotation::AppendAllVariables(std::vector<Variable*>* const vars) const {
 
 std::string Annotation::DebugString() const {
   switch (type) {
-    case ANNOTATION_LIST: {
+    case ANNOTATION_LIST:
       return absl::StrFormat("[%s]", JoinDebugString(annotations, ", "));
-    }
-    case IDENTIFIER: {
+    case IDENTIFIER:
       return id;
-    }
-    case FUNCTION_CALL: {
+    case FUNCTION_CALL:
       return absl::StrFormat("%s(%s)", id, JoinDebugString(annotations, ", "));
-    }
-    case INTERVAL: {
+    case INTERVAL:
       return absl::StrFormat("%d..%d", interval_min, interval_max);
-    }
-    case INT_VALUE: {
+    case INT_VALUE:
       return absl::StrCat(interval_min);
-    }
-    case INT_LIST: {
+    case INT_LIST:
       return absl::StrFormat("[%s]", absl::StrJoin(values, ", "));
-    }
-    case VAR_REF: {
+    case VAR_REF:
       return variables.front()->name;
-    }
     case VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -972,12 +959,11 @@ std::string Annotation::DebugString() const {
       }
       return result;
     }
-    case STRING_VALUE: {
+    case STRING_VALUE:
       return absl::StrFormat("\"%s\"", string_value);
-    }
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-  return "";
+  ABSL_UNREACHABLE();
 }
 
 // ----- SolutionOutputSpecs -----

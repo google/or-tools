@@ -46,7 +46,7 @@ DecisionBuilder* MakeSetCumulsFromLocalDimensionCosts(
 /// Variant based on global optimizers, handling all routes together.
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, SearchMonitor* monitor,
+    GlobalDimensionCumulOptimizer* global_mp_optimizer,
     bool optimize_and_pack = false,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route = {});

@@ -802,12 +802,11 @@ message SatParameters {
 
   // If true, inferred clauses are checked with an LRAT checker as they are
   // learned, in presolve (reduced to trivial simplifications if
-  // cp_model_presolve is false), and in each worker. As of November 2025, this
+  // cp_model_presolve is false), and in each worker. As of December 2025, this
   // only works with pure SAT problems, with
   //  - cp_model_presolve = false,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1,
-  //  - shared_tree_num_workers = 0.
+  //  - symmetry_level <= 1.
   optional bool check_lrat_proof = 344 [default = false];
 
   // If true, and if output_lrat_proof is true and the problem is UNSAT, check
@@ -820,12 +819,11 @@ message SatParameters {
   // If true, an LRAT proof that all the clauses inferred by the solver are
   // valid is output to several files (one for presolve -- reduced to trivial
   // simplifications if cp_model_presolve is false, one per worker, and one for
-  // the merged proof). As of November 2025, this only works for pure SAT
+  // the merged proof). As of December 2025, this only works for pure SAT
   // problems, with
   //  - cp_model_presolve = false,
   //  - linearization_level <= 1,
-  //  - symmetry_level <= 1,
-  //  - shared_tree_num_workers = 0.
+  //  - symmetry_level <= 1.
   optional bool output_lrat_proof = 345 [default = false];
 
   // If true, and if the problem is UNSAT, a DRAT proof of this UNSAT property
@@ -838,7 +836,7 @@ message SatParameters {
   optional bool check_drat_proof = 346 [default = false];
 
   // If true, a DRAT proof that all the clauses inferred by the solver are valid
-  // is output to a file. As of November 2025, this only works for pure SAT
+  // is output to a file. As of December 2025, this only works for pure SAT
   // problems, with
   //  - num_workers = 1,
   //  - cp_model_presolve = false,

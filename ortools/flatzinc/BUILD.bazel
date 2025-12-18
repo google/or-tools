@@ -32,6 +32,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/util:logging",
         "//ortools/util:string_array",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
         "@abseil-cpp//absl/log",

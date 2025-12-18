@@ -1081,10 +1081,12 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
       model->GetOrCreate<SatParameters>()->share_glue_clauses_dtime();
   auto* clause_stream = model->GetOrCreate<UniqueClauseStream>();
   auto* time_limit = model->GetOrCreate<TimeLimit>();
-  auto share_clause = [mapping, clause_stream, time_limit, id,
-                       shared_clauses_manager, share_interval,
+  auto* lrat_proof_handler = model->Mutable<LratProofHandler>();
+  auto share_clause = [mapping, clause_stream, time_limit, lrat_proof_handler,
+                       id, shared_clauses_manager, share_interval,
                        next_batch_dtime = -1.0, clause = std::vector<int>()](
-                          int lbd, absl::Span<const Literal> literals) mutable {
+                          int lbd, ClauseId clause_id,
+                          absl::Span<const Literal> literals) mutable {
     if (literals.size() >= UniqueClauseStream::kMinClauseSize &&
         literals.size() <= UniqueClauseStream::kMaxClauseSize) {
       clause.clear();
@@ -1094,7 +1096,9 @@ void RegisterClausesExport(int id, SharedClausesManager* shared_clauses_manager,
         if (var == -1) return;
         clause.push_back(lit.IsPositive() ? var : NegatedRef(var));
       }
-      clause_stream->Add(clause, lbd);
+      if (clause_stream->Add(clause, lbd) && lrat_proof_handler != nullptr) {
+        lrat_proof_handler->ExportClause(clause_id, literals);
+      }
     }
     const double elapsed_dtime = time_limit->GetElapsedDeterministicTime();
     if (next_batch_dtime < 0) next_batch_dtime = elapsed_dtime + share_interval;

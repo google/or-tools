@@ -44,6 +44,7 @@ void LratChecker::AddStats() const {
        {"LratChecker/num_processed_rat_clauses", num_processed_rat_clauses_},
        {"LratChecker/num_unneeded_rat_literals", num_unneeded_rat_literals_},
        {"LratChecker/num_unneeded_rat_clauses", num_unneeded_rat_clauses_},
+       {"LratChecker/num_deleted_clauses", num_deleted_clauses_},
        {"LratChecker/num_deleted_clauses_not_found",
         num_deleted_clauses_not_found_}});
 }
@@ -65,14 +66,17 @@ bool LratChecker::AddInferredClause(ClauseId id,
 }
 
 void LratChecker::DeleteClauses(absl::Span<const ClauseId> clause_ids) {
+  ++num_deleted_clauses_;
   for (const ClauseId clause_id : clause_ids) {
     const auto it = clauses_.find(clause_id);
     if (it == clauses_.end()) {
       ++num_deleted_clauses_not_found_;
       continue;
     }
-    for (const Literal literal : it->second) {
-      occurrences_[literal]--;
+    if (occurrences_needed_) {
+      for (const Literal literal : it->second) {
+        occurrences_[literal.Index()]--;
+      }
     }
     clauses_.erase(it);
   }
@@ -129,8 +133,19 @@ bool LratChecker::AddClauseInternal(ClauseId id,
     }
   }
   if (!sorted_clause.empty()) {
-    num_variables_ =
-        std::max(num_variables_, sorted_clause.back().Variable().value() + 1);
+    const int last_variable = sorted_clause.back().Variable().value();
+    if (last_variable >= num_variables_) {
+      num_variables_ = last_variable + 1;
+      if (occurrences_needed_) {
+        occurrences_.resize(2 * num_variables_, 0);
+      } else if (clause.size() == 1 && unit_ids.empty() && rat.empty()) {
+        // Early return for unit clauses made of a new variable. The following
+        // code would validate this proof with the RAT property, but would also
+        // set `occurrences_needed_` to true, which is unnecessary.
+        clauses_[id] = std::move(sorted_clause);
+        return true;
+      }
+    }
   }
 
   if (!is_problem_clause) {
@@ -164,6 +179,10 @@ bool LratChecker::AddClauseInternal(ClauseId id,
       // Check if `clause` has the RAT property.
       if (clause.empty()) return Error(id, "missing pivot for RAT proof");
       const Literal pivot = clause.front();
+      if (!occurrences_needed_) {
+        occurrences_needed_ = true;
+        InitializeOccurrences();
+      }
       if (rat.size() != occurrences_[pivot.Negated()]) {
         return Error(id, "wrong number of resolvant IDs in RAT proof");
       }
@@ -235,14 +254,25 @@ bool LratChecker::AddClauseInternal(ClauseId id,
     }
   }
 
-  for (const Literal literal : sorted_clause) {
-    occurrences_[literal]++;
+  if (occurrences_needed_) {
+    for (const Literal literal : sorted_clause) {
+      occurrences_[literal.Index()]++;
+    }
   }
   clauses_[id] = std::move(sorted_clause);
   if (clause.empty()) {
     complete_ = true;
   }
   return true;
+}
+
+void LratChecker::InitializeOccurrences() {
+  occurrences_.assign(2 * num_variables_, 0);
+  for (const auto& [id, clause] : clauses_) {
+    for (const Literal literal : clause) {
+      occurrences_[literal.Index()]++;
+    }
+  }
 }
 
 bool LratChecker::Error(ClauseId id, std::string_view error) {

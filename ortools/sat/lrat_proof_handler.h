@@ -23,6 +23,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_int.h"
 #include "ortools/sat/drat_checker.h"
@@ -50,14 +53,20 @@ class LratWriter {
 
   void AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
                          absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const LratChecker::RatIds> rat = {});
+                         absl::Span<const LratChecker::RatIds> rat,
+                         bool exported = false);
+
+  void ExportClause(ClauseId id, absl::Span<const Literal> clause);
 
   void DeleteClause(ClauseId id);
 
  private:
+  void WriteDeletedClauseIds();
+
   std::string filename_;
   std::ofstream ofstream_;
   RecordWriter writer_;
+  std::vector<ClauseId> deleted_clause_ids_;
 };
 
 // Merges separate LRAT proofs into a single LRAT file in ASCII format.
@@ -118,6 +127,7 @@ class LratMerger {
 
   absl::flat_hash_map<std::vector<Literal>, GlobalId> shared_clause_ids_;
   std::vector<absl::flat_hash_map<ClauseId, GlobalId>> local_to_global_ids_;
+  std::vector<absl::flat_hash_set<ClauseId>> exported_local_ids_;
   std::vector<LratProofStep> last_read_steps_;
 
   std::vector<Literal> tmp_clause_;
@@ -151,7 +161,13 @@ class LratProofHandler {
   // previously inferred clauses. See LratChecker for more details.
   bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
                          absl::Span<const ClauseId> unit_ids,
-                         absl::Span<const LratChecker::RatIds> rat = {});
+                         bool exported = false) {
+    return AddInferredClause(id, clause, unit_ids, {}, exported);
+  }
+  bool AddInferredClause(ClauseId id, absl::Span<const Literal> clause,
+                         absl::Span<const ClauseId> unit_ids,
+                         absl::Span<const LratChecker::RatIds> rat,
+                         bool exported = false);
 
   // This assumes that the 'new_clause' to prove and all the ones needed for the
   // proof only touch a small number of variables (<= 6). It will then prove the
@@ -170,15 +186,22 @@ class LratProofHandler {
       absl::Span<const ClauseId> ids_for_proof,
       const CompactVectorVector<int, Literal>& clauses_for_proof);
 
-  // Adds a clause which was inferred by another worker. Returns true if
-  // successful (the operation can fail if LRAT checks are enabled, and the ID
-  // is already used by another clause).
+  // Adds a clause which was inferred and exported by another worker. Returns
+  // true if successful (the operation can fail if LRAT checks are enabled, and
+  // the ID is already used by another clause).
   bool AddImportedClause(ClauseId id, absl::Span<const Literal> clause);
 
   // Adds a clause which is assumed to be true, without proof. Returns true if
   // successful (the operation fails if DRAT checks are enabled, or if LRAT
   // checks are enabled and the ID is already used by another clause).
   bool AddAssumedClause(ClauseId id, absl::Span<const Literal> clause);
+
+  // Exports a clause so that it can be imported by other workers. If you know
+  // whether a clause must be exported when it is inferred, it is more efficient
+  // to use the `exported` parameter of AddInferredClause(). `id` and `clause`
+  // must be the ID and the literals of a previously added clause. This is not
+  // needed for unary and binary clauses, which are always exported.
+  bool ExportClause(ClauseId id, absl::Span<const Literal> clause);
 
   // Prevents the given clause from being deleted, until UnpinClause() is called
   // with the same ID. At most one clause can be pinned at any time.
@@ -206,7 +229,7 @@ class LratProofHandler {
   void Close(bool model_is_unsat);
 
   // This can be helpful to debug wrong proof, but shouldn't be used otherwise.
-  absl::Span<const Literal> GetLratClauseForDebug(ClauseId id) {
+  absl::Span<const Literal> GetLratClauseForDebug(ClauseId id) const {
     CHECK(lrat_checker_ != nullptr);
     return lrat_checker_->GetClauseForDebug(id);
   }

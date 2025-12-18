@@ -31,6 +31,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/node_hash_map.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
@@ -130,6 +131,9 @@ class ProtoTrail {
     return literals_[decision_indexes_[level - 1]];
   }
 
+  // Returns the node ID for the decision at `level`.
+  int DecisionNodeId(int level) const;
+
   // Returns the node ids for decisions and implications at `level`.
   absl::Span<const int> NodeIds(int level) const;
 
@@ -138,15 +142,20 @@ class ProtoTrail {
   absl::Span<const ProtoLiteral> Implications(int level) const;
 
   // Adds a literal which is implied by the decisions from level 1 to `level`.
-  // The caller must add a corresponding LRAT inferred clause first (if LRAT is
+  // The caller must add a corresponding LRAT inferred clause (if LRAT is
   // enabled). This implication can then be used by other workers as an LRAT
   // imported clause, without proof.
-  void AddImplication(int level, ProtoLiteral implication) {
+  bool AddImplication(int level, ProtoLiteral implication) {
     auto it = assigned_at_level_.find(implication);
-    if (it != assigned_at_level_.end() && it->second <= level) return;
+    if (it != assigned_at_level_.end() && it->second <= level) return false;
     MutableImplications(level).push_back(implication);
     assigned_at_level_[implication] = level;
+    return true;
   }
+
+  // Removes implications that are already assigned at an earlier level, as well
+  // as duplicate implications at the same level.
+  void NormalizeImplications();
 
   IntegerValue ObjectiveLb(int level) const {
     CHECK_GE(level, 1);
@@ -281,7 +290,7 @@ class SharedTreeManager {
     std::unique_ptr<NodeTrailInfo> trail_info;
   };
   bool IsValid(const ProtoTrail& path) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  Node* GetSibling(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  Node* GetSibling(const Node* node) const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   // Returns the NodeTrailInfo for `node` or it's closest non-closed,
   // non-implied ancestor. `node` must be valid, never returns nullptr.
   NodeTrailInfo* GetTrailInfo(Node* node);
@@ -294,6 +303,10 @@ class SharedTreeManager {
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void ProcessNodeChanges() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void ProcessImpliedNode(Node* node) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  void UpdateLratClausesInSubtree(Node* node, Node* n,
+                                  std::vector<ClauseId>& clauses)
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  Node* GetNode(int node_id) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   std::vector<std::pair<Node*, int>> GetAssignedNodes(const ProtoTrail& path)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
   void AssignLeaf(ProtoTrail& path, Node* leaf)
@@ -321,6 +334,18 @@ class SharedTreeManager {
   std::vector<Literal> ClosingClause(
       const Node* node, bool skip_unprocessed_implied_nodes = false) const
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  // Adds `imported_clause` to the LRAT proof handler, as well as
+  // `inferred_clause`, inferred from `imported_clause` with `lrat_proof` (which
+  // should contain clauses proving that literals removed from `imported_clause`
+  // can actually be removed). Then deletes `imported_clause` and returns the ID
+  // of the inferred clause.
+  ClauseId AddImportedAndInferredClauses(
+      absl::Span<const Literal> imported_clause,
+      absl::Span<const Literal> inferred_clause,
+      std::vector<ClauseId>& lrat_proof) ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+
+  bool CheckLratInvariants() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
 
   mutable absl::Mutex mu_;
   const SatParameters& params_;
@@ -389,17 +414,21 @@ class SharedTreeWorker {
   bool AddImplications();
   bool AddDecisionImplication(Literal literal, int level, ClauseId clause_id);
 
-  void ClearAssignedTreeAndImplications();
+  void ClearAssignedTreeDecisionsAndImplications();
 
   // Adds the LRAT inferred clause "assigned tree decisions up to `level` =>
   // `literal`" if `lrat_proof_handler_` is not null.
-  ClauseId AddLratClauseAndProofForImplication(Literal literal, int level);
+  ClauseId AddLratClauseAndProofForImplication(
+      Literal literal, int level,
+      std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals = {});
 
   // Adds the LRAT imported clause "assigned tree decisions up to `level` =>
   // `literal`" if `lrat_proof_handler_` is not null.
   ClauseId ImportLratClauseForImplication(Literal literal, int level);
 
   std::vector<Literal>& DecisionReason(int level);
+
+  bool CheckLratInvariants();
 
   SatParameters* parameters_;
   SharedResponseManager* shared_response_;
@@ -433,6 +462,11 @@ class SharedTreeWorker {
   std::vector<std::vector<std::pair<Literal, ClauseId>>>
       assigned_tree_implications_;
   double next_split_dtime_ = 0;
+
+  // For each literal on the trail, the ID of the LRAT clause stating that this
+  // literal is implied by the previous decisions on the trail, or kNoClauseId
+  // if there is no such clause.
+  std::vector<ClauseId> trail_implication_clauses_;
 
   std::vector<ProtoLiteral> tmp_splits_;
   std::vector<Literal> reason_;

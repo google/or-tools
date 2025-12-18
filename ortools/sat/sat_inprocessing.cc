@@ -143,6 +143,22 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
       continue;
     }
 
+    // SAT sweeping has a small dtime limit, so do it before other heuristics
+    // exhaust our budget.
+    if (options.use_equivalence_sat_sweeping &&
+        stop_dtime > time_limit_->GetElapsedDeterministicTime()) {
+      auto inner_model_inprocessing = [&](Model* inner_model) {
+        inner_model->GetOrCreate<SatParameters>()
+            ->set_inprocessing_use_sat_sweeping(false);
+        inner_model->GetOrCreate<Inprocessing>()->InprocessingRound();
+      };
+      RETURN_IF_FALSE(LevelZeroPropagate());
+      RETURN_IF_FALSE(
+          equivalence_sat_sweeping_->DoOneRound(inner_model_inprocessing));
+      RETURN_IF_FALSE(LevelZeroPropagate());
+      implication_graph_->RemoveAllRedundantVariables(&postsolve_->clauses);
+    }
+
     // TODO(user): Think about the right order in this function.
     if (params_.inprocessing_use_congruence_closure()) {
       RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -856,36 +872,41 @@ void StampingSimplifier::SampleTreeAndFillParent() {
 bool StampingSimplifier::ComputeStamps() {
   const int size = implication_graph_->literal_size();
 
+  // Adjacency list representation of the parents_ tree.
+  util_intops::StrongVector<LiteralIndex, int> sizes;
+  util_intops::StrongVector<LiteralIndex, int> starts;
+  std::vector<LiteralIndex> children;
+
   // Compute sizes.
-  sizes_.assign(size, 0);
+  sizes.assign(size, 0);
   for (LiteralIndex i(0); i < size; ++i) {
     if (parents_[i] == i) continue;  // leaf.
-    sizes_[parents_[i]]++;
+    sizes[parents_[i]]++;
   }
 
   // Compute starts in the children_ vector for each node.
-  starts_.resize(size + 1);  // We use a sentinel.
-  starts_[LiteralIndex(0)] = 0;
+  starts.resize(size + 1);  // We use a sentinel.
+  starts[LiteralIndex(0)] = 0;
   for (LiteralIndex i(1); i <= size; ++i) {
-    starts_[i] = starts_[i - 1] + sizes_[i - 1];
+    starts[i] = starts[i - 1] + sizes[i - 1];
   }
 
   // Fill children. This messes up starts_.
-  children_.resize(size);
+  children.resize(size);
   for (LiteralIndex i(0); i < size; ++i) {
     if (parents_[i] == i) continue;  // leaf.
-    children_[starts_[parents_[i]]++] = i;
+    children[starts[parents_[i]]++] = i;
   }
 
   // Reset starts to correct value.
   for (LiteralIndex i(0); i < size; ++i) {
-    starts_[i] -= sizes_[i];
+    starts[i] -= sizes[i];
   }
 
   if (DEBUG_MODE) {
-    CHECK_EQ(starts_[LiteralIndex(0)], 0);
+    CHECK_EQ(starts[LiteralIndex(0)], 0);
     for (LiteralIndex i(1); i <= size; ++i) {
-      CHECK_EQ(starts_[i], starts_[i - 1] + sizes_[i - 1]);
+      CHECK_EQ(starts[i], starts[i - 1] + sizes[i - 1]);
     }
   }
 
@@ -933,11 +954,11 @@ bool StampingSimplifier::ComputeStamps() {
         }
       }
 
-      const int end = starts_[top + 1];  // Ok with sentinel.
-      for (int j = starts_[top]; j < end; ++j) {
-        DCHECK_NE(top, children_[j]);    // We removed leaf self-loop.
-        DCHECK(!marked_[children_[j]]);  // This is a tree.
-        dfs_stack_.push_back(children_[j]);
+      const int end = starts[top + 1];  // Ok with sentinel.
+      for (int j = starts[top]; j < end; ++j) {
+        DCHECK_NE(top, children[j]);    // We removed leaf self-loop.
+        DCHECK(!marked_[children[j]]);  // This is a tree.
+        dfs_stack_.push_back(children[j]);
       }
     }
   }

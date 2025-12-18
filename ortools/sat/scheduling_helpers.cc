@@ -567,7 +567,21 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
     }
   }
 
-  // We will explain StartMax(before) < EndMin(after);
+  // We prefer to explain StartMax(before) < EndMin(after), but this is false
+  // for zero-size intervals. For example, imagine two tasks:
+  //   t1: start=0, end=0, size=0
+  //   t2: start=0, end=[0-1], size=[0-1]
+  // We can say that t1 is "before" t2, but StartMax(t1) == EndMin(t2) == 0.
+  if (SizeMin(before) <= 0) {
+    // Encode the straightforward expression End(before) - Start(after) <= 0.
+    const auto [expr, ub] =
+        EncodeDifferenceLowerThan(ends_[before], starts_[after], 0);
+    if (linear2_bounds_->UpperBound(expr) <= ub) {
+      linear2_bounds_->AddReasonForUpperBoundLowerThan(
+          expr, ub, &literal_reason_, &integer_reason_);
+      return;
+    }
+  }
   DCHECK_LT(StartMax(before), EndMin(after));
 
   // The reason will be a linear expression greater than a value. Note that all

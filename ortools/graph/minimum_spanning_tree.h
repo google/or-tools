@@ -50,7 +50,6 @@ BuildKruskalMinimumSpanningTreeFromSortedArcs(
     const Graph& graph,
     absl::Span<const typename Graph::ArcIndex> sorted_arcs) {
   using ArcIndex = typename Graph::ArcIndex;
-  using NodeIndex = typename Graph::NodeIndex;
   const int num_arcs = graph.num_arcs();
   int arc_index = 0;
   std::vector<ArcIndex> tree_arcs;

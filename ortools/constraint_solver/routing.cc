@@ -181,7 +181,7 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
   }
   for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
     decision_builders.push_back(MakeSetCumulsFromGlobalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(), cumulative_limit,
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get(),
         /*optimize_and_pack=*/true));
   }
   decision_builders.push_back(finalizer_variables_->CreateFinalizer());
@@ -5844,7 +5844,7 @@ bool RoutingModel::AreRoutesInterdependent(
 }
 
 DecisionBuilder* RoutingModel::CreateSolutionFinalizer(
-    const RoutingSearchParameters& parameters, SearchLimit* lns_limit) {
+    const RoutingSearchParameters& parameters) {
   std::vector<DecisionBuilder*> decision_builders;
   decision_builders.push_back(solver_->MakePhase(
       nexts_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE));
@@ -5875,7 +5875,7 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer(
          can_use_dimension_cumul_optimizers);
   for (auto& [lp_optimizer, mp_optimizer] : global_dimension_optimizers_) {
     decision_builders.push_back(MakeSetCumulsFromGlobalDimensionCosts(
-        solver_.get(), lp_optimizer.get(), mp_optimizer.get(), lns_limit));
+        solver_.get(), lp_optimizer.get(), mp_optimizer.get()));
   }
   decision_builders.push_back(finalizer_variables_->CreateFinalizer());
 
@@ -5888,8 +5888,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       FirstSolutionStrategy_Value_Value_ARRAYSIZE, nullptr);
   first_solution_filtered_decision_builders_.resize(
       FirstSolutionStrategy_Value_Value_ARRAYSIZE, nullptr);
-  DecisionBuilder* const finalize_solution = CreateSolutionFinalizer(
-      search_parameters, GetOrCreateLargeNeighborhoodSearchLimit());
+  DecisionBuilder* const finalize_solution =
+      CreateSolutionFinalizer(search_parameters);
   // Default heuristic
   first_solution_decision_builders_
       [FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE] = finalize_solution;
@@ -6265,8 +6265,8 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
   }
   return solver_->MakeLocalSearchPhaseParameters(
       CostVar(), ls_operator,
-      solver_->MakeSolveOnce(
-          CreateSolutionFinalizer(search_parameters, lns_limit), lns_limit),
+      solver_->MakeSolveOnce(CreateSolutionFinalizer(search_parameters),
+                             lns_limit),
       GetOrCreateLocalSearchLimit(),
       GetOrCreateLocalSearchFilterManager(
           search_parameters,
@@ -6283,9 +6283,8 @@ DecisionBuilder* RoutingModel::CreatePrimaryLocalSearchDecisionBuilder(
   SearchLimit* first_solution_lns_limit =
       GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
   DecisionBuilder* const first_solution_sub_decision_builder =
-      solver_->MakeSolveOnce(
-          CreateSolutionFinalizer(search_parameters, first_solution_lns_limit),
-          first_solution_lns_limit);
+      solver_->MakeSolveOnce(CreateSolutionFinalizer(search_parameters),
+                             first_solution_lns_limit);
   if (CostsAreHomogeneousAcrossVehicles()) {
     return solver_->MakeLocalSearchPhase(nexts_, first_solution,
                                          first_solution_sub_decision_builder,
@@ -6311,9 +6310,8 @@ void RoutingModel::SetupDecisionBuilders(
         GetOrCreateFirstSolutionLargeNeighborhoodSearchLimit();
     solve_db_ = solver_->Compose(
         GetFirstSolutionDecisionBuilder(search_parameters),
-        solver_->MakeSolveOnce(
-            CreateSolutionFinalizer(search_parameters, first_lns_limit),
-            first_lns_limit));
+        solver_->MakeSolveOnce(CreateSolutionFinalizer(search_parameters),
+                               first_lns_limit));
   } else {
     solve_db_ = CreatePrimaryLocalSearchDecisionBuilder(search_parameters);
   }
@@ -6334,15 +6332,13 @@ void RoutingModel::SetupDecisionBuilders(
       CreateLocalSearchParameters(search_parameters, /*secondary_ls=*/true));
   secondary_ls_db_ = solver_->Compose(restore_preassignment, secondary_ls_db_);
 
-  restore_assignment_ = solver_->Compose(
-      solver_->MakeRestoreAssignment(GetOrCreateAssignment()),
-      CreateSolutionFinalizer(search_parameters,
-                              GetOrCreateLargeNeighborhoodSearchLimit()));
+  restore_assignment_ =
+      solver_->Compose(solver_->MakeRestoreAssignment(GetOrCreateAssignment()),
+                       CreateSolutionFinalizer(search_parameters));
   restore_tmp_assignment_ = solver_->Compose(
       restore_preassignment,
       solver_->MakeRestoreAssignment(GetOrCreateTmpAssignment()),
-      CreateSolutionFinalizer(search_parameters,
-                              GetOrCreateLargeNeighborhoodSearchLimit()));
+      CreateSolutionFinalizer(search_parameters));
 }
 
 void RoutingModel::SetupMetaheuristics(

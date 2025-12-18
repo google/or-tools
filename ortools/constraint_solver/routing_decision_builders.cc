@@ -558,12 +558,11 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   SetCumulsFromGlobalDimensionCosts(
       GlobalDimensionCumulOptimizer* global_optimizer,
       GlobalDimensionCumulOptimizer* global_mp_optimizer,
-      SearchMonitor* monitor, bool optimize_and_pack,
+      bool optimize_and_pack,
       std::vector<RoutingModel::RouteDimensionTravelInfo>
           dimension_travel_info_per_route)
       : global_optimizer_(global_optimizer),
         global_mp_optimizer_(global_mp_optimizer),
-        monitor_(monitor),
         optimize_and_pack_(optimize_and_pack),
         dimension_travel_info_per_route_(
             std::move(dimension_travel_info_per_route)),
@@ -698,7 +697,6 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
   GlobalDimensionCumulOptimizer* const global_optimizer_;
   GlobalDimensionCumulOptimizer* const global_mp_optimizer_;
-  SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
   std::vector<IntVar*> cp_variables_;
   std::vector<int64_t> cp_values_;
@@ -720,12 +718,11 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
 
 DecisionBuilder* MakeSetCumulsFromGlobalDimensionCosts(
     Solver* solver, GlobalDimensionCumulOptimizer* global_optimizer,
-    GlobalDimensionCumulOptimizer* global_mp_optimizer, SearchMonitor* monitor,
-    bool optimize_and_pack,
+    GlobalDimensionCumulOptimizer* global_mp_optimizer, bool optimize_and_pack,
     std::vector<RoutingModel::RouteDimensionTravelInfo>
         dimension_travel_info_per_route) {
   return solver->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-      global_optimizer, global_mp_optimizer, monitor, optimize_and_pack,
+      global_optimizer, global_mp_optimizer, optimize_and_pack,
       std::move(dimension_travel_info_per_route)));
 }
 
