@@ -17,6 +17,7 @@
 #include <optional>
 #include <utility>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/memory/memory.h"
@@ -44,7 +45,7 @@ absl::StatusOr<SolveResult> CallSolve(BaseSolver& solver,
                                       const ModelStorageCPtr expected_storage,
                                       const SolveArguments& arguments,
                                       SolveInterrupter& local_canceller) {
-  RETURN_IF_ERROR(arguments.CheckModelStorageAndCallback(expected_storage));
+  RETURN_IF_ERROR(arguments.CheckModelStorage(expected_storage));
 
   BaseSolver::Callback cb = nullptr;
   absl::Mutex mutex;
@@ -124,7 +125,8 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> CallComputeInfeasibleSubsystem(
 absl::StatusOr<SolveResult> SolveImpl(
     const BaseSolverFactory solver_factory, const Model& model,
     const SolverType solver_type, const SolveArguments& solve_args,
-    const SolveInterrupter* const user_canceller, const bool remove_names) {
+    const SolveInterrupter* absl_nullable const user_canceller,
+    const bool remove_names) {
   SolveInterrupter local_canceller;
   const ScopedSolveInterrupterCallback user_canceller_cb(
       user_canceller, [&]() { local_canceller.Interrupt(); });
@@ -139,7 +141,8 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystemImpl(
     const BaseSolverFactory solver_factory, const Model& model,
     const SolverType solver_type,
     const ComputeInfeasibleSubsystemArguments& compute_args,
-    const SolveInterrupter* const user_canceller, const bool remove_names) {
+    const SolveInterrupter* absl_nullable const user_canceller,
+    const bool remove_names) {
   SolveInterrupter local_canceller;
   const ScopedSolveInterrupterCallback user_canceller_cb(
       user_canceller, [&]() { local_canceller.Interrupt(); });
@@ -152,10 +155,11 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystemImpl(
 }
 
 absl::StatusOr<std::unique_ptr<IncrementalSolverImpl>>
-IncrementalSolverImpl::New(BaseSolverFactory solver_factory, Model* const model,
-                           const SolverType solver_type,
-                           const SolveInterrupter* const user_canceller,
-                           const bool remove_names) {
+IncrementalSolverImpl::New(
+    BaseSolverFactory solver_factory, Model* const model,
+    const SolverType solver_type,
+    const SolveInterrupter* absl_nullable const user_canceller,
+    const bool remove_names) {
   if (model == nullptr) {
     return absl::InvalidArgumentError("input model can't be null");
   }

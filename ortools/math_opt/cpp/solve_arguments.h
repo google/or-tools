@@ -17,6 +17,7 @@
 #ifndef ORTOOLS_MATH_OPT_CPP_SOLVE_ARGUMENTS_H_
 #define ORTOOLS_MATH_OPT_CPP_SOLVE_ARGUMENTS_H_
 
+#include "absl/base/nullability.h"
 #include "absl/status/status.h"
 #include "ortools/math_opt/cpp/callback.h"                // IWYU pragma: export
 #include "ortools/math_opt/cpp/message_callback.h"        // IWYU pragma: export
@@ -82,13 +83,11 @@ struct SolveArguments {
   //                    Solve(model, SolverType::kGlop,
   //                          { .interrupter = interrupter.get() });
   //
-  const SolveInterrupter* interrupter = nullptr;
+  const SolveInterrupter* absl_nullable interrupter = nullptr;
 
   // Returns a failure if the referenced variables and constraints don't belong
-  // to the input expected_storage (which must not be nullptr). Also returns a
-  // failure if callback events are registered but no callback is provided.
-  absl::Status CheckModelStorageAndCallback(
-      ModelStorageCPtr expected_storage) const;
+  // to the input expected_storage (which must not be nullptr).
+  absl::Status CheckModelStorage(ModelStorageCPtr expected_storage) const;
 };
 
 }  // namespace operations_research::math_opt

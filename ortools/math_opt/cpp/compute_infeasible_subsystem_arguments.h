@@ -14,6 +14,7 @@
 #ifndef ORTOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
 #define ORTOOLS_MATH_OPT_CPP_COMPUTE_INFEASIBLE_SUBSYSTEM_ARGUMENTS_H_
 
+#include "absl/base/nullability.h"
 #include "ortools/math_opt/cpp/message_callback.h"  // IWYU pragma: export
 #include "ortools/math_opt/cpp/parameters.h"        // IWYU pragma: export
 #include "ortools/util/solve_interrupter.h"         // IWYU pragma: export
@@ -59,7 +60,7 @@ struct ComputeInfeasibleSubsystemArguments {
   //                    ComputeInfeasibleSubsystem(model, SolverType::kGurobi,
   //                          { .interrupter = interrupter.get() });
   //
-  const SolveInterrupter* interrupter = nullptr;
+  const SolveInterrupter* absl_nullable interrupter = nullptr;
 };
 
 }  // namespace operations_research::math_opt

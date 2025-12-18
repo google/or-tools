@@ -19,6 +19,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -53,7 +54,6 @@ using ::testing::HasSubstr;
 using ::testing::InSequence;
 using ::testing::Mock;
 using ::testing::Ne;
-using ::testing::Optional;
 using ::testing::Pair;
 using ::testing::Return;
 using ::testing::UnorderedElementsAre;
@@ -184,7 +184,7 @@ TEST(SolveTest, SuccessfulSolveWithCallback) {
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,
           const MessageCallback message_cb, const CallbackRegistrationProto&,
           SolverInterface::Callback cb,
-          const SolveInterrupter* const interrupter)
+          const SolveInterrupter* absl_nullable const interrupter)
       -> absl::StatusOr<SolveResultProto> {
     CallbackDataProto cb_data;
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
@@ -345,10 +345,10 @@ TEST(SolveTest, NullCallback) {
   EXPECT_CALL(factory_mock, Call(EquivToProto(basic_lp.model.ExportModel()), _))
       .WillOnce(Return(ByMove(std::make_unique<DelegatingSolver>(&solver))));
 
-  EXPECT_THAT(Solve(basic_lp.model,
-                    EnumFromProto(registration.solver_type()).value(), args),
-              StatusIs(absl::StatusCode::kInvalidArgument,
-                       HasSubstr("no callback was provided")));
+  EXPECT_THAT(
+      Solve(basic_lp.model, EnumFromProto(registration.solver_type()).value(),
+            args),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("no callback")));
 }
 
 TEST(SolveTest, WrongModelInModelParameters) {
@@ -416,7 +416,7 @@ TEST(SolveTest, WrongModelInCallbackResult) {
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,
           const MessageCallback message_cb, const CallbackRegistrationProto&,
           SolverInterface::Callback cb,
-          const SolveInterrupter* const interrupter)
+          const SolveInterrupter* absl_nullable const interrupter)
       -> absl::StatusOr<SolveResultProto> {
     CallbackDataProto cb_data;
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
@@ -961,7 +961,7 @@ TEST(IncrementalSolverTest, SuccessfulSolveWithCallback) {
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,
           const MessageCallback message_cb, const CallbackRegistrationProto&,
           SolverInterface::Callback cb,
-          const SolveInterrupter* const interrupter)
+          const SolveInterrupter* absl_nullable const interrupter)
       -> absl::StatusOr<SolveResultProto> {
     CallbackDataProto cb_data;
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
@@ -1137,7 +1137,7 @@ TEST(IncrementalSolverTest, UpdateAndSolve) {
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,
           const MessageCallback message_cb, const CallbackRegistrationProto&,
           SolverInterface::Callback cb,
-          const SolveInterrupter* const interrupter)
+          const SolveInterrupter* absl_nullable const interrupter)
       -> absl::StatusOr<SolveResultProto> {
     CallbackDataProto cb_data;
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);
@@ -1306,9 +1306,9 @@ TEST(IncrementalSolverTest, NullCallback) {
   Mock::VerifyAndClearExpectations(&factory_mock);
   Mock::VerifyAndClearExpectations(&solver_interface);
 
-  EXPECT_THAT(solver->SolveWithoutUpdate(args),
-              StatusIs(absl::StatusCode::kInvalidArgument,
-                       HasSubstr("no callback was provided")));
+  EXPECT_THAT(
+      solver->SolveWithoutUpdate(args),
+      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("no callback")));
 }
 
 TEST(IncrementalSolverTest, WrongModelInModelParameters) {
@@ -1395,7 +1395,7 @@ TEST(IncrementalSolverTest, WrongModelInCallbackResult) {
       [&](const SolveParametersProto&, const ModelSolveParametersProto&,
           const MessageCallback message_cb, const CallbackRegistrationProto&,
           SolverInterface::Callback cb,
-          const SolveInterrupter* const interrupter)
+          const SolveInterrupter* absl_nullable const interrupter)
       -> absl::StatusOr<SolveResultProto> {
     CallbackDataProto cb_data;
     cb_data.set_event(CALLBACK_EVENT_MIP_SOLUTION);

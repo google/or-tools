@@ -27,7 +27,7 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::status::StatusIs;
 
-TEST(CheckModelStorageAndCallbackTest, CorrectModelAndCallback) {
+TEST(CheckModelStorageTest, CorrectModelAndCallback) {
   Model model;
   const Variable x = model.AddVariable("x");
 
@@ -41,10 +41,10 @@ TEST(CheckModelStorageAndCallbackTest, CorrectModelAndCallback) {
       .callback = [](const CallbackData&) { return CallbackResult{}; },
   };
 
-  EXPECT_OK(args.CheckModelStorageAndCallback(model.storage()));
+  EXPECT_OK(args.CheckModelStorage(model.storage()));
 }
 
-TEST(CheckModelStorageAndCallbackTest, WrongModelInModelParameters) {
+TEST(CheckModelStorageTest, WrongModelInModelParameters) {
   Model model;
   const Variable x = model.AddVariable("x");
 
@@ -53,12 +53,12 @@ TEST(CheckModelStorageAndCallbackTest, WrongModelInModelParameters) {
   };
 
   Model other_model;
-  EXPECT_THAT(args.CheckModelStorageAndCallback(other_model.storage()),
+  EXPECT_THAT(args.CheckModelStorage(other_model.storage()),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        HasSubstr("model_parameters")));
 }
 
-TEST(CheckModelStorageAndCallbackTest, WrongModelInCallbackRegistration) {
+TEST(CheckModelStorageTest, WrongModelInCallbackRegistration) {
   Model model;
   const Variable x = model.AddVariable("x");
 
@@ -72,25 +72,10 @@ TEST(CheckModelStorageAndCallbackTest, WrongModelInCallbackRegistration) {
   };
 
   Model other_model;
-  EXPECT_THAT(args.CheckModelStorageAndCallback(other_model.storage()),
+  EXPECT_THAT(args.CheckModelStorage(other_model.storage()),
               StatusIs(absl::StatusCode::kInvalidArgument,
                        AllOf(HasSubstr("callback_registration"),
                              HasSubstr("mip_solution_filter"))));
-}
-
-TEST(CheckModelStorageAndCallbackTest, NoCallbackWithRegisteredEvents) {
-  Model model;
-
-  const SolveArguments args = {
-      .callback_registration =
-          {
-              .events = {CallbackEvent::kMipSolution},
-          },
-  };
-
-  EXPECT_THAT(
-      args.CheckModelStorageAndCallback(model.storage()),
-      StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("no callback")));
 }
 
 }  // namespace

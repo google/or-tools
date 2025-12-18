@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/core/base_solver.h"
@@ -55,12 +56,10 @@ using BaseSolverFactory =
 // Solves the input model.
 //
 // The `user_canceller` parameter is optional.
-absl::StatusOr<SolveResult> SolveImpl(BaseSolverFactory solver_factory,
-                                      const Model& model,
-                                      SolverType solver_type,
-                                      const SolveArguments& solve_args,
-                                      const SolveInterrupter* user_canceller,
-                                      bool remove_names);
+absl::StatusOr<SolveResult> SolveImpl(
+    BaseSolverFactory solver_factory, const Model& model,
+    SolverType solver_type, const SolveArguments& solve_args,
+    const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
 // ComputeInfeasibleSubsystems the input model in a subprocess.
 //
@@ -69,7 +68,7 @@ absl::StatusOr<ComputeInfeasibleSubsystemResult> ComputeInfeasibleSubsystemImpl(
     BaseSolverFactory solver_factory, const Model& model,
     SolverType solver_type,
     const ComputeInfeasibleSubsystemArguments& compute_args,
-    const SolveInterrupter* user_canceller, bool remove_names);
+    const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
 // Incremental solve of a model.
 class IncrementalSolverImpl : public IncrementalSolver {
@@ -79,7 +78,7 @@ class IncrementalSolverImpl : public IncrementalSolver {
   // The `user_canceller` parameter is optional.
   static absl::StatusOr<std::unique_ptr<IncrementalSolverImpl>> New(
       BaseSolverFactory solver_factory, Model* model, SolverType solver_type,
-      const SolveInterrupter* user_canceller, bool remove_names);
+      const SolveInterrupter* absl_nullable user_canceller, bool remove_names);
 
   absl::StatusOr<UpdateResult> Update() override;
 

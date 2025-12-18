@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/status/statusor.h"
 #include "ortools/math_opt/callback.pb.h"
 #include "ortools/math_opt/infeasible_subsystem.pb.h"
@@ -78,7 +79,7 @@ class BaseSolver {
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    const SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* absl_nullable interrupter = nullptr;
 
     friend std::ostream& operator<<(std::ostream& out, const SolveArgs& args);
   };
@@ -96,7 +97,7 @@ class BaseSolver {
 
     // An optional interrupter that the solver can use to interrupt the solve
     // early.
-    const SolveInterrupter* interrupter = nullptr;
+    const SolveInterrupter* absl_nullable interrupter = nullptr;
 
     friend std::ostream& operator<<(std::ostream& out,
                                     const ComputeInfeasibleSubsystemArgs& args);

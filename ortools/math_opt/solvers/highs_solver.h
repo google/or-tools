@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "Highs.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -51,12 +52,12 @@ class HighsSolver : public SolverInterface {
       const ModelSolveParametersProto& model_parameters,
       MessageCallback message_cb,
       const CallbackRegistrationProto& callback_registration, Callback cb,
-      const SolveInterrupter* interrupter) override;
+      const SolveInterrupter* absl_nullable interrupter) override;
   absl::StatusOr<bool> Update(const ModelUpdateProto& model_update) override;
   absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
-  ComputeInfeasibleSubsystem(const SolveParametersProto& parameters,
-                             MessageCallback message_cb,
-                             const SolveInterrupter* interrupter) override;
+  ComputeInfeasibleSubsystem(
+      const SolveParametersProto& parameters, MessageCallback message_cb,
+      const SolveInterrupter* absl_nullable interrupter) override;
 
  private:
   struct SolutionClaims {

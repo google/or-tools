@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
@@ -490,7 +491,8 @@ absl::Status SetLPParameters(const SolveParametersProto& parameters,
 
 class MipCallbackData {
  public:
-  explicit MipCallbackData(const SolveInterrupter* const interrupter)
+  explicit MipCallbackData(
+      const SolveInterrupter* absl_nullable const interrupter)
       : interrupter_(interrupter) {}
 
   void Callback(glp_tree* const tree) {
@@ -540,7 +542,7 @@ class MipCallbackData {
 
  private:
   // Optional interrupter.
-  const SolveInterrupter* const interrupter_;
+  const SolveInterrupter* absl_nullable const interrupter_;
 
   // Set to true if glp_ios_terminate() has been called due to the interrupter.
   std::atomic<bool> interrupted_by_interrupter_ = false;
@@ -1059,7 +1061,8 @@ absl::StatusOr<SolveResultProto> GlpkSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration,
-    const Callback /*cb*/, const SolveInterrupter* const interrupter) {
+    const Callback /*cb*/,
+    const SolveInterrupter* absl_nullable const interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGlpkSupportedStructures, "GLPK"));
   RETURN_IF_ERROR(CheckCurrentThread());
@@ -1808,7 +1811,7 @@ std::optional<SolveResultProto> GlpkSolver::EmptyIntegerBoundsResult() {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GlpkSolver::ComputeInfeasibleSubsystem(
     const SolveParametersProto& parameters, MessageCallback message_cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   return absl::UnimplementedError(
       "GLPK does not provide a method to compute an infeasible subsystem");
 }

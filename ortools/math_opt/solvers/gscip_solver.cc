@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -1013,7 +1014,7 @@ absl::StatusOr<SolveResultProto> GScipSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, Callback cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable const interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kGscipSupportedStructures, "SCIP"));
   const absl::Time start = absl::Now();
@@ -1353,7 +1354,7 @@ absl::StatusOr<bool> GScipSolver::Update(const ModelUpdateProto& model_update) {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 GScipSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "SCIP does not provide a method to compute an infeasible subsystem");
 }

@@ -503,7 +503,7 @@ absl::StatusOr<SolveResultProto> CpSatSolver::Solve(
     const ModelSolveParametersProto& model_parameters,
     const MessageCallback message_cb,
     const CallbackRegistrationProto& callback_registration, const Callback cb,
-    const SolveInterrupter* const interrupter) {
+    const SolveInterrupter* absl_nullable interrupter) {
   RETURN_IF_ERROR(ModelSolveParametersAreSupported(
       model_parameters, kCpSatSupportedStructures, "CP-SAT"));
   const absl::Time start = absl::Now();
@@ -675,7 +675,7 @@ InvertedBounds CpSatSolver::ListInvertedBounds() const {
 absl::StatusOr<ComputeInfeasibleSubsystemResultProto>
 CpSatSolver::ComputeInfeasibleSubsystem(const SolveParametersProto&,
                                         MessageCallback,
-                                        const SolveInterrupter*) {
+                                        const SolveInterrupter* absl_nullable) {
   return absl::UnimplementedError(
       "CPSAT does not provide a method to compute an infeasible subsystem");
 }

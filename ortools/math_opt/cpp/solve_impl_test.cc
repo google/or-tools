@@ -484,32 +484,6 @@ TEST(SolveImplTest, FailingSolve) {
       StatusIs(absl::StatusCode::kInternal, "solve failed"));
 }
 
-TEST(SolveImplTest, NullCallback) {
-  BasicLp basic_lp;
-
-  SolveArguments args;
-  args.parameters.enable_output = true;
-
-  args.model_parameters =
-      ModelSolveParameters::OnlySomePrimalVariables({basic_lp.a});
-
-  args.callback_registration.add_lazy_constraints = true;
-  args.callback_registration.events.insert(CallbackEvent::kMipSolution);
-
-  BaseSolverFactoryMock factory_mock;
-  BaseSolverMock solver;
-  EXPECT_CALL(factory_mock, Call(SOLVER_TYPE_GLOP,
-                                 EquivToProto(basic_lp.model.ExportModel()), _))
-      .WillOnce(
-          Return(ByMove(std::make_unique<DelegatingBaseSolver>(&solver))));
-
-  EXPECT_THAT(
-      SolveImpl(factory_mock.AsStdFunction(), basic_lp.model, SolverType::kGlop,
-                args, /*user_canceller=*/nullptr, /*remove_names=*/false),
-      StatusIs(absl::StatusCode::kInvalidArgument,
-               HasSubstr("no callback was provided")));
-}
-
 TEST(SolveImplTest, WrongModelInModelParameters) {
   BasicLp basic_lp;
   BasicLp other_basic_lp;
@@ -1591,40 +1565,6 @@ TEST(IncrementalSolverImplTest, UpdateAndSolveWithFailingSolverUpdate) {
   ASSERT_THAT(solver->Solve({}), StatusIs(absl::StatusCode::kInternal,
                                           AllOf(HasSubstr("*update failure*"),
                                                 HasSubstr("update failed"))));
-}
-
-TEST(IncrementalSolverImplTest, NullCallback) {
-  BasicLp basic_lp;
-
-  SolveArguments args;
-  args.parameters.enable_output = true;
-
-  args.model_parameters =
-      ModelSolveParameters::OnlySomePrimalVariables({basic_lp.a});
-
-  args.callback_registration.add_lazy_constraints = true;
-  args.callback_registration.events.insert(CallbackEvent::kMipSolution);
-
-  BaseSolverFactoryMock factory_mock;
-  BaseSolverMock solver_interface;
-
-  EXPECT_CALL(factory_mock, Call(SOLVER_TYPE_GLOP,
-                                 EquivToProto(basic_lp.model.ExportModel()), _))
-      .WillOnce(Return(
-          ByMove(std::make_unique<DelegatingBaseSolver>(&solver_interface))));
-
-  ASSERT_OK_AND_ASSIGN(
-      std::unique_ptr<IncrementalSolver> solver,
-      IncrementalSolverImpl::New(
-          factory_mock.AsStdFunction(), &basic_lp.model, SolverType::kGlop,
-          /*user_canceller=*/nullptr, /*remove_names=*/false));
-
-  Mock::VerifyAndClearExpectations(&factory_mock);
-  Mock::VerifyAndClearExpectations(&solver_interface);
-
-  EXPECT_THAT(solver->SolveWithoutUpdate(args),
-              StatusIs(absl::StatusCode::kInvalidArgument,
-                       HasSubstr("no callback was provided")));
 }
 
 TEST(IncrementalSolverImplTest, WrongModelInModelParameters) {
