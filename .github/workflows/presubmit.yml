@@ -7,7 +7,7 @@ on:
       - main
 
 concurrency:
-  group: ortools-presubmit
+  group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 env:
