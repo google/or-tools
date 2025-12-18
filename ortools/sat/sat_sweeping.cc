@@ -170,7 +170,11 @@ bool EquivalenceSatSweeping::DoOneRound(
   // TODO(user): consider doing several neighborhoods to amortize the cost of
   // building the variable->clause graph.
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  if (sat_solver_->AssumptionLevel() != 0) return true;
+  if (sat_solver_->AssumptionLevel() != 0) {
+    VLOG(2)
+        << "Assumption level is not 0 (should not happen), skipping sweeping.";
+    return true;
+  }
   clauses_.clear();
 
   struct ExtractedClausesHelper {
@@ -198,7 +202,10 @@ bool EquivalenceSatSweeping::DoOneRound(
   ExtractedClausesHelper helper(clauses_, max_num_boolean_variables_);
   if (!sat_solver_->ExtractClauses(&helper)) return false;
 
-  if (clauses_.empty()) return true;
+  if (clauses_.empty()) {
+    VLOG(2) << "No clauses extracted, skipping sweeping.";
+    return true;
+  }
 
   const int num_vars = sat_solver_->NumVariables();
 
@@ -207,79 +214,96 @@ bool EquivalenceSatSweeping::DoOneRound(
   };
   var_to_clauses_.ResetFromTransposeMap<GetVarMapper>(clauses_, num_vars);
 
-  BooleanVariable boolean_for_neighborhood;
-  {
-    int tries = 0;
-    constexpr int kMaxTries = 10;
-    for (tries = 0; tries < kMaxTries; ++tries) {
-      boolean_for_neighborhood = absl::Uniform<int>(*random_, 0, num_vars);
-      if (var_to_clauses_[boolean_for_neighborhood].size() < 2) continue;
-      const Literal positive_lit(boolean_for_neighborhood, true);
-      if (implication_graph_->RepresentativeOf(positive_lit) != positive_lit) {
-        continue;
-      }
-      break;
-    }
-    if (tries == kMaxTries) return true;
-  }
-
-  const std::vector<absl::Span<const Literal>> neighborhood =
-      GetNeighborhood(boolean_for_neighborhood);
-
-  if (neighborhood.empty()) return true;
-
-  CompactVectorVector<int, Literal> neighborhood_clauses;
-  big_model_to_small_model_.clear();
-  small_model_to_big_model_.clear();
-  for (const absl::Span<const Literal> clause : neighborhood) {
-    neighborhood_clauses.Add({});
-    for (const Literal l : clause) {
-      const BooleanVariable new_var(big_model_to_small_model_.size());
-      auto [it, inserted] =
-          big_model_to_small_model_.insert({l.Variable(), new_var});
-      if (inserted) {
-        small_model_to_big_model_.push_back(l.Variable());
-      }
-      neighborhood_clauses.AppendToLastVector(
-          Literal(it->second, l.IsPositive()));
-    }
-  }
-
+  global_time_limit_->AdvanceDeterministicTime(clause_manager_->num_clauses() *
+                                               1.0e-7);
   TimeLimit sweep_time_limit;
   sweep_time_limit.ChangeDeterministicLimit(1.0);
   sweep_time_limit.MergeWithGlobalTimeLimit(global_time_limit_);
-  const SatSweepingResult result = DoFullSatSweeping(
-      neighborhood_clauses, &sweep_time_limit, run_inprocessing);
-  global_time_limit_->AdvanceDeterministicTime(
-      sweep_time_limit.GetElapsedDeterministicTime());
+  std::vector<std::pair<Literal, Literal>> binary_clauses;
+  std::vector<Literal> unary_clauses;
+  for (int i = 0; i < 50; ++i) {
+    BooleanVariable boolean_for_neighborhood;
+    {
+      int tries = 0;
+      constexpr int kMaxTries = 10;
+      for (tries = 0; tries < kMaxTries; ++tries) {
+        boolean_for_neighborhood = absl::Uniform<int>(*random_, 0, num_vars);
+        if (var_to_clauses_[boolean_for_neighborhood].size() < 2) continue;
+        const Literal positive_lit(boolean_for_neighborhood, true);
+        if (implication_graph_->RepresentativeOf(positive_lit) !=
+            positive_lit) {
+          continue;
+        }
+        break;
+      }
+      if (tries == kMaxTries) continue;
+    }
 
-  if (result.status == SatSolver::INFEASIBLE) {
-    sat_solver_->NotifyThatModelIsUnsat();
-    return false;
-  }
-  if (result.binary_clauses.empty() && result.unary_clauses.empty()) {
-    return true;
-  }
-  clause_manager_->DetachAllClauses();
-  for (const auto& [l1, l2] : result.binary_clauses) {
-    const Literal mapped_l1 =
-        Literal(small_model_to_big_model_[l1.Variable()], l1.IsPositive());
-    const Literal mapped_l2 =
-        Literal(small_model_to_big_model_[l2.Variable()], l2.IsPositive());
-    if (implication_graph_->IsRemoved(mapped_l1) ||
-        implication_graph_->IsRemoved(mapped_l2)) {
+    const std::vector<absl::Span<const Literal>> neighborhood =
+        GetNeighborhood(boolean_for_neighborhood);
+
+    if (neighborhood.empty()) {
+      VLOG(2) << "Neighborhood is empty for " << boolean_for_neighborhood;
       continue;
     }
-    clause_manager_->InprocessingAddClause({mapped_l1, mapped_l2});
-  }
-  for (const Literal l : result.unary_clauses) {
-    const Literal mapped_l =
-        Literal(small_model_to_big_model_[l.Variable()], l.IsPositive());
-    if (implication_graph_->IsRemoved(mapped_l)) continue;
-    const ClauseId new_clause_id = clause_id_generator_->GetNextId();
-    if (!clause_manager_->InprocessingAddUnitClause(new_clause_id, mapped_l)) {
+
+    CompactVectorVector<int, Literal> neighborhood_clauses;
+    big_model_to_small_model_.clear();
+    small_model_to_big_model_.clear();
+    for (const absl::Span<const Literal> clause : neighborhood) {
+      neighborhood_clauses.Add({});
+      for (const Literal l : clause) {
+        const BooleanVariable new_var(big_model_to_small_model_.size());
+        auto [it, inserted] =
+            big_model_to_small_model_.insert({l.Variable(), new_var});
+        if (inserted) {
+          small_model_to_big_model_.push_back(l.Variable());
+        }
+        neighborhood_clauses.AppendToLastVector(
+            Literal(it->second, l.IsPositive()));
+      }
+    }
+
+    const SatSweepingResult result = DoFullSatSweeping(
+        neighborhood_clauses, &sweep_time_limit, run_inprocessing);
+
+    if (result.status == SatSolver::INFEASIBLE) {
+      sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+    for (const auto& [l1, l2] : result.binary_clauses) {
+      const Literal mapped_l1 =
+          Literal(small_model_to_big_model_[l1.Variable()], l1.IsPositive());
+      const Literal mapped_l2 =
+          Literal(small_model_to_big_model_[l2.Variable()], l2.IsPositive());
+      if (implication_graph_->IsRemoved(mapped_l1) ||
+          implication_graph_->IsRemoved(mapped_l2)) {
+        continue;
+      }
+      binary_clauses.push_back({mapped_l1, mapped_l2});
+    }
+    for (const Literal l : result.unary_clauses) {
+      const Literal mapped_l =
+          Literal(small_model_to_big_model_[l.Variable()], l.IsPositive());
+      if (implication_graph_->IsRemoved(mapped_l)) continue;
+      unary_clauses.push_back(mapped_l);
+    }
+    if (result.status == SatSolver::LIMIT_REACHED) {
+      break;
+    }
+  }
+  global_time_limit_->AdvanceDeterministicTime(
+      sweep_time_limit.GetElapsedDeterministicTime());
+  if (binary_clauses.empty() && unary_clauses.empty()) {
+    return true;
+  }
+  // TODO(user): find out why this is necessary.
+  clause_manager_->DetachAllClauses();
+  for (const auto& [l1, l2] : binary_clauses) {
+    if (!implication_graph_->AddBinaryClause(l1, l2)) return false;
+  }
+  for (const Literal l : unary_clauses) {
+    if (!implication_graph_->FixLiteral(l, {})) return false;
   }
   return true;
 }
@@ -512,7 +536,7 @@ SatSweepingResult DoFullSatSweeping(
   }
   result.binary_clauses.resize(new_binary_clauses_size);
 
-  VLOG(1) << "num_booleans: " << num_variables
+  VLOG(2) << "num_booleans: " << num_variables
           << " num_clauses: " << clauses.size()
           << " num_partitions: " << num_partitions
           << " num_unary_clauses: " << result.unary_clauses.size()

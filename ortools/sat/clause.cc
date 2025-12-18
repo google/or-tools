@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <optional>
 #include <queue>
 #include <stack>
 #include <string>
@@ -28,6 +29,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/log/vlog_is_on.h"
@@ -319,7 +321,7 @@ bool ClauseManager::AddClause(ClauseId id, absl::Span<const Literal> literals,
   if (id != kNoClauseId) {
     clause_id_[clause] = id;
   }
-  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
+  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, id, literals);
   return AttachAndPropagate(clause, trail);
 }
 
@@ -331,7 +333,7 @@ SatClause* ClauseManager::AddRemovableClause(ClauseId id,
   if (id != kNoClauseId) {
     clause_id_[clause] = id;
   }
-  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, literals);
+  if (add_clause_callback_ != nullptr) add_clause_callback_(lbd, id, literals);
   CHECK(AttachAndPropagate(clause, trail));
 
   // Create an entry in clauses_info_ to mark that clause as removable.
@@ -725,24 +727,20 @@ ClauseId ClauseManager::ReasonClauseId(Literal literal) const {
 void ClauseManager::AppendClauseIdsFixing(
     absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
     LiteralIndex decision,
-    absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
-        additional_binary_clause_ids) {
+    std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals) {
   SCOPED_TIME_STAT(&stats_);
   const auto& assignment = trail_->Assignment();
 
-  // Mark the literals whose reason must be expanded, and compute their min and
-  // max trail index.
+  // Mark the literals whose reason must be expanded, and put them in a heap.
   tmp_mark_.ClearAndResize(BooleanVariable(trail_->NumVariables()));
-  int trail_index = 0;
-  int min_trail_index = trail_->Index();
+  marked_trail_indices_heap_.clear();
   for (const Literal lit : literals) {
     CHECK(assignment.LiteralIsAssigned(lit));
-    const int var_trail_index = trail_->Info(lit.Variable()).trail_index;
-    trail_index = std::max(trail_index, var_trail_index);
-    min_trail_index = std::min(min_trail_index, var_trail_index);
     tmp_mark_.Set(lit.Variable());
+    marked_trail_indices_heap_.push_back(
+        trail_->Info(lit.Variable()).trail_index);
   }
-
+  absl::c_make_heap(marked_trail_indices_heap_);
   const int current_level = trail_->CurrentDecisionLevel();
 
   // The min level of the expanded literals.
@@ -755,14 +753,11 @@ void ClauseManager::AppendClauseIdsFixing(
   non_unit_clause_ids.clear();
 
   const auto& decisions = trail_->Decisions();
-  while (true) {
-    // Find next marked literal to expand from the trail.
-    while (trail_index >= min_trail_index &&
-           !tmp_mark_[(*trail_)[trail_index].Variable()]) {
-      --trail_index;
-    }
-    if (trail_index < min_trail_index) break;
-    const Literal marked_literal = (*trail_)[trail_index--];
+  while (!marked_trail_indices_heap_.empty()) {
+    absl::c_pop_heap(marked_trail_indices_heap_);
+    const int trail_index = marked_trail_indices_heap_.back();
+    marked_trail_indices_heap_.pop_back();
+    const Literal marked_literal = (*trail_)[trail_index];
 
     // Stop at decisions, at literals fixed at root, and at literals implied by
     // the decision at their level.
@@ -779,12 +774,8 @@ void ClauseManager::AppendClauseIdsFixing(
     const Literal level_decision = decisions[level - 1].literal;
     ClauseId clause_id = implication_graph_->GetClauseId(
         level_decision.Negated(), marked_literal);
-    if (clause_id == kNoClauseId && additional_binary_clause_ids != nullptr) {
-      const auto it = additional_binary_clause_ids->find(
-          std::minmax(level_decision.Negated(), marked_literal));
-      if (it != additional_binary_clause_ids->end()) {
-        clause_id = it->second;
-      }
+    if (clause_id == kNoClauseId && root_literals.has_value()) {
+      clause_id = (*root_literals)(level, trail_index);
     }
     if (clause_id != kNoClauseId) {
       non_unit_clause_ids.push_back(clause_id);
@@ -795,10 +786,11 @@ void ClauseManager::AppendClauseIdsFixing(
     for (const Literal literal : trail_->Reason(marked_literal.Variable())) {
       const BooleanVariable var = literal.Variable();
       if (!tmp_mark_[var]) {
-        tmp_mark_.Set(var);
         const AssignmentInfo& info = trail_->Info(var);
+        tmp_mark_.Set(var);
         if (info.level > 0) {
-          min_trail_index = std::min(min_trail_index, info.trail_index);
+          marked_trail_indices_heap_.push_back(info.trail_index);
+          absl::c_push_heap(marked_trail_indices_heap_);
         } else {
           clause_ids->push_back(trail_->GetUnitClauseId(var));
         }

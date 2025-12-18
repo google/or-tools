@@ -24,6 +24,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_join.h"
 #include "absl/types/span.h"
+#include "ortools/base/strong_vector.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/synchronization.h"
@@ -114,8 +115,10 @@ class LratChecker {
   std::string_view error_message() const { return error_message_; }
 
   // This can help debugging wrong proof.
-  absl::Span<const Literal> GetClauseForDebug(ClauseId id) {
-    return clauses_[id];
+  absl::Span<const Literal> GetClauseForDebug(ClauseId id) const {
+    auto it = clauses_.find(id);
+    if (it == clauses_.end()) return {};
+    return it->second;
   }
 
  private:
@@ -123,6 +126,8 @@ class LratChecker {
                          bool is_problem_clause,
                          absl::Span<const ClauseId> unit_ids,
                          absl::Span<const RatIds> rat);
+
+  void InitializeOccurrences();
 
   bool Error(ClauseId id, std::string_view error);
 
@@ -134,8 +139,10 @@ class LratChecker {
   // more efficient but their correctness could be harder to trust).
   absl::flat_hash_map<ClauseId, FixedCapacityVector<Literal>> clauses_;
 
-  // The number of clauses in `clauses_` which contain each literal.
-  absl::flat_hash_map<Literal, int> occurrences_;
+  // The number of clauses in `clauses_` which contain each literal. This is
+  // initialized only if needed, i.e., when the first RAT proof is needed.
+  util_intops::StrongVector<LiteralIndex, int> occurrences_;
+  bool occurrences_needed_ = false;
 
   // Whether all the operations made so far were valid.
   bool valid_ = true;
@@ -152,6 +159,7 @@ class LratChecker {
   int64_t num_processed_rat_clauses_ = 0;
   int64_t num_unneeded_rat_literals_ = 0;
   int64_t num_unneeded_rat_clauses_ = 0;
+  int64_t num_deleted_clauses_ = 0;
   int64_t num_deleted_clauses_not_found_ = 0;
 
   // Whether the proof is complete, i.e., whether the empty clause has been

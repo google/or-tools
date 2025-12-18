@@ -4003,11 +4003,8 @@ void CpModelPresolver::ProcessOneLinearWithAmo(int ct_index,
   if (non_boolean_domain == Domain(0) && rhs.NumIntervals() == 1 &&
       min_magnitude < max_magnitude) {
     int64_t min_activity = 0;
-    int64_t max_activity = 0;
     for (const auto [ref, coeff] : tmp_terms_) {
-      if (coeff > 0) {
-        max_activity += coeff;
-      } else {
+      if (coeff <= 0) {
         min_activity += coeff;
       }
     }
@@ -8092,7 +8089,6 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   auto* trail = model.GetOrCreate<Trail>();
 
-  int num_equiv = 0;
   int num_changed_bounds = 0;
   int num_fixed_bools = 0;
   for (int var = 0; var < variable_mapping.size(); ++var) {
@@ -8111,7 +8107,6 @@ void CpModelPresolver::RunPropagatorsForConstraint(const ConstraintProto& ct) {
       // Add Boolean equivalence relations.
       const Literal r = implication_graph->RepresentativeOf(l);
       if (r != l) {
-        ++num_equiv;
         const int r_var =
             mapping->GetProtoVariableFromBooleanVariable(r.Variable());
         if (r_var < 0) continue;
@@ -8753,6 +8748,8 @@ bool CpModelPresolver::PresolvePureSatPart() {
     options.use_transitive_reduction = false;
     options.deterministic_time_limit =
         context_->params().presolve_probing_deterministic_time_limit();
+    options.use_equivalence_sat_sweeping =
+        context_->params().inprocessing_use_sat_sweeping();
 
     auto* inprocessing = local_model.GetOrCreate<Inprocessing>();
     inprocessing->ProvideLogger(logger_);

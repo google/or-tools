@@ -54,7 +54,6 @@ class EquivalenceSatSweeping {
       : sat_solver_(model->GetOrCreate<SatSolver>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
-        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
         global_time_limit_(model->GetOrCreate<TimeLimit>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
@@ -71,12 +70,11 @@ class EquivalenceSatSweeping {
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
-  ClauseIdGenerator* clause_id_generator_;
   TimeLimit* global_time_limit_;
   ModelRandomGenerator* random_;
 
-  int max_num_clauses_ = 32000;
-  int max_num_boolean_variables_ = 1000;
+  int max_num_clauses_ = 52000;
+  int max_num_boolean_variables_ = 2000;
 
   // We compute the occurrence graph once at the beginning of each round.
   util_intops::StrongVector<ClauseIndex, absl::Span<const Literal>> clauses_;

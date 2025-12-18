@@ -2123,7 +2123,6 @@ Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
   }
 
   // Fix the presence/absence of unseen intervals.
-  bool enforcement_literals_fixed = false;
   for (const int i : helper.TypeToConstraints(ConstraintProto::kInterval)) {
     if (seen_intervals.contains(i)) continue;
 
@@ -2146,7 +2145,6 @@ Neighborhood GenerateSchedulingNeighborhoodFromIntervalPrecedences(
     neighborhood.delta.mutable_variables(enforcement_var)->clear_domain();
     neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
     neighborhood.delta.mutable_variables(enforcement_var)->add_domain(value);
-    enforcement_literals_fixed = true;
   }
 
   for (const std::pair<int, int>& prec : precedences) {

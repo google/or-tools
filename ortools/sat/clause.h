@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <deque>
 #include <functional>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -28,6 +29,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
+#include "absl/functional/function_ref.h"
 #include "absl/log/check.h"
 #include "absl/types/span.h"
 #include "ortools/base/strong_vector.h"
@@ -400,14 +402,14 @@ class ClauseManager : public SatPropagator {
   }
 
   void SetAddClauseCallback(
-      absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
+      absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
           add_clause_callback) {
     add_clause_callback_ = std::move(add_clause_callback);
   }
 
   // Removes the add clause callback and returns it. This can be used to
   // temporarily disable the callback.
-  absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
+  absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
   TakeAddClauseCallback() {
     return std::move(add_clause_callback_);
   }
@@ -427,20 +429,23 @@ class ClauseManager : public SatPropagator {
   // previous one on the trail.
   //
   // This method expands the reasons of each literal recursively until a
-  // decision, or a literal implied by the decision at its decision level, is
-  // found. The latter criterion avoids a quadratic complexity when implications
-  // of the form "decision => literal" are added for each newly propagated
-  // literal after taking a decision (provided these implications are added to
-  // the binary implication graph right away, in trail index order).
+  // decision, or a literal implied by the decision at its decision level, or a
+  // literal for which `root_literals` returns a value other than kNoClauseId,
+  // is found. The latter criteria avoid a quadratic complexity when
+  // implications of the form "decision(s) => literal" are added for each newly
+  // propagated literal after taking a decision (provided these implications are
+  // added to the binary implication graph or to the `root_literals` function
+  // right away, in trail index order).
   //
-  // If `additional_binary_clause_ids` is not null, it is used to look for
-  // existing binary clauses if they are not found in the binary implication
-  // graph.
+  // `root_literals` must take a decision level and a trail index as parameter
+  // (the level is the assignment level of this trail index). It must return the
+  // ID of the clause stating that the literal at this index is fixed by
+  // previous decision(s), if the reason expansion should be stopped here
+  // (otherwise it should return kNoClauseId).
   void AppendClauseIdsFixing(
       absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
       LiteralIndex decision = kNoLiteralIndex,
-      absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>*
-          additional_binary_clause_ids = nullptr);
+      std::optional<absl::FunctionRef<ClauseId(int, int)>> root_literals = {});
 
  private:
   // Attaches the given clause. This eventually propagates a literal which is
@@ -506,10 +511,11 @@ class ClauseManager : public SatPropagator {
   // Temporary member used when adding LRAT inferred clauses.
   std::vector<ClauseId> clause_ids_scratchpad_;
 
-  absl::AnyInvocable<void(int lbd, absl::Span<const Literal>)>
+  absl::AnyInvocable<void(int lbd, ClauseId id, absl::Span<const Literal>)>
       add_clause_callback_ = nullptr;
 
   SparseBitset<BooleanVariable> tmp_mark_;
+  std::vector<int> marked_trail_indices_heap_;
   std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
 };
 

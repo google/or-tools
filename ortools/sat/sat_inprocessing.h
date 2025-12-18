@@ -91,6 +91,8 @@ struct SatPresolveOptions {
   // possible reduction. This shouldn't matter if we use the binary implication
   // graph and its reachability instead of just binary clause though.
   bool use_transitive_reduction = false;
+
+  bool use_equivalence_sat_sweeping = false;
 };
 
 // We need to keep some information from one call to the next, so we use a
@@ -275,11 +277,6 @@ class StampingSimplifier {
 
   // Encode a spanning tree of the implication graph.
   util_intops::StrongVector<LiteralIndex, LiteralIndex> parents_;
-
-  // Adjacency list representation of the parents_ tree.
-  util_intops::StrongVector<LiteralIndex, int> sizes_;
-  util_intops::StrongVector<LiteralIndex, int> starts_;
-  std::vector<LiteralIndex> children_;
 
   // Temporary data for the DFS.
   util_intops::StrongVector<LiteralIndex, bool> marked_;

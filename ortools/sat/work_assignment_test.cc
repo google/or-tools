@@ -136,6 +136,46 @@ TEST(ProtoTrailTest, SetMultiLevelImplied) {
   EXPECT_EQ(p.ObjectiveLb(1), 2);
 }
 
+TEST(ProtoTrailTest,
+     NormalizeImplicationsRemovesImplicationsAlreadyAssignedAtAnEarlierLevel) {
+  ProtoTrail p;
+  p.PushLevel({0, 0}, 0, 1);
+  p.AddImplication(1, {3, 0});
+  p.PushLevel({1, 0}, 0, 2);
+  p.PushLevel({3, 0}, 0, 3);
+  p.SetLevelImplied(3);
+  const std::vector<ProtoLiteral> implications1_before_normalization = {
+      p.Implications(1).begin(), p.Implications(1).end()};
+  const std::vector<ProtoLiteral> implications2_before_normalization = {
+      p.Implications(2).begin(), p.Implications(2).end()};
+
+  p.NormalizeImplications();
+
+  EXPECT_THAT(implications1_before_normalization,
+              testing::ElementsAre(ProtoLiteral(3, 0)));
+  EXPECT_THAT(implications2_before_normalization,
+              testing::ElementsAre(ProtoLiteral(3, 0)));
+  EXPECT_THAT(p.Implications(1), testing::ElementsAre(ProtoLiteral(3, 0)));
+  EXPECT_THAT(p.Implications(2), testing::IsEmpty());
+}
+
+TEST(ProtoTrailTest, NormalizeImplicationsRemovesDuplicateAtSameLevel) {
+  ProtoTrail p;
+  p.PushLevel({0, 0}, 0, 1);
+  p.PushLevel({1, 0}, 0, 2);
+  p.AddImplication(2, {3, 0});
+  p.PushLevel({3, 0}, 0, 3);
+  p.SetLevelImplied(3);
+  const std::vector<ProtoLiteral> implications_before_normalization = {
+      p.Implications(2).begin(), p.Implications(2).end()};
+
+  p.NormalizeImplications();
+
+  EXPECT_THAT(implications_before_normalization,
+              testing::ElementsAre(ProtoLiteral(3, 0), ProtoLiteral(3, 0)));
+  EXPECT_THAT(p.Implications(2), testing::ElementsAre(ProtoLiteral(3, 0)));
+}
+
 TEST(ProtoTrailTest, Clear) {
   ProtoTrail p;
   p.PushLevel({0, 0}, 0, 1);

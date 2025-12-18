@@ -810,7 +810,6 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
 
       int next_end = 0;
       int next_start = 0;
-      int num_added = 0;
       bool found = false;
       while (!found && next_end < num_tasks) {
         IntegerValue time = by_emin[next_end].time;
@@ -843,7 +842,6 @@ std::function<BooleanOrIntegerLiteral()> CumulativePrecedenceSearchHeuristic(
           if (added_demand[t] == -1) continue;  // Corner case.
           const IntegerValue demand_min = h.demand_helper->DemandMin(t);
           if (current_height + demand_min <= capacity_max) {
-            ++num_added;
             added_demand[t] = demand_min;
             current_height += demand_min;
           } else if (first_skipped_task == -1) {

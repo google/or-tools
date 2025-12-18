@@ -110,15 +110,19 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     integer_trail_->AppendNewBounds(&new_integer_bounds_);
     to_fix_at_true_.clear();
     new_literals_implied_by_decision_.clear();
+    new_implied_or_fixed_literals_.clear();
     for (int i = saved_index + 1; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
 
-      // We mark on the first run (b.IsPositive()) and check on the second.
+      // We mark on the first pass (b.IsPositive()) and check on the second.
       if (decision.IsPositive()) {
         propagated_.Set(l.Index());
       } else {
         if (propagated_[l]) {
           to_fix_at_true_.push_back(l);
+          if (lrat_proof_handler_ != nullptr) {
+            new_implied_or_fixed_literals_.push_back(l);
+          }
         }
       }
 
@@ -132,21 +136,49 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         } else if (l != decision) {
           new_literals_implied_by_decision_.push_back(l);
         }
+        if (lrat_proof_handler_ != nullptr && l != decision) {
+          new_implied_or_fixed_literals_.push_back(l);
+        }
       }
-      // TODO(user): it might be possible to generate less temporary LRAT
-      // clauses by adding them in a third iteration instead of in the first
-      // one, once we know if there are any literal to fix.
-      // Otherwise, since we always add binary, the reason should be retrievable
-      // from the binary implication graph alone. So we might just need a
-      // MarkDescendant() + parent inspection for this.
-      if (lrat_proof_handler_ != nullptr) {
+    }
+
+    if (lrat_proof_handler_ != nullptr) {
+      auto add_tmp_implication = [&](const Literal decision, const Literal l) {
         tmp_clause_ids_.clear();
         clause_manager_->AppendClauseIdsFixing(
-            {l}, &tmp_clause_ids_, decision.Index(), &tmp_binary_clause_ids_);
+            {l}, &tmp_clause_ids_, decision.Index(),
+            [&](int level, int trail_index) {
+              const Literal decision = trail_.Decisions()[level - 1].literal;
+              const Literal lit = trail_[trail_index];
+              const auto it = tmp_binary_clause_ids_.find(
+                  std::minmax(decision.Negated(), lit));
+              if (it != tmp_binary_clause_ids_.end()) return it->second;
+              return kNoClauseId;
+            });
         const ClauseId clause_id = clause_id_generator_->GetNextId();
         lrat_proof_handler_->AddInferredClause(
             clause_id, {decision.Negated(), l}, tmp_clause_ids_);
         tmp_binary_clause_ids_[std::minmax(decision.Negated(), l)] = clause_id;
+        num_lrat_clauses_++;
+        num_lrat_proof_clauses_ += tmp_clause_ids_.size();
+      };
+      for (const Literal l : new_implied_or_fixed_literals_) {
+        add_tmp_implication(decision, l);
+      }
+      if (decision.IsNegative() && !to_fix_at_true_.empty()) {
+        // Redo the first pass to add the LRAT clauses b => to_fix_at_true.
+        if (!sat_solver_->ResetToLevelZero()) return false;
+        if (assignment_.LiteralIsAssigned(decision)) continue;
+        CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+        if (sat_solver_->EnqueueDecisionAndBackjumpOnConflict(
+                decision.Negated()) == kUnsatTrailIndex) {
+          return false;
+        }
+        if (sat_solver_->ModelIsUnsat()) return false;
+        if (sat_solver_->CurrentDecisionLevel() == 0) continue;
+        for (const Literal l : to_fix_at_true_) {
+          add_tmp_implication(decision.Negated(), l);
+        }
       }
     }
 
@@ -164,6 +196,8 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
               tmp_binary_clause_ids_.at(std::minmax(decision, l)));
         }
         lrat_proof_handler_->AddInferredClause(clause_id, {l}, clause_ids);
+        num_lrat_clauses_++;
+        num_lrat_proof_clauses_ += clause_ids.size();
       }
       if (!clause_manager_->InprocessingAddUnitClause(clause_id, l)) {
         return false;
@@ -204,6 +238,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
                                           binary_clause.second) != clause_id) {
         lrat_proof_handler_->DeleteClause(
             clause_id, {binary_clause.first, binary_clause.second});
+        num_unneeded_lrat_clauses_++;
       }
     }
   }
@@ -310,6 +345,9 @@ bool Prober::ProbeBooleanVariables(
   num_new_holes_ = 0;
   num_new_integer_bounds_ = 0;
   num_new_literals_fixed_ = 0;
+  num_lrat_clauses_ = 0;
+  num_lrat_proof_clauses_ = 0;
+  num_unneeded_lrat_clauses_ = 0;
 
   // Resize the propagated sparse bitset.
   const int num_variables = sat_solver_->NumVariables();
@@ -377,6 +415,18 @@ bool Prober::ProbeBooleanVariables(
     if (num_new_binary_ > 0) {
       SOLVER_LOG(logger_, "[Probing]  - new binary clause: ",
                  FormatCounter(num_new_binary_));
+    }
+    if (num_lrat_clauses_ > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new LRAT clauses: ",
+                 FormatCounter(num_lrat_clauses_));
+    }
+    if (num_lrat_proof_clauses_ > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - new LRAT proof clauses: ",
+                 FormatCounter(num_lrat_proof_clauses_));
+    }
+    if (num_unneeded_lrat_clauses_ > 0) {
+      SOLVER_LOG(logger_, "[Probing]  - unneeded LRAT clauses: ",
+                 FormatCounter(num_unneeded_lrat_clauses_));
     }
   }
 

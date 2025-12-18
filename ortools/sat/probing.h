@@ -169,6 +169,7 @@ class Prober {
   std::vector<Literal> to_fix_at_true_;
   std::vector<IntegerLiteral> new_integer_bounds_;
   std::vector<Literal> new_literals_implied_by_decision_;
+  std::vector<Literal> new_implied_or_fixed_literals_;
   absl::btree_set<LiteralIndex> new_propagated_literals_;
   absl::btree_set<LiteralIndex> always_propagated_literals_;
   absl::btree_map<IntegerVariable, IntegerValue> new_propagated_bounds_;
@@ -186,6 +187,9 @@ class Prober {
   int num_new_binary_ = 0;
   int num_new_integer_bounds_ = 0;
   int num_new_literals_fixed_ = 0;
+  int num_lrat_clauses_ = 0;
+  int num_lrat_proof_clauses_ = 0;
+  int num_unneeded_lrat_clauses_ = 0;
 
   std::function<void(Literal decision)> callback_ = nullptr;
 

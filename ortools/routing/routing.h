@@ -2504,7 +2504,7 @@ class OR_DLL RoutingModel {
   LocalSearchFilterManager* GetOrCreateLocalSearchFilterManager(
       const RoutingSearchParameters& parameters, const FilterOptions& options);
   DecisionBuilder* CreateSolutionFinalizer(
-      const RoutingSearchParameters& parameters, SearchLimit* lns_limit);
+      const RoutingSearchParameters& parameters);
   void CreateFirstSolutionDecisionBuilders(
       const RoutingSearchParameters& search_parameters);
   DecisionBuilder* GetFirstSolutionDecisionBuilder(

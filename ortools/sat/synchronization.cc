@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/drat_checker.h"
@@ -38,7 +39,6 @@
 #include "ortools/base/helpers.h"
 #include "ortools/base/options.h"
 #endif  // __PORTABLE_PLATFORM__
-#include "absl/algorithm/container.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/flat_hash_map.h"
@@ -1239,9 +1239,8 @@ bool UniqueClauseStream::Add(absl::Span<const int> clause, int lbd) {
     absl::Span<int> replaced_clause = absl::MakeSpan(*buffer).subspan(
         replaced_clause_id * clause.size(), clause.size());
     dropped_literals_since_last_batch_ += clause.size();
-    if (HashClause(clause, 2) < HashClause(replaced_clause, 2)) {
-      std::copy(clause.begin(), clause.end(), replaced_clause.begin());
-    }
+    if (HashClause(clause, 2) >= HashClause(replaced_clause, 2)) return false;
+    absl::c_copy(clause, replaced_clause.begin());
   }
   return true;
 }

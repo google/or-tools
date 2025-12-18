@@ -52,6 +52,18 @@ message LratInferredClause {
     repeated int64 unit_ids = 2 [packed = true];
   }
   repeated RatInfo rat_infos = 4;
+
+  // Whether the clause must be exported, so that other workers can import it (a
+  // clause cannot be imported if it is not previously exported). This is not
+  // needed for unary and binary clauses, which are always exported.
+  optional bool exported = 5;
+}
+
+// A clause to export, so that it can be imported from any worker. This is not
+// needed for unary and binary clauses, which are always exported.
+message LratExportedClause {
+  optional int64 clause_id = 1;
+  repeated int32 literals = 2 [packed = true];
 }
 
 // A list of clauses to delete.
@@ -65,11 +77,13 @@ message LratDeletedClauses {
 // and ending with the empty clause. At each step new clauses can be inferred
 // from previous ones (with an explicit proof), or imported from another proof
 // built by another thread. A proof step can also delete clauses which are no
-// longer needed. Each clause is identified by a unique clause ID.
+// longer needed, or export a clause for other workers to import. Each clause is
+// identified by a unique clause ID.
 message LratProofStep {
   oneof step {
     LratImportedClause imported_clause = 1;
     LratInferredClause inferred_clause = 2;
-    LratDeletedClauses deleted_clauses = 3;
+    LratExportedClause exported_clause = 3;
+    LratDeletedClauses deleted_clauses = 4;
   }
 }
