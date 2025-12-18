@@ -15,11 +15,13 @@
 
 #include <optional>
 
+#include "absl/base/nullability.h"
 #include "ortools/util/python/py_solve_interrupter.h"
 
 namespace operations_research {
 
-std::optional<bool> IsInterrupted(const PySolveInterrupter* interrupter) {
+std::optional<bool> IsInterrupted(
+    const PySolveInterrupter* absl_nullable interrupter) {
   if (interrupter == nullptr) {
     return std::nullopt;
   }

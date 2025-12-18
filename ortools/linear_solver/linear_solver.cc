@@ -516,7 +516,6 @@ absl::string_view ToString(
   }
   LOG(FATAL) << "Unrecognized solver type: "
              << static_cast<int>(optimization_problem_type);
-  return "";
 }
 
 bool AbslParseFlag(const absl::string_view text,

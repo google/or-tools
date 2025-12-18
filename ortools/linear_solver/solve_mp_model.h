@@ -20,6 +20,7 @@
 
 #include <string>
 
+#include "absl/base/nullability.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/lazy_mutable_copy.h"
 #include "ortools/util/solve_interrupter.h"
@@ -41,8 +42,9 @@ namespace operations_research {
  * Passing a non-null pointer with any other solver type immediately returns an
  * MPSOLVER_INCOMPATIBLE_OPTIONS error.
  */
-MPSolutionResponse SolveMPModel(LazyMutableCopy<MPModelRequest> request,
-                                const SolveInterrupter* interrupter = nullptr);
+MPSolutionResponse SolveMPModel(
+    LazyMutableCopy<MPModelRequest> request,
+    const SolveInterrupter* absl_nullable interrupter = nullptr);
 
 bool SolverTypeSupportsInterruption(MPModelRequest::SolverType solver);
 
