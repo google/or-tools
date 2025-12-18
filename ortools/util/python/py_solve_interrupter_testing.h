@@ -31,7 +31,8 @@ namespace operations_research {
 //
 // The Clif/pybind11 wrapper will return a `bool | None` value, with None for
 // nullopt.
-std::optional<bool> IsInterrupted(const PySolveInterrupter* interrupter);
+std::optional<bool> IsInterrupted(
+    const PySolveInterrupter* absl_nullable interrupter);
 
 // Class that keeps a reference on a std::shared_ptr<PySolveInterrupter> to
 // test that the C++ object survive the cleanup of the Python reference.
