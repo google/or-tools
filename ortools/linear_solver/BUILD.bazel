@@ -598,5 +598,6 @@ cc_library(
         ":linear_solver_cc_proto",
         "//ortools/util:lazy_mutable_copy",
         "//ortools/util:solve_interrupter",
+        "@abseil-cpp//absl/base:nullability",
     ],
 )
