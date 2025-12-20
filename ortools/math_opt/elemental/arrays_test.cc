@@ -23,7 +23,6 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "gtest/gtest.h"
-#include "ortools/base/array.h"
 #include "ortools/base/gmock.h"
 
 namespace operations_research::math_opt {
@@ -35,7 +34,6 @@ using ::testing::ElementsAre;
 template <auto a>
 constexpr int Sum() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return (a[i] + ... + 0); });
 }
 
@@ -43,17 +41,14 @@ constexpr int Sum() {
 template <auto a>
 constexpr int SumPlusOne() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return (a[i] + ... + 1); });
 }
 
 #if __cplusplus >= 202002L
-// NOLINTBEGIN(clang-diagnostic-pre-c++20-compat)
 TEST(ApplyOnIndexRangeTest, Sum) {
-  EXPECT_EQ(Sum<gtl::to_array({5, 3, 1})>(), 9);
-  EXPECT_EQ(SumPlusOne<gtl::to_array({5, 3, 1})>(), 10);
+  EXPECT_EQ(Sum<std::to_array({5, 3, 1})>(), 9);
+  EXPECT_EQ(SumPlusOne<std::to_array({5, 3, 1})>(), 10);
 }
-// NOLINTEND(clang-diagnostic-pre-c++20-compat)
 #endif
 
 // Returns the weighted sum of the elements of an array-like object `a`, where
@@ -61,39 +56,32 @@ TEST(ApplyOnIndexRangeTest, Sum) {
 template <auto a>
 constexpr double ScaledSum() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return ((i * a[i]) + ... + 0.0); });
 }
 
 #if __cplusplus >= 202002L
-// NOLINTBEGIN(clang-diagnostic-pre-c++20-compat)
 TEST(ApplyOnIndexRangeTest, ScaledSum) {
-  EXPECT_EQ(ScaledSum<gtl::to_array({5, 3, 1})>(), 5.0);
+  EXPECT_EQ(ScaledSum<std::to_array({5, 3, 1})>(), 5.0);
 }
-// NOLINTEND(clang-diagnostic-pre-c++20-compat)
 #endif
 
 // Returns the number of even elements in an array-like object `a`.
 template <auto a>
 constexpr int CountEven() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return ((a[i] % 2 == 0 ? 1 : 0) + ... + 0); });
 }
 
 #if __cplusplus >= 202002L
-// NOLINTBEGIN(clang-diagnostic-pre-c++20-compat)
 TEST(ApplyOnIndexRangeTest, CountEven) {
-  EXPECT_EQ(CountEven<gtl::to_array({5, 4, 8, 1, 10})>(), 3);
+  EXPECT_EQ(CountEven<std::to_array({5, 4, 8, 1, 10})>(), 3);
 }
-// NOLINTEND(clang-diagnostic-pre-c++20-compat)
 #endif
 
 // Returns array of doubles of the same size as `a`, where each element has been
 // halved.
 template <auto a>
 constexpr std::array<double, std::size(a)> Half() {
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   return ApplyOnIndexRange<std::size(a)>([]<int... i>() {
     return std::array<double, std::size(a)>(
         {(static_cast<double>(a[i]) / 2.0)...});
@@ -101,19 +89,16 @@ constexpr std::array<double, std::size(a)> Half() {
 }
 
 #if __cplusplus >= 202002L
-// NOLINTBEGIN(clang-diagnostic-pre-c++20-compat)
 TEST(ApplyOnIndexRangeTest, Half) {
-  EXPECT_THAT(Half<gtl::to_array({5, 4, 8, 1, 10})>(),
+  EXPECT_THAT(Half<std::to_array({5, 4, 8, 1, 10})>(),
               ElementsAre(2.5, 2.0, 4.0, 0.5, 5.0));
 }
-// NOLINTEND(clang-diagnostic-pre-c++20-compat)
 #endif
 
 // Returns true of all elements of `a` are even.
 template <auto a>
 constexpr int AllEven() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return (((a[i] % 2) == 0) && ...); });
 }
 
@@ -121,23 +106,20 @@ constexpr int AllEven() {
 template <auto a>
 constexpr int AnyEven() {
   return ApplyOnIndexRange<std::size(a)>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       []<int... i>() { return (((a[i] % 2) == 0) || ...); });
 }
 
 #if __cplusplus >= 202002L
-// NOLINTBEGIN(clang-diagnostic-pre-c++20-compat)
 TEST(ApplyOnIndexRangeTest, Even) {
-  EXPECT_FALSE(AllEven<gtl::to_array({5, 4, 8, 1, 10})>());
-  EXPECT_TRUE(AnyEven<gtl::to_array({5, 4, 8, 1, 10})>());
+  EXPECT_FALSE(AllEven<std::to_array({5, 4, 8, 1, 10})>());
+  EXPECT_TRUE(AnyEven<std::to_array({5, 4, 8, 1, 10})>());
 
-  EXPECT_TRUE(AllEven<gtl::to_array({8, 2, 6})>());
-  EXPECT_TRUE(AnyEven<gtl::to_array({8, 2, 6})>());
+  EXPECT_TRUE(AllEven<std::to_array({8, 2, 6})>());
+  EXPECT_TRUE(AnyEven<std::to_array({8, 2, 6})>());
 
-  EXPECT_FALSE(AllEven<gtl::to_array({3, 7, 1})>());
-  EXPECT_FALSE(AnyEven<gtl::to_array({3, 7, 1})>());
+  EXPECT_FALSE(AllEven<std::to_array({3, 7, 1})>());
+  EXPECT_FALSE(AnyEven<std::to_array({3, 7, 1})>());
 }
-// NOLINTEND(clang-diagnostic-pre-c++20-compat)
 #endif
 
 // A example of a more complex reduce operation using `ForEachIndex`. Here, we
@@ -153,7 +135,6 @@ TEST(ForEachIndexTest, CollectTest) {
 
   EXPECT_THAT(
       ForEachIndex<21>(
-          // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
           [&may_fail, failed_indices = std::vector<int>()]<int i>() mutable
               -> const std::vector<int>& {
             if (!may_fail(i).ok()) {

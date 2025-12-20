@@ -365,7 +365,6 @@ R ApplyOnIndex(Fn fn, const int index) {
   CHECK_GE(index, 0);
   CHECK_LT(index, n);
   std::optional<R> result;
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   ForEachIndex<n>([index, &fn, &result]<int k>() {
     if (k == index) {
       result = fn.template operator()<k>();
@@ -384,7 +383,6 @@ absl::StatusOr<std::vector<AttrKeyFor<AttrType>>> DynamicSlice(
     const int element_id) {
   RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&e, attr, element_id]<int k>() {
         return e.Slice<k, Elemental::StatusPolicy>(attr, element_id);
       },
@@ -401,7 +399,6 @@ absl::StatusOr<int64_t> DynamicGetSliceSize(const Elemental& e,
                                             const int element_id) {
   RETURN_IF_ERROR(ValidateSliceKeyIndex(attr, key_index));
   return ApplyOnIndex<GetAttrKeySize<AttrType>()>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&e, attr, element_id]<int k>() {
         return e.GetSliceSize<k, Elemental::StatusPolicy>(attr, element_id);
       },
@@ -633,7 +630,6 @@ PYBIND11_MODULE(cpp_elemental, py_module) {
 
   // Export attribute operations.
   ForEach(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&elemental]<typename Descriptor>(const Descriptor&) {
         using AttrType = typename Descriptor::AttrType;
         using ValueType = typename Descriptor::ValueType;

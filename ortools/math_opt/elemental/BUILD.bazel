@@ -22,7 +22,6 @@ cc_library(
         ":arrays",
         ":elements",
         ":symmetry",
-        "//ortools/base:array",
         "@abseil-cpp//absl/strings:string_view",
     ],
 )
@@ -323,7 +322,6 @@ cc_test(
     srcs = ["arrays_test.cc"],
     deps = [
         ":arrays",
-        "//ortools/base:array",
         "//ortools/base:gmock_main",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
@@ -459,7 +457,6 @@ cc_library(
     visibility = ["//ortools/math_opt:__subpackages__"],
     deps = [
         ":tagged_id",
-        "//ortools/base:array",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings:string_view",
     ],

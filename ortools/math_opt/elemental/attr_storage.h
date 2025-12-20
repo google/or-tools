@@ -144,7 +144,6 @@ class SlicingSupport {
   using Key = AttrKey<n, Symmetry>;
 
   void AddRowsAndColumns(const Key key) {
-    // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
     ForEachDimension([this, key]<int i>() {
       if (MustInsertNondefault<i>(key, Symmetry{})) {
         key_nondefaults_[i][key[i]].Insert(key.template RemoveElement<i>());
@@ -154,7 +153,6 @@ class SlicingSupport {
 
   // Requires key is currently stored with a non-default value.
   void ClearRowsAndColumns(Key key) {
-    // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
     ForEachDimension([this, key]<int i>() {
       const auto& key_elem = key[i];
       auto& nondefaults = key_nondefaults_[i];
@@ -176,11 +174,9 @@ class SlicingSupport {
   std::vector<Key> Slice(const int64_t key_elem) const {
     return SliceImpl<i>(
         key_elem, Symmetry{},
-        // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
         [key_elem]<int... is>(KeySetExpansion<is>... expansions) {
           std::vector<Key> slice((expansions.key_set.size() + ...));
           Key* out = slice.data();
-          // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
           const auto append = [key_elem, &out]<int j>(
                                   const KeySetExpansion<j>& expansion) {
             expansion.key_set.ForEach(
