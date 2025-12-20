@@ -18,7 +18,7 @@ https://github.com/bazelbuild/bazelisk/releases/download/v1.27.0/bazelisk-linux-
 
 # Install Java JDK and Maven
 RUN zypper refresh \
-&& zypper install -y java-17-openjdk-devel maven \
+&& zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
 ENV PATH=/usr/share/maven/bin:$PATH
 

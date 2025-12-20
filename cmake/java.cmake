@@ -35,7 +35,7 @@ endif()
 list(APPEND CMAKE_SWIG_FLAGS "-DOR_DLL=")
 
 # Find Java and JNI
-find_package(Java 1.8 COMPONENTS Development REQUIRED)
+find_package(Java 21 COMPONENTS Development REQUIRED)
 find_package(JNI REQUIRED)
 
 # Find maven
