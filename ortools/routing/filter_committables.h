@@ -58,7 +58,7 @@ template <typename T>
 class CommittableArray {
  public:
   // Makes a vector with initial elements all committed to value.
-  CommittableArray<T>(size_t num_elements, const T& value)
+  CommittableArray(size_t num_elements, const T& value)
       : elements_(num_elements, {value, value}), changed_(num_elements) {}
 
   // Return the size of the vector.
