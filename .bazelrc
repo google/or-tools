@@ -23,6 +23,10 @@ build --define absl=1
 # Fix the python version
 build --@rules_python//python/config_settings:python_version=3.12
 
+# Fix the Java version
+build --java_language_version=21 # Version of the source files
+build --java_runtime_version=remotejdk_21 # Hermetic JRE
+
 ###############################################################################
 # Per plaform options
 ###############################################################################

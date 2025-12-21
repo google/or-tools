@@ -33,10 +33,6 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v6
-    - uses: actions/setup-java@v5
-      with:
-        distribution: ${{env.JAVA_DISTRIBUTION}}
-        java-version: ${{env.JAVA_VERSION}}
     - uses: actions/setup-python@v6
       with:
         python-version: ${{env.PYTHON_VERSION}}
