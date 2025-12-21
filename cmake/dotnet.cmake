@@ -47,7 +47,7 @@ set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
 
 # Runtime IDentifier
 # see: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)")
   set(DOTNET_PLATFORM arm64)
 else()
   set(DOTNET_PLATFORM x64)
