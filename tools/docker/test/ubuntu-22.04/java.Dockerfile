@@ -9,11 +9,10 @@ RUN apt-get update -qq \
 
 # Java/Maven Install
 RUN apt-get update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -yq \
- default-jdk maven \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq openjdk-21-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/default-java
+ENV JAVA_HOME=/usr/lib/jvm/java-openjdk
 
 WORKDIR /root
 ADD or-tools_amd64_ubuntu-22.04_java_v*.tar.gz .
