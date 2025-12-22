@@ -118,7 +118,7 @@ help:
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cpp${RESET} C++"
 	@echo -e "\t\t${BOLD}dotnet${RESET} .Net 8.0 wrappers"
-	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) wrappers"
+	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 21) wrappers"
 	@echo -e "\t\t${BOLD}python${RESET} Python 3.9+ wrappers"
 	@echo
 	@echo -e "\te.g. 'make sh_amd64_ubuntu-22.04_cpp_build'"

@@ -37,12 +37,12 @@ RUN apt-get update -qq \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Install Java (openjdk-11)
+# Install Java (openjdk-21-jdk)
 RUN apt-get update -qq \
-&& apt-get install -yq default-jdk maven \
+&& apt-get install -yq openjdk-21-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-ENV JAVA_HOME=/usr/lib/jvm/default-java
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 
 # Install Python
 RUN apt-get update -qq \

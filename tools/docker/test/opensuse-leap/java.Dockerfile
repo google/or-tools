@@ -13,7 +13,7 @@ ENTRYPOINT ["/usr/bin/bash", "-c"]
 CMD ["/usr/bin/bash"]
 
 # Java install (openjdk-8)
-RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
+RUN zypper install -y java-21-openjdk java-21-openjdk-devel maven \
 && zypper clean -a
 
 WORKDIR /root
