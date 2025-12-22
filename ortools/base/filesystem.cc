@@ -15,7 +15,7 @@
 
 #include <algorithm>
 #include <exception>   // IWYU pragma: keep
-#include <filesystem>  // NOLINT(build/c++17)
+#include <filesystem>  // NOLINT
 #include <regex>       // NOLINT
 #include <string>
 #include <string_view>
