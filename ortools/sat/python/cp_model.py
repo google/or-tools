@@ -17,10 +17,10 @@
 The following two sections describe the main
 methods for building and solving CP-SAT models.
 
-* [`CpModel`](#cp_model.CpModel): Methods for creating
-models, including variables and constraints.
-* [`CPSolver`](#cp_model.CpSolver): Methods for solving
-a model and evaluating solutions.
+* [`CpModel`](#cp_model.CpModel): Methods for creating models, including
+  variables and constraints.
+* [`CpSolver`](#cp_model.CpSolver): Methods for solving a model and evaluating
+  solutions.
 
 The following methods implement callbacks that the
 solver calls each time it finds a new solution.

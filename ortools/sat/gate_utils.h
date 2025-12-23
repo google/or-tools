@@ -98,6 +98,28 @@ inline int AddHoleAtPosition(int i, int bitset) {
   return (bitset & ((1 << i) - 1)) + ((bitset >> i) << (i + 1));
 }
 
+inline int RemoveFixedInput(int i, bool at_true,
+                            absl::Span<LiteralIndex> inputs,
+                            int& int_function_values) {
+  DCHECK_LT(i, inputs.size());
+  const int value = at_true ? 1 : 0;
+
+  // Re-compute the bitset.
+  SmallBitset values = int_function_values;
+  SmallBitset new_truth_table = 0;
+  const int new_size = inputs.size() - 1;
+  for (int p = 0; p < (1 << new_size); ++p) {
+    const int extended_p = AddHoleAtPosition(i, p) | (value << i);
+    new_truth_table |= ((values >> extended_p) & 1) << p;
+  }
+  int_function_values = new_truth_table;
+
+  for (int j = i + 1; j < inputs.size(); ++j) {
+    inputs[j - 1] = inputs[j];
+  }
+  return new_size;
+}
+
 // The function is target = function_values[inputs as bit position].
 //
 // TODO(user): This can be optimized with more bit twiddling if needed.

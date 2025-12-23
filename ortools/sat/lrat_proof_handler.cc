@@ -802,7 +802,6 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
   // That give us 2^(n + 1) intermediate clauses.
   // Their ids will be stored in (1 << k) + binary_encoding_of_the_li.
   const int n = to_dense_index.size() - new_clause.size();
-  CHECK_GT(n, 0);  // We dealt with this above.
   CHECK_EQ(n, relevant_literals.size());
   const int num_intermediates = 1 << (n + 1);
   std::vector<ClauseId> ids(num_intermediates, kNoClauseId);
@@ -838,11 +837,16 @@ ClauseId LratProofHandler::AddAndProveInferredClauseByEnumeration(
       // The clause is the same as the one we try to prove! or smaller.
       if (clauses_for_proof[i].size() == new_clause.size()) {
         return ids_for_proof[i];
+      } else {
+        // TODO(user): Likely we could have simplified what we are trying to
+        // prove. Like I saw this happen when we prove an equivalence but we
+        // can actually prove that the variables are fixed.
+        const ClauseId new_id = id_generator_->GetNextId();
+        if (!AddInferredClause(new_id, new_clause, {ids_for_proof[i]})) {
+          return error("failed trivial inclusion proof");
+        }
+        return new_id;
       }
-
-      // TODO(user): if this ever happen we can create a new id and prove it
-      // with clauses_for_proof[i], but for now I never saw that.
-      return error("Case not yet supported");
     }
 
     mask >>= new_clause.size();

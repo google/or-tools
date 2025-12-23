@@ -2529,6 +2529,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
+  if (DEBUG_MODE) {
+    LOG(WARNING)
+        << "WARNING: CP-SAT is running in debug mode. The solver will "
+           "be slow because we will do a lot of extra checks. Compile in "
+           "optimization mode to gain an order of magnitude speedup.";
+  }
   SOLVER_LOG(logger, "");
   SOLVER_LOG(logger, "Starting ", CpSatSolverVersion());
   SOLVER_LOG(logger, "Parameters: ", ProtobufShortDebugString(params));

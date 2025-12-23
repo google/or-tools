@@ -14,11 +14,14 @@
 #include "ortools/sat/probing.h"
 
 #include <algorithm>
+#include <deque>
 #include <functional>
 #include <optional>
 #include <utility>
+#include <variant>
 #include <vector>
 
+#include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -51,6 +54,212 @@
 namespace operations_research {
 namespace sat {
 
+// Holds a copy of the trail and of propagator reasons in order to be able to
+// build LRAT proofs after the trail has been modified.
+class TrailCopy {
+ public:
+  TrailCopy(const Trail& trail, const BinaryImplicationGraph& implication_graph,
+            const ClauseManager& clause_manager)
+      : trail_(trail),
+        implication_graph_(implication_graph),
+        clause_manager_(clause_manager) {}
+
+  // Updates this trail copy with the current trail state.
+  void CopyTrail() {
+    const int trail_size = trail_.Index();
+    trail_index_.resize(trail_.NumVariables(), -1);
+    trail_literals_.clear();
+    trail_info_.clear();
+    stored_reasons_.clear();
+    trail_literals_.reserve(trail_size);
+    trail_info_.reserve(trail_size);
+    for (int i = 0; i < trail_size; ++i) {
+      const Literal literal = trail_[i];
+      const BooleanVariable var = literal.Variable();
+      const AssignmentInfo& info = trail_.Info(var);
+      const int assignment_type = trail_.AssignmentType(var);
+      absl::Span<const Literal> reason;
+      // Get the clause ID only if it is very cheap to compute. Otherwise, delay
+      // its computation until it is really needed, in AppendClauseIdsFixing().
+      std::variant<ClauseId, const SatClause*> reason_clause = kNoClauseId;
+      if (assignment_type == AssignmentType::kCachedReason) {
+        const absl::Span<const Literal> cached_reason = trail_.Reason(var);
+        stored_reasons_.push_back({cached_reason.begin(), cached_reason.end()});
+        reason = stored_reasons_.back();
+      } else if (assignment_type == AssignmentType::kUnitReason) {
+        reason_clause = trail_.GetUnitClauseId(var);
+      } else if (assignment_type == implication_graph_.PropagatorId()) {
+        absl::Span<const Literal> original_reason = trail_.Reason(var);
+        DCHECK_EQ(original_reason.size(), 1);
+        reason = absl::MakeConstSpan(trail_literals_)
+                     .subspan(trail_index_[original_reason[0].Variable()], 1);
+        DCHECK_EQ(reason[0], original_reason[0].Negated());
+      } else if (assignment_type == clause_manager_.PropagatorId()) {
+        const SatClause* sat_clause = clause_manager_.ReasonClauseOrNull(var);
+        if (sat_clause != nullptr) {
+          reason = sat_clause->AsSpan();
+        }
+        reason_clause = clause_manager_.ReasonClauseOrNull(var);
+      }
+      trail_index_[var] = i;
+      trail_literals_.push_back(literal);
+      trail_info_.emplace_back(info.level, assignment_type, reason,
+                               reason_clause);
+    }
+
+    const int num_decisions = trail_.CurrentDecisionLevel();
+    decisions_.clear();
+    decisions_.reserve(num_decisions);
+    for (int i = 0; i < num_decisions; ++i) {
+      decisions_.push_back(trail_.Decisions()[i].literal);
+    }
+  }
+
+  // Same as ClauseManager::AppendClauseIdsFixing(), but adapted to work on this
+  // trail copy instead of on the real trail.
+  void AppendClauseIdsFixing(
+      absl::Span<const Literal> literals, std::vector<ClauseId>* clause_ids,
+      LiteralIndex decision,
+      absl::flat_hash_map<std::pair<Literal, Literal>, ClauseId>
+          tmp_binary_clause_ids) {
+    // Mark the literals whose reason must be expanded, and put them in a heap.
+    tmp_mark_.ClearAndResize(BooleanVariable(trail_index_.size()));
+    marked_trail_indices_heap_.clear();
+    for (const Literal lit : literals) {
+      tmp_mark_.Set(lit.Variable());
+      marked_trail_indices_heap_.push_back(trail_index_[lit.Variable()]);
+    }
+    absl::c_make_heap(marked_trail_indices_heap_);
+    const int current_level = decisions_.size();
+
+    // The min level of the expanded literals.
+    int min_level = current_level;
+
+    // Unit clauses must come first. We put them in clause_ids directly. We put
+    // the others in non_unit_clause_ids and append them to clause_ids at the
+    // end.
+    std::vector<ClauseId>& non_unit_clause_ids =
+        tmp_clause_ids_for_append_clauses_fixing_;
+    non_unit_clause_ids.clear();
+
+    while (!marked_trail_indices_heap_.empty()) {
+      absl::c_pop_heap(marked_trail_indices_heap_);
+      const int trail_index = marked_trail_indices_heap_.back();
+      marked_trail_indices_heap_.pop_back();
+      const Literal marked_literal = trail_literals_[trail_index];
+      const TrailInfo& trail_info = trail_info_[trail_index];
+
+      // Stop at decisions, at literals fixed at root, and at literals implied
+      // by the decision at their level.
+      const int level = trail_info.level;
+      if (level > 0) min_level = std::min(min_level, level);
+      if (trail_info.assignment_type == AssignmentType::kSearchDecision) {
+        continue;
+      }
+      if (level == 0) {
+        clause_ids->push_back(std::get<ClauseId>(trail_info.reason_clause));
+        continue;
+      }
+      const Literal level_decision = decisions_[level - 1];
+      ClauseId clause_id = implication_graph_.GetClauseId(
+          level_decision.Negated(), marked_literal);
+      if (clause_id == kNoClauseId) {
+        const auto it = tmp_binary_clause_ids.find(
+            std::minmax(level_decision.Negated(), marked_literal));
+        if (it != tmp_binary_clause_ids.end()) {
+          clause_id = it->second;
+        }
+      }
+      if (clause_id != kNoClauseId) {
+        non_unit_clause_ids.push_back(clause_id);
+        continue;
+      }
+
+      // Mark all the literals of its reason.
+      for (const Literal literal : trail_info.reason) {
+        const BooleanVariable var = literal.Variable();
+        if (!tmp_mark_[var]) {
+          const int trail_index = trail_index_[var];
+          const TrailInfo& info = trail_info_[trail_index];
+          tmp_mark_.Set(var);
+          if (info.level > 0) {
+            marked_trail_indices_heap_.push_back(trail_index);
+            absl::c_push_heap(marked_trail_indices_heap_);
+          } else {
+            clause_ids->push_back(std::get<ClauseId>(info.reason_clause));
+          }
+        }
+      }
+      non_unit_clause_ids.push_back(ReasonClauseId(trail_index));
+    }
+
+    // Add the implication chain from `decision` to all the decisions found
+    // during the expansion.
+    if (Literal(decision) != decisions_[current_level - 1]) {
+      // If `decision` is not the last decision, it must directly imply it.
+      clause_ids->push_back(implication_graph_.GetClauseId(
+          Literal(decision).Negated(), decisions_[current_level - 1]));
+    }
+    for (int level = current_level - 1; level >= min_level; --level) {
+      clause_ids->push_back(implication_graph_.GetClauseId(
+          decisions_[level].Negated(), decisions_[level - 1]));
+    }
+
+    clause_ids->insert(clause_ids->end(), non_unit_clause_ids.rbegin(),
+                       non_unit_clause_ids.rend());
+  }
+
+ private:
+  // Same as ClauseManager::ReasonClauseId(), but adapted to work on this trail
+  // copy instead of on the real trail.
+  ClauseId ReasonClauseId(int trail_index) const {
+    const TrailInfo& trail_info = trail_info_[trail_index];
+    const int assignment_type = trail_info.assignment_type;
+    if (assignment_type == AssignmentType::kCachedReason ||
+        assignment_type == AssignmentType::kUnitReason) {
+      return std::get<ClauseId>(trail_info.reason_clause);
+    } else if (assignment_type == implication_graph_.PropagatorId()) {
+      return implication_graph_.GetClauseId(trail_literals_[trail_index],
+                                            trail_info.reason[0].Negated());
+    } else if (assignment_type == clause_manager_.PropagatorId()) {
+      const SatClause* reason =
+          std::get<const SatClause*>(trail_info.reason_clause);
+      if (reason != nullptr) {
+        return clause_manager_.GetClauseId(reason);
+      }
+    }
+    return kNoClauseId;
+  }
+
+  struct TrailInfo {
+    int level;
+    int assignment_type;
+    // For literals propagated by the BinaryImplicationGraph, the negation of
+    // the original reason. For literals propagated by the ClauseManager, *all*
+    // the literals of the SatClause (which includes the propagated variable).
+    // For kCachedReason, this is the stored reason. Empty for kUnitReason.
+    absl::Span<const Literal> reason;
+    // Holds a clause ID if `assignment_type` is kCachedReason or kUnitReason,
+    // or a SatClause* if `assignment_type` corresponds to the ClauseManager.
+    std::variant<ClauseId, const SatClause*> reason_clause;
+  };
+
+  const Trail& trail_;
+  const BinaryImplicationGraph& implication_graph_;
+  const ClauseManager& clause_manager_;
+
+  util_intops::StrongVector<BooleanVariable, int> trail_index_;
+  std::vector<Literal> trail_literals_;
+  std::vector<TrailInfo> trail_info_;
+  // We use a deque for pointer stability (they are kept in TrailInfo::reason).
+  std::deque<std::vector<Literal>> stored_reasons_;
+  std::vector<Literal> decisions_;
+
+  SparseBitset<BooleanVariable> tmp_mark_;
+  std::vector<int> marked_trail_indices_heap_;
+  std::vector<ClauseId> tmp_clause_ids_for_append_clauses_fixing_;
+};
+
 Prober::Prober(Model* model)
     : trail_(*model->GetOrCreate<Trail>()),
       assignment_(model->GetOrCreate<SatSolver>()->Assignment()),
@@ -63,10 +272,13 @@ Prober::Prober(Model* model)
       clause_manager_(model->GetOrCreate<ClauseManager>()),
       clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
       lrat_proof_handler_(model->Mutable<LratProofHandler>()),
+      trail_copy_(new TrailCopy(trail_, *implication_graph_, *clause_manager_)),
       drat_enabled_(lrat_proof_handler_ != nullptr &&
                     (lrat_proof_handler_->drat_check_enabled() ||
                      lrat_proof_handler_->drat_output_enabled())),
       logger_(model->GetOrCreate<SolverLogger>()) {}
+
+Prober::~Prober() { delete trail_copy_; }
 
 bool Prober::ProbeBooleanVariables(const double deterministic_time_limit) {
   const int num_variables = sat_solver_->NumVariables();
@@ -87,6 +299,12 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
   new_integer_bounds_.clear();
   propagated_.ResetAllToFalse();
   tmp_binary_clause_ids_.clear();
+  // We block clause deletion since we compute some LRAT proofs in a delayed
+  // way, and we need to make sure the clauses that were used are still around.
+  sat_solver_->BlockClauseDeletion(true);
+  absl::Cleanup unblock_clause_deletion = [&] {
+    sat_solver_->BlockClauseDeletion(false);
+  };
   for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
     if (assignment_.LiteralIsAssigned(decision)) continue;
 
@@ -143,7 +361,7 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
     }
 
     if (lrat_proof_handler_ != nullptr) {
-      auto add_tmp_implication = [&](const Literal decision, const Literal l) {
+      for (const Literal l : new_implied_or_fixed_literals_) {
         tmp_clause_ids_.clear();
         clause_manager_->AppendClauseIdsFixing(
             {l}, &tmp_clause_ids_, decision.Index(),
@@ -161,23 +379,21 @@ bool Prober::ProbeOneVariableInternal(BooleanVariable b) {
         tmp_binary_clause_ids_[std::minmax(decision.Negated(), l)] = clause_id;
         num_lrat_clauses_++;
         num_lrat_proof_clauses_ += tmp_clause_ids_.size();
-      };
-      for (const Literal l : new_implied_or_fixed_literals_) {
-        add_tmp_implication(decision, l);
       }
-      if (decision.IsNegative() && !to_fix_at_true_.empty()) {
-        // Redo the first pass to add the LRAT clauses b => to_fix_at_true.
-        if (!sat_solver_->ResetToLevelZero()) return false;
-        if (assignment_.LiteralIsAssigned(decision)) continue;
-        CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-        if (sat_solver_->EnqueueDecisionAndBackjumpOnConflict(
-                decision.Negated()) == kUnsatTrailIndex) {
-          return false;
-        }
-        if (sat_solver_->ModelIsUnsat()) return false;
-        if (sat_solver_->CurrentDecisionLevel() == 0) continue;
+      if (decision.IsPositive()) {
+        trail_copy_->CopyTrail();
+      } else if (!to_fix_at_true_.empty()) {
         for (const Literal l : to_fix_at_true_) {
-          add_tmp_implication(decision.Negated(), l);
+          tmp_clause_ids_.clear();
+          trail_copy_->AppendClauseIdsFixing({l}, &tmp_clause_ids_,
+                                             decision.NegatedIndex(),
+                                             tmp_binary_clause_ids_);
+          const ClauseId clause_id = clause_id_generator_->GetNextId();
+          lrat_proof_handler_->AddInferredClause(clause_id, {decision, l},
+                                                 tmp_clause_ids_);
+          tmp_binary_clause_ids_[std::minmax(decision, l)] = clause_id;
+          num_lrat_clauses_++;
+          num_lrat_proof_clauses_ += tmp_clause_ids_.size();
         }
       }
     }
@@ -980,6 +1196,8 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   num_conflicts_ = 0;
   num_new_binary_ = 0;
   num_subsumed_ = 0;
+  num_lrat_clauses_ = 0;
+  num_lrat_proof_clauses_ = 0;
 
   // Reset the solver in case it was already used.
   if (!sat_solver_->ResetToLevelZero()) return false;
@@ -1030,12 +1248,14 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
   }
 
   binary_clause_extracted_.assign(trail_.Index(), false);
+  trail_implication_clauses_.assign(trail_.Index(), {kNoClauseId, false});
 
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= limit) {
     // We only enqueue literal at level zero if we don't use "tree look".
     if (!options.use_tree_look) {
       if (!sat_solver_->BacktrackAndPropagateReimplications(0)) return false;
+      DeleteTemporaryLratImplicationsAfterBacktrack();
     }
 
     // Probing works by taking a series of decisions, and by analyzing what
@@ -1073,6 +1293,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
     const int new_level = sat_solver_->CurrentDecisionLevel();
     if (new_level == 0) continue;
     const Literal last_decision = trail_.Decisions()[new_level - 1].literal;
+    binary_clauses_to_extract_.clear();
     for (int i = first_new_trail_index; i < trail_.Index(); ++i) {
       const Literal l = trail_[i];
       if (l == last_decision) continue;
@@ -1096,13 +1317,18 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
         // propagation for one literal we do finish it before calling again
         // the binary propagation.
         if (trail_.AssignmentType(l.Variable()) != binary_propagator_id_) {
-          MaybeExtractImplication(last_decision, l);
+          if (ShouldExtractImplication(l)) {
+            binary_clauses_to_extract_.push_back(l);
+          }
         }
       } else {
         // If we don't extract binary, we don't need to explore any of
         // these literals until more variables are fixed.
         processed_.Set(l.Index());
       }
+    }
+    if (!binary_clauses_to_extract_.empty()) {
+      ExtractImplications(last_decision, binary_clauses_to_extract_);
     }
 
     if (options.subsume_with_binary_clause) {
@@ -1112,6 +1338,7 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
 
   if (!sat_solver_->ResetToLevelZero()) return false;
   if (!ProcessLiteralsToFix()) return false;
+  DeleteTemporaryLratImplicationsAfterBacktrack();
   clause_manager_->CleanUpWatchers();
 
   // Display stats.
@@ -1129,6 +1356,8 @@ bool FailedLiteralProbing::DoOneRound(ProbingOptions options) {
       << " explicit_fix:" << num_explicit_fix_
       << " num_conflicts:" << num_conflicts_
       << " new_binary_clauses: " << num_new_binary_
+      << " num_lrat_clauses: " << num_lrat_clauses_
+      << " num_lrat_proof_clauses: " << num_lrat_proof_clauses_
       << " subsumed: " << num_subsumed_ << " dtime: " << time_diff
       << " wtime: " << wall_timer.Get() << (limit_reached ? " (Aborted)" : "");
   return sat_solver_->FinishPropagation();
@@ -1190,8 +1419,10 @@ bool FailedLiteralProbing::ComputeNextDecisionInOrder(
       // This is a backtrack marker, go back one level.
       CHECK_GT(sat_solver_->CurrentDecisionLevel(), 0);
       if (!sat_solver_->BacktrackAndPropagateReimplications(
-              sat_solver_->CurrentDecisionLevel() - 1))
+              sat_solver_->CurrentDecisionLevel() - 1)) {
         return false;
+      }
+      DeleteTemporaryLratImplicationsAfterBacktrack();
       continue;
     }
     const Literal candidate(index);
@@ -1227,6 +1458,7 @@ bool FailedLiteralProbing::GetNextDecisionInNoParticularOrder(
     if (!sat_solver_->BacktrackAndPropagateReimplications(level - 1)) {
       return false;
     }
+    DeleteTemporaryLratImplicationsAfterBacktrack();
   }
   return true;
 }
@@ -1263,6 +1495,7 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   ClauseId fixed_decision_unit_id = kNoClauseId;
   auto conflict_callback = [&](ClauseId conflict_id,
                                absl::Span<const Literal> conflict_clause) {
+    DeleteTemporaryLratImplicationsAfterBacktrack();
     if (fixed_decision_unit_id != kNoClauseId) return;
     tmp_clause_ids_.clear();
     clause_manager_->AppendClauseIdsFixing(conflict_clause, &tmp_clause_ids_,
@@ -1272,6 +1505,8 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
     lrat_proof_handler_->AddInferredClause(fixed_decision_unit_id,
                                            {Literal(next_decision).Negated()},
                                            tmp_clause_ids_);
+    num_lrat_clauses_++;
+    num_lrat_proof_clauses_ += tmp_clause_ids_.size();
   };
   first_new_trail_index = sat_solver_->EnqueueDecisionAndBackjumpOnConflict(
       Literal(next_decision),
@@ -1282,6 +1517,8 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   if (first_new_trail_index == kUnsatTrailIndex) return false;
   binary_clause_extracted_.resize(first_new_trail_index);
   binary_clause_extracted_.resize(trail_.Index(), false);
+  trail_implication_clauses_.resize(first_new_trail_index);
+  trail_implication_clauses_.resize(trail_.Index(), {kNoClauseId, false});
 
   // This is tricky, depending on the parameters, and for integer problem,
   // EnqueueDecisionAndBackjumpOnConflict() might create new Booleans.
@@ -1341,15 +1578,19 @@ bool FailedLiteralProbing::EnqueueDecisionAndBackjumpOnConflict(
   return true;
 }
 
-void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
-                                                   const Literal l) {
+bool FailedLiteralProbing::ShouldExtractImplication(const Literal l) {
   const auto& info = trail_.Info(l.Variable());
 
-  if (binary_clause_extracted_[info.trail_index]) return;
+  if (binary_clause_extracted_[info.trail_index]) return false;
   binary_clause_extracted_[info.trail_index] = true;
 
   // If the variable was true at level zero, this is not necessary.
-  if (info.level == 0) return;
+  return info.level > 0;
+}
+
+void FailedLiteralProbing::ExtractImplication(const Literal last_decision,
+                                              const Literal l, bool lrat_only) {
+  const auto& info = trail_.Info(l.Variable());
 
   // TODO(user): Think about trying to extract clause that will not
   // get removed by transitive reduction later. If we can both extract
@@ -1360,7 +1601,6 @@ void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
   // of all literals in the reason for this propagation. And use this
   // as a reason for later hyber binary resolution. Like we do when
   // this clause subsumes the reason.
-  ++num_new_binary_;
   DCHECK(assignment_.LiteralIsTrue(l));
   CHECK_NE(l.Variable(), last_decision.Variable());
 
@@ -1375,17 +1615,95 @@ void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
   if (lrat_proof_handler_ != nullptr) {
     clause_id = clause_id_generator_->GetNextId();
     tmp_clause_ids_.clear();
-    clause_manager_->AppendClauseIdsFixing({l}, &tmp_clause_ids_,
-                                           last_decision);
+    clause_manager_->AppendClauseIdsFixing(
+        {l}, &tmp_clause_ids_, last_decision,
+        [&](int /*level*/, int trail_index) {
+          return trail_implication_clauses_[trail_index].first;
+        });
+    // Cache this LRAT clause so that it can be reused for later proofs. Do this
+    // only if `l` is propagated by the last decision, so that this cache entry
+    // remains valid when we backtrack later decisions.
+    if (info.level == sat_solver_->CurrentDecisionLevel()) {
+      trail_implication_clauses_[info.trail_index] = {clause_id, lrat_only};
+    }
     lrat_proof_handler_->AddInferredClause(
         clause_id, {last_decision.Negated(), l}, tmp_clause_ids_);
+    num_lrat_clauses_++;
+    num_lrat_proof_clauses_ += tmp_clause_ids_.size();
   }
+  if (lrat_only) return;
 
   // Each time we extract a binary clause, we change the reason in the trail.
   // This is important as it will allow us to remove clauses that are now
   // subsumed by this binary, even if it was a reason.
+  ++num_new_binary_;
   CHECK(implication_graph_->AddBinaryClauseAndChangeReason(
       clause_id, l, last_decision.Negated()));
+}
+
+void FailedLiteralProbing::MaybeExtractImplication(const Literal last_decision,
+                                                   const Literal l) {
+  if (ShouldExtractImplication(l)) {
+    ExtractImplication(last_decision, l);
+  }
+}
+
+void FailedLiteralProbing::ExtractImplications(
+    Literal last_decision, absl::Span<const Literal> literals) {
+  // 1. Find all the literals which appear in the expansion of the reasons of
+  //    all the `literals` and collect them in reverse trail order in
+  //    `tmp_marked_literals_`.
+  // 1.a Put the `literals` in a heap.
+  tmp_mark_.ClearAndResize(BooleanVariable(trail_.NumVariables()));
+  tmp_heap_.clear();
+  const VariablesAssignment& assignment = trail_.Assignment();
+  for (const Literal lit : literals) {
+    CHECK(assignment.LiteralIsAssigned(lit));
+    tmp_mark_.Set(lit.Variable());
+    tmp_heap_.push_back(trail_.Info(lit.Variable()).trail_index);
+  }
+  absl::c_make_heap(tmp_heap_);
+
+  // 1.b Expand the reasons of all the literals in the heap and add the reason
+  //     literals back in the heap. Collect the literals in the order they are
+  //     popped from the heap in `tmp_marked_literals_`.
+  tmp_marked_literals_.clear();
+  while (!tmp_heap_.empty()) {
+    absl::c_pop_heap(tmp_heap_);
+    const int trail_index = tmp_heap_.back();
+    tmp_heap_.pop_back();
+    const Literal marked_literal = trail_[trail_index];
+    tmp_marked_literals_.push_back(marked_literal);
+
+    DCHECK_GT(trail_.Info(marked_literal.Variable()).level, 0);
+    DCHECK_NE(trail_.AssignmentType(marked_literal.Variable()),
+              AssignmentType::kSearchDecision);
+
+    for (const Literal literal : trail_.Reason(marked_literal.Variable())) {
+      const BooleanVariable var = literal.Variable();
+      const AssignmentInfo& info = trail_.Info(var);
+      if (info.level > 0 && !tmp_mark_[var] &&
+          trail_.AssignmentType(var) != AssignmentType::kSearchDecision) {
+        tmp_mark_.Set(var);
+        tmp_heap_.push_back(info.trail_index);
+        absl::c_push_heap(tmp_heap_);
+      }
+    }
+  }
+
+  // 2. Add an LRAT implication "last_decision => l" for each literal l in
+  //    `tmp_marked_literals_`, in increasing trail index order. Thanks to the
+  //    cache in ExtractImplication(), the proof for each new implication has
+  //    the same size as its reason. Also add a "real" implication in the binary
+  //    implication graph if `l` is in `literals`.
+  tmp_mark_.ClearAndResize(BooleanVariable(trail_.NumVariables()));
+  for (const Literal lit : literals) {
+    tmp_mark_.Set(lit.Variable());
+  }
+  for (int i = tmp_marked_literals_.size() - 1; i >= 0; --i) {
+    const bool lrat_only = !tmp_mark_[tmp_marked_literals_[i].Variable()];
+    ExtractImplication(last_decision, tmp_marked_literals_[i], lrat_only);
+  }
 }
 
 // If we can extract a binary clause that subsume the reason clause, we do add
@@ -1479,6 +1797,8 @@ void FailedLiteralProbing::AddFailedLiteralToFix(const Literal literal) {
   lrat_proof_handler_->AddInferredClause(unit_id, {literal.Negated()},
                                          tmp_clause_ids_);
   to_fix_unit_id_.push_back({unit_id});
+  num_lrat_clauses_++;
+  num_lrat_proof_clauses_ += tmp_clause_ids_.size();
 }
 
 // Fixes all the literals in to_fix_, and finish propagation.
@@ -1496,6 +1816,17 @@ bool FailedLiteralProbing::ProcessLiteralsToFix() {
   to_fix_.clear();
   to_fix_unit_id_.clear();
   return sat_solver_->FinishPropagation();
+}
+
+void FailedLiteralProbing::DeleteTemporaryLratImplicationsAfterBacktrack() {
+  if (lrat_proof_handler_ == nullptr) return;
+  for (int i = trail_.Index(); i < trail_implication_clauses_.size(); ++i) {
+    auto [clause_id, is_temporary] = trail_implication_clauses_[i];
+    if (is_temporary) {
+      lrat_proof_handler_->DeleteClause(clause_id, {});
+    }
+  }
+  trail_implication_clauses_.resize(trail_.Index(), {kNoClauseId, false});
 }
 
 }  // namespace sat

@@ -75,6 +75,47 @@ TEST(AddHoleAtPositionTest, BasicTest) {
   EXPECT_EQ(AddHoleAtPosition(8, 0xFF), 0b011111111);
 }
 
+TEST(CanonicalizeFunctionTruthTableTest, AndGateWithXAndNotX) {
+  LiteralIndex output = Literal(+1).Index();
+  std::vector<LiteralIndex> inputs{Literal(+2).Index(), Literal(-2).Index()};
+  int table = 0b1000;
+  const int new_size =
+      CanonicalizeFunctionTruthTable(output, absl::MakeSpan(inputs), table);
+  CHECK_EQ(new_size, 0);  // Fixed to zero.
+}
+
+TEST(RemoveFixedInputTest, BasicTest1) {
+  std::vector<LiteralIndex> inputs{Literal(+1).Index(), Literal(+2).Index(),
+                                   Literal(+3).Index()};
+  int table = 0b01011010;
+  const int new_size = RemoveFixedInput(1, true, absl::MakeSpan(inputs), table);
+  EXPECT_EQ(new_size, 2);
+  EXPECT_EQ(inputs[0], Literal(+1).Index());
+  EXPECT_EQ(inputs[1], Literal(+3).Index());
+  EXPECT_EQ(table, 0b0110) << std::bitset<4>(table);
+}
+
+TEST(RemoveFixedInputTest, BasicTest2) {
+  std::vector<LiteralIndex> inputs{Literal(+1).Index(), Literal(+2).Index(),
+                                   Literal(+3).Index()};
+  int table = 0b01011010;
+  const int new_size =
+      RemoveFixedInput(1, false, absl::MakeSpan(inputs), table);
+  EXPECT_EQ(new_size, 2);
+  EXPECT_EQ(inputs[0], Literal(+1).Index());
+  EXPECT_EQ(inputs[1], Literal(+3).Index());
+  EXPECT_EQ(table, 0b0110) << std::bitset<4>(table);
+}
+
+TEST(CanonicalizeFunctionTruthTableTest, AndGateWithXAndNotX2) {
+  LiteralIndex output = Literal(+1).Index();
+  std::vector<LiteralIndex> inputs{Literal(-2).Index(), Literal(+2).Index()};
+  int table = 0b1000;
+  const int new_size =
+      CanonicalizeFunctionTruthTable(output, absl::MakeSpan(inputs), table);
+  CHECK_EQ(new_size, 0);  // Fixed to zero.
+}
+
 TEST(CanonicalizeFunctionTruthTableTest, RandomTest) {
   absl::BitGen random;
   const int num_vars = 8;
