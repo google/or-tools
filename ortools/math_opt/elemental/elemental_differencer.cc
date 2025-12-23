@@ -103,7 +103,6 @@ ElementalDifference ElementalDifference::Create(
     }
   }
   AllAttrs::ForEachAttr(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&result, &first, &second]<typename AttrType>(AttrType attr) {
         using Key = typename AttributeDifference<AttrType>::Key;
         AttributeDifference<AttrType>& attr_difference =
@@ -217,7 +216,6 @@ std::string ElementalDifference::Describe(
     }
   }
   AllAttrs::ForEachAttr(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&lines, &difference, &first, &second]<typename AttrType>(AttrType attr) {
         const auto& attr_diff = difference.attr_difference(attr);
         auto attr_value_str = [attr](const Elemental& elemental,

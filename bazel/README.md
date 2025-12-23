@@ -72,35 +72,15 @@ OR-Tools depends on several mandatory libraries.
 
 ## Compilation
 
-You must compile OR-Tools using at least C++17 (C++20 on windows):
-
-*   on UNIX:
-
-    ```sh
-    bazel build -c opt --cxxopt=-std=c++17 ...
-    ```
-
-*   on Windows when using MSVC:
-
-    ```sh
-    bazel build -c opt --cxxopt="/std:c++20" ...
-    ```
+```sh
+bazel build -c opt //ortools/... //examples/...
+```
 
 ## Testing
 
-You may run tests using:
-
-*   on UNIX:
-
-    ```sh
-    bazel test -c opt --cxxopt=-std=c++17 ...
-    ```
-
-*   on Windows when using MSVC:
-
-    ```sh
-    bazel test -c opt --cxxopt="/std:c++20" ...
-    ```
+```sh
+bazel test -c opt //ortools/... //examples/...
+```
 
 ## Integration
 

@@ -424,7 +424,8 @@ endif()
 # ##############################################################################
 # Coinutils
 # ##############################################################################
-# Coin-OR does not support C++17/C++20 (use of 'register' storage class specifier)
+
+# Coin-OR uses the 'register' storage class specifier which requires C++11.
 set(CMAKE_CXX_STANDARD 11)
 if(WIN32)
   set(BUILD_SHARED_LIBS OFF)
@@ -532,13 +533,11 @@ if(BUILD_Cbc)
   message(CHECK_PASS "fetched")
 endif()
 
+# End of Coin-OR dependencies, setting the properties back to their previous
+# values.
+set(CMAKE_CXX_STANDARD 20)
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
-endif()
-if(MSVC)
-  set(CMAKE_CXX_STANDARD 20)
-else()
-  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 ###############

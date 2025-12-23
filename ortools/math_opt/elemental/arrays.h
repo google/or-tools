@@ -36,7 +36,6 @@ namespace operations_research::math_opt {
 //      ```
 template <int n, typename Fn>
 constexpr decltype(auto) ApplyOnIndexRange(Fn&& fn) {
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   return [&fn]<int... is>(std::integer_sequence<int, is...>) mutable {
     return fn.template operator()<is...>();
   }(std::make_integer_sequence<int, n>());
@@ -55,7 +54,6 @@ constexpr decltype(auto) ApplyOnIndexRange(Fn&& fn) {
 template <int n, typename Fn>
 constexpr decltype(auto) ForEachIndex(Fn&& fn) {
   return ApplyOnIndexRange<n>(
-      // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
       [&fn]<int... is>() { return (fn.template operator()<is>(), ...); });
 }
 
@@ -63,7 +61,6 @@ constexpr decltype(auto) ForEachIndex(Fn&& fn) {
 // last invocation.
 template <typename Fn, typename Tuple>
 constexpr decltype(auto) ForEach(Fn&& fn, Tuple&& tuple) {
-  // NOLINTNEXTLINE(clang-diagnostic-pre-c++20-compat)
   return std::apply([&fn]<typename... Ts>(
                         Ts&&... ts) { return (fn(std::forward<Ts>(ts)), ...); },
                     std::forward<Tuple>(tuple));
