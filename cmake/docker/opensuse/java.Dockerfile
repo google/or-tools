@@ -2,7 +2,7 @@ FROM ortools/cmake:opensuse_swig AS env
 
 # Install Java JDK and Maven
 RUN zypper refresh \
-&& zypper install -y java-17-openjdk-devel maven \
+&& zypper install -y java-21-openjdk-devel maven \
 && zypper clean -a
 ENV PATH=/usr/share/maven/bin:$PATH
 

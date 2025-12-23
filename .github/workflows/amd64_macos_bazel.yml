@@ -33,11 +33,11 @@ jobs:
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
-      - name: Set Java to OpenJDK 17 (Temurin)
+      - name: Set Java to OpenJDK 21 (Temurin)
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Check mvn
         run: mvn --version
       - name: Setup Python

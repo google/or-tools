@@ -19,8 +19,8 @@ RUN apk add --no-cache dotnet8-sdk
 RUN dotnet --info
 
 # Install Java
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8 maven
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+RUN apk add --no-cache openjdk-21-jdk maven
 
 # Install Python
 RUN apk add --no-cache python3-dev py3-pip py3-wheel \

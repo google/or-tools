@@ -29,8 +29,8 @@ RUN wget -q "https://dot.net/v1/dotnet-install.sh" \
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
-# Install Java (openjdk-8)
-RUN zypper install -y java-1_8_0-openjdk java-1_8_0-openjdk-devel maven \
+# Install Java (openjdk-21)
+RUN zypper install -y java-21-openjdk java-21-openjdk-devel maven \
 && zypper clean -a
 
 # Install Python

@@ -38,7 +38,7 @@ RUN dotnet --info
 
 # Install Java 8 SDK
 RUN dnf -y update \
-&& dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
+&& dnf -y install java-21-openjdk java-21-openjdk-devel maven \
 && dnf clean all \
 && rm -rf /var/cache/dnf
 
