@@ -22,19 +22,13 @@ jobs:
         ]
         java: [
           # see https://endoflife.date/azul-zulu
-          {distrib: 'zulu', version: '8'}, # 2030/12
-          {distrib: 'zulu', version: '11'}, # 2026/09
-          {distrib: 'zulu', version: '17'}, # 2029/09
           {distrib: 'zulu', version: '21'}, # 2031/09
+          {distrib: 'zulu', version: '25'}, # 2033/09
           # see https://endoflife.date/eclipse-temurin
-          {distrib: 'temurin', version: '8'}, # 2026/11
-          {distrib: 'temurin', version: '11'}, # 2027/10
-          {distrib: 'temurin', version: '17'}, # 2027/10
           {distrib: 'temurin', version: '21'}, # 2029/12
+          {distrib: 'temurin', version: '25'}, # 2031/09
           # see https://endoflife.date/microsoft-build-of-openjdk
           # microsoft jdk seems to use an older redistributable
-          #{distrib: 'microsoft', version: '11'}, # 2027/09
-          #{distrib: 'microsoft', version: '17'}, # 2027/09
           #{distrib: 'microsoft', version: '21'}, # 2028/09
         ]
       fail-fast: false
