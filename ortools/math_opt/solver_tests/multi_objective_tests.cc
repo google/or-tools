@@ -17,6 +17,7 @@
 #include <ostream>
 #include <utility>
 
+#include "absl/base/optimization.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
@@ -210,6 +211,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       case ObjectiveType::kAuxiliary:
         return model.AddMaximizationObjective(x, /*priority=*/0);
     }
+    ABSL_UNREACHABLE();
   }();
   const Objective priority_1 = [&]() {
     switch (priority_1_type) {
@@ -220,6 +222,7 @@ absl::StatusOr<SimpleMultiObjectiveSolveResult> SolveWithObjectiveDegradation(
       case ObjectiveType::kAuxiliary:
         return model.AddMinimizationObjective(x, /*priority=*/1);
     }
+    ABSL_UNREACHABLE();
   }();
   ModelSolveParameters model_parameters;
   switch (tolerance_type) {

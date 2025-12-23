@@ -21,6 +21,7 @@
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/diffn_util.h"
 #include "ortools/sat/integer_base.h"
@@ -180,6 +181,7 @@ class Neighbours {
         case EdgePosition::RIGHT:
           return std::tie(a.y_min, a.y_max) > std::tie(b.y_min, b.y_max);
       }
+      LOG(FATAL) << "Invalid edge position: " << static_cast<int>(edge_);
     }
     EdgePosition edge_;
   };

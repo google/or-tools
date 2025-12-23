@@ -22,10 +22,12 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
@@ -35,14 +37,6 @@
 #include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "lpi/lpi.h"
-#include "ortools/base/logging.h"
-#include "ortools/base/status_macros.h"
-#include "ortools/linear_solver/scip_helper_macros.h"
-#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
-#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
-#include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
-#include "ortools/port/proto_utils.h"
-#include "ortools/util/status_macros.h"
 #include "scip/cons_and.h"
 #include "scip/cons_indicator.h"
 #include "scip/cons_linear.h"
@@ -53,6 +47,13 @@
 #else
 #include "scip/cons_quadratic.h"
 #endif  // SCIP_VERSION_MAJOR >= 10
+#include "ortools/base/status_macros.h"
+#include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/math_opt/solvers/gscip/gscip.pb.h"
+#include "ortools/math_opt/solvers/gscip/gscip_event_handler.h"
+#include "ortools/math_opt/solvers/gscip/gscip_parameters.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/util/status_macros.h"
 #include "scip/cons_sos1.h"
 #include "scip/cons_sos2.h"
 #include "scip/def.h"
@@ -102,6 +103,7 @@ SCIP_VARTYPE ConvertVarType(const GScipVarType var_type) {
     case GScipVarType::kInteger:
       return SCIP_VARTYPE_INTEGER;
   }
+  ABSL_UNREACHABLE();
 }
 
 GScipVarType ConvertVarType(const SCIP_VARTYPE var_type) {
@@ -115,6 +117,7 @@ GScipVarType ConvertVarType(const SCIP_VARTYPE var_type) {
     case SCIP_VARTYPE_BINARY:
       return GScipVarType::kBinary;
   }
+  LOG(FATAL) << "Unrecognized SCIP_VARTYPE: " << var_type;
 }
 
 GScipOutput::Status ConvertStatus(const SCIP_STATUS scip_status) {

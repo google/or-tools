@@ -18,6 +18,7 @@
 #include <ostream>
 #include <utility>
 
+#include "absl/base/optimization.h"
 #include "absl/hash/hash_testing.h"
 #include "absl/strings/str_cat.h"
 #include "gtest/gtest.h"
@@ -39,6 +40,7 @@ std::ostream& operator<<(std::ostream& ostr, const TestEnum& e) {
       ostr << "kValue0";
       return ostr;
   }
+  ABSL_UNREACHABLE();
 }
 
 using TestEnumId = TaggedId<TestEnum::kValue0>;

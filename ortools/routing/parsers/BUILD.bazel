@@ -310,7 +310,9 @@ cc_library(
     deps = [
         ":simple_graph",
         "//ortools/base:file",
-        "//ortools/base:logging",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/strings:str_format",
         "@abseil-cpp//absl/time",

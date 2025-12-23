@@ -225,6 +225,10 @@ cc_library(
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:sparse",
+        "//ortools/lp_data:sparse_column",
+        "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
