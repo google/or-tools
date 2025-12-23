@@ -73,13 +73,13 @@ OR-Tools depends on several mandatory libraries.
 ## Compilation
 
 ```sh
-bazel build -c opt //ortools/... //examples/...
+bazel build -c opt //...
 ```
 
 ## Testing
 
 ```sh
-bazel test -c opt //ortools/... //examples/...
+bazel test -c opt //...
 ```
 
 ## Integration
