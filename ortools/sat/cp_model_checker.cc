@@ -284,15 +284,6 @@ std::string ValidateLinearExpression(const CpModelProto& model,
   return "";
 }
 
-std::string ValidateConstantExpression(const CpModelProto& model,
-                                       const LinearExpressionProto& expr) {
-  if (!expr.vars().empty()) {
-    return absl::StrCat("expression must be constant: ",
-                        ProtobufShortDebugString(expr));
-  }
-  return ValidateLinearExpression(model, expr);
-}
-
 std::string ValidateLinearConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
   if (!DomainInProtoIsValid(ct.linear())) {
@@ -1376,8 +1367,8 @@ class ConstraintChecker {
   bool LinearConstraintIsFeasible(const ConstraintProto& ct) {
     int64_t sum = 0;
     const int num_variables = ct.linear().coeffs_size();
-    const int* const vars = ct.linear().vars().data();
-    const int64_t* const coeffs = ct.linear().coeffs().data();
+    absl::Span<const int> vars = absl::MakeSpan(ct.linear().vars());
+    absl::Span<const int64_t> coeffs = absl::MakeSpan(ct.linear().coeffs());
     for (int i = 0; i < num_variables; ++i) {
       // We know we only have positive reference now.
       DCHECK(RefIsPositive(vars[i]));

@@ -449,6 +449,7 @@ class GateCongruenceClosure {
   explicit GateCongruenceClosure(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
+        trail_(model->GetOrCreate<Trail>()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
         clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
@@ -508,9 +509,10 @@ class GateCongruenceClosure {
 
   // Detects gates encoded in the given truth table, and add them to the set
   // of gates. Returns the number of gate detected.
-  int ProcessTruthTable(absl::Span<const BooleanVariable> inputs,
-                        SmallBitset truth_table,
-                        absl::Span<const TruthTableId> ids_for_proof = {});
+  int ProcessTruthTable(
+      absl::Span<const BooleanVariable> inputs, SmallBitset truth_table,
+      absl::Span<const TruthTableId> ids_for_proof,
+      absl::Span<const std::pair<Literal, Literal>> binary_used);
 
   // Add a small clause to the corresponding truth table.
   template <int arity>
@@ -518,8 +520,13 @@ class GateCongruenceClosure {
                        absl::flat_hash_map<std::array<BooleanVariable, arity>,
                                            TruthTableId>& ids);
 
+  // Make sure the small gate at given id is canonicalized.
+  // Returns its number of inputs.
+  int CanonicalizeShortGate(GateId id);
+
   const VariablesAssignment& assignment_;
   SatSolver* sat_solver_;
+  Trail* trail_;
   BinaryImplicationGraph* implication_graph_;
   ClauseManager* clause_manager_;
   ClauseIdGenerator* clause_id_generator_;
@@ -554,6 +561,14 @@ class GateCongruenceClosure {
   CompactVectorVector<GateId, LiteralIndex> gates_inputs_;
   CompactVectorVector<GateId, const SatClause*> gates_clauses_;
 
+  // Truth tables on 2 variables are handled differently, and we don't use
+  // a TruthTableId indirection.
+  //
+  // TODO(user): it feels like we could benefit from just storing this all
+  // the time in the binary_implication graph. This allow to never add duplicate
+  // and detect easy case of fixing/equivalences right away. To investigate.
+  absl::flat_hash_map<std::array<BooleanVariable, 2>, SmallBitset> ids2_;
+
   // Map (Xi) (sorted) to a bitmask corresponding to the allowed values.
   // We loop over all short clauses to fill this. We actually store an "id"
   // pointing in the vectors below.
@@ -570,6 +585,10 @@ class GateCongruenceClosure {
   // Temporary vector used to construct truth_tables_clauses_.
   std::vector<TruthTableId> tmp_ids_;
   std::vector<SatClause*> tmp_clauses_;
+
+  // Temporary SatClause* for binary, so we don't need to specialize too much
+  // code for them.
+  std::vector<std::unique_ptr<SatClause>> tmp_binary_clauses_;
 
   // For stats.
   double total_dtime_ = 0.0;

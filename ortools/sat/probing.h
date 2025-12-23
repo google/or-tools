@@ -43,9 +43,12 @@
 namespace operations_research {
 namespace sat {
 
+class TrailCopy;
+
 class Prober {
  public:
   explicit Prober(Model* model);
+  ~Prober();
 
   // Fixes Booleans variables to true/false and see what is propagated. This
   // can:
@@ -158,6 +161,7 @@ class Prober {
   ClauseManager* clause_manager_;
   ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_;
+  TrailCopy* trail_copy_;
   const bool drat_enabled_;
 
   // To detect literal x that must be true because b => x and not(b) => x.
@@ -353,8 +357,18 @@ class FailedLiteralProbing {
   // do not contain last_decision.Negated().
   void MaybeSubsumeWithBinaryClause(Literal last_decision, Literal l);
 
-  // If not already done, add last_decision => l to the repository.
+  // Functions to add "last_decision => l" to the repository if not already
+  // done. The Maybe() version just calls Extract() if ShouldExtract() is true.
+  bool ShouldExtractImplication(Literal l);
+  void ExtractImplication(Literal last_decision, Literal l,
+                          bool lrat_only = false);
   void MaybeExtractImplication(Literal last_decision, Literal l);
+
+  // Extracts an implication "`last_decision` => l" for each literal l in
+  // `literals`. This is more efficient than calling ExtractImplication() for
+  // each literal when LRAT is enabled.
+  void ExtractImplications(Literal last_decision,
+                           absl::Span<const Literal> literals);
 
   // Inspect the watcher list for last_decision, If we have a blocking
   // literal at true (implied by last decision), then we have subsumptions.
@@ -374,6 +388,10 @@ class FailedLiteralProbing {
 
   // Fixes all the literals in to_fix_, and finish propagation.
   bool ProcessLiteralsToFix();
+
+  // Deletes the temporary LRAT clauses in trail_implication_clauses_ for all
+  // trail indices greater than the current trail index.
+  void DeleteTemporaryLratImplicationsAfterBacktrack();
 
   SatSolver* sat_solver_;
   BinaryImplicationGraph* implication_graph_;
@@ -402,13 +420,24 @@ class FailedLiteralProbing {
   std::vector<Literal> to_fix_;
   // For each literal in to_fix_, the ID of the corresponding LRAT unit clause.
   std::vector<ClauseId> to_fix_unit_id_;
+  // The literals for which we want to extract "last_decision => l" clauses.
+  std::vector<Literal> binary_clauses_to_extract_;
 
   // For each literal 'l' in the trail, whether a binary clause "d => l" has
   // been extracted, with 'd' the decision at the same level as 'l'.
   std::vector<bool> binary_clause_extracted_;
 
-  // Temporary vector used for LRAT proofs.
+  // For each literal on the trail, the ID of the LRAT clause stating that this
+  // literal is implied by the previous decisions on the trail (or kNoClauseId
+  // if there is no such clause), plus a Boolean indicating whether this clause
+  // is temporary (i.e., is not an extracted binary clause).
+  std::vector<std::pair<ClauseId, bool>> trail_implication_clauses_;
+
+  // Temporary data structures used for LRAT proofs.
   std::vector<ClauseId> tmp_clause_ids_;
+  SparseBitset<BooleanVariable> tmp_mark_;
+  std::vector<int> tmp_heap_;
+  std::vector<Literal> tmp_marked_literals_;
 
   // Stats.
   int64_t num_probed_ = 0;
@@ -416,6 +445,8 @@ class FailedLiteralProbing {
   int64_t num_conflicts_ = 0;
   int64_t num_new_binary_ = 0;
   int64_t num_subsumed_ = 0;
+  int64_t num_lrat_clauses_ = 0;
+  int64_t num_lrat_proof_clauses_ = 0;
 };
 
 }  // namespace sat

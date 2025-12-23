@@ -531,6 +531,17 @@ void SchedulingConstraintHelper::AddReasonForBeingBeforeAssumingNoOverlap(
                           starts_[before].var == ends_[before].var &&
                           starts_[after].var == ends_[after].var;
 
+  if (fixed_size && sizes_[after].constant == 0 &&
+      sizes_[before].constant == 0) {
+    // If both sizes are fixed to zero use the trivial explanation.
+    const auto [expr, ub] =
+        EncodeDifferenceLowerThan(ends_[before], starts_[after], 0);
+    DCHECK_LE(linear2_bounds_->UpperBound(expr), ub);
+    linear2_bounds_->AddReasonForUpperBoundLowerThan(expr, ub, &literal_reason_,
+                                                     &integer_reason_);
+    return;
+  }
+
   // Prefer the straightforward linear2 explanation as it is more likely this
   // comes from level zero or a single enforcement literal. Also handle the
   // fixed size case. This explains with at most two integer bounds.

@@ -1638,6 +1638,7 @@ cc_library(
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
         "//ortools/util:time_limit",
+        "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",

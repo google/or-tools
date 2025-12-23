@@ -125,7 +125,6 @@ ClauseManager::~ClauseManager() {
 }
 
 void ClauseManager::Resize(int num_variables) {
-  DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
   reasons_.resize(num_variables);
   needs_cleaning_.Resize(LiteralIndex(num_variables << 1));
@@ -980,8 +979,29 @@ bool BinaryImplicationGraph::AddBinaryClauseInternal(
     trail_->ChangeReason(trail_index, propagator_id_);
   }
 
+  // Deal with literal fixing and do not even add a binary clause in that case.
   if (rep_a == rep_b) {
     return FixLiteral(rep_a, {rep_id});
+  } else if (trail_->CurrentDecisionLevel() == 0) {
+    const auto& assignment = trail_->Assignment();
+
+    // TODO(user): just make GetUnitClauseId() work all the time? for that
+    // we need to make sure all level zero are pushed with kUnitReason.
+    if (lrat_proof_handler_ != nullptr) {
+      if (assignment.LiteralIsFalse(rep_a)) {
+        return FixLiteral(rep_b,
+                          {rep_id, trail_->GetUnitClauseId(rep_a.Variable())});
+      } else if (assignment.LiteralIsFalse(rep_b)) {
+        return FixLiteral(rep_a,
+                          {rep_id, trail_->GetUnitClauseId(rep_b.Variable())});
+      }
+    } else {
+      if (assignment.LiteralIsFalse(rep_a)) {
+        return FixLiteral(rep_b, {});
+      } else if (assignment.LiteralIsFalse(rep_b)) {
+        return FixLiteral(rep_a, {});
+      }
+    }
   }
 
   a = rep_a;
