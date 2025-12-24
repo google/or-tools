@@ -227,7 +227,10 @@ cc_library(
     name = "gscip_callback_result",
     srcs = ["gscip_callback_result.cc"],
     hdrs = ["gscip_callback_result.h"],
-    deps = ["@scip"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@scip",
+    ],
 )
 
 cc_library(
