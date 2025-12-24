@@ -97,6 +97,7 @@ cc_library(
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:flat_hash_map",
         "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
@@ -215,6 +216,7 @@ cc_library(
     deps = [
         "//ortools/base:logging",
         "//ortools/linear_solver:scip_helper_macros",
+        "@abseil-cpp//absl/log:die_if_null",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings",
         "@scip",
@@ -225,7 +227,10 @@ cc_library(
     name = "gscip_callback_result",
     srcs = ["gscip_callback_result.cc"],
     hdrs = ["gscip_callback_result.h"],
-    deps = ["@scip"],
+    deps = [
+        "@abseil-cpp//absl/base:core_headers",
+        "@scip",
+    ],
 )
 
 cc_library(

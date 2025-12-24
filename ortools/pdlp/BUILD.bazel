@@ -135,6 +135,7 @@ cc_library(
         "//ortools/lp_data:proto_utils",
         "//ortools/util:logging",
         "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/base:nullability",
         "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",

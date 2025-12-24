@@ -322,6 +322,7 @@ cc_library(
         "//ortools/math_opt/cpp:math_opt",
         "//ortools/math_opt/io:mps_converter",
         "//ortools/port:proto_utils",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/strings:string_view",

@@ -412,6 +412,7 @@ cc_test(
         ":tagged_id",
         "//ortools/base:gmock_main",
         "//ortools/math_opt/testing:stream",
+        "@abseil-cpp//absl/base:core_headers",
         "@abseil-cpp//absl/hash:hash_testing",
         "@abseil-cpp//absl/strings",
     ],

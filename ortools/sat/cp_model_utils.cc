@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/flags/flag.h"
@@ -547,6 +548,7 @@ absl::string_view ConstraintCaseName(
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       return "kEmpty";
   }
+  ABSL_UNREACHABLE();
 }
 
 std::vector<int> UsedVariables(const ConstraintProto& ct) {

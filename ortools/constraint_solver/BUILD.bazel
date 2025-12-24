@@ -379,6 +379,7 @@ cc_library(
     deps = [
         ":routing_enums_cc_proto",
         ":routing_ils_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 

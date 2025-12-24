@@ -21,6 +21,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/optimization.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -403,6 +404,7 @@ absl::Status ModelIsSupported(const ModelProto& model,
       case SupportType::kSupported:
         LOG(FATAL) << "Unexpected call with `kSupported`";
     }
+    ABSL_UNREACHABLE();
   };
   if (const SupportType support = support_menu.integer_variables;
       support != SupportType::kSupported) {

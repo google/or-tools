@@ -60,6 +60,7 @@ std::string GetRecreateParametersName(
     case RecreateParameters::PARAMETERS_NOT_SET:
       return "PARAMETERS_NOT_SET";
   }
+  ABSL_UNREACHABLE();
 }
 
 }  // namespace operations_research
