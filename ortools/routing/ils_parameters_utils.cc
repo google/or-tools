@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/optimization.h"
 #include "ortools/routing/enums.pb.h"
 #include "ortools/routing/ils.pb.h"
 
@@ -60,6 +61,7 @@ std::string GetRecreateParametersName(
     case RecreateParameters::PARAMETERS_NOT_SET:
       return "PARAMETERS_NOT_SET";
   }
+  ABSL_UNREACHABLE();
 }
 
 }  // namespace operations_research::routing

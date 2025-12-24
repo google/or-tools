@@ -153,6 +153,7 @@ cc_library(
     deps = [
         ":enums_cc_proto",
         ":ils_cc_proto",
+        "@abseil-cpp//absl/base:core_headers",
     ],
 )
 

@@ -54,6 +54,7 @@
 #include "Eigen/SparseCore"
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/status/status.h"
@@ -250,6 +251,7 @@ void LogIterationStats(int verbosity_level, bool use_feasibility_polishing,
         case IterationType::kPresolveTermination:
           return "t ";
       }
+      ABSL_UNREACHABLE();
     } else {
       return "";
     }

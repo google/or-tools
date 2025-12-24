@@ -14,16 +14,25 @@
 #include "ortools/routing/parsers/solution_serializer.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/file.h"
+#include "ortools/base/helpers.h"
+#include "ortools/base/options.h"
+#include "ortools/routing/parsers/simple_graph.h"
 
 namespace operations_research::routing {
 

@@ -14,6 +14,7 @@
 #include "ortools/glop/primal_edge_norms.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 #include "absl/log/check.h"
@@ -68,6 +69,7 @@ DenseRow::ConstView PrimalEdgeNorms::GetSquaredNorms() {
     case GlopParameters::DEVEX:
       return GetDevexWeights().const_view();
   }
+  LOG(FATAL) << "Invalid pricing rule: " << pricing_rule_;
 }
 
 const DenseRow& PrimalEdgeNorms::GetEdgeSquaredNorms() {

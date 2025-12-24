@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/base/log_severity.h"
+#include "absl/base/optimization.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/types/span.h"
@@ -188,6 +189,7 @@ bool NoOverlap2DConstraintHelper::PropagateRelativePosition(
       return LeftBoxBeforeRightBoxOnFirstDimension(
           second, first, y_helper_.get(), x_helper_.get());
   }
+  ABSL_UNREACHABLE();
 }
 
 void NoOverlap2DConstraintHelper::Reset(
