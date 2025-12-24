@@ -13,6 +13,7 @@
 
 #include "ortools/math_opt/solvers/gscip/gscip_callback_result.h"
 
+#include "absl/base/optimization.h"
 #include "scip/type_result.h"
 
 namespace operations_research {
@@ -56,6 +57,7 @@ SCIP_RESULT ConvertGScipCallbackResult(const GScipCallbackResult result) {
     case GScipCallbackResult::kDelayNode:
       return SCIP_DELAYNODE;
   }
+  ABSL_UNREACHABLE();
 }
 
 }  // namespace operations_research
