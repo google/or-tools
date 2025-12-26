@@ -34,7 +34,7 @@ jobs:
           swig -version
           echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
       - name: Check java
-        run: $JAVA_HOME/java -version
+        run: $JAVA_HOME/bin/java -version
 
       # RESTORING CACHES
       - name: Restore CMake dependency source code
