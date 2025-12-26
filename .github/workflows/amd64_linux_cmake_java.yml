@@ -25,7 +25,6 @@ jobs:
       deps_src_key: amd64_linux_java_deps_src
       deps_build_key: amd64_linux_java_deps_build
       ccache_key: amd64_linux_java_ccache
-      JAVA_HOME: $JAVA_HOME_21_X64
     steps:
       - uses: actions/checkout@v6
       - name: Install Dependencies
@@ -33,6 +32,7 @@ jobs:
           sudo apt update
           sudo apt install -y ninja-build ccache swig
           swig -version
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
       - name: Check java
         run: $JAVA_HOME/bin/java -version
 
