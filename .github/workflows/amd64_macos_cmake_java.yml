@@ -39,8 +39,6 @@ jobs:
           brew install ccache swig
           swig -version
           echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
-      - name: Check java
-        run: java -version
 
       # RESTORING CACHES
       - name: Restore CMake dependency source code
