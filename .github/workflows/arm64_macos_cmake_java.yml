@@ -34,14 +34,11 @@ jobs:
       ccache_key: arm64_macos_java_ccache_${{matrix.cmake.name}}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 21
       - name: Install Dependencies
         run: |
           brew install ccache swig
           swig -version
+          echo "JAVA_HOME=${JAVA_HOME_21_arm64}" >> $GITHUB_ENV
       - name: Check java
         run: java -version
 
