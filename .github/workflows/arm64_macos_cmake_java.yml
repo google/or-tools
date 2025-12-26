@@ -38,8 +38,7 @@ jobs:
         run: |
           brew install ccache swig
           swig -version
-          echo "JAVA_HOME=$JAVA_HOME_21_arm64" >> $GITHUB_ENV
-          echo "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+          echo "$JAVA_HOME_21_arm64/bin" >> "$GITHUB_PATH"
       - name: Check java
         run: java -version
 
