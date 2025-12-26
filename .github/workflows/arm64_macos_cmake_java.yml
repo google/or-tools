@@ -32,13 +32,13 @@ jobs:
       deps_src_key: arm64_macos_java_deps_src
       deps_build_key: arm64_macos_java_deps_build_${{matrix.cmake.name}}
       ccache_key: arm64_macos_java_ccache_${{matrix.cmake.name}}
+      JAVA_HOME: "$JAVA_HOME_21_arm64"
     steps:
       - uses: actions/checkout@v6
       - name: Install Dependencies
         run: |
           brew install ccache swig
           swig -version
-          echo "JAVA_HOME=$JAVA_HOME_21_arm64" >> $GITHUB_ENV
       - name: Check java
         run: $JAVA_HOME/bin/java -version
 
