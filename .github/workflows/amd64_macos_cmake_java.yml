@@ -32,7 +32,7 @@ jobs:
       deps_src_key: amd64_macos_java_deps_src
       deps_build_key: amd64_macos_java_deps_build_${{matrix.cmake.name}}
       ccache_key: amd64_macos_java_ccache_${{matrix.cmake.name}}
-      JAVA_HOME: "$JAVA_HOME_21_X64"
+      JAVA_HOME: $JAVA_HOME_21_X64
     steps:
       - uses: actions/checkout@v6
       - name: Install Dependencies
