@@ -32,8 +32,7 @@ jobs:
           sudo apt update
           sudo apt install -y ninja-build ccache swig
           swig -version
-      - name: Check java
-        run: java -version
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> $GITHUB_ENV
 
       # RESTORING CACHES
       - name: Restore CMake dependency source code
