@@ -48,7 +48,6 @@ cc_library(
     hdrs = ["xpress_environment.h"],
     deps = [
         ":dynamic_library",
-        "//ortools/base",
         "//ortools/base:base_export",
         "//ortools/base:status_builder",
         "@abseil-cpp//absl/base",

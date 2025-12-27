@@ -1152,5 +1152,29 @@ int CombineSeed(int base_seed, int64_t delta) {
   return static_cast<int>(FingerprintSingleField(base_seed, fp) & (0x7FFFFFFF));
 }
 
+bool IsAffineIntAbs(const ConstraintProto& ct) {
+  if (ct.constraint_case() != ConstraintProto::kLinMax ||
+      ct.lin_max().exprs_size() != 2 || ct.lin_max().target().vars_size() > 1 ||
+      ct.lin_max().exprs(0).vars_size() != 1 ||
+      ct.lin_max().exprs(1).vars_size() != 1) {
+    return false;
+  }
+
+  const LinearArgumentProto& lin_max = ct.lin_max();
+  if (lin_max.exprs(0).offset() != -lin_max.exprs(1).offset()) return false;
+  if (PositiveRef(lin_max.exprs(0).vars(0)) !=
+      PositiveRef(lin_max.exprs(1).vars(0))) {
+    return false;
+  }
+
+  const int64_t left_coeff = RefIsPositive(lin_max.exprs(0).vars(0))
+                                 ? lin_max.exprs(0).coeffs(0)
+                                 : -lin_max.exprs(0).coeffs(0);
+  const int64_t right_coeff = RefIsPositive(lin_max.exprs(1).vars(0))
+                                  ? lin_max.exprs(1).coeffs(0)
+                                  : -lin_max.exprs(1).coeffs(0);
+  return left_coeff == -right_coeff;
+}
+
 }  // namespace sat
 }  // namespace operations_research

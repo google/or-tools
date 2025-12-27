@@ -193,11 +193,14 @@ class MergeableOccurrenceList {
  public:
   MergeableOccurrenceList() = default;
 
-  void ResetFromTranspose(const CompactVectorVector<V, K>& input,
-                          int min_transpose_size = 0) {
-    rows_.ResetFromTranspose(input, min_transpose_size);
+  template <typename ValueMapper, typename Container>
+  void ResetFromTransposeMap(const Container& input,
+                             int min_transpose_size = 0) {
+    rows_.template ResetFromTransposeMap<ValueMapper>(input,
+                                                      min_transpose_size);
     next_.assign(rows_.size(), K(-1));
     marked_.ClearAndResize(V(input.size()));
+    merged_.ClearAndResize(K(rows_.size()));
   }
 
   int size() const { return rows_.size(); }
@@ -212,6 +215,7 @@ class MergeableOccurrenceList {
   // This is not const because it lazily merges lists.
   absl::Span<const V> operator[](K key) {
     if (key >= rows_.size()) return {};
+    CHECK(!merged_[key]);
 
     tmp_result_.clear();
     K previous(-1);
@@ -247,9 +251,13 @@ class MergeableOccurrenceList {
   //
   // And otherwise key should never be accessed anymore.
   void MergeInto(K to_merge, K representative) {
+    CHECK(!merged_[to_merge]);
+    DCHECK_GE(to_merge, 0);
+    DCHECK_GE(representative, 0);
     DCHECK_LT(to_merge, rows_.size());
     DCHECK_LT(representative, rows_.size());
     if (to_merge == representative) return;
+    merged_.Set(to_merge);
 
     // Find the end of the representative list to happen to_merge there.
     //
@@ -259,8 +267,14 @@ class MergeableOccurrenceList {
     K last_list = representative;
     while (next_[InternalKey(last_list)] >= 0) {
       last_list = next_[InternalKey(last_list)];
+      DCHECK_NE(last_list, to_merge);
     }
     next_[InternalKey(last_list)] = to_merge;
+  }
+
+  void ClearList(K key) {
+    next_[InternalKey(key)] = -1;
+    rows_.Shrink(key, 0);
   }
 
  private:
@@ -271,6 +285,7 @@ class MergeableOccurrenceList {
   // The bitset is used to remove duplicates when merging lists.
   std::vector<V> tmp_result_;
   Bitset64<V> marked_;
+  Bitset64<K> merged_;
 
   // Each "row" contains a set of values (we lazily remove duplicate).
   CompactVectorVector<K, V> rows_;

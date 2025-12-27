@@ -386,6 +386,18 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "presolve_encoding",
+    srcs = ["presolve_encoding.cc"],
+    hdrs = ["presolve_encoding.h"],
+    deps = [
+        ":cp_model_utils",
+        ":presolve_context",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/log",
+    ],
+)
+
 cc_proto_library(
     name = "cp_model_cc_proto",
     visibility = ["//visibility:public"],
@@ -1322,6 +1334,7 @@ cc_library(
         ":model",
         ":precedences",
         ":presolve_context",
+        ":presolve_encoding",
         ":presolve_util",
         ":probing",
         ":sat_base",

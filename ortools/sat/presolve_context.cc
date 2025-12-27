@@ -633,6 +633,22 @@ bool PresolveContext::ConstraintIsInactive(int index) const {
   return false;
 }
 
+bool PresolveContext::MarkConstraintAsFalse(ConstraintProto* ct,
+                                            std::string_view reason) {
+  DCHECK(!reason.empty());
+  if (!HasEnforcementLiteral(*ct)) {
+    return NotifyThatModelIsUnsat(reason);
+  }
+  // Change the constraint to a bool_or.
+  ct->mutable_bool_or()->clear_literals();
+  for (const int lit : ct->enforcement_literal()) {
+    ct->mutable_bool_or()->add_literals(NegatedRef(lit));
+  }
+  ct->clear_enforcement_literal();
+  UpdateRuleStats(reason);
+  return true;
+}
+
 bool PresolveContext::ConstraintIsOptional(int ct_ref) const {
   const ConstraintProto& ct = working_model->constraints(ct_ref);
   bool contains_one_free_literal = false;
