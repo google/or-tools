@@ -135,6 +135,7 @@ class PresolveTimer {
   // By default we want a limit of around 1 deterministic seconds.
   void AddToWork(double dtime) { work_ += dtime; }
   void TrackSimpleLoop(int size) { work_ += 5e-9 * size; }
+  void TrackHashLookups(int size) { work_ += 5e-8 * size; }
   void TrackFastLoop(int size) { work_ += 1e-9 * size; }
   bool WorkLimitIsReached() const { return work_ >= 1.0; }
 

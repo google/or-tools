@@ -142,6 +142,22 @@ inline std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
+inline std::ostream& operator<<(std::ostream& os,
+                                absl::Span<const LiteralIndex> literals) {
+  os << "[";
+  bool first = true;
+  for (const LiteralIndex index : literals) {
+    if (first) {
+      first = false;
+    } else {
+      os << ",";
+    }
+    os << Literal(index).DebugString();
+  }
+  os << "]";
+  return os;
+}
+
 // Only used for testing to use the classical SAT notation for a literal. This
 // allows to write Literals({+1, -4, +3}) for the clause with BooleanVariable 0
 // and 2 appearing positively and 3 negatively.

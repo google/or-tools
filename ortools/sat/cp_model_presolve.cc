@@ -76,6 +76,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/presolve_encoding.h"
 #include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
@@ -430,20 +431,9 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
 // done elsewhere.
 ABSL_MUST_USE_RESULT bool CpModelPresolver::MarkConstraintAsFalse(
     ConstraintProto* ct, std::string_view reason) {
-  DCHECK(!reason.empty());
-  if (HasEnforcementLiteral(*ct)) {
-    // Change the constraint to a bool_or.
-    ct->mutable_bool_or()->clear_literals();
-    for (const int lit : ct->enforcement_literal()) {
-      ct->mutable_bool_or()->add_literals(NegatedRef(lit));
-    }
-    ct->clear_enforcement_literal();
-    PresolveBoolOr(ct);
-    context_->UpdateRuleStats(reason);
-    return true;
-  } else {
-    return context_->NotifyThatModelIsUnsat(reason);
-  }
+  if (!context_->MarkConstraintAsFalse(ct, reason)) return false;
+  if (ct->constraint_case() == ConstraintProto::kBoolOr) PresolveBoolOr(ct);
+  return true;
 }
 
 ABSL_MUST_USE_RESULT bool CpModelPresolver::MarkOptionalIntervalAsFalse(
@@ -868,30 +858,6 @@ int GetFirstVar(ExpressionList exprs) {
     }
   }
   return -1;
-}
-
-bool IsAffineIntAbs(const ConstraintProto& ct) {
-  if (ct.constraint_case() != ConstraintProto::kLinMax ||
-      ct.lin_max().exprs_size() != 2 || ct.lin_max().target().vars_size() > 1 ||
-      ct.lin_max().exprs(0).vars_size() != 1 ||
-      ct.lin_max().exprs(1).vars_size() != 1) {
-    return false;
-  }
-
-  const LinearArgumentProto& lin_max = ct.lin_max();
-  if (lin_max.exprs(0).offset() != -lin_max.exprs(1).offset()) return false;
-  if (PositiveRef(lin_max.exprs(0).vars(0)) !=
-      PositiveRef(lin_max.exprs(1).vars(0))) {
-    return false;
-  }
-
-  const int64_t left_coeff = RefIsPositive(lin_max.exprs(0).vars(0))
-                                 ? lin_max.exprs(0).coeffs(0)
-                                 : -lin_max.exprs(0).coeffs(0);
-  const int64_t right_coeff = RefIsPositive(lin_max.exprs(1).vars(0))
-                                  ? lin_max.exprs(1).coeffs(0)
-                                  : -lin_max.exprs(1).coeffs(0);
-  return left_coeff == -right_coeff;
 }
 
 }  // namespace
@@ -12293,9 +12259,9 @@ void CpModelPresolver::FindBigAtMostOneAndLinearOverlap(
 
   for (int x = 0; x < context_->working_model->variables().size(); ++x) {
     // We pick a variable x that appear in some AMO.
+    if (helper->NumAmoForVariable(x) == 0) continue;
     if (time_limit_->LimitReached()) break;
     if (timer.WorkLimitIsReached()) break;
-    if (helper->NumAmoForVariable(x) == 0) continue;
 
     amo_cts.clear();
     timer.TrackSimpleLoop(context_->VarToConstraints(x).size());
@@ -13363,121 +13329,6 @@ void CpModelPresolver::ProcessVariableInTwoAtMostOrExactlyOne(int var) {
   }
 }
 
-// If we have a bunch of constraint of the form literal => Y \in domain and
-// another constraint Y = f(X), we can remove Y, that constraint, and transform
-// all linear1 from constraining Y to constraining X.
-//
-// We can for instance do it for Y = abs(X) or Y = X^2 easily. More complex
-// function might be trickier.
-//
-// Note that we can't always do it in the reverse direction though!
-// If we have l => X = -1, we can't transfer that to abs(X) for instance, since
-// X=1 will also map to abs(-1). We can only do it if for all implied domain D
-// we have f^-1(f(D)) = D, which is not easy to check.
-void CpModelPresolver::MaybeTransferLinear1ToAnotherVariable(int var) {
-  // Find the extra constraint and do basic CHECKs.
-  int other_c;
-  int num_others = 0;
-  std::vector<int> to_rewrite;
-  for (const int c : context_->VarToConstraints(var)) {
-    if (c >= 0) {
-      const ConstraintProto& ct = context_->working_model->constraints(c);
-      if (ct.constraint_case() == ConstraintProto::kLinear &&
-          ct.linear().vars().size() == 1) {
-        to_rewrite.push_back(c);
-        continue;
-      }
-    }
-    ++num_others;
-    other_c = c;
-  }
-  if (num_others != 1) return;
-  if (other_c < 0) return;
-
-  // In general constraint with more than two variable can't be removed.
-  // Similarly for linear2 with non-fixed rhs as we would need to check the form
-  // of all implied domain.
-  const auto& other_ct = context_->working_model->constraints(other_c);
-  if (context_->ConstraintToVars(other_c).size() != 2 ||
-      !other_ct.enforcement_literal().empty() ||
-      other_ct.constraint_case() == ConstraintProto::kLinear) {
-    return;
-  }
-
-  // This will be the rewriting function. It takes the implied domain of var
-  // from linear1, and return a pair {new_var, new_var_implied_domain}.
-  std::function<std::pair<int, Domain>(const Domain& implied)> transfer_f =
-      nullptr;
-
-  // We only support a few cases.
-  //
-  // TODO(user): implement more! Note that the linear2 case was tempting, but if
-  // we don't have an equality, we can't transfer, and if we do, we actually
-  // have affine equivalence already.
-  if (other_ct.constraint_case() == ConstraintProto::kLinMax &&
-      other_ct.lin_max().target().vars().size() == 1 &&
-      other_ct.lin_max().target().vars(0) == var &&
-      std::abs(other_ct.lin_max().target().coeffs(0)) == 1 &&
-      IsAffineIntAbs(other_ct)) {
-    context_->UpdateRuleStats("linear1: transferred from abs(X) to X");
-    const LinearExpressionProto& target = other_ct.lin_max().target();
-    const LinearExpressionProto& expr = other_ct.lin_max().exprs(0);
-    transfer_f = [target = target, expr = expr](const Domain& implied) {
-      Domain target_domain =
-          implied.ContinuousMultiplicationBy(target.coeffs(0))
-              .AdditionWith(Domain(target.offset()));
-      target_domain = target_domain.IntersectionWith(
-          Domain(0, std::numeric_limits<int64_t>::max()));
-
-      // We have target = abs(expr).
-      const Domain expr_domain =
-          target_domain.UnionWith(target_domain.Negation());
-      const Domain new_domain = expr_domain.AdditionWith(Domain(-expr.offset()))
-                                    .InverseMultiplicationBy(expr.coeffs(0));
-      return std::make_pair(expr.vars(0), new_domain);
-    };
-  }
-
-  if (transfer_f == nullptr) {
-    context_->UpdateRuleStats(
-        "TODO linear1: appear in only one extra 2-var constraint");
-    return;
-  }
-
-  // Applies transfer_f to all linear1.
-  std::sort(to_rewrite.begin(), to_rewrite.end());
-  const Domain var_domain = context_->DomainOf(var);
-  for (const int c : to_rewrite) {
-    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    if (ct->linear().vars(0) != var || ct->linear().coeffs(0) != 1) {
-      // This shouldn't happen.
-      LOG(INFO) << "Aborted in MaybeTransferLinear1ToAnotherVariable()";
-      return;
-    }
-
-    const Domain implied =
-        var_domain.IntersectionWith(ReadDomainFromProto(ct->linear()));
-    auto [new_var, new_domain] = transfer_f(implied);
-    const Domain current = context_->DomainOf(new_var);
-    new_domain = new_domain.IntersectionWith(current);
-    if (new_domain.IsEmpty()) {
-      if (!MarkConstraintAsFalse(ct, "linear1: unsat transfer")) return;
-    } else if (new_domain == current) {
-      ct->Clear();
-    } else {
-      ct->mutable_linear()->set_vars(0, new_var);
-      FillDomainInProto(new_domain, ct->mutable_linear());
-    }
-    context_->UpdateConstraintVariableUsage(c);
-  }
-
-  // Copy other_ct to the mapping model and delete var!
-  context_->NewMappingConstraint(other_ct, __FILE__, __LINE__);
-  context_->working_model->mutable_constraints(other_c)->Clear();
-  context_->UpdateConstraintVariableUsage(other_c);
-  context_->MarkVariableAsRemoved(var);
-}
-
 // TODO(user): We can still remove the variable even if we want to keep
 // all feasible solutions for the cases when we have a full encoding.
 // Similarly this shouldn't break symmetry, but we do need to do it for all
@@ -13499,13 +13350,46 @@ void CpModelPresolver::ProcessVariableOnlyUsedInEncoding(int var) {
     return;
   }
 
-  if (!context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var)) {
-    if (context_->VariableIsOnlyUsedInLinear1AndOneExtraConstraint(var)) {
-      MaybeTransferLinear1ToAnotherVariable(var);
-      return;
+  const bool is_only_used_in_linear1 =
+      context_->VariableIsOnlyUsedInLinear1AndOneExtraConstraint(var);
+  const bool is_only_used_in_encoding =
+      context_->VariableIsOnlyUsedInEncodingAndMaybeInObjective(var);
+  if (!is_only_used_in_encoding && is_only_used_in_linear1) {
+    VariableEncodingLocalModel local_model;
+    local_model.var = var;
+    local_model.single_constraint_using_the_var_outside_the_local_model = -1;
+    local_model.var_in_more_than_one_constraint_outside_the_local_model = false;
+    for (const int c : context_->VarToConstraints(var)) {
+      if (c >= 0) {
+        const ConstraintProto& ct = context_->working_model->constraints(c);
+        if (ct.constraint_case() == ConstraintProto::kLinear &&
+            ct.linear().vars().size() == 1 && ct.linear().vars(0) == var) {
+          local_model.linear1_constraints.push_back(c);
+          continue;
+        }
+      }
+      if (c == kObjectiveConstraint) {
+        local_model.variable_coeff_in_objective =
+            context_->ObjectiveMap().at(var);
+      } else if (
+          local_model.single_constraint_using_the_var_outside_the_local_model ==
+              -1 &&
+          c >= 0) {
+        // First "other" constraint.
+        local_model.single_constraint_using_the_var_outside_the_local_model = c;
+      } else {
+        // We have a second "other" constraint.
+        local_model.single_constraint_using_the_var_outside_the_local_model =
+            -1;
+        local_model.var_in_more_than_one_constraint_outside_the_local_model =
+            true;
+      }
     }
+
+    MaybeTransferLinear1ToAnotherVariable(local_model, context_);
     return;
   }
+  if (!is_only_used_in_encoding) return;
 
   // Presolve newly created constraints.
   const int old_size = context_->working_model->constraints_size();
@@ -13643,18 +13527,19 @@ bool CpModelPresolver::ProcessChangedVariables(std::vector<bool>* in_queue,
     if (!context_->CanonicalizeOneObjectiveVariable(v)) return false;
 
     in_queue->resize(context_->working_model->constraints_size(), false);
+    const int size_before = queue->size();
     for (const int c : context_->VarToConstraints(v)) {
       if (c >= 0 && !(*in_queue)[c]) {
         (*in_queue)[c] = true;
         queue->push_back(c);
       }
     }
+
+    // Make sure the order is deterministic! because var_to_constraints[]
+    // order changes from one run to the next.
+    std::sort(queue->begin() + size_before, queue->end());
   }
   context_->modified_domains.ResetAllToFalse();
-
-  // Make sure the order is deterministic! because var_to_constraints[]
-  // order changes from one run to the next.
-  std::sort(queue->begin(), queue->end());
   return !queue->empty();
 }
 
@@ -13871,47 +13756,58 @@ void CpModelPresolver::PresolveToFixPoint() {
   // TODO(user): ideally we should "wake-up" any constraint that contains an
   // absent interval in the main propagation loop above. But we currently don't
   // maintain such list.
-  const int num_constraints = context_->working_model->constraints_size();
-  for (int c = 0; c < num_constraints; ++c) {
-    if (time_limit_->LimitReached()) break;
-    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
-    switch (ct->constraint_case()) {
-      case ConstraintProto::kNoOverlap:
-        // Filter out absent intervals.
-        if (PresolveNoOverlap(ct)) {
-          context_->UpdateConstraintVariableUsage(c);
-        }
-        break;
-      case ConstraintProto::kNoOverlap2D:
-        // Filter out absent intervals.
-        if (PresolveNoOverlap2D(c, ct)) {
-          context_->UpdateConstraintVariableUsage(c);
-        }
-        break;
-      case ConstraintProto::kCumulative:
-        // Filter out absent intervals.
-        if (PresolveCumulative(ct)) {
-          context_->UpdateConstraintVariableUsage(c);
-        }
-        break;
-      case ConstraintProto::kBoolOr: {
-        // Try to infer domain reductions from clauses and the saved "implies in
-        // domain" relations.
-        for (const auto& pair :
-             context_->deductions.ProcessClause(ct->bool_or().literals())) {
-          bool modified = false;
-          if (!context_->IntersectDomainWith(pair.first, pair.second,
-                                             &modified)) {
-            return;
+  if (!time_limit_->LimitReached()) {
+    const int num_constraints = context_->working_model->constraints_size();
+    TimeLimitCheckEveryNCalls bool_or_check_time_limit(100, time_limit_);
+    for (int c = 0; c < num_constraints; ++c) {
+      ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+      // We don't want to check the time limit at each "small" constraint as
+      // there could be many.
+      bool check_time_limit = false;
+
+      switch (ct->constraint_case()) {
+        case ConstraintProto::kNoOverlap:
+          // Filter out absent intervals.
+          if (PresolveNoOverlap(ct)) {
+            context_->UpdateConstraintVariableUsage(c);
           }
-          if (modified) {
-            context_->UpdateRuleStats("deductions: reduced variable domain");
+          check_time_limit = true;
+          break;
+        case ConstraintProto::kNoOverlap2D:
+          // Filter out absent intervals.
+          if (PresolveNoOverlap2D(c, ct)) {
+            context_->UpdateConstraintVariableUsage(c);
           }
+          check_time_limit = true;
+          break;
+        case ConstraintProto::kCumulative:
+          // Filter out absent intervals.
+          if (PresolveCumulative(ct)) {
+            context_->UpdateConstraintVariableUsage(c);
+          }
+          check_time_limit = true;
+          break;
+        case ConstraintProto::kBoolOr: {
+          // Try to infer domain reductions from clauses and the saved "implies
+          // in domain" relations.
+          for (const auto& pair :
+               context_->deductions.ProcessClause(ct->bool_or().literals())) {
+            bool modified = false;
+            if (!context_->IntersectDomainWith(pair.first, pair.second,
+                                               &modified)) {
+              return;
+            }
+            if (modified) {
+              context_->UpdateRuleStats("deductions: reduced variable domain");
+            }
+          }
+          if (bool_or_check_time_limit.LimitReached()) check_time_limit = true;
+          break;
         }
-        break;
+        default:
+          break;
       }
-      default:
-        break;
+      if (check_time_limit && time_limit_->LimitReached()) break;
     }
   }
 

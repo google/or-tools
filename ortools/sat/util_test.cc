@@ -172,7 +172,10 @@ TEST(MergeableOccurrenceList, BasicTest) {
   storage.ResetFromFlatMapping(keys, vals);
 
   MergeableOccurrenceList<int, int> occ;
-  occ.ResetFromTranspose(storage);
+  struct GetVarMapper {
+    int operator()(int i) const { return i; }
+  };
+  occ.ResetFromTransposeMap<GetVarMapper>(storage);
 
   // The first access should be ordered.
   EXPECT_THAT(occ.size(), 6);

@@ -616,6 +616,10 @@ class PresolveContext {
     return interval_usage_[c];
   }
 
+  // Note this function does not update the constraint graph. It assumes this is
+  // done elsewhere.
+  bool MarkConstraintAsFalse(ConstraintProto* ct, std::string_view reason);
+
   // Checks if a constraint contains an enforcement literal set to false,
   // or if it has been cleared.
   bool ConstraintIsInactive(int ct_index) const;

@@ -289,6 +289,9 @@ bool SafeAddLinearExpressionToLinearConstraint(
     const LinearExpressionProto& expr, int64_t coefficient,
     LinearConstraintProto* linear);
 
+// Returns if a constraint is of the form y = lin_max(x, -x).
+bool IsAffineIntAbs(const ConstraintProto& ct);
+
 // Returns true iff a == b * b_scaling.
 bool LinearExpressionProtosAreEqual(const LinearExpressionProto& a,
                                     const LinearExpressionProto& b,
