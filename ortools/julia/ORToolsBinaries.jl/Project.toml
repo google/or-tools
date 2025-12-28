@@ -1,0 +1,16 @@
+name = "ORToolsBinaries"
+uuid = "594ad865-6a17-49ee-8f22-76ed020c7c08"
+version = "0.0.1"
+
+[deps]
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+
+[compat]
+julia = "1.9"
+Downloads = "1"
+ZipArchives = "2"
+Tar = "1"
+CodecZlib = "0.7"
