@@ -208,7 +208,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     "-sMODULARIZE=1"
     "-sEXPORT_ES6=1"
     "-sEXPORT_NAME=cpSatModule"
-    "-sENVIRONMENT=web,worker,node"
+    "-sENVIRONMENT=web,worker"
     "-sASSERTIONS=1"
     "-sALLOW_MEMORY_GROWTH=1"
     "-sJSPI=2"
