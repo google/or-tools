@@ -345,6 +345,7 @@ if(BUILD_Boost)
     UPDATE_COMMAND git reset --hard --recurse-submodules
     PATCH_COMMAND git apply --ignore-whitespace
     "${CMAKE_CURRENT_LIST_DIR}/../../patches/boost-1.87.0.patch"
+    OVERRIDE_FIND_PACKAGE # Needed for Soplex
     SYSTEM
   )
   set(BOOST_INCLUDE_LIBRARIES multiprecision serialization)

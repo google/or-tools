@@ -1,7 +1,13 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9511442..58a8a58 100644
+index 9511442..3993fc4 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.11)
++cmake_minimum_required(VERSION 3.25)
+ 
+ # FindBoost is removed in version cmake 3.30
+ if(POLICY CMP0167)
 @@ -31,6 +31,10 @@ set(CPACK_PACKAGE_VERSION_PATCH "${SOPLEX_VERSION_PATCH}")
  set(CPACK_PACKAGE_VENDOR "Zuse Institute Berlin")
  include(CPack)
