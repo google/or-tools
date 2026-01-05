@@ -567,6 +567,7 @@ void HardFapSolver(const absl::btree_map<int, FapVariable>& data_variables,
                            static_cast<int>(variables.size()), &cardinality);
     solver.AddConstraint(solver.MakeDistribute(variables, values, cardinality));
     std::vector<IntVar*> value_not_assigned;
+    value_not_assigned.reserve(values.size());
     for (int val = 0; val < values.size(); ++val) {
       value_not_assigned.push_back(
           solver.MakeIsEqualCstVar(cardinality[val], 0));

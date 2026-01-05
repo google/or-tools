@@ -246,6 +246,7 @@ void FixtureModel(int num_teams) {
     for (int other = 0; other < num_teams; ++other) {
       if (team == other) continue;
       std::vector<BoolVar> possible_days;
+      possible_days.reserve(num_days);
       for (int d = 0; d < num_days; ++d) {
         possible_days.push_back(fixtures[d][team][other]);
       }
