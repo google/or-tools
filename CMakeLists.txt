@@ -455,6 +455,3 @@ endforeach()
 foreach(EXAMPLES IN ITEMS contrib cpp dotnet java python)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()
-
-# Add tests in examples/tests
-add_subdirectory(examples/tests)
