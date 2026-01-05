@@ -106,6 +106,7 @@ if(MSVC)
     "/D_CRT_SECURE_NO_WARNINGS"
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
+    "/Zc:inline" # Remove unreferenced COMDAT
     "/Zc:preprocessor" # Enable preprocessor conformance mode
     "/fp:precise"
     )
