@@ -84,7 +84,6 @@ This software suite is composed of the following components:
     *   [python](examples/python) Python examples.
     *   [notebook](examples/notebook) Jupyter/IPython notebooks.
     *   [flatzinc](examples/flatzinc) FlatZinc examples.
-    *   [tests](examples/tests) Unit tests and bug reports.
 *   [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, release dockers)
 
 ## Installation

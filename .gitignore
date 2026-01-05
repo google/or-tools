@@ -95,8 +95,6 @@ ortools/dotnet/*/bin
 ortools/dotnet/*/obj
 ortools/**/samples/bin
 ortools/**/samples/obj
-examples/tests/bin
-examples/tests/obj
 examples/contrib/bin
 examples/contrib/obj
 examples/dotnet/bin
