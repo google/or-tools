@@ -291,21 +291,15 @@ function build_python() {
     cmake --build "temp_python${PY_VERSION}" --target ortools -j8 -v
     echo "DONE" | tee -a build.log
 
-    if [[ ${PLATFORM} == "x86_64" ]]; then
-      echo -n "  Build all few times..." | tee -a build.log
-      # on macos X86_64 stubgen will timeout -> need to build few times
-      cmake --build "temp_python${PY_VERSION}" -j4 -v || true
-      sleep 10
-      cmake --build "temp_python${PY_VERSION}" -v || true
-      echo "DONE" | tee -a build.log
-      echo -n "  ReBuild all..." | tee -a build.log
-      cmake --build "temp_python${PY_VERSION}" -j4 -v
-      echo "DONE" | tee -a build.log
-    else
-      echo -n "  Build all..." | tee -a build.log
-      cmake --build "temp_python${PY_VERSION}" -j8 -v
-      echo "DONE" | tee -a build.log
-    fi
+    echo -n "  Build all few times..." | tee -a build.log
+    # on macos stubgen will timeout -> need to build few times
+    cmake --build "temp_python${PY_VERSION}" -j4 -v || true
+    sleep 10
+    cmake --build "temp_python${PY_VERSION}" -v || true
+    echo "DONE" | tee -a build.log
+    echo -n "  ReBuild all..." | tee -a build.log
+    cmake --build "temp_python${PY_VERSION}" -j4 -v
+    echo "DONE" | tee -a build.log
 
     echo -n "  Check libortools.dylib..." | tee -a build.log
     otool -L "temp_python${PY_VERSION}/lib/libortools.dylib" | grep -vqz "/Users"
