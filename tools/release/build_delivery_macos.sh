@@ -251,7 +251,7 @@ function build_python() {
     echo "check protoc-gen-mypy..."
     command -v protoc-gen-mypy | xargs echo "protoc-gen-mypy: " | tee -a build.log
     protoc-gen-mypy --version | xargs echo "protoc-gen-mypy version: " | tee -a build.log
-    protoc-gen-mypy --version | grep "3\.6\.0"
+    protoc-gen-mypy --version | grep "4\.0\.0"
   done
 
   declare -a MYPY_FILES=(
