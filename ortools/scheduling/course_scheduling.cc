@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "examples/cpp/course_scheduling.h"
+#include "ortools/scheduling/course_scheduling.h"
 
 #include <algorithm>
 #include <cmath>
@@ -21,10 +21,10 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
-#include "ortools/base/logging.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/scheduling/course_scheduling.pb.h"
