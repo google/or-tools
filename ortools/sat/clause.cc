@@ -529,7 +529,8 @@ bool ClauseManager::InprocessingRewriteClause(
   }
   const bool is_reason = ClauseIsUsedAsReason(clause);
 
-  CHECK(!is_reason || new_clause[0] == clause->PropagatedLiteral());
+  CHECK(!is_reason || new_clause[0] == clause->PropagatedLiteral())
+      << new_clause << " old " << clause->AsSpan();
 
   if (new_clause.empty()) return false;  // UNSAT.
 
@@ -682,12 +683,24 @@ SatClause* ClauseManager::NextNewClauseToMinimize() {
 }
 
 SatClause* ClauseManager::NextClauseToMinimize() {
+  const int old = to_first_minimize_index_;
   for (; to_minimize_index_ < clauses_.size(); ++to_minimize_index_) {
     if (clauses_[to_minimize_index_]->IsRemoved()) continue;
     if (!IsRemovable(clauses_[to_minimize_index_])) {
       return clauses_[to_minimize_index_++];
     }
   }
+
+  // Lets reset and try once more to find one.
+  to_minimize_index_ = 0;
+  ++num_to_minimize_index_resets_;
+  for (; to_minimize_index_ < old; ++to_minimize_index_) {
+    if (clauses_[to_minimize_index_]->IsRemoved()) continue;
+    if (!IsRemovable(clauses_[to_minimize_index_])) {
+      return clauses_[to_minimize_index_++];
+    }
+  }
+
   return nullptr;
 }
 

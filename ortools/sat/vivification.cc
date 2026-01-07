@@ -18,8 +18,10 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/cleanup/cleanup.h"
 #include "absl/container/btree_set.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/types/span.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/sat_base.h"
@@ -31,7 +33,7 @@ namespace operations_research::sat {
 bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
                                      bool minimize_new_clauses_only) {
   PresolveTimer timer("Vivification", logger_, time_limit_);
-  timer.OverrideLogging(log_info);
+  timer.OverrideLogging(log_info || VLOG_IS_ON(2));
 
   sat_solver_->AdvanceDeterministicTime(time_limit_);
   const double threshold =
@@ -44,34 +46,34 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
   // Tricky: we don't want TryToMinimizeClause() to delete to_minimize
   // while we are processing it.
   sat_solver_->BlockClauseDeletion(true);
+  absl::Cleanup unblock_clause_deletion = [&] {
+    sat_solver_->BlockClauseDeletion(false);
+  };
 
   const auto old_counter = counters_;
-  int num_resets = 0;
-  while (!time_limit_->LimitReached() &&
-         time_limit_->GetElapsedDeterministicTime() < threshold) {
-    SatClause* to_minimize = clause_manager_->NextNewClauseToMinimize();
-    if (!minimize_new_clauses_only && to_minimize == nullptr) {
-      to_minimize = clause_manager_->NextClauseToMinimize();
-    }
-
-    if (to_minimize != nullptr) {
-      if (!TryToMinimizeClause(to_minimize)) {
-        sat_solver_->BlockClauseDeletion(false);
-        return false;
-      }
-    } else if (minimize_new_clauses_only) {
-      break;
-    } else {
-      ++num_resets;
-      if (log_info) {
-        SOLVER_LOG(logger_,
-                   "Minimized all clauses, restarting from first one.");
-      }
-      clause_manager_->ResetToMinimizeIndex();
-      if (num_resets > 1) break;
-    }
-
+  const int num_resets = clause_manager_->NumToMinimizeIndexResets();
+  while (!time_limit_->LimitReached()) {
+    // Abort if we used our budget.
     sat_solver_->AdvanceDeterministicTime(time_limit_);
+    if (time_limit_->GetElapsedDeterministicTime() >= threshold) break;
+
+    // Also abort if we did more than one loop over all the clause.
+    if (clause_manager_->NumToMinimizeIndexResets() > num_resets + 1) break;
+
+    // First minimize clauses that where never minimized before.
+    {
+      SatClause* to_minimize = clause_manager_->NextNewClauseToMinimize();
+      if (to_minimize != nullptr) {
+        if (!TryToMinimizeClause(to_minimize)) return false;
+        continue;
+      }
+      if (minimize_new_clauses_only) break;  // We are done.
+    }
+
+    SatClause* clause = clause_manager_->NextClauseToMinimize();
+    if (clause != nullptr) {
+      if (!TryToMinimizeClause(clause)) return false;
+    }
   }
 
   // Note(user): In some corner cases, the function above might find a
@@ -85,8 +87,8 @@ bool Vivifier::MinimizeByPropagation(bool log_info, double dtime_budget,
       counters_.num_removed_literals - old_counter.num_removed_literals;
   timer.AddCounter("num_vivifed", last_num_vivified_);
   timer.AddCounter("literals_removed", last_num_literals_removed_);
+  timer.AddCounter("loops", clause_manager_->NumToMinimizeIndexResets());
 
-  sat_solver_->BlockClauseDeletion(false);
   clause_manager_->DeleteRemovedClauses();
   return result;
 }
@@ -171,6 +173,7 @@ bool Vivifier::SubsumptionIsInteresting(BooleanVariable variable,
 // that we can reuse the trail from previous calls in case there are overlaps.
 bool Vivifier::TryToMinimizeClause(SatClause* clause) {
   CHECK(clause != nullptr);
+  if (clause->empty()) return true;
   ++counters_.num_clauses_vivified;
 
   // TODO(user): Make sure clause do not contain any redundant literal before
@@ -229,8 +232,10 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
   }
   CHECK_EQ(candidate.size(), clause->size());
 
-  if (!sat_solver_->BacktrackAndPropagateReimplications(longest_valid_prefix))
+  if (!sat_solver_->BacktrackAndPropagateReimplications(longest_valid_prefix)) {
     return false;
+  }
+
   absl::btree_set<LiteralIndex> moved_last;
   while (!sat_solver_->ModelIsUnsat()) {
     // We want each literal in candidate to appear last once in our propagation
@@ -240,8 +245,9 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
     const int target_level = MoveOneUnprocessedLiteralLast(
         moved_last, sat_solver_->CurrentDecisionLevel(), &candidate);
     if (target_level == -1) break;
-    if (!sat_solver_->BacktrackAndPropagateReimplications(target_level))
+    if (!sat_solver_->BacktrackAndPropagateReimplications(target_level)) {
       return false;
+    }
     fixed_false_literals.clear();
     fixed_true_literal = kNoLiteralIndex;
 
@@ -273,9 +279,8 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
           // Replace the clause with the reason for the literal being true, plus
           // the literal itself.
           candidate.clear();
-          for (Literal lit : sat_solver_->GetDecisionsFixing(
-                   trail_->Reason(literal.Variable()))) {
-            candidate.push_back(lit.Negated());
+          for (const Literal l : sat_solver_->GetDecisionsFixing({literal})) {
+            candidate.push_back(l.Negated());
           }
         } else {
           candidate.resize(variable_level);
@@ -289,7 +294,8 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
         // clauses. If we can subsume this clause by making only 1 additional
         // clause permanent and that clause is no longer than this one, we will
         // do so.
-        if (clause_manager_->ReasonClauseOrNull(literal.Variable()) != clause &&
+        if (parameters_.subsume_during_vivification() &&
+            clause_manager_->ReasonClauseOrNull(literal.Variable()) != clause &&
             SubsumptionIsInteresting(literal.Variable(), candidate.size())) {
           counters_.num_subsumed++;
           counters_.num_removed_literals += clause->size();
@@ -305,7 +311,10 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
         sat_solver_->EnqueueDecisionAndBackjumpOnConflict(literal.Negated());
         if (sat_solver_->ModelIsUnsat()) return false;
         if (clause->IsRemoved()) return true;
+
         if (sat_solver_->CurrentDecisionLevel() < level) {
+          ++counters_.num_conflicts;
+
           // There was a conflict, consider the conflicting literal next so we
           // should be able to exploit the conflict in the next iteration.
           // TODO(user): I *think* this is sufficient to ensure pushing
@@ -321,6 +330,9 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
       sat_solver_->NotifyThatModelIsUnsat();
       return false;
     }
+
+    // TODO(user): To use this, we need to proove and rewrite the clause
+    // on each of its modification.
     if (!parameters_.inprocessing_minimization_use_all_orderings()) break;
     moved_last.insert(candidate.back().Index());
   }
@@ -396,15 +408,11 @@ bool Vivifier::TryToMinimizeClause(SatClause* clause) {
     sat_solver_->NotifyThatModelIsUnsat();
     return false;
   }
-  // Adding a unit clause can cause additional propagation, but there is also an
-  // edge case where binary_clauses_->PropagationIsDone() may return
-  // false after we add the first binary clause, even if nothing has been added
-  // to the trail. Either way, we can just check if the implication graph thinks
-  // it is done to propagate only when required.
-  if (!binary_clauses_->PropagationIsDone(*trail_)) {
-    return sat_solver_->FinishPropagation();
-  }
-  return true;
+
+  // Adding a unit clause can cause additional propagation. There is also an
+  // edge case where we added the first binary clause of the model by
+  // strenghtening a normal clause.
+  return sat_solver_->FinishPropagation();
 }
 
 }  // namespace operations_research::sat

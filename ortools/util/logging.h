@@ -127,7 +127,10 @@ class SolverLogger {
 class PresolveTimer {
  public:
   PresolveTimer(std::string name, SolverLogger* logger, TimeLimit* time_limit)
-      : name_(std::move(name)), logger_(logger), time_limit_(time_limit) {
+      : name_(std::move(name)),
+        dtime_at_start_(time_limit->GetElapsedDeterministicTime()),
+        logger_(logger),
+        time_limit_(time_limit) {
     timer_.Start();
   }
 
@@ -164,6 +167,7 @@ class PresolveTimer {
 
  private:
   const std::string name_;
+  const double dtime_at_start_;
 
   WallTimer timer_;
   SolverLogger* logger_;

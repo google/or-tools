@@ -238,23 +238,6 @@ RelationStatus BestBinaryRelationBounds::GetStatus(LinearExpression2 expr,
   return RelationStatus::IS_UNKNOWN;
 }
 
-IntegerValue BestBinaryRelationBounds::GetUpperBound(
-    LinearExpression2 expr) const {
-  expr.SimpleCanonicalization();
-  const IntegerValue gcd = expr.DivideByGcd();
-  const bool negated = expr.NegateForCanonicalization();
-  const auto it = best_bounds_.find(expr);
-  if (it != best_bounds_.end()) {
-    const auto [known_lb, known_ub] = it->second;
-    if (negated) {
-      return CapProdI(gcd, -known_lb);
-    } else {
-      return CapProdI(gcd, known_ub);
-    }
-  }
-  return kMaxIntegerValue;
-}
-
 std::vector<std::pair<LinearExpression2, IntegerValue>>
 BestBinaryRelationBounds::GetSortedNonTrivialUpperBounds() const {
   std::vector<std::pair<LinearExpression2, IntegerValue>> root_relations_sorted;

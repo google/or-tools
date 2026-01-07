@@ -45,6 +45,7 @@ class Vivifier {
         trail_(model->GetOrCreate<Trail>()),
         binary_clauses_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<ClauseManager>()),
+        clause_id_generator_(model->GetOrCreate<ClauseIdGenerator>()),
         lrat_proof_handler_(model->Mutable<LratProofHandler>()) {}
 
   // Minimize a batch of clauses using propagation.
@@ -67,6 +68,7 @@ class Vivifier {
     int64_t num_subsumed = 0;
     int64_t num_removed_literals = 0;
     int64_t num_reused = 0;
+    int64_t num_conflicts = 0;
   };
   Counters counters() const { return counters_; }
 
@@ -92,7 +94,7 @@ class Vivifier {
   Trail* trail_;
   BinaryImplicationGraph* binary_clauses_;
   ClauseManager* clause_manager_;
-
+  ClauseIdGenerator* clause_id_generator_;
   LratProofHandler* lrat_proof_handler_ = nullptr;
 
   Counters counters_;
