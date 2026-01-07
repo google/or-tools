@@ -93,7 +93,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "file", source: "../../../../examples/dotnet", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../examples/java", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../examples/python", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../../examples/tests", destination: "$HOME/project/examples/"
   config.vm.provision "file", source: "../../../../patches", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../Version.txt", destination: "$HOME/project/"
   config.vm.provision "file", source: "../../../../tools/doc/orLogo.png", destination: "$HOME/project/tools/doc/"

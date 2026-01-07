@@ -379,7 +379,7 @@ check_java: \
  rjava_LinearProgramming \
  rjava_IntegerProgramming
 
-.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
+.PHONY: test_java_tests # Build and Run all Java Tests (located in ortools/*/java)
 test_java_tests: \
  rjava_InitTest \
  rjava_KnapsackSolverTest \
