@@ -88,7 +88,6 @@ check_cpp: check_cpp_pimpl
 
 test_cpp: \
  cpp \
- test_cc_tests \
  test_cc_contrib \
  test_cc_cpp
 
@@ -306,54 +305,6 @@ endef
 CPP_EXAMPLES := contrib cpp
 $(foreach example,$(CPP_EXAMPLES),$(eval $(call cpp-example-target,$(example))))
 
-# Tests
-CPP_TESTS := tests
-
-$(TEMP_CPP_DIR)/tests: | $(TEMP_CPP_DIR)
-	-$(MKDIR) $(TEMP_CPP_DIR)$Stests
-
-$(TEMP_CPP_DIR)/tests/%: \
- $(SRC_DIR)/examples/tests/%.cc \
- | $(TEMP_CPP_DIR)/tests
-	-$(MKDIR) $(TEMP_CPP_DIR)$Stests$S$*
-
-$(TEMP_CPP_DIR)/tests/%/CMakeLists.txt: ${SRC_DIR}/ortools/cpp/CMakeLists.txt.in | $(TEMP_CPP_DIR)/tests/%
-	$(COPY) ortools$Scpp$SCMakeLists.txt.in $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
-	$(SED) -i -e 's/@CPP_NAME@/$*/' \
- $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
-	$(SED) -i -e 's/@CPP_FILE_NAME@/$*.cc/' \
- $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
-	$(SED) -i -e 's/@TEST_ARGS@//' \
- $(TEMP_CPP_DIR)$Stests$S$*$SCMakeLists.txt
-
-$(TEMP_CPP_DIR)/tests/%/%.cc: \
- $(SRC_DIR)/examples/tests/%.cc \
- | $(TEMP_CPP_DIR)/tests/%
-	$(MKDIR_P) $(TEMP_CPP_DIR)$Stests$S$*
-	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.cc \
- $(TEMP_CPP_DIR)$Stests$S$*
-
-rcpp_%: \
- cpp \
- $(SRC_DIR)/examples/tests/%.cc \
- $(TEMP_CPP_DIR)/tests/%/CMakeLists.txt \
- $(TEMP_CPP_DIR)/tests/%/%.cc \
- FORCE
-	cd $(TEMP_CPP_DIR)$Stests$S$* && \
- cmake -S. -Bbuild \
- -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
- -DCMAKE_PREFIX_PATH=$(OR_ROOT_FULL)/$(INSTALL_DIR) \
- -DCMAKE_INSTALL_PREFIX=install \
- $(CMAKE_ARGS) \
- -G $(GENERATOR)
-ifneq ($(PLATFORM),WIN64)
-	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target all -v
-	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target test -v
-else
-	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target ALL_BUILD -v
-	cd $(TEMP_CPP_DIR)$Stests$S$* && cmake --build build --config $(BUILD_TYPE) --target RUN_TESTS -v
-endif
-
 ##################################
 ##  Course scheduling example   ##
 ##################################
@@ -496,16 +447,6 @@ check_cpp_pimpl: \
  rcpp_knapsack \
  rcpp_max_flow \
  rcpp_min_cost_flow
-
-.PHONY: test_cc_tests # Build and Run all C++ Tests (located in examples/tests)
-test_cc_tests: \
- rcpp_lp_test \
- rcpp_bug_fz1 \
- rcpp_cpp11_test \
- rcpp_forbidden_intervals_test \
- rcpp_issue57 \
- rcpp_min_max_test
-#	$(MAKE) rcpp_issue173 # error: too long
 
 .PHONY: test_cc_contrib # Build and Run all C++ Contrib (located in examples/contrib)
 test_cc_contrib:

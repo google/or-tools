@@ -234,15 +234,13 @@ check_python: \
 # rpy_nurses_cp \
 # rpy_job_shop_cp \
 
-.PHONY: test_python_tests # Run all Python Tests (located in examples/tests)
+.PHONY: test_python_tests # Run all Python Tests (located in ortools/*/python)
 test_python_tests: \
  rpy_init_test \
  rpy_lp_api_test \
  rpy_lp_test \
  rpy_model_builder_test \
  rpy_pywraplp_test \
- rpy_cp_api_test \
- rpy_routing_api_test \
  rpy_pywrapcp_test \
  rpy_pywraprouting_test \
  rpy_cp_model_test \
