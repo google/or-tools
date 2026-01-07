@@ -7859,9 +7859,11 @@ TEST(PresolveCpModelTest, DetectEncodingFromLinear) {
   params.set_keep_all_feasible_solutions_in_presolve(true);
   const CpModelProto presolved_model = PresolveForTest(initial_model, params);
 
+  IntegerVariableProto expected_proto;
+  FillDomainInProto(Domain::FromValues({3, 6, 9, 10, 12}), &expected_proto);
   // The values are 10, 10-1, 10-7, 10+2, and 10-4.
-  EXPECT_EQ(ReadDomainFromProto(presolved_model.variables(5)).ToString(),
-            "[3][6][9,10][12]");
+  EXPECT_THAT(presolved_model.variables(),
+              testing::Contains(testing::EqualsProto(expected_proto)));
 }
 
 TEST(PresolveCpModelTest, ReplaceNonEqual) {

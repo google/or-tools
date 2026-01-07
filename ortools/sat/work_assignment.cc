@@ -301,7 +301,6 @@ bool SharedTreeManager::SyncTree(ProtoTrail& path) {
   // We don't rely on these being empty, but we expect them to be.
   DCHECK(to_close_.empty());
   DCHECK(to_update_.empty());
-  path.NormalizeImplications();
   int prev_level = -1;
   for (const auto& [node, level] : nodes) {
     if (level == prev_level) {
@@ -1367,6 +1366,8 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         !decision_policy_->GetBestPartialAssignment().empty()) {
       assigned_tree_.ClearTargetPhase();
       for (Literal lit : decision_policy_->GetBestPartialAssignment()) {
+        // Skip anything assigned at level 0.
+        if (trail_->Assignment().LiteralIsAssigned(lit)) continue;
         // If `lit` was last assigned at a shared level, it is implied in the
         // tree, no need to share its phase.
         if (trail_->Info(lit.Variable()).level <= assigned_tree_.MaxLevel()) {
@@ -1396,6 +1397,12 @@ bool SharedTreeWorker::SyncWithSharedTree() {
         decision_policy_->SetTargetPolarityIfUnassigned(DecodeDecision(lit));
       }
       decision_policy_->ResetActivitiesToFollowBestPartialAssignment();
+      // This seems bizzare after just setting the best partial assignment,
+      // but this makes phase sharing work even when there is no stable phase in
+      // the restart strategy, and makes no real difference if there is, since
+      // the first dive will still try to follow this assignment until the first
+      // conflict regardless of the restart strategy.
+      decision_policy_->ClearBestPartialAssignment();
     }
   }
   // If we commit to this subtree, keep it for at least 1s of dtime.

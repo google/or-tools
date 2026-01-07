@@ -514,11 +514,6 @@ class BestBinaryRelationBounds {
   RelationStatus GetStatus(LinearExpression2 expr, IntegerValue lb,
                            IntegerValue ub) const;
 
-  // Return a valid upper-bound on the given LinearExpression2. Note that we
-  // assume kMaxIntegerValue is always valid and returns it if we don't have an
-  // entry in the hash-map.
-  IntegerValue GetUpperBound(LinearExpression2 expr) const;
-
   // Same as GetUpperBound() but assume the expression is already canonicalized.
   // This is slightly faster.
   IntegerValue UpperBoundWhenCanonicalized(LinearExpression2 expr) const;

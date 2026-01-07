@@ -120,7 +120,8 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
 
   if (vivify_table_.empty()) {
     vivify_table_.push_back({"Vivification", "Clauses", "Decisions", "LitTrue",
-                             "Subsumed", "LitRemoved", "DecisionReused"});
+                             "Subsumed", "LitRemoved", "DecisionReused",
+                             "Conflicts"});
   }
   vivify_table_.push_back({FormatName(name),
                            FormatCounter(vivify_counters.num_clauses_vivified),
@@ -128,7 +129,8 @@ void SharedStatTables::AddClausesStat(absl::string_view name, Model* model) {
                            FormatCounter(vivify_counters.num_true),
                            FormatCounter(vivify_counters.num_subsumed),
                            FormatCounter(vivify_counters.num_removed_literals),
-                           FormatCounter(vivify_counters.num_reused)});
+                           FormatCounter(vivify_counters.num_reused),
+                           FormatCounter(vivify_counters.num_conflicts)});
 
   // Track reductions of Boolean variables.
   if (bool_var_table_.empty()) {

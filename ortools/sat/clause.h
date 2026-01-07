@@ -308,6 +308,7 @@ class ClauseManager : public SatPropagator {
   // Returns the next clause to minimize that has never been minimized before.
   // Note that we only minimize clauses kept forever.
   SatClause* NextNewClauseToMinimize();
+
   // Returns the next clause to minimize, this iterator will be reset to the
   // start so the clauses will be returned in round-robin order.
   // Note that we only minimize clauses kept forever.
@@ -324,7 +325,10 @@ class ClauseManager : public SatPropagator {
 
   // Restart the scans.
   void ResetToProbeIndex() { to_probe_index_ = 0; }
-  void ResetToMinimizeIndex() { to_minimize_index_ = 0; }
+  int64_t NumToMinimizeIndexResets() const {
+    return num_to_minimize_index_resets_;
+  }
+
   // Ensures that NextNewClauseToMinimize() returns only learned clauses.
   // This is a noop after the first call.
   void EnsureNewClauseIndexInitialized() {
@@ -499,6 +503,8 @@ class ClauseManager : public SatPropagator {
 
   // TODO(user): If more indices are needed, switch to a generic API.
   int to_minimize_index_ = 0;
+
+  int num_to_minimize_index_resets_ = 0;
   int to_first_minimize_index_ = 0;
   int to_probe_index_ = 0;
 

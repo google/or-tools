@@ -112,6 +112,8 @@ void SolverLogger::FlushPendingThrottledLogs(bool ignore_rates) {
 
 PresolveTimer::~PresolveTimer() {
   time_limit_->AdvanceDeterministicTime(work_);
+  const double dtime =
+      time_limit_->GetElapsedDeterministicTime() - dtime_at_start_;
 
   std::string counter_string;
   for (const auto& [counter_name, count] : counters_) {
@@ -124,7 +126,7 @@ PresolveTimer::~PresolveTimer() {
     logger_->LogInfo(
         __FILE__, __LINE__,
         absl::StrCat(absl::StrFormat("  %.2es", timer_.Get()),
-                     absl::StrFormat("  %.2ed", work_),
+                     absl::StrFormat("  %.2ed", dtime),
                      (WorkLimitIsReached() ? " *" : "  "), "[", name_, "]",
                      counter_string, " ", absl::StrJoin(extra_infos_, " ")));
   }

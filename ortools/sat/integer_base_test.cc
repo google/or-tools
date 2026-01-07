@@ -94,28 +94,6 @@ TEST(BestBinaryRelationBoundsTest, Basic) {
             best_bounds.GetStatus(expr, IntegerValue(-5), IntegerValue(3)));
 }
 
-TEST(BestBinaryRelationBoundsTest, UpperBound) {
-  LinearExpression2 expr;
-  expr.vars[0] = IntegerVariable(0);
-  expr.vars[1] = IntegerVariable(2);
-  expr.coeffs[0] = IntegerValue(1);
-  expr.coeffs[1] = IntegerValue(-1);
-
-  using AddResult = BestBinaryRelationBounds::AddResult;
-  BestBinaryRelationBounds best_bounds;
-  EXPECT_EQ(best_bounds.Add(expr, IntegerValue(0), IntegerValue(5)),
-            std::make_pair(AddResult::ADDED, AddResult::ADDED));
-
-  EXPECT_EQ(best_bounds.GetUpperBound(expr), IntegerValue(5));
-
-  expr.coeffs[0] *= 3;
-  expr.coeffs[1] *= 3;
-  EXPECT_EQ(best_bounds.GetUpperBound(expr), IntegerValue(15));
-
-  expr.Negate();
-  EXPECT_EQ(best_bounds.GetUpperBound(expr), IntegerValue(0));
-}
-
 AffineExpression OtherAffineLowerBound(LinearExpression2 expr, int var_index,
                                        IntegerValue expr_lb,
                                        IntegerValue other_var_lb) {

@@ -31,6 +31,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/log_severity.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
@@ -97,6 +98,7 @@
 #include "ortools/util/random_engine.h"
 #include "ortools/util/sigint.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/testing_utils.h"
 #include "ortools/util/time_limit.h"
 
 ABSL_FLAG(
@@ -2529,8 +2531,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 #endif  // ORTOOLS_TARGET_OS_SUPPORTS_THREADS
 
-  if (DEBUG_MODE) {
-    LOG(WARNING)
+  if (DEBUG_MODE && !ProbablyRunningInsideUnitTest()) {
+    LOG_EVERY_N_SEC(WARNING, 0.1)
         << "WARNING: CP-SAT is running in debug mode. The solver will "
            "be slow because we will do a lot of extra checks. Compile in "
            "optimization mode to gain an order of magnitude speedup.";

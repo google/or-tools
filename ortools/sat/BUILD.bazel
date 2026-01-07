@@ -335,7 +335,9 @@ cc_library(
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/algorithm:container",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/log:check",
         "@abseil-cpp//absl/types:span",
     ],
@@ -393,8 +395,32 @@ cc_library(
     deps = [
         ":cp_model_utils",
         ":presolve_context",
+        "//ortools/base:stl_util",
+        "//ortools/util:bitset",
         "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/algorithm:container",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/container:flat_hash_set",
+        "@abseil-cpp//absl/container:inlined_vector",
         "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/log:check",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "presolve_encoding_test",
+    srcs = ["presolve_encoding_test.cc"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":model",
+        ":presolve_context",
+        ":presolve_encoding",
+        "//ortools/base:gmock_main",
+        "//ortools/base:parse_test_proto",
+        "//ortools/util:sorted_interval_list",
+        "@abseil-cpp//absl/container:flat_hash_map",
+        "@abseil-cpp//absl/log:check",
     ],
 )
 
@@ -975,8 +1001,10 @@ cc_library(
         "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:strong_integers",
+        "//ortools/util:testing_utils",
         "//ortools/util:time_limit",
         "@abseil-cpp//absl/base:core_headers",
+        "@abseil-cpp//absl/base:log_severity",
         "@abseil-cpp//absl/cleanup",
         "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/container:flat_hash_map",
