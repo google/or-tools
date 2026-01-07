@@ -1417,7 +1417,8 @@ namespace {
 const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, false); },
-      MPSolver::GUROBI_LINEAR_PROGRAMMING);
+      MPSolver::GUROBI_LINEAR_PROGRAMMING,
+      []() { return GurobiIsCorrectlyInstalled(); });
   return nullptr;
 }();
 
@@ -1425,7 +1426,8 @@ const void* const kRegisterGurobiLp ABSL_ATTRIBUTE_UNUSED = [] {
 const void* const kRegisterGurobiMip ABSL_ATTRIBUTE_UNUSED = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* solver) { return new GurobiInterface(solver, true); },
-      MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+      MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING,
+      []() { return GurobiIsCorrectlyInstalled(); });
   return nullptr;
 }();
 

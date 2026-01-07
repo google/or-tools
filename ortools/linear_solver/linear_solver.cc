@@ -412,26 +412,10 @@ MPSolver::MPSolver(const std::string& name,
 
 MPSolver::~MPSolver() { Clear(); }
 
-extern bool GurobiIsCorrectlyInstalled();
-extern bool XpressIsCorrectlyInstalled();
-
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
-  if (!MPSolverInterfaceFactoryRepository::GetInstance()->Supports(
-          problem_type)) {
-    return false;
-  }
-  switch (problem_type) {
-    case GUROBI_LINEAR_PROGRAMMING:
-    case GUROBI_MIXED_INTEGER_PROGRAMMING:
-      return GurobiIsCorrectlyInstalled();
-    case XPRESS_LINEAR_PROGRAMMING:
-    case XPRESS_MIXED_INTEGER_PROGRAMMING:
-      return XpressIsCorrectlyInstalled();
-    default:
-      break;
-  }
-  return true;
+  return MPSolverInterfaceFactoryRepository::GetInstance()->Supports(
+      problem_type);
 }
 
 // TODO(user): post c++ 14, instead use
@@ -2238,9 +2222,14 @@ MPSolverInterfaceFactoryRepository::~MPSolverInterfaceFactoryRepository() {
 
 void MPSolverInterfaceFactoryRepository::Register(
     MPSolverInterfaceFactory factory,
-    MPSolver::OptimizationProblemType problem_type) {
+    MPSolver::OptimizationProblemType problem_type,
+    std::function<bool()> is_runtime_ready) {
   absl::MutexLock lock(mutex_);
-  map_[problem_type] = std::move(factory);
+  if (!is_runtime_ready) is_runtime_ready = []() { return true; };
+  map_[problem_type] = Entry{
+      .factory = std::move(factory),
+      .is_runtime_ready = std::move(is_runtime_ready),
+  };
 }
 
 bool MPSolverInterfaceFactoryRepository::Unregister(
@@ -2252,17 +2241,20 @@ bool MPSolverInterfaceFactoryRepository::Unregister(
 MPSolverInterface* MPSolverInterfaceFactoryRepository::Create(
     MPSolver* solver) const {
   absl::MutexLock lock(mutex_);
-  const MPSolverInterfaceFactory factory =
-      gtl::FindWithDefault(map_, solver->ProblemType(), nullptr);
-  if (!factory) {
-    return nullptr;
-  }
-  return factory(solver);
+  const Entry* entry = gtl::FindOrNull(map_, solver->ProblemType());
+  CHECK(entry != nullptr) << "No factory registered for problem type "
+                          << ToString(solver->ProblemType());
+  CHECK(entry->is_runtime_ready())
+      << "Solver for problem type " << ToString(solver->ProblemType())
+      << " is not ready.";
+  return entry->factory(solver);
 }
 
 bool MPSolverInterfaceFactoryRepository::Supports(
     MPSolver::OptimizationProblemType problem_type) const {
-  return map_.count(problem_type) > 0;
+  const Entry* entry = gtl::FindOrNull(map_, problem_type);
+  if (entry == nullptr) return false;
+  return entry->is_runtime_ready();
 }
 
 std::vector<MPSolver::OptimizationProblemType>
