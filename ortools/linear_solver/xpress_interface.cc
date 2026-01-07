@@ -2289,7 +2289,8 @@ namespace {
 const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new XpressInterface(solver, false); },
-      MPSolver::XPRESS_LINEAR_PROGRAMMING);
+      MPSolver::XPRESS_LINEAR_PROGRAMMING,
+      []() { return XpressIsCorrectlyInstalled(); });
   return nullptr;
 }();
 
@@ -2297,7 +2298,8 @@ const void* const kRegisterXpress ABSL_ATTRIBUTE_UNUSED = [] {
 const void* const kRegisterXpressMip ABSL_ATTRIBUTE_UNUSED = [] {
   MPSolverInterfaceFactoryRepository::GetInstance()->Register(
       [](MPSolver* const solver) { return new XpressInterface(solver, true); },
-      MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
+      MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING,
+      []() { return XpressIsCorrectlyInstalled(); });
   return nullptr;
 }();
 

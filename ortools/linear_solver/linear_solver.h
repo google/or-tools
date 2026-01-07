@@ -152,6 +152,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/flags/declare.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
@@ -1959,17 +1960,20 @@ class MPSolverInterfaceFactoryRepository {
  public:
   static MPSolverInterfaceFactoryRepository* GetInstance();
 
-  // Maps the given factory to the given problem type. If a factory was already
-  // assigned to this problem type, it will be replaced.
+  // Maps the given factory to the given problem type. For solver needing
+  // runtime checks an additional `is_runtime_ready` argument can be set. If
+  // a factory was already assigned to this problem type, it will be replaced.
   void Register(MPSolverInterfaceFactory factory,
-                MPSolver::OptimizationProblemType problem_type);
+                MPSolver::OptimizationProblemType problem_type,
+                std::function<bool()> is_runtime_ready = {});
 
-  // Invokes the factory associated to the given solver's problem type,
-  // or return NULL if no factory was found for it.
+  // Invokes the factory associated to the given solver's problem type and fails
+  // if no factory is registered or its runtime is not ready.
+  // Use `Supports` below to check if `Create` succeeds.
   MPSolverInterface* Create(MPSolver* solver) const;
 
   // Whether the implementation associated to the given problem type is
-  // available.
+  // available and ready to use.
   bool Supports(MPSolver::OptimizationProblemType problem_type) const;
 
   // List all the problem types.
@@ -1991,7 +1995,11 @@ class MPSolverInterfaceFactoryRepository {
   ~MPSolverInterfaceFactoryRepository();
 
   mutable absl::Mutex mutex_;
-  std::map<MPSolver::OptimizationProblemType, MPSolverInterfaceFactory> map_;
+  struct Entry {
+    MPSolverInterfaceFactory factory;
+    std::function<bool()> is_runtime_ready;
+  };
+  std::map<MPSolver::OptimizationProblemType, Entry> map_;
 };
 
 }  // namespace operations_research
