@@ -103,8 +103,8 @@ class TrailCopy {
       }
       trail_index_[var] = i;
       trail_literals_.push_back(literal);
-      trail_info_.emplace_back(info.level, assignment_type, reason,
-                               reason_clause);
+      trail_info_.push_back({info.level, assignment_type, reason,
+                               reason_clause});
     }
 
     const int num_decisions = trail_.CurrentDecisionLevel();
