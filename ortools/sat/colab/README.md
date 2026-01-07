@@ -12,7 +12,7 @@ Below you'll find three examples of Google's CP-SAT solver.
 Build and run locally:
 
 ```
-bazel run -c opt --cxxopt=-std=c++17 ortools/python:ortools_notebook
+bazel run -c opt ortools/python:ortools_notebook
 ```
 
 This will open a jupyter notebook in your browser.
@@ -20,7 +20,7 @@ This will open a jupyter notebook in your browser.
 To use it as a server only, use the command
 
 ```
-bazel run -c opt --cxxopt=-std=c++17 ortools/python:ortools_notebook -- --no-browser
+bazel run -c opt ortools/python:ortools_notebook -- --no-browser
 ```
 
 And paste the resulting url in your favorite environment, like visual studio code.
