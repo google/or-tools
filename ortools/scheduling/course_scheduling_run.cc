@@ -23,11 +23,11 @@
 
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
-#include "examples/cpp/course_scheduling.h"
 #include "ortools/base/helpers.h"
 #include "ortools/base/init_google.h"
 #include "ortools/base/options.h"
 #include "ortools/base/timer.h"
+#include "ortools/scheduling/course_scheduling.h"
 #include "ortools/scheduling/course_scheduling.pb.h"
 
 ABSL_FLAG(std::string, input, "",

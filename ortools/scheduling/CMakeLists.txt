@@ -11,15 +11,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB _SRCS "*.h" "*.cc")
+list(APPEND _SRCS
+  course_scheduling.cc
+  course_scheduling.h
+  jobshop_scheduling_parser.cc
+  jobshop_scheduling_parser.h
+  rcpsp_parser.cc
+  rcpsp_parser.h
+)
 set(NAME ${PROJECT_NAME}_scheduling)
 
 # Will be merge in libortools.so
-#add_library(${NAME} STATIC ${_SRCS})
 add_library(${NAME} OBJECT ${_SRCS})
-set_target_properties(${NAME} PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-  )
+set_target_properties(${NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})
