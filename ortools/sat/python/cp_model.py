@@ -184,7 +184,7 @@ _IndexOrSeries = Union[pd.Index, pd.Series]
 
 
 # Helper functions.
-
+enable_warnings = False
 
 # warnings.deprecated is python3.13+. Not compatible with Open Source (3.10+).
 # pylint: disable=g-bare-generic
@@ -193,12 +193,13 @@ def deprecated(message: str) -> Callable[[Callable], Callable]:
 
     def deprecated_decorator(func) -> Callable:
         def deprecated_func(*args, **kwargs):
-            warnings.warn(
-                f"{func.__name__} is a deprecated function. {message}",
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
-            warnings.simplefilter("default", DeprecationWarning)
+            if enable_warnings:
+                warnings.warn(
+                    f"{func.__name__} is a deprecated function. {message}",
+                    category=DeprecationWarning,
+                    stacklevel=2,
+                )
+                warnings.simplefilter("default", DeprecationWarning)
             return func(*args, **kwargs)
 
         return deprecated_func
@@ -210,12 +211,13 @@ def deprecated_method(func, old_name: str) -> Callable:
     """Wrapper that warns about a deprecated method."""
 
     def deprecated_func(*args, **kwargs) -> Any:
-        warnings.warn(
-            f"{old_name} is a deprecated function. Use {func.__name__} instead.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        warnings.simplefilter("default", DeprecationWarning)
+        if enable_warnings:
+            warnings.warn(
+                f"{old_name} is a deprecated function. Use {func.__name__} instead.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", DeprecationWarning)
         return func(*args, **kwargs)
 
     return deprecated_func
