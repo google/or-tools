@@ -14,6 +14,7 @@
 #include "ortools/sat/probing.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <functional>
 #include <optional>
@@ -103,8 +104,8 @@ class TrailCopy {
       }
       trail_index_[var] = i;
       trail_literals_.push_back(literal);
-      trail_info_.push_back({info.level, assignment_type, reason,
-                               reason_clause});
+      trail_info_.emplace_back(info.level, assignment_type, reason,
+                               reason_clause);
     }
 
     const int num_decisions = trail_.CurrentDecisionLevel();
@@ -232,7 +233,7 @@ class TrailCopy {
   }
 
   struct TrailInfo {
-    int level;
+    uint32_t level;
     int assignment_type;
     // For literals propagated by the BinaryImplicationGraph, the negation of
     // the original reason. For literals propagated by the ClauseManager, *all*
