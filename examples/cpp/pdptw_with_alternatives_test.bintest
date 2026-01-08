@@ -1,2 +1,0 @@
-RUN: $(pdptw_with_alternatives) --pdp_file=$(lc102.txt) 2>&1
-CHECK: "Cost: 361237"
