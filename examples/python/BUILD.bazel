@@ -81,6 +81,20 @@ bintest(
 )
 
 py_binary(
+    name = "bus_driver_scheduling_flow_sat_py3",
+    srcs = ["bus_driver_scheduling_flow_sat.py"],
+    main = "bus_driver_scheduling_flow_sat.py",
+    deps = ["//ortools/sat/python:cp_model"],
+)
+
+bintest(
+    name = "bus_driver_scheduling_flow_sat_py_test",
+    size = "medium",
+    srcs = [":bus_driver_scheduling_flow_sat_py_test.bintest"],
+    named_data = {"bus_driver_scheduling_flow_sat_py3": ":bus_driver_scheduling_flow_sat_py3"},
+)
+
+py_binary(
     name = "car_sequencing_optimization_sat_py3",
     srcs = ["car_sequencing_optimization_sat.py"],
     main = "car_sequencing_optimization_sat.py",
