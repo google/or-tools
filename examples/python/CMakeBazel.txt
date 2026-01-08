@@ -3,7 +3,6 @@
 # You can update this file by running:
 #   python3 tools/build/bazel2cmake.py examples/python/BUILD.bazel
 
-
 add_python_binary(
   NAME bzl_py_example_arc_flow_cutting_stock_sat_py3
   FILE ${CMAKE_CURRENT_SOURCE_DIR}/arc_flow_cutting_stock_sat.py
@@ -40,6 +39,17 @@ ortools_cxx_bintest(
   NAME bzl_py_example_bus_driver_scheduling_sat_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/bus_driver_scheduling_sat_py_test.bintest
   ENVIRONMENT BINTEST_bus_driver_scheduling_sat_py3=$<TARGET_FILE:bzl_py_example_bus_driver_scheduling_sat_py3>
+)
+
+add_python_binary(
+  NAME bzl_py_example_bus_driver_scheduling_flow_sat_py3
+  FILE ${CMAKE_CURRENT_SOURCE_DIR}/bus_driver_scheduling_flow_sat.py
+)
+
+ortools_cxx_bintest(
+  NAME bzl_py_example_bus_driver_scheduling_flow_sat_py_test
+  SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/bus_driver_scheduling_flow_sat_py_test.bintest
+  ENVIRONMENT BINTEST_bus_driver_scheduling_flow_sat_py3=$<TARGET_FILE:bzl_py_example_bus_driver_scheduling_flow_sat_py3>
 )
 
 add_python_binary(
@@ -182,7 +192,9 @@ add_python_binary(
 ortools_cxx_bintest(
   NAME bzl_py_example_line_balancing_sat_salbp_20_1_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/line_balancing_sat_salbp_20_1_py_test.bintest
-  ENVIRONMENT BINTEST_line_balancing_sat_py3=$<TARGET_FILE:bzl_py_example_line_balancing_sat_py3> BINTEST_salbp_20_1.alb=${CMAKE_SOURCE_DIR}/examples/python/testdata/salbp_20_1.alb
+  ENVIRONMENT
+    BINTEST_line_balancing_sat_py3=$<TARGET_FILE:bzl_py_example_line_balancing_sat_py3>
+    BINTEST_salbp_20_1.alb=${CMAKE_CURRENT_SOURCE_DIR}/testdata/salbp_20_1.alb
 )
 
 add_python_binary(
@@ -287,13 +299,17 @@ ortools_cxx_bintest(
 ortools_cxx_bintest(
   NAME bzl_py_example_rcpsp_sat_c1510_1_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/rcpsp_sat_c1510_1_py_test.bintest
-  ENVIRONMENT BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3> BINTEST_c1510_1.mm.txt=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/c1510_1.mm.txt
+  ENVIRONMENT
+    BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3>
+    BINTEST_c1510_1.mm.txt=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/c1510_1.mm.txt
 )
 
 ortools_cxx_bintest(
   NAME bzl_py_example_rcpsp_sat_j301_1_py_test
   SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/rcpsp_sat_j301_1_py_test.bintest
-  ENVIRONMENT BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3> BINTEST_j301_1.sm=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/j301_1.sm
+  ENVIRONMENT
+    BINTEST_rcpsp_sat_py3=$<TARGET_FILE:bzl_py_example_rcpsp_sat_py3>
+    BINTEST_j301_1.sm=${CMAKE_SOURCE_DIR}/ortools/scheduling/testdata/j301_1.sm
 )
 
 add_python_binary(
