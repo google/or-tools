@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.google.ortools.java;
+package com.google.ortools.graph.samples;
 
 import com.google.ortools.Loader;
 import com.google.ortools.graph.LinearSumAssignment;
