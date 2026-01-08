@@ -1487,10 +1487,9 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   DCHECK(
       std::all_of(marked_.begin(), marked_.end(), [](bool b) { return !b; }));
 
-  // TODO(user): add a local dtime limit for the corner case where this take too
-  // much time. We can adapt the limit depending on how much we want to spend on
+  // TODO(user): adapt the dtime limit depending on how much we want to spend on
   // inprocessing.
-  while (!time_limit_->LimitReached() && !queue_.IsEmpty()) {
+  while (!time_limit_->LimitReached() && !queue_.IsEmpty() && dtime_ < 10.0) {
     const BooleanVariable top = queue_.Top().var;
     queue_.Pop();
 
@@ -1538,7 +1537,6 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   literal_to_clauses_.clear();
   literal_to_num_clauses_.clear();
 
-  dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(2);
   LOG_IF(INFO, log_info) << "BVE."
@@ -1885,10 +1883,12 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   for (const ClauseIndex i : literal_to_clauses_[lit]) {
     const auto c = clauses_[i]->AsSpan();
     if (!c.empty()) score += clause_weight + c.size();
+    dtime_ += 1e-8 * c.size();
   }
   for (const ClauseIndex i : literal_to_clauses_[not_lit]) {
     const auto c = clauses_[i]->AsSpan();
     if (!c.empty()) score += clause_weight + c.size();
+    dtime_ += 1.0e-8 * c.size();
   }
 
   // Compute the new score after BVE.

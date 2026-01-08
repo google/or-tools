@@ -313,6 +313,7 @@ class ClauseManager : public SatPropagator {
   // start so the clauses will be returned in round-robin order.
   // Note that we only minimize clauses kept forever.
   SatClause* NextClauseToMinimize();
+
   // Returns the next clause to probe in round-robin order.
   SatClause* NextClauseToProbe();
 

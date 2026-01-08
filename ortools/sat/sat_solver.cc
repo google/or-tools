@@ -3030,6 +3030,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   std::vector<Entry> entries;
   auto& clauses_info = *(clauses_propagator_->mutable_clauses_info());
   for (auto& entry : clauses_info) {
+    DCHECK(!entry.first->empty());  // Should have been deleted !
     entry.second.num_cleanup_rounds_since_last_bumped++;
     if (clauses_propagator_->ClauseIsUsedAsReason(entry.first)) continue;
 
