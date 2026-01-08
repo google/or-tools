@@ -20,7 +20,7 @@ jobs:
     name: arm64•MacOS•CMake(${{matrix.cmake.name}})•.Net
     runs-on: macos-latest # macos arm64 based runner
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Swig install
         run: |
           brew install swig
@@ -65,4 +65,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6

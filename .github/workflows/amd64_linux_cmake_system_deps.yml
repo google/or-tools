@@ -17,7 +17,7 @@ jobs:
     name: amd64•Archlinux•CMake•${{matrix.lang}}•BUILD_DEPS=OFF
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Build base image
         run: make --directory=cmake ${{matrix.distro}}_base
       - name: Build env image

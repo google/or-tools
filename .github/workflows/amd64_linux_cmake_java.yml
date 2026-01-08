@@ -13,7 +13,7 @@ jobs:
     name: amd64•Linux•CMake•Java
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Swig install
         run: |
           sudo apt install -y swig
@@ -53,4 +53,4 @@ jobs:
     runs-on: ubuntu-latest
     needs: native
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
