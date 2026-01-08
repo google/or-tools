@@ -244,21 +244,25 @@ bool ClauseManager::Propagate(Trail* trail) {
           }
         }
 
-        reasons_[trail->Index()] = it->clause;
-        if (propagation_level == 0 && lrat_proof_handler_ != nullptr) {
-          const ClauseId clause_id = GetClauseId(it->clause);
-          const int size = it->clause->size();
-          std::vector<ClauseId>& unit_ids = clause_ids_scratchpad_;
-          unit_ids.clear();
-          for (int i = 1; i < size; ++i) {
-            unit_ids.push_back(trail_->GetUnitClauseId(literals[i].Variable()));
+        if (propagation_level == 0) {
+          if (lrat_proof_handler_ != nullptr) {
+            std::vector<ClauseId>& unit_ids = clause_ids_scratchpad_;
+            unit_ids.clear();
+            const int size = it->clause->size();
+            for (int i = 1; i < size; ++i) {
+              unit_ids.push_back(
+                  trail_->GetUnitClauseId(literals[i].Variable()));
+            }
+            unit_ids.push_back(GetClauseId(it->clause));
+            const ClauseId new_clause_id = clause_id_generator_->GetNextId();
+            lrat_proof_handler_->AddInferredClause(
+                new_clause_id, {other_watched_literal}, unit_ids);
+            helper.EnqueueWithUnitReason(other_watched_literal, new_clause_id);
+          } else {
+            trail_->EnqueueWithUnitReason(other_watched_literal);
           }
-          unit_ids.push_back(clause_id);
-          const ClauseId new_clause_id = clause_id_generator_->GetNextId();
-          lrat_proof_handler_->AddInferredClause(
-              new_clause_id, {other_watched_literal}, unit_ids);
-          helper.EnqueueWithUnitReason(other_watched_literal, new_clause_id);
         } else {
+          reasons_[trail->Index()] = it->clause;
           helper.EnqueueAtLevel(other_watched_literal, propagation_level);
         }
         *new_it++ = *it;
@@ -296,6 +300,7 @@ SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
   if (!trail_->Assignment().VariableIsAssigned(var)) return nullptr;
   if (trail_->AssignmentType(var) != propagator_id_) return nullptr;
   SatClause* result = reasons_[trail_->Info(var).trail_index];
+  DCHECK(result != nullptr) << trail_->Info(var).DebugString();
 
   // Tricky: In some corner case, that clause was subsumed, so we don't want
   // to check it nor use it.
@@ -306,6 +311,7 @@ SatClause* ClauseManager::ReasonClauseOrNull(BooleanVariable var) const {
 
 bool ClauseManager::ClauseIsUsedAsReason(SatClause* clause) const {
   DCHECK(clause != nullptr);
+  if (clause->empty()) return false;
   return clause == ReasonClauseOrNull(clause->PropagatedLiteral().Variable());
 }
 
@@ -642,6 +648,16 @@ void ClauseManager::CleanUpWatchers() {
 void ClauseManager::DeleteRemovedClauses() {
   if (!is_clean_) CleanUpWatchers();
 
+  if (DEBUG_MODE) {
+    // This help debug issues, as it is easier to check for nullptr rather than
+    // detect a pointer that has been deleted.
+    for (int i = 0; i < reasons_.size(); ++i) {
+      if (reasons_[i] != nullptr && reasons_[i]->empty()) {
+        reasons_[i] = nullptr;
+      }
+    }
+  }
+
   int new_size = 0;
   const int old_size = clauses_.size();
   for (int i = 0; i < old_size; ++i) {
@@ -649,6 +665,7 @@ void ClauseManager::DeleteRemovedClauses() {
     if (i == to_first_minimize_index_) to_first_minimize_index_ = new_size;
     if (i == to_probe_index_) to_probe_index_ = new_size;
     if (clauses_[i]->IsRemoved()) {
+      DCHECK(!clauses_info_.contains(clauses_[i]));
       delete clauses_[i];
     } else {
       clauses_[new_size++] = clauses_[i];

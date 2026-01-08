@@ -181,14 +181,6 @@ TEST(LinearConstraintCopyTest, BasicBehavior) {
   EXPECT_EQ(ct, other);
 }
 
-TEST(MakeAllCoefficientsPositiveTest, BasicBehavior) {
-  // Note that this relies on the fact that the negation of an IntegerVariable
-  // var is is the one with IntegerVariable(var.value() ^ 1);
-  LinearConstraint ct = CreateUbConstraintForTest({-2, 0, -7, 0}, 10);
-  MakeAllCoefficientsPositive(&ct);
-  EXPECT_EQ(ct, CreateUbConstraintForTest({0, 2, 0, 7}, 10));
-}
-
 TEST(LinearConstraintBuilderTest, DuplicateCoefficient) {
   Model model;
   model.GetOrCreate<IntegerEncoder>();

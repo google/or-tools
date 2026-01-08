@@ -218,8 +218,8 @@ LinearConstraint ScatteredIntegerVector::ConvertToLinearConstraint(
   result.ub = upper_bound;
 
   if (extra_term != std::nullopt) {
-    result.vars[new_size] += extra_term->first;
-    result.coeffs[new_size] += extra_term->second;
+    result.vars[new_size] = extra_term->first;
+    result.coeffs[new_size] = extra_term->second;
     ++new_size;
   }
 
