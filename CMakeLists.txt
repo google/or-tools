@@ -452,6 +452,6 @@ foreach(SAMPLES IN ITEMS
 endforeach()
 
 # Same for examples
-foreach(EXAMPLES IN ITEMS contrib cpp dotnet java python)
+foreach(EXAMPLES IN ITEMS contrib cpp dotnet python)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()

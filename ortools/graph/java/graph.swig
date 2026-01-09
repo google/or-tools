@@ -21,8 +21,8 @@
 // API to be exposed here.
 //
 // USAGE EXAMPLES:
-// - java/com/google/ortools/samples/FlowExample.java
-// - java/com/google/ortools/samples/LinearAssignmentAPI.java
+// - java/com/google/ortools/graph/samples/FlowExample.java
+// - java/com/google/ortools/graph/samples/LinearAssignmentAPI.java
 // - javatests/com/google/ortools/graph/FlowTest.java
 //
 // These examples are also used as unit tests.
