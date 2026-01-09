@@ -275,6 +275,7 @@ cc_library(
         "//ortools/graph",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/linear_solver:linear_solver_scip",
         "//ortools/util:saturated_arithmetic",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
