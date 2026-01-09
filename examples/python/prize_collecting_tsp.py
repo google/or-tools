@@ -17,6 +17,8 @@
 from ortools.routing import enums_pb2
 from ortools.routing import pywraprouting
 
+RoutingIndexManager = pywraprouting.RoutingIndexManager
+
 DISTANCE_MATRIX = [
     # fmt:off
     [0, 10938, 4542, 2835, 29441, 2171, 1611, 9208, 9528, 11111, 16120, 22606, 22127, 20627, 21246, 23387, 16697, 33609, 26184, 24772, 22644, 20655, 30492, 23296, 32979, 18141, 19248, 17129, 17192, 15645, 12658, 11210, 12094, 13175, 18162, 4968, 12308, 10084, 13026, 15056],
@@ -109,9 +111,7 @@ def main():
     all_nodes = range(num_nodes)
 
     # Create the routing index manager.
-    manager = pywraproutingindexmanager.RoutingIndexManager(
-        num_nodes, num_vehicles, depot
-    )
+    manager = RoutingIndexManager(num_nodes, num_vehicles, depot)
 
     # Create routing model.
     routing = pywraprouting.RoutingModel(manager)
