@@ -14,8 +14,8 @@
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 extra_args = [
-    "--no-emit-index-url",
-    "--reuse-hashes",
+    "--no-emit-index-url",  # Prevent emitting url in .txt file when using a proxy.
+    "--reuse-hashes",  # Improve the speed of --generate-hashes by reusing the hashes from an existing output file.
     "--verbose",
 ]
 
@@ -35,5 +35,11 @@ compile_pip_requirements(
     generate_hashes = True,
     requirements_txt = "notebook_requirements.txt",
 )
+
+# To fully update `requirements.txt` files run the following commands:
+# cat /dev/null > bazel/ortools_requirements.txt
+# cat /dev/null > bazel/notebook_requirements.txt
+# bazelisk-linux-amd64 run --config=ci //bazel:ortools_requirements.update
+# bazelisk-linux-amd64 run --config=ci //bazel:notebook_requirements.update
 
 package(default_visibility = ["//visibility:public"])
