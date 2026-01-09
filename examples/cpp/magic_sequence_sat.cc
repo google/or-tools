@@ -32,7 +32,7 @@
 #include "ortools/sat/cp_model.h"
 
 ABSL_FLAG(int, size, 50, "Size of the problem.");
-ABSL_FLAG(std::string, params, "log_search_progress:true,num_search_workers:8",
+ABSL_FLAG(std::string, params, "log_search_progress:true,num_workers:8",
           "Sat parameters.");
 
 namespace operations_research {
